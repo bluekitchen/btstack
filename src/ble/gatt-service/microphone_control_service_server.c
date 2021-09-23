@@ -55,7 +55,7 @@
 static btstack_context_callback_registration_t  mc_mute_callback;
 static att_service_handler_t       microphone_control;
 
-static microphone_control_mute_t mc_mute_value;
+static gatt_microphone_control_mute_t mc_mute_value;
 static uint16_t mc_mute_value_client_configuration;
 static hci_con_handle_t mc_mute_value_client_configuration_connection;
 
@@ -85,11 +85,11 @@ static int microphone_control_service_write_callback(hci_con_handle_t con_handle
 		if (buffer_size != 1){
 			return ATT_ERROR_VALUE_NOT_ALLOWED;
 		} 
-		microphone_control_mute_t mute_value = (microphone_control_mute_t)buffer[0];
+		gatt_microphone_control_mute_t mute_value = (gatt_microphone_control_mute_t)buffer[0];
 		switch (mute_value){
-			case MICROPHONE_CONTROL_MUTE_OFF:
-			case MICROPHONE_CONTROL_MUTE_ON:
-				if (mc_mute_value == MICROPHONE_CONTROL_MUTE_DISABLED){
+			case GATT_MICROPHONE_CONTROL_MUTE_OFF:
+			case GATT_MICROPHONE_CONTROL_MUTE_ON:
+				if (mc_mute_value == GATT_MICROPHONE_CONTROL_MUTE_DISABLED){
 					return ATT_ERROR_RESPONSE_MICROPHONE_CONTROL_MUTE_DISABLED;
 				}
 				mc_mute_value = mute_value;
@@ -115,7 +115,7 @@ static void microphone_control_service_can_send_now(void * context){
 	att_server_notify(con_handle, mc_mute_value_handle, &value, 1);
 }
 
-void microphone_control_service_server_init(microphone_control_mute_t mute_value){
+void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_value){
 	mc_mute_value = mute_value;
 
 	// get service handle range
@@ -137,7 +137,7 @@ void microphone_control_service_server_init(microphone_control_mute_t mute_value
 	att_server_register_service_handler(&microphone_control);
 }
 
-void microphone_control_service_server_set_mute(microphone_control_mute_t mute_value){
+void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t mute_value){
 	if (mc_mute_value == mute_value){
 		return;
 	}

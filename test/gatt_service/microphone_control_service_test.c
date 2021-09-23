@@ -38,7 +38,7 @@ TEST_GROUP(MICROPHONE_CONTROL_SERVICE_SERVER){
         mute_value_handle_client_configuration = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_MUTE);
 
         // setup battery service
-        microphone_control_service_server_init(MICROPHONE_CONTROL_MUTE_OFF);
+        microphone_control_service_server_init(GATT_MICROPHONE_CONTROL_MUTE_OFF);
 
         service = mock_att_server_get_service();
         con_handle = 0x00;
@@ -56,7 +56,7 @@ TEST(MICROPHONE_CONTROL_SERVICE_SERVER, set_mute_value_trigger_can_send_now){
 
     // set battery to trigger notification
     mock().expectOneCall("att_server_register_can_send_now_callback");
-    microphone_control_service_server_set_mute(MICROPHONE_CONTROL_MUTE_ON);
+    microphone_control_service_server_set_mute(GATT_MICROPHONE_CONTROL_MUTE_ON);
     mock().checkExpectations();
     mock().expectOneCall("att_server_notify");
     mock_att_service_trigger_can_send_now();
@@ -71,28 +71,28 @@ TEST(MICROPHONE_CONTROL_SERVICE_SERVER, lookup_attribute_handles){
 TEST(MICROPHONE_CONTROL_SERVICE_SERVER, set_mute_value){
     // mute_value_handle_client_configuration not set
     mock().expectNCalls(con_handle, "att_server_register_can_send_now_callback");
-    microphone_control_service_server_set_mute(MICROPHONE_CONTROL_MUTE_ON);
+    microphone_control_service_server_set_mute(GATT_MICROPHONE_CONTROL_MUTE_ON);
     mock().checkExpectations();
 
     // mute_value_handle_client_configuration set
     mock().expectOneCall("att_server_register_can_send_now_callback");
     const uint8_t enable_notify[]= { 0x1, 0x0 };
     mock_att_service_write_callback(con_handle, mute_value_handle_client_configuration, ATT_TRANSACTION_MODE_NONE, 0, enable_notify, sizeof(enable_notify));
-    microphone_control_service_server_set_mute(MICROPHONE_CONTROL_MUTE_OFF);
+    microphone_control_service_server_set_mute(GATT_MICROPHONE_CONTROL_MUTE_OFF);
     mock().checkExpectations();
 }
 
 TEST(MICROPHONE_CONTROL_SERVICE_SERVER, set_wrong_handle_mute_value){
     // mute_value_handle_client_configuration not set
     mock().expectNCalls(con_handle, "att_server_register_can_send_now_callback");
-    microphone_control_service_server_set_mute(MICROPHONE_CONTROL_MUTE_ON);
+    microphone_control_service_server_set_mute(GATT_MICROPHONE_CONTROL_MUTE_ON);
     mock().checkExpectations();
 
     // // mute_value_handle_client_configuration set
     mock().expectNoCall("att_server_register_can_send_now_callback");
     const uint8_t enable_notify[]= { 0x1, 0x0 };
     mock_att_service_write_callback(con_handle, mute_value_handle_client_configuration + 10, ATT_TRANSACTION_MODE_NONE, 0, enable_notify, sizeof(enable_notify));
-    microphone_control_service_server_set_mute(MICROPHONE_CONTROL_MUTE_OFF);
+    microphone_control_service_server_set_mute(GATT_MICROPHONE_CONTROL_MUTE_OFF);
     mock().checkExpectations();
 }
 

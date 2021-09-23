@@ -704,6 +704,12 @@ typedef struct {
     uint8_t  seconds;   // [0,59]
 } gatt_date_time_t;
 
+typedef enum {
+    GATT_MICROPHONE_CONTROL_MUTE_OFF = 0x00,
+    GATT_MICROPHONE_CONTROL_MUTE_ON,
+    GATT_MICROPHONE_CONTROL_MUTE_DISABLED
+} gatt_microphone_control_mute_t;
+
 /**
  * SM - LE Security Manager 
  */

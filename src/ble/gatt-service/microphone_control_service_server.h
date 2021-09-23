@@ -51,12 +51,6 @@ extern "C" {
 
 #define ATT_ERROR_RESPONSE_MICROPHONE_CONTROL_MUTE_DISABLED    0x80
 
-typedef enum {
-    MICROPHONE_CONTROL_MUTE_OFF = 0x00,
-    MICROPHONE_CONTROL_MUTE_ON,
-    MICROPHONE_CONTROL_MUTE_DISABLED
-} microphone_control_mute_t;
-
 /**
  * @text The Microphone Control Service enables a device to expose the mute control and state of one or more microphones.
  * Only server can disable and enable mute. Currently one one client supported.
@@ -70,13 +64,13 @@ typedef enum {
  * @brief Init Microphone Control Service Server with ATT DB
  * @param mute_value
  */
-void microphone_control_service_server_init(microphone_control_mute_t mute_value);
+void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_value);
 
 /**
  * @brief Set mute value.
  * @param mute_value
  */
-void microphone_control_service_server_set_mute(microphone_control_mute_t mute_value);
+void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t mute_value);
 
 
 /* API_END */
