@@ -57,7 +57,7 @@ extern "C" {
  * After adding it to your .gatt file, you call *tx_power_service_server_init(value)* with the
  * device’s current transmit power level value. 
  *
- * If the power level value changes, you can call *tx_power_service_server_set_level(tx_power_level)*. 
+ * If the power level value changes, you can call *tx_power_service_server_set_level(tx_power_level_dBm)*. 
  * The service does not support sending Notifications.
  */
 
@@ -71,9 +71,9 @@ void tx_power_service_server_init(int8_t tx_power_level);
 
 /**
  * @brief Update TX power level
- * @param tx_power_level
+ * @param tx_power_level_dBm range [-100,20]
  */
-void tx_power_service_server_set_level(int8_t tx_power_level);
+void tx_power_service_server_set_level(int8_t tx_power_level_dBm);
 
 /* API_END */
 

@@ -149,16 +149,20 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 
 static void show_usage(void){
     printf("## BAS\n");
-    printf("a - send 50%% battery level\n");
+    printf("a - send 50%% Battery level\n");
+    printf("## TPS\n");
+    printf("t - send 10 TX Power level\n");
 }
 
 static void stdin_process(char c){
     switch (c){
         case 'a': // accept just works
-        printf("BAS: Sending 50%% battery level\n");
+            printf("BAS: Sending 50%% battery level\n");
             battery_service_server_set_battery_value(50);
             break;
-        case 'c':
+        case 't':
+            printf("TPS: Sending 10 TX Power level\n");
+            tx_power_service_server_set_level(10);
             break;
         default:
             show_usage();
@@ -191,6 +195,12 @@ int btstack_main(void)
     // setup device information service
     device_information_service_server_init();
     device_information_service_server_set_pnp_id(1, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 0x0001, 0x001);
+    
+    tx_power_service_server_init(20);
+
+    bond_management_service_server_init(0xFFFF);
+
+    microphone_control_service_server_init(GATT_MICROPHONE_CONTROL_MUTE_OFF);
     
     // setup advertisements
     uint16_t adv_int_min = 0x0030;

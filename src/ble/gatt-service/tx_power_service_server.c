@@ -53,11 +53,15 @@
 
 #include "ble/gatt-service/tx_power_service_server.h"
 
+static btstack_context_callback_registration_t tx_power_level_callback;
 static att_service_handler_t       tx_power_service_handler;
 
 static int8_t 	tx_power_level_value;
 static uint16_t tx_power_level_value_handle;
 
+static uint16_t tx_power_level_client_configuration;
+static uint16_t tx_power_level_client_configuration_handle;
+static hci_con_handle_t tx_power_level_client_configuration_con_handle;
 
 static uint16_t tx_power_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 	UNUSED(con_handle);
@@ -65,11 +69,29 @@ static uint16_t tx_power_service_read_callback(hci_con_handle_t con_handle, uint
 	if (attribute_handle == tx_power_level_value_handle){
 		return att_read_callback_handle_byte((uint8_t)tx_power_level_value, offset, buffer, buffer_size);
 	}
+    if (attribute_handle == tx_power_level_client_configuration_handle){
+        return att_read_callback_handle_little_endian_16(tx_power_level_client_configuration, offset, buffer, buffer_size);
+    }
 	return 0;
 }
 
-void tx_power_service_server_init(int8_t tx_power_level){
-	tx_power_level_value = tx_power_level;
+
+static int tx_power_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    UNUSED(transaction_mode);
+    UNUSED(offset);
+    UNUSED(buffer_size);
+    UNUSED(con_handle);
+
+    if (attribute_handle == tx_power_level_client_configuration_handle){
+        tx_power_level_client_configuration = little_endian_read_16(buffer, 0);
+        tx_power_level_client_configuration_con_handle = con_handle;
+    }
+    return 0;
+}
+
+
+void tx_power_service_server_init(int8_t tx_power_level_dBm){
+	tx_power_level_value = tx_power_level_dBm;
 
 	// get service handle range
 	uint16_t start_handle = 0;
@@ -80,15 +102,27 @@ void tx_power_service_server_init(int8_t tx_power_level){
 
 	// get characteristic value handle and client configuration handle
 	tx_power_level_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_TX_POWER_LEVEL);
+    tx_power_level_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_TX_POWER_LEVEL);
 
 	// register service with ATT Server
 	tx_power_service_handler.start_handle   = start_handle;
 	tx_power_service_handler.end_handle     = end_handle;
 	tx_power_service_handler.read_callback  = &tx_power_service_read_callback;
-	tx_power_service_handler.write_callback = NULL;
+	tx_power_service_handler.write_callback = &tx_power_service_write_callback;
 	att_server_register_service_handler(&tx_power_service_handler);
 }
 
-void tx_power_service_server_set_level(int8_t tx_power_level){
-	tx_power_level_value = tx_power_level;
+static void tx_power_service_can_send_now(void * context){
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) context;
+    uint8_t value = (uint8_t)tx_power_level_value;
+    att_server_notify(con_handle, tx_power_level_value_handle, &value, 1);
+}
+
+void tx_power_service_server_set_level(int8_t tx_power_level_dBm){
+	tx_power_level_value = tx_power_level_dBm;
+    if (tx_power_level_client_configuration != 0){
+        tx_power_level_callback.callback = &tx_power_service_can_send_now;
+        tx_power_level_callback.context  = (void*) (uintptr_t) tx_power_level_client_configuration_con_handle;
+        att_server_register_can_send_now_callback(&tx_power_level_callback, tx_power_level_client_configuration_con_handle);
+    }
 }
