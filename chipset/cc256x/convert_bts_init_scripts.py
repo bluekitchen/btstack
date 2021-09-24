@@ -281,8 +281,7 @@ def convert_bts(output_file, main_bts_file, bts_add_on, aka, lmp_subversion):
         
         fout.write('};\n\n')
 
-        fout.write('const uint32_t {0}_init_script_size = {1};\n\n'.format(array_name,size));
-        # fout.write('void main() {0} printf("size {1}\\n", {2}_init_script_size); {3}'.format('{', '%u', array_name,'}'));
+        fout.write('const uint32_t {0}_init_script_size = sizeof({0}_init_script); // size = {1} bytes\n\n'.format(array_name,size));
 
 # check usage: 2-3 param
 if len(sys.argv) < 3 or len(sys.argv) > 4:
