@@ -442,10 +442,12 @@ static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t stat
     hci_connection->requested_security_level = LEVEL_0;
     if (!hci_pairing_active(hci_connection)) return;
     hci_connection->authentication_flags &= ~AUTH_FLAG_PAIRING_ACTIVE_MASK;
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
     hci_connection->classic_oob_c_192 = NULL;
     hci_connection->classic_oob_r_192 = NULL;
     hci_connection->classic_oob_c_256 = NULL;
     hci_connection->classic_oob_r_256 = NULL;
+#endif
     log_info("pairing complete, status %02x", status);
 
     uint8_t event[12];
