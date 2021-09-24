@@ -59,17 +59,17 @@ static uint8_t 	battery_value;
 static uint16_t battery_value_client_configuration;
 static hci_con_handle_t battery_value_client_configuration_connection;
 
-static uint16_t battery_value_handle_value;
-static uint16_t battery_value_handle_client_configuration;
+static uint16_t battery_value_handle;
+static uint16_t battery_value_client_configuration_handle;
 
 
 static uint16_t battery_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 	UNUSED(con_handle);
 
-	if (attribute_handle == battery_value_handle_value){
+	if (attribute_handle == battery_value_handle){
 		return att_read_callback_handle_byte(battery_value, offset, buffer, buffer_size);
 	}
-	if (attribute_handle == battery_value_handle_client_configuration){
+	if (attribute_handle == battery_value_client_configuration_handle){
 		return att_read_callback_handle_little_endian_16(battery_value_client_configuration, offset, buffer, buffer_size);
 	}
 	return 0;
@@ -80,7 +80,7 @@ static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t 
 	UNUSED(offset);
 	UNUSED(buffer_size);
 
-	if (attribute_handle == battery_value_handle_client_configuration){
+	if (attribute_handle == battery_value_client_configuration_handle){
 		battery_value_client_configuration = little_endian_read_16(buffer, 0);
 		battery_value_client_configuration_connection = con_handle;
 	}
@@ -89,7 +89,7 @@ static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t 
 
 static void battery_service_can_send_now(void * context){
 	hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) context;
-	att_server_notify(con_handle, battery_value_handle_value, &battery_value, 1);
+	att_server_notify(con_handle, battery_value_handle, &battery_value, 1);
 }
 
 void battery_service_server_init(uint8_t value){
@@ -104,8 +104,8 @@ void battery_service_server_init(uint8_t value){
 	UNUSED(service_found);
 
 	// get characteristic value handle and client configuration handle
-	battery_value_handle_value = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
-	battery_value_handle_client_configuration = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+	battery_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+	battery_value_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
 
 	// register service with ATT Server
 	battery_service.start_handle   = start_handle;
