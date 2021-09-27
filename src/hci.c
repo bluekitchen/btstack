@@ -2827,8 +2827,18 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_LINK_KEY_REQUEST:
-            // request handled by hci_run()
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_HANDLE_LINK_KEY_REQUEST);
+            hci_event_link_key_request_get_bd_addr(packet, addr);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+            if (!conn) break;
+
+            // lookup link key in db if not cached
+            if ((conn->link_key_type == INVALID_LINK_KEY) && (hci_stack->link_key_db != NULL)){
+                hci_stack->link_key_db->get_link_key(conn->address, conn->link_key, &conn->link_key_type);
+            }
+
+            // response sent by hci_run()
+            conn->authentication_flags |= AUTH_FLAG_HANDLE_LINK_KEY_REQUEST;
+#endif
             break;
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION: {
@@ -4722,12 +4732,7 @@ static bool hci_run_general_pending_commands(void){
             log_info("responding to link key request, have link key db: %u", hci_stack->link_key_db != NULL);
             connectionClearAuthenticationFlags(connection, AUTH_FLAG_HANDLE_LINK_KEY_REQUEST);
 
-            // lookup link key using cached key first
             bool have_link_key = connection->link_key_type != INVALID_LINK_KEY;
-            if (!have_link_key && (hci_stack->link_key_db != NULL)){
-                have_link_key = hci_stack->link_key_db->get_link_key(connection->address, connection->link_key, &connection->link_key_type);
-            }
-
             bool security_level_sufficient = have_link_key && (gap_security_level_for_link_key_type(connection->link_key_type) >= connection->requested_security_level);
             if (have_link_key && security_level_sufficient){
                 hci_send_cmd(&hci_link_key_request_reply, connection->address, &connection->link_key);
