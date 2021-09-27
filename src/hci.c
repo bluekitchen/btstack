@@ -2827,6 +2827,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_LINK_KEY_REQUEST:
+#ifndef ENABLE_EXPLICIT_LINK_KEY_REPLY
             hci_event_link_key_request_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
@@ -6533,8 +6534,7 @@ int gap_ssp_confirmation_negative(const bd_addr_t addr){
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE);
 }
 
-#ifdef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
-
+#if defined(ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY) || defined(ENABLE_EXPLICIT_LINK_KEY_REPLY)
 static uint8_t gap_set_auth_flag_and_run(const bd_addr_t addr, hci_authentication_flags_t flag){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
     if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -6542,7 +6542,9 @@ static uint8_t gap_set_auth_flag_and_run(const bd_addr_t addr, hci_authenticatio
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
+#endif
 
+#ifdef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
 uint8_t gap_ssp_io_capabilities_response(const bd_addr_t addr){
     return gap_set_auth_flag_and_run(addr, AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
 }
@@ -6588,6 +6590,20 @@ void gap_ssp_generate_oob_data(void){
 
 #endif
 
+#ifdef ENABLE_EXPLICIT_LINK_KEY_REPLY
+uint8_t gap_send_link_key_response(const bd_addr_t addr, link_key_t link_key, link_key_type_t type){
+    hci_connection_t * connection = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    memcpy(connection->link_key, link_key, sizeof(link_key_t));
+    connection->link_key_type = type;
+
+    return gap_set_auth_flag_and_run(addr, AUTH_FLAG_HANDLE_LINK_KEY_REQUEST);
+}
+
+#endif // ENABLE_EXPLICIT_LINK_KEY_REPLY
 /**
  * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
  * @param inquiry_mode see bluetooth_defines.h

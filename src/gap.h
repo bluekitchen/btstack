@@ -845,6 +845,16 @@ uint8_t gap_ssp_io_capabilities_response(const bd_addr_t addr);
 uint8_t gap_ssp_io_capabilities_negative(const bd_addr_t addr);
 
 /**
+ * Send Link Key Reponse
+ * @note Link Key (Negative) Reply is sent automaticallyu unless ENABLE_EXPLICIT_LINK_KEY_RESPONSE
+ * @param addr
+ * @param link_key
+ * @param type or INVALID_LINK_KEY if link key not available
+ * @return 0 if ok
+ */
+ uint8_t gap_send_link_key_response(const bd_addr_t addr, link_key_t link_key, link_key_type_t type);
+
+/**
  * @brief Enter Sniff mode
  * @param con_handle
  * @param sniff_min_interval range: 0x0002 to 0xFFFE; only even values are valid, Time = N * 0.625 ms
