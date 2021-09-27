@@ -819,6 +819,7 @@ void gap_ssp_generate_oob_data(void);
 
 /**
  * @brief Report Remote OOB Data
+ * @note Pairing Hash and Randomizer are expected in big-endian byte format
  * @param bd_addr
  * @param c_192 Simple Pairing Hash C derived from P-192 public key
  * @param r_192 Simple Pairing Randomizer derived from P-192 public key
