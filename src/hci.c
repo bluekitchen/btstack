@@ -1713,11 +1713,13 @@ static void hci_initializing_run(void){
 }
 
 static void hci_init_done(void){
+#ifdef ENABLE_CLASSIC
     // init sequence complete, check if GAP Tasks are completed
     if (hci_stack->gap_tasks != 0) {
         hci_run_gap_tasks_classic();
         return;
     }
+#endif
 
     // done. tell the app
     log_info("hci_init_done -> HCI_STATE_WORKING");
