@@ -1586,10 +1586,6 @@ static void hci_initializing_run(void){
 			hci_stack->secure_connections_active = true;
             hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
             break;
-        case HCI_INIT_WRITE_SCAN_ENABLE:
-            hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
-            hci_stack->substate = HCI_INIT_W4_WRITE_SCAN_ENABLE;
-            break;
         // only sent if ENABLE_SCO_OVER_HCI is defined
         case HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
             hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
@@ -3427,7 +3423,6 @@ static void hci_state_reset(void){
 
     // no pending cmds
     hci_stack->decline_reason = 0;
-    hci_stack->new_scan_enable_value = 0xff;
 
     hci_stack->secure_connections_active = false;
 
@@ -3440,7 +3435,8 @@ static void hci_state_reset(void){
             GAP_TASK_SET_DEFAULT_LINK_POLICY |
             GAP_TASK_SET_CLASS_OF_DEVICE |
             GAP_TASK_SET_LOCAL_NAME |
-            GAP_TASK_SET_EIR_DATA;
+            GAP_TASK_SET_EIR_DATA |
+            GAP_TASK_WRITE_SCAN_ENABLE;
 #endif
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
@@ -4026,6 +4022,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
 static void hci_update_scan_enable(void){
     // 2 = page scan, 1 = inq scan
     hci_stack->new_scan_enable_value  = (hci_stack->connectable << 1) | hci_stack->discoverable;
+    hci_stack->gap_tasks |= GAP_TASK_WRITE_SCAN_ENABLE;
     hci_run();
 }
 
@@ -4180,13 +4177,11 @@ static bool hci_run_general_gap_classic(void){
         return true;
     }
     // send scan enable
-    if (hci_stack->new_scan_enable_value != 0xff) {
-        uint8_t new_scan_enable_value = hci_stack->new_scan_enable_value;
-        hci_stack->new_scan_enable_value = 0xff;
-        hci_send_cmd(&hci_write_scan_enable, new_scan_enable_value);
+    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_SCAN_ENABLE) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_SCAN_ENABLE;
+        hci_send_cmd(&hci_write_scan_enable, hci_stack->new_scan_enable_value);
         return true;
     }
-
     // start/stop inquiry
     if ((hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN) && (hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX)){
         uint8_t duration = hci_stack->inquiry_state;
