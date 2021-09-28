@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (C) 2014 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,9 +69,11 @@ static void bond_management_delete_bonding_information_classic(hci_connection_t 
     link_key_type_t type;
     btstack_link_key_iterator_t it;
 
+    log_info("BMS Classic: delete bonding %s - own %d, other %d", bd_addr_to_str(connection->address), delete_own_bonding?1:0, delete_all_bonding_but_active?1:0);
+
     int ok = gap_link_key_iterator_init(&it);
     if (!ok) {
-        log_error("could not initialize iterator");
+        log_error("BMS: could not initialize iterator");
         return;
     }
 
@@ -95,11 +97,14 @@ static void bond_management_delete_bonding_information_le(hci_connection_t * con
     bd_addr_t entry_address;
     bd_addr_type_t device_address_type = connection->address_type;
 
+    log_info("BMS LE: delete bonding %s - own %d, other %d",  bd_addr_to_str(connection->address), delete_own_bonding?1:0, delete_all_bonding_but_active?1:0);
+
     uint16_t i;
     for (i=0; i < le_device_db_max_count(); i++){
         int entry_address_type = (int) BD_ADDR_TYPE_UNKNOWN;
         le_device_db_info(i, &entry_address_type, entry_address, NULL);
         // skip unused entries
+        
         if (entry_address_type == (int) BD_ADDR_TYPE_UNKNOWN) continue;
         
         if ((entry_address_type == (int) device_address_type) && (memcmp(entry_address, connection->address, 6) == 0)){
@@ -121,6 +126,10 @@ static uint16_t bond_management_service_read_callback(hci_con_handle_t con_handl
     UNUSED(buffer_size);
     
     if (attribute_handle == bm_supported_features_value_handle){
+
+#if 0
+    
+        // According to BMS Spec, 3.2.1 Bond Management Feature Characteristic Behavior, only relevant bits should be sent
         uint16_t relevant_octets = 0;
 
         // The server shall only include the number of octets needed for returning the highest set feature bit
@@ -131,23 +140,33 @@ static uint16_t bond_management_service_read_callback(hci_con_handle_t con_handl
         } else if (bm_supported_features > 0x00){
             relevant_octets = 1;
         }
+#else
+        // however PTS 8.0.3 expects 3 bytes
+        uint16_t relevant_octets = 3;
+#endif
 
         uint8_t feature_buffer[3];
         if (buffer != NULL){
             little_endian_store_24(feature_buffer, 0, bm_supported_features);
             (void) memcpy(buffer, feature_buffer, relevant_octets);
-        }  
+        } 
         return relevant_octets;
     }
 
     return 0;
 }
 
+#include <stdio.h>
+
 static int bond_management_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(transaction_mode);
     UNUSED(offset);
     UNUSED(buffer_size);
     
+    if (transaction_mode != ATT_TRANSACTION_MODE_NONE){
+        return 0;
+    } 
+
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     btstack_assert(connection != NULL);
 
@@ -156,9 +175,9 @@ static int bond_management_service_write_callback(hci_con_handle_t con_handle, u
             return BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED;
         }
 
-        uint8_t cmd = buffer[0];
+        uint8_t remote_cmd = buffer[0];
         // check if command/auth is supported
-        if (cmd > BOND_MANAGEMENT_CMD_DELETE_ALL_BUT_ACTIVE_BOND_LE) {
+        if (remote_cmd > BOND_MANAGEMENT_CMD_DELETE_ALL_BUT_ACTIVE_BOND_LE) {
             return BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED;
         }
         uint16_t authorisation_code_size = buffer_size - 1;
@@ -166,27 +185,39 @@ static int bond_management_service_write_callback(hci_con_handle_t con_handle, u
             return BOND_MANAGEMENT_OPERATION_FAILED;
         }
         
-        uint8_t  auth_provided = authorisation_code_size > 0 ? 1 : 0;
-        uint32_t requested_feature_mask = 1UL << (2*(cmd-1) + auth_provided);
+        uint32_t requested_feature_mask_without_auth = 1UL << (2*(remote_cmd-1));
+        uint32_t requested_feature_mask_with_auth    = 1UL << (2*(remote_cmd-1) + 1);
+        bool locally_supported_with_auth    = (bm_supported_features & requested_feature_mask_with_auth) != 0;
+        bool locally_supported_without_auth = (bm_supported_features & requested_feature_mask_without_auth) != 0;
 
-        if ((bm_supported_features & requested_feature_mask) == 0){
-            // abort, feature not allowed
-            return BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED;
-        } 
-
-        if (auth_provided == 1){
-            if (!bm_authorization_string){
-                return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
+        bool remote_auth_provided = authorisation_code_size > 0;
+        
+        // log_info("cmd 0x%02X, features 0x%03X, auth_provided %d, LA %d, LW %d", remote_cmd, bm_supported_features, remote_auth_provided?1:0, locally_supported_with_auth?1:0, locally_supported_without_auth?1:0);
+        if (remote_auth_provided){
+            if (locally_supported_with_auth){
+                if (!bm_authorization_string){
+                    return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
+                }
+                if (strlen(bm_authorization_string) != authorisation_code_size){
+                    return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
+                }
+                if (memcmp(bm_authorization_string, (const char *)&buffer[1], authorisation_code_size) != 0){
+                    return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
+                }
+            } else {
+                return BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED;
             }
-            if (strlen(bm_authorization_string) != authorisation_code_size){
-                return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
-            }
-            if (memcmp(bm_authorization_string, (const char *)&buffer[1], authorisation_code_size) != 0){
-                return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
-            }
+        } else {
+            if (!locally_supported_without_auth){
+                if (locally_supported_with_auth){
+                    return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
+                } else {
+                    return BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED;
+                }
+            } 
         }
 
-        switch (cmd){
+        switch (remote_cmd){
 #ifdef ENABLE_CLASSIC
             case BOND_MANAGEMENT_CMD_DELETE_ACTIVE_BOND_CLASSIC_AND_LE:
                 bond_management_delete_bonding_information_classic(connection, true, false);

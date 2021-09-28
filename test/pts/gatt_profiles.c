@@ -51,6 +51,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "gatt_profiles.h"
 #include "btstack.h"
@@ -72,7 +73,10 @@
 /* LISTING_START(MainConfiguration): Init L2CAP SM ATT Server and start heartbeat timer */
 static int  le_notification_enabled;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
+
 static uint8_t battery = 100;
+static bool accept_next_pairing = true;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
@@ -100,7 +104,25 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case ATT_EVENT_CAN_SEND_NOW:
                     // att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
                     break;
+                   case SM_EVENT_JUST_WORKS_REQUEST:
+                        if (accept_next_pairing){
+                            accept_next_pairing = false;
+                            printf("Accept Just Works\n");
+                            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+                        } else {
+                            printf("Reject Just Works\n");
+                            sm_bonding_decline(sm_event_just_works_request_get_handle(packet));
+                        }
+                        break;
+                    case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+                        printf("Confirming numeric comparison: %"PRIu32"\n", sm_event_numeric_comparison_request_get_passkey(packet));
+                        sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
+                        break;
+                default:
+                    break;
             }
+            break;
+        default:
             break;
     }
 }
@@ -152,6 +174,12 @@ static void show_usage(void){
     printf("a - send 50%% Battery level\n");
     printf("## TPS\n");
     printf("t - send 10 TX Power level\n");
+    printf("## BMS\n");
+    printf("b - enable classic and LE flags\n");
+    printf("c - enable classic flag, no auth\n");
+    printf("C - enable classic flag, with auth\n");
+    printf("l - enable LE flag, no auth\n");
+    printf("L - enable LE flag, with auth\n");
 }
 
 static void stdin_process(char c){
@@ -163,6 +191,28 @@ static void stdin_process(char c){
         case 't':
             printf("TPS: Sending 10 TX Power level\n");
             tx_power_service_server_set_level(10);
+            break;
+        
+        case 'c':
+            printf("BMS: enable only classic flag, no auth\n");
+            bond_management_service_server_init(1);
+            break;
+        case 'C':
+            printf("BMS: enable only classic flag, with auth\n");
+            bond_management_service_server_init(2);
+            break;
+        case 'l':
+            printf("BMS: enable only LE flag, no auth\n");
+            bond_management_service_server_init(0x03);
+            break;
+        case 'L':
+            printf("BMS: enable only LE flag, with auth\n");
+            bond_management_service_server_init(0x04);
+            break;
+        
+        case 'b':
+            printf("BMS: enable classic and LE flags\n");
+            bond_management_service_server_init(0xFFFF);
             break;
         default:
             show_usage();
@@ -184,6 +234,9 @@ int btstack_main(void)
 
     // setup SM: Display only
     sm_init();
+    // register for SM events
+    sm_event_callback_registration.callback = &packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
@@ -199,6 +252,7 @@ int btstack_main(void)
     tx_power_service_server_init(20);
 
     bond_management_service_server_init(0xFFFF);
+    bond_management_service_server_set_authorisation_string("000000000000");
 
     microphone_control_service_server_init(GATT_MICROPHONE_CONTROL_MUTE_OFF);
     
