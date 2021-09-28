@@ -53,10 +53,6 @@
 #endif
 #endif
 
-#ifdef HAVE_PLATFORM_IPHONE_OS
-#include "../port/ios/src/btstack_control_iphone.h"
-#endif
-
 #ifdef ENABLE_BLE
 #include "gap.h"
 #include "ble/le_device_db.h"
@@ -1319,7 +1315,7 @@ static void gap_run_set_eir_data(void){
 }
 #endif
 
-#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
+#ifndef HAVE_HOST_CONTROLLER_API
 
 static uint32_t hci_transport_uart_get_main_baud_rate(void){
     if (!hci_stack->config) return 0;
@@ -1393,7 +1389,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_SEND_RESET:
             hci_state_reset();
 
-#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
+#ifndef HAVE_HOST_CONTROLLER_API
             // prepare reset if command complete not received in 100ms
             btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
@@ -1412,7 +1408,7 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_NAME;
             break;
 
-#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
+#ifndef HAVE_HOST_CONTROLLER_API
         case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
             hci_state_reset();
             // prepare reset if command complete not received in 100ms
@@ -1713,7 +1709,7 @@ static bool hci_initializing_event_handler_command_completed(const uint8_t * pac
             log_debug("Command status for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
         }
     }
-#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
+#ifndef HAVE_HOST_CONTROLLER_API
     // Vendor == CSR
     if ((hci_stack->substate == HCI_INIT_W4_CUSTOM_INIT) && (hci_event_packet_get_type(packet) == HCI_EVENT_VENDOR_SPECIFIC)){
         // TODO: track actual command
@@ -1738,7 +1734,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
     
     bool command_completed =  hci_initializing_event_handler_command_completed(packet);
 
-#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
+#ifndef HAVE_HOST_CONTROLLER_API
 
     // Late response (> 100 ms) for HCI Reset e.g. on Toshiba TC35661:
     // Command complete for HCI Reset arrives after we've resent the HCI Reset command
@@ -1798,7 +1794,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
     bool need_baud_change = false;
     bool need_addr_change = false;
 
-#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
+#ifndef HAVE_HOST_CONTROLLER_API
     need_baud_change = hci_stack->config
                         && hci_stack->chipset
                         && hci_stack->chipset->set_baudrate_command
@@ -1812,7 +1808,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 
     switch(hci_stack->substate){
 
-#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
+#ifndef HAVE_HOST_CONTROLLER_API
         case HCI_INIT_SEND_RESET:
             // on CSR with BCSP/H5, resend triggers resend of HCI Reset and leads to substate == HCI_INIT_SEND_RESET
             // fix: just correct substate and behave as command below
@@ -1868,7 +1864,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             }
             hci_stack->substate = HCI_INIT_READ_BD_ADDR;
             return;
-#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
+#ifndef HAVE_HOST_CONTROLLER_API
         case HCI_INIT_W4_SEND_BAUD_CHANGE_BCM:
             if (need_baud_change){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
@@ -3732,7 +3728,7 @@ void hci_disable_l2cap_timeout_check(void){
 }
 #endif
 
-#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
+#ifndef HAVE_HOST_CONTROLLER_API
 // Set Public BD ADDR - passed on to Bluetooth chipset if supported in bt_control_h
 void hci_set_bd_addr(bd_addr_t addr){
     (void)memcpy(hci_stack->custom_bd_addr, addr, 6);
@@ -3946,15 +3942,6 @@ static int hci_power_control_state_halting(HCI_POWER_MODE power_mode) {
 static int hci_power_control_state_falling_asleep(HCI_POWER_MODE power_mode) {
     switch (power_mode){
         case HCI_POWER_ON:
-
-#ifdef HAVE_PLATFORM_IPHONE_OS
-            // nothing to do, if H4 supports power management
-                    if (btstack_control_iphone_power_management_enabled()){
-                        hci_stack->state = HCI_STATE_INITIALIZING;
-                        hci_stack->substate = HCI_INIT_WRITE_SCAN_ENABLE;   // init after sleep
-                        break;
-                    }
-#endif
             hci_power_transition_to_initializing();
             break;
         case HCI_POWER_OFF:
@@ -3976,15 +3963,6 @@ static int hci_power_control_state_sleeping(HCI_POWER_MODE power_mode) {
     int err;
     switch (power_mode){
         case HCI_POWER_ON:
-#ifdef HAVE_PLATFORM_IPHONE_OS
-            // nothing to do, if H4 supports power management
-                    if (btstack_control_iphone_power_management_enabled()){
-                        hci_stack->state = HCI_STATE_INITIALIZING;
-                        hci_stack->substate = HCI_INIT_AFTER_SLEEP;
-                        hci_update_scan_enable();
-                        break;
-                    }
-#endif
             err = hci_power_control_wake();
             if (err) return err;
             hci_power_transition_to_initializing();
@@ -5104,13 +5082,6 @@ static void hci_run(void){
                     log_info("HCI_STATE_FALLING_ASLEEP");
                     // close all open connections
                     connection =  (hci_connection_t *) hci_stack->connections;
-
-#ifdef HAVE_PLATFORM_IPHONE_OS
-                    // don't close connections, if H4 supports power management
-                    if (btstack_control_iphone_power_management_enabled()){
-                        connection = NULL;
-                    }
-#endif
                     if (connection){
                         
                         // send disconnect
@@ -5140,15 +5111,6 @@ static void hci_run(void){
 
                 case HCI_FALLING_ASLEEP_COMPLETE:
                     log_info("HCI_STATE_HALTING, calling sleep");
-#ifdef HAVE_PLATFORM_IPHONE_OS
-                    // don't actually go to sleep, if H4 supports power management
-                    if (btstack_control_iphone_power_management_enabled()){
-                        // SLEEP MODE reached
-                        hci_stack->state = HCI_STATE_SLEEPING; 
-                        hci_emit_state();
-                        break;
-                    }
-#endif
                     // switch mode
                     hci_power_control_sleep();  // changes hci_stack->state to SLEEP
                     hci_emit_state();

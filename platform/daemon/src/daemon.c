@@ -111,15 +111,6 @@
 #include "ble/sm.h"
 #endif
 
-#ifdef HAVE_PLATFORM_IPHONE_OS
-#include <CoreFoundation/CoreFoundation.h>
-#include <notify.h>
-#include "../port/ios/src/btstack_control_iphone.h"
-#include "../port/ios/src/platform_iphone.h"
-// support for "enforece wake device" in h4 - used by iOS power management
-extern void hci_transport_h4_iphone_set_enforce_wake_device(char *path);
-#endif
-
 // copy of prototypes
 const btstack_device_name_db_t * btstack_device_name_db_corefoundation_instance(void);
 const btstack_device_name_db_t * btstack_device_name_db_fs_instance(void);
@@ -943,23 +934,10 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             log_info("BTSTACK_GET_VERSION");
             hci_emit_btstack_version();
             break;   
-#ifdef HAVE_PLATFORM_IPHONE_OS
-        case BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED:
-            log_info("BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED %u", packet[3]);
-            btstack_control_iphone_bt_set_enabled(packet[3]);
-            hci_emit_system_bluetooth_enabled(btstack_control_iphone_bt_enabled());
-            break;
-            
-        case BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED:
-            log_info("BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED");
-            hci_emit_system_bluetooth_enabled(btstack_control_iphone_bt_enabled());
-            break;
-#else
         case BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED:
         case BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED:
             hci_emit_system_bluetooth_enabled(0);
             break;
-#endif
         case BTSTACK_SET_DISCOVERABLE:
             log_info("BTSTACK_SET_DISCOVERABLE discoverable %u)", packet[3]);
             // track client discoverable requests
@@ -1767,12 +1745,7 @@ static void power_notification_callback(POWER_NOTIFICATION_t notification){
 
 static void daemon_sigint_handler(int param){
     
-#ifdef HAVE_PLATFORM_IPHONE_OS
-    // notify daemons
-    notify_post("ch.ringwald.btstack.stopped");
-#endif
-    
-    log_info(" <= SIGINT received, shutting down..\n");    
+    log_info(" <= SIGINT received, shutting down..\n");
 
     int send_power_off = 1;
 #ifdef HAVE_INTEL_USB
@@ -1868,13 +1841,6 @@ static void usage(const char * name) {
     printf("    --tcp    use TCP server on port %u\n", BTSTACK_PORT);
     printf("Without the --tcp option, BTstack Server is listening on unix domain socket %s\n\n", BTSTACK_UNIX);
 }
-
-#ifdef HAVE_PLATFORM_IPHONE_OS 
-static void * btstack_run_loop_thread(void *context){
-    btstack_run_loop_execute();
-    return NULL;
-}
-#endif
 
 #ifdef ENABLE_BLE
 
@@ -1996,11 +1962,6 @@ static void btstack_server_configure_stack(void){
     hostname[29] = '\0';
     gap_set_local_name(hostname);
 
-#ifdef HAVE_PLATFORM_IPHONE_OS
-    // iPhone doesn't use SSP yet as there's no UI for it yet and auto accept is not an option
-    gap_ssp_set_enable(0);
-#endif
-
     // enabled EIR
     hci_set_inquiry_mode(INQUIRY_MODE_RSSI_AND_EIR);
 
@@ -2077,17 +2038,10 @@ int btstack_server_run(int tcp_flag){
     hci_transport_config_uart.flowcontrol = 1;
     hci_transport_config_uart.device_name   = UART_DEVICE;
 
-#ifndef HAVE_PLATFORM_IPHONE_OS
 #ifdef _WIN32
     uart_implementation = (const btstack_uart_t *) btstack_uart_block_windows_instance();
 #else
     uart_implementation = btstack_uart_posix_instance();
-#endif
-#endif
-    
-#ifdef HAVE_PLATFORM_IPHONE_OS
-    // use default (max) UART baudrate over netgraph interface
-    hci_transport_config_uart.baudrate_init = 0;
 #endif
 
     config = &hci_transport_config_uart;
@@ -2096,16 +2050,6 @@ int btstack_server_run(int tcp_flag){
 
 #ifdef HAVE_TRANSPORT_USB
     transport = hci_transport_usb_instance();
-#endif
-
-#ifdef HAVE_PLATFORM_IPHONE_OS
-    control = &btstack_control_iphone;
-    if (btstack_control_iphone_power_management_supported()){
-        hci_transport_h4_iphone_set_enforce_wake_device("/dev/btwake");
-    }
-    bluetooth_status_handler = platform_iphone_status_handler;
-    platform_iphone_register_window_manager_restart(update_ui_status);
-    platform_iphone_register_preferences_changed(preferences_changed_callback);
 #endif
 
 #ifdef BTSTACK_DEVICE_NAME_DB_INSTANCE
@@ -2126,10 +2070,6 @@ int btstack_server_run(int tcp_flag){
     // logging
     loggingEnabled = 0;
     int newLoggingEnabled = 1;
-#ifdef HAVE_PLATFORM_IPHONE_OS
-    // iPhone has toggle in Preferences.app
-    newLoggingEnabled = platform_iphone_logging_enabled();
-#endif
     daemon_set_logging_enabled(newLoggingEnabled);
     
     // dump version
@@ -2153,19 +2093,8 @@ int btstack_server_run(int tcp_flag){
     }
 #endif
     socket_connection_register_packet_callback(&daemon_client_handler);
-        
-#ifdef HAVE_PLATFORM_IPHONE_OS 
-    // notify daemons
-    notify_post("ch.ringwald.btstack.started");
 
-    // spawn thread to have BTstack run loop on new thread, while main thread is used to keep CFRunLoop
-    pthread_t run_loop;
-    pthread_create(&run_loop, NULL, &btstack_run_loop_thread, NULL);
-
-    // needed to receive notifications
-    CFRunLoopRun();
-#endif
-        // go!
+    // go!
     btstack_run_loop_execute();
     return 0;
 }

@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: Work around for unexpected Windows 10 disconnect for BR Secure Connections (SMP over BR timeout)
  
 ### Changed
+- Drop iOS support
 - HCI: provide status instead of undocumented int error code and bool for API functions
 - GAP: local name, EIR data, class of device and default link policy can be updated at any time
 - L2CAP: provide status instead of undocumented int error code and bool for API functions
