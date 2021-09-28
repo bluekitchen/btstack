@@ -82,6 +82,9 @@ AVRCP += \
 	avrcp_browsing_target.c \
 	avrcp_browsing_controller.c \
 
+SRC_BLE_GATT_SERVICE_FILES += \
+	microphone_control_service_server.c \
+	
 # include ${BTSTACK_ROOT}/example/Makefile.inc
 
 HXCMOD_PLAYER = \
@@ -154,6 +157,7 @@ EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test gatt_profiles hrp_col_t
 EXAMPLES += hog_device_test hog_host_test hid_device_test hid_host_test 
 EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
 EXAMPLES += gap_peripheral_test gap_central_test
+EXAMPLES += microphone_control_service_client_test
 
 all: ${EXAMPLES}
 
@@ -262,6 +266,12 @@ gatt_profiles.h: gatt_profiles.gatt
 gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.c gatt_profiles.o
 	${CC} $(filter-out gatt_profiles.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
+microphone_control_service_client_test.h: microphone_control_service_client_test.gatt
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+
+microphone_control_service_client_test: microphone_control_service_client_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} microphone_control_service_client_test.c
+	${CC} $(filter-out microphone_control_service_client_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
 myclean:
 	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o 
 	rm -rf hog_device_test.h
@@ -273,6 +283,7 @@ myclean:
 	rm -rf hrp_server_test.h
 	rm -f sco_input.msbc
 	rm -f sco_output.msbc
+	rm -f microphone_control_service_client_test.h
 
 clean: myclean
 

@@ -3468,6 +3468,24 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE 0x18
 
+// LE Audio
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param hids_cid
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_CONNECTED         0x19
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param mics_cid
+ * @param status
+ * @param mute_value
+*/
+#define GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE              0x1A
 
 // MAP Meta Event Group
 
