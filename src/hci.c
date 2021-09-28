@@ -1313,6 +1313,47 @@ static void gap_run_set_eir_data(void){
     }
     hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + 1 + EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
 }
+
+static void hci_run_gap_tasks_classic(void){
+    if ((hci_stack->gap_tasks & GAP_TASK_SET_CLASS_OF_DEVICE) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_SET_CLASS_OF_DEVICE;
+        hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
+        return;
+    }
+    if ((hci_stack->gap_tasks & GAP_TASK_SET_LOCAL_NAME) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_SET_LOCAL_NAME;
+        gap_run_set_local_name();
+        return;
+    }
+    if ((hci_stack->gap_tasks & GAP_TASK_SET_EIR_DATA) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_SET_EIR_DATA;
+        gap_run_set_eir_data();
+        return;
+    }
+    if ((hci_stack->gap_tasks & GAP_TASK_SET_DEFAULT_LINK_POLICY) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_SET_DEFAULT_LINK_POLICY;
+        hci_send_cmd(&hci_write_default_link_policy_setting, hci_stack->default_link_policy_settings);
+        return;
+    }
+    // write page scan activity
+    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY;
+        hci_send_cmd(&hci_write_page_scan_activity, hci_stack->new_page_scan_interval, hci_stack->new_page_scan_window);
+        return;
+    }
+    // write page scan type
+    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_PAGE_SCAN_TYPE) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_PAGE_SCAN_TYPE;
+        hci_send_cmd(&hci_write_page_scan_type, hci_stack->new_page_scan_type);
+        return;
+    }
+    // send scan enable
+    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_SCAN_ENABLE) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_SCAN_ENABLE;
+        hci_send_cmd(&hci_write_scan_enable, hci_stack->new_scan_enable_value);
+        return;
+    }
+}
 #endif
 
 #ifndef HAVE_HOST_CONTROLLER_API
@@ -4137,42 +4178,8 @@ static bool hci_run_general_gap_classic(void){
         return true;
     }
 
-    if ((hci_stack->gap_tasks & GAP_TASK_SET_CLASS_OF_DEVICE) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_SET_CLASS_OF_DEVICE;
-        hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
-        return true;
-    }
-    if ((hci_stack->gap_tasks & GAP_TASK_SET_LOCAL_NAME) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_SET_LOCAL_NAME;
-        gap_run_set_local_name();
-        return true;
-    }
-    if ((hci_stack->gap_tasks & GAP_TASK_SET_EIR_DATA) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_SET_EIR_DATA;
-        gap_run_set_eir_data();
-        return true;
-    }
-    if ((hci_stack->gap_tasks & GAP_TASK_SET_DEFAULT_LINK_POLICY) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_SET_DEFAULT_LINK_POLICY;
-        hci_send_cmd(&hci_write_default_link_policy_setting, hci_stack->default_link_policy_settings);
-        return true;
-    }
-    // write page scan activity
-    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY;
-        hci_send_cmd(&hci_write_page_scan_activity, hci_stack->new_page_scan_interval, hci_stack->new_page_scan_window);
-        return true;
-    }
-    // write page scan type
-    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_PAGE_SCAN_TYPE) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_PAGE_SCAN_TYPE;
-        hci_send_cmd(&hci_write_page_scan_type, hci_stack->new_page_scan_type);
-        return true;
-    }
-    // send scan enable
-    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_SCAN_ENABLE) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_SCAN_ENABLE;
-        hci_send_cmd(&hci_write_scan_enable, hci_stack->new_scan_enable_value);
+    if (hci_stack->gap_tasks != 0){
+        hci_run_gap_tasks_classic();
         return true;
     }
 
