@@ -1947,13 +1947,13 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
         case HCI_INIT_W4_WRITE_INQUIRY_MODE:
             // skip write secure connections host support if not supported or disabled
             if (!hci_stack->secure_connections_enable || (hci_stack->local_supported_commands[1u] & 0x02u) == 0u) {
-                hci_stack->substate = HCI_INIT_WRITE_SCAN_ENABLE;
+                hci_stack->substate = HCI_INIT_WRITE_PAGE_TIMEOUT;
                 return;
             }
             break;
 
 #ifdef ENABLE_SCO_OVER_HCI
-        case HCI_INIT_W4_WRITE_SCAN_ENABLE:
+        case HCI_INIT_W4_WRITE_PAGE_TIMEOUT:
             // skip write synchronous flow control if not supported
             if (hci_stack->local_supported_commands[0] & 0x04) break;
             hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
@@ -1985,7 +1985,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 
 #else /* !ENABLE_SCO_OVER_HCI */
 
-        case HCI_INIT_W4_WRITE_SCAN_ENABLE:
+        case HCI_INIT_W4_WRITE_PAGE_TIMEOUT:
 #ifdef ENABLE_SCO_OVER_PCM
             if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION) {
                 hci_stack->substate = HCI_INIT_BCM_WRITE_SCO_PCM_INT;
