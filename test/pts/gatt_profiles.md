@@ -1,0 +1,57 @@
+# GATT Service Servers Tests
+
+Tool: gatt_profiles
+
+## BMS
+
+- BMS/SEN/SD/BV-01-C: (wait)
+- BMS/SEN/SD/BV-02-C:  
+
+- BMS/SEN/DEC/BV-01-C: (wait)
+- BMS/SEN/DEC/BV-02-C: (wait)
+- BMS/SEN/DEC/BV-03-C: (wait)
+
+- BMS/SEN/CR/BV-01-C: (wait)
+
+- BMS/SEN/CW/BV-01-C: (wait)
+- BMS/SEN/CW/BV-02-C: (wait)
+- BMS/SEN/CW/BV-03-C: (wait)
+- BMS/SEN/CW/BV-04-C: (wait)
+
+- BMS/SEN/CPP/BV-01-C: (wait)
+- BMS/SEN/CPP/BV-02-C: 
+- BMS/SEN/CPP/BV-03-C: (wait)
+- BMS/SEN/CPP/BV-04-C: 
+- BMS/SEN/CPP/BV-05-C: (wait)
+- BMS/SEN/CPP/BV-06-C: 
+- BMS/SEN/CPP/BV-07-C: (wait)
+- BMS/SEN/CPP/BV-08-C: 
+- BMS/SEN/CPP/BV-09-C: (wait)
+- BMS/SEN/CPP/BV-10-C: 
+- BMS/SEN/CPP/BV-11-C: (wait)
+- BMS/SEN/CPP/BV-12-C: 
+- BMS/SEN/CPP/BV-13-C: (wait)
+- BMS/SEN/CPP/BV-14-C: 
+- BMS/SEN/CPP/BV-15-C: (wait)
+- BMS/SEN/CPP/BV-16-C: 
+- BMS/SEN/CPP/BV-17-C: 
+- BMS/SEN/CPP/BV-17-C_LT2: 
+- BMS/SEN/CPP/BV-18-C: 
+- BMS/SEN/CPP/BV-18-C_LT2: 
+- BMS/SEN/CPP/BV-19-C: 
+- BMS/SEN/CPP/BV-19-C_LT2: 
+- BMS/SEN/CPP/BV-20-C: 
+- BMS/SEN/CPP/BV-20-C_LT2: 
+- BMS/SEN/CPP/BV-21-C: 
+- BMS/SEN/CPP/BV-21-C_LT2: 
+- BMS/SEN/CPP/BV-22-C: 
+- BMS/SEN/CPP/BV-22-C_LT2: 
+- BMS/SEN/CPP/BV-23-C: 
+- BMS/SEN/CPP/BV-23-C_LT2: 
+- BMS/SEN/CPP/BV-24-C: 
+- BMS/SEN/CPP/BV-24-C_LT2: 
+
+- BMS/SEN/CPE/BI-01-C: c
+- BMS/SEN/CPE/BI-02-C: l
+- BMS/SEN/CPE/BI-03-C: C
+- BMS/SEN/CPE/BI-04-C: L
