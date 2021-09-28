@@ -3427,9 +3427,6 @@ static void hci_state_reset(void){
     hci_stack->secure_connections_active = false;
 
 #ifdef ENABLE_CLASSIC
-    hci_stack->new_page_scan_interval = 0xffff;
-    hci_stack->new_page_scan_window = 0xffff;
-    hci_stack->new_page_scan_type = 0xff;
     hci_stack->inquiry_lap = GAP_IAC_GENERAL_INQUIRY;
     hci_stack->gap_tasks =
             GAP_TASK_SET_DEFAULT_LINK_POLICY |
@@ -4161,19 +4158,15 @@ static bool hci_run_general_gap_classic(void){
         return true;
     }
     // write page scan activity
-    if (hci_stack->new_page_scan_interval != 0xffff) {
-        uint16_t new_page_scan_interval = hci_stack->new_page_scan_interval;
-        uint16_t new_page_scan_window = hci_stack->new_page_scan_window;
-        hci_stack->new_page_scan_interval = 0xffff;
-        hci_stack->new_page_scan_window = 0xffff;
-        hci_send_cmd(&hci_write_page_scan_activity, new_page_scan_interval, new_page_scan_window);
+    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY;
+        hci_send_cmd(&hci_write_page_scan_activity, hci_stack->new_page_scan_interval, hci_stack->new_page_scan_window);
         return true;
     }
     // write page scan type
-    if (hci_stack->new_page_scan_type != 0xff) {
-        uint8_t new_page_scan_type = hci_stack->new_page_scan_type;
-        hci_stack->new_page_scan_type = 0xff;
-        hci_send_cmd(&hci_write_page_scan_type, new_page_scan_type);
+    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_PAGE_SCAN_TYPE) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_PAGE_SCAN_TYPE;
+        hci_send_cmd(&hci_write_page_scan_type, hci_stack->new_page_scan_type);
         return true;
     }
     // send scan enable
@@ -4182,6 +4175,7 @@ static bool hci_run_general_gap_classic(void){
         hci_send_cmd(&hci_write_scan_enable, hci_stack->new_scan_enable_value);
         return true;
     }
+
     // start/stop inquiry
     if ((hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN) && (hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX)){
         uint8_t duration = hci_stack->inquiry_state;
@@ -6824,11 +6818,13 @@ uint8_t gap_qos_set(hci_con_handle_t con_handle, hci_service_type_t service_type
 void gap_set_page_scan_activity(uint16_t page_scan_interval, uint16_t page_scan_window){
     hci_stack->new_page_scan_interval = page_scan_interval;
     hci_stack->new_page_scan_window = page_scan_window;
+    hci_stack->gap_tasks |= GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY;
     hci_run();
 }
 
 void gap_set_page_scan_type(page_scan_type_t page_scan_type){
     hci_stack->new_page_scan_type = (uint8_t) page_scan_type;
+    hci_stack->gap_tasks |= GAP_TASK_WRITE_PAGE_SCAN_TYPE;
     hci_run();
 }
 

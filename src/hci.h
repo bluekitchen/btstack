@@ -773,6 +773,8 @@ typedef enum hci_init_state{
 #define GAP_TASK_SET_CLASS_OF_DEVICE      0x04
 #define GAP_TASK_SET_DEFAULT_LINK_POLICY  0x08
 #define GAP_TASK_WRITE_SCAN_ENABLE        0x10
+#define GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY 0x20
+#define GAP_TASK_WRITE_PAGE_SCAN_TYPE     0x49
 
 enum {
     // Tasks
