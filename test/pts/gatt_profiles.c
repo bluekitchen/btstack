@@ -255,6 +255,7 @@ int btstack_main(void)
     bond_management_service_server_set_authorisation_string("000000000000");
 
     microphone_control_service_server_init(GATT_MICROPHONE_CONTROL_MUTE_OFF);
+    volume_control_service_server_init();
     
     // setup advertisements
     uint16_t adv_int_min = 0x0030;

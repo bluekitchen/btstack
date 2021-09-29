@@ -20,4 +20,5 @@ SRC_BLE_GATT_SERVICE_FILES = \
     scan_parameters_service_server.c \
     tx_power_service_server.c \
     ublox_spp_service_server.c \
+    volume_control_service_server.c \
 

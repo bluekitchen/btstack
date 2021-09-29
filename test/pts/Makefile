@@ -84,6 +84,7 @@ AVRCP += \
 
 SRC_BLE_GATT_SERVICE_FILES += \
 	microphone_control_service_server.c \
+	volume_control_service_server.c \
 	
 # include ${BTSTACK_ROOT}/example/Makefile.inc
 

@@ -19,3 +19,6 @@ CHARACTERISTIC_FORMAT, READ, 04, 00, 27AD, 01, 01
 // add microphone control service
 #import <microphone_control_service.gatt>
 
+// add volume control service
+#import <volume_control_service.gatt>
+
