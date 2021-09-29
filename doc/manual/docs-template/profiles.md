@@ -574,7 +574,7 @@ are forwarded to the application via callback. Otherwise, the
 Characteristics cannot be written and it will return the specified
 constant value.
 
-Adding NOTIFY and/or INDICATE automatically creates an addition Client
+Adding NOTIFY and/or INDICATE automatically creates an additional Client
 Configuration Characteristic.
 
 Property                | Meaning
@@ -597,6 +597,16 @@ READ_AUTHENTICATED      | Read operations require Authentication
 WRITE_ENCRYPTED         | Write operations require Encryption
 WRITE_AUTHENTICATED     | Write operations require Authentication
 ENCRYPTION_KEY_SIZE_X   | Require encryption size >= X, with W in [7..16]
+
+For example, Volume State Characteristic (Voice Control Service) requires:
+- Mandatory Properties: Read, Notify
+- Security Permittions: Encryption Required
+
+In addition, its read is handled by application. We can model this Characteristic as follows:
+
+~~~~
+    CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_STATE, DYNAMIC | READ | NOTIFY | ENCRYPTION_KEY_SIZE_16
+~~~~
 
 To use already implemented GATT Services, you can import it
 using the *#import <service_name.gatt>* command. See [list of provided services](gatt_services.md).
