@@ -113,7 +113,7 @@ TEST(BOND_MANAGEMENT_SERVICE_SERVER, read_bm_features_value0){
     CHECK_EQUAL(0, response_len);
 
     response_len = mock_att_service_read_callback(con_handle, bm_features_value_handle, 0, response, sizeof(response));
-    CHECK_EQUAL(0, response_len);
+    CHECK_EQUAL(3, response_len);
 }
 
 
@@ -125,7 +125,7 @@ TEST(BOND_MANAGEMENT_SERVICE_SERVER, read_bm_features_value1){
     service = mock_att_server_get_service();
 
     response_len = mock_att_service_read_callback(con_handle, bm_features_value_handle, 0, response, sizeof(response));
-    CHECK_EQUAL(1, response_len);
+    CHECK_EQUAL(3, response_len);
 }
 
 TEST(BOND_MANAGEMENT_SERVICE_SERVER, read_bm_features_value2){
@@ -136,7 +136,7 @@ TEST(BOND_MANAGEMENT_SERVICE_SERVER, read_bm_features_value2){
     service = mock_att_server_get_service();
 
     response_len = mock_att_service_read_callback(con_handle, bm_features_value_handle, 0, response, sizeof(response));
-    CHECK_EQUAL(2, response_len);
+    CHECK_EQUAL(3, response_len);
 }
 
 TEST(BOND_MANAGEMENT_SERVICE_SERVER, read_bm_features_value3){
@@ -214,18 +214,18 @@ TEST(BOND_MANAGEMENT_SERVICE_SERVER, write_control_point_ln_exists_ry_exact){
         BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED);
 }
 
-// locally yes (string empty), remote no (string empty) -> BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED
+// locally yes (string empty), remote no (string empty) -> ATT_ERROR_INSUFFICIENT_AUTHORIZATION
 TEST(BOND_MANAGEMENT_SERVICE_SERVER, write_control_point_ly_empty_ry_empty){
     validate_write_control_point(BMF_DELETE_ACTIVE_BOND_CLASSIC_AND_LE_WITH_AUTH, NULL, 
         BOND_MANAGEMENT_CMD_DELETE_ACTIVE_BOND_CLASSIC_AND_LE, NULL, 
-        BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED);
+        ATT_ERROR_INSUFFICIENT_AUTHORIZATION);
 }
 
-// locally yes (string exists), remote no (string empty) -> BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED
+// locally yes (string exists), remote no (string empty) -> ATT_ERROR_INSUFFICIENT_AUTHORIZATION
 TEST(BOND_MANAGEMENT_SERVICE_SERVER, write_control_point_ly_exists_rn_empty){
     validate_write_control_point(BMF_DELETE_ACTIVE_BOND_CLASSIC_AND_LE_WITH_AUTH, "local_auth_str", 
         BOND_MANAGEMENT_CMD_DELETE_ACTIVE_BOND_CLASSIC_AND_LE, NULL, 
-        BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED);
+        ATT_ERROR_INSUFFICIENT_AUTHORIZATION);
 }
 
 // locally yes (string exists), remote yes (string exists) -> ATT_ERROR_INSUFFICIENT_AUTHORIZATION
