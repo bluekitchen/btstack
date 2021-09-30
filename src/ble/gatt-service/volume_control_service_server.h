@@ -49,11 +49,26 @@
 extern "C" {
 #endif
 
+#define VOLUME_CONTROL_INVALID_CHANGE_COUNTER 0x80
+#define VOLUME_CONTROL_OPCODE_NOT_SUPPORTED 0x81
+
+typedef enum {
+    VCS_MUTE_OFF = 0,
+    VCS_MUTE_ON
+} vcs_mute_t;
+
+typedef enum {
+    VCS_FLAG_RESET_VOLUME_SETTING = 0,
+    VCS_FLAG_USER_SET_VOLUME_SETTING
+} vcs_flag_t;
+
 /**
- * @text The Volume Control Service enables a device to expose the controls and state of its audio volume.
+ * @text The Volume Control Service (VCS) enables a device to expose the controls and state of its audio volume.
  * 
  * To use with your application, add `#import <volume_control_service.gatt>` to your .gatt file. 
  * After adding it to your .gatt file, you call *volume_control_service_server_init()* 
+ * 
+ * VCS may include zero or more instances of VOCS and zero or more instances of AICS
  * 
  */
 
@@ -61,9 +76,18 @@ extern "C" {
 
 /**
  * @brief Init Volume Control Service Server with ATT DB
+ * @param volume_setting        range [0,255]
+ * @param mute                  see vcs_mute_t
+ * @param volume_change_step
  */
-void volume_control_service_server_init(void);
+void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute, uint8_t volume_change_step);
 
+/**
+ * @brief Set volume state.
+ * @param volume_setting        range [0,255]
+ * @param mute                  see vcs_mute_t
+ */
+void volume_control_service_server_set_volume_state(uint8_t volume_setting, vcs_mute_t mute);
 
 /* API_END */
 
