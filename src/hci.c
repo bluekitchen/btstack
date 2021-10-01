@@ -1484,6 +1484,13 @@ static void hci_initializing_run(void){
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3u + hci_stack->hci_packet_buffer[2u]);
             break;
         }
+        case HCI_INIT_SET_BD_ADDR:
+            log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
+            hci_stack->chipset->set_bd_addr_command(hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
+            hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
+            hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
+            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3u + hci_stack->hci_packet_buffer[2u]);
+            break;
         case HCI_INIT_SEND_BAUD_CHANGE:
             if (need_baud_change) {
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
@@ -1566,21 +1573,10 @@ static void hci_initializing_run(void){
                     break;
                 }
             }
-            // otherwise continue
-            hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
-            hci_send_cmd(&hci_read_local_supported_commands);
-            break;
-        case HCI_INIT_SET_BD_ADDR:
-            log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
-            hci_stack->chipset->set_bd_addr_command(hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
-            hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
-            hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
-            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3u + hci_stack->hci_packet_buffer[2u]);
-            break;
+            /* fall through */
 #endif
 
         case HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS:
-            log_info("Resend hci_read_local_supported_commands after CSR Warm Boot double reset");
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
             hci_send_cmd(&hci_read_local_supported_commands);
             break;       
