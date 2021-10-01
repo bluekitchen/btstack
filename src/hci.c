@@ -1424,19 +1424,10 @@ static void hci_initializing_next_state(void){
 }
 
 static void hci_init_done(void){
-#ifdef ENABLE_CLASSIC
-    // init sequence complete, check if GAP Tasks are completed
-    if (hci_stack->gap_tasks != 0) {
-        hci_run_gap_tasks_classic();
-        return;
-    }
-#endif
-
     // done. tell the app
     log_info("hci_init_done -> HCI_STATE_WORKING");
     hci_stack->state = HCI_STATE_WORKING;
     hci_emit_state();
-    hci_run();
 }
 
 // assumption: hci_can_send_command_packet_now() == true
@@ -1794,7 +1785,16 @@ static void hci_initializing_run(void){
             }
             /* fall through */
 #endif
+
         case HCI_INIT_DONE:
+            hci_stack->substate = HCI_INIT_DONE;
+#ifdef ENABLE_CLASSIC
+            // init sequence complete, check if GAP Tasks are completed
+            if (hci_stack->gap_tasks != 0) {
+                hci_run_gap_tasks_classic();
+                break;
+            }
+#endif
             hci_init_done();
             break;
 
@@ -2022,7 +2022,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 #ifdef ENABLE_LE_CENTRAL
             hci_stack->substate = HCI_INIT_READ_WHITE_LIST_SIZE;
 #else
-            hci_init_done();
+            hci_stack->substate = HCI_INIT_DONE;
 #endif
             return;
 #endif  /* ENABLE_LE_DATA_LENGTH_EXTENSION */
@@ -2054,7 +2054,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
         case HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
-                hci_init_done();
+                hci_stack->substate = HCI_INIT_DONE;
                 return;
             }
             hci_stack->substate = HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM;
@@ -2079,7 +2079,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             }
 #endif
             // SKIP LE init for Classic only configuration
-            hci_init_done();
+            hci_stack->substate = HCI_INIT_DONE;
             return;
 #endif /* ENABLE_SCO_OVER_HCI */
 
@@ -2087,7 +2087,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 #if defined(ENABLE_BLE) || defined(ENABLE_LE_DATA_LENGTH_EXTENSION) || defined(ENABLE_LE_CENTRAL)
         // Response to command before init done state -> init done
         case (HCI_INIT_DONE-1):
-            hci_init_done();
+            hci_stack->substate = HCI_INIT_DONE;
             return;
 #endif
         case HCI_INIT_DONE:
