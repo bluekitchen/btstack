@@ -1622,9 +1622,13 @@ static void hci_initializing_run(void){
 
 #ifdef ENABLE_CLASSIC
         case HCI_INIT_WRITE_SIMPLE_PAIRING_MODE:
-            hci_stack->substate = HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE;
-            hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack->ssp_enable);
-            break;
+            if (gap_ssp_supported()){
+                hci_stack->substate = HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE;
+                hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack->ssp_enable);
+                break;
+            }
+            /* fall through */
+
         case HCI_INIT_WRITE_PAGE_TIMEOUT:
             hci_stack->substate = HCI_INIT_W4_WRITE_PAGE_TIMEOUT;
             hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
@@ -1951,12 +1955,10 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
                 hci_init_done();
                 return;
             }
-            if (!gap_ssp_supported()){
-                hci_stack->substate = HCI_INIT_WRITE_PAGE_TIMEOUT;
-                return;
-            }
-            break;
-#ifdef ENABLE_BLE            
+            hci_stack->substate = HCI_INIT_WRITE_SIMPLE_PAIRING_MODE;
+            return;
+            
+#ifdef ENABLE_BLE
         case HCI_INIT_W4_LE_READ_BUFFER_SIZE:
             // skip write le host if not supported (e.g. on LE only EM9301)
             if (hci_stack->local_supported_commands[0u] & 0x02u) break;
