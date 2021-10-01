@@ -1629,18 +1629,23 @@ static void hci_initializing_run(void){
             }
             /* fall through */
 
-        case HCI_INIT_WRITE_PAGE_TIMEOUT:
-            hci_stack->substate = HCI_INIT_W4_WRITE_PAGE_TIMEOUT;
-            hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
-            break;
         case HCI_INIT_WRITE_INQUIRY_MODE:
             hci_stack->substate = HCI_INIT_W4_WRITE_INQUIRY_MODE;
             hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
             break;
         case HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE:
-            hci_send_cmd(&hci_write_secure_connections_host_support, 1);
-			hci_stack->secure_connections_active = true;
-            hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
+            // skip write secure connections host support if not supported or disabled
+            if (hci_stack->secure_connections_enable && (hci_stack->local_supported_commands[1u] & 0x02u) != 0u) {
+                hci_send_cmd(&hci_write_secure_connections_host_support, 1);
+                hci_stack->secure_connections_active = true;
+                hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
+                break;
+            }
+            /* fall through */
+
+        case HCI_INIT_WRITE_PAGE_TIMEOUT:
+            hci_stack->substate = HCI_INIT_W4_WRITE_PAGE_TIMEOUT;
+            hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
             break;
         // only sent if ENABLE_SCO_OVER_HCI is defined
         case HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
@@ -1957,7 +1962,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             }
             hci_stack->substate = HCI_INIT_WRITE_SIMPLE_PAIRING_MODE;
             return;
-            
+
 #ifdef ENABLE_BLE
         case HCI_INIT_W4_LE_READ_BUFFER_SIZE:
             // skip write le host if not supported (e.g. on LE only EM9301)
@@ -1983,14 +1988,6 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 #endif  /* ENABLE_LE_DATA_LENGTH_EXTENSION */
 
 #endif  /* ENABLE_BLE */
-
-        case HCI_INIT_W4_WRITE_INQUIRY_MODE:
-            // skip write secure connections host support if not supported or disabled
-            if (!hci_stack->secure_connections_enable || (hci_stack->local_supported_commands[1u] & 0x02u) == 0u) {
-                hci_stack->substate = HCI_INIT_WRITE_PAGE_TIMEOUT;
-                return;
-            }
-            break;
 
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_INIT_W4_WRITE_PAGE_TIMEOUT:
