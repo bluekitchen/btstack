@@ -1585,9 +1585,14 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_read_bd_addr);
             break;
         case HCI_INIT_READ_BUFFER_SIZE:
-            hci_stack->substate = HCI_INIT_W4_READ_BUFFER_SIZE;
-            hci_send_cmd(&hci_read_buffer_size);
-            break;
+            // only read buffer size if supported
+            if (hci_stack->local_supported_commands[0u] & 0x01u) {
+                hci_stack->substate = HCI_INIT_W4_READ_BUFFER_SIZE;
+                hci_send_cmd(&hci_read_buffer_size);
+                break;
+            }
+            /* fall through */
+
         case HCI_INIT_READ_LOCAL_SUPPORTED_FEATURES:
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_FEATURES;
             hci_send_cmd(&hci_read_local_supported_features);
@@ -1933,15 +1938,6 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             hci_stack->substate = HCI_INIT_READ_BD_ADDR;
             return;
 #endif
-        case HCI_INIT_W4_READ_BD_ADDR:
-            // only read buffer size if supported
-            if (hci_stack->local_supported_commands[0u] & 0x01u) {
-                hci_stack->substate = HCI_INIT_READ_BUFFER_SIZE;
-                return;
-            }
-            // skipping read buffer size
-            hci_stack->substate = HCI_INIT_READ_LOCAL_SUPPORTED_FEATURES;
-            return;
         case HCI_INIT_W4_SET_EVENT_MASK:
             // skip Classic init commands for LE only chipsets
             if (!hci_classic_supported()){
