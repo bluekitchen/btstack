@@ -1423,6 +1423,22 @@ static void hci_initializing_next_state(void){
     hci_stack->substate = (hci_substate_t )( ((int) hci_stack->substate) + 1);
 }
 
+static void hci_init_done(void){
+#ifdef ENABLE_CLASSIC
+    // init sequence complete, check if GAP Tasks are completed
+    if (hci_stack->gap_tasks != 0) {
+        hci_run_gap_tasks_classic();
+        return;
+    }
+#endif
+
+    // done. tell the app
+    log_info("hci_init_done -> HCI_STATE_WORKING");
+    hci_stack->state = HCI_STATE_WORKING;
+    hci_emit_state();
+    hci_run();
+}
+
 // assumption: hci_can_send_command_packet_now() == true
 static void hci_initializing_run(void){
     log_debug("hci_initializing_run: substate %u, can send %u", hci_stack->substate, hci_can_send_command_packet_now());
@@ -1622,7 +1638,7 @@ static void hci_initializing_run(void){
 
 #ifdef ENABLE_CLASSIC
         case HCI_INIT_WRITE_SIMPLE_PAIRING_MODE:
-            if (gap_ssp_supported()){
+            if (hci_classic_supported() && gap_ssp_supported()){
                 hci_stack->substate = HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE;
                 hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack->ssp_enable);
                 break;
@@ -1630,12 +1646,16 @@ static void hci_initializing_run(void){
             /* fall through */
 
         case HCI_INIT_WRITE_INQUIRY_MODE:
-            hci_stack->substate = HCI_INIT_W4_WRITE_INQUIRY_MODE;
-            hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
-            break;
+            if (hci_classic_supported()){
+                hci_stack->substate = HCI_INIT_W4_WRITE_INQUIRY_MODE;
+                hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
+                break;
+            }
+            /* fall through */
+
         case HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE:
             // skip write secure connections host support if not supported or disabled
-            if (hci_stack->secure_connections_enable && (hci_stack->local_supported_commands[1u] & 0x02u) != 0u) {
+            if (hci_classic_supported() && hci_stack->secure_connections_enable && (hci_stack->local_supported_commands[1u] & 0x02u) != 0u) {
                 hci_send_cmd(&hci_write_secure_connections_host_support, 1);
                 hci_stack->secure_connections_active = true;
                 hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
@@ -1644,108 +1664,143 @@ static void hci_initializing_run(void){
             /* fall through */
 
         case HCI_INIT_WRITE_PAGE_TIMEOUT:
-            hci_stack->substate = HCI_INIT_W4_WRITE_PAGE_TIMEOUT;
-            hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
-            break;
+            if (hci_classic_supported()){
+                hci_stack->substate = HCI_INIT_W4_WRITE_PAGE_TIMEOUT;
+                hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
+                break;
+            }
+            /* fall through */
+
         // only sent if ENABLE_SCO_OVER_HCI is defined
         case HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
-            hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
-            hci_send_cmd(&hci_write_synchronous_flow_control_enable, 1); // SCO tracking enabled
-            break;
+            if (hci_classic_supported()){
+                hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
+                hci_send_cmd(&hci_write_synchronous_flow_control_enable, 1); // SCO tracking enabled
+                break;
+            }
+            /* fall through */
+
         case HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
-            hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
-            hci_send_cmd(&hci_write_default_erroneous_data_reporting, 1);
-            break;
+            if (hci_classic_supported()){
+                hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
+                hci_send_cmd(&hci_write_default_erroneous_data_reporting, 1);
+                break;
+            }
+            /* fall through */
+
+#if defined(ENABLE_SCO_OVER_HCI) || defined(ENABLE_SCO_OVER_PCM)
         // only sent if manufacturer is Broadcom and ENABLE_SCO_OVER_HCI or ENABLE_SCO_OVER_PCM is defined
         case HCI_INIT_BCM_WRITE_SCO_PCM_INT:
-            hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
+            if (hci_classic_supported()){
+                hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
 #ifdef ENABLE_SCO_OVER_HCI
-            log_info("BCM: Route SCO data via HCI transport");
-            hci_send_cmd(&hci_bcm_write_sco_pcm_int, 1, 0, 0, 0, 0);
+                log_info("BCM: Route SCO data via HCI transport");
+                hci_send_cmd(&hci_bcm_write_sco_pcm_int, 1, 0, 0, 0, 0);
 #endif
 #ifdef ENABLE_SCO_OVER_PCM
-            log_info("BCM: Route SCO data via PCM interface");
+                log_info("BCM: Route SCO data via PCM interface");
 #ifdef ENABLE_BCM_PCM_WBS
-            // 512 kHz bit clock for 2 channels x 16 bit x 8 kHz
-            hci_send_cmd(&hci_bcm_write_sco_pcm_int, 0, 2, 0, 1, 1);
+                // 512 kHz bit clock for 2 channels x 16 bit x 16 kHz
+                hci_send_cmd(&hci_bcm_write_sco_pcm_int, 0, 2, 0, 1, 1);
 #else
-            // 256 kHz bit clock for 2 channels x 16 bit x 8 kHz
-            hci_send_cmd(&hci_bcm_write_sco_pcm_int, 0, 1, 0, 1, 1);
+                // 256 kHz bit clock for 2 channels x 16 bit x 8 kHz
+                hci_send_cmd(&hci_bcm_write_sco_pcm_int, 0, 1, 0, 1, 1);
 #endif
 #endif
-            break;
+                break;
+            }
+            /* fall through */
+#endif
+
 #ifdef ENABLE_SCO_OVER_PCM
         case HCI_INIT_BCM_WRITE_I2SPCM_INTERFACE_PARAM:
-            hci_stack->substate = HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM;
-            log_info("BCM: Config PCM interface for I2S");
+            if (hci_classic_supported()){
+                hci_stack->substate = HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM;
+                log_info("BCM: Config PCM interface for I2S");
 #ifdef ENABLE_BCM_PCM_WBS
-            // 512 kHz bit clock for 2 channels x 16 bit x 8 kHz
-            hci_send_cmd(&hci_bcm_write_i2spcm_interface_param, 1, 1, 0, 2);
+                // 512 kHz bit clock for 2 channels x 16 bit x 8 kHz
+                hci_send_cmd(&hci_bcm_write_i2spcm_interface_param, 1, 1, 0, 2);
 #else
-            // 256 kHz bit clock for 2 channels x 16 bit x 8 kHz
-            hci_send_cmd(&hci_bcm_write_i2spcm_interface_param, 1, 1, 0, 1);
+                // 256 kHz bit clock for 2 channels x 16 bit x 8 kHz
+                hci_send_cmd(&hci_bcm_write_i2spcm_interface_param, 1, 1, 0, 1);
 #endif
-            break;
+                break;
+            }
+            /* fall through */
 #endif
 #endif
 
 #ifdef ENABLE_BLE
         // LE INIT
         case HCI_INIT_LE_READ_BUFFER_SIZE:
-            hci_stack->substate = HCI_INIT_W4_LE_READ_BUFFER_SIZE;
-            hci_send_cmd(&hci_le_read_buffer_size);
-            break;
+            if (hci_le_supported()){
+                hci_stack->substate = HCI_INIT_W4_LE_READ_BUFFER_SIZE;
+                hci_send_cmd(&hci_le_read_buffer_size);
+                break;
+            }
+            /* fall through */
+
         case HCI_INIT_LE_SET_EVENT_MASK:
-            hci_stack->substate = HCI_INIT_W4_LE_SET_EVENT_MASK;
-            hci_send_cmd(&hci_le_set_event_mask, 0x809FF, 0x0); // bits 0-8, 11, 19 
-            break;
+            if (hci_le_supported()){
+                hci_stack->substate = HCI_INIT_W4_LE_SET_EVENT_MASK;
+                hci_send_cmd(&hci_le_set_event_mask, 0x809FF, 0x0); // bits 0-8, 11, 19
+                break;
+            }
+            /* fall through */
+
         case HCI_INIT_WRITE_LE_HOST_SUPPORTED:
-            // LE Supported Host = 1, Simultaneous Host = 0
-            hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
-            hci_send_cmd(&hci_write_le_host_supported, 1, 0);
-            break;
+            if (hci_le_supported()){
+                // LE Supported Host = 1, Simultaneous Host = 0
+                hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
+                hci_send_cmd(&hci_write_le_host_supported, 1, 0);
+                break;
+            }
+            /* fall through */
+
 #endif
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
         case HCI_INIT_LE_READ_MAX_DATA_LENGTH:
-            hci_stack->substate = HCI_INIT_W4_LE_READ_MAX_DATA_LENGTH;
-            hci_send_cmd(&hci_le_read_maximum_data_length);
-            break;
+            if (hci_le_supported()){
+                hci_stack->substate = HCI_INIT_W4_LE_READ_MAX_DATA_LENGTH;
+                hci_send_cmd(&hci_le_read_maximum_data_length);
+                break;
+            }
+            /* fall through */
+
         case HCI_INIT_LE_WRITE_SUGGESTED_DATA_LENGTH:
-            hci_stack->substate = HCI_INIT_W4_LE_WRITE_SUGGESTED_DATA_LENGTH;
-            hci_send_cmd(&hci_le_write_suggested_default_data_length, hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
-            break;
+            if (hci_le_supported()){
+                hci_stack->substate = HCI_INIT_W4_LE_WRITE_SUGGESTED_DATA_LENGTH;
+                hci_send_cmd(&hci_le_write_suggested_default_data_length, hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
+                break;
+            }
+            /* fall through */
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
         case HCI_INIT_READ_WHITE_LIST_SIZE:
-            hci_stack->substate = HCI_INIT_W4_READ_WHITE_LIST_SIZE;
-            hci_send_cmd(&hci_le_read_white_list_size);
-            break;
+            if (hci_le_supported()){
+                hci_stack->substate = HCI_INIT_W4_READ_WHITE_LIST_SIZE;
+                hci_send_cmd(&hci_le_read_white_list_size);
+                break;
+            }
+            /* fall through */
+
         case HCI_INIT_LE_SET_SCAN_PARAMETERS:
-            hci_stack->substate = HCI_INIT_W4_LE_SET_SCAN_PARAMETERS;
-            hci_send_cmd(&hci_le_set_scan_parameters, hci_stack->le_scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
-            break;
+            if (hci_le_supported()){
+                hci_stack->substate = HCI_INIT_W4_LE_SET_SCAN_PARAMETERS;
+                hci_send_cmd(&hci_le_set_scan_parameters, hci_stack->le_scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
+                break;
+            }
+            /* fall through */
 #endif
+        case HCI_INIT_DONE:
+            hci_init_done();
+            break;
+
         default:
             return;
     }
-}
-
-static void hci_init_done(void){
-#ifdef ENABLE_CLASSIC
-    // init sequence complete, check if GAP Tasks are completed
-    if (hci_stack->gap_tasks != 0) {
-        hci_run_gap_tasks_classic();
-        return;
-    }
-#endif
-
-    // done. tell the app
-    log_info("hci_init_done -> HCI_STATE_WORKING");
-    hci_stack->state = HCI_STATE_WORKING;
-    hci_emit_state();
-    hci_run();
 }
 
 static bool hci_initializing_event_handler_command_completed(const uint8_t * packet){
@@ -1947,21 +2002,6 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             hci_stack->substate = HCI_INIT_READ_BD_ADDR;
             return;
 #endif
-        case HCI_INIT_W4_SET_EVENT_MASK:
-            // skip Classic init commands for LE only chipsets
-            if (!hci_classic_supported()){
-#ifdef ENABLE_BLE
-                if (hci_le_supported()){
-                    hci_stack->substate = HCI_INIT_LE_READ_BUFFER_SIZE; // skip all classic command
-                    return;
-                }
-#endif
-                log_error("Neither BR/EDR nor LE supported");
-                hci_init_done();
-                return;
-            }
-            hci_stack->substate = HCI_INIT_WRITE_SIMPLE_PAIRING_MODE;
-            return;
 
 #ifdef ENABLE_BLE
         case HCI_INIT_W4_LE_READ_BUFFER_SIZE:
@@ -2050,7 +2090,9 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             hci_init_done();
             return;
 #endif
-            
+        case HCI_INIT_DONE:
+            return;
+
         default:
             break;
     }
