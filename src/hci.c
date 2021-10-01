@@ -1735,19 +1735,20 @@ static void hci_initializing_run(void){
             }
             /* fall through */
 
-        case HCI_INIT_LE_SET_EVENT_MASK:
-            if (hci_le_supported()){
-                hci_stack->substate = HCI_INIT_W4_LE_SET_EVENT_MASK;
-                hci_send_cmd(&hci_le_set_event_mask, 0x809FF, 0x0); // bits 0-8, 11, 19
+        case HCI_INIT_WRITE_LE_HOST_SUPPORTED:
+            // skip write le host if not supported (e.g. on LE only EM9301)
+            if (hci_le_supported() && ((hci_stack->local_supported_commands[0u] & 0x02u) != 0)){
+                // LE Supported Host = 1, Simultaneous Host = 0
+                hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
+                hci_send_cmd(&hci_write_le_host_supported, 1, 0);
                 break;
             }
             /* fall through */
 
-        case HCI_INIT_WRITE_LE_HOST_SUPPORTED:
+        case HCI_INIT_LE_SET_EVENT_MASK:
             if (hci_le_supported()){
-                // LE Supported Host = 1, Simultaneous Host = 0
-                hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
-                hci_send_cmd(&hci_write_le_host_supported, 1, 0);
+                hci_stack->substate = HCI_INIT_W4_LE_SET_EVENT_MASK;
+                hci_send_cmd(&hci_le_set_event_mask, 0x809FF, 0x0); // bits 0-8, 11, 19
                 break;
             }
             /* fall through */
@@ -2008,11 +2009,6 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 #endif
 
 #ifdef ENABLE_BLE
-        case HCI_INIT_W4_LE_READ_BUFFER_SIZE:
-            // skip write le host if not supported (e.g. on LE only EM9301)
-            if (hci_stack->local_supported_commands[0u] & 0x02u) break;
-            hci_stack->substate = HCI_INIT_LE_SET_EVENT_MASK;
-            return;
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
         case HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED:
