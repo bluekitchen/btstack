@@ -1426,6 +1426,17 @@ static void hci_initializing_next_state(void){
 // assumption: hci_can_send_command_packet_now() == true
 static void hci_initializing_run(void){
     log_debug("hci_initializing_run: substate %u, can send %u", hci_stack->substate, hci_can_send_command_packet_now());
+
+    bool need_baud_change = false;
+
+#ifndef HAVE_HOST_CONTROLLER_API
+    need_baud_change = hci_stack->config
+            && hci_stack->chipset
+            && hci_stack->chipset->set_baudrate_command
+            && hci_stack->hci_transport->set_baudrate
+            && ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
+#endif
+
     switch (hci_stack->substate){
         case HCI_INIT_SEND_RESET:
             hci_state_reset();
@@ -1465,20 +1476,6 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_SEND_RESET_ST_WARM_BOOT;
             hci_send_cmd(&hci_reset);
             break;
-        case HCI_INIT_SEND_BAUD_CHANGE: {
-            uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-            hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
-            hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
-            hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
-            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3u + hci_stack->hci_packet_buffer[2u]);
-            // STLC25000D: baudrate change happens within 0.5 s after command was send,
-            // use timer to update baud rate after 100 ms (knowing exactly, when command was sent is non-trivial)
-            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS){
-                btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
-                btstack_run_loop_add_timer(&hci_stack->timeout);
-            }
-            break;
-        }
         case HCI_INIT_SEND_BAUD_CHANGE_BCM: {
             uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
             hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
@@ -1487,6 +1484,24 @@ static void hci_initializing_run(void){
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3u + hci_stack->hci_packet_buffer[2u]);
             break;
         }
+        case HCI_INIT_SEND_BAUD_CHANGE:
+            if (need_baud_change) {
+                uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
+                hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
+                hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
+                hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
+                hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3u + hci_stack->hci_packet_buffer[2u]);
+                // STLC25000D: baudrate change happens within 0.5 s after command was send,
+                // use timer to update baud rate after 100 ms (knowing exactly, when command was sent is non-trivial)
+                if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS){
+                    btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
+                    btstack_run_loop_add_timer(&hci_stack->timeout);
+               }
+               break;
+            }
+
+            /* fall through */
+
         case HCI_INIT_CUSTOM_INIT:
             // Custom initialization
             if (hci_stack->chipset && hci_stack->chipset->next_command){
@@ -1534,11 +1549,6 @@ static void hci_initializing_run(void){
                 ||    (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_EM_MICROELECTRONIC_MARIN_SA)) ){
 
                     // - baud rate to reset, restore UART baud rate if needed
-                    int need_baud_change = hci_stack->config
-                        && hci_stack->chipset
-                        && hci_stack->chipset->set_baudrate_command
-                        && hci_stack->hci_transport->set_baudrate
-                        && ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
                     if (need_baud_change) {
                         uint32_t baud_rate = ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_init;
                         log_info("Local baud rate change to %" PRIu32 " after init script (bcm)", baud_rate);
@@ -1559,7 +1569,7 @@ static void hci_initializing_run(void){
             // otherwise continue
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
             hci_send_cmd(&hci_read_local_supported_commands);
-            break;            
+            break;
         case HCI_INIT_SET_BD_ADDR:
             log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
             hci_stack->chipset->set_bd_addr_command(hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
@@ -1857,21 +1867,16 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
         case HCI_INIT_SEND_RESET:
             // on CSR with BCSP/H5, resend triggers resend of HCI Reset and leads to substate == HCI_INIT_SEND_RESET
             // fix: just correct substate and behave as command below
-            hci_stack->substate = HCI_INIT_W4_SEND_RESET;
-            btstack_run_loop_remove_timer(&hci_stack->timeout);
-            break;
+
+            /* fall through */
+#endif
+
         case HCI_INIT_W4_SEND_RESET:
             btstack_run_loop_remove_timer(&hci_stack->timeout);
-            break;
-        case HCI_INIT_W4_SEND_READ_LOCAL_NAME:
-            log_info("Received local name, need baud change %d", (int) need_baud_change);
-            if (need_baud_change){
-                hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
-                return;
-            }
-            // skip baud change
-            hci_stack->substate = HCI_INIT_CUSTOM_INIT;
+            hci_stack->substate = HCI_INIT_SEND_READ_LOCAL_VERSION_INFORMATION;
             return;
+
+#ifndef HAVE_HOST_CONTROLLER_API
         case HCI_INIT_W4_SEND_BAUD_CHANGE:
             // for STLC2500D, baud rate change already happened.
             // for others, baud rate gets changed now
@@ -1890,10 +1895,6 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             // repeat custom init
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
-#else
-        case HCI_INIT_W4_SEND_RESET:
-            hci_stack->substate = HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS;
-            return ;
 #endif
 
         case HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS:
