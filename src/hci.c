@@ -1662,9 +1662,11 @@ static void hci_initializing_run(void){
             }
             /* fall through */
 
+#ifdef ENABLE_SCO_OVER_HCI
         // only sent if ENABLE_SCO_OVER_HCI is defined
         case HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
-            if (hci_classic_supported()){
+            // skip write synchronous flow control if not supported
+            if (hci_classic_supported() && ((hci_stack->local_supported_commands[0] & 0x04) != 0)){
                 hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
                 hci_send_cmd(&hci_write_synchronous_flow_control_enable, 1); // SCO tracking enabled
                 break;
@@ -1672,17 +1674,19 @@ static void hci_initializing_run(void){
             /* fall through */
 
         case HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
-            if (hci_classic_supported()){
+            // skip write default erroneous data reporting if not supported
+            if (hci_classic_supported() && ((hci_stack->local_supported_commands[0] & 0x08) != 0)){
                 hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
                 hci_send_cmd(&hci_write_default_erroneous_data_reporting, 1);
                 break;
             }
             /* fall through */
+#endif
 
 #if defined(ENABLE_SCO_OVER_HCI) || defined(ENABLE_SCO_OVER_PCM)
         // only sent if manufacturer is Broadcom and ENABLE_SCO_OVER_HCI or ENABLE_SCO_OVER_PCM is defined
         case HCI_INIT_BCM_WRITE_SCO_PCM_INT:
-            if (hci_classic_supported()){
+            if (hci_classic_supported() && (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION)){
                 hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
 #ifdef ENABLE_SCO_OVER_HCI
                 log_info("BCM: Route SCO data via HCI transport");
@@ -1705,7 +1709,7 @@ static void hci_initializing_run(void){
 
 #ifdef ENABLE_SCO_OVER_PCM
         case HCI_INIT_BCM_WRITE_I2SPCM_INTERFACE_PARAM:
-            if (hci_classic_supported()){
+            if (hci_classic_supported() && (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION)){
                 hci_stack->substate = HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM;
                 log_info("BCM: Config PCM interface for I2S");
 #ifdef ENABLE_BCM_PCM_WBS
@@ -2028,60 +2032,6 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 #endif  /* ENABLE_LE_DATA_LENGTH_EXTENSION */
 
 #endif  /* ENABLE_BLE */
-
-#ifdef ENABLE_SCO_OVER_HCI
-        case HCI_INIT_W4_WRITE_PAGE_TIMEOUT:
-            // skip write synchronous flow control if not supported
-            if (hci_stack->local_supported_commands[0] & 0x04) break;
-            hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
-
-            /* fall through */
-
-        case HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
-            // skip write default erroneous data reporting if not supported
-            if (hci_stack->local_supported_commands[0] & 0x08) break;
-            hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
-
-            /* fall through */
-
-        case HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
-            // skip bcm set sco pcm config on non-Broadcom chipsets
-            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION) break;
-            hci_stack->substate = HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM;
-
-            /* fall through */
-
-        case HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT:
-            if (!hci_le_supported()){
-                // SKIP LE init for Classic only configuration
-                hci_stack->substate = HCI_INIT_DONE;
-                return;
-            }
-            hci_stack->substate = HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM;
-            break;
-
-#else /* !ENABLE_SCO_OVER_HCI */
-
-        case HCI_INIT_W4_WRITE_PAGE_TIMEOUT:
-#ifdef ENABLE_SCO_OVER_PCM
-            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION) {
-                hci_stack->substate = HCI_INIT_BCM_WRITE_SCO_PCM_INT;
-                return;
-            }
-#endif
-            /* fall through */
-
-        case HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM:
-#ifdef ENABLE_BLE
-            if (hci_le_supported()){
-                hci_stack->substate = HCI_INIT_LE_READ_BUFFER_SIZE;
-                return;
-            }
-#endif
-            // SKIP LE init for Classic only configuration
-            hci_stack->substate = HCI_INIT_DONE;
-            return;
-#endif /* ENABLE_SCO_OVER_HCI */
 
         case HCI_INIT_DONE:
             // set state if we came here by fall through
