@@ -1757,7 +1757,7 @@ static void hci_initializing_run(void){
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
         case HCI_INIT_LE_READ_MAX_DATA_LENGTH:
-            if (hci_le_supported()){
+            if (hci_le_supported() && ((hci_stack->local_supported_commands[0u] & 0x30u) == 0x30u)){
                 hci_stack->substate = HCI_INIT_W4_LE_READ_MAX_DATA_LENGTH;
                 hci_send_cmd(&hci_le_read_maximum_data_length);
                 break;
@@ -1765,7 +1765,7 @@ static void hci_initializing_run(void){
             /* fall through */
 
         case HCI_INIT_LE_WRITE_SUGGESTED_DATA_LENGTH:
-            if (hci_le_supported()){
+            if (hci_le_supported() && ((hci_stack->local_supported_commands[0u] & 0x30u) == 0x30u)){
                 hci_stack->substate = HCI_INIT_W4_LE_WRITE_SUGGESTED_DATA_LENGTH;
                 hci_send_cmd(&hci_le_write_suggested_default_data_length, hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
                 break;
@@ -2007,27 +2007,6 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             hci_stack->substate = HCI_INIT_READ_BD_ADDR;
             return;
 #endif
-
-#ifdef ENABLE_BLE
-
-#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
-        case HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED:
-            log_info("Supported commands %x", hci_stack->local_supported_commands[0] & 0x30);
-            if ((hci_stack->local_supported_commands[0u] & 0x30u) == 0x30u){
-                hci_stack->substate = HCI_INIT_LE_SET_EVENT_MASK;
-                return;
-            }
-            // explicit fall through to reduce repetitions
-
-#ifdef ENABLE_LE_CENTRAL
-            hci_stack->substate = HCI_INIT_READ_WHITE_LIST_SIZE;
-#else
-            hci_stack->substate = HCI_INIT_DONE;
-#endif
-            return;
-#endif  /* ENABLE_LE_DATA_LENGTH_EXTENSION */
-
-#endif  /* ENABLE_BLE */
 
         case HCI_INIT_DONE:
             // set state if we came here by fall through
