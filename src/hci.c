@@ -1460,12 +1460,12 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_read_local_version_information);
             hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION;
             break;
+
+#ifndef HAVE_HOST_CONTROLLER_API
         case HCI_INIT_SEND_READ_LOCAL_NAME:
             hci_send_cmd(&hci_read_local_name);
             hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_NAME;
             break;
-
-#ifndef HAVE_HOST_CONTROLLER_API
         case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
             hci_state_reset();
             // prepare reset if command complete not received in 100ms
