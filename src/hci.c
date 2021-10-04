@@ -2710,9 +2710,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     conn->state = OPEN;
                     conn->con_handle = little_endian_read_16(packet, 3);
 
-                    // queue get remote feature
-                    conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
-
                     // queue set supervision timeout if we're master
                     if ((hci_stack->link_supervision_timeout != HCI_LINK_SUPERVISION_TIMEOUT_DEFAULT) && (conn->role == HCI_ROLE_MASTER)){
                         connectionSetAuthenticationFlags(conn, AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT);
@@ -5600,6 +5597,17 @@ bool hci_remote_features_available(hci_con_handle_t handle){
     hci_connection_t * connection = hci_connection_for_handle(handle);
     if (!connection) return false;
     return (connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0;
+}
+
+/**
+ * Trigger remote supported features query
+ */
+void hci_remote_features_query(hci_con_handle_t con_handle){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection) return;
+    if ((connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0) return;
+    connection->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
+    hci_run();
 }
 
 // GAP API

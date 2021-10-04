@@ -637,7 +637,9 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_ad
         // check if remote supported fearures are already received
         if (hci_remote_features_available(conn->con_handle)) {
             l2cap_handle_remote_supported_features_received(channel);
-        }
+        } else {
+            hci_remote_features_query(conn->con_handle);
+        };
     }
 
     l2cap_run(); 
@@ -1938,8 +1940,9 @@ static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_
         log_info("connection complete con_handle %04x - for channel %p cid 0x%04x", (int) con_handle, channel, channel->local_cid);
         // success, start l2cap handshake
         channel->con_handle = con_handle;
-        // check remote SSP feature first
+        // we require remote features to check SSP
         channel->state = L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES;
+        hci_remote_features_query(con_handle);
     }
 }
 
@@ -2117,6 +2120,8 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
         if (hci_remote_features_available(conn->con_handle)) {
         	// simulate remote features received
             l2cap_handle_remote_supported_features_received(channel);
+        } else {
+            hci_remote_features_query(conn->con_handle);
         }
     }
 
@@ -2664,10 +2669,11 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
     // send conn resp pending if remote supported features have not been received yet
-    if (hci_remote_features_available(hci_connection->con_handle)) {
+    if (hci_remote_features_available(handle)) {
         l2cap_handle_remote_supported_features_received(channel);
     } else {
         channel->state_var |= L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
+        hci_remote_features_query(handle);
     }
 }
 

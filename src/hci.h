@@ -1335,6 +1335,12 @@ bool hci_non_flushable_packet_boundary_flag_supported(void);
  * Check if remote supported features query has completed
  */
 bool hci_remote_features_available(hci_con_handle_t con_handle);
+
+/**
+ * Trigger remote supported features query
+ */
+void hci_remote_features_query(hci_con_handle_t con_handle);
+
 /**
  * Check if extended SCO Link is supported
  */
