@@ -1434,10 +1434,8 @@ static void hci_init_done(void){
 static void hci_initializing_run(void){
     log_debug("hci_initializing_run: substate %u, can send %u", hci_stack->substate, hci_can_send_command_packet_now());
 
-    bool need_baud_change = false;
-
 #ifndef HAVE_HOST_CONTROLLER_API
-    need_baud_change = hci_stack->config
+    bool need_baud_change = hci_stack->config
             && hci_stack->chipset
             && hci_stack->chipset->set_baudrate_command
             && hci_stack->hci_transport->set_baudrate
