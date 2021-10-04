@@ -1332,6 +1332,10 @@ uint16_t hci_usable_acl_packet_types(void);
 bool hci_non_flushable_packet_boundary_flag_supported(void);
 
 /**
+ * Check if remote supported features query has completed
+ */
+bool hci_remote_features_available(hci_con_handle_t con_handle);
+/**
  * Check if extended SCO Link is supported
  */
 bool hci_extended_sco_link_supported(void);

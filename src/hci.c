@@ -5593,6 +5593,15 @@ bool gap_ssp_supported_on_both_sides(hci_con_handle_t handle){
     return hci_local_ssp_activated() && hci_remote_ssp_supported(handle);
 }
 
+/**
+ * Check if remote supported features query has completed
+ */
+bool hci_remote_features_available(hci_con_handle_t handle){
+    hci_connection_t * connection = hci_connection_for_handle(handle);
+    if (!connection) return false;
+    return (connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0;
+}
+
 // GAP API
 /**
  * @bbrief enable/disable bonding. default is enabled

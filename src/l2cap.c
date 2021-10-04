@@ -635,7 +635,7 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_ad
         log_info("l2cap_create_channel, hci connection already exists");
         l2cap_handle_connection_complete(conn->con_handle, channel);
         // check if remote supported fearures are already received
-        if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
+        if (hci_remote_features_available(conn->con_handle)) {
             l2cap_handle_remote_supported_features_received(channel);
         }
     }
@@ -2092,7 +2092,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
 		// state: L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES
 
         // check if remote supported features are already received
-        if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
+        if (hci_remote_features_available(conn->con_handle)) {
         	// simulate remote features received
             l2cap_handle_remote_supported_features_received(channel);
         }
@@ -2359,11 +2359,7 @@ static void l2cap_check_classic_timeout(hci_con_handle_t handle){
 }
 
 static void l2cap_handle_features_complete(hci_con_handle_t handle){
-    hci_connection_t * hci_connection = hci_connection_for_handle(handle);
-    if (hci_connection == NULL) {
-        return;
-    };
-    if ((hci_connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) == 0) {
+    if (hci_remote_features_available(handle) == false){
         return;
     }
     btstack_linked_list_iterator_t it;
@@ -2667,7 +2663,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
     // send conn resp pending if remote supported features have not been received yet
-    if ((hci_connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0){
+    if (hci_remote_features_available(hci_connection->con_handle)) {
         l2cap_handle_remote_supported_features_received(channel);
     } else {
         channel->state_var |= L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
