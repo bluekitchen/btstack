@@ -499,7 +499,7 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
     }
 
     uint16_t offset      = 1;
-    uint16_t in_group    = 0;
+    bool in_group        = false;
     uint16_t prev_handle = 0;
 
     att_iterator_t it;
@@ -517,7 +517,7 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
             log_info("End of group, handle 0x%04x", prev_handle);
             little_endian_store_16(response_buffer, offset, prev_handle);
             offset += 2u;
-            in_group = 0;
+            in_group = false;
 
             // check if space for another handle pair available
             if ((offset + 4u) > response_buffer_size){
@@ -533,7 +533,7 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
             log_info("Begin of group, handle 0x%04x", it.handle);
             little_endian_store_16(response_buffer, offset, it.handle);
             offset += 2u;
-            in_group = 1;
+            in_group = true;
         }
     }
 
@@ -903,7 +903,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
 
     uint16_t offset   = 1;
     uint16_t pair_len = 0;
-    uint16_t in_group = 0;
+    bool     in_group = false;
     uint16_t group_start_handle = 0;
     uint8_t const * group_start_value = NULL;
     uint16_t prev_handle = 0;
@@ -930,7 +930,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
             (void)memcpy(response_buffer + offset, group_start_value,
                          pair_len - 4u);
             offset += pair_len - 4u;
-            in_group = 0;
+            in_group = false;
             
             // check if space for another handle pair available
             if ((offset + pair_len) > response_buffer_size){
@@ -964,7 +964,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
             
             group_start_handle = it.handle;
             group_start_value  = it.value;
-            in_group = 1;
+            in_group = true;
         }
     }        
     
@@ -1253,7 +1253,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
 
 // returns 1 if service found. only primary service.
 bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle){
-    uint16_t in_group    = 0;
+    bool in_group    = false;
     uint16_t prev_handle = 0;
 
     uint8_t attribute_value[2];
