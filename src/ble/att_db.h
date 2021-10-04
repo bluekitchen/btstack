@@ -354,7 +354,16 @@ uint16_t gatt_server_get_server_configuration_handle_for_characteristic_with_uui
  * @param end_handle
  * @return 0 if not found
  */
-int gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle);
+int find_my_service_uuid(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle);
+
+/**
+ * @brief Get handle range for primary service.
+ * @param uuid128
+ * @param start_handle
+ * @param end_handle
+ * @return false if not found
+ */
+bool gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle);
 
 /**
  * @brief Get value handle.

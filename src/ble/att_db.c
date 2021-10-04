@@ -1335,9 +1335,9 @@ uint16_t gatt_server_get_server_configuration_handle_for_characteristic_with_uui
     return gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(start_handle, end_handle, characteristic_uuid16, GATT_SERVER_CHARACTERISTICS_CONFIGURATION);
 }
 
-// returns 1 if service found. only primary service.
-int gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle){
-    uint16_t in_group    = 0;
+// returns true if service found. only primary service.
+bool gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle){
+    bool in_group    = false;
     uint16_t prev_handle = 0;
 
     uint8_t attribute_value[16];
@@ -1354,7 +1354,7 @@ int gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid12
         if (in_group &&
             ((it.handle == 0u) || new_service_started)){
             *end_handle = prev_handle;
-            return 1;
+            return true;
         }
         
         // keep track of previous handle
@@ -1363,10 +1363,10 @@ int gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid12
         // check if found
         if (it.handle && new_service_started && (attribute_len == it.value_len) && (memcmp(attribute_value, it.value, it.value_len) == 0)){
             *start_handle = it.handle;
-            in_group = 1;
+            in_group = true;
         }
     }
-    return 0;
+    return false;
 }
 
 // returns 0 if not found
