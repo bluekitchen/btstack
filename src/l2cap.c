@@ -1974,6 +1974,28 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
     }
 
     if ((channel->state_var & L2CAP_CHANNEL_STATE_VAR_INCOMING) != 0){
+
+        // Core V5.2, Vol 3, Part C, 5.2.2.2 - Security Mode 4
+        //   When a remote device attempts to access a service offered by a Bluetooth device that is in security mode 4
+        //   and a sufficient link key exists and authentication has not been performed the local device shall authenticate
+        //   the remote device and enable encryption after the channel establishment request is received but before a channel
+        //   establishment confirmation (L2CAP_ConnectRsp with result code of 0x0000 or a higher-level channel establishment
+        //   confirmation such as that of RFCOMM) is sent.
+
+        //   If the remote device has indicated support for Secure Simple Pairing, a channel establishment request is
+        //   received for a service other than SDP, and encryption has not yet been enabled, then the local device shall
+        //   disconnect the ACL link with error code 0x05 - Authentication Failure.
+
+        // => Disconnect if l2cap request received in mode 4 and ssp supported, non-sdp psm, not encrypted, no link key available
+        if ((gap_get_security_mode() == GAP_SECURITY_MODE_4)
+        && gap_ssp_supported_on_both_sides(channel->con_handle)
+        && (channel->psm != PSM_SDP)
+        && (gap_encryption_key_size(channel->con_handle) == 0)
+        && (gap_bonded(channel->con_handle) == false)){
+            hci_disconnect_security_block(channel->con_handle);
+            return;
+        }
+
         // incoming: assert security requirements
         channel->state = L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE;
         if (channel->required_security_level <= gap_security_level(channel->con_handle)){
@@ -2609,27 +2631,6 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     if (!hci_connection) {
         // 
         log_error("no hci_connection for handle %u", handle);
-        return;
-    }
-
-    // Core V5.2, Vol 3, Part C, 5.2.2.2 - Security Mode 4
-    //   When a remote device attempts to access a service offered by a Bluetooth device that is in security mode 4
-    //   and a sufficient link key exists and authentication has not been performed the local device shall authenticate
-    //   the remote device and enable encryption after the channel establishment request is received but before a channel
-    //   establishment confirmation (L2CAP_ConnectRsp with result code of 0x0000 or a higher-level channel establishment
-    //   confirmation such as that of RFCOMM) is sent.
-
-    //   If the remote device has indicated support for Secure Simple Pairing, a channel establishment request is
-    //   received for a service other than SDP, and encryption has not yet been enabled, then the local device shall
-    //   disconnect the ACL link with error code 0x05 - Authentication Failure.
-
-    // => Disconnect if l2cap request received in mode 4 and ssp supported, non-sdp psm, not encrypted, no link key available
-    if ((gap_get_security_mode() == GAP_SECURITY_MODE_4)
-        && gap_ssp_supported_on_both_sides(handle)
-        && (psm != PSM_SDP)
-        && (gap_encryption_key_size(handle) == 0)
-        && (gap_bonded(handle) == false)){
-        hci_disconnect_security_block(handle);
         return;
     }
 
