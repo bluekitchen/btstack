@@ -347,14 +347,6 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
  */
 uint16_t gatt_server_get_server_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16);
 
-/**
- * @brief Get handle range for primary service.
- * @param uuid128
- * @param start_handle
- * @param end_handle
- * @return 0 if not found
- */
-int find_my_service_uuid(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle);
 
 /**
  * @brief Get handle range for primary service.
