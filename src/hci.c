@@ -4233,6 +4233,9 @@ static bool hci_run_general_gap_le(void){
     UNUSED(advertising_stop);
 #endif
 
+    // check if own address changes
+    bool random_address_change = (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_ADDRESS) != 0;
+
     // check if whitelist needs modification
     bool whitelist_modification_pending = false;
     btstack_linked_list_iterator_t lit;
@@ -4300,14 +4303,17 @@ static bool hci_run_general_gap_le(void){
     if (hci_stack->le_advertisements_active){
         // stop if:
         // - parameter change required
+        // - random address used in advertising and changes
         // - it's disabled
         // - whitelist change required but used for advertisement filter policy
         // - resolving list modified
         bool advertising_uses_whitelist = hci_stack->le_advertisements_filter_policy != 0;
-        bool advertising_change = (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_PARAMS) != 0;
+        bool advertising_uses_random_address = hci_stack->le_own_addr_type != BD_ADDR_TYPE_LE_PUBLIC;
+        bool advertising_change    = (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_PARAMS)  != 0;
         if (advertising_change ||
+            (advertising_uses_random_address && random_address_change) ||
             (hci_stack->le_advertisements_enabled_for_current_roles == 0) ||
-            (advertising_uses_whitelist & whitelist_modification_pending) ||
+            (advertising_uses_whitelist && whitelist_modification_pending) ||
             resolving_list_modification_pending) {
 
             advertising_stop = true;
@@ -4342,6 +4348,12 @@ static bool hci_run_general_gap_le(void){
 #endif
 
     // Phase 3: modify
+
+    if (random_address_change){
+        hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
+        hci_send_cmd(&hci_le_set_random_address, hci_stack->le_random_address);
+        return true;
+    }
 
 #ifdef ENABLE_LE_CENTRAL
     if (hci_stack->le_scanning_param_update){
@@ -6049,6 +6061,13 @@ void hci_le_set_own_address_type(uint8_t own_address_type){
 #ifdef ENABLE_LE_CENTRAL
     // note: we don't update scan parameters or modify ongoing connection attempts
 #endif
+}
+
+void hci_le_random_address_set(const bd_addr_t random_address){
+    memcpy(hci_stack->le_random_address, random_address, 6);
+    hci_stack->le_random_address_set = true;
+    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
+    hci_run();
 }
 
 #endif

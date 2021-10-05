@@ -787,6 +787,7 @@ enum {
     LE_ADVERTISEMENT_TASKS_SET_ADV_DATA  = 1 << 0,
     LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA = 1 << 1,
     LE_ADVERTISEMENT_TASKS_SET_PARAMS    = 1 << 2,
+    LE_ADVERTISEMENT_TASKS_SET_ADDRESS   = 1 << 3,
     // State
     LE_ADVERTISEMENT_TASKS_PARAMS_SET    = 1 << 7,
 };
@@ -1404,6 +1405,11 @@ void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max
  * @note internal use. use gap_random_address_set_mode from gap.h instead.
  */
 void hci_le_set_own_address_type(uint8_t own_address_type);
+
+/**
+ * @naote internal use. use gap_random_address_set from gap.h instead
+ */
+void hci_le_random_address_set(const bd_addr_t random_address);
 
 /**
  * @note internal use by sm
