@@ -3435,7 +3435,7 @@ static void hci_state_reset(void){
 #endif
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
-    hci_stack->classic_read_local_oob_data = true;
+    hci_stack->classic_read_local_oob_data = false;
     hci_stack->classic_oob_con_handle = HCI_CON_HANDLE_INVALID;
 #endif
 
