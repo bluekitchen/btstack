@@ -107,7 +107,6 @@ typedef enum {
     RAU_W4_RANDOM,
     RAU_GET_ENC,
     RAU_W4_ENC,
-    RAU_SET_ADDRESS,
 } random_address_update_t;
 
 typedef enum {
@@ -2123,11 +2122,6 @@ static bool sm_run_rau(void){
                 return true;
             }
             break;
-        case RAU_SET_ADDRESS:
-            log_info("New random address: %s", bd_addr_to_str(sm_random_address));
-            rau_state = RAU_IDLE;
-            hci_send_cmd(&hci_le_set_random_address, sm_random_address);
-            return true;
         default:
             break;
     }
@@ -3429,7 +3423,9 @@ static void sm_handle_encryption_result_rau(void *arg){
     sm_aes128_state = SM_AES128_IDLE;
 
     (void)memcpy(&sm_random_address[3], &sm_aes128_ciphertext[13], 3);
-    rau_state = RAU_SET_ADDRESS;
+    rau_state = RAU_IDLE;
+    hci_le_random_address_set(sm_random_address);
+
     sm_trigger_run();
 }
 
@@ -3448,7 +3444,7 @@ static void sm_handle_random_result_rau(void * arg){
         default:
             // "The two most significant bits of the address shall be equal to ‘0’""
             sm_random_address[0u] &= 0x3fu;
-            rau_state = RAU_SET_ADDRESS;
+            hci_le_random_address_set(sm_random_address);
             break;
     }
     sm_trigger_run();
@@ -5107,8 +5103,7 @@ void gap_random_address_set_update_period(int period_ms){
 void gap_random_address_set(const bd_addr_t addr){
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_STATIC);
     (void)memcpy(sm_random_address, addr, 6);
-    rau_state = RAU_SET_ADDRESS;
-    sm_trigger_run();
+    hci_le_random_address_set(addr);
 }
 
 #ifdef ENABLE_LE_PERIPHERAL

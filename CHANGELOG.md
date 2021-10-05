@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - RFCOMM: fixed handling of remote port configuration command
 - PBAP Client: handle chunked vCard Listing
 - SM: Work around for unexpected Windows 10 disconnect for BR Secure Connections (SMP over BR timeout)
+- GAP: restart advertising when private address changes
  
 ### Changed
 - Drop iOS support
@@ -42,7 +43,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP: removed one parameter from hfp_ag/hf_activate_voice_recognition function, instead introduced hfp_ag/hf_deactivate_voice_recognition 
 - HFP: merged legacy and enhanced Voice Recognition Activation (VRA) API. If available enhanced mode will be preferred.
 - HFP: separate events for activation (HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED) and deactivation (HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED) instead of combined HFP_SUBEVENT_VOICE_RECOGNITION_STATUS with status field. HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED contains field "enhanced" to indicate if enhanced mode is used. 
-- HFP, enhanced VRA: HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED is emitted after VRA is ready and the the audio connection is established. This simplifies HFP HF client logic, i.e. client can call `hfp_hf_enhanced_voice_recognition_report_ready_for_audio directly` upon reception of HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED event.
+- HFP: enhanced VRA: HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED is emitted after VRA is ready and the the audio connection is established. This simplifies HFP HF client logic, i.e. client can call `hfp_hf_enhanced_voice_recognition_report_ready_for_audio directly` upon reception of HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED event.
 - AVDTP: media config validator is called with preview of media codec configuration event and configured separately for sink/source
 - AVRCP: use PANEL as default unit + subunit info
 - Run Loop: new functionality for HCI transport drivers and inter-process communication
