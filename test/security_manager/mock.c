@@ -176,6 +176,9 @@ uint16_t hci_get_manufacturer(void){
 void hci_le_set_own_address_type(uint8_t own_address){
 }
 
+void hci_le_random_address_set(const bd_addr_t addr){
+}
+
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t cid){
 	if (packet_buffer_len) return;
     uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 0, 0};
