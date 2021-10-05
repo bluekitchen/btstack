@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - A2DP Source: fix reconfigure
 - RFCOMM: fixed handling of remote port configuration command
+- HFP AG: fix accept incoming connection while audio connection is established
 - PBAP Client: handle chunked vCard Listing
 - SM: Work around for unexpected Windows 10 disconnect for BR Secure Connections (SMP over BR timeout)
 - GAP: restart advertising when private address changes

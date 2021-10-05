@@ -1360,7 +1360,8 @@ static void hfp_ag_ag_accept_call(void){
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-        if (hfp_connection->call_state != HFP_CALL_INCOMING_RINGING) continue;
+        if ((hfp_connection->call_state != HFP_CALL_INCOMING_RINGING) &&
+            (hfp_connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING)) continue;
 
         hfp_connection->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
 
