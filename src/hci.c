@@ -5161,12 +5161,6 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             hci_stack->outgoing_addr_type = BD_ADDR_TYPE_ACL;
             (void) memcpy(hci_stack->outgoing_addr, addr, 6);
             break;
-        case HCI_OPCODE_HCI_DELETE_STORED_LINK_KEY:
-            if (hci_stack->link_key_db) {
-                reverse_bd_addr(&packet[3], addr);
-                hci_stack->link_key_db->delete_link_key(addr);
-            }
-            break;
 
 #if defined (ENABLE_SCO_OVER_HCI) || defined (HAVE_SCO_TRANSPORT)
         case HCI_OPCODE_HCI_SETUP_SYNCHRONOUS_CONNECTION:
@@ -5175,7 +5169,7 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 15);
             break;
         case HCI_OPCODE_HCI_ACCEPT_SYNCHRONOUS_CONNECTION:
-            // accept_synchronus_connection? Voice setting at offset 18
+            // accept_synchronous_connection? Voice setting at offset 18
             // TODO: compare to current setting if sco connection already active
             hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 19);
             break;
@@ -5183,15 +5177,6 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
 #endif
 
 #ifdef ENABLE_BLE
-        case HCI_OPCODE_HCI_LE_SET_RANDOM_ADDRESS:
-            hci_stack->le_random_address_set = 1;
-            reverse_bd_addr(&packet[3], hci_stack->le_random_address);
-            break;
-#ifdef ENABLE_LE_PERIPHERAL
-        case HCI_OPCODE_HCI_LE_SET_ADVERTISE_ENABLE:
-            hci_stack->le_advertisements_active = packet[3] != 0;
-            break;
-#endif
 #ifdef ENABLE_LE_CENTRAL
         case HCI_OPCODE_HCI_LE_CREATE_CONNECTION:
             // white list used?
