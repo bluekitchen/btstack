@@ -2120,6 +2120,11 @@ static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn
         return;
     }
 
+    // Request remote features if not already done
+    if ((conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) == 0) {
+        conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
+    }
+
     // Request Authentication if not already done
     if ((conn->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) return;
     conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
