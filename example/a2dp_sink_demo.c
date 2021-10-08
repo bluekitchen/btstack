@@ -144,13 +144,15 @@ typedef struct {
 
 static media_codec_configuration_sbc_t sbc_configuration;
 static int volume_percentage = 0; 
+static avrcp_battery_status_t battery_status = AVRCP_BATTERY_STATUS_WARNING; 
 
 #ifdef SUPPORT_VOLUME_CHANGE_NOTIFICATION
-static uint8_t events_num = 3;
+static uint8_t events_num = 4;
 static uint8_t events[] = {
     AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED,
     AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
+    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED
 };
 #endif
 
@@ -723,7 +725,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             break;
 
         case AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE:
-            printf("A2DP  Sink      : Set Player App Value %s\n", avrcp_ctype2str(avrcp_subevent_player_application_value_response_get_command_type(packet)));
+            printf("AVRCP Controller: Set Player App Value %s\n", avrcp_ctype2str(avrcp_subevent_player_application_value_response_get_command_type(packet)));
             break;
             
        
@@ -943,10 +945,10 @@ static void show_usage(void){
 
     printf("s/S - send/release long button press REWIND\n");
 
-    printf("\n--- Volume Control ---\n");
+    printf("\n--- Volume and Battery Control ---\n");
     printf("t - volume up   for 10 percent\n");
     printf("T - volume down for 10 percent\n");
-
+    printf("V - toggle Battery status from AVRCP_BATTERY_STATUS_NORMAL to AVRCP_BATTERY_STATUS_FULL_CHARGE\n");
     printf("---\n");
 }
 #endif
@@ -996,7 +998,14 @@ static void stdin_process(char cmd){
             status = avrcp_target_volume_changed(avrcp_cid, volume);
             avrcp_volume_changed(volume);
             break;
-
+        case 'V':
+            if (battery_status < AVRCP_BATTERY_STATUS_FULL_CHARGE){
+                battery_status = (avrcp_battery_status_t)((uint8_t) battery_status + 1);
+            } else {
+                battery_status = AVRCP_BATTERY_STATUS_NORMAL;
+            }
+            status = avrcp_target_battery_status_changed(avrcp_cid, battery_status);
+            break;
         case 'O':
             printf(" - get play status\n");
             status = avrcp_controller_get_play_status(avrcp_cid);
