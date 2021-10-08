@@ -682,9 +682,9 @@ uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     } 
     
+    (void)memcpy(connection->track_id, track_id, 8); 
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED)) {
         connection->track_changed = 1;
-        (void)memcpy(connection->track_id, track_id, 8);
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }
     return ERROR_CODE_SUCCESS;
@@ -713,9 +713,13 @@ uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t playe
     if (connection->addressed_player_id == player_id){
         return ERROR_CODE_SUCCESS;
     }
+
+    connection->uid_counter = uid_counter;
+    connection->addressed_player_id = player_id;
+
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED)) {
-        connection->uid_counter = uid_counter;
-        connection->addressed_player_id = player_id;
+        connection->addressed_player_changed = 1;
+        avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }
     return ERROR_CODE_SUCCESS;
 }
@@ -729,8 +733,10 @@ uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_st
     if (connection->battery_status == battery_status){
         return ERROR_CODE_SUCCESS;
     } 
+
+    connection->battery_status = battery_status;
+    
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED)) {
-        connection->battery_status = battery_status;
         connection->battery_status_changed = 1;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     } 
