@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP AG: fix accept incoming connection while audio connection is established
 - PBAP Client: handle chunked vCard Listing
 - SM: Work around for unexpected Windows 10 disconnect for BR Secure Connections (SMP over BR timeout)
+- SM: support storing bonding information for devices with identical IRK but different public addresses
 - GAP: restart advertising when private address changes
  
 ### Changed

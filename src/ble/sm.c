@@ -1428,7 +1428,9 @@ static void sm_store_bonding_information(sm_connection_t * sm_conn){
             le_device_db_info(i, &address_type, address, irk);
             // skip unused entries
             if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
-            // compare IRK
+            // compare Identity Address
+            if (memcmp(address, setup->sm_peer_address, 6) != 0) continue;
+            // compare Identity Resolving Key
             if (memcmp(irk, setup->sm_peer_irk, 16) != 0) continue;
 
             log_info("sm: device found for IRK, updating");
