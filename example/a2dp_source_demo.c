@@ -842,11 +842,29 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     if (!media_tracker.avrcp_cid) return;
 
     // ignore INTERIM status
-    if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
+    if (status == AVRCP_CTYPE_RESPONSE_INTERIM){
+        switch (packet[2]){
+            case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
+                printf("AVRCP Controller: Initial absolute volume %d %%\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet) * 100 / 127);
+                break;
             
+            case AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:
+                // see avrcp_battery_status_t
+                printf("AVRCP Controller: Initial battery status %d\n", avrcp_subevent_notification_event_batt_status_changed_get_battery_status(packet));
+                break;
+            default:
+                break;
+        }
+        return;
+    }      
+
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
             printf("AVRCP Controller: notification absolute volume changed %d %%\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet) * 100 / 127);
+            break;
+        case AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:
+            // see avrcp_battery_status_t
+            printf("AVRCP Controller: battery status changed %d\n", avrcp_subevent_notification_event_batt_status_changed_get_battery_status(packet));
             break;
         case AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID:  
             printf("Remote supports EVENT_ID 0x%02x\n", avrcp_subevent_get_capability_event_id_get_event_id(packet));
@@ -854,6 +872,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
         case AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE:  
             printf("automatically enable notifications\n");
             avrcp_controller_enable_notification(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+            avrcp_controller_enable_notification(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
             break;
         default:
             break;
