@@ -1190,6 +1190,17 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         return;
                     }
 
+                    if (connection->addressed_player_changed){
+                        connection->addressed_player_changed = 0;
+                        uint8_t buffer[4];
+                        big_endian_store_16(buffer, 0, connection->addressed_player_id);
+                        big_endian_store_16(buffer, 2, connection->uid_counter);
+                        avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED, buffer, 4);
+                        avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
+                        avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+                        return;
+                    }
+
                     if (connection->reject_transport_header){
                         connection->state = AVCTP_CONNECTION_OPENED;
                         connection->reject_transport_header = 0;
