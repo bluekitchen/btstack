@@ -472,25 +472,27 @@ uint8_t avrcp_target_operation_not_implemented(uint16_t avrcp_cid, avrcp_operati
     return avrcp_target_pass_through_response(avrcp_cid, AVRCP_CTYPE_RESPONSE_ACCEPTED, opid, operands_length, operand);
 }
 
-void avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id){
+uint8_t avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_target_set_unit_info: could not find a connection.");
-        return; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
     connection->unit_type = unit_type;
     connection->company_id = company_id;
+    return ERROR_CODE_SUCCESS;
 }
 
-void avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, const uint8_t * subunit_info_data, uint16_t subunit_info_data_size){
+uint8_t avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, const uint8_t * subunit_info_data, uint16_t subunit_info_data_size){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_target_set_subunit_info: could not find a connection.");
-        return; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
     connection->subunit_info_type = subunit_type;
     connection->subunit_info_data = subunit_info_data;
     connection->subunit_info_data_size = subunit_info_data_size;    
+    return ERROR_CODE_SUCCESS;
 }
 
 static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
@@ -629,7 +631,9 @@ uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_stat
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
-    if (connection->playback_status == playback_status) return ERROR_CODE_SUCCESS;
+    if (connection->playback_status == playback_status){
+        return ERROR_CODE_SUCCESS;
+    } 
 
     connection->playback_status = playback_status;
     connection->playback_status_changed = 1;
@@ -637,17 +641,18 @@ uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_stat
     return ERROR_CODE_SUCCESS;
 }
 
-void avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t * current_track, uint16_t total_tracks){
+uint8_t avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t * current_track, uint16_t total_tracks){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection. cid 0x%02x\n", avrcp_cid);
-        return; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (!current_track){
         connection->track_selected = 0;
         connection->playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
-        return;
+        return ERROR_CODE_COMMAND_DISALLOWED;
     } 
+
     (void)memcpy(connection->track_id, current_track->track_id, 8);
     connection->song_length_ms = current_track->song_length_ms;
     connection->track_nr = current_track->track_nr;
@@ -661,8 +666,10 @@ void avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t *
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED)) {
         connection->track_changed = 1;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    } else {
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
-    return;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
@@ -671,8 +678,10 @@ uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
         log_error("avrcp_target_track_changed: could not find connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
-    if (!track_id) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-
+    if (!track_id){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    } 
+    
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED)) {
         connection->track_changed = 1;
         (void)memcpy(connection->track_id, track_id, 8);
@@ -700,6 +709,10 @@ uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t playe
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
+
+    if (connection->addressed_player_id == player_id){
+        return ERROR_CODE_SUCCESS;
+    }
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED)) {
         connection->uid_counter = uid_counter;
         connection->addressed_player_id = player_id;
@@ -713,12 +726,14 @@ uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_st
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
-    if (connection->battery_status == battery_status) return ERROR_CODE_SUCCESS;
+    if (connection->battery_status == battery_status){
+        return ERROR_CODE_SUCCESS;
+    } 
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED)) {
         connection->battery_status = battery_status;
         connection->battery_status_changed = 1;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-    }
+    } 
     return ERROR_CODE_SUCCESS;
 }
 
@@ -728,11 +743,16 @@ uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentag
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
+    if (connection->volume_percentage == volume_percentage){
+        return ERROR_CODE_SUCCESS;
+    }
+    
     connection->volume_percentage = volume_percentage;
+
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED )) {
         connection->notify_volume_percentage_changed = 1;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-    }
+    } 
     return ERROR_CODE_SUCCESS;
 }
 
