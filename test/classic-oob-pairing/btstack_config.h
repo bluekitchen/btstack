@@ -15,6 +15,16 @@
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE                        (676 + 4)
+/// Provide 1 byte of data for H4 TL type
+#define HCI_OUTGOING_PRE_BUFFER_SIZE                (1)
+
+#define HAVE_HOST_CONTROLLER_API
+
+// Internal ring buffer: 21 kB
+#define HCI_HOST_ACL_PACKET_NUM                     (20)
+#define HCI_HOST_ACL_PACKET_LEN                     (1024)
+#define HCI_HOST_SCO_PACKET_NUM                     (10)
+#define HCI_HOST_SCO_PACKET_LEN                     (60)
 
 // Link Key DB and LE Device DB using TLV on top of Flash Sector interface
 #define NVM_NUM_LINK_KEYS                           (0)
@@ -51,9 +61,14 @@
 #define ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
 /// Enable A2DP source codec config
 #define ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
+/// Allow defer of LINK Key Reply
+#define ENABLE_EXPLICIT_LINK_KEY_REPLY
 
 #define ENABLE_HFP_WIDE_BAND_SPEECH
 #define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+#define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM
+#define ENABLE_GOEP_L2CAP
+
 
 // cannot be used yet - mere inclusion of <stdio.h> causes compile errors
 // <stdio.h> is used at various places for snprintf

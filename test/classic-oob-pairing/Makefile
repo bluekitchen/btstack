@@ -66,7 +66,7 @@ HXCMOD_PLAYER = \
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
-CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Wswitch-default
+CFLAGS += -g -Wall -Werror -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Wswitch-default
 CFLAGS += -D ENABLE_TESTING_SUPPORT
 CFLAGS += -D ENABLE_LE_SIGNED_WRITE
 CFLAGS += -fsanitize=address -fno-omit-frame-pointer
