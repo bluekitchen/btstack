@@ -250,6 +250,7 @@ static int btstack_audio_portaudio_sink_init(
 
     const PaStreamInfo * stream_info = Pa_GetStreamInfo(stream_sink);
     log_info("PortAudio: sink latency: %f", stream_info->outputLatency);
+    UNUSED(stream_info);
 
     playback_callback  = playback;
 
@@ -315,6 +316,7 @@ static int btstack_audio_portaudio_source_init(
 
     const PaStreamInfo * stream_info = Pa_GetStreamInfo(stream_source);
     log_info("PortAudio: source latency: %f", stream_info->inputLatency);
+    UNUSED(stream_info);
 
     recording_callback = recording;
 
