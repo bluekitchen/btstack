@@ -64,7 +64,7 @@
 #include "l2cap.h"
 
 #define AVDTP_MAX_SEP_NUM 10
-#define A2DP_SET_CONFIG_DELAY_MS 150
+#define A2DP_SET_CONFIG_DELAY_MS 200
 
 static const char * a2dp_default_source_service_name = "BTstack A2DP Source Service";
 static const char * a2dp_default_source_service_provider_name = "BTstack A2DP Source Service Provider";
@@ -78,6 +78,7 @@ static uint16_t                 a2dp_source_sep_discovery_count;
 static uint16_t                 a2dp_source_sep_discovery_index;
 static avdtp_sep_t              a2dp_source_sep_discovery_seps[AVDTP_MAX_SEP_NUM];
 static btstack_timer_source_t   a2dp_source_set_config_timer;
+static bool                     a2dp_source_set_config_timer_active;
 
 static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void a2dp_discover_seps_with_next_waiting_connection(void);
@@ -195,9 +196,11 @@ static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer)
     uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
 	avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
 	btstack_run_loop_set_timer_context(&a2dp_source_set_config_timer, NULL);
+	a2dp_source_set_config_timer_active = false;
+
+	log_info("Set Config timer fired, avdtp_cid 0x%02x", avdtp_cid);
 
     if (connection == NULL) {
-        log_info("a2dp_discover_seps_with_next_waiting_connection");
         a2dp_discover_seps_with_next_waiting_connection();
         return;
     }
@@ -207,7 +210,8 @@ static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer)
 }
 
 static void a2dp_source_set_config_timer_start(uint16_t avdtp_cid){
-    log_info("a2dp_source_set_config_timer_start cid 0%02x", avdtp_cid);
+    log_info("Set Config timer start for cid 0%02x", avdtp_cid);
+    a2dp_source_set_config_timer_active = true;
     btstack_run_loop_remove_timer(&a2dp_source_set_config_timer);
     btstack_run_loop_set_timer_handler(&a2dp_source_set_config_timer,a2dp_source_set_config_timer_handler);
     btstack_run_loop_set_timer(&a2dp_source_set_config_timer, A2DP_SET_CONFIG_DELAY_MS);
@@ -215,10 +219,19 @@ static void a2dp_source_set_config_timer_start(uint16_t avdtp_cid){
     btstack_run_loop_add_timer(&a2dp_source_set_config_timer);
 }
 
+static void a2dp_source_set_config_timer_restart(void){
+    log_info("Set Config timer restart");
+    btstack_run_loop_remove_timer(&a2dp_source_set_config_timer);
+    btstack_run_loop_set_timer(&a2dp_source_set_config_timer, A2DP_SET_CONFIG_DELAY_MS);
+    btstack_run_loop_add_timer(&a2dp_source_set_config_timer);
+}
+
 static void a2dp_source_set_config_timer_stop(void){
-    log_info("a2dp_source_set_config_timer_stop");
+    if (a2dp_source_set_config_timer_active == false) return;
+    log_info("Set Config timer stop");
     btstack_run_loop_remove_timer(&a2dp_source_set_config_timer);
 	btstack_run_loop_set_timer_context(&a2dp_source_set_config_timer, NULL);
+	a2dp_source_set_config_timer_active = false;
 }
 
 // Discover seps, both incoming and outgoing
@@ -603,10 +616,12 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-			// reset discovery timer while remote is active for current cid
-			if ((avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) && (cid == a2dp_source_sep_discovery_cid)){
-				log_info("Reset discovery timer");
-				a2dp_source_set_config_timer_start(a2dp_source_sep_discovery_cid);
+			// restart set config timer while remote is active for current cid
+			if (a2dp_source_set_config_timer_active &&
+			    (avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) &&
+			    (cid == a2dp_source_sep_discovery_cid)){
+
+			    a2dp_source_set_config_timer_restart();
 				break;
 			}
 
