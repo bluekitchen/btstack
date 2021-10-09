@@ -519,6 +519,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
             connection->state = AVDTP_SIGNALING_CONNECTION_OPENED;
             connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE;
             avdtp_acceptor_send_seps_response(connection->l2cap_signaling_cid, connection->acceptor_transaction_label, (avdtp_stream_endpoint_t *) stream_endpoints);
+            avdtp_signaling_emit_accept(connection->avdtp_cid, 0, connection->acceptor_signaling_packet.signal_identifier, false);
             break;
         case AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE:
             connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE;
