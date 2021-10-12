@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - HCI Dump: Support BTSnoop format in hci_dump_posix_fs.c for format = HCI_DUMP_BTSNOOP
 - HCI Dump RTT STDOUT: drop messages if RTT buffer is full and RTT is configured for non-blocking
+- HCI: hci_remove_event_handler to remove packet handler
 - hci_cmd: support variable length fields and arrayed parameters
 - GAP: ENABLE_EXPLICIT_LINK_KEY_REPLY allows for asynchronous link key lookup by application
 - POSIX: btstack_signal allows to register for callback on signal, e.g. ctrl-c
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - `a2dp_source_register_media_config_validator`
 - A2DP Sink: allow accept or reject of stream start on A2DP_SUBEVENT_START_STREAM_REQUESTED when ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION is defined
 - SM: Support Cross-Transport Key-Derivation (CTKD) of LE LTK from BR/EDR SC Link Key
+- SM: sm_remove_event_handler to remove packet handler
 - GATT Service: Bond Management Service (BMS 1.0) Server
 - GATT Service: Microphone Control Service (MICS 1.0) Server
 - GATT Service: TX Power Service (TPS 1.0) Server 

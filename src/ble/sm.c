@@ -4639,6 +4639,10 @@ void sm_add_event_handler(btstack_packet_callback_registration_t * callback_hand
     btstack_linked_list_add_tail(&sm_event_handlers, (btstack_linked_item_t*) callback_handler);
 }
 
+void sm_remove_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    btstack_linked_list_remove(&sm_event_handlers, (btstack_linked_item_t*) callback_handler);
+}
+
 void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_methods){
     sm_accepted_stk_generation_methods = accepted_stk_generation_methods;
 }

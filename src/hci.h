@@ -1175,6 +1175,11 @@ void hci_close(void);
 void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler);
 
 /**
+ * @brief Remove event packet handler.
+ */
+void hci_remove_event_handler(btstack_packet_callback_registration_t * callback_handler);
+
+/**
  * @brief Registers a packet handler for ACL data. Used by L2CAP
  */
 void hci_register_acl_packet_handler(btstack_packet_handler_t handler);

@@ -3396,6 +3396,12 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
     btstack_linked_list_add_tail(&hci_stack->event_handlers, (btstack_linked_item_t*) callback_handler);
 }
 
+/**
+ * @brief Remove event packet handler.
+ */
+void hci_remove_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    btstack_linked_list_remove(&hci_stack->event_handlers, (btstack_linked_item_t*) callback_handler);
+}
 
 /** Register HCI packet handlers */
 void hci_register_acl_packet_handler(btstack_packet_handler_t handler){
