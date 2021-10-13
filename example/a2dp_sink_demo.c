@@ -181,7 +181,7 @@ static uint8_t  a2dp_local_seid = 0;
 
 static uint16_t avrcp_cid = 0;
 static uint8_t  avrcp_connected = 0;
-static uint8_t  avrcp_subevent_value[100];
+static uint8_t  avrcp_subevent_value[255];
 
 static uint8_t media_sbc_codec_capabilities[] = {
     0xFF,//(AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
