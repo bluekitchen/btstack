@@ -849,6 +849,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     connection->cmd_operands_length = 0;
     uint8_t offset;
     uint8_t operand;
+    uint16_t event_mask;
     avrcp_operation_id_t operation_id;
 
     switch (opcode){
@@ -979,13 +980,31 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 case AVRCP_PDU_ID_REGISTER_NOTIFICATION:{
                     if ((pos + 1) > size) return;
                     avrcp_notification_event_id_t event_id = (avrcp_notification_event_id_t) packet[pos];
-                    uint16_t event_mask = (1 << event_id);
+
                     avrcp_target_set_transaction_label_for_notification(connection, event_id, connection->transaction_id);
+
+                    if (event_id < AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED ||
+                        event_id > AVRCP_NOTIFICATION_EVENT_MAX_VALUE){
+                        avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_PARAMETER);
+                        return;
+                    }
+
+                    switch (event_id){
+                        case AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED:
+                        case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:
+                        case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:
+                            avrcp_target_response_not_implemented(connection, subunit_type, subunit_id, opcode, pdu_id, event_id);
+                            return;
+                        default:
+                            break;
+                    }
+
+                    event_mask = (1 << event_id);
+                    connection->notifications_enabled |= event_mask;
+                    avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
                             
                     switch (event_id){
                         case AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED:
-                            connection->notifications_enabled |= event_mask;
-                            avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
                             if (connection->track_selected){
                                 avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, AVRCP_NOTIFICATION_TRACK_SELECTED, 8);
                             } else {
@@ -993,37 +1012,23 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             }
                             break;
                         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED:
-                            connection->notifications_enabled |= event_mask;
-                            avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
                             avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, (const uint8_t *)&connection->playback_status, 1);
                             break;
                         case AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED: 
-                            connection->notifications_enabled |= event_mask;
-                            avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
                             avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, NULL, 0);
                             break;
                         case AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED:
                             connection->notify_volume_percentage_changed = 0;
-                            connection->notifications_enabled |= event_mask;
-                            avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
                             avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, (const uint8_t *)&connection->volume_percentage, 1);
                             break;
                         case AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:
-                            connection->notifications_enabled |= event_mask;
-                            avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
                             avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, (const uint8_t *)&connection->battery_status, 1);
                             break;
-                        case AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED:
-                        case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:
-                        case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:
-                            avrcp_target_response_not_implemented(connection, subunit_type, subunit_id, opcode, pdu_id, event_id);
-                            return;
                         case AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED:
-                            connection->notifications_enabled |= event_mask;
                             avrcp_target_response_addressed_player_changed_interim(connection, subunit_type, subunit_id, opcode, pdu_id);
                             return;
                         default:
-                            avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_PARAMETER);
+                            btstack_assert(false);
                             return;
                     }
                     break;
