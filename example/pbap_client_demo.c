@@ -93,18 +93,22 @@ static uint16_t pbap_cid;
 
 static int sim1_selected;
 
-static void select_phonebook(const char * phonebook){
-    phonebook_name = phonebook;
-    sprintf(phonebook_path, "%s%s.vcf", sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook);
-    sprintf(phonebook_folder, "%s%s",   sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook);
-    printf("[-] Phonebook name   '%s'\n", phonebook_name);
+static void refresh_phonebook_folder_and_path(void){
+    sprintf(phonebook_path, "%s%s.vcf", sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook_name);
+    sprintf(phonebook_folder, "%s%s",   sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook_name);
     printf("[-] Phonebook folder '%s'\n", phonebook_folder);
     printf("[-] Phonebook path   '%s'\n", phonebook_path);
 }
 
+static void select_phonebook(const char * phonebook){
+    phonebook_name = phonebook;
+    printf("[-] Phonebook name   '%s'\n", phonebook_name);
+    refresh_phonebook_folder_and_path();
+}
+
 #ifdef HAVE_BTSTACK_STDIN
 
-// Testig User Interface 
+// Testing User Interface
 static void show_usage(void){
     bd_addr_t iut_address;
     gap_local_bd_addr(iut_address);
@@ -152,7 +156,7 @@ static void stdin_process(char c){
         case 'b':
             printf("[+] SIM1 selected'\n");
             sim1_selected = 1;
-            select_phonebook(phonebook_folder);
+            refresh_phonebook_folder_and_path();
             break;
 
         case 'd':
