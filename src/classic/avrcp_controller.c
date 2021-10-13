@@ -664,10 +664,15 @@ avrcp_controller_handle_notification(avrcp_connection_t *connection, avrcp_comma
     avrcp_notification_event_id_t event_id = (avrcp_notification_event_id_t) payload[pos++];
     uint16_t event_mask = (1 << event_id);
     uint16_t reset_event_mask = ~event_mask;
+
     switch (ctype){
         case AVRCP_CTYPE_RESPONSE_INTERIM:
             // register as enabled
             connection->notifications_enabled |= event_mask;
+            if ( (connection->initial_status_reported & event_mask) > 0 ){
+                return;
+            }
+            connection->initial_status_reported |= event_mask;
             break;
         case AVRCP_CTYPE_RESPONSE_CHANGED_STABLE:
             // received change, event is considered deregistered

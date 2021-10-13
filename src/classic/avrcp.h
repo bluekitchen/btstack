@@ -553,6 +553,8 @@ typedef struct {
     bool     press_and_hold_cmd_release;
 
     uint16_t notifications_enabled;
+    uint16_t initial_status_reported;
+    
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
     uint8_t  notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_MAX_VALUE+1];
