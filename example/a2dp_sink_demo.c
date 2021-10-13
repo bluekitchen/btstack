@@ -249,7 +249,7 @@ static int a2dp_and_avrcp_setup(void){
     // Initialize AVRCP service
     avrcp_init();
     avrcp_register_packet_handler(&avrcp_packet_handler);
-    
+
     // Initialize AVRCP Controller
     avrcp_controller_init();
     avrcp_controller_register_packet_handler(&avrcp_controller_packet_handler);
@@ -602,6 +602,8 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             avrcp_subevent_connection_established_get_bd_addr(packet, adress);
             printf("AVRCP: Connected to %s, cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
 
+            avrcp_target_battery_status_changed(avrcp_cid, battery_status);
+    
             // automatically enable notifications
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
@@ -630,22 +632,6 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     status = packet[5];
     if (!avrcp_cid) return;
 
-    // ignore INTERIM status
-    if (status == AVRCP_CTYPE_RESPONSE_INTERIM){
-        switch (packet[2]){
-            case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED:{
-                uint32_t playback_position_ms = avrcp_subevent_notification_playback_pos_changed_get_playback_position_ms(packet);
-                if (playback_position_ms == AVRCP_NO_TRACK_SELECTED_PLAYBACK_POSITION_CHANGED){
-                    printf("AVRCP Controller: playback position changed, no track is selected\n");
-                }  
-                break;
-            }
-            default:
-                break;
-        }
-        return;
-    } 
-            
     memset(avrcp_subevent_value, 0, sizeof(avrcp_subevent_value));
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED:
@@ -957,6 +943,7 @@ static void show_usage(void){
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     uint8_t volume;
+    avrcp_battery_status_t old_battery_status;
 
     switch (cmd){
         case 'b':
@@ -999,11 +986,14 @@ static void stdin_process(char cmd){
             avrcp_volume_changed(volume);
             break;
         case 'V':
+            old_battery_status = battery_status;
+
             if (battery_status < AVRCP_BATTERY_STATUS_FULL_CHARGE){
                 battery_status = (avrcp_battery_status_t)((uint8_t) battery_status + 1);
             } else {
                 battery_status = AVRCP_BATTERY_STATUS_NORMAL;
             }
+            printf(" - toggle battery value, old %d, new %d\n", old_battery_status, battery_status);
             status = avrcp_target_battery_status_changed(avrcp_cid, battery_status);
             break;
         case 'O':

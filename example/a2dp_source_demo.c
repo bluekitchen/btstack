@@ -840,24 +840,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 
     status = packet[5];
     if (!media_tracker.avrcp_cid) return;
-
-    // ignore INTERIM status
-    if (status == AVRCP_CTYPE_RESPONSE_INTERIM){
-        switch (packet[2]){
-            case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
-                printf("AVRCP Controller: Initial absolute volume %d %%\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet) * 100 / 127);
-                break;
-            
-            case AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:
-                // see avrcp_battery_status_t
-                printf("AVRCP Controller: Initial battery status %d\n", avrcp_subevent_notification_event_batt_status_changed_get_battery_status(packet));
-                break;
-            default:
-                break;
-        }
-        return;
-    }      
-
+    
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
             printf("AVRCP Controller: notification absolute volume changed %d %%\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet) * 100 / 127);
