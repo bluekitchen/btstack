@@ -582,8 +582,8 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     UNUSED(channel);
     UNUSED(size);
     uint16_t local_cid;
-    uint8_t  status = 0xFF;
-    bd_addr_t adress;
+    uint8_t  status;
+    bd_addr_t address;
     
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
@@ -599,8 +599,8 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             
             avrcp_cid = local_cid;
             avrcp_connected = 1;
-            avrcp_subevent_connection_established_get_bd_addr(packet, adress);
-            printf("AVRCP: Connected to %s, cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
+            avrcp_subevent_connection_established_get_bd_addr(packet, address);
+            printf("AVRCP: Connected to %s, cid 0x%02x\n", bd_addr_to_str(address), avrcp_cid);
 
             avrcp_target_battery_status_changed(avrcp_cid, battery_status);
     
