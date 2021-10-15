@@ -13,7 +13,7 @@
 ######################################
 # target
 ######################################
-TARGET = stm32f103zet6-csr8x11
+TARGET = stm32f103zet6-csr8x11-freertos
 
 
 ######################################
@@ -127,74 +127,36 @@ ${BTSTACK_ROOT}/src/hci_dump.c \
 ${BTSTACK_ROOT}/src/hci_transport_h4.c \
 ${BTSTACK_ROOT}/src/l2cap.c \
 ${BTSTACK_ROOT}/src/l2cap_signaling.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/def.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/inet_chksum.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/init.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ip.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/mem.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/memp.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/netif.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/pbuf.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_in.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_out.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/timeouts.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/udp.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/acd.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/dhcp.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/etharp.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/icmp.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_addr.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_frag.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/netif/ethernet.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/fs.c \
-${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c \
-${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c \
-${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c \
-${BTSTACK_ROOT}/platform/lwip/bnep_lwip.c \
-#bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c \
-bsp/audio.c \
-bsp/cs43l22.c \
-bsp/stm32f4_discovery.c \
-bsp/stm32f4_discovery_audio.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
-port/hal_audio_f4discovery.c \
-port/hal_flash_bank_stm32.c \
-port/port.c \
-Src/dma.c \
-Src/gpio.c \
-Src/main.c \
-Src/spi.c \
-Src/stm32f4xx_hal_msp.c \
-Src/stm32f4xx_it.c \
-Src/system_stm32f4xx.c \
-Src/usart.c \
+FreeRTOS/portable/MemMang/heap_4.c \
+Libraries/STM32F10x_StdPeriph_Driver/src/misc.c \
+Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_gpio.c \
+Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_rcc.c \
+Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_usart.c \
+Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_flash.c \
+User/bsp/bsp.c \
+User/bsp/stm32f10x_assert.c \
+User/bsp/stm32f10x_it.c \
+User/bsp/system_stm32f10x.c \
+User/bsp/src/bsp_led.c \
+User/bsp/src/bsp_uart_fifo.c \
+User/bsp/src/bsp_key.c \
+User/main.c 
+#User/SysInfoTest.c
+
+#FreeRTOS/portable/RVDS/ARM_CM3/port.c \
+#Middleware/at_command/at_command.c \
+#Middleware/at_command/at_command_bt.c \
+#User/bsp/bsp_msg.c \
+#FreeRTOS/croutine.c \
+#FreeRTOS/event_groups.c \
+#FreeRTOS/list.c \
+#FreeRTOS/queue.c \
+#FreeRTOS/tasks.c \
+#FreeRTOS/timers.c \
 
 # ASM sources
 ASM_SOURCES =  \
-startup_stm32f407xx.s
+startup_stm32f10x_hd.s
 
 
 #######################################
@@ -221,16 +183,17 @@ BIN = $(CP) -O binary -S
 # CFLAGS
 #######################################
 # cpu
-CPU = -mcpu=cortex-m4
+CPU = -mcpu=cortex-m3
 
 # fpu
-FPU = -mfpu=fpv4-sp-d16
+#FPU = -mfpu=fpv4-sp-d16
 
 # float-abi
-FLOAT-ABI = -mfloat-abi=softfp
+#FLOAT-ABI = -mfloat-abi=softfp
 
 # mcu
-MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
+#MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
+MCU = $(CPU) -mthumb
 
 # macros for gcc
 # AS defines
@@ -238,8 +201,10 @@ AS_DEFS =
 
 # C defines
 C_DEFS =  \
--DUSE_HAL_DRIVER \
--DSTM32F407xx
+-DUSE_STDPERIPH_DRIVER \
+-DSTM32F10X_HD \
+-DNDEBUG \
+
 
 
 # AS includes
@@ -247,11 +212,16 @@ AS_INCLUDES =
 
 # C includes
 C_INCLUDES =  \
--IInc \
--IDrivers/STM32F4xx_HAL_Driver/Inc \
--IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
--IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
--IDrivers/CMSIS/Include \
+-ILibraries/CMSIS/Include \
+-ILibraries/CMSIS/Device/ST/STM32F10x/Include \
+-ILibraries/STM32F10x_StdPeriph_Driver/inc \
+-IUser \
+-IUser/bsp \
+-IUser/bsp/inc \
+-IFreeRTOS/include \
+-IFreeRTOS/portable/RVDS/ARM_CM3 \
+-IMiddleware/at_command \
+-Iut_manager/Cunit/interface \
 
 C_INCLUDES += -I$(BUILD_DIR)
 C_INCLUDES += -I${BTSTACK_ROOT}/src/ble
@@ -272,11 +242,9 @@ C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip/port
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/csr
-C_INCLUDES += -I Drivers/STM32F4xx_HAL_Driver/Inc
-C_INCLUDES += -I bsp
-C_INCLUDES += -I pdm
-C_INCLUDES += -I port
-C_INCLUDES += -I src
+
+C_INCLUDES += -I User
+
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
@@ -296,12 +264,12 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # LDFLAGS
 #######################################
 # link script
-LDSCRIPT = STM32F407VGTx_FLASH.ld
+LDSCRIPT = STM32F103ZETx_FLASH.ld
 
 # libraries
-LIBS = -lPDMFilter_CM4_GCC -lc -lm -lnosys 
+#LIBS = -lPDMFilter_CM3_GCC -lc -lm -lnosys 
 LIBDIR = -Lpdm
-LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
 EXAMPLES = 					\
@@ -356,13 +324,13 @@ GATT_FILES = \
 	spp_and_gatt_streamer.gatt \
 
 # SBC codec
-include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
-include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
+#include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
+#include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
-VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
-VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
-C_SOURCES += ${SBC_ENCODER}
-C_SOURCES += ${SBC_DECODER}
+#VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
+#VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
+#C_SOURCES += ${SBC_ENCODER}
+#C_SOURCES += ${SBC_DECODER}
 
 #######################################
 # build the application
@@ -382,7 +350,7 @@ all: \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.bin)) \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.jdebug)) \
 
-include ${BTSTACK_ROOT}/chipset/csr/Makefile.inc
+#include ${BTSTACK_ROOT}/chipset/csr/Makefile.inc
 
 $(BUILD_DIR)/%.h: %.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 

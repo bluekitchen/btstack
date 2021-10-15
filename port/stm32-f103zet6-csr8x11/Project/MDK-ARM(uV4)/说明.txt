@@ -1,0 +1,9 @@
+project.uvproj       MDK uV4工程文件,双击这个文件可启动MDK
+
+project.uvopt        MDK uV4工程配置参数
+
+CpuRAM.ini           在CPU内部RAM调试的脚本(文本文件)，当启动调试时，调试器自动执行脚本文件，将代码装载在CPU内部RAM
+
+CopyHex_Flash.bat    批处理文件,编译连接成功后将Flash\Obj下的Hex文件复制到前级目录
+
+CopyHex_CpuRAM.bat   批处理文件,编译连接成功后将CpuRAM\Obj下的Hex文件复制到前级目录

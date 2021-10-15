@@ -1,0 +1,12 @@
+文件说明：
+	project.eww ：Workspace Data 工作空间
+	project.ewd ：Debugger Data. 调试器数据
+	project.ewp : IAR Project 项目文件
+		上面3个文件是IAR系统的工程配置文件
+
+	stm32f4xx_flash.icf : 	这个文件是IAR连接器配置文件。配置程序段（只读）在CPU内部Flash
+	 					数据段（可读写的，堆和栈）在CPU内部RAM。你可以根据自己需要进行修改。
+
+	stm32f4xx_ram.icf   : 这个文件是IAR连接器配置文件。配置程序段（只读）和数据段（可读写的，堆和栈）
+				都在CPU内部RAM。你可以根据自己需要进行修改。
+

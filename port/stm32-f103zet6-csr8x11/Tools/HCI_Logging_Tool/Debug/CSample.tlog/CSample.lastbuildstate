@@ -1,0 +1,2 @@
+#TargetFrameworkVersion=v4.0:PlatformToolSet=v140:EnableManagedIncrementalBuild=false:VCToolArchitecture=Native32Bit:WindowsTargetPlatformVersion=8.1
+Debug|Win32|F:\工作\项目\蓝牙协议栈开发-blue-angel\blue_angel\bluetooth_basic_v0.1\Tools\HCI_Logging_Tool\|
