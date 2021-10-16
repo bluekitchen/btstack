@@ -246,43 +246,43 @@ static void prvTaskExitError( void )
 }
 /*-----------------------------------------------------------*/
 
-__asm void vPortSVCHandler( void )
+void vPortSVCHandler( void )
 {
-	PRESERVE8
+	//__asm volatile("PRESERVE8");
 
-	ldr	r3, =pxCurrentTCB	/* Restore the context. */
-	ldr r1, [r3]			/* Use pxCurrentTCBConst to get the pxCurrentTCB address. */
-	ldr r0, [r1]			/* The first item in pxCurrentTCB is the task top of stack. */
-	ldmia r0!, {r4-r11}		/* Pop the registers that are not automatically saved on exception entry and the critical nesting count. */
-	msr psp, r0				/* Restore the task stack pointer. */
-	isb
-	mov r0, #0
-	msr	basepri, r0
-	orr r14, #0xd
-	bx r14
+	__asm volatile("ldr	r3, =pxCurrentTCB");	/* Restore the context. */
+	__asm volatile("ldr r1, [r3]");			/* Use pxCurrentTCBConst to get the pxCurrentTCB address. */
+	__asm volatile("ldr r0, [r1]");			/* The first item in pxCurrentTCB is the task top of stack. */
+	__asm volatile("ldmia r0!, {r4-r11}");		/* Pop the registers that are not automatically saved on exception entry and the critical nesting count. */
+	__asm volatile("msr psp, r0");			/* Restore the task stack pointer. */
+	__asm volatile("isb");
+	__asm volatile("mov r0, #0");
+	__asm volatile("msr	basepri, r0");
+	__asm volatile("orr r14, #0xd");
+	__asm volatile("bx r14");
 }
 /*-----------------------------------------------------------*/
 
-__asm void prvStartFirstTask( void )
+void prvStartFirstTask( void )
 {
-	PRESERVE8
+	//__asm volatile("PRESERVE8");
 
 	/* Use the NVIC offset register to locate the stack. */
-	ldr r0, =0xE000ED08
-	ldr r0, [r0]
-	ldr r0, [r0]
+	__asm volatile("ldr r0, =0xE000ED08");
+	__asm volatile("ldr r0, [r0]");
+	__asm volatile("ldr r0, [r0]");
 
 	/* Set the msp back to the start of the stack. */
-	msr msp, r0
+	__asm volatile("msr msp, r0");
 	/* Globally enable interrupts. */
-	cpsie i
-	cpsie f
-	dsb
-	isb
+	__asm volatile("cpsie i");
+	__asm volatile("cpsie f");
+	__asm volatile("dsb");
+	__asm volatile("isb");
 	/* Call SVC to start the first task. */
-	svc 0
-	nop
-	nop
+	__asm volatile("svc 0");
+	__asm volatile("nop");
+	__asm volatile("nop");
 }
 /*-----------------------------------------------------------*/
 
@@ -404,38 +404,39 @@ void vPortExitCritical( void )
 }
 /*-----------------------------------------------------------*/
 
-__asm void xPortPendSVHandler( void )
+void xPortPendSVHandler( void )
 {
-	extern uxCriticalNesting;
-	extern pxCurrentTCB;
-	extern vTaskSwitchContext;
+	//extern uxCriticalNesting;
+	//extern pxCurrentTCB;
+	//extern vTaskSwitchContext;
 
-	PRESERVE8
+	//__asm volatile("PRESERVE8");   //栈8字节对齐
 
-	mrs r0, psp
-	isb
+	__asm volatile("mrs r0, psp");
+	__asm volatile("isb");
 
-	ldr	r3, =pxCurrentTCB		/* Get the location of the current TCB. */
-	ldr	r2, [r3]
+	__asm volatile("ldr	r3, =pxCurrentTCB")	;	/* Get the location of the current TCB. */
+	__asm volatile("ldr	r2, [r3]");
 
-	stmdb r0!, {r4-r11}			/* Save the remaining registers. */
-	str r0, [r2]				/* Save the new top of stack into the first member of the TCB. */
+	__asm volatile("stmdb r0!, {r4-r11}")	;		/* Save the remaining registers. */
+	__asm volatile("str r0, [r2]")	;			/* Save the new top of stack into the first member of the TCB. */
 
-	stmdb sp!, {r3, r14}
-	mov r0, #configMAX_SYSCALL_INTERRUPT_PRIORITY
-	msr basepri, r0
-	bl vTaskSwitchContext
-	mov r0, #0
-	msr basepri, r0
-	ldmia sp!, {r3, r14}
+	__asm volatile("stmdb sp!, {r3, r14}");
+	//__asm volatile("mov r0, #configMAX_SYSCALL_INTERRUPT_PRIORITY");
+	__asm volatile("mov r0, #16");
+	__asm volatile("msr basepri, r0");
+	__asm volatile("bl vTaskSwitchContext");
+	__asm volatile("mov r0, #0");
+	__asm volatile("msr basepri, r0");
+	__asm volatile("ldmia sp!, {r3, r14}");
 
-	ldr r1, [r3]
-	ldr r0, [r1]				/* The first item in pxCurrentTCB is the task top of stack. */
-	ldmia r0!, {r4-r11}			/* Pop the registers and the critical nesting count. */
-	msr psp, r0
-	isb
-	bx r14
-	nop
+	__asm volatile("ldr r1, [r3]");
+	__asm volatile("ldr r0, [r1]");				/* The first item in pxCurrentTCB is the task top of stack. */
+	__asm volatile("ldmia r0!, {r4-r11}	");		/* Pop the registers and the critical nesting count. */
+	__asm volatile("msr psp, r0");
+	__asm volatile("isb");
+	__asm volatile("bx r14");
+	__asm volatile("nop");
 }
 /*-----------------------------------------------------------*/
 
@@ -637,32 +638,33 @@ void xPortSysTickHandler( void )
 #endif /* configOVERRIDE_DEFAULT_TICK_CONFIGURATION */
 /*-----------------------------------------------------------*/
 
-__asm uint32_t ulPortSetInterruptMask( void )
+uint32_t ulPortSetInterruptMask( void )
 {
-	PRESERVE8
+	//__asm volatile("PRESERVE8");
 
-	mrs r0, basepri
-	mov r1, #configMAX_SYSCALL_INTERRUPT_PRIORITY
-	msr basepri, r1
-	bx r14
+	__asm volatile("mrs r0, basepri");
+	//__asm volatile("mov r1, #configMAX_SYSCALL_INTERRUPT_PRIORITY");
+	__asm volatile("mov r1, #16");
+	__asm volatile("msr basepri, r1");
+	__asm volatile("bx r14");
 }
 /*-----------------------------------------------------------*/
 
-__asm void vPortClearInterruptMask( uint32_t ulNewMask )
+void vPortClearInterruptMask( uint32_t ulNewMask )
 {
-	PRESERVE8
+	//__asm volatile("PRESERVE8");
 
-	msr basepri, r0
-	bx r14
+	__asm volatile("msr basepri, r0");
+	__asm volatile("bx r14");
 }
 /*-----------------------------------------------------------*/
 
-__asm uint32_t vPortGetIPSR( void )
+uint32_t vPortGetIPSR( void )
 {
-	PRESERVE8
+	//__asm volatile("PRESERVE8");
 
-	mrs r0, ipsr
-	bx r14
+	__asm volatile("mrs r0, ipsr");
+	__asm volatile("bx r14");
 }
 /*-----------------------------------------------------------*/
 

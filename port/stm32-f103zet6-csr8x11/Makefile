@@ -140,20 +140,19 @@ User/bsp/system_stm32f10x.c \
 User/bsp/src/bsp_led.c \
 User/bsp/src/bsp_uart_fifo.c \
 User/bsp/src/bsp_key.c \
-User/main.c 
-#User/SysInfoTest.c
+User/main.c \
+FreeRTOS/portable/RVDS/ARM_CM3/port.c \
+FreeRTOS/croutine.c \
+FreeRTOS/event_groups.c \
+FreeRTOS/list.c \
+FreeRTOS/queue.c \
+FreeRTOS/tasks.c \
+FreeRTOS/timers.c 
 
-#FreeRTOS/portable/RVDS/ARM_CM3/port.c \
 #Middleware/at_command/at_command.c \
 #Middleware/at_command/at_command_bt.c \
+#User/SysInfoTest.c
 #User/bsp/bsp_msg.c \
-#FreeRTOS/croutine.c \
-#FreeRTOS/event_groups.c \
-#FreeRTOS/list.c \
-#FreeRTOS/queue.c \
-#FreeRTOS/tasks.c \
-#FreeRTOS/timers.c \
-
 # ASM sources
 ASM_SOURCES =  \
 startup_stm32f10x_hd.s
@@ -267,9 +266,9 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 LDSCRIPT = STM32F103ZETx_FLASH.ld
 
 # libraries
-#LIBS = -lPDMFilter_CM3_GCC -lc -lm -lnosys 
-LIBDIR = -Lpdm
-LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+LIBS = -lc -lm -lnosys
+LIBDIR =
+LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
 EXAMPLES = 					\
