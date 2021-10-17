@@ -374,7 +374,7 @@
               <MiscControls>--diag_suppress=870</MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F10X_HD,NDEBUG</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\Libraries\CMSIS\Device\ST\STM32F10x\Include;..\..\Libraries\STM32F10x_StdPeriph_Driver\inc;..\..\User\bsp;..\..\User\bsp\inc;..\..\User;..\..\Libraries\CMSIS\Include;..\..\FreeRTOS\include;..\..\FreeRTOS\portable\RVDS\ARM_CM3;..\..\Middleware\blue_angel\inc;..\..\Middleware\bt_callback_manager;..\..\Middleware\blue_angel\btif;..\..\Middleware\blue_angel\common;..\..\Middleware\blue_angel\platform;..\..\Middleware\blue_angel\src\common;..\..\Middleware\blue_angel\src\inc;..\..\Middleware\blue_angel\platform;..\..\Middleware\blue_angel\platform\rtos;..\..\Middleware\blue_angel\platform;..\..\Middleware\ut_manager\Cunit\Headers;..\..\Middleware\ut_manager\Cunit\interface;..\..\Middleware\blue_angel\platform\test;..\..\Middleware\blue_angel\driver;..\..\Middleware\blue_angel\src\core\hci;..\..\User\bt\inc;..\..\Middleware\bt_callback_manager;..\..\Middleware\at_command;..\..\Middleware\blue_angel\src\core\gap;..\..\Middleware\blue_angel\src\core\l2cap</IncludePath>
+              <IncludePath>..\..\Libraries\CMSIS\Device\ST\STM32F10x\Include;..\..\Libraries\STM32F10x_StdPeriph_Driver\inc;..\..\User\bsp;..\..\User\bsp\inc;..\..\User;..\..\Libraries\CMSIS\Include;..\..\FreeRTOS\include;..\..\FreeRTOS\portable\RVDS\ARM_CM3;..\..\Middleware\ut_manager\Cunit\Headers;..\..\Middleware\ut_manager\Cunit\interface;..\..\Middleware\at_command;..\..\..\..\src;..\..\..\..\src\ble\gatt-service;..\..\..\..\src\ble;..\..\Libraries\CMSIS\Include;..\..\Libraries\CMSIS\Device\ST\STM32F10x\Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -432,11 +432,6 @@
               <FileName>FreeRTOSConfig.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\User\FreeRTOSConfig.h</FilePath>
-            </File>
-            <File>
-              <FileName>bt_init.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\User\bt\src\bt_init.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -586,106 +581,6 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>BlueAngel</GroupName>
-          <Files>
-            <File>
-              <FileName>bt_common.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\src\common\bt_common.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_memory.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\src\common\bt_memory.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_linknode.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\src\common\bt_linknode.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_timer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\src\common\bt_timer.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_os_layer_api.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\platform\rtos\bt_os_layer_api.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_task.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\platform\rtos\bt_task.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_test.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\platform\test\bt_test.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_driver.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\driver\bt_driver.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_log.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\platform\bt_log.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_platform.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\platform\bt_platform.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_hci.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\src\core\hci\bt_hci.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_gap_classic.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\src\core\gap\bt_gap_classic.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_gap_common.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\src\core\gap\bt_gap_common.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_gap_connection.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\src\core\gap\bt_gap_connection.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_gap_le.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\src\core\gap\bt_gap_le.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_system.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Middleware\blue_angel\btif\bt_system.h</FilePath>
-            </File>
-            <File>
-              <FileName>bt_config.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Middleware\blue_angel\btif\bt_config.h</FilePath>
-            </File>
-            <File>
-              <FileName>bt_l2cap.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\src\core\l2cap\bt_l2cap.c</FilePath>
-            </File>
-            <File>
-              <FileName>bt_l2cap_state_machine.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\blue_angel\src\core\l2cap\bt_l2cap_state_machine.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
           <GroupName>Cunit</GroupName>
           <Files>
             <File>
@@ -731,36 +626,6 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Doc</GroupName>
-          <Files>
-            <File>
-              <FileName>01.例程功能说明.txt</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Doc\01.例程功能说明.txt</FilePath>
-            </File>
-            <File>
-              <FileName>02.例程修改记录.txt</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Doc\02.例程修改记录.txt</FilePath>
-            </File>
-            <File>
-              <FileName>03.开发环境说明.txt</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\Doc\03.开发环境说明.txt</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>BTCallbackManager</GroupName>
-          <Files>
-            <File>
-              <FileName>bt_callback_manager.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Middleware\bt_callback_manager\bt_callback_manager.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
           <GroupName>ATCommand</GroupName>
           <Files>
             <File>
@@ -774,6 +639,9 @@
               <FilePath>..\..\Middleware\at_command\at_command_bt.c</FilePath>
             </File>
           </Files>
+        </Group>
+        <Group>
+          <GroupName>Bluekitchen</GroupName>
         </Group>
       </Groups>
     </Target>

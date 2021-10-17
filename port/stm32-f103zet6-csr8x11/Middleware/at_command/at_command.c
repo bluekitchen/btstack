@@ -12,9 +12,10 @@
 #include "semphr.h"
 #include "queue.h"
 #include "timers.h"
-#include "bt_os_layer_api.h"
+//#include "bt_os_layer_api.h"
 #include "bsp_uart_fifo.h"
 #include "at_command_bt.h"
+#include "stdbool.h"
 static at_command_state_t g_at_command_state = AT_COMMAND_STATE_IDLE;
 static TimerHandle_t at_command_timer_handle = NULL;
 static at_command_parse_t g_parse_context = {0};

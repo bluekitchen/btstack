@@ -1,21 +1,21 @@
 /*
 *********************************************************************************************************
 *
-*	ģ������ : �����ж�+FIFO����ģ��
-*	�ļ����� : bsp_uart_fifo.c
-*	��    �� : V1.0
-*	˵    �� : ���ô����ж�+FIFOģʽʵ�ֶ�����ڵ�ͬʱ����
-*	�޸ļ�¼ :
-*		�汾��  ����       ����    ˵��
-*		V1.0    2013-02-01 armfly  ��ʽ����
-*		V1.1    2013-06-09 armfly  FiFo�ṹ����TxCount��Ա�����������жϻ�������; ���� ��FiFo�ĺ���
-*		V1.2	2014-09-29 armfly  ����RS485 MODBUS�ӿڡ����յ����ֽں�ֱ��ִ�лص�������
+*	模锟斤拷锟斤拷锟斤拷 : 锟斤拷锟斤拷锟叫讹拷+FIFO锟斤拷锟斤拷模锟斤拷
+*	锟侥硷拷锟斤拷锟斤拷 : bsp_uart_fifo.c
+*	锟斤拷    锟斤拷 : V1.0
+*	说    锟斤拷 : 锟斤拷锟矫达拷锟斤拷锟叫讹拷+FIFO模式实锟街讹拷锟斤拷锟斤拷诘锟酵憋拷锟斤拷锟�
+*	锟睫改硷拷录 :
+*		锟芥本锟斤拷  锟斤拷锟斤拷       锟斤拷锟斤拷    说锟斤拷
+*		V1.0    2013-02-01 armfly  锟斤拷式锟斤拷锟斤拷
+*		V1.1    2013-06-09 armfly  FiFo锟结构锟斤拷锟斤拷TxCount锟斤拷员锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟叫断伙拷锟斤拷锟斤拷锟斤拷; 锟斤拷锟斤拷 锟斤拷FiFo锟侥猴拷锟斤拷
+*		V1.2	2014-09-29 armfly  锟斤拷锟斤拷RS485 MODBUS锟接口★拷锟斤拷锟秸碉拷锟斤拷锟街节猴拷直锟斤拷执锟叫回碉拷锟斤拷锟斤拷锟斤拷
 *
-*	�޸Ĳ��� : 
-*		�汾��    ����       ����                  ˵��
-*		V1.0    2015-08-19  Eric2013       �ٽ�����������FreeRTOS����
+*	锟睫改诧拷锟斤拷 : 
+*		锟芥本锟斤拷    锟斤拷锟斤拷       锟斤拷锟斤拷                  说锟斤拷
+*		V1.0    2015-08-19  Eric2013       锟劫斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷FreeRTOS锟斤拷锟斤拷
 *
-*	Copyright (C), 2013-2014, ���������� www.armfly.com
+*	Copyright (C), 2013-2014, 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷 www.armfly.com
 *
 *********************************************************************************************************
 */
@@ -23,35 +23,35 @@
 #include "bsp.h"
 
 
-/* ����ÿ�����ڽṹ����� */
+/* 锟斤拷锟斤拷每锟斤拷锟斤拷锟节结构锟斤拷锟斤拷锟� */
 #if UART1_FIFO_EN == 1
 	static UART_T g_tUart1;
-	static uint8_t g_TxBuf1[UART1_TX_BUF_SIZE];		/* ���ͻ����� */
-	static uint8_t g_RxBuf1[UART1_RX_BUF_SIZE];		/* ���ջ����� */
+	static uint8_t g_TxBuf1[UART1_TX_BUF_SIZE];		/* 锟斤拷锟酵伙拷锟斤拷锟斤拷 */
+	static uint8_t g_RxBuf1[UART1_RX_BUF_SIZE];		/* 锟斤拷锟秸伙拷锟斤拷锟斤拷 */
 #endif
 
 #if UART2_FIFO_EN == 1
 	static UART_T g_tUart2;
-	static uint8_t g_TxBuf2[UART2_TX_BUF_SIZE];		/* ���ͻ����� */
-	static uint8_t g_RxBuf2[UART2_RX_BUF_SIZE];		/* ���ջ����� */
+	static uint8_t g_TxBuf2[UART2_TX_BUF_SIZE];		/* 锟斤拷锟酵伙拷锟斤拷锟斤拷 */
+	static uint8_t g_RxBuf2[UART2_RX_BUF_SIZE];		/* 锟斤拷锟秸伙拷锟斤拷锟斤拷 */
 #endif
 
 #if UART3_FIFO_EN == 1
 	static UART_T g_tUart3;
-	static uint8_t g_TxBuf3[UART3_TX_BUF_SIZE];		/* ���ͻ����� */
-	static uint8_t g_RxBuf3[UART3_RX_BUF_SIZE];		/* ���ջ����� */
+	static uint8_t g_TxBuf3[UART3_TX_BUF_SIZE];		/* 锟斤拷锟酵伙拷锟斤拷锟斤拷 */
+	static uint8_t g_RxBuf3[UART3_RX_BUF_SIZE];		/* 锟斤拷锟秸伙拷锟斤拷锟斤拷 */
 #endif
 
 #if UART4_FIFO_EN == 1
 	static UART_T g_tUart4;
-	static uint8_t g_TxBuf4[UART4_TX_BUF_SIZE];		/* ���ͻ����� */
-	static uint8_t g_RxBuf4[UART4_RX_BUF_SIZE];		/* ���ջ����� */
+	static uint8_t g_TxBuf4[UART4_TX_BUF_SIZE];		/* 锟斤拷锟酵伙拷锟斤拷锟斤拷 */
+	static uint8_t g_RxBuf4[UART4_RX_BUF_SIZE];		/* 锟斤拷锟秸伙拷锟斤拷锟斤拷 */
 #endif
 
 #if UART5_FIFO_EN == 1
 	static UART_T g_tUart5;
-	static uint8_t g_TxBuf5[UART5_TX_BUF_SIZE];		/* ���ͻ����� */
-	static uint8_t g_RxBuf5[UART5_RX_BUF_SIZE];		/* ���ջ����� */
+	static uint8_t g_TxBuf5[UART5_TX_BUF_SIZE];		/* 锟斤拷锟酵伙拷锟斤拷锟斤拷 */
+	static uint8_t g_RxBuf5[UART5_RX_BUF_SIZE];		/* 锟斤拷锟秸伙拷锟斤拷锟斤拷 */
 #endif
 
 static void UartVarInit(void);
@@ -66,31 +66,31 @@ void RS485_InitTXE(void);
 
 /*
 *********************************************************************************************************
-*	�� �� ��: bsp_InitUart
-*	����˵��: ��ʼ������Ӳ��������ȫ�ֱ�������ֵ.
-*	��    ��:  ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: bsp_InitUart
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷始锟斤拷锟斤拷锟斤拷硬锟斤拷锟斤拷锟斤拷锟斤拷全锟街憋拷锟斤拷锟斤拷锟斤拷值.
+*	锟斤拷    锟斤拷:  锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void bsp_InitUart(void)
 {
-	UartVarInit();		/* �����ȳ�ʼ��ȫ�ֱ���,������Ӳ�� */
+	UartVarInit();		/* 锟斤拷锟斤拷锟饺筹拷始锟斤拷全锟街憋拷锟斤拷,锟斤拷锟斤拷锟斤拷硬锟斤拷 */
 
-	InitHardUart();		/* ���ô��ڵ�Ӳ������(�����ʵ�) */
+	InitHardUart();		/* 锟斤拷锟矫达拷锟节碉拷硬锟斤拷锟斤拷锟斤拷(锟斤拷锟斤拷锟绞碉拷) */
 	
 #if RS485_ENABLE
-	RS485_InitTXE();	/* ����RS485оƬ�ķ���ʹ��Ӳ��������Ϊ������� */
+	RS485_InitTXE();	/* 锟斤拷锟斤拷RS485芯片锟侥凤拷锟斤拷使锟斤拷硬锟斤拷锟斤拷锟斤拷锟斤拷为锟斤拷锟斤拷锟斤拷锟� */
 #endif
 	
-	ConfigUartNVIC();	/* ���ô����ж� */
+	ConfigUartNVIC();	/* 锟斤拷锟矫达拷锟斤拷锟叫讹拷 */
 }
 
 /*
 *********************************************************************************************************
-*	�� �� ��: ComToUart
-*	����˵��: ��COM�˿ں�ת��ΪUARTָ��
-*	��    ��: _ucPort: �˿ں�(COM1 - COM6)
-*	�� �� ֵ: uartָ��
+*	锟斤拷 锟斤拷 锟斤拷: ComToUart
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷COM锟剿口猴拷转锟斤拷为UART指锟斤拷
+*	锟斤拷    锟斤拷: _ucPort: 锟剿口猴拷(COM1 - COM6)
+*	锟斤拷 锟斤拷 值: uart指锟斤拷
 *********************************************************************************************************
 */
 UART_T *ComToUart(COM_PORT_E _ucPort)
@@ -137,19 +137,19 @@ UART_T *ComToUart(COM_PORT_E _ucPort)
 	}
 	else
 	{
-		/* �����κδ��� */
+		/* 锟斤拷锟斤拷锟轿何达拷锟斤拷 */
 		return 0;
 	}
 }
 
 /*
 *********************************************************************************************************
-*	�� �� ��: comSendBuf
-*	����˵��: �򴮿ڷ���һ�����ݡ����ݷŵ����ͻ��������������أ����жϷ�������ں�̨��ɷ���
-*	��    ��: _ucPort: �˿ں�(COM1 - COM6)
-*			  _ucaBuf: �����͵����ݻ�����
-*			  _usLen : ���ݳ���
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: comSendBuf
+*	锟斤拷锟斤拷说锟斤拷: 锟津串口凤拷锟斤拷一锟斤拷锟斤拷锟捷★拷锟斤拷锟捷放碉拷锟斤拷锟酵伙拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟截ｏ拷锟斤拷锟叫断凤拷锟斤拷锟斤拷锟斤拷诤锟教拷锟缴凤拷锟斤拷
+*	锟斤拷    锟斤拷: _ucPort: 锟剿口猴拷(COM1 - COM6)
+*			  _ucaBuf: 锟斤拷锟斤拷锟酵碉拷锟斤拷锟捷伙拷锟斤拷锟斤拷
+*			  _usLen : 锟斤拷锟捷筹拷锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void comSendBuf(COM_PORT_E _ucPort, uint8_t *_ucaBuf, uint16_t _usLen)
@@ -164,7 +164,7 @@ void comSendBuf(COM_PORT_E _ucPort, uint8_t *_ucaBuf, uint16_t _usLen)
 
 	if (pUart->SendBefor != 0)
 	{
-		pUart->SendBefor();		/* �����RS485ͨ�ţ���������������н�RS485����Ϊ����ģʽ */
+		pUart->SendBefor();		/* 锟斤拷锟斤拷锟絉S485通锟脚ｏ拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷薪锟絉S485锟斤拷锟斤拷为锟斤拷锟斤拷模式 */
 	}
 
 	UartSend(pUart, _ucaBuf, _usLen);
@@ -172,11 +172,11 @@ void comSendBuf(COM_PORT_E _ucPort, uint8_t *_ucaBuf, uint16_t _usLen)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: comSendChar
-*	����˵��: �򴮿ڷ���1���ֽڡ����ݷŵ����ͻ��������������أ����жϷ�������ں�̨��ɷ���
-*	��    ��: _ucPort: �˿ں�(COM1 - COM6)
-*			  _ucByte: �����͵�����
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: comSendChar
+*	锟斤拷锟斤拷说锟斤拷: 锟津串口凤拷锟斤拷1锟斤拷锟街节★拷锟斤拷锟捷放碉拷锟斤拷锟酵伙拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟截ｏ拷锟斤拷锟叫断凤拷锟斤拷锟斤拷锟斤拷诤锟教拷锟缴凤拷锟斤拷
+*	锟斤拷    锟斤拷: _ucPort: 锟剿口猴拷(COM1 - COM6)
+*			  _ucByte: 锟斤拷锟斤拷锟酵碉拷锟斤拷锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void comSendChar(COM_PORT_E _ucPort, uint8_t _ucByte)
@@ -186,11 +186,11 @@ void comSendChar(COM_PORT_E _ucPort, uint8_t _ucByte)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: comGetChar
-*	����˵��: �Ӵ��ڻ�������ȡ1�ֽڣ��������������������ݾ���������
-*	��    ��: _ucPort: �˿ں�(COM1 - COM6)
-*			  _pByte: ���յ������ݴ���������ַ
-*	�� �� ֵ: 0 ��ʾ������, 1 ��ʾ��ȡ����Ч�ֽ�
+*	锟斤拷 锟斤拷 锟斤拷: comGetChar
+*	锟斤拷锟斤拷说锟斤拷: 锟接达拷锟节伙拷锟斤拷锟斤拷锟斤拷取1锟街节ｏ拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟捷撅拷锟斤拷锟斤拷锟斤拷锟斤拷
+*	锟斤拷    锟斤拷: _ucPort: 锟剿口猴拷(COM1 - COM6)
+*			  _pByte: 锟斤拷锟秸碉拷锟斤拷锟斤拷锟捷达拷锟斤拷锟斤拷锟斤拷锟斤拷址
+*	锟斤拷 锟斤拷 值: 0 锟斤拷示锟斤拷锟斤拷锟斤拷, 1 锟斤拷示锟斤拷取锟斤拷锟斤拷效锟街斤拷
 *********************************************************************************************************
 */
 uint8_t comGetChar(COM_PORT_E _ucPort, uint8_t *_pByte)
@@ -208,12 +208,12 @@ uint8_t comGetChar(COM_PORT_E _ucPort, uint8_t *_pByte)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: comGetChar
-*	����˵��: �Ӵ��ڻ�������ȡn�ֽڣ��������������������ݾ���������
-*	��    ��: _ucPort: �˿ں�(COM1 - COM6)
-*			  _pBuf: ���յ������ݴ���������ַ
-*			  _usLen: ׼����ȡ�����ݳ���
-*	�� �� ֵ: ʵ�ʶ��������ݳ��ȣ�0 ��ʾ������
+*	锟斤拷 锟斤拷 锟斤拷: comGetChar
+*	锟斤拷锟斤拷说锟斤拷: 锟接达拷锟节伙拷锟斤拷锟斤拷锟斤拷取n锟街节ｏ拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟捷撅拷锟斤拷锟斤拷锟斤拷锟斤拷
+*	锟斤拷    锟斤拷: _ucPort: 锟剿口猴拷(COM1 - COM6)
+*			  _pBuf: 锟斤拷锟秸碉拷锟斤拷锟斤拷锟捷达拷锟斤拷锟斤拷锟斤拷锟斤拷址
+*			  _usLen: 准锟斤拷锟斤拷取锟斤拷锟斤拷锟捷筹拷锟斤拷
+*	锟斤拷 锟斤拷 值: 实锟绞讹拷锟斤拷锟斤拷锟斤拷锟捷筹拷锟饺ｏ拷0 锟斤拷示锟斤拷锟斤拷锟斤拷
 *********************************************************************************************************
 */
 uint16_t comGetBuf(COM_PORT_E _ucPort, uint8_t *_pBuf, const uint16_t _usLenToRead)
@@ -227,13 +227,13 @@ uint16_t comGetBuf(COM_PORT_E _ucPort, uint8_t *_pBuf, const uint16_t _usLenToRe
 	{
 		return 0;
 	}
-	/* usRxWrite �������жϺ����б���д���������ȡ�ñ���ʱ����������ٽ������� */
+	/* usRxWrite 锟斤拷锟斤拷锟斤拷锟叫断猴拷锟斤拷锟叫憋拷锟斤拷写锟斤拷锟斤拷锟斤拷锟斤拷锟饺★拷帽锟斤拷锟绞憋拷锟斤拷锟斤拷锟斤拷锟斤拷锟劫斤拷锟斤拷锟斤拷锟斤拷 */
 	DISABLE_INT();
 	usCount = pUart->usRxCount;
 	ENABLE_INT();
 
-	/* �������д������ͬ���򷵻�0 */
-	if (usCount == 0)	/* �Ѿ�û������ */
+	/* 锟斤拷锟斤拷锟斤拷锟叫达拷锟斤拷锟斤拷锟酵拷锟斤拷蚍祷锟�0 */
+	if (usCount == 0)	/* 锟窖撅拷没锟斤拷锟斤拷锟斤拷 */
 	{
 		return 0;
 	}
@@ -250,7 +250,7 @@ uint16_t comGetBuf(COM_PORT_E _ucPort, uint8_t *_pBuf, const uint16_t _usLenToRe
 		{
 			memcpy(_pBuf, &pUart->pRxBuf[pUart->usRxRead], usCount);
 		}
-		pUart->usRxRead = pUart->usRxWrite; /*��λFIFO wptr * rptrָ��*/
+		pUart->usRxRead = pUart->usRxWrite; /*锟斤拷位FIFO wptr * rptr指锟斤拷*/
 		pUart->usRxCount = 0;
 		ENABLE_INT();
 		return usCount;
@@ -263,12 +263,12 @@ uint16_t comGetBuf(COM_PORT_E _ucPort, uint8_t *_pBuf, const uint16_t _usLenToRe
 			usLeftCount = _usLenToRead - usRightCount;
 			memcpy(_pBuf, &pUart->pRxBuf[pUart->usRxRead], usRightCount);
 			memcpy(_pBuf + usRightCount, pUart->pRxBuf, usLeftCount);
-			pUart->usRxRead = usLeftCount; /*��λFIFO wptr * rptrָ��*/
+			pUart->usRxRead = usLeftCount; /*锟斤拷位FIFO wptr * rptr指锟斤拷*/
 		}
 		else 
 		{
 			memcpy(_pBuf, &pUart->pRxBuf[pUart->usRxRead], _usLenToRead);
-			pUart->usRxRead += _usLenToRead; /*��λFIFO wptr * rptrָ��*/
+			pUart->usRxRead += _usLenToRead; /*锟斤拷位FIFO wptr * rptr指锟斤拷*/
 		}
 		pUart->usRxCount -= _usLenToRead;
 		ENABLE_INT();
@@ -278,10 +278,10 @@ uint16_t comGetBuf(COM_PORT_E _ucPort, uint8_t *_pBuf, const uint16_t _usLenToRe
 
 /*
 *********************************************************************************************************
-*	�� �� ��: comClearTxFifo
-*	����˵��: ��ȡ���ڻ�����available buffer length
-*	��    ��: _ucPort: �˿ں�(COM1 - COM6)
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: comClearTxFifo
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷取锟斤拷锟节伙拷锟斤拷锟斤拷available buffer length
+*	锟斤拷    锟斤拷: _ucPort: 锟剿口猴拷(COM1 - COM6)
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 uint16_t comGetRxFifoAvailableBufferLength(COM_PORT_E _ucPort)
@@ -298,10 +298,10 @@ uint16_t comGetRxFifoAvailableBufferLength(COM_PORT_E _ucPort)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: comClearTxFifo
-*	����˵��: ���㴮�ڷ��ͻ�����
-*	��    ��: _ucPort: �˿ں�(COM1 - COM6)
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: comClearTxFifo
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷锟姐串锟节凤拷锟酵伙拷锟斤拷锟斤拷
+*	锟斤拷    锟斤拷: _ucPort: 锟剿口猴拷(COM1 - COM6)
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void comClearTxFifo(COM_PORT_E _ucPort)
@@ -321,10 +321,10 @@ void comClearTxFifo(COM_PORT_E _ucPort)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: comClearRxFifo
-*	����˵��: ���㴮�ڽ��ջ�����
-*	��    ��: _ucPort: �˿ں�(COM1 - COM6)
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: comClearRxFifo
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷锟姐串锟节斤拷锟秸伙拷锟斤拷锟斤拷
+*	锟斤拷    锟斤拷: _ucPort: 锟剿口猴拷(COM1 - COM6)
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void comClearRxFifo(COM_PORT_E _ucPort)
@@ -344,18 +344,18 @@ void comClearRxFifo(COM_PORT_E _ucPort)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: bsp_SetUart1Baud
-*	����˵��: �޸�UART1������
-*	��    ��: ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: bsp_SetUart1Baud
+*	锟斤拷锟斤拷说锟斤拷: 锟睫革拷UART1锟斤拷锟斤拷锟斤拷
+*	锟斤拷    锟斤拷: 锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void bsp_SetUart1Baud(uint32_t _baud)
 {
 	USART_InitTypeDef USART_InitStructure;
 
-	/* ��2���� ���ô���Ӳ������ */
-	USART_InitStructure.USART_BaudRate = _baud;	/* ������ */
+	/* 锟斤拷2锟斤拷锟斤拷 锟斤拷锟矫达拷锟斤拷硬锟斤拷锟斤拷锟斤拷 */
+	USART_InitStructure.USART_BaudRate = _baud;	/* 锟斤拷锟斤拷锟斤拷 */
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
 	USART_InitStructure.USART_Parity = USART_Parity_No ;
@@ -366,18 +366,18 @@ void bsp_SetUart1Baud(uint32_t _baud)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: bsp_SetUart2Baud
-*	����˵��: �޸�UART2������
-*	��    ��: ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: bsp_SetUart2Baud
+*	锟斤拷锟斤拷说锟斤拷: 锟睫革拷UART2锟斤拷锟斤拷锟斤拷
+*	锟斤拷    锟斤拷: 锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void bsp_SetUart2Baud(uint32_t _baud)
 {
 	USART_InitTypeDef USART_InitStructure;
 
-	/* ��2���� ���ô���Ӳ������ */
-	USART_InitStructure.USART_BaudRate = _baud;	/* ������ */
+	/* 锟斤拷2锟斤拷锟斤拷 锟斤拷锟矫达拷锟斤拷硬锟斤拷锟斤拷锟斤拷 */
+	USART_InitStructure.USART_BaudRate = _baud;	/* 锟斤拷锟斤拷锟斤拷 */
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
 	USART_InitStructure.USART_Parity = USART_Parity_No ;
@@ -387,42 +387,42 @@ void bsp_SetUart2Baud(uint32_t _baud)
 }
 
 
-/* �����RS485ͨ�ţ��밴���¸�ʽ��д������ ���ǽ����� USART3��ΪRS485������ */
+/* 锟斤拷锟斤拷锟絉S485通锟脚ｏ拷锟诫按锟斤拷锟铰革拷式锟斤拷写锟斤拷锟斤拷锟斤拷 锟斤拷锟角斤拷锟斤拷锟斤拷 USART3锟斤拷为RS485锟斤拷锟斤拷锟斤拷 */
 
 /*
 *********************************************************************************************************
-*	�� �� ��: RS485_InitTXE
-*	����˵��: ����RS485����ʹ�ܿ��� TXE
-*	��    ��: ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: RS485_InitTXE
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷锟斤拷RS485锟斤拷锟斤拷使锟杰匡拷锟斤拷 TXE
+*	锟斤拷    锟斤拷: 锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void RS485_InitTXE(void)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
 
-	RCC_APB2PeriphClockCmd(RCC_RS485_TXEN, ENABLE);	/* ��GPIOʱ�� */
+	RCC_APB2PeriphClockCmd(RCC_RS485_TXEN, ENABLE);	/* 锟斤拷GPIO时锟斤拷 */
 
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	/* �������ģʽ */
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	/* 锟斤拷锟斤拷锟斤拷锟侥Ｊ� */
 	GPIO_InitStructure.GPIO_Pin = PIN_RS485_TXEN;
 	GPIO_Init(PORT_RS485_TXEN, &GPIO_InitStructure);
 }
 
 /*
 *********************************************************************************************************
-*	�� �� ��: bsp_Set485Baud
-*	����˵��: �޸�UART3������
-*	��    ��: ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: bsp_Set485Baud
+*	锟斤拷锟斤拷说锟斤拷: 锟睫革拷UART3锟斤拷锟斤拷锟斤拷
+*	锟斤拷    锟斤拷: 锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void bsp_Set485Baud(uint32_t _baud)
 {
 	USART_InitTypeDef USART_InitStructure;
 
-	/* ��2���� ���ô���Ӳ������ */
-	USART_InitStructure.USART_BaudRate = _baud;	/* ������ */
+	/* 锟斤拷2锟斤拷锟斤拷 锟斤拷锟矫达拷锟斤拷硬锟斤拷锟斤拷锟斤拷 */
+	USART_InitStructure.USART_BaudRate = _baud;	/* 锟斤拷锟斤拷锟斤拷 */
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
 	USART_InitStructure.USART_Parity = USART_Parity_No ;
@@ -433,39 +433,39 @@ void bsp_Set485Baud(uint32_t _baud)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: RS485_SendBefor
-*	����˵��: ��������ǰ��׼������������RS485ͨ�ţ�������RS485оƬΪ����״̬��
-*			  ���޸� UartVarInit()�еĺ���ָ����ڱ������������� g_tUart2.SendBefor = RS485_SendBefor
-*	��    ��: ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: RS485_SendBefor
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷锟斤拷锟斤拷锟斤拷前锟斤拷准锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷RS485通锟脚ｏ拷锟斤拷锟斤拷锟斤拷RS485芯片为锟斤拷锟斤拷状态锟斤拷
+*			  锟斤拷锟睫革拷 UartVarInit()锟叫的猴拷锟斤拷指锟斤拷锟斤拷诒锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟� g_tUart2.SendBefor = RS485_SendBefor
+*	锟斤拷    锟斤拷: 锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void RS485_SendBefor(void)
 {
-	RS485_TX_EN();	/* �л�RS485�շ�оƬΪ����ģʽ */
+	RS485_TX_EN();	/* 锟叫伙拷RS485锟秸凤拷芯片为锟斤拷锟斤拷模式 */
 }
 
 /*
 *********************************************************************************************************
-*	�� �� ��: RS485_SendOver
-*	����˵��: ����һ�����ݽ�������ƺ���������RS485ͨ�ţ�������RS485оƬΪ����״̬��
-*			  ���޸� UartVarInit()�еĺ���ָ����ڱ������������� g_tUart2.SendOver = RS485_SendOver
-*	��    ��: ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: RS485_SendOver
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷锟斤拷一锟斤拷锟斤拷锟捷斤拷锟斤拷锟斤拷锟斤拷坪锟斤拷锟斤拷锟斤拷锟斤拷锟絉S485通锟脚ｏ拷锟斤拷锟斤拷锟斤拷RS485芯片为锟斤拷锟斤拷状态锟斤拷
+*			  锟斤拷锟睫革拷 UartVarInit()锟叫的猴拷锟斤拷指锟斤拷锟斤拷诒锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟� g_tUart2.SendOver = RS485_SendOver
+*	锟斤拷    锟斤拷: 锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void RS485_SendOver(void)
 {
-	RS485_RX_EN();	/* �л�RS485�շ�оƬΪ����ģʽ */
+	RS485_RX_EN();	/* 锟叫伙拷RS485锟秸凤拷芯片为锟斤拷锟斤拷模式 */
 }
 
 
 /*
 *********************************************************************************************************
-*	�� �� ��: RS485_SendBuf
-*	����˵��: ͨ��RS485оƬ����һ�����ݡ�ע�⣬���������ȴ�������ϡ�
-*	��    ��: ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: RS485_SendBuf
+*	锟斤拷锟斤拷说锟斤拷: 通锟斤拷RS485芯片锟斤拷锟斤拷一锟斤拷锟斤拷锟捷★拷注锟解，锟斤拷锟斤拷锟斤拷锟斤拷锟饺达拷锟斤拷锟斤拷锟斤拷稀锟�
+*	锟斤拷    锟斤拷: 锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void RS485_SendBuf(uint8_t *_ucaBuf, uint16_t _usLen)
@@ -476,11 +476,11 @@ void RS485_SendBuf(uint8_t *_ucaBuf, uint16_t _usLen)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: RS485_SendStr
-*	����˵��: ��485���߷���һ���ַ���
-*	��    ��: _pBuf ���ݻ�����
-*			 _ucLen ���ݳ���
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: RS485_SendStr
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷485锟斤拷锟竭凤拷锟斤拷一锟斤拷锟街凤拷锟斤拷
+*	锟斤拷    锟斤拷: _pBuf 锟斤拷锟捷伙拷锟斤拷锟斤拷
+*			 _ucLen 锟斤拷锟捷筹拷锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 void RS485_SendStr(char *_pBuf)
@@ -490,10 +490,10 @@ void RS485_SendStr(char *_pBuf)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: RS485_ReciveNew
-*	����˵��: ���յ��µ�����
-*	��    ��: _byte ���յ���������
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: RS485_ReciveNew
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷锟秸碉拷锟铰碉拷锟斤拷锟斤拷
+*	锟斤拷    锟斤拷: _byte 锟斤拷锟秸碉拷锟斤拷锟斤拷锟斤拷锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 //extern void MODBUS_ReciveNew(uint8_t _byte);
@@ -504,10 +504,10 @@ void RS485_ReciveNew(uint8_t _byte)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: UartVarInit
-*	����˵��: ��ʼ��������صı���
-*	��    ��: ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: UartVarInit
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷始锟斤拷锟斤拷锟斤拷锟斤拷氐谋锟斤拷锟�
+*	锟斤拷    锟斤拷: 锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 extern void bt_driver_recieve_data_from_controller(uint8_t data);
@@ -515,115 +515,115 @@ extern void at_command_uart_rx_isr_handler(uint8_t data);
 static void UartVarInit(void)
 {
 #if UART1_FIFO_EN == 1
-	g_tUart1.uart = USART1;						/* STM32 �����豸 */
-	g_tUart1.pTxBuf = g_TxBuf1;					/* ���ͻ�����ָ�� */
-	g_tUart1.pRxBuf = g_RxBuf1;					/* ���ջ�����ָ�� */
-	g_tUart1.usTxBufSize = UART1_TX_BUF_SIZE;	/* ���ͻ�������С */
-	g_tUart1.usRxBufSize = UART1_RX_BUF_SIZE;	/* ���ջ�������С */
-	g_tUart1.usTxWrite = 0;						/* ����FIFOд���� */
-	g_tUart1.usTxRead = 0;						/* ����FIFO������ */
-	g_tUart1.usRxWrite = 0;						/* ����FIFOд���� */
-	g_tUart1.usRxRead = 0;						/* ����FIFO������ */
-	g_tUart1.usRxCount = 0;						/* ���յ��������ݸ��� */
-	g_tUart1.usTxCount = 0;						/* �����͵����ݸ��� */
-	g_tUart1.SendBefor = 0;						/* ��������ǰ�Ļص����� */
-	g_tUart1.SendOver = 0;						/* ������Ϻ�Ļص����� */
-	g_tUart1.ReciveNew = 0;//at_command_uart_rx_isr_handler;	/* ���յ������ݺ�Ļص����� */
+	g_tUart1.uart = USART1;						/* STM32 锟斤拷锟斤拷锟借备 */
+	g_tUart1.pTxBuf = g_TxBuf1;					/* 锟斤拷锟酵伙拷锟斤拷锟斤拷指锟斤拷 */
+	g_tUart1.pRxBuf = g_RxBuf1;					/* 锟斤拷锟秸伙拷锟斤拷锟斤拷指锟斤拷 */
+	g_tUart1.usTxBufSize = UART1_TX_BUF_SIZE;	/* 锟斤拷锟酵伙拷锟斤拷锟斤拷锟斤拷小 */
+	g_tUart1.usRxBufSize = UART1_RX_BUF_SIZE;	/* 锟斤拷锟秸伙拷锟斤拷锟斤拷锟斤拷小 */
+	g_tUart1.usTxWrite = 0;						/* 锟斤拷锟斤拷FIFO写锟斤拷锟斤拷 */
+	g_tUart1.usTxRead = 0;						/* 锟斤拷锟斤拷FIFO锟斤拷锟斤拷锟斤拷 */
+	g_tUart1.usRxWrite = 0;						/* 锟斤拷锟斤拷FIFO写锟斤拷锟斤拷 */
+	g_tUart1.usRxRead = 0;						/* 锟斤拷锟斤拷FIFO锟斤拷锟斤拷锟斤拷 */
+	g_tUart1.usRxCount = 0;						/* 锟斤拷锟秸碉拷锟斤拷锟斤拷锟斤拷锟捷革拷锟斤拷 */
+	g_tUart1.usTxCount = 0;						/* 锟斤拷锟斤拷锟酵碉拷锟斤拷锟捷革拷锟斤拷 */
+	g_tUart1.SendBefor = 0;						/* 锟斤拷锟斤拷锟斤拷锟斤拷前锟侥回碉拷锟斤拷锟斤拷 */
+	g_tUart1.SendOver = 0;						/* 锟斤拷锟斤拷锟斤拷虾锟侥回碉拷锟斤拷锟斤拷 */
+	g_tUart1.ReciveNew = 0;//at_command_uart_rx_isr_handler;	/* 锟斤拷锟秸碉拷锟斤拷锟斤拷锟捷猴拷幕氐锟斤拷锟斤拷锟� */
 #endif
 
 #if UART2_FIFO_EN == 1
-	g_tUart2.uart = USART2;						/* STM32 �����豸 */
-	g_tUart2.pTxBuf = g_TxBuf2;					/* ���ͻ�����ָ�� */
-	g_tUart2.pRxBuf = g_RxBuf2;					/* ���ջ�����ָ�� */
-	g_tUart2.usTxBufSize = UART2_TX_BUF_SIZE;	/* ���ͻ�������С */
-	g_tUart2.usRxBufSize = UART2_RX_BUF_SIZE;	/* ���ջ�������С */
-	g_tUart2.usTxWrite = 0;						/* ����FIFOд���� */
-	g_tUart2.usTxRead = 0;						/* ����FIFO������ */
-	g_tUart2.usRxWrite = 0;						/* ����FIFOд���� */
-	g_tUart2.usRxRead = 0;						/* ����FIFO������ */
-	g_tUart2.usRxCount = 0;						/* ���յ��������ݸ��� */
-	g_tUart2.usTxCount = 0;						/* �����͵����ݸ��� */
-	g_tUart2.SendBefor = 0;						/* ��������ǰ�Ļص����� */
-	g_tUart2.SendOver = 0;						/* ������Ϻ�Ļص����� */
-	g_tUart2.ReciveNew = 0; //bt_driver_recieve_data_from_controller;/* ���յ������ݺ�Ļص����� */
+	g_tUart2.uart = USART2;						/* STM32 锟斤拷锟斤拷锟借备 */
+	g_tUart2.pTxBuf = g_TxBuf2;					/* 锟斤拷锟酵伙拷锟斤拷锟斤拷指锟斤拷 */
+	g_tUart2.pRxBuf = g_RxBuf2;					/* 锟斤拷锟秸伙拷锟斤拷锟斤拷指锟斤拷 */
+	g_tUart2.usTxBufSize = UART2_TX_BUF_SIZE;	/* 锟斤拷锟酵伙拷锟斤拷锟斤拷锟斤拷小 */
+	g_tUart2.usRxBufSize = UART2_RX_BUF_SIZE;	/* 锟斤拷锟秸伙拷锟斤拷锟斤拷锟斤拷小 */
+	g_tUart2.usTxWrite = 0;						/* 锟斤拷锟斤拷FIFO写锟斤拷锟斤拷 */
+	g_tUart2.usTxRead = 0;						/* 锟斤拷锟斤拷FIFO锟斤拷锟斤拷锟斤拷 */
+	g_tUart2.usRxWrite = 0;						/* 锟斤拷锟斤拷FIFO写锟斤拷锟斤拷 */
+	g_tUart2.usRxRead = 0;						/* 锟斤拷锟斤拷FIFO锟斤拷锟斤拷锟斤拷 */
+	g_tUart2.usRxCount = 0;						/* 锟斤拷锟秸碉拷锟斤拷锟斤拷锟斤拷锟捷革拷锟斤拷 */
+	g_tUart2.usTxCount = 0;						/* 锟斤拷锟斤拷锟酵碉拷锟斤拷锟捷革拷锟斤拷 */
+	g_tUart2.SendBefor = 0;						/* 锟斤拷锟斤拷锟斤拷锟斤拷前锟侥回碉拷锟斤拷锟斤拷 */
+	g_tUart2.SendOver = 0;						/* 锟斤拷锟斤拷锟斤拷虾锟侥回碉拷锟斤拷锟斤拷 */
+	g_tUart2.ReciveNew = 0; //bt_driver_recieve_data_from_controller;/* 锟斤拷锟秸碉拷锟斤拷锟斤拷锟捷猴拷幕氐锟斤拷锟斤拷锟� */
 #endif
 
 #if UART3_FIFO_EN == 1
-	g_tUart3.uart = USART3;						/* STM32 �����豸 */
-	g_tUart3.pTxBuf = g_TxBuf3;					/* ���ͻ�����ָ�� */
-	g_tUart3.pRxBuf = g_RxBuf3;					/* ���ջ�����ָ�� */
-	g_tUart3.usTxBufSize = UART3_TX_BUF_SIZE;	/* ���ͻ�������С */
-	g_tUart3.usRxBufSize = UART3_RX_BUF_SIZE;	/* ���ջ�������С */
-	g_tUart3.usTxWrite = 0;						/* ����FIFOд���� */
-	g_tUart3.usTxRead = 0;						/* ����FIFO������ */
-	g_tUart3.usRxWrite = 0;						/* ����FIFOд���� */
-	g_tUart3.usRxRead = 0;						/* ����FIFO������ */
-	g_tUart3.usRxCount = 0;						/* ���յ��������ݸ��� */
-	g_tUart3.usTxCount = 0;						/* �����͵����ݸ��� */
-	g_tUart3.SendBefor = 0;//RS485_SendBefor;		/* ��������ǰ�Ļص����� */
-	g_tUart3.SendOver = 0;//RS485_SendOver;			/* ������Ϻ�Ļص����� */
-	g_tUart3.ReciveNew = 0;//RS485_ReciveNew;		/* ���յ������ݺ�Ļص����� */
+	g_tUart3.uart = USART3;						/* STM32 锟斤拷锟斤拷锟借备 */
+	g_tUart3.pTxBuf = g_TxBuf3;					/* 锟斤拷锟酵伙拷锟斤拷锟斤拷指锟斤拷 */
+	g_tUart3.pRxBuf = g_RxBuf3;					/* 锟斤拷锟秸伙拷锟斤拷锟斤拷指锟斤拷 */
+	g_tUart3.usTxBufSize = UART3_TX_BUF_SIZE;	/* 锟斤拷锟酵伙拷锟斤拷锟斤拷锟斤拷小 */
+	g_tUart3.usRxBufSize = UART3_RX_BUF_SIZE;	/* 锟斤拷锟秸伙拷锟斤拷锟斤拷锟斤拷小 */
+	g_tUart3.usTxWrite = 0;						/* 锟斤拷锟斤拷FIFO写锟斤拷锟斤拷 */
+	g_tUart3.usTxRead = 0;						/* 锟斤拷锟斤拷FIFO锟斤拷锟斤拷锟斤拷 */
+	g_tUart3.usRxWrite = 0;						/* 锟斤拷锟斤拷FIFO写锟斤拷锟斤拷 */
+	g_tUart3.usRxRead = 0;						/* 锟斤拷锟斤拷FIFO锟斤拷锟斤拷锟斤拷 */
+	g_tUart3.usRxCount = 0;						/* 锟斤拷锟秸碉拷锟斤拷锟斤拷锟斤拷锟捷革拷锟斤拷 */
+	g_tUart3.usTxCount = 0;						/* 锟斤拷锟斤拷锟酵碉拷锟斤拷锟捷革拷锟斤拷 */
+	g_tUart3.SendBefor = 0;//RS485_SendBefor;		/* 锟斤拷锟斤拷锟斤拷锟斤拷前锟侥回碉拷锟斤拷锟斤拷 */
+	g_tUart3.SendOver = 0;//RS485_SendOver;			/* 锟斤拷锟斤拷锟斤拷虾锟侥回碉拷锟斤拷锟斤拷 */
+	g_tUart3.ReciveNew = 0;//RS485_ReciveNew;		/* 锟斤拷锟秸碉拷锟斤拷锟斤拷锟捷猴拷幕氐锟斤拷锟斤拷锟� */
 #endif
 
 #if UART4_FIFO_EN == 1
-	g_tUart4.uart = UART4;						/* STM32 �����豸 */
-	g_tUart4.pTxBuf = g_TxBuf4;					/* ���ͻ�����ָ�� */
-	g_tUart4.pRxBuf = g_RxBuf4;					/* ���ջ�����ָ�� */
-	g_tUart4.usTxBufSize = UART4_TX_BUF_SIZE;	/* ���ͻ�������С */
-	g_tUart4.usRxBufSize = UART4_RX_BUF_SIZE;	/* ���ջ�������С */
-	g_tUart4.usTxWrite = 0;						/* ����FIFOд���� */
-	g_tUart4.usTxRead = 0;						/* ����FIFO������ */
-	g_tUart4.usRxWrite = 0;						/* ����FIFOд���� */
-	g_tUart4.usRxRead = 0;						/* ����FIFO������ */
-	g_tUart4.usRxCount = 0;						/* ���յ��������ݸ��� */
-	g_tUart4.usTxCount = 0;						/* �����͵����ݸ��� */
-	g_tUart4.SendBefor = 0;						/* ��������ǰ�Ļص����� */
-	g_tUart4.SendOver = 0;						/* ������Ϻ�Ļص����� */
-	g_tUart4.ReciveNew = 0;						/* ���յ������ݺ�Ļص����� */
+	g_tUart4.uart = UART4;						/* STM32 锟斤拷锟斤拷锟借备 */
+	g_tUart4.pTxBuf = g_TxBuf4;					/* 锟斤拷锟酵伙拷锟斤拷锟斤拷指锟斤拷 */
+	g_tUart4.pRxBuf = g_RxBuf4;					/* 锟斤拷锟秸伙拷锟斤拷锟斤拷指锟斤拷 */
+	g_tUart4.usTxBufSize = UART4_TX_BUF_SIZE;	/* 锟斤拷锟酵伙拷锟斤拷锟斤拷锟斤拷小 */
+	g_tUart4.usRxBufSize = UART4_RX_BUF_SIZE;	/* 锟斤拷锟秸伙拷锟斤拷锟斤拷锟斤拷小 */
+	g_tUart4.usTxWrite = 0;						/* 锟斤拷锟斤拷FIFO写锟斤拷锟斤拷 */
+	g_tUart4.usTxRead = 0;						/* 锟斤拷锟斤拷FIFO锟斤拷锟斤拷锟斤拷 */
+	g_tUart4.usRxWrite = 0;						/* 锟斤拷锟斤拷FIFO写锟斤拷锟斤拷 */
+	g_tUart4.usRxRead = 0;						/* 锟斤拷锟斤拷FIFO锟斤拷锟斤拷锟斤拷 */
+	g_tUart4.usRxCount = 0;						/* 锟斤拷锟秸碉拷锟斤拷锟斤拷锟斤拷锟捷革拷锟斤拷 */
+	g_tUart4.usTxCount = 0;						/* 锟斤拷锟斤拷锟酵碉拷锟斤拷锟捷革拷锟斤拷 */
+	g_tUart4.SendBefor = 0;						/* 锟斤拷锟斤拷锟斤拷锟斤拷前锟侥回碉拷锟斤拷锟斤拷 */
+	g_tUart4.SendOver = 0;						/* 锟斤拷锟斤拷锟斤拷虾锟侥回碉拷锟斤拷锟斤拷 */
+	g_tUart4.ReciveNew = 0;						/* 锟斤拷锟秸碉拷锟斤拷锟斤拷锟捷猴拷幕氐锟斤拷锟斤拷锟� */
 #endif
 
 #if UART5_FIFO_EN == 1
-	g_tUart5.uart = UART5;						/* STM32 �����豸 */
-	g_tUart5.pTxBuf = g_TxBuf5;					/* ���ͻ�����ָ�� */
-	g_tUart5.pRxBuf = g_RxBuf5;					/* ���ջ�����ָ�� */
-	g_tUart5.usTxBufSize = UART5_TX_BUF_SIZE;	/* ���ͻ�������С */
-	g_tUart5.usRxBufSize = UART5_RX_BUF_SIZE;	/* ���ջ�������С */
-	g_tUart5.usTxWrite = 0;						/* ����FIFOд���� */
-	g_tUart5.usTxRead = 0;						/* ����FIFO������ */
-	g_tUart5.usRxWrite = 0;						/* ����FIFOд���� */
-	g_tUart5.usRxRead = 0;						/* ����FIFO������ */
-	g_tUart5.usRxCount = 0;						/* ���յ��������ݸ��� */
-	g_tUart5.usTxCount = 0;						/* �����͵����ݸ��� */
-	g_tUart5.SendBefor = 0;						/* ��������ǰ�Ļص����� */
-	g_tUart5.SendOver = 0;						/* ������Ϻ�Ļص����� */
-	g_tUart5.ReciveNew = 0;						/* ���յ������ݺ�Ļص����� */
+	g_tUart5.uart = UART5;						/* STM32 锟斤拷锟斤拷锟借备 */
+	g_tUart5.pTxBuf = g_TxBuf5;					/* 锟斤拷锟酵伙拷锟斤拷锟斤拷指锟斤拷 */
+	g_tUart5.pRxBuf = g_RxBuf5;					/* 锟斤拷锟秸伙拷锟斤拷锟斤拷指锟斤拷 */
+	g_tUart5.usTxBufSize = UART5_TX_BUF_SIZE;	/* 锟斤拷锟酵伙拷锟斤拷锟斤拷锟斤拷小 */
+	g_tUart5.usRxBufSize = UART5_RX_BUF_SIZE;	/* 锟斤拷锟秸伙拷锟斤拷锟斤拷锟斤拷小 */
+	g_tUart5.usTxWrite = 0;						/* 锟斤拷锟斤拷FIFO写锟斤拷锟斤拷 */
+	g_tUart5.usTxRead = 0;						/* 锟斤拷锟斤拷FIFO锟斤拷锟斤拷锟斤拷 */
+	g_tUart5.usRxWrite = 0;						/* 锟斤拷锟斤拷FIFO写锟斤拷锟斤拷 */
+	g_tUart5.usRxRead = 0;						/* 锟斤拷锟斤拷FIFO锟斤拷锟斤拷锟斤拷 */
+	g_tUart5.usRxCount = 0;						/* 锟斤拷锟秸碉拷锟斤拷锟斤拷锟斤拷锟捷革拷锟斤拷 */
+	g_tUart5.usTxCount = 0;						/* 锟斤拷锟斤拷锟酵碉拷锟斤拷锟捷革拷锟斤拷 */
+	g_tUart5.SendBefor = 0;						/* 锟斤拷锟斤拷锟斤拷锟斤拷前锟侥回碉拷锟斤拷锟斤拷 */
+	g_tUart5.SendOver = 0;						/* 锟斤拷锟斤拷锟斤拷虾锟侥回碉拷锟斤拷锟斤拷 */
+	g_tUart5.ReciveNew = 0;						/* 锟斤拷锟秸碉拷锟斤拷锟斤拷锟捷猴拷幕氐锟斤拷锟斤拷锟� */
 #endif
 
 
 #if UART6_FIFO_EN == 1
-	g_tUart6.uart = USART6;						/* STM32 �����豸 */
-	g_tUart6.pTxBuf = g_TxBuf6;					/* ���ͻ�����ָ�� */
-	g_tUart6.pRxBuf = g_RxBuf6;					/* ���ջ�����ָ�� */
-	g_tUart6.usTxBufSize = UART6_TX_BUF_SIZE;	/* ���ͻ�������С */
-	g_tUart6.usRxBufSize = UART6_RX_BUF_SIZE;	/* ���ջ�������С */
-	g_tUart6.usTxWrite = 0;						/* ����FIFOд���� */
-	g_tUart6.usTxRead = 0;						/* ����FIFO������ */
-	g_tUart6.usRxWrite = 0;						/* ����FIFOд���� */
-	g_tUart6.usRxRead = 0;						/* ����FIFO������ */
-	g_tUart6.usRxCount = 0;						/* ���յ��������ݸ��� */
-	g_tUart6.usTxCount = 0;						/* �����͵����ݸ��� */
-	g_tUart6.SendBefor = 0;						/* ��������ǰ�Ļص����� */
-	g_tUart6.SendOver = 0;						/* ������Ϻ�Ļص����� */
-	g_tUart6.ReciveNew = 0;						/* ���յ������ݺ�Ļص����� */
+	g_tUart6.uart = USART6;						/* STM32 锟斤拷锟斤拷锟借备 */
+	g_tUart6.pTxBuf = g_TxBuf6;					/* 锟斤拷锟酵伙拷锟斤拷锟斤拷指锟斤拷 */
+	g_tUart6.pRxBuf = g_RxBuf6;					/* 锟斤拷锟秸伙拷锟斤拷锟斤拷指锟斤拷 */
+	g_tUart6.usTxBufSize = UART6_TX_BUF_SIZE;	/* 锟斤拷锟酵伙拷锟斤拷锟斤拷锟斤拷小 */
+	g_tUart6.usRxBufSize = UART6_RX_BUF_SIZE;	/* 锟斤拷锟秸伙拷锟斤拷锟斤拷锟斤拷小 */
+	g_tUart6.usTxWrite = 0;						/* 锟斤拷锟斤拷FIFO写锟斤拷锟斤拷 */
+	g_tUart6.usTxRead = 0;						/* 锟斤拷锟斤拷FIFO锟斤拷锟斤拷锟斤拷 */
+	g_tUart6.usRxWrite = 0;						/* 锟斤拷锟斤拷FIFO写锟斤拷锟斤拷 */
+	g_tUart6.usRxRead = 0;						/* 锟斤拷锟斤拷FIFO锟斤拷锟斤拷锟斤拷 */
+	g_tUart6.usRxCount = 0;						/* 锟斤拷锟秸碉拷锟斤拷锟斤拷锟斤拷锟捷革拷锟斤拷 */
+	g_tUart6.usTxCount = 0;						/* 锟斤拷锟斤拷锟酵碉拷锟斤拷锟捷革拷锟斤拷 */
+	g_tUart6.SendBefor = 0;						/* 锟斤拷锟斤拷锟斤拷锟斤拷前锟侥回碉拷锟斤拷锟斤拷 */
+	g_tUart6.SendOver = 0;						/* 锟斤拷锟斤拷锟斤拷虾锟侥回碉拷锟斤拷锟斤拷 */
+	g_tUart6.ReciveNew = 0;						/* 锟斤拷锟秸碉拷锟斤拷锟斤拷锟捷猴拷幕氐锟斤拷锟斤拷锟� */
 #endif
 }
 
 /*
 *********************************************************************************************************
-*	�� �� ��: InitHardUart
-*	����˵��: ���ô��ڵ�Ӳ�������������ʣ�����λ��ֹͣλ����ʼλ��У��λ���ж�ʹ�ܣ��ʺ���STM32-F4������
-*	��    ��: ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: InitHardUart
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷锟矫达拷锟节碉拷硬锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟绞ｏ拷锟斤拷锟斤拷位锟斤拷停止位锟斤拷锟斤拷始位锟斤拷校锟斤拷位锟斤拷锟叫讹拷使锟杰ｏ拷锟绞猴拷锟斤拷STM32-F4锟斤拷锟斤拷锟斤拷
+*	锟斤拷    锟斤拷: 锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 static void InitHardUart(void)
@@ -631,28 +631,28 @@ static void InitHardUart(void)
 	GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
 
-#if UART1_FIFO_EN == 1		/* ����1 TX = PA9   RX = PA10 �� TX = PB6   RX = PB7*/
+#if UART1_FIFO_EN == 1		/* 锟斤拷锟斤拷1 TX = PA9   RX = PA10 锟斤拷 TX = PB6   RX = PB7*/
 
-	/* ��1������GPIO��USART������ʱ�� */
+	/* 锟斤拷1锟斤拷锟斤拷锟斤拷GPIO锟斤拷USART锟斤拷锟斤拷锟斤拷时锟斤拷 */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
 
-	/* ��2������USART Tx��GPIO����Ϊ���츴��ģʽ */
+	/* 锟斤拷2锟斤拷锟斤拷锟斤拷USART Tx锟斤拷GPIO锟斤拷锟斤拷为锟斤拷锟届复锟斤拷模式 */
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-	/* ��3������USART Rx��GPIO����Ϊ��������ģʽ
-		����CPU��λ��GPIOȱʡ���Ǹ�������ģʽ���������������費�Ǳ����
-		���ǣ��һ��ǽ�����ϱ����Ķ������ҷ�ֹ�����ط��޸���������ߵ����ò���
+	/* 锟斤拷3锟斤拷锟斤拷锟斤拷USART Rx锟斤拷GPIO锟斤拷锟斤拷为锟斤拷锟斤拷锟斤拷锟斤拷模式
+		锟斤拷锟斤拷CPU锟斤拷位锟斤拷GPIO缺省锟斤拷锟角革拷锟斤拷锟斤拷锟斤拷模式锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟借不锟角憋拷锟斤拷锟�
+		锟斤拷锟角ｏ拷锟揭伙拷锟角斤拷锟斤拷锟斤拷媳锟斤拷锟斤拷亩锟斤拷锟斤拷锟斤拷曳锟街癸拷锟斤拷锟斤拷胤锟斤拷薷锟斤拷锟斤拷锟斤拷锟斤拷锟竭碉拷锟斤拷锟矫诧拷锟斤拷
 	*/
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	
-	/* ��4���� ���ô���Ӳ������ */
-	USART_InitStructure.USART_BaudRate = UART1_BAUD;	/* ������ */
+	/* 锟斤拷4锟斤拷锟斤拷 锟斤拷锟矫达拷锟斤拷硬锟斤拷锟斤拷锟斤拷 */
+	USART_InitStructure.USART_BaudRate = UART1_BAUD;	/* 锟斤拷锟斤拷锟斤拷 */
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
 	USART_InitStructure.USART_Parity = USART_Parity_No ;
@@ -660,71 +660,71 @@ static void InitHardUart(void)
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 	USART_Init(USART1, &USART_InitStructure);
 
-	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);	/* ʹ�ܽ����ж� */
+	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);	/* 使锟杰斤拷锟斤拷锟叫讹拷 */
 	/*
 		USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
-		ע��: ��Ҫ�ڴ˴��򿪷����ж�
-		�����ж�ʹ����SendUart()������
+		注锟斤拷: 锟斤拷要锟节此达拷锟津开凤拷锟斤拷锟叫讹拷
+		锟斤拷锟斤拷锟叫讹拷使锟斤拷锟斤拷SendUart()锟斤拷锟斤拷锟斤拷
 	*/
-	USART_Cmd(USART1, ENABLE);		/* ʹ�ܴ��� */
+	USART_Cmd(USART1, ENABLE);		/* 使锟杰达拷锟斤拷 */
 
-	/* CPU��Сȱ�ݣ��������úã����ֱ��Send�����1���ֽڷ��Ͳ���ȥ
-		�����������1���ֽ��޷���ȷ���ͳ�ȥ������ */
-	USART_ClearFlag(USART1, USART_FLAG_TC);     /* �巢����ɱ�־��Transmission Complete flag */
+	/* CPU锟斤拷小缺锟捷ｏ拷锟斤拷锟斤拷锟斤拷锟矫好ｏ拷锟斤拷锟街憋拷锟絊end锟斤拷锟斤拷锟�1锟斤拷锟街节凤拷锟酵诧拷锟斤拷去
+		锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟�1锟斤拷锟街斤拷锟睫凤拷锟斤拷确锟斤拷锟酵筹拷去锟斤拷锟斤拷锟斤拷 */
+	USART_ClearFlag(USART1, USART_FLAG_TC);     /* 锟藉发锟斤拷锟斤拷杀锟街撅拷锟絋ransmission Complete flag */
 #endif
 
-#if UART2_FIFO_EN == 1		/* ����2 TX = PA2�� RX = PA3  */
+#if UART2_FIFO_EN == 1		/* 锟斤拷锟斤拷2 TX = PA2锟斤拷 RX = PA3  */
 /******************************************************************************
  * description : Initialization of USART2.PA0->CTS PA1->RTS PA2->TX PA3->RX
 ******************************************************************************/
-	/* ��1������GPIO��USART������ʱ�� */
+	/* 锟斤拷1锟斤拷锟斤拷锟斤拷GPIO锟斤拷USART锟斤拷锟斤拷锟斤拷时锟斤拷 */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 
-	/* ��2������USART Tx��GPIO����Ϊ���츴��ģʽ */
+	/* 锟斤拷2锟斤拷锟斤拷锟斤拷USART Tx锟斤拷GPIO锟斤拷锟斤拷为锟斤拷锟届复锟斤拷模式 */
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1|GPIO_Pin_2;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-	/* ��3������USART Rx��GPIO����Ϊ��������ģʽ
-		����CPU��λ��GPIOȱʡ���Ǹ�������ģʽ���������������費�Ǳ����
-		���ǣ��һ��ǽ�����ϱ����Ķ������ҷ�ֹ�����ط��޸���������ߵ����ò���
+	/* 锟斤拷3锟斤拷锟斤拷锟斤拷USART Rx锟斤拷GPIO锟斤拷锟斤拷为锟斤拷锟斤拷锟斤拷锟斤拷模式
+		锟斤拷锟斤拷CPU锟斤拷位锟斤拷GPIO缺省锟斤拷锟角革拷锟斤拷锟斤拷锟斤拷模式锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟借不锟角憋拷锟斤拷锟�
+		锟斤拷锟角ｏ拷锟揭伙拷锟角斤拷锟斤拷锟斤拷媳锟斤拷锟斤拷亩锟斤拷锟斤拷锟斤拷曳锟街癸拷锟斤拷锟斤拷胤锟斤拷薷锟斤拷锟斤拷锟斤拷锟斤拷锟竭碉拷锟斤拷锟矫诧拷锟斤拷
 	*/
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_3;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	/*  ��3���Ѿ����ˣ�����ⲽ���Բ���
+	/*  锟斤拷3锟斤拷锟窖撅拷锟斤拷锟剿ｏ拷锟斤拷锟斤拷獠斤拷锟斤拷圆锟斤拷锟�
 		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	*/
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-	/* ��4���� ���ô���Ӳ������ */
-	USART_InitStructure.USART_BaudRate = UART2_BAUD;	/* ������ */
+	/* 锟斤拷4锟斤拷锟斤拷 锟斤拷锟矫达拷锟斤拷硬锟斤拷锟斤拷锟斤拷 */
+	USART_InitStructure.USART_BaudRate = UART2_BAUD;	/* 锟斤拷锟斤拷锟斤拷 */
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
 	USART_InitStructure.USART_Parity = USART_Parity_No ;
 	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
-	USART_InitStructure.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;		/* ��ѡ�����ģʽ */
+	USART_InitStructure.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;		/* 锟斤拷选锟斤拷锟斤拷锟侥Ｊ� */
 	USART_Init(USART2, &USART_InitStructure);
 
-	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);	/* ʹ�ܽ����ж� */
-	//USART_ITConfig(USART2, USART_IT_TXE, ENABLE);	/* ʹ�ܷ����ж� */
+	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);	/* 使锟杰斤拷锟斤拷锟叫讹拷 */
+	//USART_ITConfig(USART2, USART_IT_TXE, ENABLE);	/* 使锟杰凤拷锟斤拷锟叫讹拷 */
 	/*
 		USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
-		ע��: ��Ҫ�ڴ˴��򿪷����ж�
-		�����ж�ʹ����SendUart()������
+		注锟斤拷: 锟斤拷要锟节此达拷锟津开凤拷锟斤拷锟叫讹拷
+		锟斤拷锟斤拷锟叫讹拷使锟斤拷锟斤拷SendUart()锟斤拷锟斤拷锟斤拷
 	*/
-	USART_Cmd(USART2, ENABLE);		/* ʹ�ܴ��� */
+	USART_Cmd(USART2, ENABLE);		/* 使锟杰达拷锟斤拷 */
 
-	/* CPU��Сȱ�ݣ��������úã����ֱ��Send�����1���ֽڷ��Ͳ���ȥ
-		�����������1���ֽ��޷���ȷ���ͳ�ȥ������ */
-	USART_ClearFlag(USART2, USART_FLAG_TC);     /* �巢����ɱ�־��Transmission Complete flag */
+	/* CPU锟斤拷小缺锟捷ｏ拷锟斤拷锟斤拷锟斤拷锟矫好ｏ拷锟斤拷锟街憋拷锟絊end锟斤拷锟斤拷锟�1锟斤拷锟街节凤拷锟酵诧拷锟斤拷去
+		锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟�1锟斤拷锟街斤拷锟睫凤拷锟斤拷确锟斤拷锟酵筹拷去锟斤拷锟斤拷锟斤拷 */
+	USART_ClearFlag(USART2, USART_FLAG_TC);     /* 锟藉发锟斤拷锟斤拷杀锟街撅拷锟絋ransmission Complete flag */
 #endif
 
-#if UART3_FIFO_EN == 1			/* ����3 TX = PB10   RX = PB11 */
+#if UART3_FIFO_EN == 1			/* 锟斤拷锟斤拷3 TX = PB10   RX = PB11 */
 
-	/* ���� PB2Ϊ��������������л� RS485оƬ���շ�״̬ */
+	/* 锟斤拷锟斤拷 PB2为锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷谢锟� RS485芯片锟斤拷锟秸凤拷状态 */
 #if RS485_ENABLE
 	{
 		RCC_APB2PeriphClockCmd(RCC_RS485_TXEN, ENABLE);
@@ -735,30 +735,30 @@ static void InitHardUart(void)
 		GPIO_Init(PORT_RS485_TXEN, &GPIO_InitStructure);
 	}
 #endif
-	/* ��1���� ����GPIO��UARTʱ�� */
+	/* 锟斤拷1锟斤拷锟斤拷 锟斤拷锟斤拷GPIO锟斤拷UART时锟斤拷 */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB | RCC_APB2Periph_AFIO, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
 
-	/* ��2������USART Tx��GPIO����Ϊ���츴��ģʽ */
+	/* 锟斤拷2锟斤拷锟斤拷锟斤拷USART Tx锟斤拷GPIO锟斤拷锟斤拷为锟斤拷锟届复锟斤拷模式 */
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-	/* ��3������USART Rx��GPIO����Ϊ��������ģʽ
-		����CPU��λ��GPIOȱʡ���Ǹ�������ģʽ���������������費�Ǳ����
-		���ǣ��һ��ǽ�����ϱ����Ķ������ҷ�ֹ�����ط��޸���������ߵ����ò���
+	/* 锟斤拷3锟斤拷锟斤拷锟斤拷USART Rx锟斤拷GPIO锟斤拷锟斤拷为锟斤拷锟斤拷锟斤拷锟斤拷模式
+		锟斤拷锟斤拷CPU锟斤拷位锟斤拷GPIO缺省锟斤拷锟角革拷锟斤拷锟斤拷锟斤拷模式锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟借不锟角憋拷锟斤拷锟�
+		锟斤拷锟角ｏ拷锟揭伙拷锟角斤拷锟斤拷锟斤拷媳锟斤拷锟斤拷亩锟斤拷锟斤拷锟斤拷曳锟街癸拷锟斤拷锟斤拷胤锟斤拷薷锟斤拷锟斤拷锟斤拷锟斤拷锟竭碉拷锟斤拷锟矫诧拷锟斤拷
 	*/
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	/*  ��3���Ѿ����ˣ�����ⲽ���Բ���
+	/*  锟斤拷3锟斤拷锟窖撅拷锟斤拷锟剿ｏ拷锟斤拷锟斤拷獠斤拷锟斤拷圆锟斤拷锟�
 		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	*/
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-	/* ��4���� ���ô���Ӳ������ */
-	USART_InitStructure.USART_BaudRate = UART3_BAUD;	/* ������ */
+	/* 锟斤拷4锟斤拷锟斤拷 锟斤拷锟矫达拷锟斤拷硬锟斤拷锟斤拷锟斤拷 */
+	USART_InitStructure.USART_BaudRate = UART3_BAUD;	/* 锟斤拷锟斤拷锟斤拷 */
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
 	USART_InitStructure.USART_Parity = USART_Parity_No ;
@@ -766,40 +766,40 @@ static void InitHardUart(void)
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 	USART_Init(USART3, &USART_InitStructure);
 
-	USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);	/* ʹ�ܽ����ж� */
+	USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);	/* 使锟杰斤拷锟斤拷锟叫讹拷 */
 	/*
 		USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
-		ע��: ��Ҫ�ڴ˴��򿪷����ж�
-		�����ж�ʹ����SendUart()������
+		注锟斤拷: 锟斤拷要锟节此达拷锟津开凤拷锟斤拷锟叫讹拷
+		锟斤拷锟斤拷锟叫讹拷使锟斤拷锟斤拷SendUart()锟斤拷锟斤拷锟斤拷
 	*/
-	USART_Cmd(USART3, ENABLE);		/* ʹ�ܴ��� */
+	USART_Cmd(USART3, ENABLE);		/* 使锟杰达拷锟斤拷 */
 
-	/* CPU��Сȱ�ݣ��������úã����ֱ��Send�����1���ֽڷ��Ͳ���ȥ
-		�����������1���ֽ��޷���ȷ���ͳ�ȥ������ */
-	USART_ClearFlag(USART3, USART_FLAG_TC);     /* �巢����ɱ�־��Transmission Complete flag */
+	/* CPU锟斤拷小缺锟捷ｏ拷锟斤拷锟斤拷锟斤拷锟矫好ｏ拷锟斤拷锟街憋拷锟絊end锟斤拷锟斤拷锟�1锟斤拷锟街节凤拷锟酵诧拷锟斤拷去
+		锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟�1锟斤拷锟街斤拷锟睫凤拷锟斤拷确锟斤拷锟酵筹拷去锟斤拷锟斤拷锟斤拷 */
+	USART_ClearFlag(USART3, USART_FLAG_TC);     /* 锟藉发锟斤拷锟斤拷杀锟街撅拷锟絋ransmission Complete flag */
 #endif
 
-#if UART4_FIFO_EN == 1			/* ����4 TX = PC10   RX = PC11 */
-	/* ��1���� ����GPIO��UARTʱ�� */
+#if UART4_FIFO_EN == 1			/* 锟斤拷锟斤拷4 TX = PC10   RX = PC11 */
+	/* 锟斤拷1锟斤拷锟斤拷 锟斤拷锟斤拷GPIO锟斤拷UART时锟斤拷 */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC | RCC_APB2Periph_AFIO, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART4, ENABLE);
 
-	/* ��2������USART Tx��GPIO����Ϊ���츴��ģʽ */
+	/* 锟斤拷2锟斤拷锟斤拷锟斤拷USART Tx锟斤拷GPIO锟斤拷锟斤拷为锟斤拷锟届复锟斤拷模式 */
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-	/* ��3������USART Rx��GPIO����Ϊ��������ģʽ
-		����CPU��λ��GPIOȱʡ���Ǹ�������ģʽ���������������費�Ǳ����
-		���ǣ��һ��ǽ�����ϱ����Ķ������ҷ�ֹ�����ط��޸���������ߵ����ò���
+	/* 锟斤拷3锟斤拷锟斤拷锟斤拷USART Rx锟斤拷GPIO锟斤拷锟斤拷为锟斤拷锟斤拷锟斤拷锟斤拷模式
+		锟斤拷锟斤拷CPU锟斤拷位锟斤拷GPIO缺省锟斤拷锟角革拷锟斤拷锟斤拷锟斤拷模式锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟借不锟角憋拷锟斤拷锟�
+		锟斤拷锟角ｏ拷锟揭伙拷锟角斤拷锟斤拷锟斤拷媳锟斤拷锟斤拷亩锟斤拷锟斤拷锟斤拷曳锟街癸拷锟斤拷锟斤拷胤锟斤拷薷锟斤拷锟斤拷锟斤拷锟斤拷锟竭碉拷锟斤拷锟矫诧拷锟斤拷
 	*/
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-	/* ��4���� ���ô���Ӳ������ */
-	USART_InitStructure.USART_BaudRate = UART4_BAUD;	/* ������ */
+	/* 锟斤拷4锟斤拷锟斤拷 锟斤拷锟矫达拷锟斤拷硬锟斤拷锟斤拷锟斤拷 */
+	USART_InitStructure.USART_BaudRate = UART4_BAUD;	/* 锟斤拷锟斤拷锟斤拷 */
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
 	USART_InitStructure.USART_Parity = USART_Parity_No ;
@@ -807,41 +807,41 @@ static void InitHardUart(void)
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 	USART_Init(UART4, &USART_InitStructure);
 
-	USART_ITConfig(UART4, USART_IT_RXNE, ENABLE);	/* ʹ�ܽ����ж� */
+	USART_ITConfig(UART4, USART_IT_RXNE, ENABLE);	/* 使锟杰斤拷锟斤拷锟叫讹拷 */
 	/*
 		USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
-		ע��: ��Ҫ�ڴ˴��򿪷����ж�
-		�����ж�ʹ����SendUart()������
+		注锟斤拷: 锟斤拷要锟节此达拷锟津开凤拷锟斤拷锟叫讹拷
+		锟斤拷锟斤拷锟叫讹拷使锟斤拷锟斤拷SendUart()锟斤拷锟斤拷锟斤拷
 	*/
-	USART_Cmd(UART4, ENABLE);		/* ʹ�ܴ��� */
+	USART_Cmd(UART4, ENABLE);		/* 使锟杰达拷锟斤拷 */
 
-	/* CPU��Сȱ�ݣ��������úã����ֱ��Send�����1���ֽڷ��Ͳ���ȥ
-		�����������1���ֽ��޷���ȷ���ͳ�ȥ������ */
-	USART_ClearFlag(UART4, USART_FLAG_TC);     /* �巢����ɱ�־��Transmission Complete flag */
+	/* CPU锟斤拷小缺锟捷ｏ拷锟斤拷锟斤拷锟斤拷锟矫好ｏ拷锟斤拷锟街憋拷锟絊end锟斤拷锟斤拷锟�1锟斤拷锟街节凤拷锟酵诧拷锟斤拷去
+		锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟�1锟斤拷锟街斤拷锟睫凤拷锟斤拷确锟斤拷锟酵筹拷去锟斤拷锟斤拷锟斤拷 */
+	USART_ClearFlag(UART4, USART_FLAG_TC);     /* 锟藉发锟斤拷锟斤拷杀锟街撅拷锟絋ransmission Complete flag */
 #endif
 
-#if UART5_FIFO_EN == 1			/* ����5 TX = PC12   RX = PD2 */
-	/* ��1���� ����GPIO��UARTʱ�� */
+#if UART5_FIFO_EN == 1			/* 锟斤拷锟斤拷5 TX = PC12   RX = PD2 */
+	/* 锟斤拷1锟斤拷锟斤拷 锟斤拷锟斤拷GPIO锟斤拷UART时锟斤拷 */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD | RCC_APB2Periph_AFIO, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART5, ENABLE);
 
-	/* ��2������USART Tx��GPIO����Ϊ���츴��ģʽ */
+	/* 锟斤拷2锟斤拷锟斤拷锟斤拷USART Tx锟斤拷GPIO锟斤拷锟斤拷为锟斤拷锟届复锟斤拷模式 */
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-	/* ��3������USART Rx��GPIO����Ϊ��������ģʽ
-		����CPU��λ��GPIOȱʡ���Ǹ�������ģʽ���������������費�Ǳ����
-		���ǣ��һ��ǽ�����ϱ����Ķ������ҷ�ֹ�����ط��޸���������ߵ����ò���
+	/* 锟斤拷3锟斤拷锟斤拷锟斤拷USART Rx锟斤拷GPIO锟斤拷锟斤拷为锟斤拷锟斤拷锟斤拷锟斤拷模式
+		锟斤拷锟斤拷CPU锟斤拷位锟斤拷GPIO缺省锟斤拷锟角革拷锟斤拷锟斤拷锟斤拷模式锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟借不锟角憋拷锟斤拷锟�
+		锟斤拷锟角ｏ拷锟揭伙拷锟角斤拷锟斤拷锟斤拷媳锟斤拷锟斤拷亩锟斤拷锟斤拷锟斤拷曳锟街癸拷锟斤拷锟斤拷胤锟斤拷薷锟斤拷锟斤拷锟斤拷锟斤拷锟竭碉拷锟斤拷锟矫诧拷锟斤拷
 	*/
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOD, &GPIO_InitStructure);
 
 
-	/* ��4���� ���ô���Ӳ������ */
-	USART_InitStructure.USART_BaudRate = UART5_BAUD;	/* ������ */
+	/* 锟斤拷4锟斤拷锟斤拷 锟斤拷锟矫达拷锟斤拷硬锟斤拷锟斤拷锟斤拷 */
+	USART_InitStructure.USART_BaudRate = UART5_BAUD;	/* 锟斤拷锟斤拷锟斤拷 */
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
 	USART_InitStructure.USART_Parity = USART_Parity_No ;
@@ -849,26 +849,26 @@ static void InitHardUart(void)
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 	USART_Init(UART5, &USART_InitStructure);
 
-	USART_ITConfig(UART5, USART_IT_RXNE, ENABLE);	/* ʹ�ܽ����ж� */
+	USART_ITConfig(UART5, USART_IT_RXNE, ENABLE);	/* 使锟杰斤拷锟斤拷锟叫讹拷 */
 	/*
 		USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
-		ע��: ��Ҫ�ڴ˴��򿪷����ж�
-		�����ж�ʹ����SendUart()������
+		注锟斤拷: 锟斤拷要锟节此达拷锟津开凤拷锟斤拷锟叫讹拷
+		锟斤拷锟斤拷锟叫讹拷使锟斤拷锟斤拷SendUart()锟斤拷锟斤拷锟斤拷
 	*/
-	USART_Cmd(UART5, ENABLE);		/* ʹ�ܴ��� */
+	USART_Cmd(UART5, ENABLE);		/* 使锟杰达拷锟斤拷 */
 
-	/* CPU��Сȱ�ݣ��������úã����ֱ��Send�����1���ֽڷ��Ͳ���ȥ
-		�����������1���ֽ��޷���ȷ���ͳ�ȥ������ */
-	USART_ClearFlag(UART5, USART_FLAG_TC);     /* �巢����ɱ�־��Transmission Complete flag */
+	/* CPU锟斤拷小缺锟捷ｏ拷锟斤拷锟斤拷锟斤拷锟矫好ｏ拷锟斤拷锟街憋拷锟絊end锟斤拷锟斤拷锟�1锟斤拷锟街节凤拷锟酵诧拷锟斤拷去
+		锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟�1锟斤拷锟街斤拷锟睫凤拷锟斤拷确锟斤拷锟酵筹拷去锟斤拷锟斤拷锟斤拷 */
+	USART_ClearFlag(UART5, USART_FLAG_TC);     /* 锟藉发锟斤拷锟斤拷杀锟街撅拷锟絋ransmission Complete flag */
 #endif
 }
 
 /*
 *********************************************************************************************************
-*	�� �� ��: ConfigUartNVIC
-*	����˵��: ���ô���Ӳ���ж�.
-*	��    ��:  ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: ConfigUartNVIC
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷锟矫达拷锟斤拷硬锟斤拷锟叫讹拷.
+*	锟斤拷    锟斤拷:  锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 static void ConfigUartNVIC(void)
@@ -876,10 +876,10 @@ static void ConfigUartNVIC(void)
 	NVIC_InitTypeDef NVIC_InitStructure;
 
 	/* Configure the NVIC Preemption Priority Bits */
-	/*	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_0);  --- �� bsp.c �� bsp_Init() �������ж����ȼ��� */
+	/*	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_0);  --- 锟斤拷 bsp.c 锟斤拷 bsp_Init() 锟斤拷锟斤拷锟斤拷锟叫讹拷锟斤拷锟饺硷拷锟斤拷 */
 
 #if UART1_FIFO_EN == 1
-	/* ʹ�ܴ���1�ж� */
+	/* 使锟杰达拷锟斤拷1锟叫讹拷 */
 	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
@@ -888,7 +888,7 @@ static void ConfigUartNVIC(void)
 #endif
 
 #if UART2_FIFO_EN == 1
-	/* ʹ�ܴ���2�ж� */
+	/* 使锟杰达拷锟斤拷2锟叫讹拷 */
 	NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
@@ -897,7 +897,7 @@ static void ConfigUartNVIC(void)
 #endif
 
 #if UART3_FIFO_EN == 1
-	/* ʹ�ܴ���3�ж�t */
+	/* 使锟杰达拷锟斤拷3锟叫讹拷t */
 	NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
@@ -906,7 +906,7 @@ static void ConfigUartNVIC(void)
 #endif
 
 #if UART4_FIFO_EN == 1
-	/* ʹ�ܴ���4�ж�t */
+	/* 使锟杰达拷锟斤拷4锟叫讹拷t */
 	NVIC_InitStructure.NVIC_IRQChannel = UART4_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
@@ -915,7 +915,7 @@ static void ConfigUartNVIC(void)
 #endif
 
 #if UART5_FIFO_EN == 1
-	/* ʹ�ܴ���5�ж�t */
+	/* 使锟杰达拷锟斤拷5锟叫讹拷t */
 	NVIC_InitStructure.NVIC_IRQChannel = UART5_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
@@ -924,7 +924,7 @@ static void ConfigUartNVIC(void)
 #endif
 
 #if UART6_FIFO_EN == 1
-	/* ʹ�ܴ���6�ж�t */
+	/* 使锟杰达拷锟斤拷6锟叫讹拷t */
 	NVIC_InitStructure.NVIC_IRQChannel = USART6_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
@@ -935,10 +935,10 @@ static void ConfigUartNVIC(void)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: UartSend
-*	����˵��: ��д���ݵ�UART���ͻ�����,�����������жϡ��жϴ�������������Ϻ��Զ��رշ����ж�
-*	��    ��:  ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: UartSend
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷写锟斤拷锟捷碉拷UART锟斤拷锟酵伙拷锟斤拷锟斤拷,锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟叫断★拷锟叫断达拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷虾锟斤拷远锟斤拷乇辗锟斤拷锟斤拷卸锟�
+*	锟斤拷    锟斤拷:  锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 static void UartSend(UART_T *_pUart, uint8_t *_ucaBuf, uint16_t _usLen)
@@ -947,12 +947,12 @@ static void UartSend(UART_T *_pUart, uint8_t *_ucaBuf, uint16_t _usLen)
 
 	for (i = 0; i < _usLen; i++)
 	{
-		/* ������ͻ������Ѿ����ˣ���ȴ��������� */
+		/* 锟斤拷锟斤拷锟斤拷突锟斤拷锟斤拷锟斤拷丫锟斤拷锟斤拷耍锟斤拷锟饺达拷锟斤拷锟斤拷锟斤拷锟斤拷 */
 	#if 0
 		/*
-			�ڵ���GPRS����ʱ������Ĵ������������while ��ѭ��
-			ԭ�� ���͵�1���ֽ�ʱ _pUart->usTxWrite = 1��_pUart->usTxRead = 0;
-			������while(1) �޷��˳�
+			锟节碉拷锟斤拷GPRS锟斤拷锟斤拷时锟斤拷锟斤拷锟斤拷拇锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷while 锟斤拷循锟斤拷
+			原锟斤拷 锟斤拷锟酵碉拷1锟斤拷锟街斤拷时 _pUart->usTxWrite = 1锟斤拷_pUart->usTxRead = 0;
+			锟斤拷锟斤拷锟斤拷while(1) 锟睫凤拷锟剿筹拷
 		*/
 		while (1)
 		{
@@ -973,7 +973,7 @@ static void UartSend(UART_T *_pUart, uint8_t *_ucaBuf, uint16_t _usLen)
 			}
 		}
 	#else
-		/* �� _pUart->usTxBufSize == 1 ʱ, ����ĺ���������(������) */
+		/* 锟斤拷 _pUart->usTxBufSize == 1 时, 锟斤拷锟斤拷暮锟斤拷锟斤拷锟斤拷锟斤拷锟�(锟斤拷锟斤拷锟斤拷) */
 		while (1)
 		{
 			__IO uint16_t usCount;
@@ -989,7 +989,7 @@ static void UartSend(UART_T *_pUart, uint8_t *_ucaBuf, uint16_t _usLen)
 		}
 	#endif
 
-		/* �����������뷢�ͻ����� */
+		/* 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟诫发锟酵伙拷锟斤拷锟斤拷 */
 		_pUart->pTxBuf[_pUart->usTxWrite] = _ucaBuf[i];
 
 		DISABLE_INT();
@@ -1006,33 +1006,33 @@ static void UartSend(UART_T *_pUart, uint8_t *_ucaBuf, uint16_t _usLen)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: UartGetChar
-*	����˵��: �Ӵ��ڽ��ջ�������ȡ1�ֽ����� ��������������ã�
-*	��    ��: _pUart : �����豸
-*			  _pByte : ��Ŷ�ȡ���ݵ�ָ��
-*	�� �� ֵ: 0 ��ʾ������  1��ʾ��ȡ������
+*	锟斤拷 锟斤拷 锟斤拷: UartGetChar
+*	锟斤拷锟斤拷说锟斤拷: 锟接达拷锟节斤拷锟秸伙拷锟斤拷锟斤拷锟斤拷取1锟街斤拷锟斤拷锟斤拷 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷茫锟�
+*	锟斤拷    锟斤拷: _pUart : 锟斤拷锟斤拷锟借备
+*			  _pByte : 锟斤拷哦锟饺★拷锟斤拷莸锟街革拷锟�
+*	锟斤拷 锟斤拷 值: 0 锟斤拷示锟斤拷锟斤拷锟斤拷  1锟斤拷示锟斤拷取锟斤拷锟斤拷锟斤拷
 *********************************************************************************************************
 */
 static uint8_t UartGetChar(UART_T *_pUart, uint8_t *_pByte)
 {
 	uint16_t usCount;
 
-	/* usRxWrite �������жϺ����б���д���������ȡ�ñ���ʱ����������ٽ������� */
+	/* usRxWrite 锟斤拷锟斤拷锟斤拷锟叫断猴拷锟斤拷锟叫憋拷锟斤拷写锟斤拷锟斤拷锟斤拷锟斤拷锟饺★拷帽锟斤拷锟绞憋拷锟斤拷锟斤拷锟斤拷锟斤拷锟劫斤拷锟斤拷锟斤拷锟斤拷 */
 	DISABLE_INT();
 	usCount = _pUart->usRxCount;
 	ENABLE_INT();
 
-	/* �������д������ͬ���򷵻�0 */
+	/* 锟斤拷锟斤拷锟斤拷锟叫达拷锟斤拷锟斤拷锟酵拷锟斤拷蚍祷锟�0 */
 	//if (_pUart->usRxRead == usRxWrite)
-	if (usCount == 0)	/* �Ѿ�û������ */
+	if (usCount == 0)	/* 锟窖撅拷没锟斤拷锟斤拷锟斤拷 */
 	{
 		return 0;
 	}
 	else
 	{
-		*_pByte = _pUart->pRxBuf[_pUart->usRxRead];		/* �Ӵ��ڽ���FIFOȡ1������ */
+		*_pByte = _pUart->pRxBuf[_pUart->usRxRead];		/* 锟接达拷锟节斤拷锟斤拷FIFO取1锟斤拷锟斤拷锟斤拷 */
 
-		/* ��дFIFO������ */
+		/* 锟斤拷写FIFO锟斤拷锟斤拷锟斤拷 */
 		DISABLE_INT();
 		if (++_pUart->usRxRead >= _pUart->usRxBufSize)
 		{
@@ -1046,18 +1046,18 @@ static uint8_t UartGetChar(UART_T *_pUart, uint8_t *_pByte)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: UartIRQ
-*	����˵��: ���жϷ��������ã�ͨ�ô����жϴ�������
-*	��    ��: _pUart : �����豸
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: UartIRQ
+*	锟斤拷锟斤拷说锟斤拷: 锟斤拷锟叫断凤拷锟斤拷锟斤拷锟斤拷锟矫ｏ拷通锟矫达拷锟斤拷锟叫断达拷锟斤拷锟斤拷锟斤拷
+*	锟斤拷    锟斤拷: _pUart : 锟斤拷锟斤拷锟借备
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 static void UartIRQ(UART_T *_pUart)
 {
-	/* ���������ж�  */
+	/* 锟斤拷锟斤拷锟斤拷锟斤拷锟叫讹拷  */
 	if (USART_GetITStatus(_pUart->uart, USART_IT_RXNE) != RESET)
 	{
-		/* �Ӵ��ڽ������ݼĴ�����ȡ���ݴ�ŵ�����FIFO */
+		/* 锟接达拷锟节斤拷锟斤拷锟斤拷锟捷寄达拷锟斤拷锟斤拷取锟斤拷锟捷达拷诺锟斤拷锟斤拷锟紽IFO */
 		uint8_t ch;
 
 		ch = USART_ReceiveData(_pUart->uart);
@@ -1071,7 +1071,7 @@ static void UartIRQ(UART_T *_pUart)
 			_pUart->usRxCount++;
 		}
 
-		/* �ص�����,֪ͨӦ�ó����յ�������,һ���Ƿ���1����Ϣ��������һ����� */
+		/* 锟截碉拷锟斤拷锟斤拷,通知应锟矫筹拷锟斤拷锟秸碉拷锟斤拷锟斤拷锟斤拷,一锟斤拷锟角凤拷锟斤拷1锟斤拷锟斤拷息锟斤拷锟斤拷锟斤拷锟斤拷一锟斤拷锟斤拷锟� */
 		//if (_pUart->usRxWrite == _pUart->usRxRead)
 		//if (_pUart->usRxCount == 1)
 		{
@@ -1082,21 +1082,21 @@ static void UartIRQ(UART_T *_pUart)
 		}
 	}
 
-	/* �������ͻ��������ж� */
+	/* 锟斤拷锟斤拷锟斤拷锟酵伙拷锟斤拷锟斤拷锟斤拷锟叫讹拷 */
 	if (USART_GetITStatus(_pUart->uart, USART_IT_TXE) != RESET)
 	{
 		//if (_pUart->usTxRead == _pUart->usTxWrite)
 		if (_pUart->usTxCount == 0)
 		{
-			/* ���ͻ�������������ȡ��ʱ�� ��ֹ���ͻ��������ж� ��ע�⣺��ʱ���1�����ݻ�δ����������ϣ�*/
+			/* 锟斤拷锟酵伙拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷取锟斤拷时锟斤拷 锟斤拷止锟斤拷锟酵伙拷锟斤拷锟斤拷锟斤拷锟叫讹拷 锟斤拷注锟解：锟斤拷时锟斤拷锟�1锟斤拷锟斤拷锟捷伙拷未锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷希锟�*/
 			USART_ITConfig(_pUart->uart, USART_IT_TXE, DISABLE);
 
-			/* ʹ�����ݷ�������ж� */
+			/* 使锟斤拷锟斤拷锟捷凤拷锟斤拷锟斤拷锟斤拷卸锟� */
 			USART_ITConfig(_pUart->uart, USART_IT_TC, ENABLE);
 		}
 		else
 		{
-			/* �ӷ���FIFOȡ1���ֽ�д�봮�ڷ������ݼĴ��� */
+			/* 锟接凤拷锟斤拷FIFO取1锟斤拷锟街斤拷写锟诫串锟节凤拷锟斤拷锟斤拷锟捷寄达拷锟斤拷 */
 			USART_SendData(_pUart->uart, _pUart->pTxBuf[_pUart->usTxRead]);
 			if (++_pUart->usTxRead >= _pUart->usTxBufSize)
 			{
@@ -1106,16 +1106,16 @@ static void UartIRQ(UART_T *_pUart)
 		}
 
 	}
-	/* ����bitλȫ��������ϵ��ж� */
+	/* 锟斤拷锟斤拷bit位全锟斤拷锟斤拷锟斤拷锟斤拷系锟斤拷卸锟� */
 	else if (USART_GetITStatus(_pUart->uart, USART_IT_TC) != RESET)
 	{
 		//if (_pUart->usTxRead == _pUart->usTxWrite)
 		if (_pUart->usTxCount == 0)
 		{
-			/* �������FIFO������ȫ��������ϣ���ֹ���ݷ�������ж� */
+			/* 锟斤拷锟斤拷锟斤拷锟紽IFO锟斤拷锟斤拷锟斤拷全锟斤拷锟斤拷锟斤拷锟斤拷希锟斤拷锟街癸拷锟斤拷莘锟斤拷锟斤拷锟斤拷锟叫讹拷 */
 			USART_ITConfig(_pUart->uart, USART_IT_TC, DISABLE);
 
-			/* �ص�����, һ����������RS485ͨ�ţ���RS485оƬ����Ϊ����ģʽ��������ռ���� */
+			/* 锟截碉拷锟斤拷锟斤拷, 一锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷RS485通锟脚ｏ拷锟斤拷RS485芯片锟斤拷锟斤拷为锟斤拷锟斤拷模式锟斤拷锟斤拷锟斤拷锟斤拷占锟斤拷锟斤拷 */
 			if (_pUart->SendOver)
 			{
 				_pUart->SendOver();
@@ -1123,9 +1123,9 @@ static void UartIRQ(UART_T *_pUart)
 		}
 		else
 		{
-			/* ��������£��������˷�֧ */
+			/* 锟斤拷锟斤拷锟斤拷锟斤拷拢锟斤拷锟斤拷锟斤拷锟斤拷朔锟街� */
 
-			/* �������FIFO�����ݻ�δ��ϣ���ӷ���FIFOȡ1������д�뷢�����ݼĴ��� */
+			/* 锟斤拷锟斤拷锟斤拷锟紽IFO锟斤拷锟斤拷锟捷伙拷未锟斤拷希锟斤拷锟接凤拷锟斤拷FIFO取1锟斤拷锟斤拷锟斤拷写锟诫发锟斤拷锟斤拷锟捷寄达拷锟斤拷 */
 			USART_SendData(_pUart->uart, _pUart->pTxBuf[_pUart->usTxRead]);
 			if (++_pUart->usTxRead >= _pUart->usTxBufSize)
 			{
@@ -1138,10 +1138,10 @@ static void UartIRQ(UART_T *_pUart)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: USART1_IRQHandler  USART2_IRQHandler USART3_IRQHandler UART4_IRQHandler UART5_IRQHandler
-*	����˵��: USART�жϷ������
-*	��    ��: ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: USART1_IRQHandler  USART2_IRQHandler USART3_IRQHandler UART4_IRQHandler UART5_IRQHandler
+*	锟斤拷锟斤拷说锟斤拷: USART锟叫断凤拷锟斤拷锟斤拷锟�
+*	锟斤拷    锟斤拷: 锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 #if UART1_FIFO_EN == 1
@@ -1188,23 +1188,23 @@ void USART6_IRQHandler(void)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: fputc
-*	����˵��: �ض���putc��������������ʹ��printf�����Ӵ���1��ӡ���
-*	��    ��: ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: fputc
+*	锟斤拷锟斤拷说锟斤拷: 锟截讹拷锟斤拷putc锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷使锟斤拷printf锟斤拷锟斤拷锟接达拷锟斤拷1锟斤拷印锟斤拷锟�
+*	锟斤拷    锟斤拷: 锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 int fputc(int ch, FILE *f)
 {
-#if 1	/* ����Ҫprintf���ַ�ͨ�������ж�FIFO���ͳ�ȥ��printf�������������� */
+#if 1	/* 锟斤拷锟斤拷要printf锟斤拷锟街凤拷通锟斤拷锟斤拷锟斤拷锟叫讹拷FIFO锟斤拷锟酵筹拷去锟斤拷printf锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷 */
 	comSendChar(COM1, ch);
 
 	return ch;
-#else	/* ����������ʽ����ÿ���ַ�,�ȴ����ݷ������ */
-	/* дһ���ֽڵ�USART1 */
+#else	/* 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷式锟斤拷锟斤拷每锟斤拷锟街凤拷,锟饺达拷锟斤拷锟捷凤拷锟斤拷锟斤拷锟� */
+	/* 写一锟斤拷锟街节碉拷USART1 */
 	USART_SendData(USART1, (uint8_t) ch);
 
-	/* �ȴ����ͽ��� */
+	/* 锟饺达拷锟斤拷锟酵斤拷锟斤拷 */
 	while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET)
 	{}
 
@@ -1214,27 +1214,27 @@ int fputc(int ch, FILE *f)
 
 /*
 *********************************************************************************************************
-*	�� �� ��: fgetc
-*	����˵��: �ض���getc��������������ʹ��getchar�����Ӵ���1��������
-*	��    ��: ��
-*	�� �� ֵ: ��
+*	锟斤拷 锟斤拷 锟斤拷: fgetc
+*	锟斤拷锟斤拷说锟斤拷: 锟截讹拷锟斤拷getc锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷使锟斤拷getchar锟斤拷锟斤拷锟接达拷锟斤拷1锟斤拷锟斤拷锟斤拷锟斤拷
+*	锟斤拷    锟斤拷: 锟斤拷
+*	锟斤拷 锟斤拷 值: 锟斤拷
 *********************************************************************************************************
 */
 int fgetc(FILE *f)
 {
 
-#if 1	/* �Ӵ��ڽ���FIFO��ȡ1������, ֻ��ȡ�����ݲŷ��� */
+#if 1	/* 锟接达拷锟节斤拷锟斤拷FIFO锟斤拷取1锟斤拷锟斤拷锟斤拷, 只锟斤拷取锟斤拷锟斤拷锟捷才凤拷锟斤拷 */
 	uint8_t ucData;
 
 	while(comGetChar(COM1, &ucData) == 0);
 
 	return ucData;
 #else
-	/* �ȴ�����1�������� */
+	/* 锟饺达拷锟斤拷锟斤拷1锟斤拷锟斤拷锟斤拷锟斤拷 */
 	while (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET);
 
 	return (int)USART_ReceiveData(USART1);
 #endif
 }
 
-/***************************** ���������� www.armfly.com (END OF FILE) *********************************/
+/***************************** 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷 www.armfly.com (END OF FILE) *********************************/

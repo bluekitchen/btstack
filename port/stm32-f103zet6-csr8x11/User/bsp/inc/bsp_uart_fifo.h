@@ -13,7 +13,7 @@
 
 #ifndef _BSP_USART_FIFO_H_
 #define _BSP_USART_FIFO_H_
-
+#include "bsp.h"
 /*
 	如果需要更改串口对应的管脚，请自行修改 bsp_uart_fifo.c文件中的 static void InitHardUart(void)函数
 */

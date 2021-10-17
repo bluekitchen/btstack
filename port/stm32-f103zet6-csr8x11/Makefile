@@ -22,7 +22,7 @@ TARGET = stm32f103zet6-csr8x11-freertos
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Os
+OPT = -O0
 
 
 #######################################
@@ -141,16 +141,25 @@ User/bsp/src/bsp_led.c \
 User/bsp/src/bsp_uart_fifo.c \
 User/bsp/src/bsp_key.c \
 User/main.c \
-FreeRTOS/portable/RVDS/ARM_CM3/port.c \
+FreeRTOS/portable/GCC/ARM_CM3/port.c \
 FreeRTOS/croutine.c \
 FreeRTOS/event_groups.c \
 FreeRTOS/list.c \
 FreeRTOS/queue.c \
 FreeRTOS/tasks.c \
-FreeRTOS/timers.c 
+FreeRTOS/timers.c \
+Middleware/at_command/at_command.c \
+Middleware/at_command/at_command_bt.c \
+Middleware/ut_manager/Cunit/Sources/Basic/Basic.c \
+Middleware/ut_manager/Cunit/Sources/Framework/CUError.c \
+Middleware/ut_manager/Cunit/Sources/Framework/MyMem.c \
+Middleware/ut_manager/Cunit/Sources/Framework/TestDB.c \
+Middleware/ut_manager/Cunit/Sources/Framework/TestRun.c \
+Middleware/ut_manager/Cunit/Sources/Framework/Util.c \
+Middleware/ut_manager/Cunit/Sources/cunit_misc.c \
+Middleware/ut_manager/Cunit/interface/cunit_interface.c \
 
-#Middleware/at_command/at_command.c \
-#Middleware/at_command/at_command_bt.c \
+
 #User/SysInfoTest.c
 #User/bsp/bsp_msg.c \
 # ASM sources
@@ -218,9 +227,11 @@ C_INCLUDES =  \
 -IUser/bsp \
 -IUser/bsp/inc \
 -IFreeRTOS/include \
--IFreeRTOS/portable/RVDS/ARM_CM3 \
+-IFreeRTOS/portable/GCC/ARM_CM3 \
 -IMiddleware/at_command \
 -Iut_manager/Cunit/interface \
+-IMiddleware/ut_manager/Cunit/interface \
+-IMiddleware/ut_manager/Cunit/Headers
 
 C_INCLUDES += -I$(BUILD_DIR)
 C_INCLUDES += -I${BTSTACK_ROOT}/src/ble

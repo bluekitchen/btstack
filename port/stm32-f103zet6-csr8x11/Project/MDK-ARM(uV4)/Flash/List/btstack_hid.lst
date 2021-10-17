@@ -1,0 +1,611 @@
+L 1 "..\..\..\..\src\btstack_hid.c"
+N/*
+N * Copyright (C) 2021 BlueKitchen GmbH
+N *
+N * Redistribution and use in source and binary forms, with or without
+N * modification, are permitted provided that the following conditions
+N * are met:
+N *
+N * 1. Redistributions of source code must retain the above copyright
+N *    notice, this list of conditions and the following disclaimer.
+N * 2. Redistributions in binary form must reproduce the above copyright
+N *    notice, this list of conditions and the following disclaimer in the
+N *    documentation and/or other materials provided with the distribution.
+N * 3. Neither the name of the copyright holders nor the names of
+N *    contributors may be used to endorse or promote products derived
+N *    from this software without specific prior written permission.
+N * 4. Any redistribution, use, or modification is done solely for
+N *    personal benefit and not for any commercial purpose or for
+N *    monetary gain.
+N *
+N * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
+N * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+N * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+N * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
+N * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+N * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+N * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+N * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+N * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+N * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+N * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+N * SUCH DAMAGE.
+N *
+N * Please inquire about commercial licensing options at 
+N * contact@bluekitchen-gmbh.com
+N *
+N */
+N
+N#include "btstack_hid.h"
+L 1 "..\..\..\..\src\btstack_hid.h" 1
+N/*
+N * Copyright (C) 2021 BlueKitchen GmbH
+N *
+N * Redistribution and use in source and binary forms, with or without
+N * modification, are permitted provided that the following conditions
+N * are met:
+N *
+N * 1. Redistributions of source code must retain the above copyright
+N *    notice, this list of conditions and the following disclaimer.
+N * 2. Redistributions in binary form must reproduce the above copyright
+N *    notice, this list of conditions and the following disclaimer in the
+N *    documentation and/or other materials provided with the distribution.
+N * 3. Neither the name of the copyright holders nor the names of
+N *    contributors may be used to endorse or promote products derived
+N *    from this software without specific prior written permission.
+N * 4. Any redistribution, use, or modification is done solely for
+N *    personal benefit and not for any commercial purpose or for
+N *    monetary gain.
+N *
+N * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
+N * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+N * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+N * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
+N * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+N * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+N * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+N * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+N * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+N * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+N * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+N * SUCH DAMAGE.
+N *
+N * Please inquire about commercial licensing options at 
+N * contact@bluekitchen-gmbh.com
+N *
+N */
+N
+N/**
+N * @title Human Interface Device (HID)
+N *
+N */
+N
+N#ifndef HID_H
+N#define HID_H
+N
+N#if defined __cplusplus
+X#if 0L
+Sextern "C" {
+N#endif
+N
+N
+N#include <stdint.h>
+L 1 "C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h" 1
+N/* Copyright (C) ARM Ltd., 1999,2014 */
+N/* All rights reserved */
+N
+N/*
+N * RCS $Revision$
+N * Checkin $Date$
+N * Revising $Author: agrant $
+N */
+N
+N#ifndef __stdint_h
+N#define __stdint_h
+N#define __ARMCLIB_VERSION 5060019
+N
+N  #ifdef __INT64_TYPE__
+S    /* armclang predefines '__INT64_TYPE__' and '__INT64_C_SUFFIX__' */
+S    #define __INT64 __INT64_TYPE__
+N  #else
+N    /* armcc has builtin '__int64' which can be used in --strict mode */
+N    #define __INT64 __int64
+N    #define __INT64_C_SUFFIX__ ll
+N  #endif
+N  #define __PASTE2(x, y) x ## y
+N  #define __PASTE(x, y) __PASTE2(x, y)
+N  #define __INT64_C(x)  __ESCAPE__(__PASTE(x, __INT64_C_SUFFIX__))
+N  #define __UINT64_C(x)  __ESCAPE__(__PASTE(x ## u, __INT64_C_SUFFIX__))
+N  #if defined(__clang__) || (defined(__ARMCC_VERSION) && !defined(__STRICT_ANSI__))
+X  #if 0L || (1L && !0L)
+N    /* armclang and non-strict armcc allow 'long long' in system headers */
+N    #define __LONGLONG long long
+N  #else
+S    /* strict armcc has '__int64' */
+S    #define __LONGLONG __int64
+N  #endif
+N
+N  #ifndef __STDINT_DECLS
+N  #define __STDINT_DECLS
+N
+N    #undef __CLIBNS
+N
+N    #ifdef __cplusplus
+S      namespace std {
+S          #define __CLIBNS std::
+S          extern "C" {
+N    #else
+N      #define __CLIBNS
+N    #endif  /* __cplusplus */
+N
+N
+N/*
+N * 'signed' is redundant below, except for 'signed char' and if
+N * the typedef is used to declare a bitfield.
+N */
+N
+N    /* 7.18.1.1 */
+N
+N    /* exact-width signed integer types */
+Ntypedef   signed          char int8_t;
+Ntypedef   signed short     int int16_t;
+Ntypedef   signed           int int32_t;
+Ntypedef   signed       __INT64 int64_t;
+Xtypedef   signed       __int64 int64_t;
+N
+N    /* exact-width unsigned integer types */
+Ntypedef unsigned          char uint8_t;
+Ntypedef unsigned short     int uint16_t;
+Ntypedef unsigned           int uint32_t;
+Ntypedef unsigned       __INT64 uint64_t;
+Xtypedef unsigned       __int64 uint64_t;
+N
+N    /* 7.18.1.2 */
+N
+N    /* smallest type of at least n bits */
+N    /* minimum-width signed integer types */
+Ntypedef   signed          char int_least8_t;
+Ntypedef   signed short     int int_least16_t;
+Ntypedef   signed           int int_least32_t;
+Ntypedef   signed       __INT64 int_least64_t;
+Xtypedef   signed       __int64 int_least64_t;
+N
+N    /* minimum-width unsigned integer types */
+Ntypedef unsigned          char uint_least8_t;
+Ntypedef unsigned short     int uint_least16_t;
+Ntypedef unsigned           int uint_least32_t;
+Ntypedef unsigned       __INT64 uint_least64_t;
+Xtypedef unsigned       __int64 uint_least64_t;
+N
+N    /* 7.18.1.3 */
+N
+N    /* fastest minimum-width signed integer types */
+Ntypedef   signed           int int_fast8_t;
+Ntypedef   signed           int int_fast16_t;
+Ntypedef   signed           int int_fast32_t;
+Ntypedef   signed       __INT64 int_fast64_t;
+Xtypedef   signed       __int64 int_fast64_t;
+N
+N    /* fastest minimum-width unsigned integer types */
+Ntypedef unsigned           int uint_fast8_t;
+Ntypedef unsigned           int uint_fast16_t;
+Ntypedef unsigned           int uint_fast32_t;
+Ntypedef unsigned       __INT64 uint_fast64_t;
+Xtypedef unsigned       __int64 uint_fast64_t;
+N
+N    /* 7.18.1.4 integer types capable of holding object pointers */
+N#if __sizeof_ptr == 8
+X#if 4 == 8
+Stypedef   signed       __INT64 intptr_t;
+Stypedef unsigned       __INT64 uintptr_t;
+N#else
+Ntypedef   signed           int intptr_t;
+Ntypedef unsigned           int uintptr_t;
+N#endif
+N
+N    /* 7.18.1.5 greatest-width integer types */
+Ntypedef   signed     __LONGLONG intmax_t;
+Xtypedef   signed     long long intmax_t;
+Ntypedef unsigned     __LONGLONG uintmax_t;
+Xtypedef unsigned     long long uintmax_t;
+N
+N
+N#if !defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)
+X#if !0L || 0L
+N
+N    /* 7.18.2.1 */
+N
+N    /* minimum values of exact-width signed integer types */
+N#define INT8_MIN                   -128
+N#define INT16_MIN                -32768
+N#define INT32_MIN          (~0x7fffffff)   /* -2147483648 is unsigned */
+N#define INT64_MIN  __INT64_C(~0x7fffffffffffffff) /* -9223372036854775808 is unsigned */
+N
+N    /* maximum values of exact-width signed integer types */
+N#define INT8_MAX                    127
+N#define INT16_MAX                 32767
+N#define INT32_MAX            2147483647
+N#define INT64_MAX  __INT64_C(9223372036854775807)
+N
+N    /* maximum values of exact-width unsigned integer types */
+N#define UINT8_MAX                   255
+N#define UINT16_MAX                65535
+N#define UINT32_MAX           4294967295u
+N#define UINT64_MAX __UINT64_C(18446744073709551615)
+N
+N    /* 7.18.2.2 */
+N
+N    /* minimum values of minimum-width signed integer types */
+N#define INT_LEAST8_MIN                   -128
+N#define INT_LEAST16_MIN                -32768
+N#define INT_LEAST32_MIN          (~0x7fffffff)
+N#define INT_LEAST64_MIN  __INT64_C(~0x7fffffffffffffff)
+N
+N    /* maximum values of minimum-width signed integer types */
+N#define INT_LEAST8_MAX                    127
+N#define INT_LEAST16_MAX                 32767
+N#define INT_LEAST32_MAX            2147483647
+N#define INT_LEAST64_MAX  __INT64_C(9223372036854775807)
+N
+N    /* maximum values of minimum-width unsigned integer types */
+N#define UINT_LEAST8_MAX                   255
+N#define UINT_LEAST16_MAX                65535
+N#define UINT_LEAST32_MAX           4294967295u
+N#define UINT_LEAST64_MAX __UINT64_C(18446744073709551615)
+N
+N    /* 7.18.2.3 */
+N
+N    /* minimum values of fastest minimum-width signed integer types */
+N#define INT_FAST8_MIN           (~0x7fffffff)
+N#define INT_FAST16_MIN          (~0x7fffffff)
+N#define INT_FAST32_MIN          (~0x7fffffff)
+N#define INT_FAST64_MIN  __INT64_C(~0x7fffffffffffffff)
+N
+N    /* maximum values of fastest minimum-width signed integer types */
+N#define INT_FAST8_MAX             2147483647
+N#define INT_FAST16_MAX            2147483647
+N#define INT_FAST32_MAX            2147483647
+N#define INT_FAST64_MAX  __INT64_C(9223372036854775807)
+N
+N    /* maximum values of fastest minimum-width unsigned integer types */
+N#define UINT_FAST8_MAX            4294967295u
+N#define UINT_FAST16_MAX           4294967295u
+N#define UINT_FAST32_MAX           4294967295u
+N#define UINT_FAST64_MAX __UINT64_C(18446744073709551615)
+N
+N    /* 7.18.2.4 */
+N
+N    /* minimum value of pointer-holding signed integer type */
+N#if __sizeof_ptr == 8
+X#if 4 == 8
+S#define INTPTR_MIN INT64_MIN
+N#else
+N#define INTPTR_MIN INT32_MIN
+N#endif
+N
+N    /* maximum value of pointer-holding signed integer type */
+N#if __sizeof_ptr == 8
+X#if 4 == 8
+S#define INTPTR_MAX INT64_MAX
+N#else
+N#define INTPTR_MAX INT32_MAX
+N#endif
+N
+N    /* maximum value of pointer-holding unsigned integer type */
+N#if __sizeof_ptr == 8
+X#if 4 == 8
+S#define UINTPTR_MAX UINT64_MAX
+N#else
+N#define UINTPTR_MAX UINT32_MAX
+N#endif
+N
+N    /* 7.18.2.5 */
+N
+N    /* minimum value of greatest-width signed integer type */
+N#define INTMAX_MIN  __ESCAPE__(~0x7fffffffffffffffll)
+N
+N    /* maximum value of greatest-width signed integer type */
+N#define INTMAX_MAX  __ESCAPE__(9223372036854775807ll)
+N
+N    /* maximum value of greatest-width unsigned integer type */
+N#define UINTMAX_MAX __ESCAPE__(18446744073709551615ull)
+N
+N    /* 7.18.3 */
+N
+N    /* limits of ptrdiff_t */
+N#if __sizeof_ptr == 8
+X#if 4 == 8
+S#define PTRDIFF_MIN INT64_MIN
+S#define PTRDIFF_MAX INT64_MAX
+N#else
+N#define PTRDIFF_MIN INT32_MIN
+N#define PTRDIFF_MAX INT32_MAX
+N#endif
+N
+N    /* limits of sig_atomic_t */
+N#define SIG_ATOMIC_MIN (~0x7fffffff)
+N#define SIG_ATOMIC_MAX   2147483647
+N
+N    /* limit of size_t */
+N#if __sizeof_ptr == 8
+X#if 4 == 8
+S#define SIZE_MAX UINT64_MAX
+N#else
+N#define SIZE_MAX UINT32_MAX
+N#endif
+N
+N    /* limits of wchar_t */
+N    /* NB we have to undef and redef because they're defined in both
+N     * stdint.h and wchar.h */
+N#undef WCHAR_MIN
+N#undef WCHAR_MAX
+N
+N#if defined(__WCHAR32) || (defined(__ARM_SIZEOF_WCHAR_T) && __ARM_SIZEOF_WCHAR_T == 4)
+X#if 0L || (0L && __ARM_SIZEOF_WCHAR_T == 4)
+S  #define WCHAR_MIN   0
+S  #define WCHAR_MAX   0xffffffffU
+N#else
+N  #define WCHAR_MIN   0
+N  #define WCHAR_MAX   65535
+N#endif
+N
+N    /* limits of wint_t */
+N#define WINT_MIN (~0x7fffffff)
+N#define WINT_MAX 2147483647
+N
+N#endif /* __STDC_LIMIT_MACROS */
+N
+N#if !defined(__cplusplus) || defined(__STDC_CONSTANT_MACROS)
+X#if !0L || 0L
+N
+N    /* 7.18.4.1 macros for minimum-width integer constants */
+N#define INT8_C(x)   (x)
+N#define INT16_C(x)  (x)
+N#define INT32_C(x)  (x)
+N#define INT64_C(x)  __INT64_C(x)
+N
+N#define UINT8_C(x)  (x ## u)
+N#define UINT16_C(x) (x ## u)
+N#define UINT32_C(x) (x ## u)
+N#define UINT64_C(x) __UINT64_C(x)
+N
+N    /* 7.18.4.2 macros for greatest-width integer constants */
+N#define INTMAX_C(x)  __ESCAPE__(x ## ll)
+N#define UINTMAX_C(x) __ESCAPE__(x ## ull)
+N
+N#endif /* __STDC_CONSTANT_MACROS */
+N
+N    #ifdef __cplusplus
+S         }  /* extern "C" */
+S      }  /* namespace std */
+N    #endif /* __cplusplus */
+N  #endif /* __STDINT_DECLS */
+N
+N  #ifdef __cplusplus
+S    #ifndef __STDINT_NO_EXPORTS
+S      using ::std::int8_t;
+S      using ::std::int16_t;
+S      using ::std::int32_t;
+S      using ::std::int64_t;
+S      using ::std::uint8_t;
+S      using ::std::uint16_t;
+S      using ::std::uint32_t;
+S      using ::std::uint64_t;
+S      using ::std::int_least8_t;
+S      using ::std::int_least16_t;
+S      using ::std::int_least32_t;
+S      using ::std::int_least64_t;
+S      using ::std::uint_least8_t;
+S      using ::std::uint_least16_t;
+S      using ::std::uint_least32_t;
+S      using ::std::uint_least64_t;
+S      using ::std::int_fast8_t;
+S      using ::std::int_fast16_t;
+S      using ::std::int_fast32_t;
+S      using ::std::int_fast64_t;
+S      using ::std::uint_fast8_t;
+S      using ::std::uint_fast16_t;
+S      using ::std::uint_fast32_t;
+S      using ::std::uint_fast64_t;
+S      using ::std::intptr_t;
+S      using ::std::uintptr_t;
+S      using ::std::intmax_t;
+S      using ::std::uintmax_t;
+S    #endif
+N  #endif /* __cplusplus */
+N
+N#undef __INT64
+N#undef __LONGLONG
+N
+N#endif /* __stdint_h */
+N
+N/* end of stdint.h */
+L 52 "..\..\..\..\src\btstack_hid.h" 2
+N
+N#define HID_BOOT_MODE_KEYBOARD_ID 1
+N#define HID_BOOT_MODE_MOUSE_ID    2
+N
+Ntypedef enum {
+N    HID_MESSAGE_TYPE_HANDSHAKE = 0,
+N    HID_MESSAGE_TYPE_HID_CONTROL,
+N    HID_MESSAGE_TYPE_RESERVED_2,
+N    HID_MESSAGE_TYPE_RESERVED_3,
+N    HID_MESSAGE_TYPE_GET_REPORT,
+N    HID_MESSAGE_TYPE_SET_REPORT,
+N    HID_MESSAGE_TYPE_GET_PROTOCOL,
+N    HID_MESSAGE_TYPE_SET_PROTOCOL,
+N    HID_MESSAGE_TYPE_GET_IDLE_DEPRECATED,
+N    HID_MESSAGE_TYPE_SET_IDLE_DEPRECATED,
+N    HID_MESSAGE_TYPE_DATA,
+N    HID_MESSAGE_TYPE_DATC_DEPRECATED
+N} hid_message_type_t;
+N
+Ntypedef enum {
+N    HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL = 0x00,        // This code is used to acknowledge requests. A device that has correctly received SET_REPORT, SET_IDLE or SET_PROTOCOL payload transmits an acknowledgment to the host.
+N    HID_HANDSHAKE_PARAM_TYPE_NOT_READY,                // This code indicates that a device is too busy to accept data. The Bluetooth HID Host should retransmit the data the next time it communicates with the device.
+N    HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID,    // Invalid report ID transmitted.
+N    HID_HANDSHAKE_PARAM_TYPE_ERR_UNSUPPORTED_REQUEST,  // The device does not support the request. This result code shall be used if the HIDP message type is unsupported.
+N    HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER,    // A parameter value is out of range or inappropriate for the request.
+N    HID_HANDSHAKE_PARAM_TYPE_ERR_UNKNOWN = 0x0E,       // Device could not identify the error condition.
+N    HID_HANDSHAKE_PARAM_TYPE_ERR_FATAL = 0x0F,         // Restart is essential to resume functionality
+N    // BTstack custom error codes
+N    HID_HANDSHAKE_PARAM_TYPE_ERR_DISCONNECT            
+N} hid_handshake_param_type_t;
+N
+Ntypedef enum {
+N    HID_CONTROL_PARAM_NOP_DEPRECATED = 0,              // Deprecated: No Operation.
+N    HID_CONTROL_PARAM_HARD_RESET_DEPRECATED,           // Deprecated: Device performs Power On System Test (POST) then initializes all internal variables and initiates normal operations.
+N    HID_CONTROL_PARAM_SOFT_RESET_DEPRECATED,           // Deprecated: Device initializes all internal variables and initiates normal operations.
+N    HID_CONTROL_PARAM_SUSPEND = 0x03,                  // Go to reduced power mode.
+N    HID_CONTROL_PARAM_EXIT_SUSPEND,                    // Exit reduced power mode.
+N    HID_CONTROL_PARAM_VIRTUAL_CABLE_UNPLUG
+N} hid_control_param_t;
+N
+Ntypedef enum {
+N    HID_PROTOCOL_MODE_BOOT = 0,   
+N    HID_PROTOCOL_MODE_REPORT,
+N
+N    // the following item is only used for API calls in hid_host.h: hid_host_connect, hid_host_accept_connection
+N    // in contrast to previous two enum items that will enforce given mode, this one enables fallback from report to boot mode
+N    HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT
+N} hid_protocol_mode_t;
+N
+Ntypedef enum {
+N    HID_REPORT_TYPE_RESERVED = 0,
+N    HID_REPORT_TYPE_INPUT,
+N    HID_REPORT_TYPE_OUTPUT,
+N    HID_REPORT_TYPE_FEATURE
+N} hid_report_type_t;
+N
+Ntypedef enum {
+N    HID_REPORT_ID_UNDECLARED,
+N    HID_REPORT_ID_VALID,
+N    HID_REPORT_ID_INVALID
+N} hid_report_id_status_t;
+N
+N/* API_START */
+N
+N/*
+N * @brief Get boot descriptor data
+N * @result data
+N */
+Nconst uint8_t * hid_get_boot_descriptor_data(void);
+N
+N/*
+N * @brief Get boot descriptor length
+N * @result length
+N */
+Nuint16_t hid_get_boot_descriptor_len(void);
+N
+N/* API_END */
+N
+N#if defined __cplusplus
+X#if 0L
+S}
+N#endif
+N
+N#endif
+L 39 "..\..\..\..\src\btstack_hid.c" 2
+N
+N
+N// from USB HID Specification 1.1, Appendix B.1
+Nconst uint8_t hid_descriptor_boot_mode[] = {
+N    // Keyboard
+N
+N    0x05, 0x01,                    // Usage Page (Generic Desktop)
+N    0x09, 0x06,                    // Usage (Keyboard)
+N    0xa1, 0x01,                    // Collection (Application)
+N
+N    0x85,  0x01,                   // Report ID 1
+N
+N    // Modifier byte
+N
+N    0x75, 0x01,                    //   Report Size (1)
+N    0x95, 0x08,                    //   Report Count (8)
+N    0x05, 0x07,                    //   Usage Page (Key codes)
+N    0x19, 0xe0,                    //   Usage Minimum (Keyboard LeftControl)
+N    0x29, 0xe7,                    //   Usage Maxium (Keyboard Right GUI)
+N    0x15, 0x00,                    //   Logical Minimum (0)
+N    0x25, 0x01,                    //   Logical Maximum (1)
+N    0x81, 0x02,                    //   Input (Data, Variable, Absolute)
+N
+N    // Reserved byte
+N
+N    0x75, 0x01,                    //   Report Size (1)
+N    0x95, 0x08,                    //   Report Count (8)
+N    0x81, 0x03,                    //   Input (Constant, Variable, Absolute)
+N
+N    // LED report + padding
+N
+N    0x95, 0x05,                    //   Report Count (5)
+N    0x75, 0x01,                    //   Report Size (1)
+N    0x05, 0x08,                    //   Usage Page (LEDs)
+N    0x19, 0x01,                    //   Usage Minimum (Num Lock)
+N    0x29, 0x05,                    //   Usage Maxium (Kana)
+N    0x91, 0x02,                    //   Output (Data, Variable, Absolute)
+N
+N    0x95, 0x01,                    //   Report Count (1)
+N    0x75, 0x03,                    //   Report Size (3)
+N    0x91, 0x03,                    //   Output (Constant, Variable, Absolute)
+N
+N    // Keycodes
+N
+N    0x95, 0x06,                    //   Report Count (6)
+N    0x75, 0x08,                    //   Report Size (8)
+N    0x15, 0x00,                    //   Logical Minimum (0)
+N    0x25, 0xff,                    //   Logical Maximum (1)
+N    0x05, 0x07,                    //   Usage Page (Key codes)
+N    0x19, 0x00,                    //   Usage Minimum (Reserved (no event indicated))
+N    0x29, 0xff,                    //   Usage Maxium (Reserved)
+N    0x81, 0x00,                    //   Input (Data, Array)
+N
+N    0xc0,                          // End collection
+N
+N    // Mouse
+N    0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
+N    0x09, 0x02,                    // USAGE (Mouse)
+N    0xa1, 0x01,                    // COLLECTION (Application)
+N
+N    0x85,  0x01,                    // Report ID 1
+N
+N    0x09, 0x01,                    //   USAGE (Pointer)
+N
+N    0xa1, 0x00,                    //   COLLECTION (Physical)
+N
+N#if 1
+N    0x05, 0x09,                    //     USAGE_PAGE (Button)
+N    0x19, 0x01,                    //     USAGE_MINIMUM (Button 1)
+N    0x29, 0x03,                    //     USAGE_MAXIMUM (Button 3)
+N    0x15, 0x00,                    //     LOGICAL_MINIMUM (0)
+N    0x25, 0x01,                    //     LOGICAL_MAXIMUM (1)
+N    0x95, 0x03,                    //     REPORT_COUNT (3)
+N    0x75, 0x01,                    //     REPORT_SIZE (1)
+N    0x81, 0x02,                    //     INPUT (Data,Var,Abs)
+N    0x95, 0x01,                    //     REPORT_COUNT (1)
+N    0x75, 0x05,                    //     REPORT_SIZE (5)
+N    0x81, 0x03,                    //     INPUT (Cnst,Var,Abs)
+N#endif
+N
+N#if 1
+N    0x05, 0x01,                    //     USAGE_PAGE (Generic Desktop)
+N    0x09, 0x30,                    //     USAGE (X)
+N    0x09, 0x31,                    //     USAGE (Y)
+N    0x15, 0x81,                    //     LOGICAL_MINIMUM (-127)
+N    0x25, 0x7f,                    //     LOGICAL_MAXIMUM (127)
+N    0x75, 0x08,                    //     REPORT_SIZE (8)
+N    0x95, 0x02,                    //     REPORT_COUNT (2)
+N    0x81, 0x06,                    //     INPUT (Data,Var,Rel)
+N#endif
+N
+N    0xc0,                          //   END_COLLECTION
+N    0xc0                           // END_COLLECTION
+N};
+N
+Nconst uint8_t * hid_get_boot_descriptor_data(void){
+N    return &hid_descriptor_boot_mode[0];
+N}
+N
+Nuint16_t hid_get_boot_descriptor_len(void){
+N    return sizeof(hid_descriptor_boot_mode);
+N}
+N

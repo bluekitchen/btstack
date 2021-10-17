@@ -49,7 +49,7 @@ void bsp_Init(void)
 #if USE_FreeRTOS == 1
 void bsp_enable_interrupt()
 {
-	if (bt_os_layer_is_isr_active()) {
+	if ((*((volatile uint32_t *)0xE000ED04)) & 0x000003FF) {
 		taskEXIT_CRITICAL_FROM_ISR(0);
 	} else {
 		taskEXIT_CRITICAL();
@@ -58,7 +58,7 @@ void bsp_enable_interrupt()
 
 void bsp_disable_interrupt()
 {
-	if (bt_os_layer_is_isr_active()) {
+	if ((*((volatile uint32_t *)0xE000ED04)) & 0x000003FF) {
 		taskENTER_CRITICAL_FROM_ISR();
 	} else {
 		taskENTER_CRITICAL();

@@ -37743,137 +37743,220 @@ N*/
 N
 N#ifndef _BSP_USART_FIFO_H_
 N#define _BSP_USART_FIFO_H_
-N
+N#include "bsp.h"
+L 1 "..\..\User\bsp\bsp.h" 1
 N/*
-N	如果需要更改串口对应的管脚，请自行修改 bsp_uart_fifo.c文件中的 static void InitHardUart(void)函数
+N*********************************************************************************************************
+N*
+N*	模块名称 : BSP模块
+N*	文件名称 : bsp.h
+N*	说    明 : 这是底层驱动模块所有的h文件的汇总文件。 应用程序只需 #include bsp.h 即可，
+N*			  不需要#include 每个模块的 h 文件
+N*
+N*	Copyright (C), 2013-2014, 安富莱电子 www.armfly.com
+N*
+N*********************************************************************************************************
 N*/
 N
-N/* 定义使能的串口, 0 表示不使能（不增加代码大小）， 1表示使能 */
+N#ifndef _BSP_H_
+N#define _BSP_H
+N
+N#define STM32_V4
+N//#define STM32_X2
+N
+N/* 检查是否定义了开发板型号 */
+N#if !defined (STM32_V4) && !defined (STM32_X2)
+X#if !1L && !0L
+S	#error "Please define the board model : STM32_X2 or STM32_V4"
+N#endif
+N
+N/* 定义 BSP 版本号 */
+N#define __STM32F1_BSP_VERSION		"1.1"
+N
+N/* CPU空闲时执行的函数 */
+N//#define CPU_IDLE()		bsp_Idle()
+N
+N#define  USE_FreeRTOS      1
+N
+N#if USE_FreeRTOS == 1
+X#if 1 == 1
+N	#include "FreeRTOS.h"
+N	#include "task.h"
+N	void bsp_enable_interrupt(void);
+N	void bsp_disable_interrupt(void);
+N	#define DISABLE_INT()    bsp_disable_interrupt() //taskENTER_CRITICAL()
+N	#define ENABLE_INT()     bsp_enable_interrupt() //taskEXIT_CRITICAL()
+N#else
+S	/* 开关全局中断的宏 */
+S	#define ENABLE_INT()	__set_PRIMASK(0)	/* 使能全局中断 */
+S	#define DISABLE_INT()	__set_PRIMASK(1)	/* 禁止全局中断 */
+N#endif
+N
+N/* 这个宏仅用于调试阶段排错 */
+N#define BSP_Printf		printf
+N//#define BSP_Printf(...)
+N
+N#include "stm32f10x.h"
+N#include <stdio.h>
+N#include <string.h>
+N#include <stdlib.h>
+N
+N#ifndef TRUE
+S	#define TRUE  1
+N#endif
+N
+N#ifndef FALSE
+S	#define FALSE 0
+N#endif
+N
 N/*
-N	安富莱STM32-V4 串口分配：
-N	【串口1】 RS232 芯片第1路。
-N		PA9/USART1_TX	  --- 打印调试口
-N		PA10/USART1_RX
+N	EXTI9_5_IRQHandler 的中断服务程序分散在几个独立的 bsp文件中。
+N	需要整合到 stm32f4xx_it.c 中。
 N
-N	【串口2】GPRS 模块 
-N		PA2/USART2_TX
-N		PA3/USART2_RX 
-N
-N	【串口3】 RS485 通信 - TTL 跳线 和 排针
-N		PB10/USART3_TX
-N		PB11/USART3_RX
-N		PB2/BOOT1/RS485_TX_EN
-N
-N	【串口4】 --- 不做串口用。
-N	【串口5】 --- 不做串口用。
+N	定义下面行表示EXTI9_5_IRQHandler入口函数集中放到 stm32f4xx_it.c。
 N*/
-N#define	UART1_FIFO_EN	1
-N#define	UART2_FIFO_EN	1
-N#define	UART3_FIFO_EN	1
-N#define	UART4_FIFO_EN	0
-N#define	UART5_FIFO_EN	0
+N#define EXTI9_5_ISR_MOVE_OUT
 N
-N#define RS485_ENABLE	0
+N#define DEBUG_GPS_TO_COM1	/* 打印GPS数据到串口1 */
 N
-N/* RS485芯片发送使能GPIO, PB2 */
-N#define RCC_RS485_TXEN 	 RCC_APB2Periph_GPIOB
-N#define PORT_RS485_TXEN  GPIOB
-N#define PIN_RS485_TXEN	 GPIO_Pin_2
+N/* 通过取消注释或者添加注释的方式控制是否包含底层驱动模块 */
+N#include "bsp_uart_fifo.h"
+L 1 "..\..\User\bsp\inc\bsp_uart_fifo.h" 1
+N/*
+N*********************************************************************************************************
+N*
+N*	模块名称 : 串口中断+FIFO驱动模块
+N*	文件名称 : bsp_uart_fifo.h
+N*	版    本 : V1.0
+N*	说    明 : 头文件
+N*
+N*	Copyright (C), 2013-2014, 安富莱电子 www.armfly.com
+N*
+N*********************************************************************************************************
+N*/
 N
-N#define RS485_RX_EN()	PORT_RS485_TXEN->BRR = PIN_RS485_TXEN
-N#define RS485_TX_EN()	PORT_RS485_TXEN->BSRR = PIN_RS485_TXEN
-N
-N
-N/* 定义端口号 */
-Ntypedef enum
-N{
-N	COM1 = 0,	/* USART1  PA9, PA10 */
-N	COM2 = 1,	/* USART2, PA2, PA3 */
-N	COM3 = 2,	/* USART3, PB10, PB11 */
-N	COM4 = 3,	/* UART4, PC10, PC11 */
-N	COM5 = 4,	/* UART5, PC12, PD2 */
-N} COM_PORT_E;
-N
-N/* 定义串口波特率和FIFO缓冲区大小，分为发送缓冲区和接收缓冲区, 支持全双工 */
-N#if UART1_FIFO_EN == 1
-X#if 1 == 1
-N	#define UART1_BAUD			921600
-N	#define UART1_TX_BUF_SIZE	1*1024
-N	#define UART1_RX_BUF_SIZE	1*1024
-N#endif
-N
-N#if UART2_FIFO_EN == 1
-X#if 1 == 1
-N	#define UART2_BAUD			921600
-N	#define UART2_TX_BUF_SIZE	1*1024
-N	#define UART2_RX_BUF_SIZE	1*1024
-N#endif
-N
-N#if UART3_FIFO_EN == 1
-X#if 1 == 1
-N	#define UART3_BAUD			921600
-N	#define UART3_TX_BUF_SIZE	1*1024
-N	#define UART3_RX_BUF_SIZE	1*1024
-N#endif
-N
-N#if UART4_FIFO_EN == 1
-X#if 0 == 1
+N#ifndef _BSP_USART_FIFO_H_
+S#define _BSP_USART_FIFO_H_
+S#include "bsp.h"
+S/*
+S	如果需要更改串口对应的管脚，请自行修改 bsp_uart_fifo.c文件中的 static void InitHardUart(void)函数
+S*/
+S
+S/* 定义使能的串口, 0 表示不使能（不增加代码大小）， 1表示使能 */
+S/*
+S	安富莱STM32-V4 串口分配：
+S	【串口1】 RS232 芯片第1路。
+S		PA9/USART1_TX	  --- 打印调试口
+S		PA10/USART1_RX
+S
+S	【串口2】GPRS 模块 
+S		PA2/USART2_TX
+S		PA3/USART2_RX 
+S
+S	【串口3】 RS485 通信 - TTL 跳线 和 排针
+S		PB10/USART3_TX
+S		PB11/USART3_RX
+S		PB2/BOOT1/RS485_TX_EN
+S
+S	【串口4】 --- 不做串口用。
+S	【串口5】 --- 不做串口用。
+S*/
+S#define	UART1_FIFO_EN	1
+S#define	UART2_FIFO_EN	1
+S#define	UART3_FIFO_EN	1
+S#define	UART4_FIFO_EN	0
+S#define	UART5_FIFO_EN	0
+S
+S#define RS485_ENABLE	0
+S
+S/* RS485芯片发送使能GPIO, PB2 */
+S#define RCC_RS485_TXEN 	 RCC_APB2Periph_GPIOB
+S#define PORT_RS485_TXEN  GPIOB
+S#define PIN_RS485_TXEN	 GPIO_Pin_2
+S
+S#define RS485_RX_EN()	PORT_RS485_TXEN->BRR = PIN_RS485_TXEN
+S#define RS485_TX_EN()	PORT_RS485_TXEN->BSRR = PIN_RS485_TXEN
+S
+S
+S/* 定义端口号 */
+Stypedef enum
+S{
+S	COM1 = 0,	/* USART1  PA9, PA10 */
+S	COM2 = 1,	/* USART2, PA2, PA3 */
+S	COM3 = 2,	/* USART3, PB10, PB11 */
+S	COM4 = 3,	/* UART4, PC10, PC11 */
+S	COM5 = 4,	/* UART5, PC12, PD2 */
+S} COM_PORT_E;
+S
+S/* 定义串口波特率和FIFO缓冲区大小，分为发送缓冲区和接收缓冲区, 支持全双工 */
+S#if UART1_FIFO_EN == 1
+S	#define UART1_BAUD			921600
+S	#define UART1_TX_BUF_SIZE	1*1024
+S	#define UART1_RX_BUF_SIZE	1*1024
+S#endif
+S
+S#if UART2_FIFO_EN == 1
+S	#define UART2_BAUD			921600
+S	#define UART2_TX_BUF_SIZE	1*1024
+S	#define UART2_RX_BUF_SIZE	1*1024
+S#endif
+S
+S#if UART3_FIFO_EN == 1
+S	#define UART3_BAUD			921600
+S	#define UART3_TX_BUF_SIZE	1*1024
+S	#define UART3_RX_BUF_SIZE	1*1024
+S#endif
+S
+S#if UART4_FIFO_EN == 1
 S	#define UART4_BAUD			115200
 S	#define UART4_TX_BUF_SIZE	1*1024
 S	#define UART4_RX_BUF_SIZE	1*1024
-N#endif
-N
-N#if UART5_FIFO_EN == 1
-X#if 0 == 1
+S#endif
+S
+S#if UART5_FIFO_EN == 1
 S	#define UART5_BAUD			115200
 S	#define UART5_TX_BUF_SIZE	1*1024
 S	#define UART5_RX_BUF_SIZE	1*1024
-N#endif
-N
-N/* 串口设备结构体 */
-Ntypedef struct
-N{
-N	USART_TypeDef *uart;		/* STM32内部串口设备指针 */
-N	uint8_t *pTxBuf;			/* 发送缓冲区 */
-N	uint8_t *pRxBuf;			/* 接收缓冲区 */
-N	uint16_t usTxBufSize;		/* 发送缓冲区大小 */
-N	uint16_t usRxBufSize;		/* 接收缓冲区大小 */
-N	__IO uint16_t usTxWrite;			/* 发送缓冲区写指针 */
-X	volatile uint16_t usTxWrite;			 
-N	__IO uint16_t usTxRead;			/* 发送缓冲区读指针 */
-X	volatile uint16_t usTxRead;			 
-N	__IO uint16_t usTxCount;			/* 等待发送的数据个数 */
-X	volatile uint16_t usTxCount;			 
-N
-N	__IO uint16_t usRxWrite;			/* 接收缓冲区写指针 */
-X	volatile uint16_t usRxWrite;			 
-N	__IO uint16_t usRxRead;			/* 接收缓冲区读指针 */
-X	volatile uint16_t usRxRead;			 
-N	__IO uint16_t usRxCount;			/* 还未读取的新数据个数 */
-X	volatile uint16_t usRxCount;			 
-N
-N	void (*SendBefor)(void); 	/* 开始发送之前的回调函数指针（主要用于RS485切换到发送模式） */
-N	void (*SendOver)(void); 	/* 发送完毕的回调函数指针（主要用于RS485将发送模式切换为接收模式） */
-N	void (*ReciveNew)(uint8_t _byte);	/* 串口收到数据的回调函数指针 */
-N}UART_T;
-N
-Nvoid bsp_InitUart(void);
-Nvoid comSendBuf(COM_PORT_E _ucPort, uint8_t *_ucaBuf, uint16_t _usLen);
-Nvoid comSendChar(COM_PORT_E _ucPort, uint8_t _ucByte);
-Nuint8_t comGetChar(COM_PORT_E _ucPort, uint8_t *_pByte);
-Nuint16_t comGetBuf(COM_PORT_E _ucPort, uint8_t *_pBuf, const uint16_t _usLenToRead);
-Nuint16_t comGetRxFifoAvailableBufferLength(COM_PORT_E _ucPort);
-Nvoid comClearTxFifo(COM_PORT_E _ucPort);
-Nvoid comClearRxFifo(COM_PORT_E _ucPort);
-N
-Nvoid RS485_SendBuf(uint8_t *_ucaBuf, uint16_t _usLen);
-Nvoid RS485_SendStr(char *_pBuf);
-N
-Nvoid bsp_Set485Baud(uint32_t _baud);
-N
-Nvoid bsp_SetUart1Baud(uint32_t _baud);
-Nvoid bsp_SetUart2Baud(uint32_t _baud);
-N
+S#endif
+S
+S/* 串口设备结构体 */
+Stypedef struct
+S{
+S	USART_TypeDef *uart;		/* STM32内部串口设备指针 */
+S	uint8_t *pTxBuf;			/* 发送缓冲区 */
+S	uint8_t *pRxBuf;			/* 接收缓冲区 */
+S	uint16_t usTxBufSize;		/* 发送缓冲区大小 */
+S	uint16_t usRxBufSize;		/* 接收缓冲区大小 */
+S	__IO uint16_t usTxWrite;			/* 发送缓冲区写指针 */
+S	__IO uint16_t usTxRead;			/* 发送缓冲区读指针 */
+S	__IO uint16_t usTxCount;			/* 等待发送的数据个数 */
+S
+S	__IO uint16_t usRxWrite;			/* 接收缓冲区写指针 */
+S	__IO uint16_t usRxRead;			/* 接收缓冲区读指针 */
+S	__IO uint16_t usRxCount;			/* 还未读取的新数据个数 */
+S
+S	void (*SendBefor)(void); 	/* 开始发送之前的回调函数指针（主要用于RS485切换到发送模式） */
+S	void (*SendOver)(void); 	/* 发送完毕的回调函数指针（主要用于RS485将发送模式切换为接收模式） */
+S	void (*ReciveNew)(uint8_t _byte);	/* 串口收到数据的回调函数指针 */
+S}UART_T;
+S
+Svoid bsp_InitUart(void);
+Svoid comSendBuf(COM_PORT_E _ucPort, uint8_t *_ucaBuf, uint16_t _usLen);
+Svoid comSendChar(COM_PORT_E _ucPort, uint8_t _ucByte);
+Suint8_t comGetChar(COM_PORT_E _ucPort, uint8_t *_pByte);
+Suint16_t comGetBuf(COM_PORT_E _ucPort, uint8_t *_pBuf, const uint16_t _usLenToRead);
+Suint16_t comGetRxFifoAvailableBufferLength(COM_PORT_E _ucPort);
+Svoid comClearTxFifo(COM_PORT_E _ucPort);
+Svoid comClearRxFifo(COM_PORT_E _ucPort);
+S
+Svoid RS485_SendBuf(uint8_t *_ucaBuf, uint16_t _usLen);
+Svoid RS485_SendStr(char *_pBuf);
+S
+Svoid bsp_Set485Baud(uint32_t _baud);
+S
+Svoid bsp_SetUart1Baud(uint32_t _baud);
+Svoid bsp_SetUart2Baud(uint32_t _baud);
+S
 N#endif
 N
 N/***************************** 安富莱电子 www.armfly.com (END OF FILE) *********************************/
@@ -38266,6 +38349,212 @@ N
 N#endif
 N
 N/***************************** 安富莱电子 www.armfly.com (END OF FILE) *********************************/
+L 17 "..\..\User\bsp\inc\bsp_uart_fifo.h" 2
+N/*
+N	如果需要更改串口对应的管脚，请自行修改 bsp_uart_fifo.c文件中的 static void InitHardUart(void)函数
+N*/
+N
+N/* 定义使能的串口, 0 表示不使能（不增加代码大小）， 1表示使能 */
+N/*
+N	安富莱STM32-V4 串口分配：
+N	【串口1】 RS232 芯片第1路。
+N		PA9/USART1_TX	  --- 打印调试口
+N		PA10/USART1_RX
+N
+N	【串口2】GPRS 模块 
+N		PA2/USART2_TX
+N		PA3/USART2_RX 
+N
+N	【串口3】 RS485 通信 - TTL 跳线 和 排针
+N		PB10/USART3_TX
+N		PB11/USART3_RX
+N		PB2/BOOT1/RS485_TX_EN
+N
+N	【串口4】 --- 不做串口用。
+N	【串口5】 --- 不做串口用。
+N*/
+N#define	UART1_FIFO_EN	1
+N#define	UART2_FIFO_EN	1
+N#define	UART3_FIFO_EN	1
+N#define	UART4_FIFO_EN	0
+N#define	UART5_FIFO_EN	0
+N
+N#define RS485_ENABLE	0
+N
+N/* RS485芯片发送使能GPIO, PB2 */
+N#define RCC_RS485_TXEN 	 RCC_APB2Periph_GPIOB
+N#define PORT_RS485_TXEN  GPIOB
+N#define PIN_RS485_TXEN	 GPIO_Pin_2
+N
+N#define RS485_RX_EN()	PORT_RS485_TXEN->BRR = PIN_RS485_TXEN
+N#define RS485_TX_EN()	PORT_RS485_TXEN->BSRR = PIN_RS485_TXEN
+N
+N
+N/* 定义端口号 */
+Ntypedef enum
+N{
+N	COM1 = 0,	/* USART1  PA9, PA10 */
+N	COM2 = 1,	/* USART2, PA2, PA3 */
+N	COM3 = 2,	/* USART3, PB10, PB11 */
+N	COM4 = 3,	/* UART4, PC10, PC11 */
+N	COM5 = 4,	/* UART5, PC12, PD2 */
+N} COM_PORT_E;
+N
+N/* 定义串口波特率和FIFO缓冲区大小，分为发送缓冲区和接收缓冲区, 支持全双工 */
+N#if UART1_FIFO_EN == 1
+X#if 1 == 1
+N	#define UART1_BAUD			921600
+N	#define UART1_TX_BUF_SIZE	1*1024
+N	#define UART1_RX_BUF_SIZE	1*1024
+N#endif
+N
+N#if UART2_FIFO_EN == 1
+X#if 1 == 1
+N	#define UART2_BAUD			921600
+N	#define UART2_TX_BUF_SIZE	1*1024
+N	#define UART2_RX_BUF_SIZE	1*1024
+N#endif
+N
+N#if UART3_FIFO_EN == 1
+X#if 1 == 1
+N	#define UART3_BAUD			921600
+N	#define UART3_TX_BUF_SIZE	1*1024
+N	#define UART3_RX_BUF_SIZE	1*1024
+N#endif
+N
+N#if UART4_FIFO_EN == 1
+X#if 0 == 1
+S	#define UART4_BAUD			115200
+S	#define UART4_TX_BUF_SIZE	1*1024
+S	#define UART4_RX_BUF_SIZE	1*1024
+N#endif
+N
+N#if UART5_FIFO_EN == 1
+X#if 0 == 1
+S	#define UART5_BAUD			115200
+S	#define UART5_TX_BUF_SIZE	1*1024
+S	#define UART5_RX_BUF_SIZE	1*1024
+N#endif
+N
+N/* 串口设备结构体 */
+Ntypedef struct
+N{
+N	USART_TypeDef *uart;		/* STM32内部串口设备指针 */
+N	uint8_t *pTxBuf;			/* 发送缓冲区 */
+N	uint8_t *pRxBuf;			/* 接收缓冲区 */
+N	uint16_t usTxBufSize;		/* 发送缓冲区大小 */
+N	uint16_t usRxBufSize;		/* 接收缓冲区大小 */
+N	__IO uint16_t usTxWrite;			/* 发送缓冲区写指针 */
+X	volatile uint16_t usTxWrite;			 
+N	__IO uint16_t usTxRead;			/* 发送缓冲区读指针 */
+X	volatile uint16_t usTxRead;			 
+N	__IO uint16_t usTxCount;			/* 等待发送的数据个数 */
+X	volatile uint16_t usTxCount;			 
+N
+N	__IO uint16_t usRxWrite;			/* 接收缓冲区写指针 */
+X	volatile uint16_t usRxWrite;			 
+N	__IO uint16_t usRxRead;			/* 接收缓冲区读指针 */
+X	volatile uint16_t usRxRead;			 
+N	__IO uint16_t usRxCount;			/* 还未读取的新数据个数 */
+X	volatile uint16_t usRxCount;			 
+N
+N	void (*SendBefor)(void); 	/* 开始发送之前的回调函数指针（主要用于RS485切换到发送模式） */
+N	void (*SendOver)(void); 	/* 发送完毕的回调函数指针（主要用于RS485将发送模式切换为接收模式） */
+N	void (*ReciveNew)(uint8_t _byte);	/* 串口收到数据的回调函数指针 */
+N}UART_T;
+N
+Nvoid bsp_InitUart(void);
+Nvoid comSendBuf(COM_PORT_E _ucPort, uint8_t *_ucaBuf, uint16_t _usLen);
+Nvoid comSendChar(COM_PORT_E _ucPort, uint8_t _ucByte);
+Nuint8_t comGetChar(COM_PORT_E _ucPort, uint8_t *_pByte);
+Nuint16_t comGetBuf(COM_PORT_E _ucPort, uint8_t *_pBuf, const uint16_t _usLenToRead);
+Nuint16_t comGetRxFifoAvailableBufferLength(COM_PORT_E _ucPort);
+Nvoid comClearTxFifo(COM_PORT_E _ucPort);
+Nvoid comClearRxFifo(COM_PORT_E _ucPort);
+N
+Nvoid RS485_SendBuf(uint8_t *_ucaBuf, uint16_t _usLen);
+Nvoid RS485_SendStr(char *_pBuf);
+N
+Nvoid bsp_Set485Baud(uint32_t _baud);
+N
+Nvoid bsp_SetUart1Baud(uint32_t _baud);
+Nvoid bsp_SetUart2Baud(uint32_t _baud);
+N
+N#endif
+N
+N/***************************** 安富莱电子 www.armfly.com (END OF FILE) *********************************/
+L 75 "..\..\User\bsp\bsp.h" 2
+N#include "bsp_led.h"
+N#include "bsp_timer.h"
+N#include "bsp_key.h"
+N#include "bsp_dwt.h"
+N
+N//#include "bsp_msg.h"
+N
+N//#include "bsp_beep.h"
+N
+N#include "bsp_tim_pwm.h"
+N
+N//#include "bsp_cpu_flash.h"
+N//#include "bsp_sdio_sd.h"
+N//#include "bsp_i2c_gpio.h"
+N//#include "bsp_eeprom_24xx.h"
+N//#include "bsp_si4730.h"
+N//#include "bsp_hmc5883l.h"
+N//#include "bsp_mpu6050.h"
+N//#include "bsp_bh1750.h"
+N//#include "bsp_bmp180.h"
+N//#include "bsp_wm8978.h"
+N//#include "bsp_gt811.h"
+N
+N//#include "bsp_fsmc_sram.h"
+N//#include "bsp_nand_flash.h"
+N//#include "bsp_nor_flash.h"
+N
+N//#include "LCD_RA8875.h"
+N//#include "LCD_SPFD5420.h"
+N//#include "LCD_ILI9488.h"
+N//#include "bsp_ra8875_port.h"
+N//#include "bsp_tft_lcd.h"
+N
+N//#include "bsp_touch.h"
+N
+N
+N//#include "bsp_oled.h"
+N//#include "bsp_sim800.h"
+N//#include "bsp_ra8875_flash.h"
+N
+N//#include "bsp_spi_bus.h"
+N//#include "bsp_spi_flash.h"
+N//#include "bsp_tm7705.h"
+N//#include "bsp_vs1053b.h"
+N//#include "bsp_tsc2046.h"
+N
+N//#include "bsp_ds18b20.h"
+N//#include "bsp_dac8501.h"
+N//#include "bsp_dht11.h"
+N
+N//#include "bsp_ir_decode.h"
+N//#include "bsp_ps2.h"
+N
+N//#include "bsp_modbus.h"
+N//#include "bsp_rs485_led.h"
+N//#include "bsp_user_lib.h"
+N
+N//#include "bsp_dac8501.h"
+N//#include "bsp_dac8562.h"
+N
+N//#include "bsp_esp8266.h"
+N//#include "bsp_step_moto.h"
+N
+N/* 提供给其他C文件调用的函数 */
+Nvoid bsp_Init(void);
+Nvoid bsp_Idle(void);
+Nvoid BSP_Tick_Init (void);
+N
+N#endif
+N
+N/***************************** 安富莱电子 www.armfly.com (END OF FILE) *********************************/
 L 20 "..\..\User\bsp\bsp.c" 2
 N#include "stdbool.h"
 L 1 "C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h" 1
@@ -38331,7 +38620,7 @@ N#if USE_FreeRTOS == 1
 X#if 1 == 1
 Nvoid bsp_enable_interrupt()
 N{
-N	if (bt_os_layer_is_isr_active()) {
+N	if ((*((volatile uint32_t *)0xE000ED04)) & 0x000003FF) {
 N		taskEXIT_CRITICAL_FROM_ISR(0);
 X		vPortClearInterruptMask(0);
 N	} else {
@@ -38342,7 +38631,7 @@ N}
 N
 Nvoid bsp_disable_interrupt()
 N{
-N	if (bt_os_layer_is_isr_active()) {
+N	if ((*((volatile uint32_t *)0xE000ED04)) & 0x000003FF) {
 N		taskENTER_CRITICAL_FROM_ISR();
 X		ulPortSetInterruptMask();
 N	} else {
