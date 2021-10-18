@@ -161,17 +161,27 @@ uint8_t obex_message_builder_header_add_variable(uint8_t * buffer, uint16_t buff
  * @brief Add name header to current request
  * @param buffer
  * @param buffer_len
- * @param name
+ * @param name with trailing '\0'
  * @return status
  */
 uint8_t obex_message_builder_header_add_name(uint8_t * buffer, uint16_t buffer_len, const char * name);
+
+/**
+ * @brief Add name header to current request
+ * @param buffer
+ * @param buffer_len
+ * @param name
+ * @param name_len
+ * @return status
+ */
+uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t buffer_len, const char * name, uint16_t name_len);
 
 /**
  * @brief Add target header to current request
  * @param buffer
  * @param buffer_len
  * @param target
- * @param lenght of target
+ * @param length of target
  * @return status
  */
 uint8_t obex_message_builder_header_add_target(uint8_t * buffer, uint16_t buffer_len, const uint8_t * target, uint16_t length);
