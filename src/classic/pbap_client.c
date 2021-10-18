@@ -260,9 +260,9 @@ static void pbap_client_vcard_listing_init_parser(pbap_client_t * client){
 }
 
 static void pbap_handle_can_send_now(void){
-    uint8_t  path_element[20];
     uint16_t path_element_start;
     uint16_t path_element_len;
+    const char * path_element;
     uint8_t  application_parameters[PBAP_MAX_PHONE_NUMBER_LEN + 10];
     uint8_t  challenge_response[36];
     int i;
@@ -472,21 +472,15 @@ static void pbap_handle_can_send_now(void){
                 pbap_client->set_path_offset++;              
             }
             path_element_len = pbap_client->set_path_offset-path_element_start;
-            (void)memcpy(path_element,
-                         &pbap_client->current_folder[path_element_start],
-                         path_element_len);
-            path_element[path_element_len] = 0;
+            path_element = (const char *) &pbap_client->current_folder[path_element_start];
 
             // skip /
             if (pbap_client->current_folder[pbap_client->set_path_offset] == '/'){
                 pbap_client->set_path_offset++;  
             }
 
-            // status
-            log_info("Path element '%s'", path_element);
-
             goep_client_request_create_set_path(pbap_client->goep_cid, 1 << 1); // Don’t create directory
-            goep_client_header_add_name(pbap_client->goep_cid, (const char *) path_element); // next element
+            goep_client_header_add_name_prefix(pbap_client->goep_cid, path_element, path_element_len); // next element
             // state
             pbap_client->state = PBAP_W4_SET_PATH_ELEMENT_COMPLETE;
             // send packet
