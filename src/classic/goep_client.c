@@ -579,6 +579,15 @@ void goep_client_header_add_name(uint16_t goep_cid, const char * name){
     obex_message_builder_header_add_name(buffer, buffer_len, name);
 }
 
+void goep_client_header_add_name_prefix(uint16_t goep_cid, const char * name, uint16_t name_len){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_header_add_name_prefix(buffer, buffer_len, name, name_len);
+}
+
 void goep_client_header_add_type(uint16_t goep_cid, const char * type){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;

@@ -185,6 +185,14 @@ void goep_client_header_add_variable(uint16_t goep_cid, uint8_t header_type, con
 void goep_client_header_add_name(uint16_t goep_cid, const char * name);
 
 /**
+ * @brief Add name header to current request
+ * @param goep_cid
+ * @param name
+ * @param name_len
+ */
+void goep_client_header_add_name_prefix(uint16_t goep_cid, const char * name, uint16_t name_len);
+
+/**
  * @brief Add target header to current request
  * @param goep_cid
  * @param target
