@@ -828,6 +828,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 #ifdef ENABLE_BCM_PCM_WBS
                     hfp_bcm_prepare_for_sco(hfp_connection);
 #endif
+#ifdef ENABLE_RTK_PCM_WBS
+                    hfp_connection->rtk_send_sco_config = true;
+#endif
                     log_info("accept sco %u\n", hfp_connection->accept_sco);
                     hfp_sco_establishment_active = hfp_connection;
                     break;

@@ -633,6 +633,9 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
 #ifdef ENABLE_CC256X_ASSISTED_HFP
             hfp_cc256x_prepare_for_sco(hfp_connection);
 #endif
+#ifdef ENABLE_RTK_PCM_WBS
+            hfp_connection->rtk_send_sco_config = true;
+#endif
             return 1;
         default:
             break;
@@ -2194,6 +2197,20 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
     if (hfp_connection->bcm_send_disable_wbs){
         hfp_connection->bcm_send_disable_wbs = false;
         hci_send_cmd(&hci_bcm_enable_wbs, 0, 2);
+        return;
+    }
+#endif
+#ifdef ENABLE_RTK_PCM_WBS
+    // Configure CVSD vs. mSBC
+    if (hfp_connection->rtk_send_sco_config){
+        hfp_connection->rtk_send_sco_config = false;
+        if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+            log_info("RTK SCO: 16k + mSBC");
+            hci_send_cmd(&hci_rtk_configure_sco_routing, 0x81, 0x90, 0x00, 0x00, 0x1a, 0x0c, 0x00, 0x00, 0x41);
+        } else {
+            log_info("RTK SCO: 16k + CVSD");
+            hci_send_cmd(&hci_rtk_configure_sco_routing, 0x81, 0x90, 0x00, 0x00, 0x1a, 0x0c, 0x0c, 0x00, 0x01);
+        }
         return;
     }
 #endif

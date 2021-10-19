@@ -727,6 +727,9 @@ typedef struct hfp_connection {
     bool bcm_send_disable_wbs;
     bool bcm_send_write_i2spcm_interface_param;
 #endif
+#ifdef ENABLE_RTK_PCM_WBS
+    bool rtk_send_sco_config;
+#endif
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils

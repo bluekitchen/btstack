@@ -785,6 +785,19 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         return;
     }
 #endif
+#ifdef ENABLE_RTK_PCM_WBS
+    if (hfp_connection->rtk_send_sco_config){
+        hfp_connection->rtk_send_sco_config = false;
+        if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+            log_info("RTK SCO: 16k + mSBC");
+            hci_send_cmd(&hci_rtk_configure_sco_routing, 0x81, 0x90, 0x00, 0x00, 0x1a, 0x0c, 0x00, 0x00, 0x41);
+        } else {
+            log_info("RTK SCO: 16k + CVSD");
+            hci_send_cmd(&hci_rtk_configure_sco_routing, 0x81, 0x90, 0x00, 0x00, 0x1a, 0x0c, 0x0c, 0x00, 0x01);
+        }
+        return;
+    }
+#endif
 #if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
     if (hfp_connection->state == HFP_W4_WBS_SHUTDOWN){
         hfp_finalize_connection_context(hfp_connection);
