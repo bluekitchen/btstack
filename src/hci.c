@@ -2082,6 +2082,7 @@ static void hci_handle_remote_features_page_2(hci_connection_t * conn, const uin
 }
 
 static void hci_handle_remote_features_received(hci_connection_t * conn){
+    conn->bonding_flags &= ~BONDING_REMOTE_FEATURES_QUERY_ACTIVE;
     conn->bonding_flags |= BONDING_RECEIVED_REMOTE_FEATURES;
     log_info("Remote features %02x, bonding flags %x", conn->remote_supported_features[0], conn->bonding_flags);
     if (conn->bonding_flags & BONDING_DEDICATED){
@@ -5611,8 +5612,8 @@ bool hci_remote_features_available(hci_con_handle_t handle){
 void hci_remote_features_query(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection) return;
-    if ((connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0) return;
-    connection->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
+    if ((connection->bonding_flags & (BONDING_REMOTE_FEATURES_QUERY_ACTIVE | BONDING_RECEIVED_REMOTE_FEATURES)) != 0) return;
+    connection->bonding_flags |= BONDING_REMOTE_FEATURES_QUERY_ACTIVE | BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
     hci_run();
 }
 
