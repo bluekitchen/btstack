@@ -98,7 +98,7 @@ void avrcp_target_register_set_addressed_player_handler(bool (*callback)(uint16_
  * @param num_company_ids
  * @param company_ids
  * @param company_ids_size
- * @returns status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t num_company_ids, const uint8_t *company_ids, uint8_t company_ids_size);
 
@@ -109,7 +109,7 @@ uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t num_company
  * @param num_event_ids
  * @param event_ids
  * @param event_ids_size
- * @returns status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t num_event_ids, const uint8_t *event_ids, uint8_t event_ids_size);
 
@@ -119,122 +119,125 @@ uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t num_event_ids,
  * @param avrcp_cid
  * @param song_length_ms
  * @param song_position_ms
- * @returns status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_playback_status_t status); 
 
 /**
- * @param Set Now Playing Info that is send to Controller if notifications are enabled
+ * @brief Set Now Playing Info that is send to Controller if notifications are enabled
  * @param avrcp_cid
  * @param current_track
  * @param total_tracks
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, ERROR_CODE_COMMAND_DISALLOWED if no track is provided, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t * current_track, uint16_t total_tracks);
 
 /**
- * @param Set Playing status and send to Controller
+ * @brief Set Playing status and send to Controller
  * @param avrcp_cid
  * @param playback_status
- * @return
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_status_t playback_status);
 
 /**
- * @param Set Unit Info
+ * @brief Set Unit Info
  * @param avrcp_cid
  * @param unit_type
  * @param company_id
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id);
 
 /**
- * @param Set Subunit Info
+ * @brief Set Subunit Info
  * @param avrcp_cid
  * @param subunit_type
  * @param subunit_info_data
  * @param subunit_info_data_size
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, const uint8_t * subunit_info_data, uint16_t subunit_info_data_size);
 
 /**
- * @param Send Playing Content Changed Notification if enabled
+ * @brief Send Playing Content Changed Notification if enabled
  * @param avrcp_cid
- * @return
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid);
 
 /**
- * @param Send Addressed Player Changed Notification if enabled
+ * @brief Send Addressed Player Changed Notification if enabled
  * @param avrcp_cid
  * @param player_id
  * @param uid_counter
- * @return
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t player_id, uint16_t uid_counter);
 
 /**
- * @param Set Battery Status Changed and send notification if enabled
+ * @brief Set Battery Status Changed and send notification if enabled
  * @param avrcp_cid
  * @param battery_status
- * @return
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
 
 /**
- * @param Overwrite the absolute volume requested by controller with the actual absolute volume. 
+ * @brief Overwrite the absolute volume requested by controller with the actual absolute volume. 
  * This function can only be called on AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED event, which indicates a set absolute volume request by controller. 
  * If the absolute volume requested by controller does not match the granularity of volume control the TG provides, you can use this function to adjust the actual value.
  *
  * @param avrcp_cid
  * @param absolute_volume
- * @return
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_adjust_absolute_volume(uint16_t avrcp_cid, uint8_t absolute_volume);
 
 
 /**
- * @param Set Absolute Volume and send notification if enabled 
+ * @brief Set Absolute Volume and send notification if enabled 
  * @param avrcp_cid
  * @param absolute_volume
- * @return
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t absolute_volume);
 
 /**
- * @param Set Track and send notification if enabled
+ * @brief Set Track and send notification if enabled
  * @param avrcp_cid
  * @param trackID
- * @return
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * trackID);
 
 /**
- * @param Send Operation Rejected message
+ * @brief Send Operation Rejected message
  * @param avrcp_cid
  * @param opid
  * @param operands_length
  * @param operand
- * @return
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_operation_rejected(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
 
 /**
- * @param Send Operation Accepted message
+ * @brief Send Operation Accepted message
  * @param avrcp_cid
  * @param opid
  * @param operands_length
  * @param operand
- * @return
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_operation_accepted(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
 
 /**
- * @param Send Operation Not Implemented message
+ * @brief Send Operation Not Implemented message
  * @param avrcp_cid
  * @param opid
  * @param operands_length
  * @param operand
- * @return
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
 uint8_t avrcp_target_operation_not_implemented(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
 
