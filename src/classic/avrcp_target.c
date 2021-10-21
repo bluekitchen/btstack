@@ -743,6 +743,17 @@ uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_st
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t avrcp_target_adjust_absolute_volume(uint16_t avrcp_cid, uint8_t absolute_volume){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    if (!connection){
+        log_error("avrcp_unit_info: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+    }
+
+    connection->absolute_volume = absolute_volume;
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t absolute_volume){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
@@ -1043,8 +1054,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     if (absolute_volume < 0x80){
                         connection->absolute_volume = absolute_volume;
                     }
-                    avrcp_target_response_accept(connection, subunit_type, subunit_id, opcode, pdu_id, connection->absolute_volume);
                     avrcp_target_emit_volume_changed(avrcp_target_context.avrcp_callback, connection->avrcp_cid, connection->absolute_volume);
+                    avrcp_target_response_accept(connection, subunit_type, subunit_id, opcode, pdu_id, connection->absolute_volume);
                     break;
                 }
                 default:

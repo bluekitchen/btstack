@@ -181,7 +181,17 @@ uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t playe
 uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
 
 /**
- * @param Set Volume and send notification if enabled
+ * @param Overwrite the absolute volume requested by controller with the actual absolute volume. 
+ * This function can only be called on AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED event, which indicates a set absolute volume request by controller. 
+ * If the absolute volume requested by controller does not match the granularity of volume control the TG provides, you can use this function to adjust the actual value.
+ *
+ * @param avrcp_cid
+ * @param absolute_volume
+ * @return
+ */
+uint8_t avrcp_target_adjust_absolute_volume(uint16_t avrcp_cid, uint8_t absolute_volume);
+
+
 /**
  * @param Set Absolute Volume and send notification if enabled 
  * @param avrcp_cid
