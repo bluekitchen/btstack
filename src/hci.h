@@ -720,8 +720,6 @@ typedef enum hci_init_state{
     HCI_INIT_W4_WRITE_INQUIRY_MODE,
     HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE,
     HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE,
-    HCI_INIT_WRITE_PAGE_TIMEOUT,
-    HCI_INIT_W4_WRITE_PAGE_TIMEOUT,
 
 #ifdef ENABLE_SCO_OVER_HCI
     // SCO over HCI
@@ -786,6 +784,7 @@ typedef enum hci_init_state{
 #define GAP_TASK_WRITE_SCAN_ENABLE        0x10
 #define GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY 0x20
 #define GAP_TASK_WRITE_PAGE_SCAN_TYPE     0x40
+#define GAP_TASK_WRITE_PAGE_TIMEOUT       0x80
 
 enum {
     // Tasks
@@ -878,12 +877,15 @@ typedef struct {
     /* GAP tasks, see GAP_TASK_* */
     uint16_t           gap_tasks;
 
-    /* write page scan activity, 0xffff is no change */
+    /* write page scan activity */
     uint16_t           new_page_scan_interval;
     uint16_t           new_page_scan_window;
 
-    /* write page scan type, 0xff is no change */
+    /* write page scan type */
     uint8_t            new_page_scan_type;
+
+    /* write page timeout */
+    uint16_t           page_timeout;
 
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
     uint8_t            gap_required_encyrption_key_size;

@@ -1347,6 +1347,12 @@ static void hci_run_gap_tasks_classic(void){
         hci_send_cmd(&hci_write_page_scan_type, hci_stack->new_page_scan_type);
         return;
     }
+    // write page timeout
+    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_PAGE_TIMEOUT) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_PAGE_TIMEOUT;
+        hci_send_cmd(&hci_write_page_timeout, hci_stack->page_timeout);
+        return;
+    }
     // send scan enable
     if ((hci_stack->gap_tasks & GAP_TASK_WRITE_SCAN_ENABLE) != 0) {
         hci_stack->gap_tasks &= ~GAP_TASK_WRITE_SCAN_ENABLE;
@@ -1651,15 +1657,6 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_write_secure_connections_host_support, 1);
                 hci_stack->secure_connections_active = true;
                 hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
-                break;
-            }
-
-            /* fall through */
-
-        case HCI_INIT_WRITE_PAGE_TIMEOUT:
-            if (hci_classic_supported()){
-                hci_stack->substate = HCI_INIT_W4_WRITE_PAGE_TIMEOUT;
-                hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
                 break;
             }
 
@@ -3452,12 +3449,15 @@ static void hci_state_reset(void){
 
 #ifdef ENABLE_CLASSIC
     hci_stack->inquiry_lap = GAP_IAC_GENERAL_INQUIRY;
+    hci_stack->page_timeout = 0x6000;  // ca. 15 sec
+
     hci_stack->gap_tasks =
             GAP_TASK_SET_DEFAULT_LINK_POLICY |
             GAP_TASK_SET_CLASS_OF_DEVICE |
             GAP_TASK_SET_LOCAL_NAME |
             GAP_TASK_SET_EIR_DATA |
-            GAP_TASK_WRITE_SCAN_ENABLE;
+            GAP_TASK_WRITE_SCAN_ENABLE |
+            GAP_TASK_WRITE_PAGE_TIMEOUT;
 #endif
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
@@ -6843,6 +6843,12 @@ void gap_set_page_scan_activity(uint16_t page_scan_interval, uint16_t page_scan_
 void gap_set_page_scan_type(page_scan_type_t page_scan_type){
     hci_stack->new_page_scan_type = (uint8_t) page_scan_type;
     hci_stack->gap_tasks |= GAP_TASK_WRITE_PAGE_SCAN_TYPE;
+    hci_run();
+}
+
+void gap_set_page_timeout(uint16_t page_timeout){
+    hci_stack->page_timeout = page_timeout;
+    hci_stack->gap_tasks |= GAP_TASK_WRITE_PAGE_TIMEOUT;
     hci_run();
 }
 

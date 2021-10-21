@@ -359,6 +359,12 @@ void gap_set_page_scan_activity(uint16_t page_scan_interval, uint16_t page_scan_
  */
 void gap_set_page_scan_type(page_scan_type_t page_scan_type);
 
+/**
+ * @brief Set Page Timeout
+ * @param page_timeout * 0.625 ms, range: 0x0001..0xffff, default: 0x6000 (ca 15 seconds)
+ */
+void gap_set_page_timeout(uint16_t page_timeout);
+
 // LE
 
 /**
