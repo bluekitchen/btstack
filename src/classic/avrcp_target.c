@@ -743,20 +743,20 @@ uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_st
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentage){
+uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t absolute_volume){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
-    if (connection->volume_percentage == volume_percentage){
+    if (connection->absolute_volume == absolute_volume){
         return ERROR_CODE_SUCCESS;
     }
     
-    connection->volume_percentage = volume_percentage;
+    connection->absolute_volume = absolute_volume;
 
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED )) {
-        connection->notify_volume_percentage_changed = 1;
+        connection->notify_absolute_volume_changed = 1;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     } 
     return ERROR_CODE_SUCCESS;
@@ -1018,8 +1018,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, NULL, 0);
                             break;
                         case AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED:
-                            connection->notify_volume_percentage_changed = 0;
-                            avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, (const uint8_t *)&connection->volume_percentage, 1);
+                            connection->notify_absolute_volume_changed = 0;
+                            avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, (const uint8_t *)&connection->absolute_volume, 1);
                             break;
                         case AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:
                             avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, (const uint8_t *)&connection->battery_status, 1);
@@ -1034,18 +1034,17 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 }
                 case AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME: {
-                    if (length != 1){
+                    if ( (length != 1) || ((pos + 1) > size)){
                         avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
                         break;
                     }
 
-                    if ((pos + 1) > size) return;
                     uint8_t absolute_volume = packet[pos];
                     if (absolute_volume < 0x80){
-                        connection->volume_percentage = absolute_volume;
+                        connection->absolute_volume = absolute_volume;
                     }
-                    avrcp_target_response_accept(connection, subunit_type, subunit_id, opcode, pdu_id, connection->volume_percentage);
-                    avrcp_target_emit_volume_changed(avrcp_target_context.avrcp_callback, connection->avrcp_cid, connection->volume_percentage);
+                    avrcp_target_response_accept(connection, subunit_type, subunit_id, opcode, pdu_id, connection->absolute_volume);
+                    avrcp_target_emit_volume_changed(avrcp_target_context.avrcp_callback, connection->avrcp_cid, connection->absolute_volume);
                     break;
                 }
                 default:
@@ -1187,9 +1186,9 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         return;
                     }
                     
-                    if (connection->notify_volume_percentage_changed){
-                        connection->notify_volume_percentage_changed = 0;
-                        avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED, &connection->volume_percentage, 1);
+                    if (connection->notify_absolute_volume_changed){
+                        connection->notify_absolute_volume_changed = 0;
+                        avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED, &connection->absolute_volume, 1);
                         avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                         return;

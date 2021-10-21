@@ -581,8 +581,8 @@ typedef struct {
     
     avrcp_battery_status_t battery_status;
     uint8_t battery_status_changed;
-    uint8_t volume_percentage;
-    uint8_t notify_volume_percentage_changed;
+    uint8_t absolute_volume;
+    uint8_t notify_absolute_volume_changed;
     
     uint8_t now_playing_info_response;
     uint8_t now_playing_info_attr_bitmap;

@@ -182,11 +182,13 @@ uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_st
 
 /**
  * @param Set Volume and send notification if enabled
+/**
+ * @param Set Absolute Volume and send notification if enabled 
  * @param avrcp_cid
- * @param volume_percentage
+ * @param absolute_volume
  * @return
  */
-uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentage);
+uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t absolute_volume);
 
 /**
  * @param Set Track and send notification if enabled
