@@ -248,7 +248,8 @@ static void btstack_run_loop_posix_set_timer(btstack_timer_source_t *a, uint32_t
 static void btstack_run_loop_posix_trigger_pipe(int fd){
     if (fd < 0) return;
     const uint8_t x = (uint8_t) 'x';
-    (void) write(fd, &x, 1);
+    ssize_t bytes_written = write(fd, &x, 1);
+    UNUSED(bytes_written);
 }
 
 // poll data sources from irq
@@ -256,7 +257,8 @@ static void btstack_run_loop_posix_trigger_pipe(int fd){
 static void btstack_run_loop_posix_poll_data_sources_handler(btstack_data_source_t * ds, btstack_data_source_callback_type_t callback_type){
     UNUSED(callback_type);
     uint8_t buffer[1];
-    (void) read(ds->source.fd, buffer, 1);
+    ssize_t bytes_read = read(ds->source.fd, buffer, 1);
+    UNUSED(bytes_read);
     // poll data sources
     btstack_run_loop_base_poll_data_sources();
 }
@@ -271,7 +273,8 @@ static void btstack_run_loop_posix_poll_data_sources_from_irq(void){
 static void btstack_run_loop_posix_process_callbacks_handler(btstack_data_source_t * ds, btstack_data_source_callback_type_t callback_type){
     UNUSED(callback_type);
     uint8_t buffer[1];
-    (void) read(ds->source.fd, buffer, 1);
+    ssize_t bytes_read = read(ds->source.fd, buffer, 1);
+    UNUSED(bytes_read);
     // execute callbacks - protect list with mutex
     while (1){
         pthread_mutex_lock(&btstack_run_loop_posix_callbacks_mutex);

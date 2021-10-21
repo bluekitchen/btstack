@@ -73,7 +73,8 @@ static char log_message_buffer[256];
 static void hci_dump_posix_fs_reset(void){
     btstack_assert(dump_file >= 0);
     (void) lseek(dump_file, 0, SEEK_SET);
-    (void) ftruncate(dump_file, 0);
+    int err = ftruncate(dump_file, 0);
+    UNUSED(err);
 }
 
 static void hci_dump_posix_fs_log_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
@@ -117,8 +118,11 @@ static void hci_dump_posix_fs_log_packet(uint8_t packet_type, uint8_t in, uint8_
             return;
     }
 
-    (void) write(dump_file, &header, header_len);
-    (void) write(dump_file, packet, len );
+    ssize_t bytes_written;
+    bytes_written = write(dump_file, &header, header_len);
+    UNUSED(bytes_written);
+    bytes_written = write(dump_file, packet, len );
+    UNUSED(bytes_written);
 }
 
 static void hci_dump_posix_fs_log_message(const char * format, va_list argptr){
@@ -152,7 +156,8 @@ int hci_dump_posix_fs_open(const char *filename, hci_dump_format_t format){
             // Datalink Type: 1001 - Un-encapsulated HCI
             0x00, 0x00, 0x03, 0xE9,
         };
-        (void) write(dump_file, &file_header, sizeof(file_header));
+        ssize_t bytes_written = write(dump_file, &file_header, sizeof(file_header));
+        UNUSED(bytes_written);
     }
     return 0;
 }

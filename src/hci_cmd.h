@@ -511,7 +511,6 @@ extern const hci_cmd_t hci_le_set_default_periodic_advertising_sync_transfer_par
 extern const hci_cmd_t hci_le_set_default_phy;
 extern const hci_cmd_t hci_le_set_event_mask;
 extern const hci_cmd_t hci_le_set_extended_advertising_data;
-extern const hci_cmd_t hci_le_set_extended_advertising_data;
 extern const hci_cmd_t hci_le_set_extended_advertising_enable;
 extern const hci_cmd_t hci_le_set_extended_advertising_parameters;
 extern const hci_cmd_t hci_le_set_extended_scan_enable;

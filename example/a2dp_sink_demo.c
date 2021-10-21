@@ -624,12 +624,9 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    uint8_t  status = 0xFF;
     
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
-    
-    status = packet[5];
     if (!avrcp_cid) return;
 
     memset(avrcp_subevent_value, 0, sizeof(avrcp_subevent_value));
@@ -714,9 +711,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             printf("AVRCP Controller: Set Player App Value %s\n", avrcp_ctype2str(avrcp_subevent_player_application_value_response_get_command_type(packet)));
             break;
             
-       
         default:
-            printf("AVRCP Controller: Event 0x%02x is not parsed\n", packet[2]);
             break;
     }  
 }

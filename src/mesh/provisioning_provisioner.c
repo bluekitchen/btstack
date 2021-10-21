@@ -91,6 +91,7 @@ static uint8_t  prov_start_authentication_method;
 static uint8_t  prov_start_authentication_action;
 static uint8_t  prov_start_authentication_size;
 static uint8_t  prov_authentication_string;
+// ConfirmationInputs = ProvisioningInvitePDUValue || ProvisioningCapabilitiesPDUValue || ProvisioningStartPDUValue || PublicKeyProvisioner || PublicKeyDevice
 static uint8_t  prov_confirmation_inputs[1 + 11 + 5 + 64 + 64];
 static uint8_t  confirmation_provisioner[16];
 static uint8_t  random_provisioner[16];
@@ -99,8 +100,6 @@ static uint8_t  remote_ec_q[64];
 static uint8_t  dhkey[32];
 static uint8_t  confirmation_salt[16];
 static uint8_t  confirmation_key[16];
-// ConfirmationInputs = ProvisioningInvitePDUValue || ProvisioningCapabilitiesPDUValue || ProvisioningStartPDUValue || PublicKeyProvisioner || PublicKeyDevice
-static uint8_t  prov_confirmation_inputs[1 + 11 + 5 + 64 + 64];
 static uint8_t provisioning_salt[16];
 static uint8_t session_key[16];
 static uint8_t session_nonce[16];

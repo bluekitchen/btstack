@@ -37,6 +37,9 @@
 
 #define BTSTACK_FILE__ "btstack_signal.c"
 
+// enable System V signal API
+#define _POSIX_C_SOURCE 200809
+
 #include "btstack_signal.h"
 
 #include <pthread.h>
