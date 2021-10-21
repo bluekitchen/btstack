@@ -1578,8 +1578,8 @@ static void hci_initializing_run(void){
                     break;
                 }
             }
-            /* fall through */
 #endif
+            /* fall through */
 
         case HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS:
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
@@ -1596,6 +1596,7 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_read_buffer_size);
                 break;
             }
+
             /* fall through */
 
         case HCI_INIT_READ_LOCAL_SUPPORTED_FEATURES:
@@ -1632,6 +1633,7 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack->ssp_enable);
                 break;
             }
+
             /* fall through */
 
         case HCI_INIT_WRITE_INQUIRY_MODE:
@@ -1640,6 +1642,7 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
                 break;
             }
+
             /* fall through */
 
         case HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE:
@@ -1650,6 +1653,7 @@ static void hci_initializing_run(void){
                 hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
                 break;
             }
+
             /* fall through */
 
         case HCI_INIT_WRITE_PAGE_TIMEOUT:
@@ -1658,9 +1662,10 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
                 break;
             }
-            /* fall through */
 
 #ifdef ENABLE_SCO_OVER_HCI
+            /* fall through */
+
         // only sent if ENABLE_SCO_OVER_HCI is defined
         case HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
             // skip write synchronous flow control if not supported
@@ -1678,10 +1683,11 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_write_default_erroneous_data_reporting, 1);
                 break;
             }
-            /* fall through */
 #endif
 
 #if defined(ENABLE_SCO_OVER_HCI) || defined(ENABLE_SCO_OVER_PCM)
+            /* fall through */
+
         // only sent if manufacturer is Broadcom and ENABLE_SCO_OVER_HCI or ENABLE_SCO_OVER_PCM is defined
         case HCI_INIT_BCM_WRITE_SCO_PCM_INT:
             if (hci_classic_supported() && (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION)){
@@ -1702,10 +1708,11 @@ static void hci_initializing_run(void){
 #endif
                 break;
             }
-            /* fall through */
 #endif
 
 #ifdef ENABLE_SCO_OVER_PCM
+            /* fall through */
+
         case HCI_INIT_BCM_WRITE_I2SPCM_INTERFACE_PARAM:
             if (hci_classic_supported() && (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION)){
                 hci_stack->substate = HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM;
@@ -1719,11 +1726,12 @@ static void hci_initializing_run(void){
 #endif
                 break;
             }
-            /* fall through */
 #endif
 #endif
 
 #ifdef ENABLE_BLE
+            /* fall through */
+
         // LE INIT
         case HCI_INIT_LE_READ_BUFFER_SIZE:
             if (hci_le_supported()){
@@ -1731,6 +1739,7 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_le_read_buffer_size);
                 break;
             }
+
             /* fall through */
 
         case HCI_INIT_WRITE_LE_HOST_SUPPORTED:
@@ -1741,6 +1750,7 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_write_le_host_supported, 1, 0);
                 break;
             }
+
             /* fall through */
 
         case HCI_INIT_LE_SET_EVENT_MASK:
@@ -1749,17 +1759,18 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_le_set_event_mask, 0x809FF, 0x0); // bits 0-8, 11, 19
                 break;
             }
-            /* fall through */
-
 #endif
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+            /* fall through */
+
         case HCI_INIT_LE_READ_MAX_DATA_LENGTH:
             if (hci_le_supported() && ((hci_stack->local_supported_commands[0u] & 0x30u) == 0x30u)){
                 hci_stack->substate = HCI_INIT_W4_LE_READ_MAX_DATA_LENGTH;
                 hci_send_cmd(&hci_le_read_maximum_data_length);
                 break;
             }
+
             /* fall through */
 
         case HCI_INIT_LE_WRITE_SUGGESTED_DATA_LENGTH:
@@ -1768,16 +1779,18 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_le_write_suggested_default_data_length, hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
                 break;
             }
-            /* fall through */
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
+            /* fall through */
+
         case HCI_INIT_READ_WHITE_LIST_SIZE:
             if (hci_le_supported()){
                 hci_stack->substate = HCI_INIT_W4_READ_WHITE_LIST_SIZE;
                 hci_send_cmd(&hci_le_read_white_list_size);
                 break;
             }
+            
             /* fall through */
 
         case HCI_INIT_LE_SET_SCAN_PARAMETERS:
@@ -1786,8 +1799,9 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_le_set_scan_parameters, hci_stack->le_scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
                 break;
             }
-            /* fall through */
 #endif
+
+            /* fall through */
 
         case HCI_INIT_DONE:
             hci_stack->substate = HCI_INIT_DONE;
