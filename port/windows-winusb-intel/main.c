@@ -64,7 +64,7 @@
 #include "hci_dump.h"
 #include "hci_dump_posix_fs.h"
 #include "hci_transport.h"
-#include "hci_transport_h4.h"
+#include "hci_transport_usb.h"
 #include "btstack_stdin.h"
 #include "btstack_chipset_intel_firmware.h"
 
