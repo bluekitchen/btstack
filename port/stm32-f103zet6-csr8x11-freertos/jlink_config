@@ -1,0 +1,11 @@
+JTAG
+JTAGConf -1 -1
+speed 1000
+device STM32F103ZE
+r
+h
+
+loadfile "./build/gap_inquiry.hex"
+r
+g
+qc

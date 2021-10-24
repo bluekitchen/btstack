@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "includes.h": "c",
+        "freertos.h": "c"
+    }
+}

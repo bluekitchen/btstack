@@ -357,8 +357,8 @@ all: \
 	$(addprefix $(BUILD_DIR)/,$(GATT_FILES:.gatt=.h)) \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.elf)) \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.hex)) \
-	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.bin)) \
-	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.jdebug)) \
+	#$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.bin)) \
+	#$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.jdebug)) \
 
 #include ${BTSTACK_ROOT}/chipset/csr/Makefile.inc
 

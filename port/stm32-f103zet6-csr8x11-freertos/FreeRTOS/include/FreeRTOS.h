@@ -106,7 +106,10 @@ extern "C" {
 /*
  * Check all the required application specific macros have been defined.
  * These macros are application specific and (as downloaded) are defined
- * within FreeRTOSConfig.h.
+ * within FreeRTOSConfig.h
+	
+	
+	
  */
 
 #ifndef configMINIMAL_STACK_SIZE
