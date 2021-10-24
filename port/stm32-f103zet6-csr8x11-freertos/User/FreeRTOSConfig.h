@@ -107,6 +107,7 @@
 #define configUSE_CO_ROUTINES 		0
 #define configMAX_CO_ROUTINE_PRIORITIES ( 2 )
 
+#define configSUPPORT_DYNAMIC_ALLOCATION     1
 /* Set the following definitions to 1 to include the API function, or zero
 to exclude the API function. */
 
@@ -117,7 +118,8 @@ to exclude the API function. */
 #define INCLUDE_vTaskSuspend			1
 #define INCLUDE_vTaskDelayUntil			1
 #define INCLUDE_vTaskDelay				1
-
+#define INCLUDE_xEventGroupSetBitFromISR 1
+#define INCLUDE_xTimerPendFunctionCall 1
 /* Cortex-M specific definitions. */
 #ifdef __NVIC_PRIO_BITS
 	/* __BVIC_PRIO_BITS will be specified when CMSIS is being used. */

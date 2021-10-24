@@ -1,0 +1,35 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/port/stm32-f103zet6-csr8x11-freertos"
+            },
+            "command": "make",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "Clean",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/port/stm32-f103zet6-csr8x11-freertos"
+            },
+            "command": "make -f makefile clean",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}

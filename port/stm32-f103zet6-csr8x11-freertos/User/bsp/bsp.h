@@ -28,7 +28,7 @@
 /* CPU空闲时执行的函数 */
 //#define CPU_IDLE()		bsp_Idle()
 
-#define  USE_FreeRTOS      1
+#define  USE_FreeRTOS      0
 
 #if USE_FreeRTOS == 1
 	#include "FreeRTOS.h"

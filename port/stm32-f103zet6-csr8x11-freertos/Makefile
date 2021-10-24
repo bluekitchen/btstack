@@ -24,7 +24,21 @@ DEBUG = 1
 # optimization
 OPT = -O0
 
+######################################
+# compile variables
+######################################
 
+BR_EDR_ENABLE = n
+
+BLE_ENABLE = y
+
+EXAMPLE_PLUS_ENABLE = n
+
+BT_STACK_USE_FREERTOS = n
+
+AT_CMD_ENABLE = n
+
+CUNIT_ENABLE = n
 #######################################
 # paths
 #######################################
@@ -38,95 +52,109 @@ VPATH += ${BTSTACK_ROOT}/example
 # source
 ######################################
 # C sources
-C_SOURCES =  \
-${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c \
-${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c \
-${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c \
-${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c \
-${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c \
-${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
-${BTSTACK_ROOT}/3rd-party/yxml/yxml.c \
-${BTSTACK_ROOT}/3rd-party/md5/md5.c \
-${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c \
-${BTSTACK_ROOT}/example/sco_demo_util.c \
-${BTSTACK_ROOT}/platform/embedded/btstack_audio_embedded.c \
-${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c \
-${BTSTACK_ROOT}/platform/embedded/btstack_stdin_embedded.c \
-${BTSTACK_ROOT}/platform/embedded/btstack_tlv_flash_bank.c \
-${BTSTACK_ROOT}/platform/embedded/btstack_uart_block_embedded.c \
-${BTSTACK_ROOT}/platform/embedded/hci_dump_embedded_stdout.c \
-${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c \
-${BTSTACK_ROOT}/src/ad_parser.c \
-${BTSTACK_ROOT}/src/ble/att_db.c \
-${BTSTACK_ROOT}/src/ble/att_dispatch.c \
-${BTSTACK_ROOT}/src/ble/att_server.c \
-${BTSTACK_ROOT}/src/ble/gatt-service/ancs_client.c \
-${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_client.c \
-${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c \
-${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_client.c \
-${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c \
-${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c \
-${BTSTACK_ROOT}/src/ble/gatt_client.c \
-${BTSTACK_ROOT}/src/ble/le_device_db_memory.c \
-${BTSTACK_ROOT}/src/ble/le_device_db_tlv.c \
-${BTSTACK_ROOT}/src/ble/sm.c \
-${BTSTACK_ROOT}/src/btstack_audio.c \
-${BTSTACK_ROOT}/src/btstack_crypto.c \
-${BTSTACK_ROOT}/src/btstack_hid_parser.c \
-${BTSTACK_ROOT}/src/btstack_linked_list.c \
-${BTSTACK_ROOT}/src/btstack_memory.c \
-${BTSTACK_ROOT}/src/btstack_memory_pool.c \
-${BTSTACK_ROOT}/src/btstack_resample.c \
-${BTSTACK_ROOT}/src/btstack_ring_buffer.c \
-${BTSTACK_ROOT}/src/btstack_run_loop.c \
-${BTSTACK_ROOT}/src/btstack_tlv.c \
-${BTSTACK_ROOT}/src/btstack_util.c \
-${BTSTACK_ROOT}/src/classic/a2dp_sink.c \
-${BTSTACK_ROOT}/src/classic/a2dp_source.c \
-${BTSTACK_ROOT}/src/classic/avdtp.c \
-${BTSTACK_ROOT}/src/classic/avdtp_acceptor.c \
-${BTSTACK_ROOT}/src/classic/avdtp_initiator.c \
-${BTSTACK_ROOT}/src/classic/avdtp_sink.c \
-${BTSTACK_ROOT}/src/classic/avdtp_source.c \
-${BTSTACK_ROOT}/src/classic/avdtp_util.c \
-${BTSTACK_ROOT}/src/classic/avrcp.c \
-${BTSTACK_ROOT}/src/classic/avrcp_browsing_controller.c \
-${BTSTACK_ROOT}/src/classic/avrcp_controller.c \
-${BTSTACK_ROOT}/src/classic/avrcp_media_item_iterator.c \
-${BTSTACK_ROOT}/src/classic/avrcp_target.c \
-${BTSTACK_ROOT}/src/classic/bnep.c \
-${BTSTACK_ROOT}/src/classic/btstack_cvsd_plc.c \
-${BTSTACK_ROOT}/src/classic/btstack_link_key_db_tlv.c \
-${BTSTACK_ROOT}/src/classic/btstack_sbc_decoder_bluedroid.c \
-${BTSTACK_ROOT}/src/classic/btstack_sbc_encoder_bluedroid.c \
-${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
-${BTSTACK_ROOT}/src/classic/device_id_server.c \
-${BTSTACK_ROOT}/src/classic/goep_client.c \
-${BTSTACK_ROOT}/src/classic/hfp.c \
-${BTSTACK_ROOT}/src/classic/hfp_ag.c \
-${BTSTACK_ROOT}/src/classic/hfp_gsm_model.c \
-${BTSTACK_ROOT}/src/classic/hfp_hf.c \
-${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
-${BTSTACK_ROOT}/src/classic/hid_device.c \
-${BTSTACK_ROOT}/src/classic/hid_host.c \
-${BTSTACK_ROOT}/src/classic/hsp_ag.c \
-${BTSTACK_ROOT}/src/classic/hsp_hs.c \
-${BTSTACK_ROOT}/src/classic/obex_iterator.c \
-${BTSTACK_ROOT}/src/classic/obex_message_builder.c \
-${BTSTACK_ROOT}/src/classic/pan.c \
-${BTSTACK_ROOT}/src/classic/pbap_client.c \
-${BTSTACK_ROOT}/src/classic/rfcomm.c \
-${BTSTACK_ROOT}/src/classic/sdp_client.c \
-${BTSTACK_ROOT}/src/classic/sdp_client_rfcomm.c \
-${BTSTACK_ROOT}/src/classic/sdp_server.c \
-${BTSTACK_ROOT}/src/classic/sdp_util.c \
-${BTSTACK_ROOT}/src/classic/spp_server.c \
-${BTSTACK_ROOT}/src/hci.c \
-${BTSTACK_ROOT}/src/hci_cmd.c \
-${BTSTACK_ROOT}/src/hci_dump.c \
-${BTSTACK_ROOT}/src/hci_transport_h4.c \
-${BTSTACK_ROOT}/src/l2cap.c \
-${BTSTACK_ROOT}/src/l2cap_signaling.c \
+ifeq (${BLE_ENABLE}, y)
+C_SOURCES += ${BTSTACK_ROOT}/src/ad_parser.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/att_db.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/att_dispatch.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/att_server.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/ancs_client.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_client.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_client.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt_client.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/le_device_db_memory.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/le_device_db_tlv.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/sm.c
+endif
+
+ifeq (${BR_EDR_ENABLE}, y)
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/a2dp_sink.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/a2dp_source.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/avdtp.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/avdtp_acceptor.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/avdtp_initiator.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/avdtp_sink.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/avdtp_source.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/avdtp_util.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/avrcp.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/avrcp_browsing_controller.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/avrcp_controller.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/avrcp_media_item_iterator.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/avrcp_target.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/bnep.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/btstack_cvsd_plc.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/btstack_link_key_db_tlv.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/btstack_sbc_decoder_bluedroid.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/btstack_sbc_encoder_bluedroid.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/device_id_server.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/goep_client.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/hfp.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/hfp_ag.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/hfp_gsm_model.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/hfp_hf.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/hfp_msbc.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/hid_device.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/hid_host.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/hsp_ag.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/hsp_hs.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/obex_iterator.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/obex_message_builder.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/pan.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/pbap_client.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/rfcomm.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/sdp_client.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/sdp_client_rfcomm.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/sdp_server.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/sdp_util.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/spp_server.c
+endif
+
+ifeq (${BT_STACK_USE_FREERTOS}, y)
+	C_SOURCES += ${BTSTACK_ROOT}/platform/freertos/btstack_run_loop_freertos.c
+	C_SOURCES += ${BTSTACK_ROOT}/platform/freertos/btstack_uart_block_freertos.c
+else
+	C_SOURCES += ${BTSTACK_ROOT}/platform/embedded/btstack_audio_embedded.c
+	C_SOURCES += ${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c
+	C_SOURCES += ${BTSTACK_ROOT}/platform/embedded/btstack_stdin_embedded.c
+	C_SOURCES += ${BTSTACK_ROOT}/platform/embedded/btstack_tlv_flash_bank.c
+	C_SOURCES += ${BTSTACK_ROOT}/platform/embedded/btstack_uart_block_embedded.c
+	C_SOURCES += ${BTSTACK_ROOT}/platform/embedded/hci_dump_embedded_stdout.c
+	C_SOURCES += ${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c
+endif
+
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c
+#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c
+#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c
+#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/yxml/yxml.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/md5/md5.c
+C_SOURCES += ${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c
+C_SOURCES += ${BTSTACK_ROOT}/example/sco_demo_util.c
+C_SOURCES += ${BTSTACK_ROOT}/src/btstack_audio.c
+C_SOURCES += ${BTSTACK_ROOT}/src/btstack_crypto.c
+C_SOURCES += ${BTSTACK_ROOT}/src/btstack_hid_parser.c
+C_SOURCES += ${BTSTACK_ROOT}/src/btstack_linked_list.c
+C_SOURCES += ${BTSTACK_ROOT}/src/btstack_memory.c
+C_SOURCES += ${BTSTACK_ROOT}/src/btstack_memory_pool.c
+C_SOURCES += ${BTSTACK_ROOT}/src/btstack_resample.c
+C_SOURCES += ${BTSTACK_ROOT}/src/btstack_ring_buffer.c
+C_SOURCES += ${BTSTACK_ROOT}/src/btstack_run_loop.c
+C_SOURCES += ${BTSTACK_ROOT}/src/btstack_tlv.c
+C_SOURCES += ${BTSTACK_ROOT}/src/btstack_util.c
+C_SOURCES += ${BTSTACK_ROOT}/src/hci.c
+C_SOURCES += ${BTSTACK_ROOT}/src/hci_cmd.c
+C_SOURCES += ${BTSTACK_ROOT}/src/hci_dump.c
+C_SOURCES += ${BTSTACK_ROOT}/src/hci_transport_h4.c
+C_SOURCES += ${BTSTACK_ROOT}/src/l2cap.c
+C_SOURCES += ${BTSTACK_ROOT}/src/l2cap_signaling.c
+
+#customize
+C_SOURCES +=  \
 FreeRTOS/portable/MemMang/heap_4.c \
 Libraries/STM32F10x_StdPeriph_Driver/src/misc.c \
 Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_gpio.c \
@@ -140,25 +168,34 @@ User/bsp/system_stm32f10x.c \
 User/bsp/src/bsp_led.c \
 User/bsp/src/bsp_uart_fifo.c \
 User/bsp/src/bsp_key.c \
+User/bsp/src/bsp_dwt.c \
 User/main.c \
-FreeRTOS/portable/GCC/ARM_CM3/port.c \
-FreeRTOS/croutine.c \
-FreeRTOS/event_groups.c \
-FreeRTOS/list.c \
-FreeRTOS/queue.c \
-FreeRTOS/tasks.c \
-FreeRTOS/timers.c \
-Middleware/at_command/at_command.c \
-Middleware/at_command/at_command_bt.c \
-Middleware/ut_manager/Cunit/Sources/Basic/Basic.c \
-Middleware/ut_manager/Cunit/Sources/Framework/CUError.c \
-Middleware/ut_manager/Cunit/Sources/Framework/MyMem.c \
-Middleware/ut_manager/Cunit/Sources/Framework/TestDB.c \
-Middleware/ut_manager/Cunit/Sources/Framework/TestRun.c \
-Middleware/ut_manager/Cunit/Sources/Framework/Util.c \
-Middleware/ut_manager/Cunit/Sources/cunit_misc.c \
-Middleware/ut_manager/Cunit/interface/cunit_interface.c \
 
+ifeq (${BT_STACK_USE_FREERTOS}, y)
+C_SOURCES += FreeRTOS/portable/GCC/ARM_CM3/port.c
+C_SOURCES += FreeRTOS/croutine.c
+C_SOURCES += FreeRTOS/event_groups.c
+C_SOURCES += FreeRTOS/list.c
+C_SOURCES += FreeRTOS/queue.c
+C_SOURCES += FreeRTOS/tasks.c
+C_SOURCES += FreeRTOS/timers.c
+endif
+
+ifeq (${AT_CMD_ENABLE}, y)
+C_SOURCES += Middleware/at_command/at_command.c
+C_SOURCES += Middleware/at_command/at_command_bt.c
+endif
+
+ifeq (${CUNIT_ENABLE}, y)
+C_SOURCES += Middleware/ut_manager/Cunit/Sources/Basic/Basic.c
+C_SOURCES += Middleware/ut_manager/Cunit/Sources/Framework/CUError.c
+C_SOURCES += Middleware/ut_manager/Cunit/Sources/Framework/MyMem.c
+C_SOURCES += Middleware/ut_manager/Cunit/Sources/Framework/TestDB.c
+C_SOURCES += Middleware/ut_manager/Cunit/Sources/Framework/TestRun.c
+C_SOURCES += Middleware/ut_manager/Cunit/Sources/Framework/Util.c
+C_SOURCES += Middleware/ut_manager/Cunit/Sources/cunit_misc.c
+C_SOURCES += Middleware/ut_manager/Cunit/interface/cunit_interface.c
+endif
 
 #User/SysInfoTest.c
 #User/bsp/bsp_msg.c \
@@ -249,6 +286,7 @@ C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/md5
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/yxml
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
+C_INCLUDES += -I${BTSTACK_ROOT}/platform/freertos
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip/port
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/csr
@@ -282,7 +320,10 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
-EXAMPLES = 					\
+EXAMPLES = gap_le_advertisements
+
+#ifeq (${EXAMPLE_PLUS_ENABLE}, y)
+#EXAMPLES += 				\
 	audio_duplex            \
 	a2dp_sink_demo			\
 	a2dp_source_demo        \
@@ -314,11 +355,12 @@ EXAMPLES = 					\
 	sine_player             \
 	sm_pairing_central      \
 	sm_pairing_peripheral   \
-	spp_and_gatt_counter 		\
-	spp_and_gatt_streamer     \
+	spp_and_gatt_counter 	\
+	spp_and_gatt_streamer   \
 	spp_counter 			\
 	spp_streamer			\
 	spp_streamer_client     \
+#endif
 
 GATT_FILES = \
 	ancs_client_demo.gatt \
