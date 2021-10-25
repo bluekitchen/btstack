@@ -638,6 +638,21 @@ static uint8_t request_continuous_pass_through_press_control_cmd(uint16_t avrcp_
     return avrcp_controller_request_pass_through_press_control_cmd(avrcp_cid, opid, playback_speed, true);
 }
 
+static void avrcp_controller_get_capabilities_for_connection(avrcp_connection_t * connection, uint8_t capability_id){
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_type = AVRCP_CTYPE_STATUS;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
+    connection->cmd_operands[3] = AVRCP_PDU_ID_GET_CAPABILITIES; // PDU ID
+    connection->cmd_operands[4] = 0;
+    big_endian_store_16(connection->cmd_operands, 5, 1); // parameter length
+    connection->cmd_operands[7] = capability_id;                  // capability ID
+    connection->cmd_operands_length = 8;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+}
 
 static uint8_t avrcp_controller_register_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t event_id){
     if ( (connection->remote_supported_notifications & (1 << event_id)) == 0){
@@ -1368,22 +1383,10 @@ static uint8_t avrcp_controller_get_capabilities(uint16_t avrcp_cid, uint8_t cap
         log_error("avrcp_get_capabilities: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    connection->state = AVCTP_W2_SEND_COMMAND;
-    
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-    connection->command_type = AVRCP_CTYPE_STATUS;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = AVRCP_SUBUNIT_ID;
-    big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
-    connection->cmd_operands[3] = AVRCP_PDU_ID_GET_CAPABILITIES; // PDU ID
-    connection->cmd_operands[4] = 0;
-    big_endian_store_16(connection->cmd_operands, 5, 1); // parameter length
-    connection->cmd_operands[7] = capability_id;                  // capability ID
-    connection->cmd_operands_length = 8;
-    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-    return ERROR_CODE_SUCCESS;
+    if (connection->state != AVCTP_CONNECTION_OPENED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    return avrcp_controller_get_capabilities_for_connection(connection, capability_id);
 }
 
 uint8_t avrcp_controller_get_supported_company_ids(uint16_t avrcp_cid){
