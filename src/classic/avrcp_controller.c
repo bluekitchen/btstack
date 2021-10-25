@@ -1377,7 +1377,7 @@ uint8_t avrcp_controller_subunit_info(uint16_t avrcp_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t avrcp_controller_get_capabilities(uint16_t avrcp_cid, uint8_t capability_id){
+uint8_t avrcp_controller_get_supported_company_ids(uint16_t avrcp_cid){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
@@ -1386,15 +1386,22 @@ static uint8_t avrcp_controller_get_capabilities(uint16_t avrcp_cid, uint8_t cap
     if (connection->state != AVCTP_CONNECTION_OPENED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    return avrcp_controller_get_capabilities_for_connection(connection, capability_id);
-}
-
-uint8_t avrcp_controller_get_supported_company_ids(uint16_t avrcp_cid){
-    return avrcp_controller_get_capabilities(avrcp_cid, AVRCP_CAPABILITY_ID_COMPANY);
+    avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_COMPANY);
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avrcp_controller_get_supported_events(uint16_t avrcp_cid){
-    return avrcp_controller_get_capabilities(avrcp_cid, AVRCP_CAPABILITY_ID_EVENT);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection){
+        log_error("avrcp_get_capabilities: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_EVENT);
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avrcp_controller_get_play_status(uint16_t avrcp_cid){
