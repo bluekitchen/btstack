@@ -446,7 +446,7 @@ static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t stat
 #endif
     log_info("pairing complete, status %02x", status);
 
-    uint8_t event[12];
+    uint8_t event[11];
     event[0] = GAP_EVENT_PAIRING_COMPLETE;
     event[1] = 9;
     little_endian_store_16(event, 2, (uint16_t) hci_connection->con_handle);
