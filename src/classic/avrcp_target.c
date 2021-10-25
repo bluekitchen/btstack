@@ -636,8 +636,10 @@ uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_stat
     } 
 
     connection->playback_status = playback_status;
-    connection->playback_status_changed = 1;
-    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED)) {
+        connection->playback_status_changed = 1;
+        avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    } 
     return ERROR_CODE_SUCCESS;
 }
 
@@ -666,8 +668,6 @@ uint8_t avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED)) {
         connection->track_changed = 1;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-    } else {
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
     return ERROR_CODE_SUCCESS;
 }
@@ -1004,6 +1004,11 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         case AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED:
                         case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:
                         case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:
+                        case AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END:
+                        case AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START:
+                        case AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED:
+                        case AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED:
+                        case AVRCP_NOTIFICATION_EVENT_MAX_VALUE:
                             avrcp_target_response_not_implemented(connection, subunit_type, subunit_id, opcode, pdu_id, event_id);
                             return;
                         default:
