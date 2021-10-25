@@ -1034,7 +1034,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, NULL, 0);
                             break;
                         case AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED:
-                            connection->notify_absolute_volume_changed = 0;
                             avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, (const uint8_t *)&connection->absolute_volume, 1);
                             break;
                         case AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:
