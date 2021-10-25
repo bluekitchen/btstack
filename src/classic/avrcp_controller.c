@@ -92,6 +92,39 @@ static int avrcp_controller_supports_browsing(uint16_t controller_supported_feat
     return controller_supported_features & AVRCP_FEATURE_MASK_BROWSING;
 }
 
+static void avrcp_controller_emit_supported_events(avrcp_connection_t * connection){
+    uint8_t event_id;
+    uint8_t offset;
+    uint8_t event[9];
+    uint8_t ctype = (uint8_t) AVRCP_CTYPE_RESPONSE_CHANGED_STABLE;
+
+    for (event_id = (uint8_t) AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED; event_id < (uint8_t) AVRCP_NOTIFICATION_EVENT_MAX_VALUE; event_id++){
+        if ( (connection->remote_supported_notifications & (1<<event_id)) == 0){
+            continue;
+        }
+        offset = 0;
+        event[offset++] = HCI_EVENT_AVRCP_META;
+        event[offset++] = sizeof(event) - 2;
+        event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID;
+        little_endian_store_16(event, offset, connection->avrcp_cid);
+        offset += 2;
+        event[offset++] = ctype;
+        event[offset++] = 0;
+        event[offset++] = event_id;
+        (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
+    }
+
+    offset = 0;
+    event[offset++] = HCI_EVENT_AVRCP_META;
+    event[offset++] = sizeof(event) - 2;
+    event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE;
+    little_endian_store_16(event, offset, connection->avrcp_cid);
+    offset += 2;
+    event[offset++] = ctype;
+    event[offset++] = 0;
+    (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id,
                                                             avrcp_command_type_t ctype, const uint8_t *payload,
                                                             uint16_t size) {
@@ -939,29 +972,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         case AVRCP_CAPABILITY_ID_EVENT:
                             for (i = 0; (i < capability_count) && ((size - pos) >= 1); i++){
                                 uint8_t event_id = packet[pos++];
-                                log_info("  0x%02x %s", event_id, avrcp_event2str(event_id));
-                                
-                                offset = 0;
-                                event[offset++] = HCI_EVENT_AVRCP_META;
-                                event[offset++] = sizeof(event) - 2;
-                                event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID;
-                                little_endian_store_16(event, offset, connection->avrcp_cid);
-                                offset += 2;
-                                event[offset++] = ctype;
-                                event[offset++] = 0;
-                                event[offset++] = event_id;
-                                (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
+                                connection->remote_supported_notifications |= (1 << event_id);
                             }
-
-                            offset = 0;
-                            event[offset++] = HCI_EVENT_AVRCP_META;
-                            event[offset++] = sizeof(event) - 2;
-                            event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE;
-                            little_endian_store_16(event, offset, connection->avrcp_cid);
-                            offset += 2;
-                            event[offset++] = ctype;
-                            event[offset++] = 0;
-                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                            avrcp_controller_emit_supported_events(connection);
                             break;
 
                         default:

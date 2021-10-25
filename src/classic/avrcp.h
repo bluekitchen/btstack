@@ -554,6 +554,9 @@ typedef struct {
 
     uint16_t notifications_enabled;
     uint16_t initial_status_reported;
+
+    uint16_t remote_supported_notifications;
+    bool     remote_supported_notifications_queried;
     
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
