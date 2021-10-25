@@ -907,8 +907,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     switch (capability_id){
 
                         case AVRCP_CAPABILITY_ID_COMPANY:
-                            // TODO: avoid out of bounds read
-                            for (i = 0; i < capability_count; i++){
+                            for (i = 0; (i < capability_count) && ((size - pos) >= 3); i++){
                                 uint32_t company_id = big_endian_read_24(packet, pos);
                                 pos += 3;
                                 log_info("  0x%06" PRIx32 ", ", company_id);
@@ -924,9 +923,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                                 little_endian_store_24(event, offset, company_id);
                                 offset += 3;
                                 (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
-                                break;
-                            }
-                            
+                            } 
+
                             offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
@@ -939,8 +937,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
 
                         case AVRCP_CAPABILITY_ID_EVENT:
-                            // TODO: avoid out of bounds read
-                            for (i = 0; i < capability_count; i++){
+                            for (i = 0; (i < capability_count) && ((size - pos) >= 1); i++){
                                 uint8_t event_id = packet[pos++];
                                 log_info("  0x%02x %s", event_id, avrcp_event2str(event_id));
                                 
