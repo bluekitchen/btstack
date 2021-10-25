@@ -701,7 +701,7 @@ static void avrcp_handle_open_connection(avrcp_connection_t * connection, hci_co
     connection->incoming_declined = false;
     connection->song_length_ms = 0xFFFFFFFF;
     connection->song_position_ms = 0xFFFFFFFF;
-    connection->playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
+    connection->playback_status = AVRCP_PLAYBACK_STATUS_STOPPED;
     connection->state = AVCTP_CONNECTION_OPENED;
     
     log_info("L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x, role %d, state %d", connection->avrcp_cid, connection->l2cap_signaling_cid, connection->role, connection->state);
