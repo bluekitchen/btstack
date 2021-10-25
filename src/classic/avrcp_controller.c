@@ -638,13 +638,24 @@ static uint8_t request_continuous_pass_through_press_control_cmd(uint16_t avrcp_
     return avrcp_controller_request_pass_through_press_control_cmd(avrcp_cid, opid, playback_speed, true);
 }
 
-static int avrcp_controller_register_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t event_id){
-    if (connection->notifications_to_deregister & (1 << event_id)) return 0;
-    if (connection->notifications_enabled & (1 << event_id)) return 0;
-    if (connection->notifications_to_register & (1 << event_id)) return 0;
+
+static uint8_t avrcp_controller_register_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t event_id){
+    if ( (connection->remote_supported_notifications & (1 << event_id)) == 0){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }  
+    if ( (connection->notifications_to_deregister & (1 << event_id)) != 0){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
+    if ( (connection->notifications_enabled & (1 << event_id)) != 0){
+        return ERROR_CODE_SUCCESS;
+    }
+    if ( (connection->notifications_to_register & (1 << event_id)) != 0){
+        return ERROR_CODE_SUCCESS;
+    }
+    
     connection->notifications_to_register |= (1 << event_id);
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-    return 1;
+    return ERROR_CODE_SUCCESS;
 }
 
 static uint8_t avrcp_controller_request_abort_continuation(avrcp_connection_t * connection){
@@ -1297,8 +1308,7 @@ uint8_t avrcp_controller_enable_notification(uint16_t avrcp_cid, avrcp_notificat
         log_error("avrcp_get_play_status: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    avrcp_controller_register_notification(connection, event_id);
-    return ERROR_CODE_SUCCESS;
+    return avrcp_controller_register_notification(connection, event_id);
 }
 
 uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id){
