@@ -1019,10 +1019,26 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                                 uint8_t event_id = packet[pos++];
                                 connection->remote_supported_notifications |= (1 << event_id);
                             }
+                            
+                            // if the get supported events query is triggered by avrcp_controller_enable_notification call, 
+                            // avrcp_controller_emit_supported_events should be suppressed
                             if (connection->remote_supported_notifications_suppress_emit_result){
                                 connection->remote_supported_notifications_suppress_emit_result = false;
+                                // also, notification might not be supported
+                                // if so, emit AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE event to app, 
+                                // and update notifications_to_register bitmap
+                                for (i = (uint8_t)AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; i < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; i++){
+                                    if ((connection->notifications_to_register & (1<<i)) != 0){
+                                        if ((connection->remote_supported_notifications & (1<<i)) == 0){
+                                            avrcp_controller_emit_notification_complete(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE, i);
+                                            connection->notifications_to_register &= ~(1 << i);
+                                        }
+                                    }
+                                }
                                 break;
                             }
+                            // supported events are emitted only if the get supported events query 
+                            // is triggered by avrcp_controller_get_supported_events call
                             avrcp_controller_emit_supported_events(connection);
                             break;
 
