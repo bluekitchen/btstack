@@ -738,6 +738,10 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
     if (size < 1) return;
     uint16_t pos = 0;
     avrcp_notification_event_id_t event_id = (avrcp_notification_event_id_t) payload[pos++];
+    if ( (event_id < AVRCP_NOTIFICATION_EVENT_FIRST_INDEX) || (event_id > AVRCP_NOTIFICATION_EVENT_LAST_INDEX)){
+        return;
+    }
+
     uint16_t event_mask = (1 << event_id);
     uint16_t reset_event_mask = ~event_mask;
 
