@@ -1386,7 +1386,7 @@ uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notifica
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     } 
 
-    if (connection->notifications_enabled & (1 << event_id) == 0){
+    if ((connection->notifications_enabled & (1 << event_id)) == 0){
         return ERROR_CODE_SUCCESS;
     }
 
