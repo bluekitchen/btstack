@@ -770,10 +770,7 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
             }
             break;
         default:
-            connection->notifications_to_register &= reset_event_mask;
-            connection->notifications_enabled &= reset_event_mask;
-            connection->notifications_to_deregister &= reset_event_mask;
-            break;
+            return;
     }
 
     avrcp_controller_emit_notification_for_event_id(connection->avrcp_cid, event_id, ctype, payload + pos, size - pos);
