@@ -733,6 +733,8 @@ typedef enum hci_init_state{
     // Broadcom SCO Routing and Configuration
     HCI_INIT_BCM_WRITE_SCO_PCM_INT,
     HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT,
+#endif
+#ifdef ENABLE_SCO_OVER_PCM
     HCI_INIT_BCM_WRITE_I2SPCM_INTERFACE_PARAM,
     HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM,
 #endif
