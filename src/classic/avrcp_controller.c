@@ -763,7 +763,7 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
             // we are re-enabling it automatically, if it is not 
             // explicitly disabled
             connection->notifications_enabled &= reset_event_mask;
-            if (! (connection->notifications_to_deregister & event_mask)){
+            if ((connection->notifications_to_deregister & event_mask) == 0){
                 avrcp_controller_register_notification(connection, event_id);
             } else {
                 connection->notifications_to_deregister &= reset_event_mask;
@@ -1374,6 +1374,14 @@ uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notifica
         log_error("avrcp_get_play_status: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+    if (!connection->remote_supported_notifications_queried){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if ((connection->remote_supported_notifications & (1 << event_id)) == 0){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    } 
+
     connection->notifications_to_deregister |= (1 << event_id);
     return ERROR_CODE_SUCCESS;
 }
