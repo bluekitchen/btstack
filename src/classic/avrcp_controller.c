@@ -680,10 +680,6 @@ static uint8_t avrcp_controller_register_notification(avrcp_connection_t * conne
     if ( (connection->notifications_enabled & (1 << event_id)) != 0){
         return ERROR_CODE_SUCCESS;
     }
-    if ( (connection->notifications_to_register & (1 << event_id)) != 0){
-        return ERROR_CODE_SUCCESS;
-    }
-    
     connection->notifications_to_register |= (1 << event_id);
 
     if (!connection->remote_supported_notifications_queried){
