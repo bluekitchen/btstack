@@ -8189,21 +8189,21 @@ static inline uint16_t avrcp_subevent_enable_notification_complete_get_avrcp_cid
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field command_type from event AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE
+ * @brief Get field status from event AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE
  * @param event packet
- * @return command_type
+ * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t avrcp_subevent_enable_notification_complete_get_command_type(const uint8_t * event){
+static inline uint8_t avrcp_subevent_enable_notification_complete_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field notification_id from event AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE
+ * @brief Get field event_id from event AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE
  * @param event packet
- * @return notification_id
+ * @return event_id
  * @note: btstack_type 1
  */
-static inline uint8_t avrcp_subevent_enable_notification_complete_get_notification_id(const uint8_t * event){
+static inline uint8_t avrcp_subevent_enable_notification_complete_get_event_id(const uint8_t * event){
     return event[6];
 }
 

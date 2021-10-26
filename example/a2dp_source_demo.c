@@ -843,11 +843,20 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
-            printf("AVRCP Controller: notification absolute volume changed %d %%\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet) * 100 / 127);
+            printf("AVRCP Controller: Notification Absolute Volume %d %%\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet) * 100 / 127);
             break;
         case AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:
             // see avrcp_battery_status_t
-            printf("AVRCP Controller: battery status changed %d\n", avrcp_subevent_notification_event_batt_status_changed_get_battery_status(packet));
+            printf("AVRCP Controller: Notification Battery Status %d\n", avrcp_subevent_notification_event_batt_status_changed_get_battery_status(packet));
+            break;
+        case AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE:
+            printf("AVRCP Controller: Notification %s ", avrcp_event2str(avrcp_subevent_enable_notification_complete_get_event_id(packet)));
+            if (avrcp_subevent_enable_notification_complete_get_status(packet) == ERROR_CODE_SUCCESS){
+                printf("enabled\n");
+            } else {
+                printf("disabled\n");
+            }
+            
             break;
         default:
             break;

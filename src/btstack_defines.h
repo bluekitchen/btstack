@@ -2693,8 +2693,8 @@ typedef uint8_t sm_key_t[16];
  * @format 1211
  * @param subevent_code
  * @param avrcp_cid
- * @param command_type
- * @param notification_id
+ * @param status
+ * @param event_id
  */
 #define AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE                       0x11
 

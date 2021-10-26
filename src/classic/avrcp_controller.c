@@ -92,6 +92,20 @@ static int avrcp_controller_supports_browsing(uint16_t controller_supported_feat
     return controller_supported_features & AVRCP_FEATURE_MASK_BROWSING;
 }
 
+static void avrcp_controller_emit_notification_complete(avrcp_connection_t * connection, uint8_t status, uint8_t event_id){
+    uint8_t event[7];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE;
+    little_endian_store_16(event, pos, connection->avrcp_cid);
+    pos += 2;
+    event[pos++] = status;
+    event[pos++] = event_id;
+    UNUSED(pos);
+    (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void avrcp_controller_emit_supported_events(avrcp_connection_t * connection){
     uint8_t ctype = (uint8_t) AVRCP_CTYPE_RESPONSE_CHANGED_STABLE;
     uint8_t event_id;
@@ -724,8 +738,7 @@ static uint8_t avrcp_controller_request_continue_response(avrcp_connection_t * c
     return ERROR_CODE_SUCCESS;
 }
 
-static void
-avrcp_controller_handle_notification(avrcp_connection_t *connection, avrcp_command_type_t ctype, uint8_t *payload, uint16_t size) {
+static void avrcp_controller_handle_notification(avrcp_connection_t *connection, avrcp_command_type_t ctype, uint8_t status, uint8_t *payload, uint16_t size) {
     if (size < 1) return;
     uint16_t pos = 0;
     avrcp_notification_event_id_t event_id = (avrcp_notification_event_id_t) payload[pos++];
@@ -736,13 +749,15 @@ avrcp_controller_handle_notification(avrcp_connection_t *connection, avrcp_comma
         case AVRCP_CTYPE_RESPONSE_INTERIM:
             // register as enabled
             connection->notifications_enabled |= event_mask;
+            avrcp_controller_emit_notification_complete(connection, status, event_id);
+            // check if initial value is already sent
             if ( (connection->initial_status_reported & event_mask) > 0 ){
                 return;
             }
             connection->initial_status_reported |= event_mask;
             break;
         case AVRCP_CTYPE_RESPONSE_CHANGED_STABLE:
-            // received change, event is considered deregistered
+            // received change, event is considered de-registered
             // we are re-enabling it automatically, if it is not 
             // explicitly disabled
             connection->notifications_enabled &= reset_event_mask;
@@ -899,7 +914,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
             // handle asynchronous notifications, without changing state
             if (pdu_id == AVRCP_PDU_ID_REGISTER_NOTIFICATION){
-                avrcp_controller_handle_notification(connection, ctype, packet + pos, size - pos);
+                avrcp_controller_handle_notification(connection, ctype, ERROR_CODE_SUCCESS, packet + pos, size - pos);
                 break;
             }
 
