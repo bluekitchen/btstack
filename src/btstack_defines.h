@@ -2690,13 +2690,14 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE                      0x10
 
 /**
- * @format 1211
+ * @format 12111
  * @param subevent_code
  * @param avrcp_cid
  * @param status
+ * @param enabled   // 1 enabled, 0 disabled
  * @param event_id
  */
-#define AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE                       0x11
+#define AVRCP_SUBEVENT_NOTIFICATION_STATE                               0x11
 
 /**
  * @format 112B2

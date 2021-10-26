@@ -8180,31 +8180,40 @@ static inline uint8_t avrcp_subevent_set_absolute_volume_response_get_absolute_v
 }
 
 /**
- * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_STATE
  * @param event packet
  * @return avrcp_cid
  * @note: btstack_type 2
  */
-static inline uint16_t avrcp_subevent_enable_notification_complete_get_avrcp_cid(const uint8_t * event){
+static inline uint16_t avrcp_subevent_notification_state_get_avrcp_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE
+ * @brief Get field status from event AVRCP_SUBEVENT_NOTIFICATION_STATE
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t avrcp_subevent_enable_notification_complete_get_status(const uint8_t * event){
+static inline uint8_t avrcp_subevent_notification_state_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field event_id from event AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE
+ * @brief Get field enabled from event AVRCP_SUBEVENT_NOTIFICATION_STATE
+ * @param event packet
+ * @return enabled
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_state_get_enabled(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field event_id from event AVRCP_SUBEVENT_NOTIFICATION_STATE
  * @param event packet
  * @return event_id
  * @note: btstack_type 1
  */
-static inline uint8_t avrcp_subevent_enable_notification_complete_get_event_id(const uint8_t * event){
-    return event[6];
+static inline uint8_t avrcp_subevent_notification_state_get_event_id(const uint8_t * event){
+    return event[7];
 }
 
 /**

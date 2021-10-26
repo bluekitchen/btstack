@@ -226,7 +226,7 @@ uint8_t avrcp_controller_press_and_hold_mute(uint16_t avrcp_cid);
 uint8_t avrcp_controller_get_play_status(uint16_t avrcp_cid);
 
 /**
- * @brief Enable notification. Response via AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE.
+ * @brief Enable notification. Response via AVRCP_SUBEVENT_NOTIFICATION_STATE.
  * @param avrcp_cid
  * @param event_id
  * @returns status
@@ -234,7 +234,7 @@ uint8_t avrcp_controller_get_play_status(uint16_t avrcp_cid);
 uint8_t avrcp_controller_enable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
 
 /**
- * @brief Disable notification. Response via AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE.
+ * @brief Disable notification. Response via AVRCP_SUBEVENT_NOTIFICATION_STATE.
  * @param avrcp_cid
  * @param event_id
  * @returns status

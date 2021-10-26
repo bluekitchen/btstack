@@ -147,7 +147,7 @@ static int volume_percentage = 0;
 static avrcp_battery_status_t battery_status = AVRCP_BATTERY_STATUS_WARNING; 
 
 #ifdef SUPPORT_VOLUME_CHANGE_NOTIFICATION
-static uint8_t events_num = 4;
+
 static uint8_t events[] = {
     AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED,
     AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
@@ -744,7 +744,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         
         case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
 #ifdef SUPPORT_VOLUME_CHANGE_NOTIFICATION
-            avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
+            avrcp_target_supported_events(avrcp_cid, sizeof(events)/sizeof(uint8_t), events, sizeof(events));
 #else
             avrcp_target_supported_events(avrcp_cid, 0, NULL, 0);
 #endif

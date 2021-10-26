@@ -92,15 +92,16 @@ static int avrcp_controller_supports_browsing(uint16_t controller_supported_feat
     return controller_supported_features & AVRCP_FEATURE_MASK_BROWSING;
 }
 
-static void avrcp_controller_emit_notification_complete(avrcp_connection_t * connection, uint8_t status, uint8_t event_id){
-    uint8_t event[7];
+static void avrcp_controller_emit_notification_complete(avrcp_connection_t * connection, uint8_t status, uint8_t event_id, bool enabled){
+    uint8_t event[8];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE;
+    event[pos++] = AVRCP_SUBEVENT_NOTIFICATION_STATE;
     little_endian_store_16(event, pos, connection->avrcp_cid);
     pos += 2;
     event[pos++] = status;
+    event[pos++] = enabled ? 1 : 0;
     event[pos++] = event_id;
     UNUSED(pos);
     (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -755,7 +756,7 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
                 return;
             }
             // emit event only once, initially
-            avrcp_controller_emit_notification_complete(connection, ERROR_CODE_SUCCESS, event_id);
+            avrcp_controller_emit_notification_complete(connection, ERROR_CODE_SUCCESS, event_id, true);
             connection->initial_status_reported |= event_mask;
             break;
         case AVRCP_CTYPE_RESPONSE_CHANGED_STABLE:
@@ -767,6 +768,9 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
                 avrcp_controller_register_notification(connection, event_id);
             } else {
                 connection->notifications_to_deregister &= reset_event_mask;
+                connection->notifications_to_register   &= reset_event_mask;
+                connection->initial_status_reported     &= reset_event_mask;
+                avrcp_controller_emit_notification_complete(connection, ERROR_CODE_SUCCESS, event_id, false);
             }
             break;
         default:
@@ -1033,7 +1037,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                                 for (i = (uint8_t)AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; i < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; i++){
                                     if ((connection->notifications_to_register & (1<<i)) != 0){
                                         if ((connection->remote_supported_notifications & (1<<i)) == 0){
-                                            avrcp_controller_emit_notification_complete(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE, i);
+                                            avrcp_controller_emit_notification_complete(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE, i, false);
                                             connection->notifications_to_register &= ~(1 << i);
                                         }
                                     }
@@ -1381,6 +1385,10 @@ uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notifica
     if ((connection->remote_supported_notifications & (1 << event_id)) == 0){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     } 
+
+    if (connection->notifications_enabled & (1 << event_id) == 0){
+        return ERROR_CODE_SUCCESS;
+    }
 
     connection->notifications_to_deregister |= (1 << event_id);
     return ERROR_CODE_SUCCESS;

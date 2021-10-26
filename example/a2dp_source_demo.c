@@ -849,14 +849,10 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             // see avrcp_battery_status_t
             printf("AVRCP Controller: Notification Battery Status %d\n", avrcp_subevent_notification_event_batt_status_changed_get_battery_status(packet));
             break;
-        case AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE:
-            printf("AVRCP Controller: Notification %s ", avrcp_event2str(avrcp_subevent_enable_notification_complete_get_event_id(packet)));
-            if (avrcp_subevent_enable_notification_complete_get_status(packet) == ERROR_CODE_SUCCESS){
-                printf("enabled\n");
-            } else {
-                printf("disabled\n");
-            }
-            
+        case AVRCP_SUBEVENT_NOTIFICATION_STATE:
+            printf("AVRCP Controller: Notification %s - %s\n", 
+                avrcp_event2str(avrcp_subevent_notification_state_get_event_id(packet)), 
+                avrcp_subevent_notification_state_get_enabled(packet) != 0 ? "enabled" : "disabled");
             break;
         default:
             break;
