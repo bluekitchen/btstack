@@ -738,7 +738,7 @@ static uint8_t avrcp_controller_request_continue_response(avrcp_connection_t * c
     return ERROR_CODE_SUCCESS;
 }
 
-static void avrcp_controller_handle_notification(avrcp_connection_t *connection, avrcp_command_type_t ctype, uint8_t status, uint8_t *payload, uint16_t size) {
+static void avrcp_controller_handle_notification(avrcp_connection_t *connection, avrcp_command_type_t ctype, uint8_t *payload, uint16_t size) {
     if (size < 1) return;
     uint16_t pos = 0;
     avrcp_notification_event_id_t event_id = (avrcp_notification_event_id_t) payload[pos++];
@@ -749,7 +749,7 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
         case AVRCP_CTYPE_RESPONSE_INTERIM:
             // register as enabled
             connection->notifications_enabled |= event_mask;
-            avrcp_controller_emit_notification_complete(connection, status, event_id);
+            avrcp_controller_emit_notification_complete(connection, ERROR_CODE_SUCCESS, event_id);
             // check if initial value is already sent
             if ( (connection->initial_status_reported & event_mask) > 0 ){
                 return;
@@ -914,7 +914,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
             // handle asynchronous notifications, without changing state
             if (pdu_id == AVRCP_PDU_ID_REGISTER_NOTIFICATION){
-                avrcp_controller_handle_notification(connection, ctype, ERROR_CODE_SUCCESS, packet + pos, size - pos);
+                avrcp_controller_handle_notification(connection, ctype, packet + pos, size - pos);
                 break;
             }
 
