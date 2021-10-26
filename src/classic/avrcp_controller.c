@@ -110,7 +110,7 @@ static void avrcp_controller_emit_supported_events(avrcp_connection_t * connecti
     uint8_t ctype = (uint8_t) AVRCP_CTYPE_RESPONSE_CHANGED_STABLE;
     uint8_t event_id;
 
-    for (event_id = (uint8_t) AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED; event_id < (uint8_t) AVRCP_NOTIFICATION_EVENT_MAX_VALUE; event_id++){
+    for (event_id = (uint8_t) AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; event_id < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; event_id++){
         if ( (connection->remote_supported_notifications & (1<<event_id)) == 0){
             continue;
         }
@@ -875,7 +875,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             connection->state = AVCTP_CONNECTION_OPENED;
 
 #ifdef ENABLE_LOG_INFO
-            // page, extention code (1)
+            // page, extension code (1)
             pos++;
             uint8_t unit_type = packet[pos] >> 3;
             uint8_t max_subunit_ID = packet[pos] & 0x07;
@@ -1179,7 +1179,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
     // send register notification if queued
     if (connection->notifications_to_register != 0){
         uint8_t event_id;
-        for (event_id = 1; event_id <= AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED; event_id++){
+        for (event_id = (uint8_t)AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; event_id < (uint8_t)AVRCP_NOTIFICATION_EVENT_LAST_INDEX; event_id++){
             if (connection->notifications_to_register & (1<<event_id)){
                 connection->notifications_to_register &= ~ (1 << event_id);
                 avrcp_send_register_notification(connection, event_id);

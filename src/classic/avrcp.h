@@ -167,6 +167,7 @@ typedef enum {
 } avrcp_pdu_id_t;
 
 typedef enum {
+    AVRCP_NOTIFICATION_EVENT_FIRST_INDEX = 0x01,
     AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED = 0x01,            // Change in playback status of the current track.
     AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED = 0x02,                      // Change of current track
     AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END = 0x03,                  // Reached end of a track
@@ -180,7 +181,8 @@ typedef enum {
     AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED = 0x0b,           // The Addressed Player has been changed, see 6.9.2.
     AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED = 0x0c,                       // The UIDs have changed, see 6.10.3.3.
     AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED = 0x0d,                     // The volume has been changed locally on the TG, see 6.13.3.
-    AVRCP_NOTIFICATION_EVENT_MAX_VALUE = 0x0e
+    AVRCP_NOTIFICATION_EVENT_MAX_VALUE = 0x0e,
+    AVRCP_NOTIFICATION_EVENT_LAST_INDEX = 0x0e
 } avrcp_notification_event_id_t;
 
 
