@@ -93,35 +93,37 @@ static int avrcp_controller_supports_browsing(uint16_t controller_supported_feat
 }
 
 static void avrcp_controller_emit_supported_events(avrcp_connection_t * connection){
-    uint8_t event_id;
-    uint8_t offset;
-    uint8_t event[9];
     uint8_t ctype = (uint8_t) AVRCP_CTYPE_RESPONSE_CHANGED_STABLE;
+    uint8_t event_id;
 
     for (event_id = (uint8_t) AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED; event_id < (uint8_t) AVRCP_NOTIFICATION_EVENT_MAX_VALUE; event_id++){
         if ( (connection->remote_supported_notifications & (1<<event_id)) == 0){
             continue;
         }
-        offset = 0;
-        event[offset++] = HCI_EVENT_AVRCP_META;
-        event[offset++] = sizeof(event) - 2;
-        event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID;
-        little_endian_store_16(event, offset, connection->avrcp_cid);
-        offset += 2;
-        event[offset++] = ctype;
-        event[offset++] = 0;
-        event[offset++] = event_id;
-        (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
+        uint8_t event[8];
+        uint8_t pos = 0;
+        event[pos++] = HCI_EVENT_AVRCP_META;
+        event[pos++] = sizeof(event) - 2;
+        event[pos++] = AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID;
+        little_endian_store_16(event, pos, connection->avrcp_cid);
+        pos += 2;
+        event[pos++] = ctype;
+        event[pos++] = 0;
+        event[pos++] = event_id;
+        UNUSED(pos);
+        (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
     }
 
-    offset = 0;
-    event[offset++] = HCI_EVENT_AVRCP_META;
-    event[offset++] = sizeof(event) - 2;
-    event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE;
-    little_endian_store_16(event, offset, connection->avrcp_cid);
-    offset += 2;
-    event[offset++] = ctype;
-    event[offset++] = 0;
+    uint8_t event[7];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE;
+    little_endian_store_16(event, pos, connection->avrcp_cid);
+    pos += 2;
+    event[pos++] = ctype;
+    event[pos++] = 0;
+    UNUSED(pos);
     (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -655,7 +657,7 @@ static void avrcp_controller_get_capabilities_for_connection(avrcp_connection_t 
 }
 
 static uint8_t avrcp_controller_register_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t event_id){
-    if ( (connection->remote_supported_notifications & (1 << event_id)) == 0){
+    if (connection->remote_supported_notifications_queried && (connection->remote_supported_notifications & (1 << event_id)) == 0){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }  
     if ( (connection->notifications_to_deregister & (1 << event_id)) != 0){
@@ -669,6 +671,12 @@ static uint8_t avrcp_controller_register_notification(avrcp_connection_t * conne
     }
     
     connection->notifications_to_register |= (1 << event_id);
+
+    if (!connection->remote_supported_notifications_queried){
+        connection->remote_supported_notifications_suppress_emit_result = true;
+        avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_EVENT);
+        return ERROR_CODE_SUCCESS;
+    }
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -999,6 +1007,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             for (i = 0; (i < capability_count) && ((size - pos) >= 1); i++){
                                 uint8_t event_id = packet[pos++];
                                 connection->remote_supported_notifications |= (1 << event_id);
+                            }
+                            if (connection->remote_supported_notifications_suppress_emit_result){
+                                connection->remote_supported_notifications_suppress_emit_result = false;
+                                break;
                             }
                             avrcp_controller_emit_supported_events(connection);
                             break;
@@ -1400,7 +1412,13 @@ uint8_t avrcp_controller_get_supported_events(uint16_t avrcp_cid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_EVENT);
+    if (!connection->remote_supported_notifications_queried){
+        connection->remote_supported_notifications_queried = true;
+        avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_EVENT);
+        return ERROR_CODE_SUCCESS;
+    }
+
+    avrcp_controller_emit_supported_events(connection);
     return ERROR_CODE_SUCCESS;
 }
 

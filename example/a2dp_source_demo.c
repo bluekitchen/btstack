@@ -752,11 +752,14 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             media_tracker.avrcp_cid = local_cid;
             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
 
+            printf("AVRCP: Channel to %s successfully opened, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), media_tracker.avrcp_cid);
+             
             avrcp_target_set_now_playing_info(media_tracker.avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
-
-            avrcp_controller_get_supported_events(media_tracker.avrcp_cid);
             
-            printf("AVRCP: Channel successfully opened:  media_tracker.avrcp_cid 0x%02x\n", media_tracker.avrcp_cid);
+            printf("Enable Volume Change notification\n");
+            avrcp_controller_enable_notification(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+            printf("Enable Battery Status Change notification\n");
+            avrcp_controller_enable_notification(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
             return;
         
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
@@ -845,14 +848,6 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
         case AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:
             // see avrcp_battery_status_t
             printf("AVRCP Controller: battery status changed %d\n", avrcp_subevent_notification_event_batt_status_changed_get_battery_status(packet));
-            break;
-        case AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID:  
-            printf("Remote supports EVENT_ID 0x%02x\n", avrcp_subevent_get_capability_event_id_get_event_id(packet));
-            break;
-        case AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE:  
-            printf("automatically enable notifications\n");
-            avrcp_controller_enable_notification(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
-            avrcp_controller_enable_notification(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
             break;
         default:
             break;

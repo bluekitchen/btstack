@@ -557,7 +557,8 @@ typedef struct {
 
     uint16_t remote_supported_notifications;
     bool     remote_supported_notifications_queried;
-    
+    bool     remote_supported_notifications_suppress_emit_result;
+
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
     uint8_t  notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_MAX_VALUE+1];

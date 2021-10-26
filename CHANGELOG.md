@@ -29,13 +29,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - A2DP Source: fix reconfigure
+- AVRCP Controller: prevent registering notifications for unsupported events
 - RFCOMM: fixed handling of remote port configuration command
 - HFP AG: fix accept incoming connection while audio connection is established
 - PBAP Client: handle chunked vCard Listing
 - SM: Work around for unexpected Windows 10 disconnect for BR Secure Connections (SMP over BR timeout)
 - SM: support storing bonding information for devices with identical IRK but different public addresses
 - GAP: restart advertising when private address changes
- 
+
 ### Changed
 - Drop iOS support
 - HCI: provide status instead of undocumented int error code and bool for API functions
@@ -51,6 +52,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP: enhanced VRA: HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED is emitted after VRA is ready and the the audio connection is established. This simplifies HFP HF client logic, i.e. client can call `hfp_hf_enhanced_voice_recognition_report_ready_for_audio directly` upon reception of HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED event.
 - AVDTP: media config validator is called with preview of media codec configuration event and configured separately for sink/source
 - AVRCP: use PANEL as default unit + subunit info
+- AVRCP Controller: automatically query supported events when registering for notifications 
 - Run Loop: new functionality for HCI transport drivers and inter-process communication
   - *btstack_run_loop_poll_data_sources_from_irq*: used to transfer control from IRQ handler to main thread/run loop
   - *btstack_run_loop_execute_on_main_thread*: schedule code execution on main thread from other thread
