@@ -745,11 +745,13 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
         case AVRCP_CTYPE_RESPONSE_INTERIM:
             // register as enabled
             connection->notifications_enabled |= event_mask;
-            avrcp_controller_emit_notification_complete(connection, ERROR_CODE_SUCCESS, event_id);
+            
             // check if initial value is already sent
-            if ( (connection->initial_status_reported & event_mask) > 0 ){
+            if ( (connection->initial_status_reported & event_mask) != 0 ){
                 return;
             }
+            // emit event only once, initially
+            avrcp_controller_emit_notification_complete(connection, ERROR_CODE_SUCCESS, event_id);
             connection->initial_status_reported |= event_mask;
             break;
         case AVRCP_CTYPE_RESPONSE_CHANGED_STABLE:
