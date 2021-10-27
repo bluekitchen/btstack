@@ -34,7 +34,7 @@ BLE_ENABLE = y
 
 EXAMPLE_PLUS_ENABLE = n
 
-BT_STACK_USE_FREERTOS = y
+FREERTOS_ENABLE = y
 
 AT_CMD_ENABLE = y
 
@@ -53,6 +53,8 @@ VPATH += ${BTSTACK_ROOT}/example
 ######################################
 # C sources
 ifeq (${BLE_ENABLE}, y)
+C_DEFS += -DBLE_ENABLE
+
 C_SOURCES += ${BTSTACK_ROOT}/src/ad_parser.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/att_db.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/att_dispatch.c
@@ -70,6 +72,8 @@ C_SOURCES += ${BTSTACK_ROOT}/src/ble/sm.c
 endif
 
 ifeq (${BR_EDR_ENABLE}, y)
+C_DEFS += -DBR_EDR_ENABLE
+
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/a2dp_sink.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/a2dp_source.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/avdtp.c
@@ -112,7 +116,9 @@ C_SOURCES += ${BTSTACK_ROOT}/src/classic/sdp_util.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/spp_server.c
 endif
 
-ifeq (${BT_STACK_USE_FREERTOS}, y)
+ifeq (${FREERTOS_ENABLE}, y)
+	C_DEFS += -DFREERTOS_ENABLE
+
 	C_SOURCES += ${BTSTACK_ROOT}/platform/freertos/btstack_run_loop_freertos.c
 	C_SOURCES += ${BTSTACK_ROOT}/platform/freertos/btstack_uart_block_freertos.c
 else
@@ -125,14 +131,14 @@ else
 	C_SOURCES += ${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c
 endif
 
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c
+#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c
+#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c
+#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c
 #C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c
 #C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c
 #C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/yxml/yxml.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/md5/md5.c
+#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/yxml/yxml.c
+#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/md5/md5.c
 C_SOURCES += ${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c
 C_SOURCES += ${BTSTACK_ROOT}/example/sco_demo_util.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_audio.c
@@ -155,7 +161,6 @@ C_SOURCES += ${BTSTACK_ROOT}/src/l2cap_signaling.c
 
 #customize
 C_SOURCES +=  \
-FreeRTOS/portable/MemMang/heap_4.c \
 Libraries/STM32F10x_StdPeriph_Driver/src/misc.c \
 Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_gpio.c \
 Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_rcc.c \
@@ -170,7 +175,8 @@ User/bsp/src/bsp_uart_fifo.c \
 User/bsp/src/bsp_key.c \
 User/main.c \
 
-ifeq (${BT_STACK_USE_FREERTOS}, y)
+ifeq (${FREERTOS_ENABLE}, y)
+C_SOURCES += FreeRTOS/portable/MemMang/heap_4.c
 C_SOURCES += FreeRTOS/portable/GCC/ARM_CM3/port.c
 C_SOURCES += FreeRTOS/croutine.c
 C_SOURCES += FreeRTOS/event_groups.c
@@ -181,11 +187,15 @@ C_SOURCES += FreeRTOS/timers.c
 endif
 
 ifeq (${AT_CMD_ENABLE}, y)
+C_DEFS += -DAT_CMD_ENABLE
+
 C_SOURCES += Middleware/at_command/at_command.c
 C_SOURCES += Middleware/at_command/at_command_bt.c
 endif
 
 ifeq (${CUNIT_ENABLE}, y)
+C_DEFS += -DCUNIT_ENABLE
+
 C_SOURCES += Middleware/ut_manager/Cunit/Sources/Basic/Basic.c
 C_SOURCES += Middleware/ut_manager/Cunit/Sources/Framework/CUError.c
 C_SOURCES += Middleware/ut_manager/Cunit/Sources/Framework/MyMem.c
@@ -244,7 +254,7 @@ MCU = $(CPU) -mthumb
 AS_DEFS = 
 
 # C defines
-C_DEFS =  \
+C_DEFS +=  \
 -DUSE_STDPERIPH_DRIVER \
 -DSTM32F10X_HD \
 -DNDEBUG \

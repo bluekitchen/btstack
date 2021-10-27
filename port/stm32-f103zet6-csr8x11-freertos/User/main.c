@@ -1,10 +1,9 @@
 #include "includes.h"
 
-#if 1
+#ifdef FREERTOS_ENABLE
 static void AppTaskCreate (void);
 static TaskHandle_t vHandleTaskATCommand = NULL;
 static TaskHandle_t xHandleTaskBT = NULL;
-//extern void vBT_Task(void *pvParameters);
 #endif
 
 int main(void)
@@ -13,17 +12,23 @@ int main(void)
 	__set_PRIMASK(1);  
 	
 	bsp_Init(); 
-	
+
+#ifdef AT_CMD_ENABLE	
 	at_command_init();
+#endif
 
+#ifdef CUNIT_ENABLE
 	cunit_init();
+#endif
 
+#ifdef FREERTOS_ENABLE
 	AppTaskCreate();
-	
+
     vTaskStartScheduler();
+#endif
 }
 
-#if 1
+#ifdef FREERTOS_ENABLE
 
 void vBT_Task(void *pvParameters)
 {
