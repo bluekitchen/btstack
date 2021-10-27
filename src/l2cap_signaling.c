@@ -39,8 +39,6 @@
 
 /*
  *  l2cap_signaling.h
- *
- *  Created by Matthias Ringwald on 7/23/09.
  */
 
 #include "l2cap_signaling.h"
@@ -50,7 +48,7 @@
 
 #include <string.h>
 
-static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, uint8_t pb_flags, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
+uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t handle, uint8_t pb_flags, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
 
     static const char *l2cap_signaling_commands_format[] = {
             "2D",    // 0x01 command reject: reason {cmd not understood (0), sig MTU exceeded (2:max sig MTU), invalid CID (4:req CID)}, data len, data
@@ -90,7 +88,7 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
         format = l2cap_signaling_commands_format[cmd-1u];
     }
     if (!format){
-        log_error("l2cap_create_signaling_internal: invalid command id 0x%02x", cmd);
+        log_error("l2cap_create_signaling_packet: invalid command id 0x%02x", cmd);
         return 0;
     }
 
@@ -150,17 +148,3 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
     
     return pos;
 }
-
-#ifdef ENABLE_CLASSIC
-uint16_t l2cap_create_signaling_classic(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
-    uint8_t pb_flags = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
-    return l2cap_create_signaling_internal(acl_buffer, handle, pb_flags, L2CAP_CID_SIGNALING, cmd, identifier, argptr);
-}
-#endif
-
-#ifdef ENABLE_BLE
-uint16_t l2cap_create_signaling_le(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
-    uint8_t pb_flags = 0x00;  // First non-automatically-flushable packet of a higher layer message
-    return l2cap_create_signaling_internal(acl_buffer, handle, pb_flags, L2CAP_CID_SIGNALING_LE, cmd, identifier, argptr);
-}
-#endif

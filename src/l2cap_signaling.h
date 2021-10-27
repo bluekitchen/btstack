@@ -90,8 +90,18 @@ typedef enum {
     L2CAP_CHANNEL_MODE_STREAMING_MODE          = 4,
 } l2cap_channel_mode_t;
 
-uint16_t l2cap_create_signaling_classic(uint8_t * acl_buffer,hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
-uint16_t l2cap_create_signaling_le(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
+/**
+ * @brief Create L2CAP signaling packet based on template and va_args
+ * @param acl_buffer to create packet
+ * @param handle
+ * @param pb_flags
+ * @param cid
+ * @param cmd
+ * @param identifier
+ * @param argptr
+ * @return
+ */
+uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t handle, uint8_t pb_flags, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
 
 #if defined __cplusplus
 }
