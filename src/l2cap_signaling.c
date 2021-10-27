@@ -50,7 +50,7 @@
 
 #include <string.h>
 
-static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, bool is_classic, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
+static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, uint8_t pb_flags, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
 
     static const char *l2cap_signaling_commands_format[] = {
             "2D",    // 0x01 command reject: reason {cmd not understood (0), sig MTU exceeded (2:max sig MTU), invalid CID (4:req CID)}, data len, data
@@ -94,17 +94,8 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
         return 0;
     }
 
-    int pb = 0x00;  // First non-automatically-flushable packet of a higher layer message 
-#ifdef ENABLE_CLASSIC
-    if (is_classic){
-        pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
-    }
-#else
-    UNUSED(is_classic);
-#endif
-
     // 0 - Connection handle : PB=pb : BC=00 
-    little_endian_store_16(acl_buffer, 0u, handle | (pb << 12u) | (0u << 14u));
+    little_endian_store_16(acl_buffer, 0u, handle | (pb_flags << 12u) | (0u << 14u));
     // 6 - L2CAP channel = 1
     little_endian_store_16(acl_buffer, 6, cid);
     // 8 - Code
@@ -162,12 +153,14 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
 
 #ifdef ENABLE_CLASSIC
 uint16_t l2cap_create_signaling_classic(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
-    return l2cap_create_signaling_internal(acl_buffer, handle, true, 1, cmd, identifier, argptr);
+    uint8_t pb_flags = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+    return l2cap_create_signaling_internal(acl_buffer, handle, pb_flags, L2CAP_CID_SIGNALING, cmd, identifier, argptr);
 }
 #endif
 
 #ifdef ENABLE_BLE
 uint16_t l2cap_create_signaling_le(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
-    return l2cap_create_signaling_internal(acl_buffer, handle, false, 5, cmd, identifier, argptr);
+    uint8_t pb_flags = 0x00;  // First non-automatically-flushable packet of a higher layer message
+    return l2cap_create_signaling_internal(acl_buffer, handle, pb_flags, L2CAP_CID_SIGNALING_LE, cmd, identifier, argptr);
 }
 #endif
