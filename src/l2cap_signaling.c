@@ -83,14 +83,11 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
     };
     static const unsigned int num_l2cap_commands = sizeof(l2cap_signaling_commands_format) / sizeof(const char *);
 
-    const char *format = NULL;
-    if ((cmd > 0u) && (cmd <= num_l2cap_commands)) {
-        format = l2cap_signaling_commands_format[cmd-1u];
-    }
-    if (!format){
-        log_error("l2cap_create_signaling_packet: invalid command id 0x%02x", cmd);
-        return 0;
-    }
+    btstack_assert(0 < cmd);
+    btstack_assert(cmd <= num_l2cap_commands);
+
+    const char *format = l2cap_signaling_commands_format[cmd-1u];
+    btstack_assert(format != NULL);
 
     // 0 - Connection handle : PB=pb : BC=00 
     little_endian_store_16(acl_buffer, 0u, handle | (pb_flags << 12u) | (0u << 14u));
@@ -136,7 +133,7 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
     };
     va_end(argptr);
     
-    // Fill in various length fields: it's the number of bytes following for ACL lenght and l2cap parameter length
+    // Fill in various length fields: it's the number of bytes following for ACL length and l2cap parameter length
     // - the l2cap payload length is counted after the following channel id (only payload) 
     
     // 2 - ACL length
