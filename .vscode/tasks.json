@@ -37,7 +37,7 @@
             "options": {
                 "cwd":  "${workspaceRoot}/port/stm32-f103zet6-csr8x11-freertos"
             },
-            "command": "JLink.exe -device stm32f103zet6 -speed 4000 -CommanderScript flash.jlink",
+            "command": "JLink.exe -device stm32f103zet6 -speed 4000 -SI SWD -CommanderScript flash.jlink", //Detail description about jlink command, please refer:https://wiki.segger.com/J-Link_Commander
             "group": {
                 "kind": "build",
                 "isDefault": true

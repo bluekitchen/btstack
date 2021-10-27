@@ -2,24 +2,6 @@
     // 使用 IntelliSense 了解相关属性。
     // 悬停以查看现有属性的描述。
     // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
-    
-    /*"version": "0.2.0",
-    "configurations": [
-        {
-            "name": "CortexDebug (JLink)",
-            "type": "cortex-debug",
-            "request": "launch",
-            "servertype": "jlink",
-            "cwd": "${workspaceRoot}/port/stm32-f103zet6-csr8x11-freertos",//work directory 
-            "executable": "build/gap_le_advertisements.elf",
-            "device": "STM32F103ZET6",
-            "debugServerArgs": "-if swd -singlerun -strict -endian little -speed auto -port 5000 -device STM32F103ZET6 -vd -strict -halt",
-            "interface": "swd",
-            "preLaunchTask": "build",//先运行Build任务
-            "ipAddress": null,
-            "serialNumber": null,
-        }
-    ]*/
 
     "version": "0.2.0",
     "configurations": [
@@ -35,8 +17,7 @@
       "interface": "swd",
       "preLaunchTask": "download",//先运行Build任务
       "serialNumber": "", //If you have more than one J-Link probe, add the serial number here.
-      "runToMain": true,
-      "svdFile": "${workspaceRoot}/port/stm32-f103zet6-csr8x11-freertos/STM32F103xx.svd" 
+      "runToMain": true
       }
       ]
 }

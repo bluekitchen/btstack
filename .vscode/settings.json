@@ -14,11 +14,7 @@
 "files.autoSave": "afterDelay",
 "security.workspace.trust.untrustedFiles": "open",
 
-//"terminal.integrated.shellArgs.windows": ["-NoExit", "/c", "chcp 65001"]
 "cortex-debug.JLinkGDBServerPath": "C:\\Program Files (x86)\\SEGGER\\JLink_V612a",
 
 "cortex-debug.armToolchainPath": "C:\\Program Files (x86)\\GNU Arm Embedded Toolchain\\10 2021.07\\bin",
-
-//"cortex-debug.stlinkPath": "C:\\Program Files (x86)\\SEGGER\\JLink_V612a"
-
 }
