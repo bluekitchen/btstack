@@ -3,14 +3,14 @@
     // 悬停以查看现有属性的描述。
     // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
     
-    "version": "0.2.0",
+    /*"version": "0.2.0",
     "configurations": [
         {
             "name": "CortexDebug (JLink)",
             "type": "cortex-debug",
             "request": "launch",
             "servertype": "jlink",
-            "cwd": "${workspaceFolder}/port/stm32-f103zet6-csr8x11-freertos",//work directory 
+            "cwd": "${workspaceRoot}/port/stm32-f103zet6-csr8x11-freertos",//work directory 
             "executable": "build/gap_le_advertisements.elf",
             "device": "STM32F103ZET6",
             "debugServerArgs": "-if swd -singlerun -strict -endian little -speed auto -port 5000 -device STM32F103ZET6 -vd -strict -halt",
@@ -19,33 +19,24 @@
             "ipAddress": null,
             "serialNumber": null,
         }
-    ]
-    /*"version": "0.2.1",
+    ]*/
+
+    "version": "0.2.0",
     "configurations": [
       {
-        "name": "Debug J-Link",
-        "type": "cppdbg",
-        "request": "launch",
-        "program": "${workspaceFolder}/port/stm32-f103zet6-csr8x11-freertos/build/gap_le_advertisements.elf",
-        "stopAtEntry": true,
-        "cwd": "${workspaceFolder}/port/stm32-f103zet6-csr8x11-freertos",
-        "externalConsole": false,
-        "MIMode": "gdb",
-        "miDebuggerPath": "C:\\Program Files (x86)\\GNU Arm Embedded Toolchain\\10 2021.07\\bin\\arm-none-eabi-gdb.exe",
-        "debugServerPath": "C:\\Program Files (x86)\\SEGGER\\JLink_V612a\\JLinkGDBServerCL.exe",
-        "debugServerArgs": "-if swd -singlerun -strict -endian little -speed auto -port 2331 -device STM32F103ZET6 -vd -strict -halt",
-        "serverStarted": "Connected\ to\ target",
-        "serverLaunchTimeout": 5000,
-        "filterStderr": false,
-        "filterStdout": true,
-        "setupCommands": [
-          {"text": "target remote localhost:2331"},
-          {"text": "monitor flash breakpoints = 1"},
-          {"text": "monitor flash download = 1"},
-          {"text": "monitor reset"},
-          {"text": "load ${workspaceFolder}/port/stm32-f103zet6-csr8x11-freertos/build/gap_le_advertisements.elf"},
-          {"text": "monitor reset"}
-        ]
+      "type": "cortex-debug",
+      "request": "launch",
+      "name": "Debug J-Link",
+      "cwd": "${workspaceRoot}/port/stm32-f103zet6-csr8x11-freertos",//work directory 
+      "executable": "build/gap_le_advertisements.elf",
+      "serverpath": "C:/Program Files (x86)/SEGGER/JLink_V612a/JLinkGDBServerCL.exe", 
+      "servertype": "jlink",
+      "device": "STM32F103ZET6",
+      "interface": "swd",
+      "preLaunchTask": "download",//先运行Build任务
+      "serialNumber": "", //If you have more than one J-Link probe, add the serial number here.
+      "runToMain": true,
+      "svdFile": "${workspaceRoot}/port/stm32-f103zet6-csr8x11-freertos/STM32F103xx.svd" 
       }
-    ]    */
+      ]
 }

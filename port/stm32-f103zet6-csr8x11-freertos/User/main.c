@@ -2,38 +2,40 @@
 
 #if 1
 static void AppTaskCreate (void);
-
-//static TaskHandle_t vHandleTaskATCommand = NULL;
-//static TaskHandle_t xHandleTaskBT = NULL;
+static TaskHandle_t vHandleTaskATCommand = NULL;
+static TaskHandle_t xHandleTaskBT = NULL;
 //extern void vBT_Task(void *pvParameters);
 #endif
 
 int main(void)
 {
 
-	//__set_PRIMASK(1);  
+	__set_PRIMASK(1);  
 	
 	bsp_Init(); 
-	uint32_t i = 0;
-	//bt_init();
 	
-	//at_command_init();
+	at_command_init();
 
-	//cunit_init();
+	cunit_init();
 
-	//AppTaskCreate();
+	AppTaskCreate();
 	
-    //vTaskStartScheduler();
-    printf("bluekitchen test! \r\n");
+    vTaskStartScheduler();
+}
+
+#if 1
+
+void vBT_Task(void *pvParameters)
+{
+    uint32_t i = 0;
+    printf("this is bt task! \r\n");
 	while(1)
     {
-        printf("bluekitchen test i = %d! \r\n", i);
+        printf("this is bt task! i = %d! \r\n", i);
         i++;
-        //bsp_DelayMS(100);
     }
 }
 
-#if 0
 static void AppTaskCreate (void)
 {
     xTaskCreate( vTaskATCommand,
@@ -43,11 +45,11 @@ static void AppTaskCreate (void)
                  2,                 	
                  &vHandleTaskATCommand );  
 	
-    /*xTaskCreate( vBT_Task,	      	    
+    xTaskCreate( vBT_Task,	      	    
                  "vBT_Task",     	    
                  512,               	
                  NULL,              	
                  4,                 	
-                 &xHandleTaskBT );*/
+                 &xHandleTaskBT );
 }
 #endif

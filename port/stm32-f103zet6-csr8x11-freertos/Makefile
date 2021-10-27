@@ -34,11 +34,11 @@ BLE_ENABLE = y
 
 EXAMPLE_PLUS_ENABLE = n
 
-BT_STACK_USE_FREERTOS = n
+BT_STACK_USE_FREERTOS = y
 
-AT_CMD_ENABLE = n
+AT_CMD_ENABLE = y
 
-CUNIT_ENABLE = n
+CUNIT_ENABLE = y
 #######################################
 # paths
 #######################################
@@ -168,7 +168,6 @@ User/bsp/system_stm32f10x.c \
 User/bsp/src/bsp_led.c \
 User/bsp/src/bsp_uart_fifo.c \
 User/bsp/src/bsp_key.c \
-User/bsp/src/bsp_dwt.c \
 User/main.c \
 
 ifeq (${BT_STACK_USE_FREERTOS}, y)

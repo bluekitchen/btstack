@@ -1,6 +1,24 @@
 {
-    "files.associations": {
-        "includes.h": "c",
-        "freertos.h": "c"
-    }
+    "files.autoGuessEncoding": true,
+
+ // cygwin 的安装目录
+"terminal.integrated.shell.windows": "C:\\cygwin64\\bin\\bash.exe",
+// 使得 cygwin 切换到当前工作目录
+"terminal.integrated.env.windows": {
+    "CHERE_INVOKING": "1"
+},
+// 使 cygwin 能够在 vscode 中正常使用 Shell 命令
+"terminal.integrated.shellArgs.windows": [
+    "-l"
+],
+"files.autoSave": "afterDelay",
+"security.workspace.trust.untrustedFiles": "open",
+
+//"terminal.integrated.shellArgs.windows": ["-NoExit", "/c", "chcp 65001"]
+"cortex-debug.JLinkGDBServerPath": "C:\\Program Files (x86)\\SEGGER\\JLink_V612a",
+
+"cortex-debug.armToolchainPath": "C:\\Program Files (x86)\\GNU Arm Embedded Toolchain\\10 2021.07\\bin",
+
+//"cortex-debug.stlinkPath": "C:\\Program Files (x86)\\SEGGER\\JLink_V612a"
+
 }
