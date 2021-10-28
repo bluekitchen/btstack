@@ -1255,6 +1255,18 @@ static void l2cap_stop_rtx(l2cap_channel_t * channel){
 }
 #endif
 
+static uint8_t l2cap_send_signaling_packet(hci_con_handle_t handle, uint8_t pb_flags, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, int identifier, va_list argptr){
+    if (!hci_can_send_acl_packet_now(handle)){
+        log_info("l2cap_send_classic_signaling_packet, cannot send");
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+    hci_reserve_packet_buffer();
+    uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
+    uint16_t len = l2cap_create_signaling_packet(acl_buffer, handle, pb_flags, cid, cmd, identifier, argptr);
+    va_end(argptr);
+    return hci_send_acl_packet_buffer(len);
+}
+
 #ifdef ENABLE_CLASSIC
 
 static void l2cap_start_rtx(l2cap_channel_t * channel){
@@ -1282,19 +1294,12 @@ static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm){
 }
 
 static int l2cap_send_classic_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, int identifier, ...){
-    if (!hci_can_send_acl_packet_now(handle)){
-        log_info("l2cap_send_classic_signaling_packet, cannot send");
-        return BTSTACK_ACL_BUFFERS_FULL;
-    }
-    
-    hci_reserve_packet_buffer();
-    uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
     va_list argptr;
     va_start(argptr, identifier);
     uint8_t pb_flags = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
-    uint16_t len = l2cap_create_signaling_packet(acl_buffer, handle, pb_flags, L2CAP_CID_SIGNALING, cmd, identifier, argptr);
+    uint8_t result = l2cap_send_signaling_packet(handle, pb_flags, L2CAP_CID_SIGNALING, cmd, identifier, argptr);
     va_end(argptr);
-    return hci_send_acl_packet_buffer(len);
+    return result;
 }
 
 // assumption - only on Classic connections
@@ -1392,19 +1397,12 @@ static inline void channelStateVarClearFlag(l2cap_channel_t *channel, uint16_t f
 
 #ifdef ENABLE_BLE
 static int l2cap_send_le_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, int identifier, ...){
-    if (!hci_can_send_acl_packet_now(handle)){
-        log_info("l2cap_send_le_signaling_packet, cannot send");
-        return BTSTACK_ACL_BUFFERS_FULL;
-    }
-    
-    hci_reserve_packet_buffer();
-    uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
     va_list argptr;
     va_start(argptr, identifier);
     uint8_t pb_flags = 0x00;  // First non-automatically-flushable packet of a higher layer message
-    uint16_t len = l2cap_create_signaling_packet(acl_buffer, handle, pb_flags, L2CAP_CID_SIGNALING_LE, cmd, identifier, argptr);
+    uint8_t result = l2cap_send_signaling_packet(handle, pb_flags, L2CAP_CID_SIGNALING, cmd, identifier, argptr);
     va_end(argptr);
-    return hci_send_acl_packet_buffer(len);
+    return result;
 }
 #endif
 
