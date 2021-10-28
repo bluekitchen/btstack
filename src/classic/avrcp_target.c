@@ -572,28 +572,69 @@ static inline uint8_t avrcp_prepare_vendor_dependent_response(uint16_t avrcp_cid
     return avrcp_prepare_vendor_dependent_response_for_connection(*out_connection, pdu_id, param_length);
 }
 
-static uint8_t avrcp_target_capability(uint16_t avrcp_cid, avrcp_capability_id_t capability_id, uint8_t num_capabilities, const uint8_t *capabilities, uint8_t capabilities_size){
-    avrcp_connection_t * connection = NULL;
-    uint8_t status = avrcp_prepare_vendor_dependent_response(avrcp_cid, &connection, AVRCP_PDU_ID_GET_CAPABILITIES, 2 + capabilities_size);
+
+static uint8_t avrcp_target_supported_events(avrcp_connection_t * connection){
+    uint8_t num_events = 0;
+    uint8_t event_id;
+    uint8_t events[(uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX];
+
+    for (event_id = (uint8_t) AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; event_id < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; event_id++){
+        if ((connection->target_supported_notifications & (1<<event_id)) == 0){
+            continue;
+        }
+        events[num_events] = event_id;
+        num_events++;
+    }
+
+    uint8_t events_size = sizeof(uint8_t) * num_events;
+    uint8_t status = avrcp_prepare_vendor_dependent_response_for_connection(connection, AVRCP_PDU_ID_GET_CAPABILITIES, 2 + events_size);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    connection->cmd_operands[connection->cmd_operands_length++] = capability_id;
-    connection->cmd_operands[connection->cmd_operands_length++] = num_capabilities;
-    (void)memcpy(connection->cmd_operands + connection->cmd_operands_length,
-                 capabilities, capabilities_size);
-    connection->cmd_operands_length += capabilities_size;
+    connection->cmd_operands[connection->cmd_operands_length++] = AVRCP_CAPABILITY_ID_EVENT;
+    connection->cmd_operands[connection->cmd_operands_length++] = num_events;
+
+    (void)memcpy(connection->cmd_operands + connection->cmd_operands_length, events, events_size);
+    connection->cmd_operands_length += events_size;
     
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t num_event_ids, const uint8_t *event_ids, uint8_t event_ids_size){
-    return avrcp_target_capability(avrcp_cid, AVRCP_CAPABILITY_ID_EVENT, num_event_ids, event_ids, event_ids_size);
+static uint8_t avrcp_target_supported_companies(avrcp_connection_t * connection){
+    static uint32_t default_companies[] = {
+        0x581900 //BT SIG registered CompanyID
+    };
+
+    uint8_t  target_supported_companies_num = connection->target_supported_companies_num;
+    const uint32_t *target_supported_companies = connection->target_supported_companies;
+
+    if (connection->target_supported_companies_num == 0){
+        target_supported_companies_num = 1;
+        target_supported_companies = default_companies;
+    }
+
+    uint16_t capabilities_size = target_supported_companies_num * 3;
+
+    uint8_t status = avrcp_prepare_vendor_dependent_response_for_connection(connection, AVRCP_PDU_ID_GET_CAPABILITIES, 2 + capabilities_size);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    connection->cmd_operands[connection->cmd_operands_length++] = AVRCP_CAPABILITY_ID_COMPANY;
+    connection->cmd_operands[connection->cmd_operands_length++] = target_supported_companies_num;
+    
+    uint8_t i;
+    for (i = 0; i < target_supported_companies_num; i++){
+        little_endian_store_24(connection->cmd_operands, connection->cmd_operands_length, target_supported_companies[i]);
+         connection->cmd_operands_length += 3;
+    }
+    
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t num_company_ids, const uint8_t *company_ids, uint8_t company_ids_size){
-    return avrcp_target_capability(avrcp_cid, AVRCP_CAPABILITY_ID_COMPANY, num_company_ids, company_ids, company_ids_size);
+}
+
 }
 
 uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_playback_status_t play_status){
@@ -940,10 +981,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     avrcp_capability_id_t capability_id = (avrcp_capability_id_t) packet[pos];
                     switch (capability_id){
                         case AVRCP_CAPABILITY_ID_EVENT:
-                            avrcp_target_emit_respond_vendor_dependent_query(avrcp_target_context.avrcp_callback, connection->avrcp_cid, AVRCP_SUBEVENT_EVENT_IDS_QUERY);
+                             avrcp_target_supported_events(connection);
                             break;
                         case AVRCP_CAPABILITY_ID_COMPANY:
-                            avrcp_target_emit_respond_vendor_dependent_query(avrcp_target_context.avrcp_callback, connection->avrcp_cid, AVRCP_SUBEVENT_COMPANY_IDS_QUERY);
+                            avrcp_target_supported_companies(connection);
                             break;
                         default:
                             avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_PARAMETER);

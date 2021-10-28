@@ -200,20 +200,6 @@ static modcontext mod_context;
 static tracker_buffer_state trkbuf;
 
 /* AVRCP Target context START */
-static uint8_t  companies_num = 1;
-static uint8_t  companies[] = {
-    0x00, 0x19, 0x58 //BT SIG registered CompanyID
-};
-
-static uint8_t events_num = 6;
-static uint8_t events[] = {
-    AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED
-};
 
 typedef struct {
     uint8_t track_id[8];
@@ -788,12 +774,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     avrcp_operation_id_t operation_id;
 
     switch (packet[2]){
-        case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
-            status = avrcp_target_supported_events(media_tracker.avrcp_cid, events_num, events, sizeof(events));
-            break;
-        case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
-            status = avrcp_target_supported_companies(media_tracker.avrcp_cid, companies_num, companies, sizeof(companies));
-            break;
         case AVRCP_SUBEVENT_PLAY_STATUS_QUERY:
             status = avrcp_target_play_status(media_tracker.avrcp_cid, play_info.song_length_ms, play_info.song_position_ms, play_info.status);            
             break;

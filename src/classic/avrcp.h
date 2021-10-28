@@ -560,6 +560,8 @@ typedef struct {
     uint16_t target_supported_notifications;
     bool     target_supported_notifications_queried;
     bool     target_supported_notifications_suppress_emit_result;
+    const uint32_t *target_supported_companies;
+    uint8_t  target_supported_companies_num;
 
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 

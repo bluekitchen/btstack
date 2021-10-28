@@ -146,21 +146,6 @@ static media_codec_configuration_sbc_t sbc_configuration;
 static int volume_percentage = 0; 
 static avrcp_battery_status_t battery_status = AVRCP_BATTERY_STATUS_WARNING; 
 
-#ifdef SUPPORT_VOLUME_CHANGE_NOTIFICATION
-
-static uint8_t events[] = {
-    AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED
-};
-#endif
-
-static uint8_t companies_num = 1;
-static uint8_t companies[] = {
-    0x00, 0x19, 0x58 //BT SIG registered CompanyID
-};
-
 #ifdef HAVE_BTSTACK_STDIN
 // pts:         
 static const char * device_addr_string = "6C:72:E7:10:22:EE";
