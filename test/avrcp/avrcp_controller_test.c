@@ -105,9 +105,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     local_cid = little_endian_read_16(packet, 3);
                     if (avrcp_cid != local_cid) return;
 
-                    // avoid printing INTERIM status
-                    if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
-                            
                     printf("AVRCP: command status: %s, ", avrcp_ctype2str(status));
                     switch (packet[2]){
                         case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:

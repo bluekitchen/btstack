@@ -310,23 +310,6 @@ static uint8_t companies[] = {
     0x00, 0x19, 0x58 //BT SIG registered CompanyID
 };
 
-static uint8_t events_num = 13;
-static uint8_t events[] = {
-    AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END,
-    AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START,
-    AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
-};
-
 static avrcp_media_attribute_id_t now_playing_info_attributes [] = {
     AVRCP_MEDIA_ATTR_TITLE
 };
@@ -611,6 +594,20 @@ static void avrcp_connection_establishment_packet_handler(uint8_t packet_type, u
             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
             printf("AVRCP connection established: avrcp_cid 0x%02x.\n", avrcp_cid);
             
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+
             avrcp_target_set_now_playing_info(avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
 
             // Set PTS default TSPX_max_avc_fragments = 10
@@ -713,12 +710,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
     
     switch (packet[2]){
-        case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
-            avrcp_status = avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
-            break;
-        case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
-            avrcp_status = avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
-            break;
         case AVRCP_SUBEVENT_PLAY_STATUS_QUERY:
             avrcp_status = avrcp_target_play_status(avrcp_cid, play_info.song_length_ms, play_info.song_position_ms, play_info.status);            
             break;
@@ -817,10 +808,14 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     // avoid printing INTERIM status
     uint8_t status = packet[5];
     int volume_percentage;
-    if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
     printf("AVRCP: command status: %s, ", avrcp_ctype2str(status));
 
     switch (packet[2]){
+        case AVRCP_SUBEVENT_NOTIFICATION_STATE:
+            printf("Notification %s - %s\n", 
+                avrcp_event2str(avrcp_subevent_notification_state_get_event_id(packet)), 
+                avrcp_subevent_notification_state_get_enabled(packet) != 0 ? "enabled" : "disabled");
+            break;
         case AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO:
             printf("Now playing:     Track: %d\n", avrcp_subevent_now_playing_track_info_get_track(packet));
             break;

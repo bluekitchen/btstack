@@ -148,7 +148,7 @@ static avrcp_battery_status_t battery_status = AVRCP_BATTERY_STATUS_WARNING;
 
 #ifdef HAVE_BTSTACK_STDIN
 // pts:         
-static const char * device_addr_string = "6C:72:E7:10:22:EE";
+static const char * device_addr_string = "5C:F3:70:60:7B:87";
 // mac 2013:  static const char * device_addr_string = "84:38:35:65:d1:15";
 // iPhone 5S: static const char * device_addr_string = "54:E4:3A:26:A2:39";
 static bd_addr_t device_addr;
@@ -729,16 +729,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             avrcp_volume_changed(volume);
             break;
         
-        case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
-#ifdef SUPPORT_VOLUME_CHANGE_NOTIFICATION
-            avrcp_target_supported_events(avrcp_cid, sizeof(events)/sizeof(uint8_t), events, sizeof(events));
-#else
-            avrcp_target_supported_events(avrcp_cid, 0, NULL, 0);
-#endif
-            break;
-        case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
-            avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
-            break;
         case AVRCP_SUBEVENT_OPERATION:
             operation_id = avrcp_subevent_operation_get_operation_id(packet);
             button_state = avrcp_subevent_operation_get_button_pressed(packet) > 0 ? "PRESS" : "RELEASE";
