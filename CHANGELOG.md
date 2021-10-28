@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVDTP: media config validator is called with preview of media codec configuration event and configured separately for sink/source
 - AVRCP: use PANEL as default unit + subunit info
 - AVRCP Controller: automatically query supported events when registering for notifications 
+- AVRCP Target: cache companies and events in library and remove need to answer query in application callback. Use Bluetooth SIG as default company.
 - Run Loop: new functionality for HCI transport drivers and inter-process communication
   - *btstack_run_loop_poll_data_sources_from_irq*: used to transfer control from IRQ handler to main thread/run loop
   - *btstack_run_loop_execute_on_main_thread*: schedule code execution on main thread from other thread

@@ -92,24 +92,21 @@ void    avrcp_target_register_packet_handler(btstack_packet_handler_t callback);
 void avrcp_target_register_set_addressed_player_handler(bool (*callback)(uint16_t player_id));
 
 /**
- * @brief Send a list of Company IDs supported by target. 
- * @note  The avrcp_target_packet_handler will receive AVRCP_SUBEVENT_COMPANY_IDS_QUERY event. Use this function to respond.
+ * @brief Register a list of Company IDs supported by target. 
  * @param avrcp_cid
- * @param num_company_ids
- * @param company_ids
- * @param company_ids_size
+ * @param num_companies
+ * @param companies
  * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
+uint8_t avrcp_target_support_companies(uint16_t avrcp_cid, uint8_t num_companies, const uint32_t *companies);
 
 /**
- * @brief Send a list of Events supported by target.
- * @note  The avrcp_target_packet_handler will receive AVRCP_SUBEVENT_EVENT_IDS_QUERY event. Use this function to respond.
+ * @brief Register event ID supported by target.
  * @param avrcp_cid
- * @param num_event_ids
- * @param event_ids
- * @param event_ids_size
- * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
+ * @param event_id 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE for unsupported event id, otherwise ERROR_CODE_SUCCESS, 
  */
+uint8_t avrcp_target_support_event(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
 
 /**
  * @brief Send a play status.

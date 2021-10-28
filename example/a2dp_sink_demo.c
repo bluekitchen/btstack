@@ -587,6 +587,8 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             avrcp_subevent_connection_established_get_bd_addr(packet, address);
             printf("AVRCP: Connected to %s, cid 0x%02x\n", bd_addr_to_str(address), avrcp_cid);
 
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
             avrcp_target_battery_status_changed(avrcp_cid, battery_status);
     
             // automatically enable notifications

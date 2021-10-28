@@ -633,8 +633,29 @@ static uint8_t avrcp_target_supported_companies(avrcp_connection_t * connection)
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t avrcp_target_support_event(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+    }
+
+    if ((event_id < (uint8_t)AVRCP_NOTIFICATION_EVENT_FIRST_INDEX) || (event_id > (uint8_t)AVRCP_NOTIFICATION_EVENT_LAST_INDEX)){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+
+    connection->target_supported_notifications |= (1 << (uint8_t)event_id);
+    return ERROR_CODE_SUCCESS;
 }
 
+uint8_t avrcp_target_support_companies(uint16_t avrcp_cid, uint8_t num_companies, const uint32_t *companies){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+    }
+
+    connection->target_supported_companies_num = num_companies;
+    connection->target_supported_companies     = companies;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_playback_status_t play_status){

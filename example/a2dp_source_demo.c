@@ -274,6 +274,7 @@ static int a2dp_source_and_avrcp_services_init(void){
     // Initialize AVRCP Target
     avrcp_target_init();
     avrcp_target_register_packet_handler(&avrcp_target_packet_handler);
+
     // Initialize AVRCP Controller
     avrcp_controller_init();
     avrcp_controller_register_packet_handler(&avrcp_controller_packet_handler);
@@ -740,6 +741,9 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 
             printf("AVRCP: Channel to %s successfully opened, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), media_tracker.avrcp_cid);
              
+            avrcp_target_support_event(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+            avrcp_target_support_event(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            avrcp_target_support_event(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
             avrcp_target_set_now_playing_info(media_tracker.avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
             
             printf("Enable Volume Change notification\n");
