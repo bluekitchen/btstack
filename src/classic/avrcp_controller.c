@@ -112,7 +112,7 @@ static void avrcp_controller_emit_supported_events(avrcp_connection_t * connecti
     uint8_t event_id;
 
     for (event_id = (uint8_t) AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; event_id < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; event_id++){
-        if ( (connection->remote_supported_notifications & (1<<event_id)) == 0){
+        if ( (connection->target_supported_notifications & (1<<event_id)) == 0){
             continue;
         }
         uint8_t event[8];
@@ -672,7 +672,7 @@ static void avrcp_controller_get_capabilities_for_connection(avrcp_connection_t 
 }
 
 static uint8_t avrcp_controller_register_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t event_id){
-    if (connection->remote_supported_notifications_queried && (connection->remote_supported_notifications & (1 << event_id)) == 0){
+    if (connection->target_supported_notifications_queried && (connection->target_supported_notifications & (1 << event_id)) == 0){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }  
     if ( (connection->notifications_to_deregister & (1 << event_id)) != 0){
@@ -683,8 +683,8 @@ static uint8_t avrcp_controller_register_notification(avrcp_connection_t * conne
     }
     connection->notifications_to_register |= (1 << event_id);
 
-    if (!connection->remote_supported_notifications_queried){
-        connection->remote_supported_notifications_suppress_emit_result = true;
+    if (!connection->target_supported_notifications_queried){
+        connection->target_supported_notifications_suppress_emit_result = true;
         avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_EVENT);
         return ERROR_CODE_SUCCESS;
     }
@@ -1024,19 +1024,19 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         case AVRCP_CAPABILITY_ID_EVENT:
                             for (i = 0; (i < capability_count) && ((size - pos) >= 1); i++){
                                 uint8_t event_id = packet[pos++];
-                                connection->remote_supported_notifications |= (1 << event_id);
+                                connection->target_supported_notifications |= (1 << event_id);
                             }
                             
                             // if the get supported events query is triggered by avrcp_controller_enable_notification call, 
                             // avrcp_controller_emit_supported_events should be suppressed
-                            if (connection->remote_supported_notifications_suppress_emit_result){
-                                connection->remote_supported_notifications_suppress_emit_result = false;
+                            if (connection->target_supported_notifications_suppress_emit_result){
+                                connection->target_supported_notifications_suppress_emit_result = false;
                                 // also, notification might not be supported
                                 // if so, emit AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE event to app, 
                                 // and update notifications_to_register bitmap
                                 for (i = (uint8_t)AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; i < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; i++){
                                     if ((connection->notifications_to_register & (1<<i)) != 0){
-                                        if ((connection->remote_supported_notifications & (1<<i)) == 0){
+                                        if ((connection->target_supported_notifications & (1<<i)) == 0){
                                             avrcp_controller_emit_notification_complete(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE, i, false);
                                             connection->notifications_to_register &= ~(1 << i);
                                         }
@@ -1378,11 +1378,11 @@ uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notifica
         log_error("avrcp_get_play_status: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (!connection->remote_supported_notifications_queried){
+    if (!connection->target_supported_notifications_queried){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    if ((connection->remote_supported_notifications & (1 << event_id)) == 0){
+    if ((connection->target_supported_notifications & (1 << event_id)) == 0){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     } 
 
@@ -1458,8 +1458,8 @@ uint8_t avrcp_controller_get_supported_events(uint16_t avrcp_cid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    if (!connection->remote_supported_notifications_queried){
-        connection->remote_supported_notifications_queried = true;
+    if (!connection->target_supported_notifications_queried){
+        connection->target_supported_notifications_queried = true;
         avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_EVENT);
         return ERROR_CODE_SUCCESS;
     }
