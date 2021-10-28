@@ -1089,7 +1089,6 @@ uint8_t avdtp_disconnect(uint16_t avdtp_cid){
 static uint8_t avdtp_handle_explicit_start_stream_confirmation(uint16_t avdtp_cid, uint8_t local_seid, bool accept_stream_requested){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
-        log_error("avdtp_media_connect: no connection for signaling cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
@@ -1129,7 +1128,6 @@ uint8_t avdtp_start_stream_reject(uint16_t avdtp_cid, uint8_t local_seid){
 uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
-        log_error("avdtp_media_connect: no connection for signaling cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
@@ -1163,7 +1161,6 @@ uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
 uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
-        log_error("avdtp_start_stream: no connection for signaling cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
@@ -1201,7 +1198,6 @@ uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid){
 uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
-        log_error("avdtp_stop_stream: no connection for signaling cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
@@ -1234,7 +1230,6 @@ uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid){
 uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
-        log_error("avdtp_abort_stream: no connection for signaling cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
@@ -1267,7 +1262,6 @@ uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid){
 uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
-        log_error("avdtp_suspend_stream: no connection for signaling cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
@@ -1299,7 +1293,6 @@ uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid){
 uint8_t avdtp_discover_stream_endpoints(uint16_t avdtp_cid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
-        log_error("avdtp_discover_stream_endpoints: no connection for signaling cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) ||
@@ -1316,7 +1309,6 @@ uint8_t avdtp_discover_stream_endpoints(uint16_t avdtp_cid){
 uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
-        log_error("No connection for AVDTP cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) || 
@@ -1334,7 +1326,6 @@ uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
 uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
-        log_error("No connection for AVDTP cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) || 
@@ -1365,7 +1356,6 @@ uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
 uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
-        log_error("No connection for AVDTP cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) || 
@@ -1382,7 +1372,6 @@ uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid){
 uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
-        log_error("No connection for AVDTP cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) || 
@@ -1423,7 +1412,6 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
 uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
-        log_error("No connection for AVDTP cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     //TODO: if opened only app capabilities, enable reconfigure for not opened
