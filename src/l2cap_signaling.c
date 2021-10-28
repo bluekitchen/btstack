@@ -81,10 +81,11 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
             "M",     // invalid format for unit testing
 #endif           
     };
-    static const unsigned int num_l2cap_commands = sizeof(l2cap_signaling_commands_format) / sizeof(const char *);
 
     btstack_assert(0 < cmd);
+    static const unsigned int num_l2cap_commands = sizeof(l2cap_signaling_commands_format) / sizeof(const char *);
     btstack_assert(cmd <= num_l2cap_commands);
+    UNUSED(num_l2cap_commands);
 
     const char *format = l2cap_signaling_commands_format[cmd-1u];
     btstack_assert(format != NULL);
