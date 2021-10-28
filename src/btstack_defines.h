@@ -2768,21 +2768,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param avrcp_cid
  */
-#define AVRCP_SUBEVENT_COMPANY_IDS_QUERY                                    0x19
-
-/**
- * @format 12
- * @param subevent_code
- * @param avrcp_cid
- */
-#define AVRCP_SUBEVENT_EVENT_IDS_QUERY                                      0x1A
-
-/**
- * @format 12
- * @param subevent_code
- * @param avrcp_cid
- */
-#define AVRCP_SUBEVENT_PLAY_STATUS_QUERY                                    0x1B
+#define AVRCP_SUBEVENT_PLAY_STATUS_QUERY                                    0x19
 
 /**
  * @format 121111
@@ -2793,7 +2779,7 @@ typedef uint8_t sm_key_t[16];
  * @param operands_length
  * @param operand
  */
-#define AVRCP_SUBEVENT_OPERATION                                            0x1C 
+#define AVRCP_SUBEVENT_OPERATION                                            0x1A 
 
 /**
  * @format 1211
@@ -2802,7 +2788,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param track
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO                               0x1D
+#define AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO                               0x1B
 
 /**
  * @format 1211
@@ -2811,7 +2797,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param total_tracks
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO                        0x1E
+#define AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO                        0x1C
 
 /**
  * @format 1214
@@ -2820,7 +2806,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param song_length in ms
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO                      0x1F
+#define AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO                      0x1D
 
 /**
  * @format 121JV
@@ -2830,7 +2816,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len
  * @param value
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO                                 0x20
+#define AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO                                 0x1E
 
  /*
  * @format 121JV
@@ -2840,7 +2826,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len
  * @param value
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO                                0x21
+#define AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO                                0x1F
 
  /*
  * @format 121JV
@@ -2850,7 +2836,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len
  * @param value
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO                                 0x22
+#define AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO                                 0x20
 
  /*
  * @format 121JV
@@ -2860,7 +2846,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len
  * @param value
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO                                 0x23
+#define AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO                                 0x21
 
 /*
  * @format 1211
@@ -2869,7 +2855,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param status
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE                                  0x24
+#define AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE                                  0x22
 
 /**
  * @format 1214
@@ -2878,7 +2864,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param playback_position_ms
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED                      0x25
+#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED                      0x23
 
 /*
  * @format 12111
@@ -2888,7 +2874,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param event_id
  */
-#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID                                0x26
+#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID                                0x24
 /*
  * @format 1211
  * @param subevent_code
@@ -2896,7 +2882,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param status
  */
-#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE                           0x27
+#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE                           0x25
 
 /*
  * @format 12113
@@ -2906,7 +2892,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param company_id
  */
-#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID                              0x28
+#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID                              0x26
 /*
  * @format 1211
  * @param subevent_code
@@ -2914,7 +2900,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param status
  */
-#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE                         0x29
+#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE                         0x27
 
 
 
