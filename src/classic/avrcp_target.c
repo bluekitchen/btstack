@@ -542,26 +542,34 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
     return ERROR_CODE_SUCCESS;
 }
 
+static uint8_t avrcp_prepare_vendor_dependent_response_for_connection(avrcp_connection_t * connection, avrcp_pdu_id_t pdu_id, uint16_t param_length){
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
+    connection->command_opcode  = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_type    = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;
+    connection->subunit_type    = AVRCP_SUBUNIT_TYPE_PANEL; 
+    connection->subunit_id      = AVRCP_SUBUNIT_ID;
+
+    connection->cmd_operands[connection->cmd_operands_length++] = pdu_id;
+    // reserved
+    connection->cmd_operands[connection->cmd_operands_length++] = 0;
+    // param length
+    big_endian_store_16(connection->cmd_operands, connection->cmd_operands_length, param_length);
+    connection->cmd_operands_length += 2;
+    return ERROR_CODE_SUCCESS;
+}
+
 static inline uint8_t avrcp_prepare_vendor_dependent_response(uint16_t avrcp_cid, avrcp_connection_t ** out_connection, avrcp_pdu_id_t pdu_id, uint16_t param_length){
     *out_connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!*out_connection){
         log_error("avrcp tartget: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
-
-    if ((*out_connection)->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    (*out_connection)->command_opcode  = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-    (*out_connection)->command_type    = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;
-    (*out_connection)->subunit_type    = AVRCP_SUBUNIT_TYPE_PANEL; 
-    (*out_connection)->subunit_id      = AVRCP_SUBUNIT_ID;
-
-    (*out_connection)->cmd_operands[(*out_connection)->cmd_operands_length++] = pdu_id;
-    // reserved
-    (*out_connection)->cmd_operands[(*out_connection)->cmd_operands_length++] = 0;
-    // param length
-    big_endian_store_16((*out_connection)->cmd_operands, (*out_connection)->cmd_operands_length, param_length);
-    (*out_connection)->cmd_operands_length += 2;
-    return ERROR_CODE_SUCCESS;
+    return avrcp_prepare_vendor_dependent_response_for_connection(*out_connection, pdu_id, param_length);
 }
 
 static uint8_t avrcp_target_capability(uint16_t avrcp_cid, avrcp_capability_id_t capability_id, uint8_t num_capabilities, const uint8_t *capabilities, uint8_t capabilities_size){
