@@ -6404,7 +6404,7 @@ void gap_inquiry_set_lap(uint32_t lap){
     hci_stack->inquiry_lap = lap;
 }
 
-void gap_inquiry_set_activity(uint16_t inquiry_scan_interval, uint16_t inquiry_scan_window){
+void gap_inquiry_set_scan_activity(uint16_t inquiry_scan_interval, uint16_t inquiry_scan_window){
     hci_stack->inquiry_scan_interval = inquiry_scan_interval;
     hci_stack->inquiry_scan_window   = inquiry_scan_window;
     hci_stack->gap_tasks |= GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY;

@@ -754,7 +754,7 @@ void gap_inquiry_set_lap(uint32_t lap);
  * @param inquiry_scan_interval range: 0x0012 to 0x1000; only even values are valid, Time = N * 0.625 ms
  * @param inquiry_scan_window range: 0x0011 to 0x1000; Time = N * 0.625 ms
  */
-void gap_inquiry_set_activity(uint16_t inquiry_scan_interval, uint16_t inquiry_scan_window);
+void gap_inquiry_set_scan_activity(uint16_t inquiry_scan_interval, uint16_t inquiry_scan_window);
 
 /**
  * @brief Remote Name Request
