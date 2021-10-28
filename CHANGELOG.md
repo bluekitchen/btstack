@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - hci_cmd: support variable length fields and arrayed parameters
 - GAP: ENABLE_EXPLICIT_LINK_KEY_REPLY allows for asynchronous link key lookup by application
 - GAP: gap_set_page_timeout to set Page Timeout
+- GAP: gap_inquiry_set_scan_activity to set Inquiry Scan Activity
 - POSIX: btstack_signal allows to register for callback on signal, e.g. ctrl-c
 - Windows: btstack_stdin_window_register_ctrl_c_callback allows to register for ctrl-c
 - A2DP: allow to register media codec validator for sink and source with:

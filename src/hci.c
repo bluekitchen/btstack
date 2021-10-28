@@ -1359,6 +1359,12 @@ static void hci_run_gap_tasks_classic(void){
         hci_send_cmd(&hci_write_scan_enable, hci_stack->new_scan_enable_value);
         return;
     }
+    // send write scan activity
+    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY;
+        hci_send_cmd(&hci_write_inquiry_scan_activity, hci_stack->inquiry_scan_interval, hci_stack->inquiry_scan_window);
+        return;
+    }
 }
 #endif
 
@@ -6396,6 +6402,13 @@ int gap_inquiry_stop(void){
 
 void gap_inquiry_set_lap(uint32_t lap){
     hci_stack->inquiry_lap = lap;
+}
+
+void gap_inquiry_set_activity(uint16_t inquiry_scan_interval, uint16_t inquiry_scan_window){
+    hci_stack->inquiry_scan_interval = inquiry_scan_interval;
+    hci_stack->inquiry_scan_window   = inquiry_scan_window;
+    hci_stack->gap_tasks |= GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY;
+    hci_run();
 }
 
 
