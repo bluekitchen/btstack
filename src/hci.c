@@ -5629,11 +5629,17 @@ bool hci_remote_features_available(hci_con_handle_t handle){
 /**
  * Trigger remote supported features query
  */
+
+static void hci_trigger_remote_features_for_connection(hci_connection_t * connection){
+    if ((connection->bonding_flags & (BONDING_REMOTE_FEATURES_QUERY_ACTIVE | BONDING_RECEIVED_REMOTE_FEATURES)) == 0){
+        connection->bonding_flags |= BONDING_REMOTE_FEATURES_QUERY_ACTIVE | BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
+    }
+}
+
 void hci_remote_features_query(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection) return;
-    if ((connection->bonding_flags & (BONDING_REMOTE_FEATURES_QUERY_ACTIVE | BONDING_RECEIVED_REMOTE_FEATURES)) != 0) return;
-    connection->bonding_flags |= BONDING_REMOTE_FEATURES_QUERY_ACTIVE | BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
+    hci_trigger_remote_features_for_connection(connection);
     hci_run();
 }
 
