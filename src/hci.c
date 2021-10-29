@@ -165,6 +165,7 @@ static int  hci_number_free_acl_slots_for_connection_type( bd_addr_type_t addres
 
 #ifdef ENABLE_CLASSIC
 static int hci_have_usb_transport(void);
+static void hci_trigger_remote_features_for_connection(hci_connection_t * connection);
 #endif
 
 #ifdef ENABLE_BLE
@@ -2139,9 +2140,7 @@ static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn
     }
 
     // Request remote features if not already done
-    if ((conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) == 0) {
-        conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
-    }
+    hci_trigger_remote_features_for_connection(conn);
 
     // Request Authentication if not already done
     if ((conn->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) return;
