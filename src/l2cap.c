@@ -2684,12 +2684,17 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     // add to connections list
     btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
-    // send conn resp pending if remote supported features have not been received yet
-    if (hci_remote_features_available(handle)) {
-        l2cap_handle_remote_supported_features_received(channel);
+    //
+    if (required_level > LEVEL_0){
+        // send conn resp pending if remote supported features have not been received yet
+        if (hci_remote_features_available(handle)) {
+            l2cap_handle_remote_supported_features_received(channel);
+        } else {
+            channel->state_var |= L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
+            hci_remote_features_query(handle);
+        }
     } else {
-        channel->state_var |= L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
-        hci_remote_features_query(handle);
+        l2cap_handle_security_level_incoming_sufficient(channel);
     }
 }
 
