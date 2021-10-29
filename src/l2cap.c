@@ -2131,12 +2131,10 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
 
 		// state: L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES
 
-        // check if remote supported features are already received
+        // simulate if remote supported features if already received
         if (hci_remote_features_available(conn->con_handle)) {
         	// simulate remote features received
             l2cap_handle_remote_supported_features_received(channel);
-        } else {
-            hci_remote_features_query(conn->con_handle);
         }
     }
 
