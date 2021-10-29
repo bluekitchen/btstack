@@ -746,6 +746,13 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
     uint16_t reset_event_mask = ~event_mask;
 
     switch (ctype){
+        case AVRCP_CTYPE_RESPONSE_REJECTED:
+            connection->notifications_to_deregister &= reset_event_mask;
+            connection->notifications_to_register   &= reset_event_mask;
+            connection->initial_status_reported     &= reset_event_mask;
+            avrcp_controller_emit_notification_complete(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE, event_id, false);
+            return;
+
         case AVRCP_CTYPE_RESPONSE_INTERIM:
             // register as enabled
             connection->notifications_enabled |= event_mask;
@@ -757,7 +764,9 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
             // emit event only once, initially
             avrcp_controller_emit_notification_complete(connection, ERROR_CODE_SUCCESS, event_id, true);
             connection->initial_status_reported |= event_mask;
+            // emit initial value after this switch 
             break;
+        
         case AVRCP_CTYPE_RESPONSE_CHANGED_STABLE:
             // received change, event is considered de-registered
             // we are re-enabling it automatically, if it is not 
@@ -772,6 +781,7 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
                 avrcp_controller_emit_notification_complete(connection, ERROR_CODE_SUCCESS, event_id, false);
             }
             break;
+
         default:
             return;
     }
