@@ -1950,17 +1950,6 @@ static void l2cap_run(void){
 }
 
 #ifdef ENABLE_CLASSIC
-static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel){
-    if ((channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE) || (channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION)) {
-        log_info("connection complete con_handle %04x - for channel %p cid 0x%04x", (int) con_handle, channel, channel->local_cid);
-        // success, start l2cap handshake
-        channel->con_handle = con_handle;
-        // we require remote features to check SSP
-        channel->state = L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES;
-        hci_remote_features_query(con_handle);
-    }
-}
-
 static void l2cap_ready_to_connect(l2cap_channel_t * channel){
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -1975,6 +1964,20 @@ static void l2cap_ready_to_connect(l2cap_channel_t * channel){
 
     // fine, go ahead
     channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
+}
+
+static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel){
+    if ((channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE) || (channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION)) {
+        log_info("connection complete con_handle %04x - for channel %p cid 0x%04x", (int) con_handle, channel, channel->local_cid);
+        channel->con_handle = con_handle;
+        // query remote features if pairing is required
+        if (channel->required_security_level > LEVEL_0){
+            channel->state = L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES;
+            hci_remote_features_query(con_handle);
+        } else {
+            l2cap_ready_to_connect(channel);
+        }
+    }
 }
 
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel){
@@ -2129,10 +2132,10 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     	// simulate connection complete
 	    l2cap_handle_connection_complete(conn->con_handle, channel);
 
-		// state: L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES
+	    // state: L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES or L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST
 
-        // simulate if remote supported features if already received
-        if (hci_remote_features_available(conn->con_handle)) {
+        // simulate if remote supported features if requested and already received
+        if ((channel->state == L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) && hci_remote_features_available(conn->con_handle)) {
         	// simulate remote features received
             l2cap_handle_remote_supported_features_received(channel);
         }
