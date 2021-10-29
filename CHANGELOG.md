@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: provide status instead of undocumented int error code and bool for API functions
 - GAP: local name, EIR data, class of device and default link policy can be updated at any time
 - L2CAP: provide status instead of undocumented int error code and bool for API functions
+- L2CAP: remote features not required for SDP connections
 - RFCOMM: `RFCOMM_EVENT_PORT_CONFIGURATION` contains rfcomm_cid and remote flag, emitted for query config
 - RFCOMM: provide status instead of undocumented int error code and bool for API functions
 - RFCOMM: remote port configuration, line status, and modem status are sent by channel state machine
