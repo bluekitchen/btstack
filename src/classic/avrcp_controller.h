@@ -256,6 +256,14 @@ uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_
 uint8_t avrcp_controller_get_now_playing_info(uint16_t avrcp_cid);
 
 /**
+ * @brief Get info on now playing media using specific media attribute ID.
+ * @param media_attribute_id
+ * @param avrcp_cid
+ * @return status
+ */
+uint8_t avrcp_controller_get_now_playing_info_for_media_attribute_id(uint16_t avrcp_cid, avrcp_media_attribute_id_t media_attribute_id);
+
+/**
  * @brief Set absolute volume 0-127 (corresponds to 0-100%). Response via AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE
  * @param avrcp_cid
  * @return status

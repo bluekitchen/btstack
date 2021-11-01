@@ -1572,6 +1572,13 @@ uint8_t avrcp_controller_get_now_playing_info(uint16_t avrcp_cid){
     return avrcp_controller_get_element_attributes(avrcp_cid, 0, NULL);
 }
 
+uint8_t avrcp_controller_get_now_playing_info_for_media_attribute_id(uint16_t avrcp_cid, avrcp_media_attribute_id_t media_attribute_id){
+    if (media_attribute_id == AVRCP_MEDIA_ATTR_ALL){
+        return avrcp_controller_get_now_playing_info(avrcp_cid);
+    }
+    return avrcp_controller_get_element_attributes(avrcp_cid, 1, &media_attribute_id);
+}
+
 uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume){
      avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
