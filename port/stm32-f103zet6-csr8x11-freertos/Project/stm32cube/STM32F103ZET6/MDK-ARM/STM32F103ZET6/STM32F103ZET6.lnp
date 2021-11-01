@@ -1,0 +1,27 @@
+--cpu Cortex-M3
+"stm32f103zet6\startup_stm32f103xe.o"
+"stm32f103zet6\main.o"
+"stm32f103zet6\gpio.o"
+"stm32f103zet6\dma.o"
+"stm32f103zet6\usart.o"
+"stm32f103zet6\stm32f1xx_it.o"
+"stm32f103zet6\stm32f1xx_hal_msp.o"
+"stm32f103zet6\stm32f1xx_hal_gpio_ex.o"
+"stm32f103zet6\stm32f1xx_hal_tim.o"
+"stm32f103zet6\stm32f1xx_hal_tim_ex.o"
+"stm32f103zet6\stm32f1xx_hal_uart.o"
+"stm32f103zet6\stm32f1xx_hal.o"
+"stm32f103zet6\stm32f1xx_hal_rcc.o"
+"stm32f103zet6\stm32f1xx_hal_rcc_ex.o"
+"stm32f103zet6\stm32f1xx_hal_gpio.o"
+"stm32f103zet6\stm32f1xx_hal_dma.o"
+"stm32f103zet6\stm32f1xx_hal_cortex.o"
+"stm32f103zet6\stm32f1xx_hal_pwr.o"
+"stm32f103zet6\stm32f1xx_hal_flash.o"
+"stm32f103zet6\stm32f1xx_hal_flash_ex.o"
+"stm32f103zet6\stm32f1xx_hal_exti.o"
+"stm32f103zet6\system_stm32f1xx.o"
+--strict --scatter "STM32F103ZET6\STM32F103ZET6.sct"
+--summary_stderr --info summarysizes --map --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "STM32F103ZET6.map" -o STM32F103ZET6\STM32F103ZET6.axf

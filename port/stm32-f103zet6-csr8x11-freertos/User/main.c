@@ -9,7 +9,7 @@ static TaskHandle_t xHandleTaskBT = NULL;
 int main(void)
 {
 
-	__set_PRIMASK(1);  
+	__set_PRIMASK(1);
 	
 	bsp_Init(); 
 
@@ -36,7 +36,8 @@ void vBT_Task(void *pvParameters)
     printf("this is bt task! \r\n");
 	while(1)
     {
-        printf("this is bt task! i = %d! \r\n", i);
+        vTaskDelay(500);
+        //printf("this is bt task! i = %d! \r\n", i);
         i++;
     }
 }
@@ -48,7 +49,7 @@ static void AppTaskCreate (void)
                  512,               	
                  NULL,              	
                  2,                 	
-                 &vHandleTaskATCommand );  
+                 &vHandleTaskATCommand );    
 	
     xTaskCreate( vBT_Task,	      	    
                  "vBT_Task",     	    

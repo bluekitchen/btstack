@@ -1,12 +1,12 @@
 /**
   ******************************************************************************
-  * File Name          : USART.h
-  * Description        : This file provides code for the configuration
-  *                      of the USART instances.
+  * @file    usart.h
+  * @brief   This file contains all the function prototypes for
+  *          the usart.c file
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics.
+  * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
   * This software component is licensed by ST under BSD 3-Clause license,
@@ -17,10 +17,11 @@
   ******************************************************************************
   */
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __usart_H
-#define __usart_H
+#ifndef __USART_H__
+#define __USART_H__
+
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
@@ -47,14 +48,7 @@ void MX_USART3_UART_Init(void);
 #ifdef __cplusplus
 }
 #endif
-#endif /*__ usart_H */
 
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
+#endif /* __USART_H__ */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
