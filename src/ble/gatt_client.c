@@ -152,7 +152,7 @@ static gatt_client_t * gatt_client_get_context_for_handle(uint16_t handle){
 }
 
 
-// @returns gatt_client context
+// @return gatt_client context
 // returns existing one, or tries to setup new one
 static gatt_client_t * gatt_client_provide_context_for_handle(hci_con_handle_t con_handle){
     gatt_client_t * gatt_client = gatt_client_get_context_for_handle(con_handle);
@@ -702,7 +702,7 @@ static void report_gatt_included_service_uuid128(gatt_client_t * gatt_client, ui
                                                   gatt_client->query_end_handle, uuid128);
 }
 
-// @returns packet pointer
+// @return packet pointer
 // @note assume that value is part of an l2cap buffer - overwrite HCI + L2CAP packet headers
 static const int characteristic_value_event_header_size = 8;
 static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t * value, uint16_t length){
@@ -720,7 +720,7 @@ static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_
     return packet;
 }
 
-// @returns packet pointer
+// @return packet pointer
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static const int long_characteristic_value_event_header_size = 10;
 static uint8_t * setup_long_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * value, uint16_t length){

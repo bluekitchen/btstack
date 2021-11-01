@@ -65,7 +65,7 @@ void provisioning_provisioner_register_packet_handler(btstack_packet_handler_t p
 /**
  * @brief Start Provisioning device with provided device_uuid
  * @param device_uuid
- * @returns pb_adv_cid or 0
+ * @return pb_adv_cid or 0
  */
 uint16_t provisioning_provisioner_start_provisioning(const uint8_t * device_uuid);
 

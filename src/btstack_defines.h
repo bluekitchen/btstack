@@ -138,7 +138,7 @@ typedef uint8_t sm_key_t[16];
 #define OGF_BTSTACK 0x3d
 
 // cmds for BTstack 
-// get state: @returns HCI_STATE
+// get state: @return HCI_STATE
 #define BTSTACK_GET_STATE                                  0x01
 
 // set power mode: param HCI_POWER_MODE

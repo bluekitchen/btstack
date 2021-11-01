@@ -136,7 +136,7 @@ void mesh_network_key_init(void);
 /**
  * @brief Get internal index of free network key storage entry
  * @note index 0 is reserved for primary network key
- * @returns index or MESH_KEYS_INVALID_INDEX if none found
+ * @return index or MESH_KEYS_INVALID_INDEX if none found
  */
 uint16_t mesh_network_key_get_free_index(void);
 
@@ -158,13 +158,13 @@ bool mesh_network_key_remove(mesh_network_key_t * network_key);
 /**
  * @brief Get network_key for netkey_index
  * @param netkey_index
- * @returns mesh_network_key_t or NULL
+ * @return mesh_network_key_t or NULL
  */
 mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index);
 
 /**
  * @brief Get number of stored network_keys
- * @returns count
+ * @return count
  */
 int mesh_network_key_list_count(void);
 
@@ -222,7 +222,7 @@ void mesh_transport_set_device_key(const uint8_t * device_key);
 /**
  * @brief Get internal index of free transport key storage entry
  * @note index 0 is reserved for device key
- * @returns index or 0u if none found
+ * @return index or 0u if none found
  */
 uint16_t mesh_transport_key_get_free_index(void);
 

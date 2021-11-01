@@ -841,7 +841,7 @@ void hfp_set_sco_packet_types(uint16_t packet_types);
 
 /**
  * @brief Get packet types for SCO connections
- * @returns packet_types
+ * @return packet_types
  */
 uint16_t hfp_get_sco_packet_types(void);
 

@@ -272,7 +272,7 @@ void gap_set_connection_parameter_range(le_connection_parameter_range_t *range){
  * @param conn_interval_max (unit: 1.25ms)
  * @param conn_latency
  * @param supervision_timeout (unit: 10ms)
- * @returns 1 if included
+ * @return 1 if included
  */
 int gap_connection_parameter_range_included(le_connection_parameter_range_t * existing_range, uint16_t le_conn_interval_min, uint16_t le_conn_interval_max, uint16_t le_conn_latency, uint16_t le_supervision_timeout){
     if (le_conn_interval_min < existing_range->le_conn_interval_min) return 0;
@@ -712,7 +712,8 @@ bool hci_is_packet_buffer_reserved(void){
     return hci_stack->hci_packet_buffer_reserved;
 }
 
-// reserves outgoing packet buffer. @returns 1 if successful
+// reserves outgoing packet buffer. 
+// @return 1 if successful
 bool hci_reserve_packet_buffer(void){
     if (hci_stack->hci_packet_buffer_reserved) {
         log_error("hci_reserve_packet_buffer called but buffer already reserved");
@@ -5963,7 +5964,7 @@ void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_sc
  * @param conn_interval_max (unit: 1.25ms)
  * @param conn_latency
  * @param supervision_timeout (unit: 10ms)
- * @returns 0 if ok
+ * @return 0 if ok
  */
 int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_interval_min,
     uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout){
@@ -5985,7 +5986,7 @@ int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_
  * @param conn_interval_max (unit: 1.25ms)
  * @param conn_latency
  * @param supervision_timeout (unit: 10ms)
- * @returns 0 if ok
+ * @return 0 if ok
  */
 int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_t conn_interval_min,
     uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout){
@@ -6243,7 +6244,7 @@ static void hci_whitelist_clear(void){
 
 /**
  * @brief Clear Whitelist
- * @returns 0 if ok
+ * @return 0 if ok
  */
 uint8_t gap_whitelist_clear(void){
     hci_whitelist_clear();
@@ -6255,7 +6256,7 @@ uint8_t gap_whitelist_clear(void){
  * @brief Add Device to Whitelist
  * @param address_typ
  * @param address
- * @returns 0 if ok
+ * @return 0 if ok
  */
 uint8_t gap_whitelist_add(bd_addr_type_t address_type, const bd_addr_t address){
     uint8_t status = hci_whitelist_add(address_type, address);
@@ -6270,7 +6271,7 @@ uint8_t gap_whitelist_add(bd_addr_type_t address_type, const bd_addr_t address){
  * @brief Remove Device from Whitelist
  * @param address_typ
  * @param address
- * @returns 0 if ok
+ * @return 0 if ok
  */
 uint8_t gap_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address){
     uint8_t status = hci_whitelist_remove(address_type, address);
@@ -6283,9 +6284,9 @@ uint8_t gap_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t addres
 
 #ifdef ENABLE_LE_CENTRAL
 /**
- *  @brief Connect with Whitelist
- *  @note Explicit whitelist management and this connect with whitelist replace deprecated gap_auto_connection_* functions
- *  @returns - if ok
+ * @brief Connect with Whitelist
+ * @note Explicit whitelist management and this connect with whitelist replace deprecated gap_auto_connection_* functions
+ * @return - if ok
  */
 uint8_t gap_connect_with_whitelist(void){
     if (hci_stack->le_connecting_request != LE_CONNECTING_IDLE){
@@ -6300,7 +6301,7 @@ uint8_t gap_connect_with_whitelist(void){
  * @brief Auto Connection Establishment - Start Connecting to device
  * @param address_typ
  * @param address
- * @returns 0 if ok
+ * @return 0 if ok
  */
 uint8_t gap_auto_connection_start(bd_addr_type_t address_type, const bd_addr_t address){
     if (hci_stack->le_connecting_request == LE_CONNECTING_DIRECT){
@@ -6322,7 +6323,7 @@ uint8_t gap_auto_connection_start(bd_addr_type_t address_type, const bd_addr_t a
  * @brief Auto Connection Establishment - Stop Connecting to device
  * @param address_typ
  * @param address
- * @returns 0 if ok
+ * @return 0 if ok
  */
 uint8_t gap_auto_connection_stop(bd_addr_type_t address_type, const bd_addr_t address){
     if (hci_stack->le_connecting_request == LE_CONNECTING_DIRECT){
@@ -6390,7 +6391,7 @@ int gap_inquiry_start(uint8_t duration_in_1280ms_units){
 
 /**
  * @brief Stop GAP Classic Inquiry
- * @returns 0 if ok
+ * @return 0 if ok
  */
 int gap_inquiry_stop(void){
     if ((hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN) && (hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX)) {

@@ -695,14 +695,14 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback);
  * @brief   Connect to AVRCP service on a remote device, emits AVRCP_SUBEVENT_CONNECTION_ESTABLISHED with status
  * @param   remote_addr
  * @param   avrcp_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
- * @returns status     
+ * @return status     
  */
 uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid);
 
 /**
  * @brief   Disconnect from AVRCP service
  * @param   avrcp_cid
- * @returns status
+ * @return status
  */
 uint8_t avrcp_disconnect(uint16_t avrcp_cid);
 

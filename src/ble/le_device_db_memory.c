@@ -94,7 +94,7 @@ void le_device_db_set_local_bd_addr(bd_addr_t bd_addr){
     (void)bd_addr;
 }
 
-// @returns number of device in db
+// @return number of device in db
 int le_device_db_count(void){
     int i;
     int counter = 0;

@@ -67,7 +67,7 @@ void mesh_proxy_stop_advertising_unprovisioned_device(void);
 /**
  * @brief Set Advertising with Node ID on given subnet
  * @param netkey_index of subnet
- * @returns MESH_FOUNDATION_STATUS_SUCCESS, MESH_FOUNDATION_STATUS_FEATURE_NOT_SUPPORTED, or MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX
+ * @return MESH_FOUNDATION_STATUS_SUCCESS, MESH_FOUNDATION_STATUS_FEATURE_NOT_SUPPORTED, or MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX
  * @note Node ID is only advertised on one subnet at a time and it is limited to 60 seconds
  */
 uint8_t mesh_proxy_set_advertising_with_node_id(uint16_t netkey_index, mesh_node_identity_state_t state);
@@ -76,7 +76,7 @@ uint8_t mesh_proxy_set_advertising_with_node_id(uint16_t netkey_index, mesh_node
  * @brief Check if Advertising with Node ID is active
  * @param netey_index of subnet
  * @param out_state current state
- * @returns MESH_FOUNDATION_STATUS_SUCCESS or MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX
+ * @return MESH_FOUNDATION_STATUS_SUCCESS or MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX
  */
 uint8_t mesh_proxy_get_advertising_with_node_id_status(uint16_t netkey_index, mesh_node_identity_state_t * out_state );
 

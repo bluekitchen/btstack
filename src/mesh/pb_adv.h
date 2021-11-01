@@ -82,7 +82,7 @@ void pb_adv_close_link(uint16_t pb_adv_cid, uint8_t reason);
 /**
  * Setup Link with unprovisioned device
  * @param DeviceUUID - data not copied
- * @returns pb_adv_cid or 0
+ * @return pb_adv_cid or 0
  */
 uint16_t pb_adv_create_link(const uint8_t * device_uuid);
 #endif

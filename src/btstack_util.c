@@ -173,7 +173,7 @@ uint32_t btstack_max(uint32_t a, uint32_t b){
 
 /**
  * @brief Calculate delta between two points in time
- * @returns time_a - time_b - result > 0 if time_a is newer than time_b
+ * @return time_a - time_b - result > 0 if time_a is newer than time_b
  */
 int32_t btstack_time_delta(uint32_t time_a, uint32_t time_b){
     return (int32_t)(time_a - time_b);

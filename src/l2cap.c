@@ -3206,7 +3206,7 @@ static void l2cap_emit_connection_parameter_update_response(hci_con_handle_t con
     (*l2cap_event_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-// @returns valid
+// @return valid
 static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * command, uint8_t sig_id){
     hci_connection_t * connection;
     uint16_t result;

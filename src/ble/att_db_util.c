@@ -120,7 +120,7 @@ static bool att_db_util_hash_include_without_value(uint16_t uuid16){
 
 /**
  * asserts that the requested amount of bytes can be stored in the att_db
- * @returns TRUE if space is available
+ * @return TRUE if space is available
  */
 static int att_db_util_assert_space(uint16_t size){
 	uint16_t required_size = att_db_size + size + 2;

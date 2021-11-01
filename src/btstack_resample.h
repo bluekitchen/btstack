@@ -65,7 +65,7 @@ typedef struct {
 /**
  * @brief Init resample context
  * @param num_channels
- * @returns btstack_audio implementation
+ * @return btstack_audio implementation
  */
 void btstack_resample_init(btstack_resample_t * context, int num_channels);
 
@@ -81,7 +81,7 @@ void btstack_resample_set_factor(btstack_resample_t * context, uint32_t factor);
  * @param input_buffer
  * @param num_frames
  * @param output_buffer
- * @returns number destination frames
+ * @return number destination frames
  */
 uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * input_buffer, uint32_t num_frames, int16_t * output_buffer);
 

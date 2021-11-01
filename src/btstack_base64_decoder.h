@@ -70,7 +70,7 @@ void btstack_base64_decoder_init(btstack_base64_decoder_t * context);
 /**
  * @brief Decode single byte
  * @brief context
- * @returns value, or BTSTACK_BASE64_DECODER_MORE, BTSTACK_BASE64_DECODER_COMPLETE, BTSTACK_BASE64_DECODER_INVALID
+ * @return value, or BTSTACK_BASE64_DECODER_MORE, BTSTACK_BASE64_DECODER_COMPLETE, BTSTACK_BASE64_DECODER_INVALID
  */
 int  btstack_base64_decoder_process_byte(btstack_base64_decoder_t * context, uint8_t c);
 

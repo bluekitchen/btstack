@@ -382,7 +382,7 @@ static sm_setup_context_t * setup = &the_setup;
 // active connection - the one for which the_setup is used for
 static uint16_t sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
 
-// @returns 1 if oob data is available
+// @return 1 if oob data is available
 // stores oob data in provided 16 byte buffer if not null
 static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data) = NULL;
 static int (*sm_get_sc_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random);
@@ -470,7 +470,7 @@ static inline void sm_pairing_packet_set_responder_key_distribution(sm_pairing_p
     packet[6] = responder_key_distribution;
 }
 
-// @returns 1 if all bytes are 0
+// @return 1 if all bytes are 0
 static bool sm_is_null(uint8_t * data, int size){
     int i;
     for (i=0; i < size ; i++){
@@ -5058,7 +5058,7 @@ irk_lookup_state_t sm_identity_resolving_state(hci_con_handle_t con_handle){
 /**
  * @brief Identify device in LE Device DB
  * @param handle
- * @returns index from le_device_db or -1 if not found/identified
+ * @return index from le_device_db or -1 if not found/identified
  */
 int sm_le_device_index(hci_con_handle_t con_handle ){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);

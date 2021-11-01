@@ -64,28 +64,28 @@ void att_db_util_init(void);
 /**
  * @brief Add primary service for 16-bit UUID
  * @param uuid16
- * @returns attribute handle for the new service definition
+ * @return attribute handle for the new service definition
  */
 uint16_t att_db_util_add_service_uuid16(uint16_t uuid16);
 
 /**
  * @brief Add primary service for 128-bit UUID
  * @param uuid128
- * @returns attribute handle for the new service definition
+ * @return attribute handle for the new service definition
  */
 uint16_t att_db_util_add_service_uuid128(const uint8_t * uuid128);
 
 /**
  * @brief Add secondary service for 16-bit UUID
  * @param uuid16
- * @returns attribute handle for the new service definition
+ * @return attribute handle for the new service definition
  */
 uint16_t att_db_util_add_secondary_service_uuid16(uint16_t uuid16);
 
 /**
  * @brief Add secondary service for 128-bit UUID
  * @param uuid128
- * @returns attribute handle for the new service definition
+ * @return attribute handle for the new service definition
  */
 uint16_t att_db_util_add_secondary_service_uuid128(const uint8_t * uuid128);
 
@@ -94,7 +94,7 @@ uint16_t att_db_util_add_secondary_service_uuid128(const uint8_t * uuid128);
  * @param start_group_handle
  * @param end_group_handle
  * @param uuid16
- * @returns attribute handle for the new service definition
+ * @return attribute handle for the new service definition
  */
 uint16_t att_db_util_add_included_service_uuid16(uint16_t start_group_handle, uint16_t  end_group_handle, uint16_t uuid16);
 
@@ -106,7 +106,7 @@ uint16_t att_db_util_add_included_service_uuid16(uint16_t start_group_handle, ui
  * @param write_permissions - see ATT_SECURITY_* in src/bluetooth.h
  * @param data returned in read operations if ATT_PROPERTY_DYNAMIC is not specified
  * @param data_len
- * @returns attribute handle of the new characteristic value declaration
+ * @return attribute handle of the new characteristic value declaration
  * @note If properties contains ATT_PROPERTY_NOTIFY or ATT_PROPERTY_INDICATE flags, a Client Configuration Characteristic Descriptor (CCCD)
  *       is created as well. The attribute value handle of the CCCD is the attribute value handle plus 1
  */
@@ -120,7 +120,7 @@ uint16_t att_db_util_add_characteristic_uuid16(uint16_t uuid16, uint16_t propert
  * @param write_permissions - see ATT_SECURITY_* in src/bluetooth.h
  * @param data returned in read operations if ATT_PROPERTY_DYNAMIC is not specified
  * @param data_len
- * @returns attribute handle of the new characteristic value declaration
+ * @return attribute handle of the new characteristic value declaration
  * @note If properties contains ATT_PROPERTY_NOTIFY or ATT_PROPERTY_INDICATE flags, a Client Configuration Characteristic Descriptor (CCCD)
  *       is created as well. The attribute value handle of the CCCD is the attribute value handle plus 1
  */
@@ -134,7 +134,7 @@ uint16_t att_db_util_add_characteristic_uuid128(const uint8_t * uuid128, uint16_
 * @param write_permissions - see ATT_SECURITY_* in src/bluetooth.h
 * @param data returned in read operations if ATT_PROPERTY_DYNAMIC is not specified
 * @param data_len
-* @returns attribute handle of the new characteristic descriptor declaration
+* @return attribute handle of the new characteristic descriptor declaration
 */
 uint16_t att_db_util_add_descriptor_uuid16(uint16_t uuid16, uint16_t properties, uint8_t read_permission, uint8_t write_permission, uint8_t * data, uint16_t data_len);
 
@@ -146,7 +146,7 @@ uint16_t att_db_util_add_descriptor_uuid16(uint16_t uuid16, uint16_t properties,
 * @param write_permissions - see ATT_SECURITY_* in src/bluetooth.h
 * @param data returned in read operations if ATT_PROPERTY_DYNAMIC is not specified
 * @param data_len
-* @returns attribute handle of the new characteristic descriptor declaration
+* @return attribute handle of the new characteristic descriptor declaration
 */
 uint16_t att_db_util_add_descriptor_uuid128(const uint8_t * uuid128, uint16_t properties, uint8_t read_permission, uint8_t write_permission, uint8_t * data, uint16_t data_len);
 

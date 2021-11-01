@@ -479,7 +479,7 @@ void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_sc
  * @param conn_interval_max (unit: 1.25ms)
  * @param conn_latency
  * @param supervision_timeout (unit: 10ms)
- * @returns 0 if ok
+ * @return 0 if ok
  */
 int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_t conn_interval_min,
 	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
@@ -491,7 +491,7 @@ int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_
  * @param conn_interval_max (unit: 1.25ms)
  * @param conn_latency
  * @param supervision_timeout (unit: 10ms)
- * @returns 0 if ok
+ * @return 0 if ok
  */
 int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_interval_min,
 	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
@@ -514,7 +514,7 @@ void gap_set_connection_parameter_range(le_connection_parameter_range_t * range)
  * @param conn_interval_max (unit: 1.25ms)
  * @param conn_latency
  * @param supervision_timeout (unit: 10ms)
- * @returns 1 if included
+ * @return 1 if included
  */
 int gap_connection_parameter_range_included(le_connection_parameter_range_t * existing_range, uint16_t le_conn_interval_min, uint16_t le_conn_interval_max, uint16_t le_conn_latency, uint16_t le_supervision_timeout);
 
@@ -529,7 +529,7 @@ void gap_set_max_number_peripheral_connections(int max_peripheral_connections);
  * @brief Add Device to Whitelist
  * @param address_typ
  * @param address
- * @returns 0 if ok
+ * @return 0 if ok
  */
 uint8_t gap_whitelist_add(bd_addr_type_t address_type, const bd_addr_t address);
 
@@ -537,13 +537,13 @@ uint8_t gap_whitelist_add(bd_addr_type_t address_type, const bd_addr_t address);
  * @brief Remove Device from Whitelist
  * @param address_typ
  * @param address
- * @returns 0 if ok
+ * @return 0 if ok
  */
 uint8_t gap_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address);
 
 /**
  * @brief Clear Whitelist
- * @returns 0 if ok
+ * @return 0 if ok
  */
 uint8_t gap_whitelist_clear(void);
 
@@ -555,7 +555,7 @@ uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type);
 /**
  *  @brief Connect with Whitelist
  *  @note Explicit whitelist management and this connect with whitelist replace deprecated gap_auto_connection_* functions
- *  @returns - if ok
+ *  @return - if ok
  */
 uint8_t gap_connect_with_whitelist(void);
 
@@ -569,7 +569,7 @@ uint8_t gap_connect_cancel(void);
  * @deprecated Please setup Whitelist with gap_whitelist_* and start connecting with gap_connect_with_whitelist
  * @param address_type
  * @param address
- * @returns 0 if ok
+ * @return 0 if ok
  */
 uint8_t gap_auto_connection_start(bd_addr_type_t address_type, const bd_addr_t address);
 
@@ -578,7 +578,7 @@ uint8_t gap_auto_connection_start(bd_addr_type_t address_type, const bd_addr_t a
  * @deprecated Please setup Whitelist with gap_whitelist_* and start connecting with gap_connect_with_whitelist
  * @param address_type
  * @param address
- * @returns 0 if ok
+ * @return 0 if ok
  */
 uint8_t gap_auto_connection_stop(bd_addr_type_t address_type, const bd_addr_t address);
 
@@ -596,7 +596,7 @@ uint8_t gap_auto_connection_stop_all(void);
  * @param tx_phys 1 = 1M, 2 = 2M, 4 = Coded
  * @param rx_phys 1 = 1M, 2 = 2M, 4 = Coded
  * @param phy_options 0 = no preferred coding for Coded, 1 = S=2 coding (500 kbit), 2 = S=8 coding (125 kbit)
- * @returns 0 if ok
+ * @return 0 if ok
  */
 uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx_phys, uint8_t rx_phys, uint8_t phy_options);
 
@@ -701,7 +701,7 @@ bool gap_get_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_
 /**
  * @brief Setup Link Key iterator
  * @param it
- * @returns 1 on success
+ * @return 1 on success
  * @note On most desktop ports, the Link Key DB uses a TLV and there is one TLV storage per
  *       Controller resp. its Bluetooth Address. As the Bluetooth Address is retrieved during
  *       power up, this function only works, when the stack is in working state for these ports.
@@ -714,7 +714,7 @@ int gap_link_key_iterator_init(btstack_link_key_iterator_t * it);
  * @brief addr
  * @brief link_key
  * @brief type of link key
- * @returns 1, if valid link key found
+ * @return 1, if valid link key found
  * @see note on gap_link_key_iterator_init
  */
 int gap_link_key_iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * type);
@@ -738,7 +738,7 @@ int gap_inquiry_start(uint8_t duration_in_1280ms_units);
 /**
  * @brief Stop GAP Classic Inquiry
  * @brief Stop GAP Classic Inquiry
- * @returns 0 if ok
+ * @return 0 if ok
  * @events: GAP_EVENT_INQUIRY_COMPLETE
  */
 int gap_inquiry_stop(void);

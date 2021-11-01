@@ -109,7 +109,7 @@ static uint32_t le_device_db_tlv_tag_for_index(uint8_t index){
     return (tag_0 << 24u) | (tag_1 << 16u) | (tag_2 << 8u) | index;
 }
 
-// @returns success
+// @return success
 // @param index = entry_pos
 static bool le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
     btstack_assert(le_device_db_tlv_btstack_tlv_impl != NULL);
@@ -121,7 +121,7 @@ static bool le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
 	return size == sizeof(le_device_db_entry_t);
 }
 
-// @returns success
+// @return success
 // @param index = entry_pos
 static bool le_device_db_tlv_store(int index, le_device_db_entry_t * entry){
     btstack_assert(le_device_db_tlv_btstack_tlv_impl != NULL);
@@ -170,7 +170,7 @@ void le_device_db_set_local_bd_addr(bd_addr_t bd_addr){
     (void)bd_addr;
 }
 
-// @returns number of device in db
+// @return number of device in db
 int le_device_db_count(void){
 	return num_valid_entries;
 }

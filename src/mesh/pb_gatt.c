@@ -241,7 +241,7 @@ void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason){
 /**
  * Setup Link with unprovisioned device
  * @param device_uuid
- * @returns con_handle or HCI_CON_HANDLE_INVALID
+ * @return con_handle or HCI_CON_HANDLE_INVALID
  */
 uint16_t pb_gatt_create_link(const uint8_t * device_uuid){
     UNUSED(device_uuid);

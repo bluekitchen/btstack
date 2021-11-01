@@ -113,7 +113,7 @@ bool  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_it
 }
 
 /**
- * @returns number of items in list
+ * @return number of items in list
  */
  int btstack_linked_list_count(btstack_linked_list_t * list){
     btstack_linked_item_t *it;

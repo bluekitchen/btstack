@@ -39,7 +39,7 @@
  * @param tag
  * @param buffer
  * @param buffer_size
- * @returns size of value
+ * @return size of value
  */
 static int btstack_tlv_none_get_tag(void * context, uint32_t tag, uint8_t * buffer, uint32_t buffer_size){
 	return 0;

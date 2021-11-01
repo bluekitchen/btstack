@@ -128,13 +128,13 @@ typedef struct {
 
 /**
  * @brief Get BTstack Audio Sink Instance
- * @returns btstack_audio_sink implementation
+ * @return btstack_audio_sink implementation
  */
 const btstack_audio_sink_t * btstack_audio_sink_get_instance(void);
 
 /**
  * @brief Get BTstack Audio Source Instance
- * @returns btstack_audio_source implementation
+ * @return btstack_audio_source implementation
  */
 const btstack_audio_source_t * btstack_audio_source_get_instance(void);
 

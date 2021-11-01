@@ -140,7 +140,7 @@ void btstack_run_loop_base_add_timer(btstack_timer_source_t * timer);
 /**
  * @brief Remove timer source.
  * @param timer to remove
- * @returns true if timer was removed
+ * @return true if timer was removed
  */
 bool  btstack_run_loop_base_remove_timer(btstack_timer_source_t * timer);
 
@@ -157,7 +157,7 @@ void btstack_run_loop_base_dump_timer(void);
 
 /**
  * @brief Get time until first timer fires
- * @returns -1 if no timers, time until next timeout otherwise
+ * @return -1 if no timers, time until next timeout otherwise
  */
 int32_t btstack_run_loop_base_get_time_until_timeout(uint32_t now);
 
@@ -170,7 +170,7 @@ void btstack_run_loop_base_add_data_source(btstack_data_source_t * data_source);
 /**
  * @brief Remove data source from run loop
  * @param data_source to remove
- * @returns true if data srouce was removed
+ * @return true if data srouce was removed
  */
 bool btstack_run_loop_base_remove_data_source(btstack_data_source_t * data_source);
 

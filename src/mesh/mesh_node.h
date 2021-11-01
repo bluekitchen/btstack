@@ -65,7 +65,7 @@ typedef void (*mesh_operation_handler)(struct mesh_model * mesh_model, mesh_pdu_
 
 // function to publish the current state of a model
 // @param mesh_model to publish
-// @returns mesh_pdu with status message
+// @return mesh_pdu with status message
 typedef mesh_pdu_t * (*mesh_publish_state_t)(struct mesh_model * mesh_model);
 
 typedef enum {
@@ -218,7 +218,7 @@ void mesh_node_add_element(mesh_element_t * element);
 
 /**
  * @brief Get number elements
- * @returns number of elements on this node
+ * @return number of elements on this node
  */
 uint16_t mesh_node_element_count(void);
 
@@ -301,7 +301,7 @@ void mesh_node_set_device_uuid(const uint8_t * device_uuid);
 
 /**
  * @brief Get Device UUID
- * @returns device_uuid if set, NULL otherwise
+ * @return device_uuid if set, NULL otherwise
  */
 const uint8_t * mesh_node_get_device_uuid(void);
 
@@ -315,19 +315,19 @@ void mesh_node_set_info(uint16_t company_id, uint16_t product_id, uint16_t produ
 
 /**
  * @brief Get node info: company_id
- * @returns company_id
+ * @return company_id
  */
 uint16_t mesh_node_get_company_id(void);
 
 /**
  * @brief Get node info: product_id
- * @returns product_id
+ * @return product_id
  */
 uint16_t mesh_node_get_product_id(void);
 
 /**
  * @brief Get node info: product_version_id
- * @returns product_version_id
+ * @return product_version_id
  */
 uint16_t mesh_node_get_product_version_id(void);
 

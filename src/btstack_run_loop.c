@@ -126,7 +126,7 @@ void btstack_run_loop_base_dump_timer(void){
 }
 /**
  * @brief Get time until first timer fires
- * @returns -1 if no timers, time until next timeout otherwise
+ * @return -1 if no timers, time until next timeout otherwise
  */
 int32_t btstack_run_loop_base_get_time_until_timeout(uint32_t now){
     if (btstack_run_loop_base_timers == NULL) return -1;
