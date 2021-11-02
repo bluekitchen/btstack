@@ -1190,7 +1190,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
             avrcp_send_cmd(connection, AVRCP_SINGLE_PACKET);
             return;
-        case AVCTP_W2_SEND_FRAGMENTED_MESSAGE:
+        case AVCTP_W2_SEND_AVCTP_FRAGMENTED_MESSAGE:
             if (connection->cmd_operands_fragmented_pos == 0){
                  avrcp_send_cmd(connection, AVRCP_START_PACKET);
                  avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -1797,7 +1797,7 @@ uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid, avrcp_command_t
     }
 
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    connection->state = AVCTP_W2_SEND_FRAGMENTED_MESSAGE;
+    connection->state = AVCTP_W2_SEND_AVCTP_FRAGMENTED_MESSAGE;
 
     connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = command_opcode;
