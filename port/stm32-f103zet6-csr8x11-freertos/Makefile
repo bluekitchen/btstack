@@ -34,11 +34,11 @@ BLE_ENABLE = y
 
 EXAMPLE_PLUS_ENABLE = n
 
-FREERTOS_ENABLE = y
+FREERTOS_ENABLE = n
 
-AT_CMD_ENABLE = y
+AT_CMD_ENABLE = n
 
-CUNIT_ENABLE = y
+CUNIT_ENABLE = n
 #######################################
 # paths
 #######################################
@@ -161,19 +161,28 @@ C_SOURCES += ${BTSTACK_ROOT}/src/l2cap_signaling.c
 
 #customize
 C_SOURCES +=  \
-Libraries/STM32F10x_StdPeriph_Driver/src/misc.c \
-Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_gpio.c \
-Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_rcc.c \
-Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_usart.c \
-Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_flash.c \
-User/bsp/bsp.c \
-User/bsp/stm32f10x_assert.c \
-User/bsp/stm32f10x_it.c \
-User/bsp/system_stm32f10x.c \
-User/bsp/src/bsp_led.c \
-User/bsp/src/bsp_uart_fifo.c \
-User/bsp/src/bsp_key.c \
-User/main.c \
+Src/main.c \
+Src/stm32f1xx_it.c \
+Src/stm32f1xx_hal_msp.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_exti.c \
+Src/system_stm32f1xx.c \
+Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c \
+Src/gpio.c \
+Src/dma.c \
+Src/usart.c \
+Port/btstack_port.c
 
 ifeq (${FREERTOS_ENABLE}, y)
 C_SOURCES += FreeRTOS/portable/MemMang/heap_4.c
@@ -206,8 +215,6 @@ C_SOURCES += Middleware/ut_manager/Cunit/Sources/cunit_misc.c
 C_SOURCES += Middleware/ut_manager/Cunit/interface/cunit_interface.c
 endif
 
-#User/SysInfoTest.c
-#User/bsp/bsp_msg.c \
 # ASM sources
 ASM_SOURCES =  \
 startup_stm32f10x_hd.s
@@ -255,8 +262,8 @@ AS_DEFS =
 
 # C defines
 C_DEFS +=  \
--DUSE_STDPERIPH_DRIVER \
--DSTM32F10X_HD \
+-DUSE_HAL_DRIVER \
+-DSTM32F103xE \
 -DNDEBUG \
 
 
@@ -264,14 +271,12 @@ C_DEFS +=  \
 # AS includes
 AS_INCLUDES = 
 
-# C includes
 C_INCLUDES =  \
--ILibraries/CMSIS/Include \
--ILibraries/CMSIS/Device/ST/STM32F10x/Include \
--ILibraries/STM32F10x_StdPeriph_Driver/inc \
--IUser \
--IUser/bsp \
--IUser/bsp/inc \
+-IInc \
+-IDrivers/STM32F1xx_HAL_Driver/Inc \
+-IDrivers/STM32F1xx_HAL_Driver/Inc/Legacy \
+-IDrivers/CMSIS/Device/ST/STM32F1xx/Include \
+-IDrivers/CMSIS/Include \
 -IFreeRTOS/include \
 -IFreeRTOS/portable/GCC/ARM_CM3 \
 -IMiddleware/at_command \
@@ -300,8 +305,9 @@ C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip/port
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/csr
 
-C_INCLUDES += -I User
-
+C_INCLUDES += -I Port
+C_INCLUDES += -I Src
+C_INCLUDES += -I Inc
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

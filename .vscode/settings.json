@@ -19,7 +19,8 @@
 "cortex-debug.armToolchainPath": "C:\\Program Files (x86)\\GNU Arm Embedded Toolchain\\10 2021.07\\bin",
 "cortex-debug.registerUseNaturalFormat": false,
 "files.associations": {
-    "includes.h": "c"
+    "includes.h": "c",
+    "btstack_port.h": "c"
 },
 "cortex-debug.variableUseNaturalFormat": true,
 }
