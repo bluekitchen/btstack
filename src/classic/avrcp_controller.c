@@ -51,6 +51,7 @@
 #include "l2cap.h"
 
 #define AVRCP_CMD_BUFFER_SIZE 30
+#define AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE 512
 
 // made public in avrcp_controller.h
 avrcp_context_t avrcp_controller_context;
@@ -73,15 +74,17 @@ static bool avrcp_controller_is_transaction_id_valid(avrcp_connection_t * connec
     return delta < 15;
 }
 
-static uint16_t avrcp_get_max_payload_size_for_packet_type(avrcp_packet_type_t packet_type){
-    switch (packet_type){
-        case AVRCP_SINGLE_PACKET:
-            return AVRCP_CMD_BUFFER_SIZE - 3;
-        case AVRCP_START_PACKET:
-            return AVRCP_CMD_BUFFER_SIZE - 4;
-        case AVRCP_CONTINUE_PACKET:
-        case AVRCP_END_PACKET:
-            return AVRCP_CMD_BUFFER_SIZE - 1;
+static uint16_t avrcp_get_max_payload_size_for_avctp_packet_type(avrcp_connection_t * connection, avctp_packet_type_t avctp_packet_type){
+    uint16_t max_frame_size = btstack_min(l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid), AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
+
+    switch (avctp_packet_type){
+        case AVCTP_SINGLE_PACKET:
+            return max_frame_size - 3;
+        case AVCTP_START_PACKET:
+            return max_frame_size - 4;
+        case AVCTP_CONTINUE_PACKET:
+        case AVCTP_END_PACKET:
+            return max_frame_size - 1;
         default:
             btstack_assert(false);
             return 0;
@@ -1192,7 +1195,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
                  avrcp_send_cmd(connection, AVRCP_START_PACKET);
                  avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
             } else {
-                if ((connection->cmd_operands_fragmented_len - connection->cmd_operands_fragmented_pos) > avrcp_get_max_payload_size_for_packet_type(AVRCP_CONTINUE_PACKET)){
+                if ((connection->cmd_operands_fragmented_len - connection->cmd_operands_fragmented_pos) > avrcp_get_max_payload_size_for_avctp_packet_type(connection, AVCTP_CONTINUE_PACKET)){
                      avrcp_send_cmd(connection, AVRCP_CONTINUE_PACKET);
                      avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                  } else {
