@@ -592,7 +592,7 @@ typedef struct {
     uint8_t absolute_volume;
     uint8_t notify_absolute_volume_changed;
     
-    uint8_t now_playing_info_response;
+    bool now_playing_info_response;
     uint8_t now_playing_info_attr_bitmap;
     uint8_t abort_continue_response;
     

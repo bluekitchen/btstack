@@ -673,7 +673,7 @@ uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, ui
 
 static uint8_t avrcp_target_now_playing_info(avrcp_connection_t * connection){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    connection->now_playing_info_response = 1;
+    connection->now_playing_info_response = true;
     connection->command_opcode  = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type    = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;
     connection->subunit_type    = AVRCP_SUBUNIT_TYPE_PANEL; 
@@ -1017,7 +1017,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
                         return;
                     }
-                    connection->now_playing_info_response = 1;
+                    connection->now_playing_info_response = true;
                     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                     break;
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
@@ -1215,13 +1215,13 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 
                     if (connection->abort_continue_response){
                         connection->abort_continue_response = 0;
-                        connection->now_playing_info_response = 0;
+                        connection->now_playing_info_response = false;
                         avrcp_target_abort_continue_response(connection->l2cap_signaling_cid, connection);
                         return;
                     }
 
                     if (connection->now_playing_info_response){
-                        connection->now_playing_info_response = 0;
+                        connection->now_playing_info_response = false;
                         avrcp_target_send_now_playing_info(connection->l2cap_signaling_cid, connection);
                         return;
                     }
