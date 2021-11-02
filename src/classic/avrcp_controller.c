@@ -1197,7 +1197,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
                  avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
             } else {
                 if ((connection->cmd_operands_fragmented_len - connection->cmd_operands_fragmented_pos) > avrcp_get_max_payload_size_for_avctp_packet_type(connection, AVCTP_CONTINUE_PACKET)){
-                     avrcp_send_cmd_with_avctp_fragmentation(connection, AVRCP_CONTINUE_PACKET);
+                     avrcp_send_cmd_with_avctp_fragmentation(connection, AVCTP_CONTINUE_PACKET);
                      avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                  } else {
                     connection->state = AVCTP_W2_RECEIVE_RESPONSE;
