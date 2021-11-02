@@ -50,7 +50,6 @@
 #include "btstack_util.h"
 #include "l2cap.h"
 
-#define AVRCP_CMD_BUFFER_SIZE 30
 #define AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE 512
 
 // made public in avrcp_controller.h
@@ -507,7 +506,10 @@ static void avrcp_controller_parse_and_emit_element_attrs(uint8_t * packet, uint
 
 
 static int avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connection, avctp_packet_type_t avctp_packet_type){
+    l2cap_reserve_packet_buffer();
+    uint8_t * command = l2cap_get_outgoing_buffer();     
     uint16_t pos = 0; 
+    uint16_t max_frame_size = btstack_min(l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid), AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
 
     // non-fragmented: transport header (1) + PID (2)
     // fragmented:     transport header (1) + num packets (1) + PID (2)
@@ -518,7 +520,7 @@ static int avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connecti
     if (avctp_packet_type == AVCTP_START_PACKET){
         // num packets: (3 bytes overhead (PID, num packets) + command) / (MTU - transport header). 
         // to get number of packets using integer division, we subtract 1 from the data e.g. len = 5, packet size 5 => need 1 packet
-        command[pos++] = ((connection->cmd_operands_fragmented_len + 3 - 1) / (AVRCP_CMD_BUFFER_SIZE - 1)) + 1;
+        command[pos++] = ((connection->cmd_operands_fragmented_len + 3 - 1) / (max_frame_size - 1)) + 1;
     }
 
     if ((avctp_packet_type == AVCTP_START_PACKET) || (avctp_packet_type == AVCTP_START_PACKET)){
@@ -540,7 +542,7 @@ static int avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connecti
                      connection->cmd_operands_length);
         pos += connection->cmd_operands_length;
     } else {
-        uint16_t bytes_free = AVRCP_CMD_BUFFER_SIZE - pos;
+        uint16_t bytes_free = max_frame_size - pos;
         uint16_t bytes_to_store = connection->cmd_operands_fragmented_len-connection->cmd_operands_fragmented_pos;
         uint16_t bytes_to_copy = btstack_min(bytes_to_store, bytes_free);
         (void)memcpy(command + pos,
@@ -550,7 +552,7 @@ static int avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connecti
         connection->cmd_operands_fragmented_pos += bytes_to_copy;
     }
 
-    return l2cap_send(connection->l2cap_signaling_cid, command, pos);
+    return l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
 }
 
 static int avrcp_send_register_notification(avrcp_connection_t * connection, uint8_t event_id){
