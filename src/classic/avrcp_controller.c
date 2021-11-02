@@ -506,23 +506,22 @@ static void avrcp_controller_parse_and_emit_element_attrs(uint8_t * packet, uint
 }
 
 
-static int avrcp_send_cmd(avrcp_connection_t * connection, avrcp_packet_type_t packet_type){
-    uint8_t  command[AVRCP_CMD_BUFFER_SIZE];
+static int avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connection, avctp_packet_type_t avctp_packet_type){
     uint16_t pos = 0; 
 
     // non-fragmented: transport header (1) + PID (2)
     // fragmented:     transport header (1) + num packets (1) + PID (2)
 
     // transport header : transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
-    command[pos++] = (connection->transaction_id << 4) | (packet_type << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
+    command[pos++] = (connection->transaction_id << 4) | (avctp_packet_type << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
 
-    if (packet_type == AVRCP_START_PACKET){
+    if (avctp_packet_type == AVCTP_START_PACKET){
         // num packets: (3 bytes overhead (PID, num packets) + command) / (MTU - transport header). 
         // to get number of packets using integer division, we subtract 1 from the data e.g. len = 5, packet size 5 => need 1 packet
         command[pos++] = ((connection->cmd_operands_fragmented_len + 3 - 1) / (AVRCP_CMD_BUFFER_SIZE - 1)) + 1;
     }
 
-    if ((packet_type == AVRCP_SINGLE_PACKET) || (packet_type == AVRCP_START_PACKET)){
+    if ((avctp_packet_type == AVCTP_START_PACKET) || (avctp_packet_type == AVCTP_START_PACKET)){
         // Profile IDentifier (PID)
         command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
         command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
@@ -535,7 +534,7 @@ static int avrcp_send_cmd(avrcp_connection_t * connection, avrcp_packet_type_t p
         command[pos++] = (uint8_t)connection->command_opcode;
     }
 
-    if (packet_type == AVRCP_SINGLE_PACKET){
+    if (avctp_packet_type == AVCTP_SINGLE_PACKET){
         // operands
         (void)memcpy(command + pos, connection->cmd_operands,
                      connection->cmd_operands_length);
@@ -1183,24 +1182,24 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
     switch (connection->state){
         case AVCTP_W2_SEND_PRESS_COMMAND:
             connection->state = AVCTP_W2_RECEIVE_PRESS_RESPONSE;
-            avrcp_send_cmd(connection, AVRCP_SINGLE_PACKET);
+            avrcp_send_cmd_with_avctp_fragmentation(connection, AVCTP_SINGLE_PACKET);
             return;
         case AVCTP_W2_SEND_COMMAND:
         case AVCTP_W2_SEND_RELEASE_COMMAND:
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-            avrcp_send_cmd(connection, AVRCP_SINGLE_PACKET);
+            avrcp_send_cmd_with_avctp_fragmentation(connection, AVCTP_SINGLE_PACKET);
             return;
         case AVCTP_W2_SEND_AVCTP_FRAGMENTED_MESSAGE:
             if (connection->cmd_operands_fragmented_pos == 0){
-                 avrcp_send_cmd(connection, AVRCP_START_PACKET);
+                 avrcp_send_cmd_with_avctp_fragmentation(connection, AVCTP_START_PACKET);
                  avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
             } else {
                 if ((connection->cmd_operands_fragmented_len - connection->cmd_operands_fragmented_pos) > avrcp_get_max_payload_size_for_avctp_packet_type(connection, AVCTP_CONTINUE_PACKET)){
-                     avrcp_send_cmd(connection, AVRCP_CONTINUE_PACKET);
+                     avrcp_send_cmd_with_avctp_fragmentation(connection, AVRCP_CONTINUE_PACKET);
                      avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                  } else {
                     connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-                    avrcp_send_cmd(connection, AVRCP_END_PACKET);
+                    avrcp_send_cmd_with_avctp_fragmentation(connection, AVCTP_END_PACKET);
                  }
             }
             return;
