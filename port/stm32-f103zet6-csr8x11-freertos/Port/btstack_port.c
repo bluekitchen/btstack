@@ -28,6 +28,7 @@
 #endif
 
 //
+extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
 
@@ -96,9 +97,9 @@ static void (*cts_irq_handler)(void) = &dummy_handler;
 static void dummy_handler(void){};
 //static int hal_uart_needed_during_sleep;
 
-#if 0
+#if 1
 void hal_uart_dma_set_sleep(uint8_t sleep){
-
+#if 0
 	// RTS is on PD12 - manually set it during sleep
 	GPIO_InitTypeDef RTS_InitStruct;
 	RTS_InitStruct.Pin = GPIO_PIN_12;
@@ -119,37 +120,38 @@ void hal_uart_dma_set_sleep(uint8_t sleep){
 //		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
 //	}
 	hal_uart_needed_during_sleep = !sleep;
+#endif
 }
 #endif
 
-#if 0
+#if 1
 // reset Bluetooth using n_shutdown
 static void bluetooth_power_cycle(void){
 	printf("Bluetooth power cycle\n");
-	HAL_GPIO_WritePin( CC_nSHUTD_GPIO_Port, CC_nSHUTD_Pin, GPIO_PIN_RESET );
+	HAL_GPIO_WritePin( BT_HW_RST_GPIO_Port, BT_HW_RST_Pin, GPIO_PIN_RESET );
 	HAL_Delay( 250 );
-	HAL_GPIO_WritePin( CC_nSHUTD_GPIO_Port, CC_nSHUTD_Pin, GPIO_PIN_SET );
+	HAL_GPIO_WritePin( BT_HW_RST_GPIO_Port, BT_HW_RST_Pin, GPIO_PIN_SET );
 	HAL_Delay( 500 );
 }
 #endif
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
-	if (huart == &huart3){
+	if (huart == &huart2){
 		(*tx_done_handler)();
 	}
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
-	if (huart == &huart3){
+	if (huart == &huart2){
 		(*rx_done_handler)();
 	}
     if (huart == &huart2){
-        stdin_rx_complete();
+        //stdin_rx_complete();
     }
 }
 
 void hal_uart_dma_init(void){
-	//bluetooth_power_cycle();
+	bluetooth_power_cycle();
 }
 void hal_uart_dma_set_block_received( void (*the_block_handler)(void)){
     rx_done_handler = the_block_handler;
@@ -166,9 +168,9 @@ void EXTI15_10_IRQHandler(void){
 	}
 }
 
-#if 0
+#if 1
 void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
-
+#if 0
 	GPIO_InitTypeDef CTS_InitStruct = {
 		.Pin       = GPIO_PIN_11,
 		.Mode      = GPIO_MODE_AF_PP,
@@ -193,21 +195,22 @@ void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
 		log_info("disabled CTS irq");
 	}
     cts_irq_handler = the_irq_handler;
+#endif
 }
 #endif
 
 int  hal_uart_dma_set_baud(uint32_t baud){
-	huart3.Init.BaudRate = baud;
-	HAL_UART_Init(&huart3);
+	huart2.Init.BaudRate = baud;
+	HAL_UART_Init(&huart2);
 	return 0;
 }
 
 void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
-    HAL_UART_Transmit_DMA( &huart3, (uint8_t *) data, size);
+    HAL_UART_Transmit_DMA( &huart2, (uint8_t *) data, size);
 }
 
 void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
-	HAL_UART_Receive_DMA( &huart3, data, size );
+	HAL_UART_Receive_DMA( &huart2, data, size );
 }
 
 #ifndef ENABLE_SEGGER_RTT
@@ -230,12 +233,14 @@ int _write(int file, char *ptr, int len){
 	int i;
 
 	if (file == STDOUT_FILENO || file == STDERR_FILENO) {
-		for (i = 0; i < len; i++) {
+		HAL_UART_Transmit_DMA( &huart1, (uint8_t *) ptr, len);
+		/*for (i = 0; i < len; i++) {
 			if (ptr[i] == '\n') {
-				HAL_UART_Transmit( &huart2, &cr, 1, HAL_MAX_DELAY );
+				HAL_UART_Transmit_DMA( &huart1, &cr, 1 );
 			}
-			HAL_UART_Transmit( &huart2, (uint8_t *) &ptr[i], 1, HAL_MAX_DELAY );
-		}
+			uint8_t x = ptr[i];
+			HAL_UART_Transmit_DMA( &huart1, (uint8_t *) &ptr[i], 1 );
+		}*/
 		return i;
 	}
 	errno = EIO;
@@ -336,7 +341,7 @@ void port_main(void){
 #ifdef ENABLE_SEGGER_RTT
     // hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
 #else
-    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
+    hci_dump_init(hci_dump_embedded_stdout_get_instance());
 #endif
 
 	// init HCI
