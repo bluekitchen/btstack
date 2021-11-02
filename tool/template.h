@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 BlueKitchen GmbH
+ * Copyright (C) 2021 BlueKitchen GmbH
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
