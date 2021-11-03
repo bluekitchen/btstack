@@ -270,7 +270,8 @@ typedef enum {
 #define L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU                  0x6C
 #define L2CAP_SERVICE_DOES_NOT_EXIST                       0x6D
 #define L2CAP_LOCAL_CID_DOES_NOT_EXIST                     0x6E
-    
+#define L2CAP_CONNECTION_RESPONSE_UNKNOWN_ERROR            0x6F
+
 #define RFCOMM_MULTIPLEXER_STOPPED                         0x70
 #define RFCOMM_CHANNEL_ALREADY_REGISTERED                  0x71
 #define RFCOMM_NO_OUTGOING_CREDITS                         0x72
@@ -453,6 +454,19 @@ typedef enum {
 #define L2CAP_CID_SIGNALING_LE                     0x0005
 #define L2CAP_CID_SECURITY_MANAGER_PROTOCOL        0x0006
 #define L2CAP_CID_BR_EDR_SECURITY_MANAGER          0x0007
+
+// L2CAP Enhanced Credit-Based Flow-Control Mode - L2CAP Enhanced Data Channels
+
+// number of CIDs in single connection+reconfiguration request/response
+#define L2CAP_ENHANCED_DATA_CHANNEL_MAX_CID_ARRAY_SIZE        5
+
+// Result for Reconfigure Request
+#define L2CAP_RECONFIGURE_SUCCESS                                 0
+#define L2CAP_RECONFIGURE_FAILED_MTU_REDUCTION_NOT_ALLOWED        1
+#define L2CAP_RECONFIGURE_FAILED_MPS_REDUCTION_MULTIPLE_CHANNELS  2
+#define L2CAP_RECONFIGURE_FAILED_DESTINATION_CID_INVALID          3
+#define L2CAP_RECONFIGURE_FAILED_UNACCEPTABLE_PARAMETERS          4
+
 /**
  * SDP Protocol
  */
