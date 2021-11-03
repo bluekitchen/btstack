@@ -139,6 +139,18 @@ static inline {result_type} {fn_name}(const uint8_t * event){{
 }}
 '''
 
+c_prototoype_array_getter = '''/**
+ * @brief {description}
+ * @param event packet
+ * @param index
+ * @return {result_name}
+ * @note: btstack_type {format}
+ */
+static inline {result_type} {fn_name}(const uint8_t * event, uint8_t index){{
+    {code}
+}}
+'''
+
 c_prototoype_struct_return = '''/**
  * @brief {description}
  * @param event packet
@@ -172,8 +184,6 @@ static inline uint8_t hci_event_{meta_event}_meta_get_subevent_code(const uint8_
 '''
 
 # global variables/defines
-# gen_path = '../src/btstack_event.h'
-
 defines = dict()
 defines_used = set()
 
@@ -197,6 +207,7 @@ param_read = {
     'Y' : 'gatt_client_deserialize_characteristic(event, {offset}, {result_name});',
     'Z' : 'gatt_client_deserialize_characteristic_descriptor(event, {offset}, {result_name});',
     'V' : 'return &event[{offset}];',
+    'C' : 'return little_endian_read_16(event, {offset} + (2 * index));'
 }
 
 def c_type_for_btstack_type(type):
@@ -206,12 +217,12 @@ def c_type_for_btstack_type(type):
                     'J' : 'uint8_t', 'L' : 'uint16_t', 'V' : 'const uint8_t *', 'U' : 'BT_UUID',
                     'Q' : 'uint8_t *', 'K' : 'uint8_t *',
                     'X' : 'gatt_client_service_t *', 'Y' : 'gatt_client_characteristic_t *', 'Z' : 'gatt_client_characteristic_descriptor_t *',
-                    'T' : 'const char *'}
+                    'T' : 'const char *', 'C' : 'uint16_t' }
     return param_types[type]
 
 def size_for_type(type):
     param_sizes = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16, 'Q':32, 'K':16,
-                    'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1}
+                    'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1, 'C':-1 }
     return param_sizes[type]
 
 def format_function_name(event_name):
@@ -223,6 +234,9 @@ def format_function_name(event_name):
 def template_for_type(field_type):
     global c_prototoype_simple_return
     global c_prototoype_struct_return
+    global c_prototoype_array_getter
+    if field_type == 'C':
+        return c_prototoype_array_getter
     types_with_struct_return = "BKQXYZ"
     if field_type in types_with_struct_return:
         return c_prototoype_struct_return
@@ -240,7 +254,11 @@ def create_getter(event_name, field_name, field_type, offset, supported):
     global c_prototoype_unsupported
     global param_read
 
-    description = "Get field %s from event %s" % (field_name, event_name.upper())
+    if field_type == 'C':
+        description_template = 'Get element of array field %s from event %s'
+    else:
+        description_template = "Get field %s from event %s"
+    description = description_template % (field_name, event_name.upper())
     result_name = field_name
     fn_name     = "%s_get_%s" % (event_name, field_name)
     result_type = c_type_for_btstack_type(field_type)
@@ -294,7 +312,7 @@ def create_events(events):
                     offset += 1
                     continue
                 if offset_unknown:
-                    print("Param after variable length field without preceding 'J' lenght field")
+                    print("Param after variable length field without preceding 'J' length field")
                     break
                 field_type = f 
                 text = create_getter(base_name, field_name, field_type, offset, supported)
