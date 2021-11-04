@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Drop iOS support
 - HCI: provide status instead of undocumented int error code and bool for API functions
+- HCI: use 1000 ms watchdog to force power off for hci_power_control(HCI_POWER_OFF)
 - GAP: local name, EIR data, class of device and default link policy can be updated at any time
 - L2CAP: provide status instead of undocumented int error code and bool for API functions
 - L2CAP: remote features not required for SDP connections
