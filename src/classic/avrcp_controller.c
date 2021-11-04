@@ -90,6 +90,53 @@ static uint16_t avrcp_get_max_payload_size_for_avctp_packet_type(avrcp_connectio
     }
 }
 
+
+static void avrcp_custome_command_data_init(avrcp_connection_t * connection, 
+    avrcp_command_opcode_t opcode, avrcp_command_type_t command_type, 
+    avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, 
+    avrcp_pdu_id_t pdu_id, uint32_t company_id){
+
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
+    connection->command_opcode = opcode;
+    connection->command_type = command_type;
+    connection->subunit_type = subunit_type;
+    connection->subunit_id = subunit_id;
+    connection->company_id = company_id << 16;
+    connection->pdu_id = pdu_id;
+    connection->cmd_operands_fragmented_buffer = NULL;
+    connection->cmd_operands_fragmented_pos = 0;
+    connection->cmd_operands_fragmented_len = 0;
+}
+
+static void avrcp_vendor_dependent_command_data_init(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_pdu_id_t pdu_id){
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    connection->company_id = BT_SIG_COMPANY_ID;
+   
+    connection->command_type = command_type;
+    connection->pdu_id = pdu_id;
+    connection->cmd_operands_fragmented_buffer = NULL;
+    connection->cmd_operands_fragmented_pos = 0;
+    connection->cmd_operands_fragmented_len = 0;
+}
+
+static void avrcp_pass_through_command_data_init(avrcp_connection_t * connection, avrcp_operation_id_t opid){
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
+    connection->command_opcode =  AVRCP_CMD_OPCODE_PASS_THROUGH;
+    connection->command_type = AVRCP_CTYPE_CONTROL;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL; 
+    connection->subunit_id =   AVRCP_SUBUNIT_ID;
+    
+    connection->company_id = 0;
+    connection->pdu_id = 0;
+    connection->operation_id = opid;
+
+    connection->cmd_operands_fragmented_buffer = NULL;
+    connection->cmd_operands_fragmented_pos = 0;
+    connection->cmd_operands_fragmented_len = 0;
+}
 static int avrcp_controller_supports_browsing(uint16_t controller_supported_features){
     return controller_supported_features & AVRCP_FEATURE_MASK_BROWSING;
 }
@@ -626,11 +673,7 @@ static uint8_t avrcp_controller_request_pass_through_press_control_cmd(uint16_t 
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
     connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
-    connection->command_opcode =  AVRCP_CMD_OPCODE_PASS_THROUGH;
-    connection->command_type = AVRCP_CTYPE_CONTROL;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL; 
-    connection->subunit_id =   AVRCP_SUBUNIT_ID;
-    connection->cmd_operands_length = 0;
+    avrcp_pass_through_command_data_init(connection, opid);
 
     connection->press_and_hold_cmd_active = continuous_cmd;
     connection->cmd_operands_length = 2;
@@ -645,7 +688,6 @@ static uint8_t avrcp_controller_request_pass_through_press_control_cmd(uint16_t 
         avrcp_press_and_hold_timer_start(connection);
     }
 
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -660,11 +702,9 @@ static uint8_t request_continuous_pass_through_press_control_cmd(uint16_t avrcp_
 
 static void avrcp_controller_get_capabilities_for_connection(avrcp_connection_t * connection, uint8_t capability_id){
     connection->state = AVCTP_W2_SEND_COMMAND;
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-    connection->command_type = AVRCP_CTYPE_STATUS;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    avrcp_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_CAPABILITIES);
+
+    // TODO: refactor
     big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
     connection->cmd_operands[3] = AVRCP_PDU_ID_GET_CAPABILITIES; // PDU ID
     connection->cmd_operands[4] = 0;
@@ -697,11 +737,9 @@ static uint8_t avrcp_controller_register_notification(avrcp_connection_t * conne
 
 static uint8_t avrcp_controller_request_abort_continuation(avrcp_connection_t * connection){
     connection->state = AVCTP_W2_SEND_COMMAND;
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-    connection->command_type = AVRCP_CTYPE_CONTROL;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    avrcp_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE);
+
+    // TODO: refactor
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
@@ -719,11 +757,9 @@ static uint8_t avrcp_controller_request_abort_continuation(avrcp_connection_t * 
 
 static uint8_t avrcp_controller_request_continue_response(avrcp_connection_t * connection){
     connection->state = AVCTP_W2_SEND_COMMAND;
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-    connection->command_type = AVRCP_CTYPE_CONTROL;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    avrcp_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE);
+
+    // TODO: refactor
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
@@ -1480,12 +1516,11 @@ uint8_t avrcp_controller_get_play_status(uint16_t avrcp_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+
     connection->state = AVCTP_W2_SEND_COMMAND;
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-    connection->command_type = AVRCP_CTYPE_STATUS;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    avrcp_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_PLAY_STATUS);
+
+    // TODO refactor
     big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
     connection->cmd_operands[3] = AVRCP_PDU_ID_GET_PLAY_STATUS;
     connection->cmd_operands[4] = 0;                     // reserved(upper 6) | packet_type -> 0
@@ -1501,13 +1536,11 @@ uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addre
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+
     connection->state = AVCTP_W2_SEND_COMMAND;
-    
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-    connection->command_type = AVRCP_CTYPE_CONTROL;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    avrcp_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_SET_ADDRESSED_PLAYER);
+
+    // TODO refactor
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
@@ -1537,13 +1570,11 @@ uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_
     if (num_attributes >= AVRCP_MEDIA_ATTR_RESERVED) {
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
-    connection->state = AVCTP_W2_SEND_COMMAND;
 
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-    connection->command_type = AVRCP_CTYPE_STATUS;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES);
+
+    // TODO refactor
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
@@ -1614,12 +1645,9 @@ uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume)
     if (status != ERROR_CODE_SUCCESS) return status;
 
     connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME);
 
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-    connection->command_type = AVRCP_CTYPE_CONTROL;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    // TODO refactor:
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
@@ -1642,13 +1670,11 @@ uint8_t avrcp_controller_query_shuffle_and_repeat_modes(uint16_t avrcp_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    connection->state = AVCTP_W2_SEND_COMMAND;
     
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-    connection->command_type = AVRCP_CTYPE_STATUS;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_CURRENT_PLAYER_APPLICATION_SETTING_VALUE);
+
+    // TODO refactor
     big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
     connection->cmd_operands[3] = AVRCP_PDU_ID_GET_CURRENT_PLAYER_APPLICATION_SETTING_VALUE; // PDU ID
     connection->cmd_operands[4] = 0;
@@ -1670,13 +1696,11 @@ static uint8_t avrcp_controller_set_current_player_application_setting_value(uin
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    
     connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_SET_PLAYER_APPLICATION_SETTING_VALUE);
 
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-    connection->command_type = AVRCP_CTYPE_CONTROL;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    // TODO refactor
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
@@ -1714,12 +1738,9 @@ uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, 
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
     connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_PLAY_ITEM);
 
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
-    connection->command_type = AVRCP_CTYPE_CONTROL;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = AVRCP_SUBUNIT_ID;
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    // TODO refactor
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
@@ -1752,13 +1773,11 @@ uint8_t avrcp_controller_add_item_from_scope_to_now_playing_list(uint16_t avrcp_
         log_error("Connection in wrong state, expected %d, received %d", AVCTP_CONNECTION_OPENED, connection->state);
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
+    
     connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_ADD_TO_NOW_PLAYING);
 
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
-    connection->command_type = AVRCP_CTYPE_CONTROL;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = AVRCP_SUBUNIT_ID;
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    // TODO refactor
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;

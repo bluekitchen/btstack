@@ -540,7 +540,10 @@ typedef struct {
     avrcp_subunit_type_t subunit_type;
     avrcp_subunit_id_t   subunit_id;
     avrcp_packet_type_t  packet_type;
-
+    avrcp_pdu_id_t pdu_id;
+    // needed for PASS_THROUGH
+    avrcp_operation_id_t operation_id;
+    
     // regular commands
     uint8_t cmd_operands[20];
     uint8_t cmd_operands_length;
