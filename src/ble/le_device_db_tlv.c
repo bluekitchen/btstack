@@ -203,6 +203,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     int index_for_lowest_seq_nr = -1;
     int index_for_addr  = -1;
     int index_for_empty = -1;
+    bool new_entry = false;
 
 	// find unused entry in the used list
     int i;
@@ -234,6 +235,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     if (index_for_addr >= 0){
         index_to_use = index_for_addr;
     } else if (index_for_empty >= 0){
+        new_entry = true;
         index_to_use = index_for_empty;
     } else if (index_for_lowest_seq_nr >= 0){
         index_to_use = index_for_lowest_seq_nr;
@@ -268,8 +270,8 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     // set in entry_mape
     entry_map[index_to_use] = 1;
 
-    // keep track - don't increase if old entry found
-    if (index_for_addr < 0){
+    // keep track - don't increase if old entry found or replaced
+    if (new_entry){
         num_valid_entries++;
     }
 

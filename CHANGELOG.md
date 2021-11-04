@@ -37,7 +37,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: Work around for unexpected Windows 10 disconnect for BR Secure Connections (SMP over BR timeout)
 - SM: support storing bonding information for devices with identical IRK but different public addresses
 - GAP: restart advertising when private address changes
-
+- le_device_db_tlv: keep number of devices reported by le_device_db_count if old entry is replaced
+ 
 ### Changed
 - Drop iOS support
 - HCI: provide status instead of undocumented int error code and bool for API functions
