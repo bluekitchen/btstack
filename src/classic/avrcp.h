@@ -58,6 +58,7 @@ extern "C" {
 #define AVRCP_BROWSING_ITEM_HEADER_LEN 3
 #define AVRCP_BROWSING_MAX_NUM_ATTR_IDS 8
 
+#define AVRCP_MAX_COMMAND_PARAMETER_LENGTH 11
 #define BT_SIG_COMPANY_ID 0x001958
 #define AVRCP_MEDIA_ATTR_COUNT 7
 #define AVRCP_MAX_ATTRIBUTTE_SIZE 100
@@ -543,16 +544,15 @@ typedef struct {
     avrcp_pdu_id_t pdu_id;
     // needed for PASS_THROUGH
     avrcp_operation_id_t operation_id;
-    
+
     // regular commands
-    uint8_t cmd_operands[20];
-    uint8_t cmd_operands_length;
+    uint8_t cmd_operands[AVRCP_MAX_COMMAND_PARAMETER_LENGTH];
 
+    uint8_t * data;
+    uint16_t  data_len;
     // long/fragmented commands
-    const uint8_t * cmd_operands_fragmented_buffer;
-    uint16_t  cmd_operands_fragmented_pos;
-    uint16_t  cmd_operands_fragmented_len;
-
+    uint16_t  data_offset;
+    
     btstack_timer_source_t retry_timer;
     btstack_timer_source_t press_and_hold_cmd_timer;
     bool     press_and_hold_cmd_active;

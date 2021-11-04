@@ -329,12 +329,17 @@ uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addre
  * @param avrcp_cid
  * @param command_type
  * @param subunit_type
- * @param subunit ID
- * @param command_opcode
- * @param command_buffer
- * @param command_len
+ * @param subunit_id
+ * @param pdu_id
+ * @param company_id
+ * @param data
+ * @param data_len
  */
-uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid, avrcp_command_type_t command_type, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t command_opcode, const uint8_t * command_buffer, uint16_t command_len);
+uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid, 
+    avrcp_command_type_t command_type, 
+    avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, 
+    avrcp_pdu_id_t pdu_id, uint32_t company_id, 
+    const uint8_t * data, uint16_t data_len);
 
 /**
  * @brief De-Init AVRCP Controller
