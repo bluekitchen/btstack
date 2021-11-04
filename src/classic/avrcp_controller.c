@@ -551,55 +551,98 @@ static void avrcp_controller_parse_and_emit_element_attrs(uint8_t * packet, uint
     }
 }
 
+static avctp_packet_type_t avrcp_get_avctp_packet_type(avrcp_connection_t * connection){
+    if (connection->data_offset == 0){
+        if (avrcp_get_max_payload_size_for_avctp_packet_type(connection, AVCTP_SINGLE_PACKET) >= connection->data_len){
+            return AVCTP_SINGLE_PACKET;
+        } else {
+            return AVCTP_START_PACKET;
+        }
 
-static int avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connection, avctp_packet_type_t avctp_packet_type){
+    } else {
+        if ((connection->data_len - connection->data_offset) > avrcp_get_max_payload_size_for_avctp_packet_type(connection, AVCTP_CONTINUE_PACKET)){
+             return AVCTP_CONTINUE_PACKET;
+         } else {
+            return AVCTP_END_PACKET;
+         }
+    }
+}
+
+static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connection){
     l2cap_reserve_packet_buffer();
     uint8_t * command = l2cap_get_outgoing_buffer();     
-    uint16_t pos = 0; 
+    
     uint16_t max_frame_size = btstack_min(l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid), AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
+
+    avctp_packet_type_t avctp_packet_type = avrcp_get_avctp_packet_type(connection);
 
     // non-fragmented: transport header (1) + PID (2)
     // fragmented:     transport header (1) + num packets (1) + PID (2)
 
+    // AVCTP header
     // transport header : transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
+    uint16_t pos = 0; 
     command[pos++] = (connection->transaction_id << 4) | (avctp_packet_type << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
 
-    if (avctp_packet_type == AVCTP_START_PACKET){
-        // num packets: (3 bytes overhead (PID, num packets) + command) / (MTU - transport header). 
-        // to get number of packets using integer division, we subtract 1 from the data e.g. len = 5, packet size 5 => need 1 packet
-        command[pos++] = ((connection->cmd_operands_fragmented_len + 3 - 1) / (max_frame_size - 1)) + 1;
+    
+    switch (avctp_packet_type){
+        case AVCTP_SINGLE_PACKET:
+        case AVCTP_START_PACKET:
+            if (avctp_packet_type == AVCTP_START_PACKET){
+                // num packets: (3 bytes overhead (PID, num packets) + command) / (MTU - transport header). 
+                // to get number of packets using integer division, we subtract 1 from the data e.g. len = 5, packet size 5 => need 1 packet
+                command[pos++] = ((connection->data_len + 3 - 1) / (max_frame_size - 1)) + 1;
+            }
+            // Profile IDentifier (PID)
+            command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
+            command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
+
+            // command_type
+            command[pos++] = connection->command_type;
+            // subunit_type | subunit ID
+            command[pos++] = (connection->subunit_type << 3) | connection->subunit_id;
+            // opcode
+            command[pos++] = (uint8_t)connection->command_opcode;
+
+            switch (connection->command_opcode){
+                case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
+                    big_endian_store_24(command, pos, connection->company_id);
+                    pos += 3;
+                    command[pos++] = connection->pdu_id;
+                    command[pos++] = 0;                       // reserved(upper 6) | packet_type -> 0
+                    big_endian_store_16(command, pos, connection->data_len);     // parameter length
+                    pos += 2;
+                    break;
+                case AVRCP_CMD_OPCODE_PASS_THROUGH:
+                    command[pos++] = connection->operation_id;
+                    command[pos++] = (uint8_t)connection->data_len;     // parameter length
+                    pos += 2;
+                    break;
+                case AVRCP_CMD_OPCODE_UNIT_INFO:
+                    break;
+                case AVRCP_CMD_OPCODE_SUBUNIT_INFO:
+                    break;
+                default:
+                    btstack_assert(false);
+                    return;
+            }
+            break;
+        case AVCTP_CONTINUE_PACKET:
+        case AVCTP_END_PACKET:
+            break;
+        default:
+            btstack_assert(false);
+            return;
     }
 
-    if ((avctp_packet_type == AVCTP_START_PACKET) || (avctp_packet_type == AVCTP_START_PACKET)){
-        // Profile IDentifier (PID)
-        command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
-        command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
+    // compare bytes to store wth the remaining buffer size
+    uint16_t bytes_to_copy = btstack_min(connection->data_len - connection->data_offset, max_frame_size - pos);
 
-        // command_type
-        command[pos++] = connection->command_type;
-        // subunit_type | subunit ID
-        command[pos++] = (connection->subunit_type << 3) | connection->subunit_id;
-        // opcode
-        command[pos++] = (uint8_t)connection->command_opcode;
-    }
+    (void)memcpy(command + pos, &connection->data[connection->data_offset], bytes_to_copy);
+    pos += bytes_to_copy;
+    connection->data_offset += bytes_to_copy;
 
-    if (avctp_packet_type == AVCTP_SINGLE_PACKET){
-        // operands
-        (void)memcpy(command + pos, connection->cmd_operands,
-                     connection->cmd_operands_length);
-        pos += connection->cmd_operands_length;
-    } else {
-        uint16_t bytes_free = max_frame_size - pos;
-        uint16_t bytes_to_store = connection->cmd_operands_fragmented_len-connection->cmd_operands_fragmented_pos;
-        uint16_t bytes_to_copy = btstack_min(bytes_to_store, bytes_free);
-        (void)memcpy(command + pos,
-                     &connection->cmd_operands_fragmented_buffer[connection->cmd_operands_fragmented_pos],
-                     bytes_to_copy);
-        pos += bytes_to_copy;
-        connection->cmd_operands_fragmented_pos += bytes_to_copy;
-    }
-
-    return l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
+    l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
 }
 
 static int avrcp_send_register_notification(avrcp_connection_t * connection, uint8_t event_id){
@@ -1195,31 +1238,25 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection){
     switch (connection->state){
         case AVCTP_W2_SEND_PRESS_COMMAND:
-            connection->state = AVCTP_W2_RECEIVE_PRESS_RESPONSE;
-            avrcp_send_cmd_with_avctp_fragmentation(connection, AVCTP_SINGLE_PACKET);
-            return;
         case AVCTP_W2_SEND_COMMAND:
         case AVCTP_W2_SEND_RELEASE_COMMAND:
-            connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-            avrcp_send_cmd_with_avctp_fragmentation(connection, AVCTP_SINGLE_PACKET);
-            return;
         case AVCTP_W2_SEND_AVCTP_FRAGMENTED_MESSAGE:
-            if (connection->cmd_operands_fragmented_pos == 0){
-                 avrcp_send_cmd_with_avctp_fragmentation(connection, AVCTP_START_PACKET);
-                 avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-            } else {
-                if ((connection->cmd_operands_fragmented_len - connection->cmd_operands_fragmented_pos) > avrcp_get_max_payload_size_for_avctp_packet_type(connection, AVCTP_CONTINUE_PACKET)){
-                     avrcp_send_cmd_with_avctp_fragmentation(connection, AVCTP_CONTINUE_PACKET);
-                     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-                 } else {
-                    connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-                    avrcp_send_cmd_with_avctp_fragmentation(connection, AVCTP_END_PACKET);
-                 }
+            avrcp_send_cmd_with_avctp_fragmentation(connection);
+            
+            if (connection->data_offset < connection->data_len){
+                avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+                return;
             }
-            return;
+            if (connection->state == AVCTP_W2_SEND_PRESS_COMMAND){
+                connection->state = AVCTP_W2_RECEIVE_PRESS_RESPONSE;
+            } else {
+                connection->state = AVCTP_W2_RECEIVE_RESPONSE;
+            }
+            break;
         default:
             break;
     }
+    
     // send register notification if queued
     if (connection->notifications_to_register != 0){
         uint8_t event_id;
