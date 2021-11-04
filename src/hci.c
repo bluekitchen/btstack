@@ -152,6 +152,7 @@ static void gap_inquiry_explode(uint8_t *packet, uint16_t size);
 static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
+static void hci_halting_timeout_handler(btstack_timer_source_t * ds);
 static void hci_emit_transport_packet_sent(void);
 static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason);
 static void hci_emit_nr_connections_changed(void);
@@ -3934,6 +3935,10 @@ static int hci_power_control_state_working(HCI_POWER_MODE power_mode) {
             // see hci_run
             hci_stack->state = HCI_STATE_HALTING;
             hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
+            // setup watchdog timer for disconnect - only triggers if Controller does not respond anymore
+            btstack_run_loop_set_timer(&hci_stack->timeout, 1000);
+            btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
+            btstack_run_loop_add_timer(&hci_stack->timeout);
             break;
         case HCI_POWER_SLEEP:
             // see hci_run
@@ -5041,6 +5046,7 @@ static void hci_run(void){
                         // no connections left, wait a bit to assert that btstack_cyrpto isn't waiting for an HCI event
                         log_info("HCI_STATE_HALTING: wait 50 ms");
                         hci_stack->substate = HCI_HALTING_W4_TIMER;
+                        btstack_run_loop_remove_timer(&hci_stack->timeout);
                         btstack_run_loop_set_timer(&hci_stack->timeout, 50);
                         btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
                         btstack_run_loop_add_timer(&hci_stack->timeout);
@@ -5050,6 +5056,9 @@ static void hci_run(void){
                     /* fall through */
 
                 case HCI_HALTING_CLOSE:
+                    // close left over connections (that had not been properly closed before)
+                    hci_discard_connections();
+
                     log_info("HCI_STATE_HALTING, calling off");
                     
                     // switch mode
