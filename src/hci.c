@@ -3492,15 +3492,7 @@ void hci_set_control(const btstack_control_t *hardware_control){
     hardware_control->init(hci_stack->config);
 }
 
-void hci_close(void){
-
-#ifdef ENABLE_CLASSIC
-    // close remote device db
-    if (hci_stack->link_key_db) {
-        hci_stack->link_key_db->close();
-    }
-#endif
-    
+static void hci_discard_connections(void){
     btstack_linked_list_iterator_t lit;
     btstack_linked_list_iterator_init(&lit, &hci_stack->connections);
     while (btstack_linked_list_iterator_has_next(&lit)){
@@ -3509,6 +3501,18 @@ void hci_close(void){
         hci_emit_disconnection_complete(connection->con_handle, 0x16); // terminated by local host
         hci_shutdown_connection(connection);
     }
+}
+
+void hci_close(void){
+
+#ifdef ENABLE_CLASSIC
+    // close remote device db
+    if (hci_stack->link_key_db) {
+        hci_stack->link_key_db->close();
+    }
+#endif
+
+    hci_discard_connections();
 
     hci_power_control(HCI_POWER_OFF);
     
