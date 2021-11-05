@@ -632,6 +632,15 @@ const hci_cmd_t hci_remote_oob_extended_data_request_reply = {
 
 /**
  * @param handle
+ * @param hold_mode_max_interval * 0.625 ms,  range: 0x0002..0xFFFE; only even values are valid.
+ * @param hold_mode_min_interval * 0.625 ms,  range: 0x0002..0xFFFE; only even values are valid.
+ */
+const hci_cmd_t hci_hold_mode = {
+        HCI_OPCODE_HCI_HOLD_MODE, "H22"
+};
+
+/**
+ * @param handle
  * @param sniff_max_interval
  * @param sniff_min_interval
  * @param sniff_attempt

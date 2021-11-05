@@ -123,6 +123,7 @@ typedef enum {
     HCI_OPCODE_HCI_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY = HCI_OPCODE (OGF_LINK_CONTROL, 0x45),
 
     // Link Policy
+    HCI_OPCODE_HCI_HOLD_MODE = HCI_OPCODE (OGF_LINK_POLICY, 0x01),
     HCI_OPCODE_HCI_SNIFF_MODE = HCI_OPCODE (OGF_LINK_POLICY, 0x03),
     HCI_OPCODE_HCI_EXIT_SNIFF_MODE = HCI_OPCODE (OGF_LINK_POLICY, 0x04),
     HCI_OPCODE_HCI_QOS_SETUP = HCI_OPCODE (OGF_LINK_POLICY, 0x07),
@@ -344,6 +345,7 @@ extern const hci_cmd_t hci_enhanced_setup_synchronous_connection;
 extern const hci_cmd_t hci_exit_sniff_mode;
 extern const hci_cmd_t hci_flow_specification;
 extern const hci_cmd_t hci_flush;
+extern const hci_cmd_t hci_hold_mode;
 extern const hci_cmd_t hci_host_buffer_size;
 extern const hci_cmd_t hci_inquiry;
 extern const hci_cmd_t hci_inquiry_cancel;
