@@ -126,6 +126,8 @@ typedef enum {
     HCI_OPCODE_HCI_HOLD_MODE = HCI_OPCODE (OGF_LINK_POLICY, 0x01),
     HCI_OPCODE_HCI_SNIFF_MODE = HCI_OPCODE (OGF_LINK_POLICY, 0x03),
     HCI_OPCODE_HCI_EXIT_SNIFF_MODE = HCI_OPCODE (OGF_LINK_POLICY, 0x04),
+    HCI_OPCODE_HCI_PARK_STATE = HCI_OPCODE (OGF_LINK_POLICY, 0x05),
+    HCI_OPCODE_HCI_EXIT_PARK_STATE = HCI_OPCODE (OGF_LINK_POLICY, 0x06),
     HCI_OPCODE_HCI_QOS_SETUP = HCI_OPCODE (OGF_LINK_POLICY, 0x07),
     HCI_OPCODE_HCI_ROLE_DISCOVERY = HCI_OPCODE (OGF_LINK_POLICY, 0x09),
     HCI_OPCODE_HCI_SWITCH_ROLE_COMMAND = HCI_OPCODE (OGF_LINK_POLICY, 0x0b),
@@ -353,6 +355,8 @@ extern const hci_cmd_t hci_io_capability_request_negative_reply;
 extern const hci_cmd_t hci_io_capability_request_reply;
 extern const hci_cmd_t hci_link_key_request_negative_reply;
 extern const hci_cmd_t hci_link_key_request_reply;
+extern const hci_cmd_t hci_park_state;
+extern const hci_cmd_t hci_exit_park_state;
 extern const hci_cmd_t hci_pin_code_request_negative_reply;
 extern const hci_cmd_t hci_pin_code_request_reply;
 extern const hci_cmd_t hci_qos_setup;

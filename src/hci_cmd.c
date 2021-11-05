@@ -658,6 +658,24 @@ const hci_cmd_t hci_exit_sniff_mode = {
 };
 
 /**
+ * @note  Removed in Bluetooth Core v5.0
+ * @param handle
+ * @param beacon_max_interval * 0.625 ms,  range: 0x000E..0xFFFE; only even values are valid.
+ * @param beacon_max_interval * 0.625 ms,  range: 0x000E..0xFFFE; only even values are valid.
+ */
+const hci_cmd_t hci_park_state = {
+        HCI_OPCODE_HCI_PARK_STATE, "H22"
+};
+
+/**
+ * @note  Removed in Bluetooth Core v5.0
+ * @param handle
+ */
+const hci_cmd_t hci_exit_park_state = {
+        HCI_OPCODE_HCI_EXIT_PARK_STATE, "H"
+};
+
+/**
  * @param handle
  * @param flags
  * @param service_type
