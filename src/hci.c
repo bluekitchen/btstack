@@ -104,7 +104,7 @@
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 
 #ifndef HCI_RESET_RESEND_TIMEOUT_MS
-#define HCI_RESET_RESEND_TIMEOUT_MS 200
+#define HCI_RESET_RESEND_TIMEOUT_MS 1000
 #endif
 
 // Names are arbitrarily shortened to 32 bytes if not requested otherwise
@@ -1319,6 +1319,7 @@ static void hci_initializing_run(void){
             break;
         case HCI_INIT_SEND_READ_LOCAL_VERSION_INFORMATION:
             hci_send_cmd(&hci_read_local_version_information);
+            //hci_send_cmd(&hci_reset);
             hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION;
             break;
         case HCI_INIT_SEND_READ_LOCAL_NAME:

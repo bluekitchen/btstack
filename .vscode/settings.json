@@ -22,5 +22,5 @@
     "includes.h": "c",
     "btstack_port.h": "c"
 },
-"cortex-debug.variableUseNaturalFormat": true,
+"cortex-debug.variableUseNaturalFormat": false,
 }

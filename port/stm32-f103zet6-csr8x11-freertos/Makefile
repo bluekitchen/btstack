@@ -141,6 +141,7 @@ endif
 #C_SOURCES += ${BTSTACK_ROOT}/3rd-party/md5/md5.c
 C_SOURCES += ${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c
 C_SOURCES += ${BTSTACK_ROOT}/example/gap_le_advertisements.c
+#C_SOURCES += ${BTSTACK_ROOT}/example/gap_inquiry.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_audio.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_crypto.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_hid_parser.c

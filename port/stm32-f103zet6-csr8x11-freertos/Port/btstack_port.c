@@ -8,7 +8,6 @@
 #include "btstack.h"
 #include "btstack_debug.h"
 #include "btstack_audio.h"
-//#include "btstack_chipset_cc256x.h"
 #include "btstack_chipset_csr.h"
 #include "btstack_run_loop_embedded.h"
 #include "btstack_tlv.h"
@@ -38,7 +37,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static const hci_transport_config_uart_t config = {
 	HCI_TRANSPORT_CONFIG_UART,
     115200,
-    4000000,
+    0,
     1,
     NULL
 };
@@ -62,7 +61,7 @@ void hal_cpu_enable_irqs(void){
 
 void hal_cpu_enable_irqs_and_sleep(void){
 	__enable_irq();
-	__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+	//__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
 }
 
 // hal_stdin.h
@@ -72,14 +71,14 @@ static void (*stdin_handler)(char c);
 void hal_stdin_setup(void (*handler)(char c)){
     stdin_handler = handler;
     // start receiving
-	HAL_UART_Receive_IT(&huart2, &stdin_buffer[0], 1);
+	HAL_UART_Receive_IT(&huart1, &stdin_buffer[0], 1);
 }
 
 static void stdin_rx_complete(void){
     if (stdin_handler){
         (*stdin_handler)(stdin_buffer[0]);
     }
-    HAL_UART_Receive_IT(&huart2, &stdin_buffer[0], 1);
+    HAL_UART_Receive_IT(&huart1, &stdin_buffer[0], 1);
 }
 
 // hal_uart_dma.h
@@ -145,9 +144,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	if (huart == &huart2){
 		(*rx_done_handler)();
 	}
-    if (huart == &huart2){
-        //stdin_rx_complete();
-    }
+    /*if (huart == &huart1){
+        stdin_rx_complete();
+    }*/
 }
 
 void hal_uart_dma_init(void){
@@ -213,6 +212,10 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 	HAL_UART_Receive_DMA( &huart2, data, size );
 }
 
+void hal_uart_dma_send_block_for_hci(const uint8_t *data, uint16_t size){
+    //HAL_UART_Transmit_DMA( &huart3, (uint8_t *) data, size);
+	HAL_UART_Transmit( &huart3, (uint8_t *) data, size, HAL_MAX_DELAY );
+}
 #ifndef ENABLE_SEGGER_RTT
 
 /**
@@ -230,17 +233,21 @@ int _write(int file, char *ptr, int len);
 int _write(int file, char *ptr, int len){
 #if 1
 	uint8_t cr = '\r';
+	uint8_t *cn = '\r\n';
 	int i;
 
 	if (file == STDOUT_FILENO || file == STDERR_FILENO) {
-		HAL_UART_Transmit_DMA( &huart1, (uint8_t *) ptr, len);
-		/*for (i = 0; i < len; i++) {
+		//HAL_UART_Transmit_DMA( &huart1, (uint8_t *) ptr, len);
+		//HAL_UART_Transmit( &huart1, &cr, 1, HAL_MAX_DELAY );
+		//HAL_UART_Transmit_DMA( &huart1, (uint8_t *) cn, strlen(cn));
+#if 1
+		for (i = 0; i < len; i++) {
 			if (ptr[i] == '\n') {
-				HAL_UART_Transmit_DMA( &huart1, &cr, 1 );
+				HAL_UART_Transmit( &huart1, &cr, 1, HAL_MAX_DELAY );
 			}
-			uint8_t x = ptr[i];
-			HAL_UART_Transmit_DMA( &huart1, (uint8_t *) &ptr[i], 1 );
-		}*/
+			HAL_UART_Transmit( &huart1, (uint8_t *) &ptr[i], 1, HAL_MAX_DELAY );
+		}
+#endif
 		return i;
 	}
 	errno = EIO;
@@ -293,25 +300,25 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
-#if 0
+
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
                 uint16_t manufacturer   = little_endian_read_16(packet, 10);
                 uint16_t lmp_subversion = little_endian_read_16(packet, 12);
                 // assert manufacturer is TI
-                if (manufacturer != BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC){
-                    printf("ERROR: Expected Bluetooth Chipset from TI but got manufacturer 0x%04x\n", manufacturer);
+                if (manufacturer != BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
+                    printf("ERROR: Expected Bluetooth Chipset from CSR but got manufacturer 0x%04x\n", manufacturer);
                     break;
                 }
                 // assert correct init script is used based on expected lmp_subversion
-
+#if 0
                 if (lmp_subversion != btstack_chipset_cc256x_lmp_subversion()){
                     printf("Error: LMP Subversion does not match initscript! ");
                     printf("Your initscripts is for %s chipset\n", btstack_chipset_cc256x_lmp_subversion() < lmp_subversion ? "an older" : "a newer");
                     printf("Please update Makefile to include the appropriate bluetooth_init_cc256???.c file\n");
                     break;
                 }
-            }
 #endif
+            }
             break;
         default:
             break;

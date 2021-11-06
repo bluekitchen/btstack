@@ -196,3 +196,6 @@ void btstack_chipset_csr_set_bd_addr(bd_addr_t new_bd_addr){
     set_bd_addr = 1;
     memcpy(bd_addr, new_bd_addr, 6);
 }
+
+void (*set_bd_addr_command)(bd_addr_t addr, uint8_t *hci_cmd_buffer); 
+void (*set_baudrate_command)(uint32_t baudrate, uint8_t *hci_cmd_buffer); 
