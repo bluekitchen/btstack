@@ -10,7 +10,7 @@
       "request": "launch",
       "name": "Debug J-Link",
       "cwd": "${workspaceRoot}/port/stm32-f103zet6-csr8x11-freertos",//work directory 
-      "executable": "build/gap_le_advertisements.elf",
+      "executable": "build/gap_inquiry.elf",
       "serverpath": "C:/Program Files (x86)/SEGGER/JLink_V612a/JLinkGDBServerCL.exe", 
       "servertype": "jlink",
       "device": "STM32F103ZET6",

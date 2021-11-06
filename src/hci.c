@@ -104,7 +104,7 @@
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 
 #ifndef HCI_RESET_RESEND_TIMEOUT_MS
-#define HCI_RESET_RESEND_TIMEOUT_MS 1000
+#define HCI_RESET_RESEND_TIMEOUT_MS 200
 #endif
 
 // Names are arbitrarily shortened to 32 bytes if not requested otherwise
@@ -3392,6 +3392,10 @@ void hci_init(const hci_transport_t *transport, const void *config){
 
     // bondable by default
     hci_stack->bondable = 1;
+
+    hci_stack->discoverable = 1;
+
+    hci_stack->connectable = 1;
 
 #ifdef ENABLE_CLASSIC
     // classic name
