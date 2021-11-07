@@ -1,5 +1,0 @@
-r
-speed 4000
-loadfile ./build/gap_inquiry.hex,0x08000000
-r
-exit

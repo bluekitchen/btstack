@@ -1,5 +1,0 @@
-L 1 "..\..\..\..\src\btstack_run_loop_base.c"
-N/*
-N *  btstack_run_loop_base.c was integrated into btstack_run_loop.c
-N *  Deprecated - will be removed in future releases
-N */

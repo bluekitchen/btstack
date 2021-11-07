@@ -14,3 +14,8 @@ rd  /Q /S project\EWARMv7\Flash
 rd /Q /S project\EWARMv7\CpuRAM
 rd /Q /S project\EWARMv7\settings
 
+del /Q build\*.d
+del /Q build\*.o
+del /Q build\*.lst
+
+

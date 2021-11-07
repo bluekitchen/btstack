@@ -1,0 +1,1 @@
+JLink.exe -device stm32f103zet6 -speed 4000 -SI SWD -CommanderScript ./flash.jlink

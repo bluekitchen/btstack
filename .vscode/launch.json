@@ -15,7 +15,7 @@
       "servertype": "jlink",
       "device": "STM32F103ZET6",
       "interface": "swd",
-      "preLaunchTask": "download",//先运行Build任务
+      "preLaunchTask": "download",//先运行download任务
       "serialNumber": "", //If you have more than one J-Link probe, add the serial number here.
       "runToMain": true
       }
