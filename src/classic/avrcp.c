@@ -332,6 +332,40 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
+static uint16_t avrcp_get_max_payload_size_for_avctp_packet_type(avrcp_connection_t * connection, avctp_packet_type_t avctp_packet_type){
+    uint16_t max_frame_size = btstack_min(l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid), AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
+
+    switch (avctp_packet_type){
+        case AVCTP_SINGLE_PACKET:
+            return max_frame_size - 3;
+        case AVCTP_START_PACKET:
+            return max_frame_size - 4;
+        case AVCTP_CONTINUE_PACKET:
+        case AVCTP_END_PACKET:
+            return max_frame_size - 1;
+        default:
+            btstack_assert(false);
+            return 0;
+    }
+}
+
+avctp_packet_type_t avrcp_get_avctp_packet_type(avrcp_connection_t * connection){
+    if (connection->data_offset == 0){
+        if (avrcp_get_max_payload_size_for_avctp_packet_type(connection, AVCTP_SINGLE_PACKET) >= connection->data_len){
+            return AVCTP_SINGLE_PACKET;
+        } else {
+            return AVCTP_START_PACKET;
+        }
+
+    } else {
+        if ((connection->data_len - connection->data_offset) > avrcp_get_max_payload_size_for_avctp_packet_type(connection, AVCTP_CONTINUE_PACKET)){
+             return AVCTP_CONTINUE_PACKET;
+         } else {
+            return AVCTP_END_PACKET;
+         }
+    }
+}
+
 avrcp_connection_t * avrcp_get_connection_for_bd_addr_for_role(avrcp_role_t role, bd_addr_t addr){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &avrcp_connections);
