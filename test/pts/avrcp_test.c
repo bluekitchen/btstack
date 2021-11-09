@@ -52,7 +52,6 @@
 
 #define AVRCP_BROWSING_ENABLED
 
-#define AVRCP_BROWSING_MAX_PLAYERS                  10
 #define AVRCP_BROWSING_MAX_FOLDERS                  10
 #define AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN  30
 #define AVRCP_BROWSING_MAX_MEDIA_ITEMS              10
@@ -63,25 +62,34 @@
 
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
-// pts:         static const char * device_addr_string = "00:1B:DC:07:32:EF";
-// iPod 5G-C:   
+// pts:         
 static const char * device_addr_string = "00:1B:DC:08:E2:5C";
+// iPod 5G-C:   static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // head phones: static const char * device_addr_string = "00:18:09:28:50:18";
 // bt dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
+
 #endif
 static bd_addr_t device_addr;
 static bd_addr_t device_addr_browsing;
 
-static const uint8_t fragmented_message[] = { 
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  
-    10, 11, 12, 13, 14, 15, 16, 17, 18, 19,  
-    20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-    30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 
-    40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 
-    50, 51, 52, 53, 54, 55, 56, 57, 58, 59 
+static const uint8_t fragmented_message[] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+        0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19,
+        0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
+        0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29,
+        0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F,
+        0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39,
+        0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
+        0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49,
+        0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F,
+        0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59,
+        0x5A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F,
+        0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69,
+        0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F
 };
 
 typedef enum {
@@ -305,11 +313,6 @@ static uint8_t virtual_filesystem_list[] ={ 0x00, 0x07, 0x02, 0x00, 0x14, 0x00, 
 static uint8_t search_list[] = {};
 static uint8_t now_playing_list[] = {};
 
-static uint8_t companies_num = 1;
-static uint8_t companies[] = {
-    0x00, 0x19, 0x58 //BT SIG registered CompanyID
-};
-
 static avrcp_media_attribute_id_t now_playing_info_attributes [] = {
     AVRCP_MEDIA_ATTR_TITLE
 };
@@ -322,14 +325,15 @@ typedef struct {
 } avrcp_play_status_info_t;
 
 // python -c "print('a'*512)"
-static const char title[] = "baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab";
+static const char title[] = "Really aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa Really Really Long Song Title Name So That This Response Will Fragment Into Enough Pieces For This Test Case";
 
+// Generated02 Generated3 Generated4 Generated5 Generated6 Generated7 Generated8 Generated9
 avrcp_track_t tracks[] = {
-    {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}, 1, "Sine0Sine1", "Generated01 Generated02 Generated3 Generated4 Generated5 Generated6 Generated7 Generated8 Generated9", "AVRCP Demo", "monotone01", 1234567890},
+    {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}, 1, "Sine0Sine1", "Generated01", "AVRCP Demo", "monotone01", 1234567890},
     {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02}, 2, "Nao-deceased", "Decease", "AVRCP Demo", "vivid", 12345},
     {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03}, 3, (char *)title, "Decease", "AVRCP Demo", "vivid", 12345},
 };
-int current_track_index;
+
 avrcp_play_status_info_t play_info;
 static media_codec_configuration_sbc_t sbc_configuration;
 static btstack_sbc_encoder_state_t sbc_encoder_state;
@@ -342,8 +346,30 @@ static uint8_t  avrcp_connected;
 static uint16_t uid_counter = 0x5A73;
 static stream_data_source_t data_source;
 
-
 /* AVRCP Target context END */
+static void reset_avrcp_context(void){
+        avrcp_cid = 0;
+        avrcp_connected = 0;
+        auto_avrcp_regular  = false;
+}
+
+static void reset_avrcp_browsing_context(void){
+        memset(folders, 0, sizeof(folders));
+        parent_folder_set = 0;
+        media_element_item_index = -1;
+        media_player_item_index = -1;
+        folder_index = -1;
+
+        browsing_cid = 0;
+        avrcp_browsing_connected = 0;
+        playable_folder_index = 0;
+        browsing_query_active = 0;
+
+        browsing_uid_counter = 0;
+        browsing_state = AVRCP_BROWSING_STATE_IDLE;
+
+        auto_avrcp_browsing = false;
+}
 
 static inline int next_index(int * index, int max_value){
     if ((*index) < max_value){
@@ -385,6 +411,7 @@ static void avdtp_sink_connection_establishment_packet_handler(uint8_t packet_ty
             break;
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
             avdtp_cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
+
             printf("AVDTP connection released: avdtp_cid 0x%02x.\n", avdtp_cid);
             break;
         default:
@@ -608,7 +635,7 @@ static void avrcp_connection_establishment_packet_handler(uint8_t packet_type, u
             avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
             avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
 
-            avrcp_target_set_now_playing_info(avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
+            avrcp_target_set_now_playing_info(avrcp_cid, &tracks[0], sizeof(tracks)/sizeof(avrcp_track_t));
 
             // Set PTS default TSPX_max_avc_fragments = 10
             avrcp_controller_set_max_num_fragments(avrcp_cid, 10);
@@ -622,10 +649,7 @@ static void avrcp_connection_establishment_packet_handler(uint8_t packet_type, u
 
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("AVRCP connection released: avrcp_cid 0x%02x.\n", avrcp_cid);
-            browsing_cid = 0;
-            avrcp_browsing_connected = 0;
-            folder_index = 0;
-            memset(folders, 0, sizeof(folders));
+            reset_avrcp_context();
             return;
         
         default:
@@ -690,8 +714,7 @@ static void avrcp_browsing_connection_establishment_packet_handler(uint8_t packe
 
         case AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED:
             printf("AVRCP Browsing released: browsing_cid 0x%02x\n", browsing_cid);
-            browsing_cid = 0;
-            avrcp_browsing_connected = 0;
+            reset_avrcp_browsing_context();
             return;
         
         default:
@@ -805,11 +828,8 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     
     uint16_t local_cid = little_endian_read_16(packet, 3);
     if (local_cid != avrcp_cid) return;
-    // avoid printing INTERIM status
-    uint8_t status = packet[5];
-    int volume_percentage;
-    printf("AVRCP: command status: %s, ", avrcp_ctype2str(status));
 
+    int volume_percentage;
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_STATE:
             printf("Notification %s - %s\n", 
@@ -904,6 +924,10 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             break;
         case AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE:
             printf("Playing info done with receiving\n");
+            break;
+        case AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE:
+            printf("Custom command response: pdu id 0x%2X, param len %d\n", avrcp_subevent_custom_command_response_get_pdu_id(packet), avrcp_subevent_custom_command_response_get_params_len(packet));
+            printf_hexdump(avrcp_subevent_custom_command_response_get_params(packet), avrcp_subevent_custom_command_response_get_params_len(packet));
             break;
         default:
             printf("AVRCP controller: event not parsed 0x%02x\n", packet[2]);
@@ -1376,7 +1400,7 @@ static void stdin_process(char * cmd, int size){
             break;
         case '/':
             printf("AVRCP: get now playing info\n");
-            avrcp_controller_get_now_playing_info(avrcp_cid);
+            avrcp_controller_get_now_playing_info_for_media_attribute_id(avrcp_cid, AVRCP_MEDIA_ATTR_TITLE);
             break;
         case '$':
             printf("AVRCP: get TITLE of now playing song\n");
@@ -1788,11 +1812,13 @@ static void stdin_process(char * cmd, int size){
                     // printf_hexdump(media_element_items[0].uid, 8);
                     status = avrcp_controller_add_item_from_scope_to_now_playing_list(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_SEARCH);
                     break;
-                
+
                 case 'f':
                     printf("Send fragmented command\n");
-                    status = avrcp_controller_send_custom_command(avrcp_cid, AVRCP_CTYPE_CONTROL, AVRCP_SUBUNIT_TYPE_PANEL, AVRCP_SUBUNIT_ID, AVRCP_CMD_OPCODE_VENDOR_DEPENDENT,
-                     fragmented_message, sizeof(fragmented_message));
+                    status = avrcp_controller_send_custom_command(avrcp_cid, AVRCP_CTYPE_CONTROL, 
+                        AVRCP_SUBUNIT_TYPE_PANEL, AVRCP_SUBUNIT_ID, 
+                        0xAA, BT_SIG_COMPANY_ID,
+                        fragmented_message, sizeof(fragmented_message));
                     break;
 
                 default:
@@ -1812,6 +1838,10 @@ static void stdin_process(char * cmd, int size){
                         avrcp_target_track_changed(avrcp_cid, track_id);
                         break;
                     }
+                    case 'T':
+                        printf("AVRCP: Unselect track\n");
+                        avrcp_target_track_changed(avrcp_cid, NULL);
+                        break;
                     case 'b':
                         printf("AVRCP: trigger notification BATT_STATUS_CHANGED\n");
                         avrcp_target_battery_status_changed(avrcp_cid, AVRCP_BATTERY_STATUS_CRITICAL);

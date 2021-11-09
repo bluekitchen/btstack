@@ -430,7 +430,7 @@ static void avctp_send_reject_cmd_wrong_pid(avrcp_connection_t * connection){
     l2cap_send_prepared(connection->l2cap_signaling_cid, 3);
 }
 
-static void avrcp_target_custome_command_data_init(avrcp_connection_t * connection, 
+static void avrcp_target_custom_command_data_init(avrcp_connection_t * connection, 
     avrcp_command_opcode_t opcode, avrcp_command_type_t command_type, 
     avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, 
     avrcp_pdu_id_t pdu_id, uint32_t company_id){

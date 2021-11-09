@@ -496,6 +496,9 @@ static void stdin_process(char cmd){
             printf("AG: Reject held incoming call (Response and Hold)\n");
             hfp_ag_reject_held_incoming_call();
             break;
+        case '\n':
+        case '\r':
+            break;
         default:
             show_usage();
             break;
