@@ -659,6 +659,7 @@ const char * avrcp_shuffle2str(uint8_t index);
 
 
 avctp_packet_type_t avrcp_get_avctp_packet_type(avrcp_connection_t * connection);
+uint8_t avctp_get_num_packets(uint16_t max_frame_size, uint16_t data_len, avrcp_command_opcode_t command_opcode);
 
 void avrcp_register_controller_packet_handler(btstack_packet_handler_t avrcp_controller_packet_handler);
 void avrcp_register_target_packet_handler(btstack_packet_handler_t avrcp_target_packet_handler);

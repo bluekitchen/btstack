@@ -81,7 +81,7 @@ static void avrcp_controller_custome_command_data_init(avrcp_connection_t * conn
     connection->command_type = command_type;
     connection->subunit_type = subunit_type;
     connection->subunit_id = subunit_id;
-    connection->company_id = company_id << 16;
+    connection->company_id = company_id;
     connection->pdu_id = pdu_id;
     connection->data = NULL;
     connection->data_offset = 0;
@@ -547,15 +547,15 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
     uint16_t pos = 0; 
     command[pos++] = (connection->transaction_id << 4) | (avctp_packet_type << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
 
-    
     switch (avctp_packet_type){
         case AVCTP_SINGLE_PACKET:
         case AVCTP_START_PACKET:
             if (avctp_packet_type == AVCTP_START_PACKET){
                 // num packets: (3 bytes overhead (PID, num packets) + command) / (MTU - transport header). 
                 // to get number of packets using integer division, we subtract 1 from the data e.g. len = 5, packet size 5 => need 1 packet
-                command[pos++] = ((connection->data_len + 3 - 1) / (max_frame_size - 1)) + 1;
+                command[pos++] = avctp_get_num_packets(max_frame_size, connection->data_len, connection->command_opcode);
             }
+
             // Profile IDentifier (PID)
             command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
             command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
@@ -597,7 +597,6 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
             btstack_assert(false);
             return;
     }
-
     // compare number of bytes to store with the remaining buffer size
     uint16_t bytes_to_copy = btstack_min(connection->data_len - connection->data_offset, max_frame_size - pos);
 

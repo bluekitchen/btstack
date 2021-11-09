@@ -366,6 +366,33 @@ avctp_packet_type_t avrcp_get_avctp_packet_type(avrcp_connection_t * connection)
     }
 }
 
+uint8_t avctp_get_num_packets(uint16_t max_frame_size, uint16_t data_len, avrcp_command_opcode_t command_opcode){
+    if (command_opcode != AVRCP_CMD_OPCODE_VENDOR_DEPENDENT){
+        return 1;
+    }
+    uint16_t header_offset = 4; // AVCTP message: header (1), num_packets (1), pid (2)
+    switch (command_opcode){
+        case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
+            header_offset += 10; // AVRCP message: cmd type (1), subunit (1), opcode (1), company (3), pdu id(1), AVRCP packet type (1), param_len (2)
+            break;
+        case AVRCP_CMD_OPCODE_PASS_THROUGH:
+            header_offset += 6;  // AVRCP message: cmd type (1), subunit (1), opcode (1), operation id (1), param_len (2)
+            break;
+        default:
+            return 1;
+    }
+    uint16_t num_remaining_bytes_of_data =  data_len - ( max_frame_size - header_offset );
+    uint8_t num_packets = 1;
+
+    while (num_remaining_bytes_of_data > 0){
+        uint8_t bytes_to_copy = btstack_min(max_frame_size, num_remaining_bytes_of_data + 1); // 1 byte for AVCTP header
+        num_remaining_bytes_of_data -= bytes_to_copy;
+        num_packets++;
+    }
+    return num_packets;
+}
+
+
 avrcp_connection_t * avrcp_get_connection_for_bd_addr_for_role(avrcp_role_t role, bd_addr_t addr){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &avrcp_connections);
