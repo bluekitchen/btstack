@@ -537,7 +537,7 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
     
     uint16_t max_frame_size = btstack_min(l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid), AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
 
-    avctp_packet_type_t avctp_packet_type = avrcp_get_avctp_packet_type(connection);
+    avctp_packet_type_t avctp_packet_type = avctp_get_packet_type(connection);
 
     // non-fragmented: transport header (1) + PID (2)
     // fragmented:     transport header (1) + num packets (1) + PID (2)

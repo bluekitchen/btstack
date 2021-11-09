@@ -349,7 +349,7 @@ static uint16_t avrcp_get_max_payload_size_for_avctp_packet_type(avrcp_connectio
     }
 }
 
-avctp_packet_type_t avrcp_get_avctp_packet_type(avrcp_connection_t * connection){
+avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection){
     if (connection->data_offset == 0){
         if (avrcp_get_max_payload_size_for_avctp_packet_type(connection, AVCTP_SINGLE_PACKET) >= connection->data_len){
             return AVCTP_SINGLE_PACKET;
