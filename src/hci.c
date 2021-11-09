@@ -162,7 +162,6 @@ static void hci_emit_event(uint8_t * event, uint16_t size, int dump);
 static void hci_emit_acl_packet(uint8_t * packet, uint16_t size);
 static void hci_run(void);
 static int  hci_is_le_connection(hci_connection_t * connection);
-static int  hci_number_free_acl_slots_for_connection_type( bd_addr_type_t address_type);
 
 #ifdef ENABLE_CLASSIC
 static int hci_have_usb_transport(void);
@@ -542,7 +541,7 @@ static int nr_hci_connections(void){
     return count;
 }
 
-static int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_type){
+uint16_t hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_type){
     
     unsigned int num_packets_sent_classic = 0;
     unsigned int num_packets_sent_le = 0;
@@ -588,13 +587,13 @@ static int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_
             return 0;
 
         case BD_ADDR_TYPE_ACL:
-            return free_slots_classic;
+            return (uint16_t) free_slots_classic;
 
         default:
-           if (hci_stack->le_acl_packets_total_num){
-               return free_slots_le;
+           if (hci_stack->le_acl_packets_total_num > 0){
+               return (uint16_t) free_slots_le;
            }
-           return free_slots_classic; 
+           return (uint16_t) free_slots_classic;
     }
 }
 

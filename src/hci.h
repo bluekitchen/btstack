@@ -1439,6 +1439,11 @@ void hci_load_le_device_db_entry_into_resolving_list(uint16_t le_device_db_index
 void hci_remove_le_device_db_entry_from_resolving_list(uint16_t le_device_db_index);
 
 /**
+ * @note internal use
+ */
+uint16_t hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_type);
+
+/**
  * @brief Get Manufactured
  * @return manufacturer id
  */
