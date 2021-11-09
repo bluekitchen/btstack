@@ -534,10 +534,9 @@ static void avrcp_controller_parse_and_emit_element_attrs(uint8_t * packet, uint
 static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connection){
     l2cap_reserve_packet_buffer();
     uint8_t * command = l2cap_get_outgoing_buffer();     
-    
-    uint16_t max_frame_size = btstack_min(l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid), AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
 
-    avctp_packet_type_t avctp_packet_type = avctp_get_packet_type(connection);
+    uint16_t max_payload_size;
+    avctp_packet_type_t avctp_packet_type = avctp_get_packet_type(connection, &max_payload_size);
 
     // non-fragmented: transport header (1) + PID (2)
     // fragmented:     transport header (1) + num packets (1) + PID (2)
@@ -551,9 +550,8 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
         case AVCTP_SINGLE_PACKET:
         case AVCTP_START_PACKET:
             if (avctp_packet_type == AVCTP_START_PACKET){
-                // num packets: (3 bytes overhead (PID, num packets) + command) / (MTU - transport header). 
-                // to get number of packets using integer division, we subtract 1 from the data e.g. len = 5, packet size 5 => need 1 packet
-                command[pos++] = avctp_get_num_packets(max_frame_size, connection->data_len, connection->command_opcode);
+                // num packets
+                command[pos++] = ((connection->data_len + max_payload_size - 1) / max_payload_size);
             }
 
             // Profile IDentifier (PID)
@@ -598,7 +596,7 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
             return;
     }
     // compare number of bytes to store with the remaining buffer size
-    uint16_t bytes_to_copy = btstack_min(connection->data_len - connection->data_offset, max_frame_size - pos);
+    uint16_t bytes_to_copy = btstack_min(connection->data_len - connection->data_offset, max_payload_size - pos);
 
     (void)memcpy(command + pos, &connection->data[connection->data_offset], bytes_to_copy);
     pos += bytes_to_copy;
@@ -1111,6 +1109,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
                 
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
+                    // TODO Review
                     switch (vendor_dependent_packet_type){
                         case AVRCP_START_PACKET:
                         case AVRCP_SINGLE_PACKET:

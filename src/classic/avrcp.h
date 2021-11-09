@@ -63,7 +63,7 @@ extern "C" {
 #define AVRCP_MAX_COMMAND_PARAMETER_LENGTH 11
 #define BT_SIG_COMPANY_ID 0x001958
 #define AVRCP_MEDIA_ATTR_COUNT 7
-#define AVRCP_MAX_ATTRIBUTTE_SIZE 100
+#define AVRCP_MAX_ATTRIBUTTE_SIZE 130
 #define AVRCP_ATTRIBUTE_HEADER_LEN  8
 #define AVRCP_MAX_FOLDER_NAME_SIZE      20
 
@@ -658,8 +658,7 @@ const char * avrcp_repeat2str(uint8_t index);
 const char * avrcp_shuffle2str(uint8_t index);
 
 
-avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection);
-uint8_t avctp_get_num_packets(uint16_t max_frame_size, uint16_t data_len, avrcp_command_opcode_t command_opcode);
+avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint16_t * max_payload_size);
 
 void avrcp_register_controller_packet_handler(btstack_packet_handler_t avrcp_controller_packet_handler);
 void avrcp_register_target_packet_handler(btstack_packet_handler_t avrcp_target_packet_handler);

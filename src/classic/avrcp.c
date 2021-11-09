@@ -332,66 +332,69 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
-static uint16_t avrcp_get_max_payload_size_for_avctp_packet_type(avrcp_connection_t * connection, avctp_packet_type_t avctp_packet_type){
-    uint16_t max_frame_size = btstack_min(l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid), AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
-
+static uint16_t avctp_get_header_offset(avctp_packet_type_t avctp_packet_type) {
+    uint16_t offset; // AVCTP message: header (1), num_packets (1), pid (2)
     switch (avctp_packet_type){
         case AVCTP_SINGLE_PACKET:
-            return max_frame_size - 3;
         case AVCTP_START_PACKET:
-            return max_frame_size - 4;
-        case AVCTP_CONTINUE_PACKET:
-        case AVCTP_END_PACKET:
-            return max_frame_size - 1;
+            offset = 4;
+            break;
         default:
-            btstack_assert(false);
-            return 0;
+            offset = 1;
+            break;
     }
+    return offset;
 }
 
-avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection){
+static uint16_t avctp_get_message_offset(avrcp_command_opcode_t command_opcode, avctp_packet_type_t avctp_packet_type) {
+    switch (avctp_packet_type){
+        case AVCTP_SINGLE_PACKET:
+        case AVCTP_START_PACKET:
+            break;
+        default:
+            return 0;
+    }
+
+    uint16_t offset = 3; // AVRCP message: cmd type (1), subunit (1), opcode (1)
+    switch (command_opcode){
+        case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
+            offset += 7; // AVRCP message:  company (3), pdu id(1), AVRCP packet type (1), param_len (2)
+            break;
+        case AVRCP_CMD_OPCODE_PASS_THROUGH:
+            offset += 3;  // AVRCP message: operation id (1), param_len (2)
+            break;
+        default:
+            break;
+    }
+    return offset;
+}
+
+static uint16_t avctp_get_max_payload_size(uint16_t l2cap_cid, avrcp_command_opcode_t command_opcode, avctp_packet_type_t avctp_packet_type){
+    uint16_t max_frame_size = btstack_min(l2cap_get_remote_mtu_for_local_cid(l2cap_cid), AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
+    uint16_t offset = avctp_get_header_offset(avctp_packet_type) + avctp_get_message_offset(command_opcode, avctp_packet_type);
+
+    btstack_assert( max_frame_size >= offset);
+    return (max_frame_size - offset);
+}
+
+
+avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint16_t * max_payload_size){
     if (connection->data_offset == 0){
-        if (avrcp_get_max_payload_size_for_avctp_packet_type(connection, AVCTP_SINGLE_PACKET) >= connection->data_len){
+        *max_payload_size = avctp_get_max_payload_size(connection->l2cap_signaling_cid, connection->command_opcode, AVCTP_SINGLE_PACKET);
+        if (*max_payload_size >= connection->data_len){
             return AVCTP_SINGLE_PACKET;
         } else {
             return AVCTP_START_PACKET;
         }
-
     } else {
-        if ((connection->data_len - connection->data_offset) > avrcp_get_max_payload_size_for_avctp_packet_type(connection, AVCTP_CONTINUE_PACKET)){
+        *max_payload_size = avctp_get_max_payload_size(connection->l2cap_signaling_cid, connection->command_opcode, AVCTP_CONTINUE_PACKET);
+        if ((connection->data_len - connection->data_offset) > *max_payload_size){
              return AVCTP_CONTINUE_PACKET;
-         } else {
+        } else {
             return AVCTP_END_PACKET;
-         }
+        }
     }
 }
-
-uint8_t avctp_get_num_packets(uint16_t max_frame_size, uint16_t data_len, avrcp_command_opcode_t command_opcode){
-    if (command_opcode != AVRCP_CMD_OPCODE_VENDOR_DEPENDENT){
-        return 1;
-    }
-    uint16_t header_offset = 4; // AVCTP message: header (1), num_packets (1), pid (2)
-    switch (command_opcode){
-        case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
-            header_offset += 10; // AVRCP message: cmd type (1), subunit (1), opcode (1), company (3), pdu id(1), AVRCP packet type (1), param_len (2)
-            break;
-        case AVRCP_CMD_OPCODE_PASS_THROUGH:
-            header_offset += 6;  // AVRCP message: cmd type (1), subunit (1), opcode (1), operation id (1), param_len (2)
-            break;
-        default:
-            return 1;
-    }
-    uint16_t num_remaining_bytes_of_data =  data_len - ( max_frame_size - header_offset );
-    uint8_t num_packets = 1;
-
-    while (num_remaining_bytes_of_data > 0){
-        uint8_t bytes_to_copy = btstack_min(max_frame_size, num_remaining_bytes_of_data + 1); // 1 byte for AVCTP header
-        num_remaining_bytes_of_data -= bytes_to_copy;
-        num_packets++;
-    }
-    return num_packets;
-}
-
 
 avrcp_connection_t * avrcp_get_connection_for_bd_addr_for_role(avrcp_role_t role, bd_addr_t addr){
     btstack_linked_list_iterator_t it;    
