@@ -123,7 +123,7 @@ typedef enum {
     uint8_t *buf = NULL;
     uint8_t check_sum = 0;
 
-    if (packet[0] > 0x3e) {
+    if (packet_type == BT_UART_EVT && packet[0] > 0x3e && packet[0] != 0xFF) {
         return;
     }
 

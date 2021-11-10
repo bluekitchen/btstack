@@ -28,7 +28,7 @@ OPT = -O0
 # compile variables
 ######################################
 
-BR_EDR_ENABLE = y
+BR_EDR_ENABLE = n
 
 BLE_ENABLE = y
 
@@ -141,8 +141,9 @@ endif
 #C_SOURCES += ${BTSTACK_ROOT}/3rd-party/md5/md5.c
 C_SOURCES += ${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c
 #C_SOURCES += ${BTSTACK_ROOT}/example/gap_le_advertisements.c
-C_SOURCES += ${BTSTACK_ROOT}/example/gap_inquiry.c
+#C_SOURCES += ${BTSTACK_ROOT}/example/gap_inquiry.c
 #C_SOURCES += ${BTSTACK_ROOT}/example/gap_link_keys.c
+C_SOURCES += ${BTSTACK_ROOT}/example/gatt_device_information_query.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_audio.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_crypto.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_hid_parser.c
@@ -306,6 +307,7 @@ C_INCLUDES += -I${BTSTACK_ROOT}/platform/freertos
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip/port
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/csr
+C_INCLUDES += -I${BTSTACK_ROOT}/tool
 
 C_INCLUDES += -I Port
 C_INCLUDES += -I Src
@@ -337,7 +339,7 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
-EXAMPLES = gap_inquiry
+EXAMPLES = gatt_device_information_query
 
 #ifeq (${EXAMPLE_PLUS_ENABLE}, y)
 #EXAMPLES += 				\
@@ -383,6 +385,7 @@ GATT_FILES = \
 	ancs_client_demo.gatt \
 	gatt_counter.gatt \
 	gatt_streamer_server.gatt \
+	gatt_device_information_query.gatt \
 	gatt_browser.gatt \
 	gatt_battery_query.gatt \
 	hog_keyboard_demo.gatt \
@@ -416,7 +419,7 @@ all: \
 	$(addprefix $(BUILD_DIR)/,$(GATT_FILES:.gatt=.h)) \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.elf)) \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.hex)) \
-	#$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.bin)) \
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.bin)) \
 	#$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.jdebug)) \
 
 #include ${BTSTACK_ROOT}/chipset/csr/Makefile.inc

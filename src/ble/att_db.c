@@ -339,7 +339,7 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
     if (required_encryption_size != 0) required_encryption_size++;   // store -1 to fit into 4 bit
 
     log_debug("att_validate_security. flags 0x%04x (=> security level %u, key size %u) authorized %u, authenticated %u, encryption_key_size %u, secure connection %u",
-        it->flags, required_security_level, required_encryption_size, att_connection->authorized, att_connection->authenticated, att_connection->encryption_key_size, att_connection->secure_connection);
+        it->flags, security_settings.required_security_level, required_encryption_size, att_connection->authorized, att_connection->authenticated, att_connection->encryption_key_size, att_connection->secure_connection);
 
     bool sc_missing = security_settings.requires_secure_connection && (att_connection->secure_connection == 0u);
     switch (security_settings.required_security_level){
