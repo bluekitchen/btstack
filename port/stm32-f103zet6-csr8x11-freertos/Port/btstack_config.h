@@ -12,7 +12,7 @@
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
-#define ENABLE_CLASSIC
+//#define ENABLE_CLASSIC
 //#define ENABLE_HFP_WIDE_BAND_SPEECH
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_DATA_CHANNELS

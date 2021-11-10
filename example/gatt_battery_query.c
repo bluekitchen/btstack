@@ -164,6 +164,7 @@ static void dump_advertising_report(uint8_t *packet){
     
 }
 
+static bd_addr_t target_addr = {0xe4, 0x5d, 0x8e, 0xc2, 0xb3, 0x1a};
 /* LISTING_START(packetHandler): Packet Handler */
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     /* LISTING_PAUSE */
@@ -198,21 +199,30 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         case GAP_EVENT_ADVERTISING_REPORT:
             if (app_state != APP_STATE_W4_SCAN_RESULT) return;
 
-            gap_event_advertising_report_get_address(packet, address);
-            if (blacklist_contains(address)) {
+            gap_event_advertising_report_get_address(packet, report.address);
+            if (blacklist_contains(report.address)) {
                 break;
             }
             dump_advertising_report(packet);
 
-            // stop scanning, and connect to the device
-            app_state = APP_STATE_W4_CONNECT;
-            gap_stop_scan();
-            printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(report.address));
-            gap_connect(report.address,report.address_type);
+            if (0 == memcmp(target_addr, report.address, sizeof(bd_addr_t))) {
+                // stop scanning, and connect to the device
+                app_state = APP_STATE_W4_CONNECT;
+                gap_stop_scan();
+                //printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(report.address));
+                //gap_connect(report.address,report.address_type);
+            }
             break;
-
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if (app_state != APP_STATE_W4_CONNECT) return;
+            uint16_t opcode = hci_event_command_complete_get_command_opcode(packet);
+            if (opcode == HCI_OPCODE_HCI_LE_SET_SCAN_ENABLE) {
+                printf("Connect to device with addr %s.\n", bd_addr_to_str(report.address));
+                gap_connect(report.address,report.address_type);
+            }
+            break;
         /* LISTING_RESUME */
-        case HCI_EVENT_LE_META:
+        case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED://HCI_EVENT_LE_META:
             // Wait for connection complete
             if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             
