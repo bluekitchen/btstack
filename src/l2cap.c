@@ -3139,7 +3139,9 @@ static void l2cap_handle_information_request_complete(hci_connection_t * connect
 // @pre command len is valid, see check in l2cap_acl_classic_handler
 static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * command){
 
-    // get code, signalind identifier and command len
+    hci_connection_t * connection;
+
+    // get code, signal identifier and command len
     uint8_t code     = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
     uint8_t sig_id   = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
     uint16_t cmd_len = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
@@ -3177,8 +3179,8 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
             return;
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-        case INFORMATION_RESPONSE: {
-            hci_connection_t * connection = hci_connection_for_handle(handle);
+        case INFORMATION_RESPONSE:
+            connection = hci_connection_for_handle(handle);
             if (!connection) return;
             if (connection->l2cap_state.information_state != L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE) return;
 
@@ -3191,12 +3193,12 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
                     connection->l2cap_state.extended_feature_mask = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
                 }
                 log_info("extended features mask 0x%02x", connection->l2cap_state.extended_feature_mask);
+
             }
 
             // information request complete
             l2cap_handle_information_request_complete(connection);
             return;
-        }
 #endif
 
         default:
