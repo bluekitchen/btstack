@@ -1961,12 +1961,17 @@ static void l2cap_run(void){
 static void l2cap_ready_to_connect(l2cap_channel_t * channel){
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    // assumption: outgoing connection
+    // assumption: outgoing connection: trigger information request if not already started and wait for done
     hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
-    if (connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_IDLE){
-        connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;        
-        channel->state = L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES;
-        return;
+    switch (connection->l2cap_state.information_state){
+        case L2CAP_INFORMATION_STATE_DONE:
+            break;
+        case L2CAP_INFORMATION_STATE_IDLE:
+            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
+            /* fall through */
+        default:
+            channel->state = L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES;
+            return;
     }
 #endif
 
@@ -2428,10 +2433,15 @@ static void l2cap_handle_security_level_incoming_sufficient(l2cap_channel_t * ch
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     // we need to know if ERTM is supported before sending a config response
     hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
-    if (connection->l2cap_state.information_state != L2CAP_INFORMATION_STATE_DONE){
-        connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
-        channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
-        return;
+    switch (connection->l2cap_state.information_state){
+        case L2CAP_INFORMATION_STATE_DONE:
+            break;
+        case L2CAP_INFORMATION_STATE_IDLE:
+            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
+            /* fall through */
+        default:
+            channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
+            return;
     }
 #endif
     channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
@@ -2440,6 +2450,16 @@ static void l2cap_handle_security_level_incoming_sufficient(l2cap_channel_t * ch
 
 static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_level_t actual_level){
     log_info("security level update for handle 0x%04x", handle);
+
+    // trigger l2cap information requests
+    if (actual_level > LEVEL_0){
+        hci_connection_t * hci_connection = hci_connection_for_handle(handle);
+        btstack_assert(hci_connection != NULL);
+        if (hci_connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_IDLE){
+            hci_connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
+        }
+    }
+
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
