@@ -1802,16 +1802,27 @@ static bool l2ap_run_information_requests(void){
     // send l2cap information request if requested
     btstack_linked_list_iterator_t it;
     hci_connections_get_iterator(&it);
+    uint8_t info_type;
+    l2cap_information_state_t new_state;
     while(btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
-        if (connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST){
-            if (!hci_can_send_acl_packet_now(connection->con_handle)) break;
-            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE;
-            uint8_t sig_id = l2cap_next_sig_id();
-            uint8_t info_type = L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED;
-            l2cap_send_classic_signaling_packet(connection->con_handle, INFORMATION_REQUEST, sig_id, info_type);
-            return true;
+        switch (connection->l2cap_state.information_state){
+            case L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST:
+                info_type = L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED;
+                new_state = L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE;
+                break;
+            case L2CAP_INFORMATION_STATE_W2_SEND_FIXED_CHANNELS_REQUEST:
+                info_type = L2CAP_INFO_TYPE_FIXED_CHANNELS_SUPPORTED;
+                new_state = L2CAP_INFORMATION_STATE_W4_FIXED_CHANNELS_RESPONSE;
+                break;
+            default:
+                continue;
         }
+        if (!hci_can_send_acl_packet_now(connection->con_handle)) break;
+
+        connection->l2cap_state.information_state = new_state;
+        uint8_t sig_id = l2cap_next_sig_id();
+        l2cap_send_classic_signaling_packet(connection->con_handle, INFORMATION_REQUEST, sig_id, info_type);
     }
     return false;
 }
@@ -3127,7 +3138,7 @@ static void l2cap_handle_information_request_complete(hci_connection_t * connect
                 }
             }
 #endif
-            
+
             // respond to connection request
             channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
             continue;
@@ -3178,28 +3189,43 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
             }
             return;
 
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
         case INFORMATION_RESPONSE:
             connection = hci_connection_for_handle(handle);
             if (!connection) return;
-            if (connection->l2cap_state.information_state != L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE) return;
-
-            // get extended features from response if valid
-            connection->l2cap_state.extended_feature_mask = 0;
-            if (cmd_len >= 6) {
-                uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-                uint16_t result    = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
-                if (result == 0 && info_type == L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED) {
-                    connection->l2cap_state.extended_feature_mask = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
-                }
-                log_info("extended features mask 0x%02x", connection->l2cap_state.extended_feature_mask);
-
+            switch (connection->l2cap_state.information_state){
+                case L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE:
+                    // get extended features from response if valid
+                    if (cmd_len >= 6) {
+                        uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+                        uint16_t result    = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
+                        if (result == 0 && info_type == L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED) {
+                            connection->l2cap_state.extended_feature_mask = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
+                        }
+                        log_info("extended features mask 0x%02x", connection->l2cap_state.extended_feature_mask);
+                        if ((connection->l2cap_state.extended_feature_mask & 0x80) != 0){
+                            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_FIXED_CHANNELS_REQUEST;
+                        } else {
+                            // information request complete
+                            l2cap_handle_information_request_complete(connection);
+                        }
+                    }
+                    break;
+                case L2CAP_INFORMATION_STATE_W4_FIXED_CHANNELS_RESPONSE:
+                    if (cmd_len >= 12) {
+                        uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+                        uint16_t result    = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
+                        if (result == 0 && info_type == L2CAP_INFO_TYPE_FIXED_CHANNELS_SUPPORTED) {
+                            connection->l2cap_state.fixed_channels = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
+                        }
+                        log_info("fixed channels mask 0x%02x", connection->l2cap_state.fixed_channels);
+                        // information request complete
+                        l2cap_handle_information_request_complete(connection);
+                    }
+                    break;
+                default:
+                    break;
             }
-
-            // information request complete
-            l2cap_handle_information_request_complete(connection);
             return;
-#endif
 
         default:
             break;
