@@ -1798,9 +1798,8 @@ static void l2cap_run_signaling_response(void) {
     }
 }
 
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-static bool l2ap_run_ertm(void){
-    // send l2cap information request if neccessary
+static bool l2ap_run_information_requests(void){
+    // send l2cap information request if requested
     btstack_linked_list_iterator_t it;
     hci_connections_get_iterator(&it);
     while(btstack_linked_list_iterator_has_next(&it)){
@@ -1816,7 +1815,6 @@ static bool l2ap_run_ertm(void){
     }
     return false;
 }
-#endif
 
 #ifdef ENABLE_LE_DATA_CHANNELS
 static void l2cap_run_le_data_channels(void){
@@ -1898,11 +1896,9 @@ static void l2cap_run(void){
     
     // log_info("l2cap_run: entered");
     l2cap_run_signaling_response();
-    
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    bool done = l2ap_run_ertm();
+
+    bool done = l2ap_run_information_requests();
     if (done) return;
-#endif
 
 #if defined(ENABLE_CLASSIC) || defined(ENABLE_BLE)
     btstack_linked_list_iterator_t it;
