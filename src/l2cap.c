@@ -3084,11 +3084,60 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
     // log_info("new state %u", channel->state);
 }
 
+static void l2cap_handle_information_request_complete(hci_connection_t * connection){
+
+    connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_DONE;
+
+    // trigger connection request
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
+        if (channel->con_handle != connection->con_handle) continue;
+
+        // incoming connection: ask user for channel configuration, esp. if ertm will be mandatory
+        if (channel->state == L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES){
+            channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+            l2cap_emit_incoming_connection(channel);
+            continue;
+        }
+
+        // outgoing connection
+        if (channel->state == L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES){
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+            // if ERTM was requested, but is not listed in extended feature mask:
+            if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
+
+                if (channel->ertm_mandatory){
+                    // bail if ERTM is mandatory
+                    channel->state = L2CAP_STATE_CLOSED;
+                    // map l2cap connection response result to BTstack status enumeration
+                    l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED);
+                    // discard channel
+                    btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
+                    l2cap_free_channel_entry(channel);
+                    continue;
+
+                } else {
+                    // fallback to Basic mode
+                    l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
+                    channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+                }
+            }
+#endif
+            
+            // respond to connection request
+            channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
+            continue;
+        }
+    }
+}
+
 
 // @pre command len is valid, see check in l2cap_acl_classic_handler
 static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * command){
-    
-    btstack_linked_list_iterator_t it;    
 
     // get code, signalind identifier and command len
     uint8_t code     = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
@@ -3141,52 +3190,11 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
                 if (result == 0 && info_type == L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED) {
                     connection->l2cap_state.extended_feature_mask = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
                 }
+                log_info("extended features mask 0x%02x", connection->l2cap_state.extended_feature_mask);
             }
-            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_DONE; 
-            log_info("extended features mask 0x%02x", connection->l2cap_state.extended_feature_mask);
 
-            // trigger connection request
-            btstack_linked_list_iterator_init(&it, &l2cap_channels);
-            while (btstack_linked_list_iterator_has_next(&it)){
-                l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-                if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
-                if (channel->con_handle != handle) continue;
-
-                // incoming connection: ask user for channel configuration, esp. if ertm will be mandatory
-                if (channel->state == L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES){
-                    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-                    l2cap_emit_incoming_connection(channel);
-                    continue;
-                }
-
-                // outgoing connection
-                if (channel->state == L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES){
-
-                    // if ERTM was requested, but is not listed in extended feature mask:
-                    if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
-
-                        if (channel->ertm_mandatory){
-                            // bail if ERTM is mandatory
-                            channel->state = L2CAP_STATE_CLOSED;
-                            // map l2cap connection response result to BTstack status enumeration
-                            l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED);
-                            // discard channel
-                            btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
-                            l2cap_free_channel_entry(channel);
-                            continue;
-
-                        } else {
-                            // fallback to Basic mode
-                            l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
-                            channel->mode = L2CAP_CHANNEL_MODE_BASIC;
-                        }
-                    }
-
-                    // respond to connection request
-                    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
-                    continue;
-                }
-            }
+            // information request complete
+            l2cap_handle_information_request_complete(connection);
             return;
         }
 #endif
@@ -3199,6 +3207,7 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
     uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
     
     // Find channel for this sig_id and connection handle
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
