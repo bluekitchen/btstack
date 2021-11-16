@@ -143,6 +143,7 @@ static void l2cap_notify_channel_can_send(void);
 static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel);
 static uint8_t  l2cap_next_sig_id(void);
 static l2cap_fixed_channel_t * l2cap_fixed_channel_for_channel_id(uint16_t local_cid);
+static void l2cap_handle_information_request_complete(hci_connection_t * connection);
 #ifdef ENABLE_CLASSIC
 static void l2cap_handle_security_level_incoming_sufficient(l2cap_channel_t * channel);
 static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm);
@@ -672,30 +673,23 @@ uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * e
     // configure L2CAP ERTM
     l2cap_ertm_configure_channel(channel, ertm_config, buffer, size);
 
-    // default: continue
-    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT;
-
-    // verify remote ERTM support
+    // already available?
     hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
-    if (connection == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
 
-    if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
-        // ERTM not possible, select basic mode and release buffer
-        channel->mode = L2CAP_CHANNEL_MODE_BASIC;
-        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
-
-        // bail if ERTM is mandatory
-        if (channel->ertm_mandatory){
-            // We chose 'no resources available' for "ERTM mandatory but you don't even know ERTM exists"
-            log_info("ERTM mandatory -> reject connection");
-            channel->state  = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
-            channel->reason = 0x04; // no resources available
-        }  else {
-            log_info("ERTM not supported by remote -> use Basic mode");
-        }      
+    // we need to know if ERTM is supported before sending a config response
+    switch (connection->l2cap_state.information_state){
+        case L2CAP_INFORMATION_STATE_DONE:
+            l2cap_handle_information_request_complete(connection);
+            break;
+        case L2CAP_INFORMATION_STATE_IDLE:
+            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
+        /* fall through */
+        default:
+            channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
+            break;
     }
 
-    // process
     l2cap_run();
 
     return ERROR_CODE_SUCCESS;
@@ -2441,20 +2435,6 @@ static void l2cap_handle_features_complete(hci_con_handle_t handle){
 }
 
 static void l2cap_handle_security_level_incoming_sufficient(l2cap_channel_t * channel){
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    // we need to know if ERTM is supported before sending a config response
-    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
-    switch (connection->l2cap_state.information_state){
-        case L2CAP_INFORMATION_STATE_DONE:
-            break;
-        case L2CAP_INFORMATION_STATE_IDLE:
-            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
-            /* fall through */
-        default:
-            channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
-            return;
-    }
-#endif
     channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
     l2cap_emit_incoming_connection(channel);
 }
@@ -3107,14 +3087,30 @@ static void l2cap_handle_information_request_complete(hci_connection_t * connect
         if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
         if (channel->con_handle != connection->con_handle) continue;
 
-        // incoming connection: ask user for channel configuration, esp. if ertm will be mandatory
+        // incoming connection: information request was triggered after user has accepted connection,
+        // now: verify channel configuration, esp. if ertm will be mandatory
         if (channel->state == L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES){
-            channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-            l2cap_emit_incoming_connection(channel);
+            // default: continue
+            channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT;
+            if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
+                // ERTM not possible, select basic mode and release buffer
+                channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+                l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
+
+                // bail if ERTM is mandatory
+                if (channel->ertm_mandatory){
+                    // We chose 'no resources available' for "ERTM mandatory but you don't even know ERTM exists"
+                    log_info("ERTM mandatory -> reject connection");
+                    channel->state  = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
+                    channel->reason = 0x04; // no resources available
+                }  else {
+                    log_info("ERTM not supported by remote -> use Basic mode");
+                }
+            }
             continue;
         }
 
-        // outgoing connection
+        // outgoing connection: information request is triggered before connection request
         if (channel->state == L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES){
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
