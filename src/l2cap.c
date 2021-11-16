@@ -3214,9 +3214,9 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
                         uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
                         uint16_t result    = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
                         if (result == 0 && info_type == L2CAP_INFO_TYPE_FIXED_CHANNELS_SUPPORTED) {
-                            connection->l2cap_state.fixed_channels = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
+                            connection->l2cap_state.fixed_channels_supported = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 4);
                         }
-                        log_info("fixed channels mask 0x%02x", connection->l2cap_state.fixed_channels);
+                        log_info("fixed channels mask 0x%02x", connection->l2cap_state.fixed_channels_supported);
                         // information request complete
                         l2cap_handle_information_request_complete(connection);
                     }

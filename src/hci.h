@@ -509,7 +509,7 @@ typedef enum {
 typedef struct {
     l2cap_information_state_t information_state;
     uint16_t                  extended_feature_mask;
-    uint16_t                  fixed_channels;    // Core V5.3 - only first octet used
+    uint16_t                  fixed_channels_supported;    // Core V5.3 - only first octet used
 } l2cap_state_t;
 
 //
