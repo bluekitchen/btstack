@@ -1966,17 +1966,20 @@ static void l2cap_run(void){
 static void l2cap_ready_to_connect(l2cap_channel_t * channel){
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    // assumption: outgoing connection: trigger information request if not already started and wait for done
-    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
-    switch (connection->l2cap_state.information_state){
-        case L2CAP_INFORMATION_STATE_DONE:
-            break;
-        case L2CAP_INFORMATION_STATE_IDLE:
-            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
-            /* fall through */
-        default:
-            channel->state = L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES;
-            return;
+    // assumption: outgoing connection
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        // ERTM requested: trigger information request if not already started then wait for response
+        hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
+        switch (connection->l2cap_state.information_state){
+            case L2CAP_INFORMATION_STATE_DONE:
+                break;
+            case L2CAP_INFORMATION_STATE_IDLE:
+                connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
+                /* fall through */
+            default:
+                channel->state = L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES;
+                return;
+        }
     }
 #endif
 
