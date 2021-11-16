@@ -73,7 +73,8 @@ const uint8_t adv_data[] = {
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
-static btstack_packet_callback_registration_t event_callback_registration;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t l2cap_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 // support for multiple clients
@@ -117,14 +118,16 @@ static void le_data_channel_setup(void){
     att_server_init(profile_data, NULL, NULL);    
 
     // register for HCI events
-    event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&event_callback_registration);
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // register for SM events
     sm_event_callback_registration.callback = &sm_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
 
-    l2cap_register_packet_handler(&packet_handler);
+    // register for L2CAP events
+    l2cap_event_callback_registration.callback = &packet_handler;
+    l2cap_add_event_handler(&sm_event_callback_registration);
 
     // le data channel setup
     l2cap_le_register_service(&packet_handler, TSPX_le_psm, LEVEL_0);
