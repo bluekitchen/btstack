@@ -906,6 +906,13 @@ typedef uint8_t sm_key_t[16];
  */
 #define L2CAP_EVENT_TRIGGER_RUN                            0x7f
 
+/*
+ * @format H22
+ * @param con_handle
+ * @param extended_feature_mask
+ * @param fixed_channels_supported
+ */
+#define L2CAP_EVENT_INFORMATION_RESPONSE                   0x97
 
 // RFCOMM EVENTS
 

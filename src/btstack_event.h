@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
- * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
+ * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -1618,6 +1618,34 @@ static inline uint16_t l2cap_event_ertm_buffer_released_get_local_cid(const uint
     return little_endian_read_16(event, 2);
 }
 
+
+/**
+ * @brief Get field con_handle from event L2CAP_EVENT_INFORMATION_RESPONSE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t l2cap_event_information_response_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field extended_feature_mask from event L2CAP_EVENT_INFORMATION_RESPONSE
+ * @param event packet
+ * @return extended_feature_mask
+ * @note: btstack_type 2
+ */
+static inline uint16_t l2cap_event_information_response_get_extended_feature_mask(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field fixed_channels_supported from event L2CAP_EVENT_INFORMATION_RESPONSE
+ * @param event packet
+ * @return fixed_channels_supported
+ * @note: btstack_type 2
+ */
+static inline uint16_t l2cap_event_information_response_get_fixed_channels_supported(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
 
 /**
  * @brief Get field status from event RFCOMM_EVENT_CHANNEL_OPENED

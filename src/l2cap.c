@@ -3082,6 +3082,15 @@ static void l2cap_handle_information_request_complete(hci_connection_t * connect
 
     connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_DONE;
 
+    // emit event
+    uint8_t event[8];
+    event[0] = L2CAP_EVENT_INFORMATION_RESPONSE;
+    event[1] = sizeof(event) - 2;
+    little_endian_store_16(event, 2, connection->con_handle);
+    little_endian_store_16(event, 4, connection->l2cap_state.extended_feature_mask);
+    little_endian_store_16(event, 6, connection->l2cap_state.fixed_channels_supported);
+    l2cap_emit_event(event, sizeof(event));
+
     // trigger connection request
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
