@@ -4934,11 +4934,12 @@ static void hci_run(void){
                         return;
                     }
 
+                    btstack_run_loop_remove_timer(&hci_stack->timeout);
+
                     if (hci_stack->substate == HCI_HALTING_DISCONNECT_ALL_TIMER){
                         // no connections left, wait a bit to assert that btstack_cyrpto isn't waiting for an HCI event
                         log_info("HCI_STATE_HALTING: wait 50 ms");
                         hci_stack->substate = HCI_HALTING_W4_TIMER;
-                        btstack_run_loop_remove_timer(&hci_stack->timeout);
                         btstack_run_loop_set_timer(&hci_stack->timeout, 50);
                         btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
                         btstack_run_loop_add_timer(&hci_stack->timeout);
