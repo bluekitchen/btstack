@@ -214,9 +214,11 @@ static btstack_packet_callback_registration_t l2cap_hci_event_callback_registrat
 
 #ifdef ENABLE_BLE
 // only used for connection parameter update events
-static btstack_packet_handler_t l2cap_event_packet_handler;
 static uint16_t l2cap_le_custom_max_mtu;
 #endif
+
+/* callbacks for events */
+static btstack_linked_list_t l2cap_event_handlers;
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 
@@ -931,7 +933,6 @@ void l2cap_deinit(void){
     (void)memset(l2cap_outgoing_classic_addr, 0, 6);
 #endif
 #ifdef ENABLE_BLE
-    l2cap_event_packet_handler = NULL;
     l2cap_le_custom_max_mtu = 0;
     (void)memset(&l2cap_fixed_channel_att, 0, sizeof(l2cap_fixed_channel_att));
     (void)memset(&l2cap_fixed_channel_sm, 0, sizeof(l2cap_fixed_channel_sm));
@@ -939,15 +940,26 @@ void l2cap_deinit(void){
 #ifdef ENABLE_LE_DATA_CHANNELS
     l2cap_le_services = NULL;
 #endif
-    l2cap_signaling_responses_pending = 0;
+    l2cap_event_handlers = NULL;
 }
 
-void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
-#ifdef ENABLE_BLE
-    l2cap_event_packet_handler = handler;
-#else
-    UNUSED(handler);    // ok: no code
-#endif
+void l2cap_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    btstack_linked_list_add_tail(&l2cap_event_handlers, (btstack_linked_item_t*) callback_handler);
+}
+
+void l2cap_remove_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    btstack_linked_list_remove(&l2cap_event_handlers, (btstack_linked_item_t*) callback_handler);
+}
+
+static void l2cap_emit_event(uint8_t *event, uint16_t size) {
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, size);
+    // dispatch to all event handlers
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &l2cap_event_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_packet_callback_registration_t * entry = (btstack_packet_callback_registration_t*) btstack_linked_list_iterator_next(&it);
+        entry->callback(HCI_EVENT_PACKET, 0, event, size);
+    }
 }
 
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id){
@@ -3201,9 +3213,7 @@ static void l2cap_emit_connection_parameter_update_response(hci_con_handle_t con
     event[1] = 4;
     little_endian_store_16(event, 2, con_handle);
     little_endian_store_16(event, 4, result);
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    if (!l2cap_event_packet_handler) return;
-    (*l2cap_event_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    l2cap_emit_event(event, sizeof(event));
 }
 
 // @return valid
@@ -3258,14 +3268,11 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 connection->le_con_param_update_identifier = sig_id;
             }
 
-            if (!l2cap_event_packet_handler) break;
-
             event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST;
             event[1] = 8;
             little_endian_store_16(event, 2, handle);
             (void)memcpy(&event[4], &command[4], 8);
-            hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-            (*l2cap_event_packet_handler)( HCI_EVENT_PACKET, 0, event, sizeof(event));
+            l2cap_emit_event(event, sizeof(event));
             break;
 
         case CONNECTION_PARAMETER_UPDATE_RESPONSE:

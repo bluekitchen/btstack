@@ -218,6 +218,7 @@ typedef struct {
 static att_service_handler_t cycling_power_service;
 static cycling_power_t cycling_power;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t l2cap_event_callback_registration;
 
 static uint16_t cycling_power_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
@@ -997,9 +998,12 @@ void cycling_power_service_server_init(uint32_t feature_flags,
     instance->con_interval_max = 6;
     instance->con_interval_status = CP_CONNECTION_INTERVAL_STATUS_NONE;
     instance->w4_indication_complete = 0;
+
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-    l2cap_register_packet_handler(&packet_handler);
+
+    l2cap_event_callback_registration.callback = &packet_handler;
+    l2cap_add_event_handler(&l2cap_event_callback_registration);
 
     instance->sensor_location = current_sensor_location;
     instance->num_supported_sensor_locations = 0;

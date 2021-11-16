@@ -447,10 +447,15 @@ bool l2cap_can_send_prepared_packet_now(uint16_t local_cid);
  */
 void l2cap_init(void);
 
-/** 
- * @brief Registers packet handler for LE Connection Parameter Update events
+/**
+ * @brief Add event packet handler for LE Connection Parameter Update events
  */
-void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
+void l2cap_add_event_handler(btstack_packet_callback_registration_t * callback_handler);
+
+/**
+ * @brief Remove event packet handler.
+ */
+void l2cap_remove_event_handler(btstack_packet_callback_registration_t * callback_handler);
 
 /** 
  * @brief Get max MTU for Classic connections based on btstack configuration
