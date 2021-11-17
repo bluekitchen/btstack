@@ -4053,6 +4053,127 @@ int hci_power_control(HCI_POWER_MODE power_mode){
 }
 
 
+static void hci_halting_run(void){
+
+    log_info("HCI_STATE_HALTING, substate %x\n", hci_stack->substate);
+
+    hci_connection_t * connection;
+
+    switch (hci_stack->substate) {
+        case HCI_HALTING_DISCONNECT_ALL_NO_TIMER:
+            case HCI_HALTING_DISCONNECT_ALL_TIMER:
+
+#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_CENTRAL
+    hci_whitelist_free();
+#endif
+#endif
+    // close all open connections
+    connection = (hci_connection_t *) hci_stack->connections;
+    if (connection) {
+        hci_con_handle_t con_handle = (uint16_t) connection->con_handle;
+        if (!hci_can_send_command_packet_now()) return;
+
+        // check state
+        if (connection->state == SENT_DISCONNECT) return;
+        connection->state = SENT_DISCONNECT;
+
+        log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, con_handle);
+
+        // cancel all l2cap connections right away instead of waiting for disconnection complete event ...
+        hci_emit_disconnection_complete(con_handle, 0x16); // terminated by local host
+
+        // ... which would be ignored anyway as we shutdown (free) the connection now
+        hci_shutdown_connection(connection);
+
+        // finally, send the disconnect command
+        hci_send_cmd(&hci_disconnect, con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
+        return;
+    }
+
+    btstack_run_loop_remove_timer(&hci_stack->timeout);
+
+    if (hci_stack->substate == HCI_HALTING_DISCONNECT_ALL_TIMER) {
+        // no connections left, wait a bit to assert that btstack_cyrpto isn't waiting for an HCI event
+        log_info("HCI_STATE_HALTING: wait 50 ms");
+        hci_stack->substate = HCI_HALTING_W4_TIMER;
+        btstack_run_loop_set_timer(&hci_stack->timeout, 50);
+        btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
+        btstack_run_loop_add_timer(&hci_stack->timeout);
+        break;
+    }
+
+    /* fall through */
+
+    case HCI_HALTING_CLOSE:
+        // close left over connections (that had not been properly closed before)
+        hci_discard_connections();
+
+        log_info("HCI_STATE_HALTING, calling off");
+
+        // switch mode
+        hci_power_control_off();
+
+        log_info("HCI_STATE_HALTING, emitting state");
+        hci_emit_state();
+        log_info("HCI_STATE_HALTING, done");
+        break;
+
+        case HCI_HALTING_W4_TIMER:
+            // keep waiting
+
+            break;
+        default:
+            break;
+    }
+};
+
+static void hci_falling_asleep_run(void){
+    hci_connection_t * connection;
+    switch(hci_stack->substate) {
+        case HCI_FALLING_ASLEEP_DISCONNECT:
+            log_info("HCI_STATE_FALLING_ASLEEP");
+            // close all open connections
+            connection =  (hci_connection_t *) hci_stack->connections;
+            if (connection){
+
+                // send disconnect
+                if (!hci_can_send_command_packet_now()) return;
+
+                log_info("HCI_STATE_FALLING_ASLEEP, connection %p, handle %u", connection, (uint16_t)connection->con_handle);
+                hci_send_cmd(&hci_disconnect, connection->con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
+
+                // send disconnected event right away - causes higher layer connections to get closed, too.
+                hci_shutdown_connection(connection);
+                return;
+            }
+
+            if (hci_classic_supported()){
+                // disable page and inquiry scan
+                if (!hci_can_send_command_packet_now()) return;
+
+                log_info("HCI_STATE_HALTING, disabling inq scans");
+                hci_send_cmd(&hci_write_scan_enable, hci_stack->connectable << 1); // drop inquiry scan but keep page scan
+
+                // continue in next sub state
+                hci_stack->substate = HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE;
+                break;
+            }
+
+            /* fall through */
+
+            case HCI_FALLING_ASLEEP_COMPLETE:
+                log_info("HCI_STATE_HALTING, calling sleep");
+                // switch mode
+                hci_power_control_sleep();  // changes hci_stack->state to SLEEP
+                hci_emit_state();
+                break;
+
+                default:
+                    break;
+    }
+}
+
 #ifdef ENABLE_CLASSIC
 
 static void hci_update_scan_enable(void){
@@ -5005,125 +5126,12 @@ static void hci_run(void){
         case HCI_STATE_INITIALIZING:
             hci_initializing_run();
             break;
-            
         case HCI_STATE_HALTING:
-
-            log_info("HCI_STATE_HALTING, substate %x\n", hci_stack->substate);
-            switch (hci_stack->substate){
-                case HCI_HALTING_DISCONNECT_ALL_NO_TIMER:
-                case HCI_HALTING_DISCONNECT_ALL_TIMER:
-
-#ifdef ENABLE_BLE
-#ifdef ENABLE_LE_CENTRAL
-                    hci_whitelist_free();
-#endif
-#endif
-                    // close all open connections
-                    connection =  (hci_connection_t *) hci_stack->connections;
-                    if (connection){
-                        hci_con_handle_t con_handle = (uint16_t) connection->con_handle;
-                        if (!hci_can_send_command_packet_now()) return;
-
-                        // check state
-                        if (connection->state == SENT_DISCONNECT) return;
-                        connection->state = SENT_DISCONNECT;
-
-                        log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, con_handle);
-
-                        // cancel all l2cap connections right away instead of waiting for disconnection complete event ...
-                        hci_emit_disconnection_complete(con_handle, 0x16); // terminated by local host
-
-                        // ... which would be ignored anyway as we shutdown (free) the connection now
-                        hci_shutdown_connection(connection);
-
-                        // finally, send the disconnect command
-                        hci_send_cmd(&hci_disconnect, con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
-                        return;
-                    }
-
-                    btstack_run_loop_remove_timer(&hci_stack->timeout);
-
-                    if (hci_stack->substate == HCI_HALTING_DISCONNECT_ALL_TIMER){
-                        // no connections left, wait a bit to assert that btstack_cyrpto isn't waiting for an HCI event
-                        log_info("HCI_STATE_HALTING: wait 50 ms");
-                        hci_stack->substate = HCI_HALTING_W4_TIMER;
-                        btstack_run_loop_set_timer(&hci_stack->timeout, 50);
-                        btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
-                        btstack_run_loop_add_timer(&hci_stack->timeout);
-                        break;
-                    }
-
-                    /* fall through */
-
-                case HCI_HALTING_CLOSE:
-                    // close left over connections (that had not been properly closed before)
-                    hci_discard_connections();
-
-                    log_info("HCI_STATE_HALTING, calling off");
-                    
-                    // switch mode
-                    hci_power_control_off();
-                    
-                    log_info("HCI_STATE_HALTING, emitting state");
-                    hci_emit_state();
-                    log_info("HCI_STATE_HALTING, done");
-                    break;
-
-                case HCI_HALTING_W4_TIMER:
-                    // keep waiting
-
-                    break;
-                default:
-                    break;
-            }
-
+            hci_halting_run();
             break;
-            
         case HCI_STATE_FALLING_ASLEEP:
-            switch(hci_stack->substate) {
-                case HCI_FALLING_ASLEEP_DISCONNECT:
-                    log_info("HCI_STATE_FALLING_ASLEEP");
-                    // close all open connections
-                    connection =  (hci_connection_t *) hci_stack->connections;
-                    if (connection){
-                        
-                        // send disconnect
-                        if (!hci_can_send_command_packet_now()) return;
-
-                        log_info("HCI_STATE_FALLING_ASLEEP, connection %p, handle %u", connection, (uint16_t)connection->con_handle);
-                        hci_send_cmd(&hci_disconnect, connection->con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
-
-                        // send disconnected event right away - causes higher layer connections to get closed, too.
-                        hci_shutdown_connection(connection);
-                        return;
-                    }
-                    
-                    if (hci_classic_supported()){
-                        // disable page and inquiry scan
-                        if (!hci_can_send_command_packet_now()) return;
-                        
-                        log_info("HCI_STATE_HALTING, disabling inq scans");
-                        hci_send_cmd(&hci_write_scan_enable, hci_stack->connectable << 1); // drop inquiry scan but keep page scan
-                        
-                        // continue in next sub state
-                        hci_stack->substate = HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE;
-                        break;
-                    }
-
-                    /* fall through */
-
-                case HCI_FALLING_ASLEEP_COMPLETE:
-                    log_info("HCI_STATE_HALTING, calling sleep");
-                    // switch mode
-                    hci_power_control_sleep();  // changes hci_stack->state to SLEEP
-                    hci_emit_state();
-                    break;
-                    
-                default:
-                    break;
-            }
+            hci_falling_asleep_run();
             break;
-            
         default:
             break;
     }
