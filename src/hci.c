@@ -4995,7 +4995,6 @@ static bool hci_run_general_pending_commands(void){
 static void hci_run(void){
 
     // stack state sub statemachines
-    hci_connection_t *connection;
     switch (hci_stack->state) {
         case HCI_STATE_INITIALIZING:
             hci_initializing_run();
