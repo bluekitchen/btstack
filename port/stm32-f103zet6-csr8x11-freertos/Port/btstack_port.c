@@ -329,10 +329,10 @@ static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 static hal_flash_bank_stm32_t   hal_flash_bank_context;
 
 #define HAL_FLASH_PAGE_SIZE   (2 * 1024)	    //page size
-//#define HAL_FLASH_PAGE_0_ADDR 0x080C0000      //flash page0 start address
-//#define HAL_FLASH_PAGE_1_ADDR 0x080C0800	    //flash page1 start address
-#define HAL_FLASH_PAGE_0_ID 384 //((HAL_FLASH_PAGE_0_ADDR - FLASH_BASE) / HAL_FLASH_PAGE_SIZE) //page0 ID 384
-#define HAL_FLASH_PAGE_1_ID 385 //((HAL_FLASH_PAGE_1_ADDR - FLASH_BASE) / HAL_FLASH_PAGE_SIZE) //page1 ID 385
+#define HAL_FLASH_PAGE_0_ID   100               //page0 id
+#define HAL_FLASH_PAGE_1_ID   101               //page1 id
+//#define HAL_FLASH_PAGE_0_ADDR 0x08032000      (FLASH_BASE + HAL_FLASH_PAGE_0_ID * HAL_FLASH_PAGE_SIZE)//flash page0 start address
+//#define HAL_FLASH_PAGE_1_ADDR 0x08032800	    (FLASH_BASE + HAL_FLASH_PAGE_0_ID * HAL_FLASH_PAGE_SIZE)//flash page1 start address
 #endif
 
 //
