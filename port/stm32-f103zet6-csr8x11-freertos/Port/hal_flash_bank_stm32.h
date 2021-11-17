@@ -47,24 +47,22 @@ extern "C" {
 #endif
 
 typedef struct {
-	uint32_t   sector_size;
-	uint32_t   sectors[2];
-	uintptr_t  banks[2];
+	uint32_t   page_size;
+	uint32_t   page_start[2];
+	uint16_t   page_index[2];
 } hal_flash_bank_stm32_t;
 
 /**
  * Configure STM32 HAL Flash Implementation
  *
  * @param context of hal_flash_bank_stm32_t
- * @param bank_size
- * @param bank_0_sector id
- * @param bank_1_sector id
- * @param bank_0_addr
- * @param bank_1_addr
+ * @param page_size
+ * @param bank_0_page_id id
+ * @param bank_0_page_id id
  * @return 
  */
-const hal_flash_bank_t * hal_flash_bank_stm32_init_instance(hal_flash_bank_stm32_t * context, uint32_t bank_size,
-		uint32_t bank_0_sector, uint32_t bank_1_sector, uintptr_t bank_0_addr, uintptr_t bank_1_addr);
+const hal_flash_bank_t * hal_flash_bank_stm32_init_instance(hal_flash_bank_stm32_t * context, uint32_t page_size,
+		uint32_t bank_0_page_id, uint32_t bank_1_page_id);
 
 #if defined __cplusplus
 }

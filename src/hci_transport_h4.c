@@ -255,6 +255,7 @@ static void hci_transport_h4_block_read(void){
                 default:
                     log_error("hci_transport_h4: invalid packet type 0x%02x", hci_packet[0]);
                     hci_transport_h4_reset_statemachine();
+                    memset(hci_packet_with_pre_buffer, 0, sizeof(hci_packet_with_pre_buffer));
                     break;
             }
             break;

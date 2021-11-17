@@ -233,7 +233,6 @@ int _write(int file, char *ptr, int len);
 int _write(int file, char *ptr, int len){
 #if 1
 	uint8_t cr = '\r';
-	uint8_t *cn = '\r\n';
 	int i;
 
 	if (file == STDOUT_FILENO || file == STDERR_FILENO) {
@@ -325,15 +324,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-#if 0
+#if 1
 static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 static hal_flash_bank_stm32_t   hal_flash_bank_context;
 
-#define HAL_FLASH_BANK_SIZE (128 * 1024)
-#define HAL_FLASH_BANK_0_ADDR 0x080C0000
-#define HAL_FLASH_BANK_1_ADDR 0x080E0000
-#define HAL_FLASH_BANK_0_SECTOR FLASH_SECTOR_10
-#define HAL_FLASH_BANK_1_SECTOR FLASH_SECTOR_11
+#define HAL_FLASH_PAGE_SIZE   (2 * 1024)	    //page size
+//#define HAL_FLASH_PAGE_0_ADDR 0x080C0000      //flash page0 start address
+//#define HAL_FLASH_PAGE_1_ADDR 0x080C0800	    //flash page1 start address
+#define HAL_FLASH_PAGE_0_ID 384 //((HAL_FLASH_PAGE_0_ADDR - FLASH_BASE) / HAL_FLASH_PAGE_SIZE) //page0 ID 384
+#define HAL_FLASH_PAGE_1_ID 385 //((HAL_FLASH_PAGE_1_ADDR - FLASH_BASE) / HAL_FLASH_PAGE_SIZE) //page1 ID 385
 #endif
 
 //
@@ -355,15 +354,13 @@ void port_main(void){
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
     hci_set_chipset(btstack_chipset_csr_instance());
 
-#if 0
+#if 1
     // setup TLV Flash Sector implementation
     const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_stm32_init_instance(
     		&hal_flash_bank_context,
-    		HAL_FLASH_BANK_SIZE,
-			HAL_FLASH_BANK_0_SECTOR,
-			HAL_FLASH_BANK_1_SECTOR,
-			HAL_FLASH_BANK_0_ADDR,
-			HAL_FLASH_BANK_1_ADDR);
+    		HAL_FLASH_PAGE_SIZE,
+			HAL_FLASH_PAGE_0_ID,
+			HAL_FLASH_PAGE_1_ID);
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
     		&btstack_tlv_flash_bank_context,
 			hal_flash_bank_impl,
