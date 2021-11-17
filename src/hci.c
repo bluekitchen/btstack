@@ -5084,6 +5084,22 @@ static bool hci_run_general_pending_commands(void){
 
 static void hci_run(void){
 
+    // stack state sub statemachines
+    hci_connection_t *connection;
+    switch (hci_stack->state) {
+        case HCI_STATE_INITIALIZING:
+            hci_initializing_run();
+            break;
+        case HCI_STATE_HALTING:
+            hci_halting_run();
+            break;
+        case HCI_STATE_FALLING_ASLEEP:
+            hci_falling_asleep_run();
+            break;
+        default:
+            break;
+    }
+
     bool done;
 
     // send continuation fragments first, as they block the prepared packet buffer
@@ -5117,24 +5133,7 @@ static void hci_run(void){
 #endif
 
     // send pending HCI commands
-    done = hci_run_general_pending_commands();
-    if (done) return;
-
-    // stack state sub statemachines
-    hci_connection_t * connection;
-    switch (hci_stack->state){
-        case HCI_STATE_INITIALIZING:
-            hci_initializing_run();
-            break;
-        case HCI_STATE_HALTING:
-            hci_halting_run();
-            break;
-        case HCI_STATE_FALLING_ASLEEP:
-            hci_falling_asleep_run();
-            break;
-        default:
-            break;
-    }
+    hci_run_general_pending_commands();
 }
 
 uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
