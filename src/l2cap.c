@@ -152,7 +152,6 @@ static void l2cap_handle_security_level_incoming_sufficient(l2cap_channel_t * ch
 static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm);
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel);
 static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel);
-static void l2cap_finalize_channel_close(l2cap_channel_t *channel);
 static void l2cap_handle_information_request_complete(hci_connection_t * connection);
 static inline l2cap_service_t * l2cap_get_service(uint16_t psm);
 static void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
@@ -181,6 +180,7 @@ static void l2cap_emit_simple_event_with_cid(l2cap_channel_t * channel, uint8_t 
 static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size);
 static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, l2cap_channel_type_t channel_type, bd_addr_t address, bd_addr_type_t address_type,
         uint16_t psm, uint16_t local_mtu, gap_security_level_t security_level);
+static void l2cap_finalize_channel_close(l2cap_channel_t *channel);
 static void l2cap_free_channel_entry(l2cap_channel_t * channel);
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -1117,11 +1117,6 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-static void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
-    log_info("L2CAP_EVENT_CHANNEL_CLOSED local_cid 0x%x", channel->local_cid);
-    l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CHANNEL_CLOSED);
-}
-
 static void l2cap_emit_incoming_connection(l2cap_channel_t *channel) {
     log_info("L2CAP_EVENT_INCOMING_CONNECTION addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x",
              bd_addr_to_str(channel->address), channel->con_handle,  channel->psm, channel->local_cid, channel->remote_cid);
@@ -1145,6 +1140,15 @@ static void l2cap_handle_channel_open_failed(l2cap_channel_t * channel, uint8_t 
     }
 #endif
     l2cap_emit_channel_opened(channel, status);
+}
+
+#endif
+
+#ifdef L2CAP_USES_CHANNELS
+
+static void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
+    log_info("L2CAP_EVENT_CHANNEL_CLOSED local_cid 0x%x", channel->local_cid);
+    l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CHANNEL_CLOSED);
 }
 
 static void l2cap_handle_channel_closed(l2cap_channel_t * channel){
@@ -4259,7 +4263,9 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             channel = l2cap_get_channel_for_local_cid_and_handle(local_cid, handle);
             if (!channel) break;
             if (channel->local_sig_id == sig_id) {
-                l2cap_signaling_handler_channel(channel, command);
+                if (channel->state == L2CAP_STATE_WAIT_DISCONNECT){
+                    l2cap_finalize_channel_close(channel);
+                }
             }
             break;
 #endif
@@ -4638,7 +4644,7 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint1
     channel->packet_handler = packet_handler;
 }
 
-#ifdef ENABLE_CLASSIC
+#ifdef L2CAP_USES_CHANNELS
 // finalize closed channel - l2cap_handle_disconnect_request & DISCONNECTION_RESPONSE
 void l2cap_finalize_channel_close(l2cap_channel_t * channel){
     channel->state = L2CAP_STATE_CLOSED;
