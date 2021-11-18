@@ -93,6 +93,10 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
     UNUSED(callback_handler);
 }
 
+void l2cap_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    UNUSED(callback_handler);
+}
+
 uint16_t l2cap_max_mtu(void){
     return HCI_ACL_PAYLOAD_SIZE - L2CAP_HEADER_SIZE;
 }

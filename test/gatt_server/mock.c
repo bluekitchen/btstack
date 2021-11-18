@@ -70,6 +70,10 @@ static void att_init_connection(att_connection_t * att_connection){
 	att_connection->authorized = 0;
 }
 
+void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    registered_hci_event_handler = callback_handler->callback;
+}
+
 bool hci_can_send_acl_le_packet_now(void){
 	return true;
 }
@@ -94,6 +98,10 @@ bool l2cap_can_send_connectionless_packet_now(void){
 	return 1;	
 }
 
+void l2cap_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    UNUSED(callback_handler);
+}
+
 uint8_t *l2cap_get_outgoing_buffer(void){
 	// printf("l2cap_get_outgoing_buffer\n");
 	return (uint8_t *)&l2cap_stack_buffer; // 8 bytes
@@ -113,10 +121,6 @@ void l2cap_init(void){}
 
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {
     att_packet_handler = packet_handler;
-}
-
-void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
-	registered_hci_event_handler = callback_handler->callback;
 }
 
 bool l2cap_reserve_packet_buffer(void){
