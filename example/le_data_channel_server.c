@@ -127,7 +127,7 @@ static void le_data_channel_setup(void){
 
     // register for L2CAP events
     l2cap_event_callback_registration.callback = &packet_handler;
-    l2cap_add_event_handler(&sm_event_callback_registration);
+    l2cap_add_event_handler(&l2cap_event_callback_registration);
 
     // le data channel setup
     l2cap_le_register_service(&packet_handler, TSPX_le_psm, LEVEL_0);
