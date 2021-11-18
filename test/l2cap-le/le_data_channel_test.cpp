@@ -76,6 +76,7 @@ static uint16_t initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
 static uint8_t data_channel_buffer[TEST_PACKET_SIZE];
 static uint16_t l2cap_cid;
 static bool l2cap_channel_opened;
+static btstack_packet_callback_registration_t l2cap_event_callback_registration;
 
 const uint8_t le_data_channel_conn_request_1[] = {
         0x05, 0x20, 0x12, 0x00, 0x0e, 0x00, 0x05, 0x00, 0x14, 0x01, 0x0a, 0x00, 0x01, 0x10, 0x41, 0x00,
@@ -156,7 +157,8 @@ TEST_GROUP(L2CAP_CHANNELS){
         hci_transport = mock_hci_transport_mock_get_instance();
         hci_init(hci_transport, NULL);
         l2cap_init();
-        l2cap_register_packet_handler(&l2cap_channel_packet_handler);
+        l2cap_event_callback_registration.callback = &l2cap_channel_packet_handler;
+        l2cap_add_event_handler(&l2cap_event_callback_registration);
         l2cap_register_fixed_channel(&l2cap_channel_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
         hci_dump_init(hci_dump_posix_stdout_get_instance());
         l2cap_channel_opened = false;
