@@ -1142,10 +1142,12 @@ bool hci_non_flushable_packet_boundary_flag_supported(void){
     return (hci_stack->local_supported_features[6u] & (1u << 6u)) != 0u;
 }
 
+#ifdef ENABLE_CLASSIC
 static int gap_ssp_supported(void){
     // No. 51, byte 6, bit 3
     return (hci_stack->local_supported_features[6u] & (1u << 3u)) != 0u;
 }
+#endif
 
 static int hci_classic_supported(void){
 #ifdef ENABLE_CLASSIC    
