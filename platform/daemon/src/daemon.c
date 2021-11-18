@@ -226,6 +226,7 @@ static btstack_linked_list_t gatt_client_helpers = NULL;   // list of used gatt 
 static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t l2cap_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 static int global_enable = 0;
@@ -1971,7 +1972,8 @@ static void btstack_server_configure_stack(void){
 
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(&stack_packet_handler);
+    l2cap_event_callback_registration.callback = &stack_packet_handler;
+    l2cap_add_event_handler(&l2cap_event_callback_registration);
     timeout.process = daemon_no_connections_timeout;
 
 #ifdef ENABLE_RFCOMM
