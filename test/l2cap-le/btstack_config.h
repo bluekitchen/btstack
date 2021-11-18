@@ -11,7 +11,9 @@
 #define HAVE_POSIX_FILE_IO
 #define HAVE_POSIX_TIME
 
+
 // BTstack features that can be enabled
+#define ENABLE_CLASSIC
 #define ENABLE_BLE
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
@@ -20,6 +22,7 @@
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_DATA_CHANNELS
+#define ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
 
 // for ready-to-use hci channels
 #define FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION

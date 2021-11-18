@@ -68,7 +68,7 @@ void mock_hci_transport_receive_packet(uint8_t packet_type, const uint8_t * pack
 #include "btstack_event.h"
 
 #define TEST_PACKET_SIZE       100
-#define HCI_CON_HANDLE_TEST 0x0005
+#define HCI_CON_HANDLE_TEST_LE 0x0005
 #define TEST_PSM 0x1001
 
 static bool l2cap_channel_accept_incoming;
@@ -172,18 +172,19 @@ TEST_GROUP(L2CAP_CHANNELS){
 TEST(L2CAP_CHANNELS, fixed_channel){
     hci_setup_test_connections_fuzz();
     // channel does not exist
-    l2cap_request_can_send_fix_channel_now_event(HCI_CON_HANDLE_TEST, 0x003f);
+    l2cap_request_can_send_fix_channel_now_event(HCI_CON_HANDLE_TEST_LE, 0x003f);
     // att
-    l2cap_request_can_send_fix_channel_now_event(HCI_CON_HANDLE_TEST, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    l2cap_request_can_send_fix_channel_now_event(HCI_CON_HANDLE_TEST_LE, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     //
-    (void) l2cap_can_send_fixed_channel_packet_now(HCI_CON_HANDLE_TEST, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    (void) l2cap_can_send_fixed_channel_packet_now(HCI_CON_HANDLE_TEST_LE, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     // packet buffer not reserved
-    l2cap_send_prepared_connectionless(HCI_CON_HANDLE_TEST, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5);
+    log_info("ignore error in next line (calling .. without reserving buffer first");
+    l2cap_send_prepared_connectionless(HCI_CON_HANDLE_TEST_LE, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5);
     // packet buffer reserved
     l2cap_reserve_packet_buffer();
-    l2cap_send_prepared_connectionless(HCI_CON_HANDLE_TEST, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5);
+    l2cap_send_prepared_connectionless(HCI_CON_HANDLE_TEST_LE, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5);
     //
-    l2cap_send_connectionless(HCI_CON_HANDLE_TEST, L2CAP_CID_ATTRIBUTE_PROTOCOL, (uint8_t *) "hallo", 5);
+    l2cap_send_connectionless(HCI_CON_HANDLE_TEST_LE, L2CAP_CID_ATTRIBUTE_PROTOCOL, (uint8_t *) "hallo", 5);
 }
 
 TEST(L2CAP_CHANNELS, some_functions){
@@ -200,33 +201,32 @@ TEST(L2CAP_CHANNELS, some_functions){
 }
 
 TEST(L2CAP_CHANNELS, outgoing_no_connection){
-    l2cap_le_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST, TEST_PSM, data_channel_buffer,
+    l2cap_le_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM, data_channel_buffer,
                             sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &l2cap_cid);
 }
 
 TEST(L2CAP_CHANNELS, outgoing_security_1){
     hci_setup_test_connections_fuzz();
-    l2cap_le_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST, TEST_PSM, data_channel_buffer,
+    l2cap_le_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM, data_channel_buffer,
                             sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_2, NULL);
-    l2cap_le_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST, TEST_PSM, data_channel_buffer,
+    l2cap_le_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM, data_channel_buffer,
                             sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_2, &l2cap_cid);
 }
 
 TEST(L2CAP_CHANNELS, outgoing_1){
     hci_setup_test_connections_fuzz();
-    l2cap_le_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST, TEST_PSM, data_channel_buffer,
+    l2cap_le_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM, data_channel_buffer,
                             sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &l2cap_cid);
     // fix_boundary_flags(mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);
     // print_acl("le_data_channel_conn_request_1", mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);
     // simulate conn response
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, le_data_channel_conn_response_1, sizeof(le_data_channel_conn_response_1));
     CHECK(l2cap_channel_opened);
-    CHECK(hci_number_free_acl_slots_for_handle(HCI_CON_HANDLE_TEST) > 0);
+    CHECK(hci_number_free_acl_slots_for_handle(HCI_CON_HANDLE_TEST_LE) > 0);
     bool can_send_now = l2cap_le_can_send_now(l2cap_cid);
     CHECK(can_send_now);
-    l2cap_le_provide_credits(l2cap_cid, 1);
     l2cap_le_request_can_send_now_event(l2cap_cid);
-    CHECK(hci_number_free_acl_slots_for_handle(HCI_CON_HANDLE_TEST) > 0);
+    CHECK(hci_number_free_acl_slots_for_handle(HCI_CON_HANDLE_TEST_LE) > 0);
     l2cap_le_send_data(l2cap_cid, (uint8_t *) "hallo", 5);
     // CHECK(hci_number_free_acl_slots_for_handle(HCI_CON_HANDLE_TEST) > 0);
     // fix_boundary_flags(mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);

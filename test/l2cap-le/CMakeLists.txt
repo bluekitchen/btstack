@@ -15,11 +15,6 @@ include_directories(../../platform/embedded)
 include_directories(../../platform/posix)
 include_directories( ${CMAKE_CURRENT_BINARY_DIR})
 
-add_compile_options(--coverage)
-add_link_options(   --coverage)
-add_definitions(    -DCOVERAGE)
-add_definitions(    -DHAVE_ASSERT)
-
 # common files
 set(SOURCES
 		../../src/btstack_linked_list.c
