@@ -608,6 +608,13 @@ uint8_t l2cap_ertm_create_channel(btstack_packet_handler_t packet_handler, bd_ad
 uint8_t l2cap_ertm_accept_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size);
 
 /**
+ * @brief Deny incoming incoming L2CAP connection for Enhanced Retransmission Mode
+ * @param local_cid
+ * @return status
+ */
+uint8_t l2cap_ertm_decline_connection(uint16_t local_cid);
+
+/**
  * @brief ERTM Set channel as busy.
  * @note Can be cleared by l2cap_ertm_set_ready
  * @param local_cid

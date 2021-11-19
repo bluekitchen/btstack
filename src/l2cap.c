@@ -721,6 +721,11 @@ uint8_t l2cap_ertm_accept_connection(uint16_t local_cid, l2cap_ertm_config_t * e
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t l2cap_ertm_decline_connection(uint16_t local_cid){
+    l2cap_decline_connection(local_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t l2cap_ertm_set_busy(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
     if (!channel) {
