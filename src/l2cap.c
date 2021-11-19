@@ -5504,11 +5504,10 @@ uint8_t l2cap_ecbm_provide_credits(uint16_t local_cid, uint16_t credits){
 uint8_t l2cap_ecbm_disconnect(uint16_t local_cid){
     return l2cap_credit_based_disconnect(local_cid);
 }
-
 #endif
 
-
-// deprecation wrappers - please update
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+// @deprecated - please use l2cap_ertm_create_channel
 uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm,
                                   l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid){
     log_error("deprecated - please use l2cap_ertm_create_channel");
@@ -5520,7 +5519,9 @@ uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * e
     log_error("deprecated - please use l2cap_ertm_accept_connection");
     return l2cap_ertm_accept_connection(local_cid, ertm_contig, buffer, size);
 }
+#endif
 
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 // @deprecated - please use l2cap_cbm_register_service
 uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level){
     log_error("deprecated - please use l2cap_cbm_register_service");
@@ -5582,3 +5583,4 @@ uint8_t l2cap_le_disconnect(uint16_t local_cid){
     log_error("deprecated - please use l2cap_cbm_disconnect");
     return l2cap_cbm_disconnect(local_cid);
 }
+#endif
