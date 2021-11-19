@@ -699,7 +699,7 @@ uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits);
 bool l2cap_cbm_can_send_now(uint16_t local_cid);
 
 /**
- * @brief Request emission of L2CAP_EVENT_LE_CAN_SEND_NOW as soon as possible
+ * @brief Request emission of L2CAP_EVENT_CBM_CAN_SEND_NOW as soon as possible
  * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
  * @param local_cid             L2CAP Channel Identifier
@@ -805,8 +805,8 @@ uint8_t l2cap_ecbm_decline_channels(uint16_t local_cid, uint16_t result);
 uint8_t l2cap_ecbm_provide_credits(uint16_t local_cid, uint16_t credits);
 
 /**
- * @brief Request emission of L2CAP_EVENT_DATA_CHANNEL_CAN_SEND_NOW as soon as possible
- * @note L2CAP_EVENT_DATA_CHANNEL_CAN_SEND_NOW might be emitted during call to this function
+ * @brief Request emission of L2CAP_EVENT_ECBM_CAN_SEND_NOW as soon as possible
+ * @note L2CAP_EVENT_ECBM_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
  * @param local_cid             L2CAP Channel Identifier
  * @return status

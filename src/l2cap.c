@@ -1991,7 +1991,7 @@ static void l2cap_ecbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t sta
             status, channel->address_type, bd_addr_to_str(channel->address), channel->con_handle, channel->psm,
             channel->local_cid, channel->remote_cid, channel->local_mtu, channel->remote_mtu);
     uint8_t event[23];
-    event[0] = L2CAP_EVENT_DATA_CHANNEL_OPENED;
+    event[0] = L2CAP_EVENT_ECBM_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2u;
     event[2] = status;
     event[3] = channel->address_type;
@@ -2010,7 +2010,7 @@ static void l2cap_ecbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t sta
 static void l2cap_ecbm_emit_reconfigure_complete(l2cap_channel_t *channel, uint16_t result) {
     // emit event
     uint8_t event[6];
-    event[0] = L2CAP_EVENT_DATA_CHANNEL_RECONFIGURATION_COMPLETE;
+    event[0] = L2CAP_EVENT_ECBM_RECONFIGURATION_COMPLETE;
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->local_cid);
     little_endian_store_16(event, 4, result);
@@ -2824,7 +2824,7 @@ static void l2cap_handle_disconnection_complete(hci_con_handle_t handle){
                         l2cap_ecbm_emit_reconfigure_complete(channel, 0xffff);
                         break;
                     default:
-                        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_DATA_CHANNEL_CLOSED);
+                        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ECBM_CHANNEL_OPENED);
                         break;
                 }
                 l2cap_free_channel_entry(channel);
@@ -3811,7 +3811,7 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
 
                 // emit incoming data connection event
                 uint8_t event[16];
-                event[0] = L2CAP_EVENT_DATA_CHANNEL_INCOMING;
+                event[0] = L2CAP_EVENT_ECBM_INCOMING_CONNECTION;
                 event[1] = sizeof(event) - 2;
                 event[2] = connection->address_type;
                 reverse_bd_addr(connection->address, &event[3]);
@@ -3929,7 +3929,7 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                 channel->remote_mtu = new_mtu;
                 // emit event
                 uint8_t event[8];
-                event[0] = L2CAP_EVENT_DATA_CHANNEL_RECONFIGURED;
+                event[0] = L2CAP_EVENT_ECBM_RECONFIGURED;
                 event[1] = sizeof(event) - 2;
                 little_endian_store_16(event, 2, channel->local_cid);
                 little_endian_store_16(event, 4, new_mtu);
@@ -4767,7 +4767,7 @@ static void l2cap_credit_based_send_pdu(l2cap_channel_t *channel) {
 
     if (done) {
         // send done event
-        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_LE_PACKET_SENT);
+        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CBM_PACKET_SENT);
         // inform about can send now
         l2cap_cbm_notify_channel_can_send(channel);
     }
@@ -4928,7 +4928,7 @@ static void l2cap_cbm_notify_channel_can_send(l2cap_channel_t *channel){
     if (channel->send_sdu_buffer) return;
     channel->waiting_for_can_send_now = 0;
     log_debug("le can send now, local_cid 0x%x", channel->local_cid);
-    l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_LE_CAN_SEND_NOW);
+    l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CBM_CAN_SEND_NOW);
 }
 
 // 1BH2222
@@ -4936,7 +4936,7 @@ static void l2cap_cbm_emit_incoming_connection(l2cap_channel_t *channel) {
     log_info("le incoming addr_type %u, addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x, remote_mtu %u",
              channel->address_type, bd_addr_to_str(channel->address), channel->con_handle,  channel->psm, channel->local_cid, channel->remote_cid, channel->remote_mtu);
     uint8_t event[19];
-    event[0] = L2CAP_EVENT_LE_INCOMING_CONNECTION;
+    event[0] = L2CAP_EVENT_CBM_INCOMING_CONNECTION;
     event[1] = sizeof(event) - 2u;
     event[2] = channel->address_type;
     reverse_bd_addr(channel->address, &event[3]);
@@ -4954,7 +4954,7 @@ static void l2cap_cbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t stat
              status, channel->address_type, bd_addr_to_str(channel->address), channel->con_handle, channel->psm,
              channel->local_cid, channel->remote_cid, channel->local_mtu, channel->remote_mtu);
     uint8_t event[23];
-    event[0] = L2CAP_EVENT_LE_CHANNEL_OPENED;
+    event[0] = L2CAP_EVENT_CBM_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2u;
     event[2] = status;
     event[3] = channel->address_type;
@@ -4973,7 +4973,7 @@ static void l2cap_cbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t stat
 static void l2cap_cbm_emit_channel_closed(l2cap_channel_t * channel){
     log_info("closed local_cid 0x%x", channel->local_cid);
     uint8_t event[4];
-    event[0] = L2CAP_EVENT_LE_CHANNEL_CLOSED;
+    event[0] = L2CAP_EVENT_CBM_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2u;
     little_endian_store_16(event, 2, channel->local_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));

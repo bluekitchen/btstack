@@ -271,7 +271,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                 // LE Data Channels
 
-                case L2CAP_EVENT_LE_INCOMING_CONNECTION: 
+                case L2CAP_EVENT_CBM_INCOMING_CONNECTION: 
                     psm = l2cap_event_le_incoming_connection_get_psm(packet);
                     cid = l2cap_event_le_incoming_connection_get_local_cid(packet);
                     if (psm != TSPX_le_psm) break;
@@ -279,7 +279,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     l2cap_cbm_accept_connection(cid, data_channel_buffer, sizeof(data_channel_buffer), initial_credits);
                     break;
 
-                case L2CAP_EVENT_LE_CHANNEL_OPENED:
+                case L2CAP_EVENT_CBM_CHANNEL_OPENED:
                     // inform about new l2cap connection
                     l2cap_event_le_channel_opened_get_address(packet, event_address);
                     psm = l2cap_event_le_channel_opened_get_psm(packet); 
@@ -304,13 +304,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;
 
-                case L2CAP_EVENT_LE_CHANNEL_CLOSED:
+                case L2CAP_EVENT_CBM_CHANNEL_CLOSED:
                     printf("L2CAP: LE Data Channel closed\n"); 
                     le_data_channel_connection.cid = 0;
                     break;
 
 #ifdef TEST_STREAM_DATA
-                case L2CAP_EVENT_LE_CAN_SEND_NOW:
+                case L2CAP_EVENT_CBM_CAN_SEND_NOW:
                     streamer();
                     break;
 #endif

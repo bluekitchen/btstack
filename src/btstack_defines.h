@@ -848,7 +848,7 @@ typedef uint8_t sm_key_t[16];
  */
 #define L2CAP_EVENT_CAN_SEND_NOW                           0x78
 
-// LE Data Channels
+// L2CAP Channel in LE Credit-based Flow-Control Mode (CBM)
 
 /**
  * @format 1BH2222
@@ -860,7 +860,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_cid
  * @param remote_mtu
  */
-#define L2CAP_EVENT_LE_INCOMING_CONNECTION                 0x79
+#define L2CAP_EVENT_CBM_INCOMING_CONNECTION                 0x79
 
 /**
  * @format 11BH122222
@@ -875,25 +875,25 @@ typedef uint8_t sm_key_t[16];
  * @param local_mtu
  * @param remote_mtu
  */
-#define L2CAP_EVENT_LE_CHANNEL_OPENED                      0x7a
+#define L2CAP_EVENT_CBM_CHANNEL_OPENED                      0x7a
 
 /*
  * @format 2
  * @param local_cid
  */
-#define L2CAP_EVENT_LE_CHANNEL_CLOSED                      0x7b
+#define L2CAP_EVENT_CBM_CHANNEL_CLOSED                      0x7b
 
 /*
  * @format 2
  * @param local_cid
  */
-#define L2CAP_EVENT_LE_CAN_SEND_NOW                        0x7c
+#define L2CAP_EVENT_CBM_CAN_SEND_NOW                        0x7c
 
 /*
  * @format 2
  * @param local_cid
  */
-#define L2CAP_EVENT_LE_PACKET_SENT                         0x7d
+#define L2CAP_EVENT_CBM_PACKET_SENT                         0x7d
 
 /*
  * @format 2
@@ -915,7 +915,7 @@ typedef uint8_t sm_key_t[16];
  * @param num_channels
  * @param local_cid first new cid
  */
-#define L2CAP_EVENT_DATA_CHANNEL_INCOMING               0x8A
+#define L2CAP_EVENT_ECBM_INCOMING_CONNECTION               0x8A
 
 /**
  * @format 11BH122222
@@ -930,25 +930,25 @@ typedef uint8_t sm_key_t[16];
  * @param local_mtu
  * @param remote_mtu
  */
-#define L2CAP_EVENT_DATA_CHANNEL_OPENED                      0x8b
+#define L2CAP_EVENT_ECBM_CHANNEL_OPENED                      0x8b
 
 /*
  * @format 2
  * @param local_cid
  */
-#define L2CAP_EVENT_DATA_CHANNEL_CLOSED                      0x8c
+#define L2CAP_EVENT_ECBM_CHANNEL_CLOSED                      0x8c
 
 /*
  * @format 2
  * @param local_cid
  */
-#define L2CAP_EVENT_DATA_CHANNEL_CAN_SEND_NOW                0x8d
+#define L2CAP_EVENT_ECBM_CAN_SEND_NOW                0x8d
 
 /*
  * @format 2
  * @param local_cid
  */
-#define L2CAP_EVENT_DATA_CHANNEL_PACKET_SENT                 0x8e
+#define L2CAP_EVENT_ECBM_PACKET_SENT                 0x8e
 
 /*
  * @format 222
@@ -956,14 +956,14 @@ typedef uint8_t sm_key_t[16];
  * @param mtu
  * @param mps
  */
-#define L2CAP_EVENT_DATA_CHANNEL_RECONFIGURED                0x8f
+#define L2CAP_EVENT_ECBM_RECONFIGURED                0x8f
 
 /*
  * @format 22
  * @param local_cid
  * @param reconfigure_result
  */
-#define L2CAP_EVENT_DATA_CHANNEL_RECONFIGURATION_COMPLETE    0x96
+#define L2CAP_EVENT_ECBM_RECONFIGURATION_COMPLETE    0x96
 
 /*
  * @format H22

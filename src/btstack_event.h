@@ -1424,7 +1424,7 @@ static inline uint16_t l2cap_event_can_send_now_get_local_cid(const uint8_t * ev
 }
 
 /**
- * @brief Get field address_type from event L2CAP_EVENT_LE_INCOMING_CONNECTION
+ * @brief Get field address_type from event L2CAP_EVENT_CBM_INCOMING_CONNECTION
  * @param event packet
  * @return address_type
  * @note: btstack_type 1
@@ -1433,7 +1433,7 @@ static inline uint8_t l2cap_event_le_incoming_connection_get_address_type(const 
     return event[2];
 }
 /**
- * @brief Get field address from event L2CAP_EVENT_LE_INCOMING_CONNECTION
+ * @brief Get field address from event L2CAP_EVENT_CBM_INCOMING_CONNECTION
  * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
@@ -1442,7 +1442,7 @@ static inline void l2cap_event_le_incoming_connection_get_address(const uint8_t 
     reverse_bytes(&event[3], address, 6);
 }
 /**
- * @brief Get field handle from event L2CAP_EVENT_LE_INCOMING_CONNECTION
+ * @brief Get field handle from event L2CAP_EVENT_CBM_INCOMING_CONNECTION
  * @param event packet
  * @return handle
  * @note: btstack_type H
@@ -1451,7 +1451,7 @@ static inline hci_con_handle_t l2cap_event_le_incoming_connection_get_handle(con
     return little_endian_read_16(event, 9);
 }
 /**
- * @brief Get field psm from event L2CAP_EVENT_LE_INCOMING_CONNECTION
+ * @brief Get field psm from event L2CAP_EVENT_CBM_INCOMING_CONNECTION
  * @param event packet
  * @return psm
  * @note: btstack_type 2
@@ -1460,7 +1460,7 @@ static inline uint16_t l2cap_event_le_incoming_connection_get_psm(const uint8_t 
     return little_endian_read_16(event, 11);
 }
 /**
- * @brief Get field local_cid from event L2CAP_EVENT_LE_INCOMING_CONNECTION
+ * @brief Get field local_cid from event L2CAP_EVENT_CBM_INCOMING_CONNECTION
  * @param event packet
  * @return local_cid
  * @note: btstack_type 2
@@ -1469,7 +1469,7 @@ static inline uint16_t l2cap_event_le_incoming_connection_get_local_cid(const ui
     return little_endian_read_16(event, 13);
 }
 /**
- * @brief Get field remote_cid from event L2CAP_EVENT_LE_INCOMING_CONNECTION
+ * @brief Get field remote_cid from event L2CAP_EVENT_CBM_INCOMING_CONNECTION
  * @param event packet
  * @return remote_cid
  * @note: btstack_type 2
@@ -1478,7 +1478,7 @@ static inline uint16_t l2cap_event_le_incoming_connection_get_remote_cid(const u
     return little_endian_read_16(event, 15);
 }
 /**
- * @brief Get field remote_mtu from event L2CAP_EVENT_LE_INCOMING_CONNECTION
+ * @brief Get field remote_mtu from event L2CAP_EVENT_CBM_INCOMING_CONNECTION
  * @param event packet
  * @return remote_mtu
  * @note: btstack_type 2
@@ -1488,7 +1488,7 @@ static inline uint16_t l2cap_event_le_incoming_connection_get_remote_mtu(const u
 }
 
 /**
- * @brief Get field status from event L2CAP_EVENT_LE_CHANNEL_OPENED
+ * @brief Get field status from event L2CAP_EVENT_CBM_CHANNEL_OPENED
  * @param event packet
  * @return status
  * @note: btstack_type 1
@@ -1497,7 +1497,7 @@ static inline uint8_t l2cap_event_le_channel_opened_get_status(const uint8_t * e
     return event[2];
 }
 /**
- * @brief Get field address_type from event L2CAP_EVENT_LE_CHANNEL_OPENED
+ * @brief Get field address_type from event L2CAP_EVENT_CBM_CHANNEL_OPENED
  * @param event packet
  * @return address_type
  * @note: btstack_type 1
@@ -1506,7 +1506,7 @@ static inline uint8_t l2cap_event_le_channel_opened_get_address_type(const uint8
     return event[3];
 }
 /**
- * @brief Get field address from event L2CAP_EVENT_LE_CHANNEL_OPENED
+ * @brief Get field address from event L2CAP_EVENT_CBM_CHANNEL_OPENED
  * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
@@ -1515,7 +1515,7 @@ static inline void l2cap_event_le_channel_opened_get_address(const uint8_t * eve
     reverse_bytes(&event[4], address, 6);
 }
 /**
- * @brief Get field handle from event L2CAP_EVENT_LE_CHANNEL_OPENED
+ * @brief Get field handle from event L2CAP_EVENT_CBM_CHANNEL_OPENED
  * @param event packet
  * @return handle
  * @note: btstack_type H
@@ -1524,7 +1524,7 @@ static inline hci_con_handle_t l2cap_event_le_channel_opened_get_handle(const ui
     return little_endian_read_16(event, 10);
 }
 /**
- * @brief Get field incoming from event L2CAP_EVENT_LE_CHANNEL_OPENED
+ * @brief Get field incoming from event L2CAP_EVENT_CBM_CHANNEL_OPENED
  * @param event packet
  * @return incoming
  * @note: btstack_type 1
@@ -1533,7 +1533,7 @@ static inline uint8_t l2cap_event_le_channel_opened_get_incoming(const uint8_t *
     return event[12];
 }
 /**
- * @brief Get field psm from event L2CAP_EVENT_LE_CHANNEL_OPENED
+ * @brief Get field psm from event L2CAP_EVENT_CBM_CHANNEL_OPENED
  * @param event packet
  * @return psm
  * @note: btstack_type 2
@@ -1542,7 +1542,7 @@ static inline uint16_t l2cap_event_le_channel_opened_get_psm(const uint8_t * eve
     return little_endian_read_16(event, 13);
 }
 /**
- * @brief Get field local_cid from event L2CAP_EVENT_LE_CHANNEL_OPENED
+ * @brief Get field local_cid from event L2CAP_EVENT_CBM_CHANNEL_OPENED
  * @param event packet
  * @return local_cid
  * @note: btstack_type 2
@@ -1551,7 +1551,7 @@ static inline uint16_t l2cap_event_le_channel_opened_get_local_cid(const uint8_t
     return little_endian_read_16(event, 15);
 }
 /**
- * @brief Get field remote_cid from event L2CAP_EVENT_LE_CHANNEL_OPENED
+ * @brief Get field remote_cid from event L2CAP_EVENT_CBM_CHANNEL_OPENED
  * @param event packet
  * @return remote_cid
  * @note: btstack_type 2
@@ -1560,7 +1560,7 @@ static inline uint16_t l2cap_event_le_channel_opened_get_remote_cid(const uint8_
     return little_endian_read_16(event, 17);
 }
 /**
- * @brief Get field local_mtu from event L2CAP_EVENT_LE_CHANNEL_OPENED
+ * @brief Get field local_mtu from event L2CAP_EVENT_CBM_CHANNEL_OPENED
  * @param event packet
  * @return local_mtu
  * @note: btstack_type 2
@@ -1569,7 +1569,7 @@ static inline uint16_t l2cap_event_le_channel_opened_get_local_mtu(const uint8_t
     return little_endian_read_16(event, 19);
 }
 /**
- * @brief Get field remote_mtu from event L2CAP_EVENT_LE_CHANNEL_OPENED
+ * @brief Get field remote_mtu from event L2CAP_EVENT_CBM_CHANNEL_OPENED
  * @param event packet
  * @return remote_mtu
  * @note: btstack_type 2
@@ -1579,7 +1579,7 @@ static inline uint16_t l2cap_event_le_channel_opened_get_remote_mtu(const uint8_
 }
 
 /**
- * @brief Get field local_cid from event L2CAP_EVENT_LE_CHANNEL_CLOSED
+ * @brief Get field local_cid from event L2CAP_EVENT_CBM_CHANNEL_CLOSED
  * @param event packet
  * @return local_cid
  * @note: btstack_type 2
@@ -1589,7 +1589,7 @@ static inline uint16_t l2cap_event_le_channel_closed_get_local_cid(const uint8_t
 }
 
 /**
- * @brief Get field local_cid from event L2CAP_EVENT_LE_CAN_SEND_NOW
+ * @brief Get field local_cid from event L2CAP_EVENT_CBM_CAN_SEND_NOW
  * @param event packet
  * @return local_cid
  * @note: btstack_type 2
@@ -1599,7 +1599,7 @@ static inline uint16_t l2cap_event_le_can_send_now_get_local_cid(const uint8_t *
 }
 
 /**
- * @brief Get field local_cid from event L2CAP_EVENT_LE_PACKET_SENT
+ * @brief Get field local_cid from event L2CAP_EVENT_CBM_PACKET_SENT
  * @param event packet
  * @return local_cid
  * @note: btstack_type 2
@@ -1620,7 +1620,7 @@ static inline uint16_t l2cap_event_ertm_buffer_released_get_local_cid(const uint
 
 
 /**
- * @brief Get field address_type from event L2CAP_EVENT_DATA_CHANNEL_INCOMING
+ * @brief Get field address_type from event L2CAP_EVENT_ECBM_INCOMING_CONNECTION
  * @param event packet
  * @return address_type
  * @note: btstack_type 1
@@ -1629,7 +1629,7 @@ static inline uint8_t l2cap_event_data_channel_incoming_get_address_type(const u
     return event[2];
 }
 /**
- * @brief Get field address from event L2CAP_EVENT_DATA_CHANNEL_INCOMING
+ * @brief Get field address from event L2CAP_EVENT_ECBM_INCOMING_CONNECTION
  * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
@@ -1638,7 +1638,7 @@ static inline void l2cap_event_data_channel_incoming_get_address(const uint8_t *
     reverse_bytes(&event[3], address, 6);
 }
 /**
- * @brief Get field handle from event L2CAP_EVENT_DATA_CHANNEL_INCOMING
+ * @brief Get field handle from event L2CAP_EVENT_ECBM_INCOMING_CONNECTION
  * @param event packet
  * @return handle
  * @note: btstack_type H
@@ -1647,7 +1647,7 @@ static inline hci_con_handle_t l2cap_event_data_channel_incoming_get_handle(cons
     return little_endian_read_16(event, 9);
 }
 /**
- * @brief Get field psm from event L2CAP_EVENT_DATA_CHANNEL_INCOMING
+ * @brief Get field psm from event L2CAP_EVENT_ECBM_INCOMING_CONNECTION
  * @param event packet
  * @return psm
  * @note: btstack_type 2
@@ -1656,7 +1656,7 @@ static inline uint16_t l2cap_event_data_channel_incoming_get_psm(const uint8_t *
     return little_endian_read_16(event, 11);
 }
 /**
- * @brief Get field num_channels from event L2CAP_EVENT_DATA_CHANNEL_INCOMING
+ * @brief Get field num_channels from event L2CAP_EVENT_ECBM_INCOMING_CONNECTION
  * @param event packet
  * @return num_channels
  * @note: btstack_type 1
@@ -1665,7 +1665,7 @@ static inline uint8_t l2cap_event_data_channel_incoming_get_num_channels(const u
     return event[13];
 }
 /**
- * @brief Get field local_cid from event L2CAP_EVENT_DATA_CHANNEL_INCOMING
+ * @brief Get field local_cid from event L2CAP_EVENT_ECBM_INCOMING_CONNECTION
  * @param event packet
  * @return local_cid
  * @note: btstack_type 2
@@ -1675,7 +1675,7 @@ static inline uint16_t l2cap_event_data_channel_incoming_get_local_cid(const uin
 }
 
 /**
- * @brief Get field status from event L2CAP_EVENT_DATA_CHANNEL_OPENED
+ * @brief Get field status from event L2CAP_EVENT_ECBM_CHANNEL_OPENED
  * @param event packet
  * @return status
  * @note: btstack_type 1
@@ -1684,7 +1684,7 @@ static inline uint8_t l2cap_event_data_channel_opened_get_status(const uint8_t *
     return event[2];
 }
 /**
- * @brief Get field address_type from event L2CAP_EVENT_DATA_CHANNEL_OPENED
+ * @brief Get field address_type from event L2CAP_EVENT_ECBM_CHANNEL_OPENED
  * @param event packet
  * @return address_type
  * @note: btstack_type 1
@@ -1693,7 +1693,7 @@ static inline uint8_t l2cap_event_data_channel_opened_get_address_type(const uin
     return event[3];
 }
 /**
- * @brief Get field address from event L2CAP_EVENT_DATA_CHANNEL_OPENED
+ * @brief Get field address from event L2CAP_EVENT_ECBM_CHANNEL_OPENED
  * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
@@ -1702,7 +1702,7 @@ static inline void l2cap_event_data_channel_opened_get_address(const uint8_t * e
     reverse_bytes(&event[4], address, 6);
 }
 /**
- * @brief Get field handle from event L2CAP_EVENT_DATA_CHANNEL_OPENED
+ * @brief Get field handle from event L2CAP_EVENT_ECBM_CHANNEL_OPENED
  * @param event packet
  * @return handle
  * @note: btstack_type H
@@ -1711,7 +1711,7 @@ static inline hci_con_handle_t l2cap_event_data_channel_opened_get_handle(const 
     return little_endian_read_16(event, 10);
 }
 /**
- * @brief Get field incoming from event L2CAP_EVENT_DATA_CHANNEL_OPENED
+ * @brief Get field incoming from event L2CAP_EVENT_ECBM_CHANNEL_OPENED
  * @param event packet
  * @return incoming
  * @note: btstack_type 1
@@ -1720,7 +1720,7 @@ static inline uint8_t l2cap_event_data_channel_opened_get_incoming(const uint8_t
     return event[12];
 }
 /**
- * @brief Get field psm from event L2CAP_EVENT_DATA_CHANNEL_OPENED
+ * @brief Get field psm from event L2CAP_EVENT_ECBM_CHANNEL_OPENED
  * @param event packet
  * @return psm
  * @note: btstack_type 2
@@ -1729,7 +1729,7 @@ static inline uint16_t l2cap_event_data_channel_opened_get_psm(const uint8_t * e
     return little_endian_read_16(event, 13);
 }
 /**
- * @brief Get field local_cid from event L2CAP_EVENT_DATA_CHANNEL_OPENED
+ * @brief Get field local_cid from event L2CAP_EVENT_ECBM_CHANNEL_OPENED
  * @param event packet
  * @return local_cid
  * @note: btstack_type 2
@@ -1738,7 +1738,7 @@ static inline uint16_t l2cap_event_data_channel_opened_get_local_cid(const uint8
     return little_endian_read_16(event, 15);
 }
 /**
- * @brief Get field remote_cid from event L2CAP_EVENT_DATA_CHANNEL_OPENED
+ * @brief Get field remote_cid from event L2CAP_EVENT_ECBM_CHANNEL_OPENED
  * @param event packet
  * @return remote_cid
  * @note: btstack_type 2
@@ -1747,7 +1747,7 @@ static inline uint16_t l2cap_event_data_channel_opened_get_remote_cid(const uint
     return little_endian_read_16(event, 17);
 }
 /**
- * @brief Get field local_mtu from event L2CAP_EVENT_DATA_CHANNEL_OPENED
+ * @brief Get field local_mtu from event L2CAP_EVENT_ECBM_CHANNEL_OPENED
  * @param event packet
  * @return local_mtu
  * @note: btstack_type 2
@@ -1756,7 +1756,7 @@ static inline uint16_t l2cap_event_data_channel_opened_get_local_mtu(const uint8
     return little_endian_read_16(event, 19);
 }
 /**
- * @brief Get field remote_mtu from event L2CAP_EVENT_DATA_CHANNEL_OPENED
+ * @brief Get field remote_mtu from event L2CAP_EVENT_ECBM_CHANNEL_OPENED
  * @param event packet
  * @return remote_mtu
  * @note: btstack_type 2
@@ -1766,7 +1766,7 @@ static inline uint16_t l2cap_event_data_channel_opened_get_remote_mtu(const uint
 }
 
 /**
- * @brief Get field local_cid from event L2CAP_EVENT_DATA_CHANNEL_CLOSED
+ * @brief Get field local_cid from event L2CAP_EVENT_ECBM_CHANNEL_OPENED
  * @param event packet
  * @return local_cid
  * @note: btstack_type 2
@@ -1776,7 +1776,7 @@ static inline uint16_t l2cap_event_data_channel_closed_get_local_cid(const uint8
 }
 
 /**
- * @brief Get field local_cid from event L2CAP_EVENT_DATA_CHANNEL_CAN_SEND_NOW
+ * @brief Get field local_cid from event L2CAP_EVENT_ECBM_CAN_SEND_NOW
  * @param event packet
  * @return local_cid
  * @note: btstack_type 2
@@ -1786,7 +1786,7 @@ static inline uint16_t l2cap_event_data_channel_can_send_now_get_local_cid(const
 }
 
 /**
- * @brief Get field local_cid from event L2CAP_EVENT_DATA_CHANNEL_PACKET_SENT
+ * @brief Get field local_cid from event L2CAP_EVENT_ECBM_PACKET_SENT
  * @param event packet
  * @return local_cid
  * @note: btstack_type 2
@@ -1796,7 +1796,7 @@ static inline uint16_t l2cap_event_data_channel_packet_sent_get_local_cid(const 
 }
 
 /**
- * @brief Get field remote_cid from event L2CAP_EVENT_DATA_CHANNEL_RECONFIGURED
+ * @brief Get field remote_cid from event L2CAP_EVENT_ECBM_RECONFIGURED
  * @param event packet
  * @return remote_cid
  * @note: btstack_type 2
@@ -1805,7 +1805,7 @@ static inline uint16_t l2cap_event_data_channel_reconfigured_get_remote_cid(cons
     return little_endian_read_16(event, 2);
 }
 /**
- * @brief Get field mtu from event L2CAP_EVENT_DATA_CHANNEL_RECONFIGURED
+ * @brief Get field mtu from event L2CAP_EVENT_ECBM_RECONFIGURED
  * @param event packet
  * @return mtu
  * @note: btstack_type 2
@@ -1814,7 +1814,7 @@ static inline uint16_t l2cap_event_data_channel_reconfigured_get_mtu(const uint8
     return little_endian_read_16(event, 4);
 }
 /**
- * @brief Get field mps from event L2CAP_EVENT_DATA_CHANNEL_RECONFIGURED
+ * @brief Get field mps from event L2CAP_EVENT_ECBM_RECONFIGURED
  * @param event packet
  * @return mps
  * @note: btstack_type 2
@@ -1824,7 +1824,7 @@ static inline uint16_t l2cap_event_data_channel_reconfigured_get_mps(const uint8
 }
 
 /**
- * @brief Get field local_cid from event L2CAP_EVENT_DATA_CHANNEL_RECONFIGURATION_COMPLETE
+ * @brief Get field local_cid from event L2CAP_EVENT_ECBM_RECONFIGURATION_COMPLETE
  * @param event packet
  * @return local_cid
  * @note: btstack_type 2
@@ -1833,7 +1833,7 @@ static inline uint16_t l2cap_event_data_channel_reconfiguration_complete_get_loc
     return little_endian_read_16(event, 2);
 }
 /**
- * @brief Get field reconfigure_result from event L2CAP_EVENT_DATA_CHANNEL_RECONFIGURATION_COMPLETE
+ * @brief Get field reconfigure_result from event L2CAP_EVENT_ECBM_RECONFIGURATION_COMPLETE
  * @param event packet
  * @return reconfigure_result
  * @note: btstack_type 2
