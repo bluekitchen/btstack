@@ -484,7 +484,7 @@ typedef enum {
 // L2CAP Channels in Enhanced Credit-Based Flow-Control Mode
 
 // number of CIDs in single connection+reconfiguration request/response
-#define L2CAP_ENHANCED_DATA_CHANNEL_MAX_CID_ARRAY_SIZE        5
+#define L2CAP_ECBM_MAX_CID_ARRAY_SIZE        5
 
 // connection response result
 #define L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS                                    0x0000

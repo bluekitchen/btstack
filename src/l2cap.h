@@ -123,9 +123,9 @@ typedef enum {
 typedef enum {
     L2CAP_CHANNEL_TYPE_CLASSIC,         // Classic Basic or ERTM
     L2CAP_CHANNEL_TYPE_CONNECTIONLESS,  // Classic Connectionless
-    L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL, // LE
+    L2CAP_CHANNEL_TYPE_CHANNEL_CBM,     // LE
     L2CAP_CHANNEL_TYPE_FIXED,           // LE ATT + SM, Classic SM
-    L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL // Classic + LE
+    L2CAP_CHANNEL_TYPE_CHANNEL_ECBM     // Classic + LE
 } l2cap_channel_type_t;
 
 
@@ -251,7 +251,7 @@ typedef struct {
 
     uint8_t   unknown_option; // used for ConfigResponse
 
-    // LE Data Channels
+    // Credit-Based Flow-Control mode
 
     // incoming SDU
     uint8_t * receive_sdu_buffer;
@@ -410,7 +410,7 @@ typedef struct {
     // service id
     uint16_t  psm;
     
-    // max local mtu for basic mode, min remote mtu for enhanced data channels
+    // max local mtu for basic mode, min remote mtu for enhanced credit-based flow-control mode
     uint16_t mtu;
     
     // internal connection
@@ -763,7 +763,7 @@ void l2cap_ecbm_mps_set_max(uint16_t mps_max);
  * @param out_local_cids        Array of L2CAP Channel Identifiers is stored here on success
  * @return status
  */
-uint8_t l2cap_enhanced_create_channels(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle,
+uint8_t l2cap_ecbm_create_channels(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle,
                                        gap_security_level_t security_level,
                                        uint16_t psm, uint8_t num_channels, uint16_t initial_credits, uint16_t receive_buffer_size,
                                        uint8_t ** receive_buffers, uint16_t * out_local_cids);
@@ -778,7 +778,7 @@ uint8_t l2cap_enhanced_create_channels(btstack_packet_handler_t packet_handler, 
  * @param out_local_cids       Array of L2CAP Channel Identifiers is stored here on success
  * @return status
  */
-uint8_t l2cap_ecbm_accept_data_channels(uint16_t local_cid, uint8_t num_channels, uint16_t initial_credits,
+uint8_t l2cap_ecbm_accept_channels(uint16_t local_cid, uint8_t num_channels, uint16_t initial_credits,
                                             uint16_t receive_buffer_size, uint8_t ** receive_buffers, uint16_t * out_local_cids);
 /**
  * @brief Decline connection in Enhanced Credit-Based Flow-Control Mode
@@ -786,7 +786,7 @@ uint8_t l2cap_ecbm_accept_data_channels(uint16_t local_cid, uint8_t num_channels
  * @param result              0x0004 -  insufficient resources, 0x0006 - insufficient authorization
  * @return status
  */
-uint8_t l2cap_ecbm_decline_data_channels(uint16_t local_cid, uint16_t result);
+uint8_t l2cap_ecbm_decline_channels(uint16_t local_cid, uint16_t result);
 
 /**
  * @brief Provide credits for channel in Enhanced Credit-Based Flow-Control Mode
@@ -803,7 +803,7 @@ uint8_t l2cap_ecbm_provide_credits(uint16_t local_cid, uint16_t credits);
  * @param local_cid             L2CAP Channel Identifier
  * @return status
  */
-uint8_t l2cap_ecbm_data_channel_request_can_send_now_event(uint16_t local_cid);
+uint8_t l2cap_ecbm_request_can_send_now_event(uint16_t local_cid);
 
 /**
  * @brief Reconfigure MPS/MTU of local channels
@@ -813,7 +813,7 @@ uint8_t l2cap_ecbm_data_channel_request_can_send_now_event(uint16_t local_cid);
  * @param receive_buffers       Array of buffers used for reassembly of L2CAP Information Frames into service data unit (SDU) with given MTU
  * @return status
  */
-uint8_t l2cap_ecbm_reconfigure(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers);
+uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers);
 
 /**
  * @brief Send data for channel in Enhanced Credit-Based Flow-Control Mode

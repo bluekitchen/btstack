@@ -293,15 +293,15 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     cid = l2cap_event_data_channel_incoming_get_local_cid(packet);
                     if (enhanced_authorization_required){
                         enhanced_authorization_required = false;
-                        l2cap_ecbm_decline_data_channels(cid, 0x0006);
+                        l2cap_ecbm_decline_channels(cid, 0x0006);
                         break;
                     }
                     if (enhanced_insufficient_key_size){
                         enhanced_insufficient_key_size = false;
-                        l2cap_ecbm_decline_data_channels(cid, 0x0007);
+                        l2cap_ecbm_decline_channels(cid, 0x0007);
                         break;
                     }
-                    l2cap_ecbm_accept_data_channels(cid, 2, initial_credits, ENHANCED_MTU_INITIAL, receive_buffers_2, cids);
+                    l2cap_ecbm_accept_channels(cid, 2, initial_credits, ENHANCED_MTU_INITIAL, receive_buffers_2, cids);
                     break;
 
                 case L2CAP_EVENT_DATA_CHANNEL_RECONFIGURED:
@@ -419,13 +419,13 @@ static void stdin_process(char buffer){
         case 'd':
             if (handle_le != HCI_CON_HANDLE_INVALID){
                 printf("Connect to PSM 0x%02x - ECFC LE\n", TSPX_LE_PSM);
-                l2cap_enhanced_create_channels(&app_packet_handler, handle_le, LEVEL_0, TSPX_ENHANCED_PSM,
+                l2cap_ecbm_create_channels(&app_packet_handler, handle_le, LEVEL_0, TSPX_ENHANCED_PSM,
                                                2, L2CAP_LE_AUTOMATIC_CREDITS, ENHANCED_MTU_INITIAL, receive_buffers_2, cids);
                 break;
             }
             if (handle_classic != HCI_CON_HANDLE_INVALID){
                 printf("Connect to PSM 0x%02x - ECFC Classic\n", TSPX_LE_PSM);
-                l2cap_enhanced_create_channels(&app_packet_handler, handle_classic, LEVEL_0, TSPX_ENHANCED_PSM,
+                l2cap_ecbm_create_channels(&app_packet_handler, handle_classic, LEVEL_0, TSPX_ENHANCED_PSM,
                                                2, L2CAP_LE_AUTOMATIC_CREDITS, ENHANCED_MTU_INITIAL, receive_buffers_2, cids);
                 break;
             }
@@ -434,7 +434,7 @@ static void stdin_process(char buffer){
 
         case 'D':
             printf("Creating connection to %s 0x%02x - ECFC LE\n", bd_addr_to_str(pts_address), TSPX_PSM_UNSUPPORTED);
-            l2cap_enhanced_create_channels(&app_packet_handler, handle_le, LEVEL_0, TSPX_PSM_UNSUPPORTED,
+            l2cap_ecbm_create_channels(&app_packet_handler, handle_le, LEVEL_0, TSPX_PSM_UNSUPPORTED,
                                            2, L2CAP_LE_AUTOMATIC_CREDITS, ENHANCED_MTU_INITIAL, receive_buffers_2, cids);
             break;
 
@@ -475,7 +475,7 @@ static void stdin_process(char buffer){
         case 'r':
             printf("Reconfigure MTU = %u, MPS = %u\n", ENHANCED_MTU_RECONFIGURE, enhanced_reconfigure_mps[enhanced_reconfigure_index]);
             l2cap_ecbm_mps_set_max(enhanced_reconfigure_mps[enhanced_reconfigure_index++]);
-            l2cap_ecbm_reconfigure(1, &cid_enhanced, ENHANCED_MTU_RECONFIGURE, receive_buffers_2);
+            l2cap_ecbm_reconfigure_channels(1, &cid_enhanced, ENHANCED_MTU_RECONFIGURE, receive_buffers_2);
             if (enhanced_reconfigure_index == enhanced_reconfigure_choices){
                 enhanced_reconfigure_index = 0;
             }
@@ -485,7 +485,7 @@ static void stdin_process(char buffer){
             printf("Send L2CAP Data Short %s\n", data_short);
             todo_send_short = 1;
             if (enhanced_data_channel){
-                l2cap_ecbm_data_channel_request_can_send_now_event(cid_enhanced);
+                l2cap_ecbm_request_can_send_now_event(cid_enhanced);
             } else {
                 l2cap_cbm_request_can_send_now_event(cid_le);
             }
@@ -495,7 +495,7 @@ static void stdin_process(char buffer){
             printf("Send L2CAP Data Long %s\n", data_long);
             todo_send_long = 1;
             if (enhanced_data_channel){
-                l2cap_ecbm_data_channel_request_can_send_now_event(cid_enhanced);
+                l2cap_ecbm_request_can_send_now_event(cid_enhanced);
             } else {
                 l2cap_cbm_request_can_send_now_event(cid_le);
             }

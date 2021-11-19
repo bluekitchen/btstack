@@ -122,8 +122,8 @@ typedef enum {
 #define NR_PENDING_SIGNALING_RESPONSES 3
 
 // nr of credits provided to remote if credits fall below watermark
-#define L2CAP_LE_DATA_CHANNELS_AUTOMATIC_CREDITS_WATERMARK 5
-#define L2CAP_LE_DATA_CHANNELS_AUTOMATIC_CREDITS_INCREMENT 5
+#define L2CAP_CREDIT_BASED_FLOW_CONTROL_MODE_AUTOMATIC_CREDITS_WATERMARK 5
+#define L2CAP_CREDIT_BASED_FLOW_CONTROL_MODE_AUTOMATIC_CREDITS_INCREMENT 5
 
 // offsets for L2CAP SIGNALING COMMANDS
 #define L2CAP_SIGNALING_COMMAND_CODE_OFFSET   0
@@ -223,7 +223,7 @@ static uint16_t l2cap_enhanced_mps_min;
 static uint16_t l2cap_enhanced_mps_max;
 #endif
 
-// single list of channels for Classic Channels, LE Data Channels, Classic Connectionless, ATT, and SM
+// single list of channels for connection-oriented channels (basic, ertm, cbm, ecbf) Classic Connectionless, ATT, and SM
 static btstack_linked_list_t l2cap_channels;
 #ifdef L2CAP_USES_CHANNELS
 // next channel id for new connections
@@ -1191,8 +1191,8 @@ static l2cap_fixed_channel_t * l2cap_fixed_channel_for_channel_id(uint16_t local
 static int l2cap_is_dynamic_channel_type(l2cap_channel_type_t channel_type) {
     switch (channel_type) {
         case L2CAP_CHANNEL_TYPE_CLASSIC:
-        case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
-        case L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL:
+        case L2CAP_CHANNEL_TYPE_CHANNEL_CBM:
+        case L2CAP_CHANNEL_TYPE_CHANNEL_ECBM:
             return 1;
         default:
             return 0;
@@ -1913,14 +1913,14 @@ static bool l2ap_run_information_requests(void){
 #endif
 
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
-static void l2cap_run_le_data_channels(void){
+static void l2cap_cbm_run_channels(void){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         uint16_t mps;
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
 
-        if (channel->channel_type != L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL) continue;
+        if (channel->channel_type != L2CAP_CHANNEL_TYPE_CHANNEL_CBM) continue;
 
         // log_info("l2cap_run: channel %p, state %u, var 0x%02x", channel, channel->state, channel->state_var);
         switch (channel->state){
@@ -1981,8 +1981,8 @@ static void l2cap_run_le_data_channels(void){
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
 
 // 11BH22222
-static void l2cap_emit_enhanced_data_channel_opened(l2cap_channel_t *channel, uint8_t status) {
-    log_info("opened enhanced channel status 0x%x addr_type %u addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x local_mtu %u, remote_mtu %u",
+static void l2cap_ecbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
+    log_info("opened ecbm channel status 0x%x addr_type %u addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x local_mtu %u, remote_mtu %u",
             status, channel->address_type, bd_addr_to_str(channel->address), channel->con_handle, channel->psm,
             channel->local_cid, channel->remote_cid, channel->local_mtu, channel->remote_mtu);
     uint8_t event[23];
@@ -2002,7 +2002,7 @@ static void l2cap_emit_enhanced_data_channel_opened(l2cap_channel_t *channel, ui
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-static void l2cap_emit_enhanced_data_channel_reconfigure_complete(l2cap_channel_t *channel, uint16_t result) {
+static void l2cap_ecbm_emit_reconfigure_complete(l2cap_channel_t *channel, uint16_t result) {
     // emit event
     uint8_t event[6];
     event[0] = L2CAP_EVENT_DATA_CHANNEL_RECONFIGURATION_COMPLETE;
@@ -2012,10 +2012,10 @@ static void l2cap_emit_enhanced_data_channel_reconfigure_complete(l2cap_channel_
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-static void l2cap_run_enhanced_data_channels(void) {
+static void l2cap_ecbm_run_channels(void) {
     hci_con_handle_t con_handle = HCI_CON_HANDLE_INVALID;
     // num max channels + 1 for signaling pdu generator
-    uint16_t cids[L2CAP_ENHANCED_DATA_CHANNEL_MAX_CID_ARRAY_SIZE + 1];
+    uint16_t cids[L2CAP_ECBM_MAX_CID_ARRAY_SIZE + 1];
     uint8_t num_cids = 0;
     uint8_t sig_id;
     uint16_t spsm;
@@ -2033,7 +2033,7 @@ static void l2cap_run_enhanced_data_channels(void) {
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)) {
         l2cap_channel_t *channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if (channel->channel_type != L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL) continue;
+        if (channel->channel_type != L2CAP_CHANNEL_TYPE_CHANNEL_ECBM) continue;
         if (con_handle == HCI_CON_HANDLE_INVALID) {
             switch (channel->state) {
                 case L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_REQUEST:
@@ -2116,7 +2116,7 @@ static void l2cap_run_enhanced_data_channels(void) {
         // handle open for L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_RESPONSE
         if (matching_state == L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_RESPONSE) {
             if (channel->reason == 0) {
-                l2cap_emit_enhanced_data_channel_opened(channel, ERROR_CODE_SUCCESS);
+                l2cap_ecbm_emit_channel_opened(channel, ERROR_CODE_SUCCESS);
             } else {
                 result = channel->reason;
                 btstack_linked_list_iterator_remove(&it);
@@ -2187,11 +2187,11 @@ static void l2cap_run(void){
 #endif
 
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
-    l2cap_run_le_data_channels();
+    l2cap_cbm_run_channels();
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
-    l2cap_run_enhanced_data_channels();
+    l2cap_ecbm_run_channels();
 #endif
 
 #ifdef ENABLE_BLE
@@ -2524,7 +2524,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
             if (!channel->waiting_for_can_send_now) return false;
             return hci_can_send_acl_le_packet_now() != 0;
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
-        case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
+        case L2CAP_CHANNEL_TYPE_CHANNEL_CBM:
             if (channel->state != L2CAP_STATE_OPEN) return false;
             if (channel->send_sdu_buffer == NULL) return false;
             if (channel->credits_outgoing == 0u) return false;
@@ -2532,7 +2532,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
 #endif
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
-        case L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL:
+        case L2CAP_CHANNEL_TYPE_CHANNEL_ECBM:
             if (channel->state != L2CAP_STATE_OPEN) return false;
             if (channel->send_sdu_buffer == NULL) return false;
             if (channel->credits_outgoing == 0u) return false;
@@ -2572,12 +2572,12 @@ static void l2cap_channel_trigger_send(l2cap_channel_t * channel){
             break;
 #endif
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
-        case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
+        case L2CAP_CHANNEL_TYPE_CHANNEL_CBM:
             l2cap_credit_based_send_pdu(channel);
             break;
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
-        case L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL:
+        case L2CAP_CHANNEL_TYPE_CHANNEL_ECBM:
             l2cap_credit_based_send_pdu(channel);
             break;
 #endif
@@ -2801,22 +2801,22 @@ static void l2cap_handle_disconnection_complete(hci_con_handle_t handle){
                 break;
 #endif
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
-            case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
+            case L2CAP_CHANNEL_TYPE_CHANNEL_CBM:
                 l2cap_handle_hci_le_disconnect_event(channel);
                 break;
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
-            case L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL:
+            case L2CAP_CHANNEL_TYPE_CHANNEL_ECBM:
                 switch (channel->state) {
                     case L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_REQUEST:
                     case L2CAP_STATE_WAIT_ENHANCED_CONNECTION_RESPONSE:
                         // emit open failed if disconnected before connection complete
-                        l2cap_emit_enhanced_data_channel_opened(channel, L2CAP_CONNECTION_BASEBAND_DISCONNECT);
+                        l2cap_ecbm_emit_channel_opened(channel, L2CAP_CONNECTION_BASEBAND_DISCONNECT);
                         break;
                     case L2CAP_STATE_WILL_SEND_EHNANCED_RENEGOTIATION_REQUEST:
                     case L2CAP_STATE_WAIT_ENHANCED_RENEGOTIATION_RESPONSE:
                         // emit reconfigure failure - result = 0xffff
-                        l2cap_emit_enhanced_data_channel_reconfigure_complete(channel, 0xffff);
+                        l2cap_ecbm_emit_reconfigure_complete(channel, 0xffff);
                         break;
                     default:
                         l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_DATA_CHANNEL_CLOSED);
@@ -3557,8 +3557,8 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
 
                 // open failed
                 channel->state = L2CAP_STATE_CLOSED;
-                l2cap_emit_enhanced_data_channel_opened(channel,
-                                                        ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES);
+                l2cap_ecbm_emit_channel_opened(channel,
+                                               ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES);
                 // drop failed channel
                 btstack_linked_list_iterator_remove(&it);
                 l2cap_free_channel_entry(channel);
@@ -3621,7 +3621,7 @@ static uint8_t l2cap_enhanced_setup_channels(btstack_linked_list_t * channels,
     uint8_t i;
     uint8_t status = ERROR_CODE_SUCCESS;
     for (i=0;i<num_channels;i++){
-        l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL, connection->address, connection->address_type, psm, mtu, security_level);
+        l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, L2CAP_CHANNEL_TYPE_CHANNEL_ECBM, connection->address, connection->address_type, psm, mtu, security_level);
         if (!channel) {
             status = BTSTACK_MEMORY_ALLOC_FAILED;
             break;
@@ -3771,7 +3771,7 @@ static int l2cap_enhanced_signaling_handler_dispatch(hci_con_handle_t handle, ui
 
                     // setup channel
                     l2cap_channel_t *channel = l2cap_create_channel_entry(service->packet_handler,
-                                                                          L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL,
+                                                                          L2CAP_CHANNEL_TYPE_CHANNEL_ECBM,
                                                                           connection->address,
                                                                           connection->address_type, spsm,
                                                                           service->mtu,
@@ -3862,12 +3862,12 @@ static int l2cap_enhanced_signaling_handler_dispatch(hci_con_handle_t handle, ui
                         channel->remote_mtu = new_mtu;
                         channel->remote_mps = new_mps;
                         channel->credits_outgoing = initial_credits;
-                        l2cap_emit_enhanced_data_channel_opened(channel, ERROR_CODE_SUCCESS);
+                        l2cap_ecbm_emit_channel_opened(channel, ERROR_CODE_SUCCESS);
                         continue;
                     }
                 }
                 // open failed
-                l2cap_emit_enhanced_data_channel_opened(channel, status);
+                l2cap_ecbm_emit_channel_opened(channel, status);
                 // drop failed channel
                 btstack_linked_list_iterator_remove(&it);
                 btstack_memory_l2cap_channel_free(channel);
@@ -3966,7 +3966,7 @@ static int l2cap_enhanced_signaling_handler_dispatch(hci_con_handle_t handle, ui
                 }
                 channel->state = L2CAP_STATE_OPEN;
                 // emit event
-                l2cap_emit_enhanced_data_channel_reconfigure_complete(channel, result);
+                l2cap_ecbm_emit_reconfigure_complete(channel, result);
             }
             break;
 
@@ -4090,7 +4090,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 if (channel->state == L2CAP_STATE_WAIT_ENHANCED_CONNECTION_RESPONSE){
                     channel->state = L2CAP_STATE_CLOSED;
                     // treat as SPSM not supported
-                    l2cap_emit_enhanced_data_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM);
+                    l2cap_ecbm_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM);
 
                     // discard channel
                     btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
@@ -4169,8 +4169,8 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 }
 
                 // allocate channel
-                channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL, connection->address,
-                    BD_ADDR_TYPE_LE_RANDOM, le_psm, service->mtu, service->required_security_level);
+                channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CHANNEL_CBM, connection->address,
+                                                     BD_ADDR_TYPE_LE_RANDOM, le_psm, service->mtu, service->required_security_level);
                 if (!channel){
                     // 0x0004 Connection refused – no resources available
                     l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0004);
@@ -4291,7 +4291,7 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
     if (l2cap_channel->state != L2CAP_STATE_OPEN) return;
 
 #ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
-    if (l2cap_channel->channel_type == L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL){
+    if (l2cap_channel->channel_type == L2CAP_CHANNEL_TYPE_CHANNEL_ECBM){
         l2cap_credit_based_handle_pdu(l2cap_channel, packet, size);
         return;
     }
@@ -4887,15 +4887,15 @@ static void l2cap_credit_based_handle_pdu(l2cap_channel_t * l2cap_channel, const
 
     // credit counting
     if (l2cap_channel->credits_incoming == 0u){
-        log_info("Data Channel packet received but no incoming credits");
+        log_info("(e)CBM: packet received but no incoming credits");
         l2cap_channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
         return;
     }
     l2cap_channel->credits_incoming--;
 
     // automatic credits
-    if ((l2cap_channel->credits_incoming < L2CAP_LE_DATA_CHANNELS_AUTOMATIC_CREDITS_WATERMARK) && l2cap_channel->automatic_credits){
-        l2cap_channel->new_credits_incoming = L2CAP_LE_DATA_CHANNELS_AUTOMATIC_CREDITS_INCREMENT;
+    if ((l2cap_channel->credits_incoming < L2CAP_CREDIT_BASED_FLOW_CONTROL_MODE_AUTOMATIC_CREDITS_WATERMARK) && l2cap_channel->automatic_credits){
+        l2cap_channel->new_credits_incoming = L2CAP_CREDIT_BASED_FLOW_CONTROL_MODE_AUTOMATIC_CREDITS_INCREMENT;
     }
 
     // first fragment
@@ -5069,11 +5069,6 @@ uint8_t l2cap_cbm_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_bu
     return ERROR_CODE_SUCCESS;
 }
 
-/** 
- * @brief Deny incoming LE Data Channel connection due to resource constraints
- * @param local_cid             L2CAP LE Data Channel Identifier
- */
-
 uint8_t l2cap_cbm_decline_connection(uint16_t local_cid){
     // get channel
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
@@ -5147,7 +5142,7 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL, connection->address, connection->address_type, psm, mtu, security_level);
+    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, L2CAP_CHANNEL_TYPE_CHANNEL_CBM, connection->address, connection->address_type, psm, mtu, security_level);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -5188,19 +5183,10 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
     return ERROR_CODE_SUCCESS;
 }
 
-/**
- * @brief Provide credtis for LE Data Channel
- * @param local_cid             L2CAP LE Data Channel Identifier
- * @param credits               Number additional credits for peer
- */
 uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_credit_based_provide_credits(local_cid, credits);
 }
 
-/**
- * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module
- * @param local_cid             L2CAP LE Data Channel Identifier
- */
 bool l2cap_cbm_can_send_now(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
@@ -5218,12 +5204,6 @@ bool l2cap_cbm_can_send_now(uint16_t local_cid){
     return true;
 }
 
-/**
- * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible
- * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
- *       so packet handler should be ready to handle it
- * @param local_cid             L2CAP LE Data Channel Identifier
- */
 uint8_t l2cap_cbm_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
@@ -5235,22 +5215,10 @@ uint8_t l2cap_cbm_request_can_send_now_event(uint16_t local_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-/**
- * @brief Send data via LE Data Channel
- * @note Since data larger then the maximum PDU needs to be segmented into multiple PDUs, data needs to stay valid until ... event
- * @param local_cid             L2CAP LE Data Channel Identifier
- * @param data                  data to send
- * @param size                  data size
- */
 uint8_t l2cap_cbm_send_data(uint16_t local_cid, uint8_t * data, uint16_t size){
     return l2cap_credit_based_send_data(local_cid, data, size);
 }
 
-
-/**
- * @brief Disconnect from LE Data Channel
- * @param local_cid             L2CAP LE Data Channel Identifier
- */
 uint8_t l2cap_cbm_disconnect(uint16_t local_cid){
     return l2cap_credit_based_disconnect(local_cid);
 }
@@ -5303,7 +5271,7 @@ void l2cap_ecbm_mps_set_max(uint16_t mps_max){
     l2cap_enhanced_mps_max = mps_max;
 }
 
-uint8_t l2cap_enhanced_create_channels(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle,
+uint8_t l2cap_ecbm_create_channels(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle,
                                        gap_security_level_t security_level,
                                        uint16_t psm, uint8_t num_channels, uint16_t initial_credits, uint16_t mtu,
                                        uint8_t ** receive_sdu_buffers, uint16_t * out_local_cid){
@@ -5367,7 +5335,7 @@ uint8_t l2cap_enhanced_create_channels(btstack_packet_handler_t packet_handler, 
     return status;
 }
 
-uint8_t l2cap_ecbm_accept_data_channels(uint16_t local_cid, uint8_t num_channels, uint16_t initial_credits,
+uint8_t l2cap_ecbm_accept_channels(uint16_t local_cid, uint8_t num_channels, uint16_t initial_credits,
                                             uint16_t receive_buffer_size, uint8_t ** receive_buffers, uint16_t * out_local_cids){
 
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
@@ -5414,7 +5382,7 @@ uint8_t l2cap_ecbm_accept_data_channels(uint16_t local_cid, uint8_t num_channels
 
 
 
-uint8_t l2cap_ecbm_decline_data_channels(uint16_t local_cid, uint16_t result){
+uint8_t l2cap_ecbm_decline_channels(uint16_t local_cid, uint16_t result){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -5440,7 +5408,7 @@ uint8_t l2cap_ecbm_decline_data_channels(uint16_t local_cid, uint16_t result){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_ecbm_data_channel_request_can_send_now_event(uint16_t local_cid){
+uint8_t l2cap_ecbm_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("can send now, no channel for cid 0x%02x", local_cid);
@@ -5451,11 +5419,11 @@ uint8_t l2cap_ecbm_data_channel_request_can_send_now_event(uint16_t local_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_ecbm_reconfigure(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers){
+uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers){
     btstack_assert(receive_buffers != NULL);
     btstack_assert(local_cids != NULL);
 
-    if (num_cids > L2CAP_ENHANCED_DATA_CHANNEL_MAX_CID_ARRAY_SIZE){
+    if (num_cids > L2CAP_ECBM_MAX_CID_ARRAY_SIZE){
         return ERROR_CODE_UNACCEPTABLE_CONNECTION_PARAMETERS;
     }
 
