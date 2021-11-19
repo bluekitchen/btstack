@@ -228,10 +228,10 @@ static void l2cap_channel_packet_handler(uint8_t packet_type, uint16_t channel, 
                     printf("L2CAP_EVENT_DATA_CHANNEL_INCOMING\n");
                     cid = l2cap_event_data_channel_incoming_get_local_cid(packet);
                     if (l2cap_channel_accept_incoming){
-                        l2cap_enhanced_accept_data_channels(cid, 2, initial_credits, TEST_PACKET_SIZE, receive_buffers_2, cids);
+                        l2cap_ecbm_accept_data_channels(cid, 2, initial_credits, TEST_PACKET_SIZE, receive_buffers_2, cids);
                     } else {
                         // reject request by providing zero buffers
-                        l2cap_enhanced_accept_data_channels(cid, 0, 0, 0,NULL, NULL);
+                        l2cap_ecbm_accept_data_channels(cid, 0, 0, 0,NULL, NULL);
                     }
                     break;
                 case L2CAP_EVENT_DATA_CHANNEL_OPENED:
@@ -324,7 +324,7 @@ TEST(L2CAP_CHANNELS, incoming_classic_no_service){
 
 TEST(L2CAP_CHANNELS, incoming_1){
     hci_setup_test_connections_fuzz();
-    l2cap_enhanced_register_service(&l2cap_channel_packet_handler, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0);
+    l2cap_ecbm_register_service(&l2cap_channel_packet_handler, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0);
     l2cap_channel_accept_incoming = false;
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_conn_request_1, sizeof(l2cap_enhanced_data_channel_le_conn_request_1));
     CHECK_EQUAL(0, num_l2cap_channel_opened);
@@ -332,7 +332,7 @@ TEST(L2CAP_CHANNELS, incoming_1){
 
 TEST(L2CAP_CHANNELS, incoming_2){
     hci_setup_test_connections_fuzz();
-    l2cap_enhanced_register_service(&l2cap_channel_packet_handler, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0);
+    l2cap_ecbm_register_service(&l2cap_channel_packet_handler, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0);
     l2cap_channel_accept_incoming = true;
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_conn_request_1, sizeof(l2cap_enhanced_data_channel_le_conn_request_1));
     CHECK_EQUAL(2, num_l2cap_channel_opened);
@@ -369,7 +369,7 @@ TEST(L2CAP_CHANNELS, outgoing_le_send_packet){
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_conn_response_2_success, sizeof(l2cap_enhanced_data_channel_le_conn_response_2_success));
     CHECK_EQUAL(2, num_l2cap_channel_opened);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_credits, sizeof(l2cap_enhanced_data_channel_le_credits));
-    status = l2cap_enhanced_send_data(l2cap_cids[0], (const uint8_t *) "hello", 5);
+    status = l2cap_ecbm_send_data(l2cap_cids[0], (const uint8_t *) "hello", 5);
 }
 
 TEST(L2CAP_CHANNELS, outgoing_classic_send_packet){
@@ -381,7 +381,7 @@ TEST(L2CAP_CHANNELS, outgoing_classic_send_packet){
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_classic_conn_response_2_success, sizeof(l2cap_enhanced_data_channel_classic_conn_response_2_success));
     CHECK_EQUAL(2, num_l2cap_channel_opened);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_classic_credits, sizeof(l2cap_enhanced_data_channel_classic_credits));
-    status = l2cap_enhanced_send_data(l2cap_cids[0], (const uint8_t *) "hello", 5);
+    status = l2cap_ecbm_send_data(l2cap_cids[0], (const uint8_t *) "hello", 5);
 }
 
 TEST(L2CAP_CHANNELS, outgoing_le_receive_packet){
@@ -416,7 +416,7 @@ TEST(L2CAP_CHANNELS, outgoing_le_provide_credits){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_conn_response_2_success, sizeof(l2cap_enhanced_data_channel_le_conn_response_2_success));
     CHECK_EQUAL(2, num_l2cap_channel_opened);
-    status = l2cap_enhanced_provide_credits(l2cap_cids[0], 5);
+    status = l2cap_ecbm_provide_credits(l2cap_cids[0], 5);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
 }
 
@@ -428,7 +428,7 @@ TEST(L2CAP_CHANNELS, outgoing_classic_provide_credits){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_classic_conn_response_2_success, sizeof(l2cap_enhanced_data_channel_classic_conn_response_2_success));
     CHECK_EQUAL(2, num_l2cap_channel_opened);
-    status = l2cap_enhanced_provide_credits(l2cap_cids[0], 5);
+    status = l2cap_ecbm_provide_credits(l2cap_cids[0], 5);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
 }
 
@@ -441,7 +441,7 @@ TEST(L2CAP_CHANNELS, outgoing_le_renegotiate_initiator){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_conn_response_2_success, sizeof(l2cap_enhanced_data_channel_le_conn_response_2_success));
     CHECK_EQUAL(2, num_l2cap_channel_opened);
-    status = l2cap_enhanced_reconfigure(2, l2cap_cids, TEST_PACKET_SIZE/2, reconfigure_buffers_2);
+    status = l2cap_ecbm_reconfigure(2, l2cap_cids, TEST_PACKET_SIZE/2, reconfigure_buffers_2);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_renegotiate_response, sizeof(l2cap_enhanced_data_channel_le_renegotiate_response));
     CHECK_EQUAL(0, reconfigure_result);
@@ -456,7 +456,7 @@ TEST(L2CAP_CHANNELS, outgoing_classic_renegotiate_initiator){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_classic_conn_response_2_success, sizeof(l2cap_enhanced_data_channel_classic_conn_response_2_success));
     CHECK_EQUAL(2, num_l2cap_channel_opened);
-    status = l2cap_enhanced_reconfigure(2, l2cap_cids, TEST_PACKET_SIZE/2, reconfigure_buffers_2);
+    status = l2cap_ecbm_reconfigure(2, l2cap_cids, TEST_PACKET_SIZE/2, reconfigure_buffers_2);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_classic_renegotiate_response, sizeof(l2cap_enhanced_data_channel_classic_renegotiate_response));
     CHECK_EQUAL(0, reconfigure_result);
@@ -496,8 +496,8 @@ TEST(L2CAP_CHANNELS, outgoing_le_disconnect_initiator){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_conn_response_2_success, sizeof(l2cap_enhanced_data_channel_le_conn_response_2_success));
     CHECK_EQUAL(2, num_l2cap_channel_opened);
-    l2cap_enhanced_disconnect(l2cap_cids[0]);
-    l2cap_enhanced_disconnect(l2cap_cids[1]);
+    l2cap_ecbm_disconnect(l2cap_cids[0]);
+    l2cap_ecbm_disconnect(l2cap_cids[1]);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_disconnect_response_1, sizeof(l2cap_enhanced_data_channel_le_disconnect_response_1));
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_disconnect_response_2, sizeof(l2cap_enhanced_data_channel_le_disconnect_response_2));
     CHECK_EQUAL(2, num_l2cap_channel_closed);
@@ -524,8 +524,8 @@ TEST(L2CAP_CHANNELS, outgoing_classic_disconnect_initiator){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_classic_conn_response_2_success, sizeof(l2cap_enhanced_data_channel_classic_conn_response_2_success));
     CHECK_EQUAL(2, num_l2cap_channel_opened);
-    l2cap_enhanced_disconnect(l2cap_cids[0]);
-    l2cap_enhanced_disconnect(l2cap_cids[1]);
+    l2cap_ecbm_disconnect(l2cap_cids[0]);
+    l2cap_ecbm_disconnect(l2cap_cids[1]);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_classic_disconnect_response_1, sizeof(l2cap_enhanced_data_channel_classic_disconnect_response_1));
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_classic_disconnect_response_2, sizeof(l2cap_enhanced_data_channel_classic_disconnect_response_2));
     CHECK_EQUAL(2, num_l2cap_channel_closed);

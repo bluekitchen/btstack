@@ -332,7 +332,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
 #ifdef ENABLE_GOEP_L2CAP
             if (context->l2cap_psm){
                 log_info("Remote GOEP L2CAP PSM: %u", context->l2cap_psm);
-                l2cap_create_ertm_channel(&goep_client_packet_handler, context->bd_addr, context->l2cap_psm,
+                l2cap_ertm_create_channel(&goep_client_packet_handler, context->bd_addr, context->l2cap_psm,
                                           &ertm_config, ertm_buffer, sizeof(ertm_buffer), &context->bearer_cid);
                 return;
             }

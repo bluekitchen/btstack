@@ -1083,7 +1083,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             }
             if (request.ertm_config && request.ertm_buffer && request.ertm_buffer_size){
                 multiplexer->ertm_id = request.ertm_id;
-                l2cap_accept_ertm_connection(l2cap_cid, request.ertm_config, request.ertm_buffer, request.ertm_buffer_size);
+                l2cap_ertm_accept_connection(l2cap_cid, request.ertm_config, request.ertm_buffer, request.ertm_buffer_size);
                 return 1;
             }
 #endif
@@ -2515,7 +2515,7 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
         }
         if (request.ertm_config && request.ertm_buffer && request.ertm_buffer_size){
             multiplexer->ertm_id = request.ertm_id;
-            status = l2cap_create_ertm_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM, 
+            status = l2cap_ertm_create_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM,
                         request.ertm_config, request.ertm_buffer, request.ertm_buffer_size, &l2cap_cid);
         }
         else

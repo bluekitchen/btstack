@@ -172,13 +172,13 @@ static void streamer(void){
     memset(le_data_channel_connection.test_data, le_data_channel_connection.counter, le_data_channel_connection.test_data_len);
 
     // send
-    l2cap_le_send_data(le_data_channel_connection.cid, (uint8_t *) le_data_channel_connection.test_data, le_data_channel_connection.test_data_len);
+    l2cap_cbm_send_data(le_data_channel_connection.cid, (uint8_t *) le_data_channel_connection.test_data, le_data_channel_connection.test_data_len);
 
     // track
     test_track_data(&le_data_channel_connection, le_data_channel_connection.test_data_len);
 
     // request another packet
-    l2cap_le_request_can_send_now_event(le_data_channel_connection.cid);
+    l2cap_cbm_request_can_send_now_event(le_data_channel_connection.cid);
 } 
 /* LISTING_END */
 #endif
@@ -245,7 +245,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     // query primary services
                     printf("Connect to performance test channel.\n");
                     state = TC_W4_CHANNEL;
-                    l2cap_le_create_channel(&packet_handler, connection_handle, TSPX_le_psm, data_channel_buffer, 
+                    l2cap_cbm_create_channel(&packet_handler, connection_handle, TSPX_le_psm, data_channel_buffer,
                                             sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &le_data_channel_connection.cid);
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -274,7 +274,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         printf("Test packet size: %u\n", le_data_channel_connection.test_data_len);
                         test_reset(&le_data_channel_connection);
 #ifdef TEST_STREAM_DATA
-                        l2cap_le_request_can_send_now_event(le_data_channel_connection.cid);
+                        l2cap_cbm_request_can_send_now_event(le_data_channel_connection.cid);
 #endif
                     } else {
                         printf("L2CAP: LE Data Channel connection to device %s failed. status code 0x%02x\n", bd_addr_to_str(event_address), status);

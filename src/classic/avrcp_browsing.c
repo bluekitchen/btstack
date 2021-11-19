@@ -88,7 +88,7 @@ static void avrcp_retry_timer_timeout_handler(btstack_timer_source_t * timer){
         connection_controller->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
         connection_target->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
 
-        l2cap_create_ertm_channel(avrcp_browsing_packet_handler, connection_controller->remote_addr, connection_controller->browsing_l2cap_psm, 
+        l2cap_ertm_create_channel(avrcp_browsing_packet_handler, connection_controller->remote_addr, connection_controller->browsing_l2cap_psm,
                 &connection_controller->browsing_connection->ertm_config, 
                 connection_controller->browsing_connection->ertm_buffer, 
                 connection_controller->browsing_connection->ertm_buffer_size, NULL);
@@ -445,7 +445,7 @@ static void avrcp_browsing_handle_sdp_client_query_result(uint8_t packet_type, u
                 break;
             }
 
-            l2cap_create_ertm_channel(avrcp_browsing_packet_handler, avrcp_browsing_sdp_addr, browsing_l2cap_psm,
+            l2cap_ertm_create_channel(avrcp_browsing_packet_handler, avrcp_browsing_sdp_addr, browsing_l2cap_psm,
                                             &avrcp_controller_connection->browsing_connection->ertm_config,
                                             avrcp_controller_connection->browsing_connection->ertm_buffer,
                                             avrcp_controller_connection->browsing_connection->ertm_buffer_size, NULL);
@@ -549,7 +549,7 @@ uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uin
         connection_controller->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
         connection_target->browsing_connection->state     = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
 
-        return l2cap_create_ertm_channel(avrcp_browsing_packet_handler, remote_addr, connection_controller->browsing_l2cap_psm,
+        return l2cap_ertm_create_channel(avrcp_browsing_packet_handler, remote_addr, connection_controller->browsing_l2cap_psm,
                                          &connection_controller->browsing_connection->ertm_config,
                                          connection_controller->browsing_connection->ertm_buffer,
                                          connection_controller->browsing_connection->ertm_buffer_size, NULL);
@@ -583,7 +583,7 @@ uint8_t avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid
     connection_controller->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
     connection_target->browsing_connection->state     = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
     
-    l2cap_accept_ertm_connection(connection_controller->browsing_connection->l2cap_browsing_cid, 
+    l2cap_ertm_accept_connection(connection_controller->browsing_connection->l2cap_browsing_cid,
         &connection_controller->browsing_connection->ertm_config, 
         connection_controller->browsing_connection->ertm_buffer, 
         connection_controller->browsing_connection->ertm_buffer_size);

@@ -630,10 +630,10 @@ static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_c
     channel->fcs_option = ertm_config->fcs_option;
 }
 
-uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, 
+uint8_t l2cap_ertm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm,
     l2cap_ertm_config_t * ertm_config, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid){
 
-    log_info("L2CAP_CREATE_ERTM_CHANNEL addr %s, psm 0x%x, local mtu %u", bd_addr_to_str(address), psm, ertm_config->local_mtu);
+    log_info("l2cap_ertm_create_channel addr %s, psm 0x%x, local mtu %u", bd_addr_to_str(address), psm, ertm_config->local_mtu);
 
     // validate local config
     uint8_t result = l2cap_ertm_validate_local_config(ertm_config);
@@ -683,9 +683,9 @@ static void l2cap_ertm_notify_channel_can_send(l2cap_channel_t * channel){
     }
 }
 
-uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_config, uint8_t * buffer, uint32_t size){
+uint8_t l2cap_ertm_accept_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_config, uint8_t * buffer, uint32_t size){
 
-    log_info("L2CAP_ACCEPT_ERTM_CONNECTION local_cid 0x%x", local_cid);
+    log_info("l2cap_ertm_accept_connection local_cid 0x%x", local_cid);
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_accept_connection called but local_cid 0x%x not found", local_cid);
@@ -5007,9 +5007,9 @@ static inline l2cap_service_t * l2cap_le_get_service(uint16_t le_psm){
     return l2cap_get_service_internal(&l2cap_le_services, le_psm);
 }
 
-uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level){
+uint8_t l2cap_cbm_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level){
     
-    log_info("L2CAP_LE_REGISTER_SERVICE psm 0x%x", psm);
+    log_info("l2cap_cbm_register_service psm 0x%x", psm);
     
     // check for alread registered psm 
     l2cap_service_t *service = l2cap_le_get_service(psm);
@@ -5037,8 +5037,8 @@ uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint1
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_le_unregister_service(uint16_t psm) {
-    log_info("L2CAP_LE_UNREGISTER_SERVICE psm 0x%x", psm);
+uint8_t l2cap_cbm_unregister_service(uint16_t psm) {
+    log_info("l2cap_cbm_unregister_service psm 0x%x", psm);
     l2cap_service_t *service = l2cap_le_get_service(psm);
     if (!service) return L2CAP_SERVICE_DOES_NOT_EXIST;
 
@@ -5047,7 +5047,7 @@ uint8_t l2cap_le_unregister_service(uint16_t psm) {
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits){
+uint8_t l2cap_cbm_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits){
     // get channel
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -5074,7 +5074,7 @@ uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buf
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
 
-uint8_t l2cap_le_decline_connection(uint16_t local_cid){
+uint8_t l2cap_cbm_decline_connection(uint16_t local_cid){
     // get channel
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -5132,7 +5132,7 @@ static void l2cap_sm_packet_handler(uint8_t packet_type, uint16_t channel_nr, ui
     }
 }
 
-uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle,
+uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle,
     uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
     uint16_t * out_local_cid) {
 
@@ -5193,7 +5193,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
  * @param local_cid             L2CAP LE Data Channel Identifier
  * @param credits               Number additional credits for peer
  */
-uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
+uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_credit_based_provide_credits(local_cid, credits);
 }
 
@@ -5201,7 +5201,7 @@ uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
  * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
-bool l2cap_le_can_send_now(uint16_t local_cid){
+bool l2cap_cbm_can_send_now(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("le can send now, no channel for cid 0x%02x", local_cid);
@@ -5224,7 +5224,7 @@ bool l2cap_le_can_send_now(uint16_t local_cid){
  *       so packet handler should be ready to handle it
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
-uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid){
+uint8_t l2cap_cbm_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("can send now, no channel for cid 0x%02x", local_cid);
@@ -5242,7 +5242,7 @@ uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid){
  * @param data                  data to send
  * @param size                  data size
  */
-uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size){
+uint8_t l2cap_cbm_send_data(uint16_t local_cid, uint8_t * data, uint16_t size){
     return l2cap_credit_based_send_data(local_cid, data, size);
 }
 
@@ -5251,14 +5251,14 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size){
  * @brief Disconnect from LE Data Channel
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
-uint8_t l2cap_le_disconnect(uint16_t local_cid){
+uint8_t l2cap_cbm_disconnect(uint16_t local_cid){
     return l2cap_credit_based_disconnect(local_cid);
 }
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
 
-uint8_t l2cap_enhanced_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t min_remote_mtu, gap_security_level_t security_level){
+uint8_t l2cap_ecbm_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t min_remote_mtu, gap_security_level_t security_level){
 
     // check for already registered psm
     l2cap_service_t *service = l2cap_le_get_service(psm);
@@ -5286,7 +5286,7 @@ uint8_t l2cap_enhanced_register_service(btstack_packet_handler_t packet_handler,
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_enhanced_unregister_service(uint16_t psm) {
+uint8_t l2cap_ecbm_unregister_service(uint16_t psm) {
     l2cap_service_t *service = l2cap_le_get_service(psm);
     if (!service) return L2CAP_SERVICE_DOES_NOT_EXIST;
 
@@ -5295,11 +5295,11 @@ uint8_t l2cap_enhanced_unregister_service(uint16_t psm) {
     return ERROR_CODE_SUCCESS;
 }
 
-void l2cap_enhanced_mps_set_min(uint16_t mps_min){
+void l2cap_ecbm_mps_set_min(uint16_t mps_min){
     l2cap_enhanced_mps_min = mps_min;
 }
 
-void l2cap_enhanced_mps_set_max(uint16_t mps_max){
+void l2cap_ecbm_mps_set_max(uint16_t mps_max){
     l2cap_enhanced_mps_max = mps_max;
 }
 
@@ -5367,7 +5367,7 @@ uint8_t l2cap_enhanced_create_channels(btstack_packet_handler_t packet_handler, 
     return status;
 }
 
-uint8_t l2cap_enhanced_accept_data_channels(uint16_t local_cid, uint8_t num_channels, uint16_t initial_credits,
+uint8_t l2cap_ecbm_accept_data_channels(uint16_t local_cid, uint8_t num_channels, uint16_t initial_credits,
                                             uint16_t receive_buffer_size, uint8_t ** receive_buffers, uint16_t * out_local_cids){
 
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
@@ -5414,7 +5414,7 @@ uint8_t l2cap_enhanced_accept_data_channels(uint16_t local_cid, uint8_t num_chan
 
 
 
-uint8_t l2cap_enhanced_decline_data_channels(uint16_t local_cid, uint16_t result){
+uint8_t l2cap_ecbm_decline_data_channels(uint16_t local_cid, uint16_t result){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -5440,7 +5440,7 @@ uint8_t l2cap_enhanced_decline_data_channels(uint16_t local_cid, uint16_t result
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_enhanced_data_channel_request_can_send_now_event(uint16_t local_cid){
+uint8_t l2cap_ecbm_data_channel_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("can send now, no channel for cid 0x%02x", local_cid);
@@ -5451,7 +5451,7 @@ uint8_t l2cap_enhanced_data_channel_request_can_send_now_event(uint16_t local_ci
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_enhanced_reconfigure(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers){
+uint8_t l2cap_ecbm_reconfigure(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers){
     btstack_assert(receive_buffers != NULL);
     btstack_assert(local_cids != NULL);
 
@@ -5493,15 +5493,15 @@ uint8_t l2cap_enhanced_reconfigure(uint8_t num_cids, uint16_t * local_cids, int1
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_enhanced_send_data(uint16_t local_cid, const uint8_t * data, uint16_t size){
+uint8_t l2cap_ecbm_send_data(uint16_t local_cid, const uint8_t * data, uint16_t size){
     return l2cap_credit_based_send_data(local_cid, data, size);
 }
 
-uint8_t l2cap_enhanced_provide_credits(uint16_t local_cid, uint16_t credits){
+uint8_t l2cap_ecbm_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_credit_based_provide_credits(local_cid, credits);
 }
 
-uint8_t l2cap_enhanced_disconnect(uint16_t local_cid){
+uint8_t l2cap_ecbm_disconnect(uint16_t local_cid){
     return l2cap_credit_based_disconnect(local_cid);
 }
 

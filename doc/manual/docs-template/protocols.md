@@ -314,18 +314,18 @@ The full title for LE Data Channels is actually LE Connection-Oriented Channels 
 LE Data Channels are similar to Classic L2CAP Channels but also provide a credit-based flow control similar to RFCOMM Channels.
 Unless the LE Data Packet Extension of Bluetooth Core 4.2 specification is used, the maximum packet size for LE ACL packets is 27 bytes. In order to send larger packets, each packet will be split into multiple ACL LE packets and recombined on the receiving side. 
 
-Since multiple SDUs can be transmitted at the same time and the individual ACL LE packets can be sent interleaved, BTstack requires a dedicated receive buffer per channel that has to be passed when creating the channel or accepting it. Similarly, when sending SDUs, the data provided to the *l2cap_le_send_data* must stay valid until the *L2CAP_EVENT_LE_PACKET_SENT* is received.
+Since multiple SDUs can be transmitted at the same time and the individual ACL LE packets can be sent interleaved, BTstack requires a dedicated receive buffer per channel that has to be passed when creating the channel or accepting it. Similarly, when sending SDUs, the data provided to the *l2cap_cbm_send_data* must stay valid until the *L2CAP_EVENT_LE_PACKET_SENT* is received.
 
-When creating an outgoing connection of accepting an incoming, the *initial_credits* allows to provide a fixed number of credits to the remote side. Further credits can be provided anytime with *l2cap_le_provide_credits*. If *L2CAP_LE_AUTOMATIC_CREDITS* is used, BTstack automatically provides credits as needed - effectively trading in the flow-control functionality for convenience.
+When creating an outgoing connection of accepting an incoming, the *initial_credits* allows to provide a fixed number of credits to the remote side. Further credits can be provided anytime with *l2cap_cbm_provide_credits*. If *L2CAP_LE_AUTOMATIC_CREDITS* is used, BTstack automatically provides credits as needed - effectively trading in the flow-control functionality for convenience.
 
 The remainder of the API is similar to the one of L2CAP: 
 
-  * *l2cap_le_register_service* and *l2cap_le_unregister_service* are used to manage local services.
-  * *l2cap_le_accept_connection* and *l2cap_le_decline_connection* are used to accept or deny an incoming connection request.
-  * *l2cap_le_create_channel* creates an outgoing connections.
-  * *l2cap_le_can_send_now* checks if a packet can be scheduled for transmission now.
-  * *l2cap_le_request_can_send_now_event* requests an *L2CAP_EVENT_LE_CAN_SEND_NOW* event as soon as possible.
-  * *l2cap_le_disconnect* closes the connection.
+  * *l2cap_cbm_register_service* and *l2cap_cbm_unregister_service* are used to manage local services.
+  * *l2cap_cbm_accept_connection* and *l2cap_cbm_decline_connection* are used to accept or deny an incoming connection request.
+  * *l2cap_cbm_create_channel* creates an outgoing connections.
+  * *l2cap_cbm_can_send_now* checks if a packet can be scheduled for transmission now.
+  * *l2cap_cbm_request_can_send_now_event* requests an *L2CAP_EVENT_LE_CAN_SEND_NOW* event as soon as possible.
+  * *l2cap_cbm_disconnect* closes the connection.
 
 ## RFCOMM - Radio Frequency Communication Protocol
 

@@ -130,7 +130,7 @@ static void le_data_channel_setup(void){
     l2cap_add_event_handler(&l2cap_event_callback_registration);
 
     // le data channel setup
-    l2cap_le_register_service(&packet_handler, TSPX_le_psm, LEVEL_0);
+    l2cap_cbm_register_service(&packet_handler, TSPX_le_psm, LEVEL_0);
 
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
@@ -194,13 +194,13 @@ static void streamer(void){
     memset(le_data_channel_connection.test_data, le_data_channel_connection.counter, le_data_channel_connection.test_data_len);
 
     // send
-    l2cap_le_send_data(le_data_channel_connection.cid, (uint8_t *) le_data_channel_connection.test_data, le_data_channel_connection.test_data_len);
+    l2cap_cbm_send_data(le_data_channel_connection.cid, (uint8_t *) le_data_channel_connection.test_data, le_data_channel_connection.test_data_len);
 
     // track
     test_track_data(&le_data_channel_connection, le_data_channel_connection.test_data_len);
 
     // request another packet
-    l2cap_le_request_can_send_now_event(le_data_channel_connection.cid);
+    l2cap_cbm_request_can_send_now_event(le_data_channel_connection.cid);
 } 
 /* LISTING_END */
 #endif
@@ -276,7 +276,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     cid = l2cap_event_le_incoming_connection_get_local_cid(packet);
                     if (psm != TSPX_le_psm) break;
                     printf("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x\n", cid, psm); 
-                    l2cap_le_accept_connection(cid, data_channel_buffer, sizeof(data_channel_buffer), initial_credits);
+                    l2cap_cbm_accept_connection(cid, data_channel_buffer, sizeof(data_channel_buffer), initial_credits);
                     break;
 
                 case L2CAP_EVENT_LE_CHANNEL_OPENED:
@@ -297,7 +297,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("Test packet size: %u\n", le_data_channel_connection.test_data_len);
                         test_reset(&le_data_channel_connection);
 #ifdef TEST_STREAM_DATA
-                        l2cap_le_request_can_send_now_event(le_data_channel_connection.cid);
+                        l2cap_cbm_request_can_send_now_event(le_data_channel_connection.cid);
 #endif
                     } else {
                         printf("L2CAP: LE Data Channel connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), status);
