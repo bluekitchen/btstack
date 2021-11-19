@@ -52,7 +52,7 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 // TODO avoid dependency on higher layer: used to trigger pairing for outgoing connections
 #include "ble/sm.h"
 #endif
@@ -131,7 +131,13 @@ typedef enum {
 #define L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET 2
 #define L2CAP_SIGNALING_COMMAND_DATA_OFFSET   4
 
-#if defined(ENABLE_LE_DATA_CHANNELS) || defined(ENABLE_L2CAP_ENHANCED_DATA_CHANNELS)
+#ifdef ENABLE_LE_DATA_CHANNELS
+#warning "ENABLE_LE_DATA_CHANNELS has been deprecated."
+#warning "Please use ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE instead in btstack_config.h"
+#define ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
+#endif
+
+#if defined(ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE) || defined(ENABLE_L2CAP_ENHANCED_DATA_CHANNELS)
 #define ENABLE_L2CAP_CREDIT_BASED_CHANNELS
 #endif
 
@@ -159,7 +165,7 @@ static void l2cap_emit_channel_closed(l2cap_channel_t *channel);
 static void l2cap_emit_incoming_connection(l2cap_channel_t *channel);
 static int  l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 #endif
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 static void l2cap_emit_le_channel_opened(l2cap_channel_t *channel, uint8_t status);
 static void l2cap_emit_le_channel_closed(l2cap_channel_t * channel);
 static void l2cap_emit_le_incoming_connection(l2cap_channel_t *channel);
@@ -207,7 +213,7 @@ static uint8_t l2cap_require_security_level2_for_outgoing_sdp;
 static bd_addr_t l2cap_outgoing_classic_addr;
 #endif
 
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 static btstack_linked_list_t l2cap_le_services;
 #endif
 
@@ -956,7 +962,7 @@ void l2cap_deinit(void){
     (void)memset(&l2cap_fixed_channel_att, 0, sizeof(l2cap_fixed_channel_att));
     (void)memset(&l2cap_fixed_channel_sm, 0, sizeof(l2cap_fixed_channel_sm));
 #endif
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
     l2cap_le_services = NULL;
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
@@ -1906,7 +1912,7 @@ static bool l2ap_run_information_requests(void){
 }
 #endif
 
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 static void l2cap_run_le_data_channels(void){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
@@ -2180,7 +2186,7 @@ static void l2cap_run(void){
     }
 #endif
 
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
     l2cap_run_le_data_channels();
 #endif
 
@@ -2517,7 +2523,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
         case L2CAP_CHANNEL_TYPE_FIXED:
             if (!channel->waiting_for_can_send_now) return false;
             return hci_can_send_acl_le_packet_now() != 0;
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
         case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
             if (channel->state != L2CAP_STATE_OPEN) return false;
             if (channel->send_sdu_buffer == NULL) return false;
@@ -2565,7 +2571,7 @@ static void l2cap_channel_trigger_send(l2cap_channel_t * channel){
             l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
             break;
 #endif
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
         case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
             l2cap_credit_based_send_pdu(channel);
             break;
@@ -2661,7 +2667,7 @@ static void l2cap_handle_hci_disconnect_event(l2cap_channel_t * channel){
 }
 #endif
 
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 static void l2cap_handle_hci_le_disconnect_event(l2cap_channel_t * channel){
     if (l2cap_send_open_failed_on_hci_disconnect(channel)){
         l2cap_emit_le_channel_opened(channel, L2CAP_CONNECTION_BASEBAND_DISCONNECT);
@@ -2794,7 +2800,7 @@ static void l2cap_handle_disconnection_complete(hci_con_handle_t handle){
                 l2cap_handle_hci_disconnect_event(channel);
                 break;
 #endif
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
             case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
                 l2cap_handle_hci_le_disconnect_event(channel);
                 break;
@@ -3994,7 +4000,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
     l2cap_channel_t * channel;
     btstack_linked_list_iterator_t it;
 #endif
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
     uint16_t local_cid;
     uint16_t le_psm;
     l2cap_service_t * service;
@@ -4066,7 +4072,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
                 if (channel->con_handle   != handle) continue;
                 if (channel->local_sig_id != sig_id) continue;
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
                 // if received while waiting for le connection response, assume legacy device
                 if (channel->state == L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE){
                     channel->state = L2CAP_STATE_CLOSED;
@@ -4096,7 +4102,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             break;
 #endif
 
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
         case LE_CREDIT_BASED_CONNECTION_REQUEST:
             // check size
             if (len < 10u) return 0u;
@@ -4566,7 +4572,7 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
 
     l2cap_fixed_channel_t * l2cap_fixed_channel;
 
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
     l2cap_channel_t * l2cap_channel;
 #endif
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet);
@@ -4602,7 +4608,7 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
 
         default:
 
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
             l2cap_channel = l2cap_get_channel_for_local_cid_and_handle(channel_id, handle);
             if (l2cap_channel != NULL) {
                 l2cap_credit_based_handle_pdu(l2cap_channel, packet, size);
@@ -4929,7 +4935,7 @@ static uint8_t l2cap_credit_based_disconnect(uint16_t local_cid){
 }
 #endif
 
-#ifdef ENABLE_LE_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 
 static void l2cap_le_notify_channel_can_send(l2cap_channel_t *channel){
     if (!channel->waiting_for_can_send_now) return;

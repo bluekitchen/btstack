@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: provide status instead of undocumented int error code and bool for API functions
 - L2CAP: remote features not required for SDP connections
 - L2CAP: replaced l2cap_register_packet_handler with l2cap_add_event_handler to register multiple handlers
+- L2CAP: use official terminology for L2CAP channel modes - ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE replaces ENABLE_LE_DATA_CHANNELS
 - RFCOMM: `RFCOMM_EVENT_PORT_CONFIGURATION` contains rfcomm_cid and remote flag, emitted for query config
 - RFCOMM: provide status instead of undocumented int error code and bool for API functions
 - RFCOMM: remote port configuration, line status, and modem status are sent by channel state machine
