@@ -172,6 +172,8 @@ static uint16_t avrcp_now_playing_info_value_len_with_headers(avrcp_connection_t
                 break;
         }
     }
+    // for total num bytes that of the attributes + headers
+    playing_info_len += 1;
     return playing_info_len;
 }
 
@@ -217,38 +219,37 @@ static uint16_t avrcp_store_avctp_now_playing_info_fragment(avrcp_connection_t *
             continue;
         }
 
+        // prepare attribute value
+        uint16_t num_bytes_to_copy;
+        uint8_t * attr_value_with_offset = avrcp_get_next_value_fragment_for_attribute_id(connection,
+                                                                                          connection->next_attr_id,
+                                                                                          &num_bytes_to_copy);
+
         // store header
         if (connection->attribute_value_offset == 0){
             // pack the whole attribute value header
             if (connection->parser_attribute_header_pos == 0) {
                 avrcp_target_pack_single_element_header(connection->parser_attribute_header, connection->next_attr_id,
                                                         connection->attribute_value_len);
-                connection->parser_attribute_header_pos = 0;
             }
+        }
 
-            if (connection->parser_attribute_header_pos < AVRCP_ATTRIBUTE_HEADER_LEN){
-                uint16_t num_header_bytes_to_store = btstack_min(num_free_bytes, AVRCP_ATTRIBUTE_HEADER_LEN - connection->parser_attribute_header_pos);
-                memcpy(packet + bytes_stored, connection->parser_attribute_header + connection->parser_attribute_header_pos, num_header_bytes_to_store);
-                connection->parser_attribute_header_pos += num_header_bytes_to_store;
-                bytes_stored += num_header_bytes_to_store;
-                num_free_bytes -= num_header_bytes_to_store;
-                connection->data_offset += num_header_bytes_to_store;
+        if (connection->parser_attribute_header_pos < AVRCP_ATTRIBUTE_HEADER_LEN){
+            uint16_t num_header_bytes_to_store = btstack_min(num_free_bytes, AVRCP_ATTRIBUTE_HEADER_LEN - connection->parser_attribute_header_pos);
+            memcpy(packet + bytes_stored, connection->parser_attribute_header + connection->parser_attribute_header_pos, num_header_bytes_to_store);
+            connection->parser_attribute_header_pos += num_header_bytes_to_store;
+            bytes_stored += num_header_bytes_to_store;
+            num_free_bytes -= num_header_bytes_to_store;
+            connection->data_offset += num_header_bytes_to_store;
 
-                if (num_free_bytes == 0){
-                    continue;
-                }
+            if (num_free_bytes == 0){
+                continue;
             }
         }
 
         // store value
-        uint16_t num_bytes_to_copy;
-        uint8_t * attr_value_with_offset = avrcp_get_next_value_fragment_for_attribute_id(connection,
-                                                                                          connection->next_attr_id,
-                                                                                          &num_bytes_to_copy);
-
         uint16_t num_attr_value_bytes_to_store = btstack_min(num_free_bytes, connection->attribute_value_len - connection->attribute_value_offset);
         memcpy(packet + bytes_stored, attr_value_with_offset, num_attr_value_bytes_to_store);
-
         bytes_stored   += num_attr_value_bytes_to_store;
         num_free_bytes -= num_attr_value_bytes_to_store;
         connection->attribute_value_offset += num_attr_value_bytes_to_store;
@@ -366,11 +367,14 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                             return;
 
                         case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:
+
                             packet[pos++] = connection->num_attributes;
+                            max_payload_size--;
+
                             bytes_stored = avrcp_store_avctp_now_playing_info_fragment(connection, max_payload_size, packet + pos);
 
                             connection->avrcp_frame_bytes_sent += bytes_stored + pos;
-                            l2cap_send_prepared(connection->l2cap_signaling_cid, bytes_stored);
+                            l2cap_send_prepared(connection->l2cap_signaling_cid, pos + bytes_stored);
                             return;
 
                         default:
@@ -400,7 +404,7 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                     bytes_stored = avrcp_store_avctp_now_playing_info_fragment(connection, max_payload_size, packet + pos);
 
                     connection->avrcp_frame_bytes_sent += bytes_stored + pos;
-                    l2cap_send_prepared(connection->l2cap_signaling_cid, bytes_stored);
+                    l2cap_send_prepared(connection->l2cap_signaling_cid, pos + bytes_stored);
                     return;
 
                 default:
@@ -471,7 +475,7 @@ static void avrcp_target_pass_through_command_data_init(avrcp_connection_t * con
     
     connection->command_type = command_type;
     connection->company_id = 0;
-    connection->pdu_id = 0;
+    connection->pdu_id = AVRCP_PDU_ID_UNDEFINED;
     connection->operation_id = opid;
 
     connection->data = connection->cmd_operands;
@@ -598,7 +602,7 @@ static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
     
     avrcp_target_custome_command_data_init(connection, 
         AVRCP_CMD_OPCODE_UNIT_INFO, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, 
-        AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, 0, connection->company_id);
+        AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, AVRCP_PDU_ID_UNDEFINED, connection->company_id);
     
     uint8_t unit = 0;    
     connection->data_len = 5;
@@ -619,7 +623,7 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
     connection->state = AVCTP_W2_SEND_RESPONSE;
     
     avrcp_target_custome_command_data_init(connection, AVRCP_CMD_OPCODE_SUBUNIT_INFO, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, 
-        AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, 0, connection->company_id);
+        AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, AVRCP_PDU_ID_UNDEFINED, connection->company_id);
 
     uint8_t page = offset / 4;
     uint8_t extension_code = 7;
@@ -1253,7 +1257,7 @@ static void avrcp_request_next_avctp_segment(avrcp_connection_t * connection){
     // AVCTP
     switch (connection->avctp_packet_type){
         case AVCTP_END_PACKET:
-        case AVRCP_SINGLE_PACKET:
+        case AVCTP_SINGLE_PACKET:
             connection->avrcp_frame_bytes_sent = 0;
             connection->data_offset = 0;
             connection->data_len = 0;

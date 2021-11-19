@@ -658,7 +658,7 @@ static uint8_t avrcp_controller_request_pass_through_release_control_cmd(avrcp_c
     if (connection->press_and_hold_cmd_active){
         avrcp_press_and_hold_timer_stop(connection);
     }
-    connection->operation_id = 0x80 | connection->operation_id;
+    connection->operation_id = (avrcp_operation_id_t)(0x80 | connection->operation_id);
     connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
