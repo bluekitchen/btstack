@@ -35,6 +35,7 @@
 #define ENABLE_SCO_OVER_HCI
 #define ENABLE_SDP_DES_DUMP
 #define ENABLE_SOFTWARE_AES128
+#define ENABLE_AVCTP_FRAGMENTATION
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)

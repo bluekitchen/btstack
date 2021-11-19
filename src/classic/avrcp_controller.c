@@ -463,7 +463,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
             if (connection->parser_attribute_header_pos < AVRCP_ATTRIBUTE_HEADER_LEN) return;
 
             attribute_total_value_len = big_endian_read_16(connection->parser_attribute_header, 6);
-            connection->attribute_value_len = btstack_min(attribute_total_value_len, AVRCP_MAX_ATTRIBUTTE_SIZE);
+            connection->attribute_value_len = btstack_min(attribute_total_value_len, AVRCP_MAX_ATTRIBUTE_SIZE);
             if (connection->attribute_value_len > 0){
                 // get ready for attribute value
                 connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_VALUE;

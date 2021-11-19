@@ -332,21 +332,21 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
-static uint16_t avctp_get_header_offset(avctp_packet_type_t avctp_packet_type) {
-    uint16_t offset; // AVCTP message: header (1), num_packets (1), pid (2)
+uint16_t avctp_get_num_bytes_for_header(avctp_packet_type_t avctp_packet_type) {
     switch (avctp_packet_type){
         case AVCTP_SINGLE_PACKET:
+            // AVCTP message: transport header (1), pid (2)
+            return 3;
         case AVCTP_START_PACKET:
-            offset = 4;
-            break;
+            // AVCTP message: transport header (1), num_packets (1), pid (2)
+            return 4;
         default:
-            offset = 1;
-            break;
+            // AVCTP message: transport header (1)
+            return 1;
     }
-    return offset;
 }
 
-static uint16_t avctp_get_message_offset(avrcp_command_opcode_t command_opcode, avctp_packet_type_t avctp_packet_type) {
+uint16_t avrcp_get_num_bytes_for_header(avrcp_command_opcode_t command_opcode, avctp_packet_type_t avctp_packet_type) {
     switch (avctp_packet_type){
         case AVCTP_SINGLE_PACKET:
         case AVCTP_START_PACKET:
@@ -369,29 +369,58 @@ static uint16_t avctp_get_message_offset(avrcp_command_opcode_t command_opcode, 
     return offset;
 }
 
-static uint16_t avctp_get_max_payload_size(uint16_t l2cap_cid, avrcp_command_opcode_t command_opcode, avctp_packet_type_t avctp_packet_type){
+static uint16_t avrcp_get_num_free_bytes_for_payload(uint16_t l2cap_cid, avrcp_command_opcode_t command_opcode, avctp_packet_type_t avctp_packet_type){
     uint16_t max_frame_size = btstack_min(l2cap_get_remote_mtu_for_local_cid(l2cap_cid), AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
-    uint16_t offset = avctp_get_header_offset(avctp_packet_type) + avctp_get_message_offset(command_opcode, avctp_packet_type);
+    uint16_t payload_offset = avctp_get_num_bytes_for_header(avctp_packet_type) +
+                              avrcp_get_num_bytes_for_header(command_opcode, avctp_packet_type);
 
-    btstack_assert( max_frame_size >= offset);
-    return (max_frame_size - offset);
+    btstack_assert(max_frame_size >= payload_offset);
+    return (max_frame_size - payload_offset);
 }
 
 
 avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint16_t * max_payload_size){
     if (connection->data_offset == 0){
-        *max_payload_size = avctp_get_max_payload_size(connection->l2cap_signaling_cid, connection->command_opcode, AVCTP_SINGLE_PACKET);
+        *max_payload_size = avrcp_get_num_free_bytes_for_payload(connection->l2cap_signaling_cid,
+                                                                 connection->command_opcode,
+                                                                 AVCTP_SINGLE_PACKET);
         if (*max_payload_size >= connection->data_len){
             return AVCTP_SINGLE_PACKET;
         } else {
             return AVCTP_START_PACKET;
         }
     } else {
-        *max_payload_size = avctp_get_max_payload_size(connection->l2cap_signaling_cid, connection->command_opcode, AVCTP_CONTINUE_PACKET);
+        *max_payload_size = avrcp_get_num_free_bytes_for_payload(connection->l2cap_signaling_cid,
+                                                                 connection->command_opcode,
+                                                                 AVCTP_CONTINUE_PACKET);
         if ((connection->data_len - connection->data_offset) > *max_payload_size){
-             return AVCTP_CONTINUE_PACKET;
+            return AVCTP_CONTINUE_PACKET;
         } else {
             return AVCTP_END_PACKET;
+        }
+    }
+}
+
+avrcp_packet_type_t avrcp_get_packet_type(avrcp_connection_t * connection){
+    switch (connection->avctp_packet_type) {
+        case AVCTP_SINGLE_PACKET:
+        case AVCTP_START_PACKET:
+            break;
+        default:
+            return connection->packet_type;
+    }
+
+    if (connection->data_offset == 0){
+        if (AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE >= connection->data_len){
+            return AVRCP_SINGLE_PACKET;
+        } else {
+            return AVRCP_START_PACKET;
+        }
+    } else {
+        if ((connection->data_len - connection->data_offset) > AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE){
+            return AVRCP_CONTINUE_PACKET;
+        } else {
+            return AVRCP_END_PACKET;
         }
     }
 }

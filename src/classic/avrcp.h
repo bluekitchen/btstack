@@ -63,7 +63,7 @@ extern "C" {
 #define AVRCP_MAX_COMMAND_PARAMETER_LENGTH 11
 #define BT_SIG_COMPANY_ID 0x001958
 #define AVRCP_MEDIA_ATTR_COUNT 7
-#define AVRCP_MAX_ATTRIBUTTE_SIZE 130
+#define AVRCP_MAX_ATTRIBUTE_SIZE 130
 #define AVRCP_ATTRIBUTE_HEADER_LEN  8
 #define AVRCP_MAX_FOLDER_NAME_SIZE      20
 
@@ -481,7 +481,7 @@ typedef struct {
     avrcp_parser_state_t parser_state;
     uint8_t  parser_attribute_header[AVRCP_BROWSING_ITEM_HEADER_LEN];
     uint8_t  parser_attribute_header_pos;
-    uint8_t  parsed_attribute_value[AVRCP_MAX_ATTRIBUTTE_SIZE];
+    uint8_t  parsed_attribute_value[AVRCP_MAX_ATTRIBUTE_SIZE];
     uint16_t parsed_attribute_value_len;
     uint16_t parsed_attribute_value_offset;
     uint8_t  parsed_num_attributes;
@@ -552,9 +552,13 @@ typedef struct {
 
     uint8_t * data;
     uint16_t  data_len;
+
+
     // long/fragmented commands
     uint16_t  data_offset;
-    
+    uint16_t  avrcp_frame_bytes_sent;
+    avctp_packet_type_t  avctp_packet_type;
+
     btstack_timer_source_t retry_timer;
     btstack_timer_source_t press_and_hold_cmd_timer;
     bool     press_and_hold_cmd_active;
@@ -611,7 +615,7 @@ typedef struct {
 
     uint16_t list_size;
     uint16_t list_offset;
-    uint8_t  attribute_value[AVRCP_MAX_ATTRIBUTTE_SIZE];
+    uint8_t  attribute_value[AVRCP_MAX_ATTRIBUTE_SIZE];
     uint16_t attribute_value_len;
     uint16_t attribute_value_offset;
     
@@ -659,6 +663,9 @@ const char * avrcp_shuffle2str(uint8_t index);
 
 
 avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint16_t * max_payload_size);
+avrcp_packet_type_t avrcp_get_packet_type(avrcp_connection_t * connection);
+uint16_t avctp_get_num_bytes_for_header(avctp_packet_type_t avctp_packet_type);
+uint16_t avrcp_get_num_bytes_for_header(avrcp_command_opcode_t command_opcode, avctp_packet_type_t avctp_packet_type);
 
 void avrcp_register_controller_packet_handler(btstack_packet_handler_t avrcp_controller_packet_handler);
 void avrcp_register_target_packet_handler(btstack_packet_handler_t avrcp_target_packet_handler);
