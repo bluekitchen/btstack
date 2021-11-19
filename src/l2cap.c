@@ -138,10 +138,10 @@ typedef enum {
 #endif
 
 #if defined(ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE) || defined(ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE)
-#define ENABLE_L2CAP_CREDIT_BASED_CHANNELS
+#define L2CAP_USES_CREDIT_BASED_CHANNELS
 #endif
 
-#if defined(ENABLE_L2CAP_CREDIT_BASED_CHANNELS) || defined(ENABLE_CLASSIC)
+#if defined(L2CAP_USES_CREDIT_BASED_CHANNELS) || defined(ENABLE_CLASSIC)
 #define L2CAP_USES_CHANNELS
 #endif
 
@@ -173,7 +173,7 @@ static void l2cap_le_notify_channel_can_send(l2cap_channel_t *channel);
 static void l2cap_le_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm);
 #endif
-#ifdef ENABLE_L2CAP_CREDIT_BASED_CHANNELS
+#ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
 static void l2cap_credit_based_send_pdu(l2cap_channel_t *channel);
 static void l2cap_credit_based_send_credits(l2cap_channel_t *channel);
 static bool l2cap_credit_based_handle_credit_indication(hci_con_handle_t handle, const uint8_t * command, uint16_t len);
@@ -1213,7 +1213,7 @@ static l2cap_channel_t * l2cap_get_channel_for_local_cid_and_handle(uint16_t loc
 }
 #endif
 
-#ifdef ENABLE_L2CAP_CREDIT_BASED_CHANNELS
+#ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
 static l2cap_channel_t * l2cap_get_channel_for_remote_handle_and_cid(hci_con_handle_t con_handle, uint16_t remote_cid){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
@@ -1326,7 +1326,7 @@ static uint8_t l2cap_send_signaling_packet(hci_con_handle_t handle, uint8_t pb_f
     return hci_send_acl_packet_buffer(len);
 }
 
-#ifdef ENABLE_L2CAP_CREDIT_BASED_CHANNELS
+#ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
 static int l2cap_send_general_signaling_packet(hci_con_handle_t handle, uint16_t signaling_cid, L2CAP_SIGNALING_COMMANDS cmd, int identifier, ...){
     va_list argptr;
     va_start(argptr, identifier);
@@ -3996,7 +3996,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
     uint16_t result;
     uint8_t  event[12];
 
-#ifdef ENABLE_L2CAP_CREDIT_BASED_CHANNELS
+#ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
     l2cap_channel_t * channel;
     btstack_linked_list_iterator_t it;
 #endif
@@ -4064,7 +4064,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             return l2cap_enhanced_signaling_handler_dispatch(handle, L2CAP_CID_SIGNALING_LE, command, sig_id);
 #endif
 
-#ifdef ENABLE_L2CAP_CREDIT_BASED_CHANNELS
+#ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
         case COMMAND_REJECT:
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
@@ -4240,7 +4240,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             break;
 #endif
 
-#ifdef ENABLE_L2CAP_CREDIT_BASED_CHANNELS
+#ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
         case L2CAP_FLOW_CONTROL_CREDIT_INDICATION:
             return l2cap_credit_based_handle_credit_indication(handle, command, len) ? 1 : 0;
 
@@ -4290,7 +4290,7 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
     // forward data only in OPEN state
     if (l2cap_channel->state != L2CAP_STATE_OPEN) return;
 
-#ifdef ENABLE_L2CAP_CREDIT_BASED_CHANNELS
+#ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
     if (l2cap_channel->channel_type == L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL){
         l2cap_credit_based_handle_pdu(l2cap_channel, packet, size);
         return;
@@ -4741,7 +4741,7 @@ uint8_t l2cap_unregister_service(uint16_t psm){
 #endif
 
 
-#ifdef ENABLE_L2CAP_CREDIT_BASED_CHANNELS
+#ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
 
 static void l2cap_credit_based_send_pdu(l2cap_channel_t *channel) {
     btstack_assert(channel != NULL);
