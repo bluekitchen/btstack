@@ -839,6 +839,42 @@ void l2cap_deinit(void);
 
 /* API_END */
 
+
+// @deprecated - please use l2cap_ertm_create_channel
+uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm,  l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid);
+
+// @deprecated - please use l2cap_ertm_accept_connection
+uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size);
+
+// @deprecated - please use l2cap_cbm_register_service
+uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level);
+
+// @deprecated - please use l2cap_cbm_unregister_service
+uint8_t l2cap_le_unregister_service(uint16_t psm);
+
+// @deprecated - please use l2cap_cbm_accept_connection
+uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits);
+
+// @deprecated - please use l2cap_cbm_decline_connection
+uint8_t l2cap_le_decline_connection(uint16_t local_cid);
+
+// @deprecated - please use l2cap_cbm_create_channel
+uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle,
+                                uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
+                                uint16_t * out_local_cid);
+
+// @deprecated - please use l2cap_cbm_can_send_now
+bool l2cap_le_can_send_now(uint16_t local_cid);
+
+// @deprecated - please use l2cap_cbm_request_can_send_now_event
+uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid);
+
+// @deprecated - please use l2cap_cbm_send_data
+uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size);
+
+// @deprecated - please use l2cap_cbm_disconnect
+uint8_t l2cap_le_disconnect(uint16_t local_cid);
+
 #if defined __cplusplus
 }
 #endif

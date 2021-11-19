@@ -5506,3 +5506,79 @@ uint8_t l2cap_ecbm_disconnect(uint16_t local_cid){
 }
 
 #endif
+
+
+// deprecation wrappers - please update
+uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm,
+                                  l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid){
+    log_error("deprecated - please use l2cap_ertm_create_channel");
+    return l2cap_ertm_create_channel(packet_handler, address, psm, ertm_contig, buffer, size, out_local_cid);
+};
+
+// @deprecated - please use l2cap_ertm_accept_connection
+uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size){
+    log_error("deprecated - please use l2cap_ertm_accept_connection");
+    return l2cap_ertm_accept_connection(local_cid, ertm_contig, buffer, size);
+}
+
+// @deprecated - please use l2cap_cbm_register_service
+uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level){
+    log_error("deprecated - please use l2cap_cbm_register_service");
+    return l2cap_cbm_register_service(packet_handler, psm, security_level);
+}
+
+// @deprecated - please use l2cap_cbm_unregister_service
+uint8_t l2cap_le_unregister_service(uint16_t psm){
+    log_error("deprecated - please use l2cap_cbm_unregister_service");
+    return l2cap_cbm_unregister_service(psm);
+}
+
+// @deprecated - please use l2cap_cbm_accept_connection
+uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits){
+    log_error("deprecated - please use l2cap_cbm_accept_connection");
+    return l2cap_cbm_accept_connection(local_cid, receive_sdu_buffer, mtu, initial_credits);
+}
+
+// @deprecated - please use l2cap_cbm_decline_connection
+uint8_t l2cap_le_decline_connection(uint16_t local_cid){
+    log_error("deprecated - please use l2cap_cbm_decline_connection");
+    return l2cap_cbm_decline_connection(local_cid);
+}
+
+// @deprecated - please use l2cap_cbm_create_channel
+uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle,
+                                uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
+                                uint16_t * out_local_cid){
+    log_error("deprecated - please use l2cap_cbm_create_channel");
+    return l2cap_cbm_create_channel(packet_handler, con_handle, psm, receive_sdu_buffer, mtu, initial_credits, security_level, out_local_cid);
+}
+
+// @deprecated - please use l2cap_cbm_provide_credits
+uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
+    log_error("deprecated - please use l2cap_cbm_provide_credits");
+    return l2cap_cbm_provide_credits(local_cid, credits);
+}
+
+// @deprecated - please use l2cap_cbm_can_send_now
+bool l2cap_le_can_send_now(uint16_t local_cid){
+    log_error("deprecated - please use l2cap_cbm_can_send_now");
+    return l2cap_cbm_can_send_now(local_cid);
+}
+
+// @deprecated - please use l2cap_cbm_request_can_send_now_event
+uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid){
+    log_error("deprecated - please use l2cap_cbm_request_can_send_now_event");
+    return l2cap_cbm_request_can_send_now_event(local_cid);
+}
+
+// @deprecated - please use l2cap_cbm_send_data
+uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size){
+    log_error("deprecated - please use l2cap_cbm_send_data");
+    return l2cap_cbm_send_data(local_cid, data, size);
+}
+
+// @deprecated - please use l2cap_cbm_disconnect
+uint8_t l2cap_le_disconnect(uint16_t local_cid){
+    log_error("deprecated - please use l2cap_cbm_disconnect");
+    return l2cap_cbm_disconnect(local_cid);
+}
