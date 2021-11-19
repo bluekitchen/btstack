@@ -381,15 +381,19 @@ static uint16_t avrcp_get_num_free_bytes_for_payload(uint16_t l2cap_cid, avrcp_c
 
 avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint16_t * max_payload_size){
     if (connection->data_offset == 0){
-        *max_payload_size = avrcp_get_num_free_bytes_for_payload(connection->l2cap_signaling_cid,
+        uint16_t max_payload_size_for_single_packet = avrcp_get_num_free_bytes_for_payload(connection->l2cap_signaling_cid,
                                                                  connection->command_opcode,
                                                                  AVCTP_SINGLE_PACKET);
-        if (*max_payload_size >= connection->data_len){
+        if (max_payload_size_for_single_packet >= connection->data_len){
+            *max_payload_size = max_payload_size_for_single_packet;
             return AVCTP_SINGLE_PACKET;
         } else {
+            uint16_t max_payload_size_for_start_packet = max_payload_size_for_single_packet - 1;
+            *max_payload_size = max_payload_size_for_start_packet;
             return AVCTP_START_PACKET;
         }
     } else {
+        // both packet types have the same single byte AVCTP header
         *max_payload_size = avrcp_get_num_free_bytes_for_payload(connection->l2cap_signaling_cid,
                                                                  connection->command_opcode,
                                                                  AVCTP_CONTINUE_PACKET);
