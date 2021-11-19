@@ -258,7 +258,7 @@ typedef struct {
     uint16_t  receive_sdu_len;
     uint16_t  receive_sdu_pos;
 
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
     uint8_t * renegotiate_sdu_buffer;
     uint16_t  renegotiate_mtu;
 #endif
@@ -283,7 +283,7 @@ typedef struct {
     // automatic credits incoming
     uint16_t automatic_credits;
 
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
     uint8_t cid_index;
     uint8_t num_cids;
 #endif

@@ -98,6 +98,7 @@ ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION | Enable address resolution for resolvable 
 ENABLE_CROSS_TRANSPORT_KEY_DERIVATION | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections
 ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE | Enable Enhanced Retransmission Mode for L2CAP Channels. Mandatory for AVRCP Browsing
 ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE | Enable LE credit-based flow-control mode for L2CAP channels
+ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE | Enable Enhanced credit-based flow-control mode for L2CAP Channels
 ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow Control, see below
 ENABLE_ATT_DELAYED_RESPONSE      | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)
 ENABLE_BCM_PCM_WBS               | Enable support for Wide-Band Speech codec in BCM controller, requires ENABLE_SCO_OVER_PCM

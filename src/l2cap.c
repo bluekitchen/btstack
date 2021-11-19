@@ -137,7 +137,7 @@ typedef enum {
 #define ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 #endif
 
-#if defined(ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE) || defined(ENABLE_L2CAP_ENHANCED_DATA_CHANNELS)
+#if defined(ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE) || defined(ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE)
 #define ENABLE_L2CAP_CREDIT_BASED_CHANNELS
 #endif
 
@@ -194,7 +194,7 @@ static void l2cap_ertm_notify_channel_can_send(l2cap_channel_t * channel);
 static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts);
 static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * ts);
 #endif
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
 static int l2cap_enhanced_signaling_handler_dispatch(hci_con_handle_t handle, uint16_t signaling_cid, uint8_t * command, uint8_t sig_id);
 #endif
 
@@ -217,7 +217,7 @@ static bd_addr_t l2cap_outgoing_classic_addr;
 static btstack_linked_list_t l2cap_le_services;
 #endif
 
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
 static btstack_linked_list_t l2cap_enhanced_services;
 static uint16_t l2cap_enhanced_mps_min;
 static uint16_t l2cap_enhanced_mps_max;
@@ -925,7 +925,7 @@ void l2cap_init(void){
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_sm);
 #endif
     
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
     l2cap_enhanced_mps_min = 0x0001;
     l2cap_enhanced_mps_max = 0xffff;
 #endif
@@ -965,7 +965,7 @@ void l2cap_deinit(void){
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
     l2cap_le_services = NULL;
 #endif
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
     l2cap_enhanced_services = NULL;
 #endif
     l2cap_event_handlers = NULL;
@@ -1786,7 +1786,7 @@ static void l2cap_run_signaling_response(void) {
 #ifdef ENABLE_CLASSIC
         uint16_t info_type     = l2cap_signaling_responses[0].data;  // INFORMATION_REQUEST
 #endif
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
         uint8_t num_channels = l2cap_signaling_responses[0].cid >> 8;                 // L2CAP_CREDIT_BASED_CONNECTION_REQUEST
         uint16_t signaling_cid = (uint16_t) l2cap_signaling_responses[0].cid & 0xff;  // L2CAP_CREDIT_BASED_CONNECTION_REQUEST, L2CAP_CREDIT_BASED_CONNECTION_REQUEST
 #endif
@@ -1853,7 +1853,7 @@ static void l2cap_run_signaling_response(void) {
                 l2cap_send_le_signaling_packet(handle, COMMAND_REJECT, sig_id, result, 0, NULL);
                 break;
 #endif
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
             case L2CAP_CREDIT_BASED_CONNECTION_REQUEST: {
                 // send variable size array or cids with each cid being zero
                 uint16_t cids[6];
@@ -1978,7 +1978,7 @@ static void l2cap_run_le_data_channels(void){
 }
 #endif
 
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
 
 // 11BH22222
 static void l2cap_emit_enhanced_data_channel_opened(l2cap_channel_t *channel, uint8_t status) {
@@ -2190,7 +2190,7 @@ static void l2cap_run(void){
     l2cap_run_le_data_channels();
 #endif
 
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
     l2cap_run_enhanced_data_channels();
 #endif
 
@@ -2531,7 +2531,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
             return hci_can_send_acl_le_packet_now() != 0;
 #endif
 #endif
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
         case L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL:
             if (channel->state != L2CAP_STATE_OPEN) return false;
             if (channel->send_sdu_buffer == NULL) return false;
@@ -2576,7 +2576,7 @@ static void l2cap_channel_trigger_send(l2cap_channel_t * channel){
             l2cap_credit_based_send_pdu(channel);
             break;
 #endif
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
         case L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL:
             l2cap_credit_based_send_pdu(channel);
             break;
@@ -2805,7 +2805,7 @@ static void l2cap_handle_disconnection_complete(hci_con_handle_t handle){
                 l2cap_handle_hci_le_disconnect_event(channel);
                 break;
 #endif
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
             case L2CAP_CHANNEL_TYPE_ENHANCED_DATA_CHANNEL:
                 switch (channel->state) {
                     case L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_REQUEST:
@@ -3534,7 +3534,7 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
             }
             return;
 
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
         case L2CAP_CREDIT_BASED_CONNECTION_REQUEST:
         case L2CAP_CREDIT_BASED_CONNECTION_RESPONSE:
         case L2CAP_CREDIT_BASED_RECONFIGURE_REQUEST:
@@ -3613,7 +3613,7 @@ static l2cap_service_t * l2cap_get_service_internal(btstack_linked_list_t * serv
 }
 #endif
 
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
 
 static uint8_t l2cap_enhanced_setup_channels(btstack_linked_list_t * channels,
                                              btstack_packet_handler_t packet_handler, uint8_t num_channels,
@@ -4056,7 +4056,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             l2cap_emit_connection_parameter_update_response(handle, result);
             break;
 
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
         case L2CAP_CREDIT_BASED_CONNECTION_REQUEST:
         case L2CAP_CREDIT_BASED_CONNECTION_RESPONSE:
         case L2CAP_CREDIT_BASED_RECONFIGURE_REQUEST:
@@ -4085,7 +4085,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                     continue;
                 }
 #endif
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
                 // if received while waiting for le connection response, assume legacy device
                 if (channel->state == L2CAP_STATE_WAIT_ENHANCED_CONNECTION_RESPONSE){
                     channel->state = L2CAP_STATE_CLOSED;
@@ -5256,7 +5256,7 @@ uint8_t l2cap_le_disconnect(uint16_t local_cid){
 }
 #endif
 
-#ifdef ENABLE_L2CAP_ENHANCED_DATA_CHANNELS
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
 
 uint8_t l2cap_enhanced_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t min_remote_mtu, gap_security_level_t security_level){
 
