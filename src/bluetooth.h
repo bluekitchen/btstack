@@ -455,7 +455,7 @@ typedef enum {
 #define L2CAP_CID_SECURITY_MANAGER_PROTOCOL        0x0006
 #define L2CAP_CID_BR_EDR_SECURITY_MANAGER          0x0007
 
-// L2CAP Channels in Basic Mode
+// L2CAP Channels in Basic and Enhanced Retransmission Mode
 
 // connection response result
 #define L2CAP_CONNECTION_RESULT_SUCCESS                         0x0000

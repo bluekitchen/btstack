@@ -2115,7 +2115,7 @@ static void l2cap_ecbm_run_channels(void) {
 
         // handle open for L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_RESPONSE
         if (matching_state == L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_RESPONSE) {
-            if (channel->reason == 0) {
+            if (channel->reason == L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS) {
                 l2cap_ecbm_emit_channel_opened(channel, ERROR_CODE_SUCCESS);
             } else {
                 result = channel->reason;
@@ -2753,7 +2753,7 @@ static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_le
                 if (actual_level >= required_level){
                     l2cap_handle_security_level_incoming_sufficient(channel);
                 } else {
-                    channel->reason = 0x0003; // security block
+                    channel->reason = L2CAP_CONNECTION_RESULT_SECURITY_BLOCK;
                     channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
                 }
                 break;
@@ -2967,8 +2967,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     // log_info("l2cap_handle_connection_request for handle %u, psm %u cid 0x%02x", handle, psm, source_cid);
     l2cap_service_t *service = l2cap_get_service(psm);
     if (!service) {
-        // 0x0002 PSM not supported
-        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, source_cid, 0x0002);
+        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CONNECTION_RESULT_PSM_NOT_SUPPORTED);
         return;
     }
     
@@ -2987,8 +2986,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     l2cap_channel_t * channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, hci_connection->address, BD_ADDR_TYPE_ACL, 
     psm, service->mtu, required_level);
     if (!channel){
-        // 0x0004 No resources available
-        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, source_cid, 0x0004);
+        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE);
         return;
     }
 
@@ -3049,7 +3047,7 @@ void l2cap_decline_connection(uint16_t local_cid){
         return;
     }
     channel->state  = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
-    channel->reason = 0x04; // no resources available
+    channel->reason = L2CAP_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE;
     l2cap_run();
 }
 
@@ -3418,7 +3416,7 @@ static void l2cap_handle_information_request_complete(hci_connection_t * connect
                     // We chose 'no resources available' for "ERTM mandatory but you don't even know ERTM exists"
                     log_info("ERTM mandatory -> reject connection");
                     channel->state  = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
-                    channel->reason = 0x04; // no resources available
+                    channel->reason = L2CAP_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE;
                 }  else {
                     log_info("ERTM not supported by remote -> use Basic mode");
                 }
@@ -3648,16 +3646,16 @@ static inline l2cap_service_t * l2cap_enhanced_get_service(uint16_t spsm){
 
 static inline uint8_t l2cap_enhanced_status_for_result(uint16_t result) {
     switch (result) {
-        case 0x0000:
+        case L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS:
             return ERROR_CODE_SUCCESS;
-        case 0x0002:
+        case L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_SPSM_NOT_SUPPORTED:
             return L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM;
-        case 0x0004:
+        case L2CAP_ECBM_CONNECTION_RESULT_SOME_REFUSED_INSUFFICIENT_RESOURCES_AVAILABLE:
             return L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES;
-        case 0x0005:
-        case 0x0006:
-        case 0x0007:
-        case 0x0008:
+        case L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INSUFFICIENT_AUTHENTICATION:
+        case L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INSUFFICIENT_AUTHORIZATION:
+        case L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_ENCYRPTION_KEY_SIZE_TOO_SHORT:
+        case L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INSUFFICIENT_ENCRYPTION:
             return L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY;
         default:
             // invalid Source CID, Source CID already allocated, unacceptable parameters
@@ -3712,29 +3710,26 @@ static int l2cap_enhanced_signaling_handler_dispatch(hci_con_handle_t handle, ui
 
                 // param: check remote mtu
                 if (service->mtu > remote_mtu) {
-                    // 0x000B All connections refused – invalid parameters
                     l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
-                                                      num_channels_and_signaling_cid, 0x000C);
+                                                      num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INVALID_PARAMETERS);
                     return 1;
                 }
 
                 // security: check authentication
                 if (service->required_security_level >= LEVEL_3) {
                     if (!gap_authenticated(handle)) {
-                        // 0x0005 Connection refused – insufficient authentication
                         l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
-                                                          num_channels_and_signaling_cid, 0x0005);
+                                                          num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INSUFFICIENT_AUTHENTICATION);
                         return 1;
                     }
                 }
 
                 // security: check encryption
-                // L2CAP.TS.p31 does not check for 0x0008 Connection refused - insufficient encryption which might be send for no encryption
+                // L2CAP.TS.p31 does not check for Connection refused - insufficient encryption which might be send for no encryption
                 if (service->required_security_level >= LEVEL_2) {
                     if (gap_encryption_key_size(handle) < 16) {
-                        // 0x0007 Connection refused – insufficient encryption key size
                         l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
-                                                          num_channels_and_signaling_cid, 0x0007);
+                                                          num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_ENCYRPTION_KEY_SIZE_TOO_SHORT);
                         return 1;
                     }
                 }
@@ -3748,8 +3743,7 @@ static int l2cap_enhanced_signaling_handler_dispatch(hci_con_handle_t handle, ui
                     // check source cids
                     uint16_t source_cid = little_endian_read_16(command, 12 + (i * 2));
                     if (source_cid < 0x40u) {
-                        // 0x0009 Connection refused - Invalid Source CID
-                        result = 0x0009;
+                        result = L2CAP_ECBM_CONNECTION_RESULT_SOME_REFUSED_INVALID_SOURCE_CID;
                         continue;
                     }
 
@@ -3824,9 +3818,8 @@ static int l2cap_enhanced_signaling_handler_dispatch(hci_con_handle_t handle, ui
                 (*service->packet_handler)(HCI_EVENT_PACKET, a_local_cid, event, sizeof(event));
 
             } else {
-                // All connections refused – SPSM not supported
                 l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
-                                                  num_channels_and_signaling_cid, 0x0002);
+                                                  num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_SPSM_NOT_SUPPORTED);
             }
             return 1;
 
@@ -3896,26 +3889,22 @@ static int l2cap_enhanced_signaling_handler_dispatch(hci_con_handle_t handle, ui
                 uint16_t remote_cid = little_endian_read_16(command, 8 + (i * sizeof(uint16_t)));
                 l2cap_channel_t *channel = l2cap_get_channel_for_remote_handle_and_cid(handle, remote_cid);
                 if (channel == NULL) {
-                    // 0x0003 Reconfiguration failed - one or more Destination CIDs invalid
-                    result = 0x0003;
+                    result = L2CAP_ECBM_RECONFIGURE_FAILED_DESTINATION_CID_INVALID;
                     break;
                 }
                 // check MTU is not reduced
                 if (channel->remote_mtu > new_mtu) {
-                    // 0x0001 Reconfiguration failed - reduction in size of MTU not allowed
-                    result = 0x0001;
+                    result = L2CAP_ECBM_RECONFIGURE_FAILED_MTU_REDUCTION_NOT_ALLOWED;
                     break;
                 }
                 // check MPS reduction
                 if ((num_channels > 1) && (channel->remote_mps > new_mps)) {
-                    // 0x002 Reconfiguration failed - reduction in size of MPS not allowed for more than one channel at a time
-                    result = 0x0002;
+                    result = L2CAP_ECBM_RECONFIGURE_FAILED_MPS_REDUCTION_MULTIPLE_CHANNELS;
                     break;
                 }
                 // check MPS valid
                 if (new_mps < l2cap_enhanced_mps_min) {
-                    // 0x0002 Reconfiguration failed - other unacceptable parameters
-                    result = 0x0004;
+                    result = L2CAP_ECBM_RECONFIGURE_FAILED_UNACCEPTABLE_PARAMETERS;
                     break;
                 }
             }
@@ -4076,8 +4065,8 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 // if received while waiting for le connection response, assume legacy device
                 if (channel->state == L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE){
                     channel->state = L2CAP_STATE_CLOSED;
-                    // no official value for this, use: Connection refused – LE_PSM not supported - 0x0002
-                    l2cap_emit_le_channel_opened(channel, 0x0002);
+                    // no official value for this, use: Connection refused – LE_PSM not supported
+                    l2cap_emit_le_channel_opened(channel, L2CAP_CBM_CONNECTION_RESULT_SPSM_NOT_SUPPORTED);
 
                     // discard channel
                     btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
@@ -4118,8 +4107,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 
             if (service){
                 if (source_cid < 0x40u){
-                    // 0x0009 Connection refused - Invalid Source CID
-                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0009);
+                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INVALID_SOURCE_CID);
                     return 1;
                 }
 
@@ -4130,31 +4118,27 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                     if (!l2cap_is_dynamic_channel_type(a_channel->channel_type)) continue;
                     if (a_channel->con_handle != handle) continue;
                     if (a_channel->remote_cid != source_cid) continue;
-                    // 0x000a Connection refused - Source CID already allocated
-                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x000a);
+                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_SOURCE_CID_ALREADY_ALLOCATED);
                     return 1;
                 }                    
 
                 // security: check encryption
                 if (service->required_security_level >= LEVEL_2){
                     if (gap_encryption_key_size(handle) == 0){
-                        // 0x0008 Connection refused - insufficient encryption 
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0008);
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_ENCRYPTION);
                         return 1;
                     }
                     // anything less than 16 byte key size is insufficient
                     if (gap_encryption_key_size(handle) < 16){
-                        // 0x0007 Connection refused – insufficient encryption key size
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0007);
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_ENCYRPTION_KEY_SIZE_TOO_SHORT);
                         return 1;
                     }
                 }
 
-                // security: check authencation
+                // security: check authentication
                 if (service->required_security_level >= LEVEL_3){
                     if (!gap_authenticated(handle)){
-                        // 0x0005 Connection refused – insufficient authentication
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0005);
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_AUTHENTICATION);
                         return 1;
                     }
                 }
@@ -4162,8 +4146,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 // security: check authorization
                 if (service->required_security_level >= LEVEL_4){
                     if (gap_authorization_state(handle) != AUTHORIZATION_GRANTED){
-                        // 0x0006 Connection refused – insufficient authorization
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0006);
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_AUTHORIZATION);
                         return 1;
                     }
                 }
@@ -4172,8 +4155,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CHANNEL_CBM, connection->address,
                                                      BD_ADDR_TYPE_LE_RANDOM, le_psm, service->mtu, service->required_security_level);
                 if (!channel){
-                    // 0x0004 Connection refused – no resources available
-                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0004);
+                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE);
                     return 1;
                 }
 
@@ -4195,8 +4177,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 l2cap_emit_le_incoming_connection(channel);
 
             } else {
-                // Connection refused – LE_PSM not supported
-                l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0002);
+                l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_SPSM_NOT_SUPPORTED);
             }
             break;
 
@@ -5081,7 +5062,7 @@ uint8_t l2cap_cbm_decline_connection(uint16_t local_cid){
 
     // set state decline connection
     channel->state  = L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE;
-    channel->reason = 0x04; // no resources available
+    channel->reason = L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE;
     l2cap_run();
     return ERROR_CODE_SUCCESS;
 }
@@ -5367,8 +5348,7 @@ uint8_t l2cap_ecbm_accept_channels(uint16_t local_cid, uint8_t num_channels, uin
         } else {
             // clear local cid for response packet
             channel->local_cid = 0;
-            // Some connections refused – insufficient resources available
-            channel->reason = 0x004;
+            channel->reason = L2CAP_ECBM_CONNECTION_RESULT_SOME_REFUSED_INSUFFICIENT_RESOURCES_AVAILABLE;
         }
         // update state
         channel->state = L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_RESPONSE;
