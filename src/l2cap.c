@@ -5050,7 +5050,7 @@ uint8_t l2cap_cbm_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_bu
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_cbm_decline_connection(uint16_t local_cid){
+uint8_t l2cap_cbm_decline_connection(uint16_t local_cid, uint16_t result) {
     // get channel
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -5487,7 +5487,7 @@ uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buf
 // @deprecated - please use l2cap_cbm_decline_connection
 uint8_t l2cap_le_decline_connection(uint16_t local_cid){
     log_error("deprecated - please use l2cap_cbm_decline_connection");
-    return l2cap_cbm_decline_connection(local_cid);
+    return l2cap_cbm_decline_connection(local_cid, L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE);
 }
 
 // @deprecated - please use l2cap_cbm_create_channel

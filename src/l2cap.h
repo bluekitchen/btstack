@@ -657,9 +657,10 @@ uint8_t l2cap_cbm_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_bu
 /** 
  * @brief Deecline connection in LE Credit-Based Flow-Control Mode
  * @param local_cid             L2CAP Channel Identifier
+ * @param result                result, see L2CAP_CBM_CONNECTION_RESULT_SUCCESS in bluetooth.h
  */
 
-uint8_t l2cap_cbm_decline_connection(uint16_t local_cid);
+uint8_t l2cap_cbm_decline_connection(uint16_t local_cid, uint16_t result);
 
 /**
  * @brief Create outgoing channel in LE Credit-Based Flow-Control Mode
@@ -783,7 +784,7 @@ uint8_t l2cap_ecbm_accept_channels(uint16_t local_cid, uint8_t num_channels, uin
 /**
  * @brief Decline connection in Enhanced Credit-Based Flow-Control Mode
  * @param local_cid           from L2CAP_EVENT_INCOMING_DATA_CONNECTION
- * @param result              0x0004 -  insufficient resources, 0x0006 - insufficient authorization
+ * @param result              See L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS in bluetooth.h
  * @return status
  */
 uint8_t l2cap_ecbm_decline_channels(uint16_t local_cid, uint16_t result);
