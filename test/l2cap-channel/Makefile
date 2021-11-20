@@ -75,7 +75,7 @@ build-asan/l2cap_ecbm_test: ${COMMON_OBJ_ASAN} build-asan/l2cap_ecbm_test.o | bu
 
 test: all
 	build-asan/l2cap_cbm_test
-	# build-asan/l2cap_ecbm_test
+	build-asan/l2cap_ecbm_test
 
 coverage: all
 	rm -f build-coverage/*.gcda
