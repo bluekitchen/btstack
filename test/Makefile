@@ -22,7 +22,7 @@ SUBDIRS =  \
 	gatt_service \
 	hfp \
 	hid_parser \
-	l2cap-le \
+	l2cap-channel \
 	le_device_db_tlv \
 	linked_list \
 	map_test \
