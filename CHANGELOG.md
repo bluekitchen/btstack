@@ -66,6 +66,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - *btstack_run_loop_execute_on_main_thread*: schedule code execution on main thread from other thread
   - *btstack_run_loop_trigger_exit*: trigger run loop exit
 - POSIX / Windows / Raspi / Qt: use updated ctrl-c handling
+- POSIX TLV: use max value size of 2048, assert if size is larger in store
 
 
 ## Release v1.4.1
