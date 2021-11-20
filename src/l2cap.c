@@ -1948,7 +1948,7 @@ static void l2cap_cbm_run_channels(void){
                 mps = btstack_min(l2cap_max_le_mtu(), channel->local_mtu);
                 l2cap_send_le_signaling_packet(channel->con_handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->local_mtu, mps, channel->credits_incoming, 0);
                 // notify client
-                l2cap_cbm_emit_channel_opened(channel, 0);
+                l2cap_cbm_emit_channel_opened(channel, ERROR_CODE_SUCCESS);
                 break;
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
@@ -1981,6 +1981,26 @@ static void l2cap_cbm_run_channels(void){
         }
     }
 }
+
+static inline uint8_t l2cap_cbm_status_for_result(uint16_t result) {
+    switch (result) {
+        case L2CAP_CBM_CONNECTION_RESULT_SUCCESS:
+            return ERROR_CODE_SUCCESS;
+        case L2CAP_CBM_CONNECTION_RESULT_SPSM_NOT_SUPPORTED:
+            return L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM;
+        case L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE:
+            return L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES;
+        case L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_AUTHENTICATION:
+        case L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_AUTHORIZATION:
+        case L2CAP_CBM_CONNECTION_RESULT_ENCYRPTION_KEY_SIZE_TOO_SHORT:
+        case L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_ENCRYPTION:
+            return L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY;
+        default:
+            // invalid Source CID, Source CID already allocated, unacceptable parameters
+            return L2CAP_CONNECTION_RESPONSE_UNKNOWN_ERROR;
+    }
+}
+
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
@@ -4207,8 +4227,8 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             result = little_endian_read_16 (command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+8);
             if (result){
                 channel->state = L2CAP_STATE_CLOSED;
-                // map l2cap connection response result to BTstack status enumeration
-                l2cap_cbm_emit_channel_opened(channel, result);
+                uint8_t status = l2cap_cbm_status_for_result(result);
+                l2cap_cbm_emit_channel_opened(channel, status);
                                 
                 // discard channel
                 btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
@@ -4222,7 +4242,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             channel->remote_mps = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 4);
             channel->credits_outgoing = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 6);
             channel->state = L2CAP_STATE_OPEN;
-            l2cap_cbm_emit_channel_opened(channel, result);
+            l2cap_cbm_emit_channel_opened(channel, ERROR_CODE_SUCCESS);
             break;
 #endif
 
