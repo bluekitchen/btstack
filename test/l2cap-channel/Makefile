@@ -43,7 +43,8 @@ COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
 
 all: \
-	build-coverage/le_data_channel_test build-asan/le_data_channel_test
+	build-coverage/le_data_channel_test build-asan/le_data_channel_test \
+	build-coverage/l2cap_enhanced_data_channel_test build-asan/l2cap_enhanced_data_channel_test \
 
 build-%:
 	mkdir -p $@
@@ -66,12 +67,20 @@ build-coverage/le_data_channel_test: ${COMMON_OBJ_COVERAGE} build-coverage/le_da
 build-asan/le_data_channel_test: ${COMMON_OBJ_ASAN} build-asan/le_data_channel_test.o | build-asan
 	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
+build-coverage/l2cap_enhanced_data_channel_test: ${COMMON_OBJ_COVERAGE} build-coverage/l2cap_enhanced_data_channel_test.o | build-coverage
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/l2cap_enhanced_data_channel_test: ${COMMON_OBJ_ASAN} build-asan/l2cap_enhanced_data_channel_test.o | build-asan
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
+
 test: all
 	build-asan/le_data_channel_test
+	# build-asan/l2cap_enhanced_data_channel_test
 
 coverage: all
 	rm -f build-coverage/*.gcda
 	build-coverage/le_data_channel_test
+	build-coverage/l2cap_enhanced_data_channel_test
 
 clean:
 	rm -rf build-coverage build-asan

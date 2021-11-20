@@ -128,16 +128,16 @@ static void l2cap_channel_packet_handler(uint8_t packet_type, uint16_t channel, 
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
-                case L2CAP_EVENT_LE_INCOMING_CONNECTION:
+                case L2CAP_EVENT_CBM_INCOMING_CONNECTION:
                     psm = l2cap_event_le_incoming_connection_get_psm(packet);
                     cid = l2cap_event_le_incoming_connection_get_local_cid(packet);
                     if (l2cap_channel_accept_incoming){
                         l2cap_cbm_accept_connection(cid, data_channel_buffer, sizeof(data_channel_buffer), initial_credits);
                     } else {
-                        l2cap_cbm_decline_connection(cid);
+                        l2cap_cbm_decline_connection(cid, L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE);
                     }
                     break;
-                case L2CAP_EVENT_LE_CHANNEL_OPENED:
+                case L2CAP_EVENT_CBM_CHANNEL_OPENED:
                     l2cap_channel_opened = true;
                     break;
                 default:
@@ -198,7 +198,7 @@ TEST(L2CAP_CHANNELS, some_functions){
     l2cap_set_max_le_mtu(30);
     l2cap_cbm_unregister_service(TEST_PSM);
     l2cap_cbm_accept_connection(0X01, NULL, 0, 0);
-    l2cap_cbm_decline_connection(0x01);
+    l2cap_cbm_decline_connection(0x01, L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE);
     l2cap_cbm_disconnect(0x01);
 }
 
