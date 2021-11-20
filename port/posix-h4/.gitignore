@@ -54,9 +54,9 @@ hsp_hs_test
 l2cap_test
 le_counter
 le_counter.h
-le_data_channel_client
-le_data_channel_server
-le_data_channel_server.h
+le_credit_based_flow_control_mode_client
+le_credit_based_flow_control_mode_server
+le_credit_based_flow_control_mode_server.h
 le_streamer
 le_streamer.h
 le_streamer_and_counter_client

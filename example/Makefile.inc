@@ -231,8 +231,8 @@ EXAMPLES_LE_ONLY=           		\
 	hog_host_demo      		        \
 	hog_keyboard_demo       		\
 	hog_mouse_demo          		\
-	le_data_channel_client  		\
-	le_data_channel_server  		\
+	le_credit_based_flow_control_mode_client  		\
+	le_credit_based_flow_control_mode_server  		\
 	le_mitm                 		\
 	le_streamer_client      		\
 	mesh_node_demo          		\
@@ -262,7 +262,7 @@ EXAMPLES_GATT_FILES =           		\
 	gatt_streamer_server.gatt   		\
 	hog_keyboard_demo.gatt      		\
 	hog_mouse_demo.gatt         		\
-	le_data_channel_server.gatt 		\
+	le_credit_based_flow_control_mode_server.gatt 		\
 	nordic_spp_le_counter.gatt  		\
 	nordic_spp_le_streamer.gatt 		\
 	sm_pairing_central.gatt     		\
@@ -492,14 +492,14 @@ avrcp_browsing_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${
 dut_mode_classic: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} dut_mode_classic.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-le_data_channel_client: ${CORE_OBJ} ${COMMON_OBJ} le_data_channel_client.c
+le_credit_based_flow_control_mode_client: ${CORE_OBJ} ${COMMON_OBJ} le_credit_based_flow_control_mode_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 
-le_data_channel_server.o: le_data_channel_server.h le_data_channel_server.c
-	${CC} ${CFLAGS} -c $(filter-out le_data_channel_server.h,$^) -o $@
+le_credit_based_flow_control_mode_server.o: le_credit_based_flow_control_mode_server.h le_credit_based_flow_control_mode_server.c
+	${CC} ${CFLAGS} -c $(filter-out le_credit_based_flow_control_mode_server.h,$^) -o $@
 
-le_data_channel_server: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} le_data_channel_server.o
+le_credit_based_flow_control_mode_server: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} le_credit_based_flow_control_mode_server.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 

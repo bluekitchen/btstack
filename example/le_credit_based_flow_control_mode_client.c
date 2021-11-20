@@ -35,13 +35,13 @@
  *
  */
 
-#define BTSTACK_FILE__ "le_data_channel_client.c"
+#define BTSTACK_FILE__ "le_credit_based_flow_control_mode_client.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(le_data_channel_client): LE Data Channel Client - Send Data over L2CAP
+/* EXAMPLE_START(le_credit_based_flow_control_mode_client): LE Credit-Based Flow-Control Mode Client - Send Data over L2CAP
  *
- * @text Connects to 'LE Data Channel' and streams data 
- * via LE Data Channel == LE Connection-Oriented Channel == LE Credit-based Connection
+ * @text Connects to 'LE CBM Server' and streams data
+ * via L2CAP Channel in LE Credit-Based Flow-Control Mode (CBM)
  */
 // *****************************************************************************
 
@@ -71,14 +71,14 @@ static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
 // addr and type of device with correct name
-static bd_addr_t      le_data_channel_addr;
-static bd_addr_type_t le_data_channel_addr_type;
+static bd_addr_t      le_cbm_server_addr;
+static bd_addr_type_t le_cbm_server_addr_type;
 
 static hci_con_handle_t connection_handle;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
-static uint8_t data_channel_buffer[TEST_PACKET_SIZE];
+static uint8_t cbm_receive_buffer[TEST_PACKET_SIZE];
 
 /*
  * @section Track throughput
@@ -101,16 +101,16 @@ typedef struct {
     int  test_data_len;
     uint32_t test_data_sent;
     uint32_t test_data_start;
-} le_data_channel_connection_t;
+} le_cbm_connection_t;
 
-static le_data_channel_connection_t le_data_channel_connection;
+static le_cbm_connection_t le_cbm_connection;
 
-static void test_reset(le_data_channel_connection_t * context){
+static void test_reset(le_cbm_connection_t * context){
     context->test_data_start = btstack_run_loop_get_time_ms();
     context->test_data_sent = 0;
 }
 
-static void test_track_data(le_data_channel_connection_t * context, int bytes_transferred){
+static void test_track_data(le_cbm_connection_t * context, int bytes_transferred){
     context->test_data_sent += bytes_transferred;
     // evaluate
     uint32_t now = btstack_run_loop_get_time_ms();
@@ -167,24 +167,24 @@ static int advertisement_report_contains_name(const char * name, uint8_t * adver
 static void streamer(void){
 
     // create test data
-    le_data_channel_connection.counter++;
-    if (le_data_channel_connection.counter > 'Z') le_data_channel_connection.counter = 'A';
-    memset(le_data_channel_connection.test_data, le_data_channel_connection.counter, le_data_channel_connection.test_data_len);
+    le_cbm_connection.counter++;
+    if (le_cbm_connection.counter > 'Z') le_cbm_connection.counter = 'A';
+    memset(le_cbm_connection.test_data, le_cbm_connection.counter, le_cbm_connection.test_data_len);
 
     // send
-    l2cap_cbm_send_data(le_data_channel_connection.cid, (uint8_t *) le_data_channel_connection.test_data, le_data_channel_connection.test_data_len);
+    l2cap_cbm_send_data(le_cbm_connection.cid, (uint8_t *) le_cbm_connection.test_data, le_cbm_connection.test_data_len);
 
     // track
-    test_track_data(&le_data_channel_connection, le_data_channel_connection.test_data_len);
+    test_track_data(&le_cbm_connection, le_cbm_connection.test_data_len);
 
     // request another packet
-    l2cap_cbm_request_can_send_now_event(le_data_channel_connection.cid);
+    l2cap_cbm_request_can_send_now_event(le_cbm_connection.cid);
 } 
 /* LISTING_END */
 #endif
 
-// Either connect to remote specified on command line or start scan for device with "LE Data Channel" in advertisement
-static void le_data_channel_client_start(void){
+// Either connect to remote specified on command line or start scan for device with "LE CBM Server" in advertisement
+static void le_cbm_client_start(void){
     if (cmdline_addr_found){
         printf("Connect to %s\n", bd_addr_to_str(cmdline_addr));
         state = TC_W4_CONNECT;
@@ -214,7 +214,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case BTSTACK_EVENT_STATE:
                     // BTstack activated, get started
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
-                        le_data_channel_client_start();
+                        le_cbm_client_start();
                     } else {
                         state = TC_OFF;
                     }
@@ -222,15 +222,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case GAP_EVENT_ADVERTISING_REPORT:
                     if (state != TC_W4_SCAN_RESULT) return;
                     // check name in advertisement
-                    if (!advertisement_report_contains_name("LE Data Channel", packet)) return;
+                    if (!advertisement_report_contains_name("LE CBM Server", packet)) return;
                     // store address and type
-                    gap_event_advertising_report_get_address(packet, le_data_channel_addr);
-                    le_data_channel_addr_type = gap_event_advertising_report_get_address_type(packet);
+                    gap_event_advertising_report_get_address(packet, le_cbm_server_addr);
+                    le_cbm_server_addr_type = gap_event_advertising_report_get_address_type(packet);
                     // stop scanning, and connect to the device
                     state = TC_W4_CONNECT;
                     gap_stop_scan();
-                    printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(le_data_channel_addr));
-                    gap_connect(le_data_channel_addr,le_data_channel_addr_type);
+                    printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(le_cbm_server_addr));
+                    gap_connect(le_cbm_server_addr, le_cbm_server_addr_type);
                     break;
                 case HCI_EVENT_LE_META:
                     // wait for connection complete
@@ -243,19 +243,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));  
                     // initialize gatt client context with handle, and add it to the list of active clients
                     // query primary services
-                    printf("Connect to performance test channel.\n");
+                    printf("Connect to performance test service.\n");
                     state = TC_W4_CHANNEL;
-                    l2cap_cbm_create_channel(&packet_handler, connection_handle, TSPX_le_psm, data_channel_buffer,
-                                            sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &le_data_channel_connection.cid);
+                    l2cap_cbm_create_channel(&packet_handler, connection_handle, TSPX_le_psm, cbm_receive_buffer,
+                                             sizeof(cbm_receive_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &le_cbm_connection.cid);
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     if (cmdline_addr_found){
                         printf("Disconnected %s\n", bd_addr_to_str(cmdline_addr));
                         return;
                     }
-                    printf("Disconnected %s\n", bd_addr_to_str(le_data_channel_addr));
+                    printf("Disconnected %s\n", bd_addr_to_str(le_cbm_server_addr));
                     if (state == TC_OFF) break;
-                    le_data_channel_client_start();
+                    le_cbm_client_start();
                     break;
                 case L2CAP_EVENT_CBM_CHANNEL_OPENED:
                     // inform about new l2cap connection
@@ -265,19 +265,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     handle = l2cap_event_le_channel_opened_get_handle(packet);
                     status = l2cap_event_le_channel_opened_get_status(packet);
                     if (status == ERROR_CODE_SUCCESS) {
-                        printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                        printf("L2CAP: CBM Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
-                        le_data_channel_connection.cid = cid;
-                        le_data_channel_connection.connection_handle = handle;
-                        le_data_channel_connection.test_data_len = btstack_min(l2cap_event_le_channel_opened_get_remote_mtu(packet), sizeof(le_data_channel_connection.test_data));
+                        le_cbm_connection.cid = cid;
+                        le_cbm_connection.connection_handle = handle;
+                        le_cbm_connection.test_data_len = btstack_min(l2cap_event_le_channel_opened_get_remote_mtu(packet), sizeof(le_cbm_connection.test_data));
                         state = TC_TEST_DATA;
-                        printf("Test packet size: %u\n", le_data_channel_connection.test_data_len);
-                        test_reset(&le_data_channel_connection);
+                        printf("Test packet size: %u\n", le_cbm_connection.test_data_len);
+                        test_reset(&le_cbm_connection);
 #ifdef TEST_STREAM_DATA
-                        l2cap_cbm_request_can_send_now_event(le_data_channel_connection.cid);
+                        l2cap_cbm_request_can_send_now_event(le_cbm_connection.cid);
 #endif
                     } else {
-                        printf("L2CAP: LE Data Channel connection to device %s failed. status code 0x%02x\n", bd_addr_to_str(event_address), status);
+                        printf("L2CAP: Connection to device %s failed. status code 0x%02x\n", bd_addr_to_str(event_address), status);
                     }
                     break;
 
@@ -289,7 +289,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                 case L2CAP_EVENT_CBM_CHANNEL_CLOSED:
                     cid = l2cap_event_le_channel_closed_get_local_cid(packet);
-                    printf("L2CAP: LE Data Channel closed 0x%02x\n", cid); 
+                    printf("L2CAP: Channel closed 0x%02x\n", cid);
                     break;
 
                 default:
@@ -298,7 +298,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
 
         case L2CAP_DATA_PACKET:
-            test_track_data(&le_data_channel_connection, size);
+            test_track_data(&le_cbm_connection, size);
             break;
 
         default:
@@ -337,7 +337,7 @@ static void sm_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 #ifdef HAVE_BTSTACK_STDIN
 static void usage(const char *name){
     fprintf(stderr, "Usage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
-    fprintf(stderr, "If no argument is provided, LE Data Channel Client will start scanning and connect to the first device named 'LE Data Channel'.\n");
+    fprintf(stderr, "If no argument is provided, LE CBM Client will start scanning and connect to the first device named 'LE CBM Server'.\n");
     fprintf(stderr, "To connect to a specific device use argument [-a].\n\n");
 }
 #endif
