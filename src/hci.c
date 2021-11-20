@@ -1451,6 +1451,8 @@ static void hci_init_done(void){
 static void hci_initializing_run(void){
     log_debug("hci_initializing_run: substate %u, can send %u", hci_stack->substate, hci_can_send_command_packet_now());
 
+    if (!hci_can_send_command_packet_now()) return;
+
 #ifndef HAVE_HOST_CONTROLLER_API
     bool need_baud_change = hci_stack->config
             && hci_stack->chipset
@@ -5087,6 +5089,7 @@ static bool hci_run_general_pending_commands(void){
 static void hci_run(void){
 
     // stack state sub statemachines
+    // halting needs to be called even if we cannot send command packet now
     switch (hci_stack->state) {
         case HCI_STATE_INITIALIZING:
             hci_initializing_run();
