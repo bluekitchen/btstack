@@ -1427,7 +1427,7 @@ uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_send_prepared no channel for cid 0x%02x", local_cid);
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
 
     if (!hci_can_send_prepared_acl_packet_now(channel->con_handle)){
@@ -1468,7 +1468,7 @@ uint8_t l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_send no channel for cid 0x%02x", local_cid);
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
