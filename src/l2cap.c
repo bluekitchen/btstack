@@ -1264,9 +1264,7 @@ uint8_t l2cap_request_can_send_now_event(uint16_t local_cid){
     }
     return ERROR_CODE_SUCCESS;
 }
-#endif
 
-#ifdef ENABLE_CLASSIC
 bool l2cap_can_send_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return false;
@@ -1291,7 +1289,9 @@ bool l2cap_can_send_packet_now(uint16_t local_cid){
             return false;
     }
 }
+#endif
 
+#ifdef ENABLE_CLASSIC
 bool l2cap_can_send_prepared_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return false;
