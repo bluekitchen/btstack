@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: replaced l2cap_register_packet_handler with l2cap_add_event_handler to register multiple handlers
 - L2CAP: drop reason parameter in l2cap_disconnect
 - L2CAP: use official terminology for L2CAP channel modes - ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE replaces ENABLE_LE_DATA_CHANNELS
+- L2CAP: unify API for can send now, request to send, and send packet and disconnect channel
 - RFCOMM: `RFCOMM_EVENT_PORT_CONFIGURATION` contains rfcomm_cid and remote flag, emitted for query config
 - RFCOMM: provide status instead of undocumented int error code and bool for API functions
 - RFCOMM: remote port configuration, line status, and modem status are sent by channel state machine
