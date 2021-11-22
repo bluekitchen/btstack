@@ -104,9 +104,8 @@ static int todo_send_long;
 // note: must be smaller than TSPX_tester_mtu for l2cap/le/cfc/bv-02-c to succeed
 static uint8_t buffer_x[500];
 
-static uint16_t cid_le;
 static uint16_t cid_classic;
-static uint16_t cid_enhanced;
+static uint16_t cid_credit_based;
 
 uint8_t receive_buffer_X[100];
 
@@ -134,7 +133,6 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     hci_con_handle_t handle;
     uint16_t cids[2];
     uint8_t status;
-    uint16_t mps, mtu;
 
     switch (packet_type) {
         
@@ -191,16 +189,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                         enhanced_data_channel = false;
                         printf("L2CAP: Classic Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  l2cap_event_channel_opened_get_remote_cid(packet));
-                        switch (psm){
-                            case TSPX_LE_PSM:
-                                cid_le = cid;
-                                break;
-                            case TSPX_PSM:
-                                cid_classic = cid;
-                                break;
-                            default:
-                                break;
-                        }
+                        cid_classic = cid;
                     } else {
                         printf("L2CAP: classic connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
                     }
@@ -230,16 +219,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                         enhanced_data_channel = false;
                         printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
-                        switch (psm){
-                            case TSPX_LE_PSM:
-                                cid_le = cid;
-                                break;
-                            case TSPX_PSM:
-                                cid_classic = cid;
-                                break;
-                            default:
-                                break;
-                        }
+                        cid_credit_based = cid;
                     } else {
                         printf("L2CAP: LE Data Channel connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
                     }
@@ -248,21 +228,16 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case L2CAP_EVENT_CBM_CAN_SEND_NOW:
                     if (todo_send_short){
                         todo_send_short = 0;
-                        if (enhanced_data_channel){
-                            l2cap_ecbm_send_data(cid_enhanced, (uint8_t *) data_short, strlen(data_short));
-                        } else {
-                            l2cap_cbm_send_data(cid_le, (uint8_t *) data_short, strlen(data_short));
-                        }
+                        l2cap_send(cid_credit_based, (uint8_t *) data_short, strlen(data_short));
                         break;
                     }
                     if (todo_send_long){
                         todo_send_long = 0;                        
                         if (enhanced_data_channel){
-                            // l2cap_ecbm_send_data(cid_enhanced, (uint8_t *) data_long, strlen(data_long));
                             memset(receive_buffer_X, 0x33, enhanced_remote_mtu);
-                            l2cap_ecbm_send_data(cid_enhanced, (uint8_t *) receive_buffer_X, enhanced_remote_mtu);
+                            l2cap_send(cid_credit_based, (uint8_t *) receive_buffer_X, enhanced_remote_mtu);
                         } else {
-                            l2cap_cbm_send_data(cid_le, (uint8_t *) data_long, strlen(data_long));
+                            l2cap_send(cid_credit_based, (uint8_t *) data_long, strlen(data_long));
                         }
                     }
                     break;
@@ -282,14 +257,14 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     cid = l2cap_event_data_channel_opened_get_local_cid(packet);
                     status = l2cap_event_channel_opened_get_status(packet);
                     if (l2cap_event_channel_opened_get_status(packet) == 0){
-                        cid_enhanced = cid;
+                        cid_credit_based = cid;
                         enhanced_remote_mtu = l2cap_event_data_channel_opened_get_remote_mtu(packet);
                     }
                     printf("L2CAP_EVENT_ECBM_CHANNEL_OPENED - cid 0x%04x mtu %u, status 0x%02x\n", cid, enhanced_remote_mtu, status);
                     break;
 
                 case L2CAP_EVENT_ECBM_INCOMING_CONNECTION:
-                    printf("L2CAP_EVENT_ECBM_INCOMING_CONNECTION - remote mtu %u\n", mtu);
+                    printf("L2CAP_EVENT_ECBM_INCOMING_CONNECTION\n");
                     cid = l2cap_event_data_channel_incoming_get_local_cid(packet);
                     if (enhanced_authorization_required){
                         enhanced_authorization_required = false;
@@ -407,13 +382,13 @@ static void stdin_process(char buffer){
         case 'b':
             printf("Connect to PSM 0x%02x - CFC LE\n", TSPX_LE_PSM);
             l2cap_cbm_create_channel(&app_packet_handler, handle_le, TSPX_LE_PSM, buffer_x,
-                                    sizeof(buffer_x), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &cid_le);
+                                    sizeof(buffer_x), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &cid_credit_based);
             break;
 
         case 'B':
             printf("Creating connection to %s 0x%02x - CFC LE\n", bd_addr_to_str(pts_address), TSPX_PSM_UNSUPPORTED);
             l2cap_cbm_create_channel(&app_packet_handler, handle_le, TSPX_PSM_UNSUPPORTED, buffer_x,
-                                    sizeof(buffer_x), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &cid_le);
+                                    sizeof(buffer_x), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &cid_credit_based);
             break;
 
         case 'd':
@@ -441,9 +416,9 @@ static void stdin_process(char buffer){
         case 'c':
             printf("Provide 10 credits\n");
             if (enhanced_data_channel){
-                l2cap_ecbm_provide_credits(cid_enhanced, 10);
+                l2cap_ecbm_provide_credits(cid_credit_based, 10);
             } else {
-                l2cap_cbm_provide_credits(cid_le, 10);
+                l2cap_cbm_provide_credits(cid_credit_based, 10);
             }
             break;
 
@@ -475,7 +450,7 @@ static void stdin_process(char buffer){
         case 'r':
             printf("Reconfigure MTU = %u, MPS = %u\n", ENHANCED_MTU_RECONFIGURE, enhanced_reconfigure_mps[enhanced_reconfigure_index]);
             l2cap_ecbm_mps_set_max(enhanced_reconfigure_mps[enhanced_reconfigure_index++]);
-            l2cap_ecbm_reconfigure_channels(1, &cid_enhanced, ENHANCED_MTU_RECONFIGURE, receive_buffers_2);
+            l2cap_ecbm_reconfigure_channels(1, &cid_credit_based, ENHANCED_MTU_RECONFIGURE, receive_buffers_2);
             if (enhanced_reconfigure_index == enhanced_reconfigure_choices){
                 enhanced_reconfigure_index = 0;
             }
@@ -484,21 +459,13 @@ static void stdin_process(char buffer){
         case 's':
             printf("Send L2CAP Data Short %s\n", data_short);
             todo_send_short = 1;
-            if (enhanced_data_channel){
-                l2cap_ecbm_request_can_send_now_event(cid_enhanced);
-            } else {
-                l2cap_cbm_request_can_send_now_event(cid_le);
-            }
+            l2cap_request_can_send_now_event(cid_credit_based);
             break;
 
         case 'S':
             printf("Send L2CAP Data Long %s\n", data_long);
             todo_send_long = 1;
-            if (enhanced_data_channel){
-                l2cap_ecbm_request_can_send_now_event(cid_enhanced);
-            } else {
-                l2cap_cbm_request_can_send_now_event(cid_le);
-            }
+            l2cap_request_can_send_now_event(cid_credit_based);
             break;
 
         case 'y':
@@ -512,13 +479,8 @@ static void stdin_process(char buffer){
             break;
 
         case 't':
-            if (enhanced_data_channel){
-                printf("Disconnect channel 0x%02x\n", cid_enhanced);
-                l2cap_disconnect(cid_enhanced);
-            } else {
-                printf("Disconnect channel 0x%02x\n", cid_le);
-                l2cap_disconnect(cid_le);
-            }
+            printf("Disconnect channel 0x%02x\n", cid_credit_based);
+            l2cap_disconnect(cid_credit_based);
             break;
 
         default:
