@@ -1251,12 +1251,26 @@ void l2cap_request_can_send_now_event(uint16_t local_cid){
 bool l2cap_can_send_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return false;
+    if (channel->state != L2CAP_STATE_OPEN) return false;
+    switch (channel->channel_type){
+        case L2CAP_CHANNEL_TYPE_CLASSIC:
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
-        return l2cap_ertm_can_store_packet_now(channel);
+            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                return l2cap_ertm_can_store_packet_now(channel);
+            }
+#endif
+            return hci_can_send_acl_packet_now(channel->con_handle);
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
+        case L2CAP_CHANNEL_TYPE_CHANNEL_CBM:
+            return channel->send_sdu_buffer == NULL;
+#endif
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
+        case L2CAP_CHANNEL_TYPE_CHANNEL_ECBM:
+            return channel->send_sdu_buffer == NULL;
+#endif
+        default:
+            return false;
     }
-#endif    
-    return hci_can_send_acl_packet_now(channel->con_handle);
 }
 
 bool l2cap_can_send_prepared_packet_now(uint16_t local_cid){
@@ -5181,23 +5195,6 @@ uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_credit_based_provide_credits(local_cid, credits);
 }
 
-bool l2cap_cbm_can_send_now(uint16_t local_cid){
-    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (!channel) {
-        log_error("le can send now, no channel for cid 0x%02x", local_cid);
-        return false;
-    }
-
-    // check state
-    if (channel->state != L2CAP_STATE_OPEN) return false;
-
-    // check queue
-    if (channel->send_sdu_buffer) return false;
-
-    // fine, go ahead
-    return true;
-}
-
 uint8_t l2cap_cbm_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
@@ -5509,10 +5506,10 @@ uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_cbm_provide_credits(local_cid, credits);
 }
 
-// @deprecated - please use l2cap_cbm_can_send_now
+// @deprecated - please use l2cap_can_send_packet_now
 bool l2cap_le_can_send_now(uint16_t local_cid){
-    log_error("deprecated - please use l2cap_cbm_can_send_now");
-    return l2cap_cbm_can_send_now(local_cid);
+    log_error("deprecated - please use l2cap_can_send_packet_now");
+    return l2cap_can_send_packet_now(local_cid);
 }
 
 // @deprecated - please use l2cap_cbm_request_can_send_now_event

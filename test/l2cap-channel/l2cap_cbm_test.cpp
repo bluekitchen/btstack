@@ -225,7 +225,7 @@ TEST(L2CAP_CHANNELS, outgoing_1){
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, le_data_channel_conn_response_1, sizeof(le_data_channel_conn_response_1));
     CHECK(l2cap_channel_opened);
     CHECK(hci_number_free_acl_slots_for_handle(HCI_CON_HANDLE_TEST_LE) > 0);
-    bool can_send_now = l2cap_cbm_can_send_now(l2cap_cid);
+    bool can_send_now = l2cap_can_send_packet_now(l2cap_cid);
     CHECK(can_send_now);
     l2cap_cbm_request_can_send_now_event(l2cap_cid);
     CHECK(hci_number_free_acl_slots_for_handle(HCI_CON_HANDLE_TEST_LE) > 0);

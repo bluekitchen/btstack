@@ -693,12 +693,6 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
  */
 uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits);
 
-/**
- * @brief Check if packet can be scheduled for transmission
- * @param local_cid             L2CAP Channel Identifier
- * @return true if packet can be sent on local_cid
- */
-bool l2cap_cbm_can_send_now(uint16_t local_cid);
 
 /**
  * @brief Request emission of L2CAP_EVENT_CBM_CAN_SEND_NOW as soon as possible
@@ -874,6 +868,9 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size);
 
 // @deprecated - please use l2cap_disconnect
 uint8_t l2cap_le_disconnect(uint16_t local_cid);
+
+// @deprecated - please use l2cap_can_send_now
+bool l2cap_cbm_can_send_now(uint16_t local_cid);
 
 #if defined __cplusplus
 }
