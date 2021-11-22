@@ -1298,8 +1298,10 @@ uint8_t l2cap_send(uint16_t local_cid, const uint8_t *data, uint16_t len){
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
     switch (channel->channel_type){
+#ifdef ENABLE_CLASSIC
         case L2CAP_CHANNEL_TYPE_CLASSIC:
             return l2cap_classic_send(channel, data, len);
+#endif
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
         case L2CAP_CHANNEL_TYPE_CHANNEL_CBM:
             return l2cap_credit_based_send_data(channel, data, len);

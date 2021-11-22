@@ -882,7 +882,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     uint16_t psm;
     uint16_t service_channel;
     uint16_t mtu;
-    uint8_t  reason;
     uint8_t  rfcomm_channel;
     uint8_t  rfcomm_credits;
     uint32_t service_record_handle;

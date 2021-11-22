@@ -854,7 +854,7 @@ typedef uint8_t sm_key_t[16];
  * @format 2
  * @param local_cid
  */
-#define L2CAP_EVENT_CAN_SEND_NOW                           0x78
+#define L2CAP_EVENT_CAN_SEND_NOW                           0x79
 
 /*
  * @format 2
@@ -926,7 +926,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_mtu
  * @param remote_mtu
  */
-#define L2CAP_EVENT_ECBM_CHANNEL_OPENED              0x84
+#define L2CAP_EVENT_ECBM_CHANNEL_OPENED              0x8a
 
 /*
  * @format 222
@@ -934,14 +934,14 @@ typedef uint8_t sm_key_t[16];
  * @param mtu
  * @param mps
  */
-#define L2CAP_EVENT_ECBM_RECONFIGURED                0x85
+#define L2CAP_EVENT_ECBM_RECONFIGURED                0x8b
 
 /*
  * @format 22
  * @param local_cid
  * @param reconfigure_result
  */
-#define L2CAP_EVENT_ECBM_RECONFIGURATION_COMPLETE    0x86
+#define L2CAP_EVENT_ECBM_RECONFIGURATION_COMPLETE    0x8c
 
 
 // RFCOMM EVENTS

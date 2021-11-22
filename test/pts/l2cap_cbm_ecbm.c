@@ -199,10 +199,10 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     printf("L2CAP: Clasic Channel closed 0x%02x\n", cid); 
                     break;
 
-                // LE Data Channels
+                // LE CBM
                 case L2CAP_EVENT_CBM_INCOMING_CONNECTION: 
-                    psm = l2cap_event_le_incoming_connection_get_psm(packet);
-                    cid = l2cap_event_le_incoming_connection_get_local_cid(packet);
+                    psm = l2cap_event_cbm_incoming_connection_get_psm(packet);
+                    cid = l2cap_event_cbm_incoming_connection_get_local_cid(packet);
                     if (psm != TSPX_LE_PSM) break;
                     printf("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x\n", cid, psm); 
                     l2cap_cbm_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
@@ -211,10 +211,10 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
                 case L2CAP_EVENT_CBM_CHANNEL_OPENED:
                     // inform about new l2cap connection
-                    l2cap_event_le_channel_opened_get_address(packet, event_address);
-                    psm = l2cap_event_le_channel_opened_get_psm(packet); 
-                    cid = l2cap_event_le_channel_opened_get_local_cid(packet); 
-                    handle = l2cap_event_le_channel_opened_get_handle(packet);
+                    l2cap_event_cbm_channel_opened_get_address(packet, event_address);
+                    psm = l2cap_event_cbm_channel_opened_get_psm(packet);
+                    cid = l2cap_event_cbm_channel_opened_get_local_cid(packet);
+                    handle = l2cap_event_cbm_channel_opened_get_handle(packet);
                     if (packet[2] == 0) {
                         enhanced_data_channel = false;
                         printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
@@ -243,24 +243,24 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
 
                case L2CAP_EVENT_PACKET_SENT:
-                    cid = l2cap_event_le_packet_sent_get_local_cid(packet);
+                    cid = l2cap_event_packet_sent_get_local_cid(packet);
                     printf("L2CAP: LE Data Channel Packet sent0x%02x\n", cid); 
                     break;
 
                 case L2CAP_EVENT_ECBM_CHANNEL_OPENED:
                     enhanced_data_channel = true;
-                    cid = l2cap_event_data_channel_opened_get_local_cid(packet);
+                    cid = l2cap_event_ecbm_channel_opened_get_local_cid(packet);
                     status = l2cap_event_channel_opened_get_status(packet);
                     if (l2cap_event_channel_opened_get_status(packet) == 0){
                         cid_credit_based = cid;
-                        enhanced_remote_mtu = l2cap_event_data_channel_opened_get_remote_mtu(packet);
+                        enhanced_remote_mtu = l2cap_event_ecbm_channel_opened_get_remote_mtu(packet);
                     }
                     printf("L2CAP_EVENT_ECBM_CHANNEL_OPENED - cid 0x%04x mtu %u, status 0x%02x\n", cid, enhanced_remote_mtu, status);
                     break;
 
                 case L2CAP_EVENT_ECBM_INCOMING_CONNECTION:
                     printf("L2CAP_EVENT_ECBM_INCOMING_CONNECTION\n");
-                    cid = l2cap_event_data_channel_incoming_get_local_cid(packet);
+                    cid = l2cap_event_ecbm_incoming_connection_get_local_cid(packet);
                     if (enhanced_authorization_required){
                         enhanced_authorization_required = false;
                         l2cap_ecbm_decline_channels(cid, 0x0006);
@@ -275,9 +275,9 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
 
                 case L2CAP_EVENT_ECBM_RECONFIGURED:
-                    enhanced_remote_mtu = l2cap_event_data_channel_reconfigured_get_mtu(packet);
+                    enhanced_remote_mtu = l2cap_event_ecbm_reconfigured_get_mtu(packet);
                     printf("L2CAP_EVENT_ECBM_RECONFIGURED - remote mps %u, remote mtu %u\n",
-                           l2cap_event_data_channel_reconfigured_get_mps(packet), enhanced_remote_mtu);
+                           l2cap_event_ecbm_reconfigured_get_mps(packet), enhanced_remote_mtu);
                     break;
 
                 case SM_EVENT_JUST_WORKS_REQUEST:
