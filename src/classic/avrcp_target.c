@@ -216,6 +216,7 @@ static uint16_t avrcp_store_avctp_now_playing_info_fragment(avrcp_connection_t *
 
     while ((num_free_bytes > 0) && (connection->next_attr_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS)){
         if ((connection->now_playing_info_attr_bitmap & (1 << (uint8_t)connection->next_attr_id)) == 0) {
+            connection->next_attr_id = (avrcp_media_attribute_id_t) (((int) connection->next_attr_id) + 1);
             continue;
         }
 

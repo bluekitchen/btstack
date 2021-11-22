@@ -110,7 +110,7 @@ static void avrcp_controller_pass_through_command_data_init(avrcp_connection_t *
     connection->subunit_id =   AVRCP_SUBUNIT_ID;
     
     connection->company_id = 0;
-    connection->pdu_id = 0;
+    connection->pdu_id = AVRCP_PDU_ID_UNDEFINED;
     connection->operation_id = opid;
 
     connection->data = connection->cmd_operands;
@@ -1422,7 +1422,7 @@ uint8_t avrcp_controller_unit_info(uint16_t avrcp_cid){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
 
     connection->state = AVCTP_W2_SEND_COMMAND;
-    avrcp_controller_custome_command_data_init(connection, AVRCP_CMD_OPCODE_UNIT_INFO, AVRCP_CTYPE_STATUS, AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, 0, 0);
+    avrcp_controller_custome_command_data_init(connection, AVRCP_CMD_OPCODE_UNIT_INFO, AVRCP_CTYPE_STATUS, AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, AVRCP_PDU_ID_UNDEFINED, 0);
 
     memset(connection->data, 0xFF, 5);
     connection->data_len = 5;
@@ -1438,7 +1438,7 @@ uint8_t avrcp_controller_subunit_info(uint16_t avrcp_cid){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
 
     connection->state = AVCTP_W2_SEND_COMMAND;
-    avrcp_controller_custome_command_data_init(connection, AVRCP_CMD_OPCODE_SUBUNIT_INFO, AVRCP_CTYPE_STATUS, AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, 0, 0);
+    avrcp_controller_custome_command_data_init(connection, AVRCP_CMD_OPCODE_SUBUNIT_INFO, AVRCP_CTYPE_STATUS, AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, AVRCP_PDU_ID_UNDEFINED, 0);
 
     memset(connection->data, 0xFF, 5);
     connection->data[0] = 7; // page: 0, extention_code: 7
