@@ -501,8 +501,10 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t 
 
 /** 
  * @brief Disconnects L2CAP channel with given identifier. 
+ * @param local_cid
+ * @return status ERROR_CODE_SUCCESS if successful or L2CAP_LOCAL_CID_DOES_NOT_EXIST
  */
-void l2cap_disconnect(uint16_t local_cid, uint8_t reason);
+uint8_t l2cap_disconnect(uint16_t local_cid);
 
 /** 
  * @brief Queries the maximal transfer unit (MTU) for L2CAP channel with given identifier. 

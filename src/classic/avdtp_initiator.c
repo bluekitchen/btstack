@@ -238,7 +238,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         case AVDTP_STREAM_ENDPOINT_STREAMING:
                             stream_endpoint_for_event = stream_endpoint;
                             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CLOSING;
-                            l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
+                            l2cap_disconnect(stream_endpoint->l2cap_media_cid);
                             break;
                         default:
                             break;
@@ -256,7 +256,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         case AVDTP_STREAM_ENDPOINT_STREAMING:
                             stream_endpoint_for_event = stream_endpoint;
                             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
-                            l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
+                            l2cap_disconnect(stream_endpoint->l2cap_media_cid);
                             break;
                         default:
                             break;

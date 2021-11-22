@@ -464,7 +464,7 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         switch (sdp_client_pdu_id){
             case SDP_ErrorResponse:
                 log_error("Received error response with code %u, disconnecting", packet[2]);
-                l2cap_disconnect(sdp_client_sdp_cid, 0);
+                l2cap_disconnect(sdp_client_sdp_cid);
                 return;
 #ifdef ENABLE_SDP_EXTRA_QUERIES
             case SDP_ServiceSearchResponse:
@@ -486,7 +486,7 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         if (sdp_client_continuation_state_len == 0){
             log_debug("SDP Client Query DONE! ");
             sdp_client_state = QUERY_COMPLETE;
-            l2cap_disconnect(sdp_client_sdp_cid, 0);
+            l2cap_disconnect(sdp_client_sdp_cid);
             return;
         }
         // prepare next request and send

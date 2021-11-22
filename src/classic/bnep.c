@@ -814,7 +814,7 @@ static void bnep_channel_finalize(bnep_channel_t *channel)
     
     /* Free ressources and then close the l2cap channel */
     bnep_channel_free(channel);
-    l2cap_disconnect(l2cap_cid, 0x13);
+    l2cap_disconnect(l2cap_cid);
 }
 
 static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *packet, uint16_t size)

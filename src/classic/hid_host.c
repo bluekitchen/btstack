@@ -368,10 +368,10 @@ static void hid_host_finalize_connection(hid_host_connection_t * connection){
     connection->control_cid = 0;
 
     if (interrupt_cid != 0){
-        l2cap_disconnect(interrupt_cid, 0);
+        l2cap_disconnect(interrupt_cid);
     }
     if (control_cid != 0){
-        l2cap_disconnect(control_cid, 0);
+        l2cap_disconnect(control_cid);
     }
     btstack_linked_list_remove(&hid_host_connections, (btstack_linked_item_t*) connection);
     btstack_memory_hid_host_connection_free(connection);
@@ -904,7 +904,7 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                         connection->interrupt_cid = 0;
                         if (connection->state == HID_HOST_W4_INTERRUPT_CONNECTION_DISCONNECTED){
                             connection->state = HID_HOST_W4_CONTROL_CONNECTION_DISCONNECTED;
-                            l2cap_disconnect(connection->control_cid, 0);
+                            l2cap_disconnect(connection->control_cid);
                         }
                         break;
                     }
@@ -1158,13 +1158,13 @@ void hid_host_disconnect(uint16_t hid_cid){
     
     if (connection->interrupt_cid){
         connection->state = HID_HOST_W4_INTERRUPT_CONNECTION_DISCONNECTED;
-        l2cap_disconnect(connection->interrupt_cid, 0);  // reason isn't used
+        l2cap_disconnect(connection->interrupt_cid);
         return;
     }
 
     if (connection->control_cid){
         connection->state = HID_HOST_W4_CONTROL_CONNECTION_DISCONNECTED;
-        l2cap_disconnect(connection->control_cid, 0);  // reason isn't used
+        l2cap_disconnect(connection->control_cid);
         return;
     } 
 }

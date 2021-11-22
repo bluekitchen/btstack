@@ -1072,7 +1072,7 @@ uint8_t avdtp_disconnect(uint16_t avdtp_cid){
             case AVDTP_STREAM_ENDPOINT_OPENED:
             case AVDTP_STREAM_ENDPOINT_STREAMING:
                 stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED;
-                l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
+                l2cap_disconnect(stream_endpoint->l2cap_media_cid);
                 break;
             default:
                 break;
@@ -1080,7 +1080,7 @@ uint8_t avdtp_disconnect(uint16_t avdtp_cid){
     }
 
     connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED;
-    l2cap_disconnect(connection->l2cap_signaling_cid, 0);
+    l2cap_disconnect(connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
 

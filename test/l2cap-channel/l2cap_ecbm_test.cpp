@@ -496,8 +496,8 @@ TEST(L2CAP_CHANNELS, outgoing_le_disconnect_initiator){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_conn_response_2_success, sizeof(l2cap_enhanced_data_channel_le_conn_response_2_success));
     CHECK_EQUAL(2, num_l2cap_channel_opened);
-    l2cap_ecbm_disconnect(l2cap_cids[0]);
-    l2cap_ecbm_disconnect(l2cap_cids[1]);
+    l2cap_disconnect(l2cap_cids[0]);
+    l2cap_disconnect(l2cap_cids[1]);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_disconnect_response_1, sizeof(l2cap_enhanced_data_channel_le_disconnect_response_1));
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_disconnect_response_2, sizeof(l2cap_enhanced_data_channel_le_disconnect_response_2));
     CHECK_EQUAL(2, num_l2cap_channel_closed);
@@ -524,8 +524,8 @@ TEST(L2CAP_CHANNELS, outgoing_classic_disconnect_initiator){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_classic_conn_response_2_success, sizeof(l2cap_enhanced_data_channel_classic_conn_response_2_success));
     CHECK_EQUAL(2, num_l2cap_channel_opened);
-    l2cap_ecbm_disconnect(l2cap_cids[0]);
-    l2cap_ecbm_disconnect(l2cap_cids[1]);
+    l2cap_disconnect(l2cap_cids[0]);
+    l2cap_disconnect(l2cap_cids[1]);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_classic_disconnect_response_1, sizeof(l2cap_enhanced_data_channel_classic_disconnect_response_1));
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_classic_disconnect_response_2, sizeof(l2cap_enhanced_data_channel_classic_disconnect_response_2));
     CHECK_EQUAL(2, num_l2cap_channel_closed);

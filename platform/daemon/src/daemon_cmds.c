@@ -117,10 +117,9 @@ const hci_cmd_t l2cap_create_channel_mtu_cmd = {
 
 /**
  * @param channel (16)
- * @param reason (16)
  */
 const hci_cmd_t l2cap_disconnect_cmd = {
-    DAEMON_OPCODE_L2CAP_DISCONNECT, "21"
+    DAEMON_OPCODE_L2CAP_DISCONNECT, "2"
 };
 
 /**

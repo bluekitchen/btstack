@@ -549,7 +549,7 @@ static void daemon_l2cap_close_connection(client_state_t * daemon_client){
     btstack_linked_list_iterator_init(&it, l2cap_cids);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
-        l2cap_disconnect(item->value, 0); // note: reason isn't used
+        l2cap_disconnect(item->value);
         btstack_linked_list_remove(l2cap_cids, (btstack_linked_item_t *) item);
         free(item);
     }
@@ -985,8 +985,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case L2CAP_DISCONNECT:
             cid = little_endian_read_16(packet, 3);
-            reason = packet[5];
-            l2cap_disconnect(cid, reason);
+            l2cap_disconnect(cid);
             break;
         case L2CAP_REGISTER_SERVICE:
             psm = little_endian_read_16(packet, 3);

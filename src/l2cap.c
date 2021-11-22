@@ -2459,16 +2459,14 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     return ERROR_CODE_SUCCESS;
 }
 
-void l2cap_disconnect(uint16_t local_cid, uint8_t reason){
-    log_info("disconnect local_cid 0x%x reason 0x%x", local_cid, reason);
-    UNUSED(reason);
-    // find channel for local_cid
+uint8_t l2cap_disconnect(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (channel) {
-        channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+    if (!channel) {
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
-    // process
+    channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
     l2cap_run();
+    return ERROR_CODE_SUCCESS;
 }
 
 static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t status){

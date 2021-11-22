@@ -196,7 +196,7 @@ static void stdin_process(char buffer){
             break;
         case 'd':
             printf("L2CAP Channel Closed\n");
-            l2cap_disconnect(local_cid, 0);
+            l2cap_disconnect(local_cid);
             break;
         case 'e':
             printf("L2CAP Enhanced Retransmission Mode (ERTM) optional\n");

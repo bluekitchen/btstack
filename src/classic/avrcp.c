@@ -919,9 +919,9 @@ uint8_t avrcp_disconnect(uint16_t avrcp_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection_controller->browsing_connection){
-        l2cap_disconnect(connection_controller->browsing_connection->l2cap_browsing_cid, 0);
+        l2cap_disconnect(connection_controller->browsing_connection->l2cap_browsing_cid);
     }
-    l2cap_disconnect(connection_controller->l2cap_signaling_cid, 0);
+    l2cap_disconnect(connection_controller->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
 

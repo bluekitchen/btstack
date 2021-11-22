@@ -918,7 +918,7 @@ static void rfcomm_multiplexer_timer_handler(btstack_timer_source_t *timer){
     log_info("handler timeout: shutting down multiplexer! (no channels)");
     uint16_t l2cap_cid = multiplexer->l2cap_cid;
     rfcomm_multiplexer_finalize(multiplexer);
-    l2cap_disconnect(l2cap_cid, 0x13);
+    l2cap_disconnect(l2cap_cid);
 }
 
 static void rfcomm_multiplexer_prepare_idle_timer(rfcomm_multiplexer_t * multiplexer){
@@ -1242,7 +1242,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
             log_info("Received DM #0");
             log_info("-> Closing down multiplexer");
             rfcomm_multiplexer_finalize(multiplexer);
-            l2cap_disconnect(l2cap_cid, 0x13);
+            l2cap_disconnect(l2cap_cid);
             return 1;
             
         case BT_RFCOMM_UIH:
@@ -1253,7 +1253,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                 log_info("Received Multiplexer close down command");
                 log_info("-> Closing down multiplexer");
                 rfcomm_multiplexer_finalize(multiplexer);
-                l2cap_disconnect(l2cap_cid, 0x13);
+                l2cap_disconnect(l2cap_cid);
                 return 1;
             }
             switch (packet[payload_offset]){
@@ -1262,7 +1262,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                     log_info("Received Multiplexer close down command");
                     log_info("-> Closing down multiplexer");
                     rfcomm_multiplexer_finalize(multiplexer);
-                    l2cap_disconnect(l2cap_cid, 0x13);
+                    l2cap_disconnect(l2cap_cid);
                     return 1;
 
                 case BT_RFCOMM_FCON_CMD:
@@ -1373,7 +1373,7 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
             rfcomm_send_ua(multiplexer, 0);
 
             rfcomm_multiplexer_finalize(multiplexer);
-            l2cap_disconnect(l2cap_cid, 0x13);
+            l2cap_disconnect(l2cap_cid);
             break;
         case RFCOMM_MULTIPLEXER_OPEN:
             // respond to test command

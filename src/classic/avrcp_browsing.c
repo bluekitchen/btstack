@@ -636,7 +636,7 @@ uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    l2cap_disconnect(connection_controller->browsing_connection->l2cap_browsing_cid, 0);
+    l2cap_disconnect(connection_controller->browsing_connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
 

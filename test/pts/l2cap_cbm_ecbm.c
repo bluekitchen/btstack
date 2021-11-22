@@ -514,10 +514,10 @@ static void stdin_process(char buffer){
         case 't':
             if (enhanced_data_channel){
                 printf("Disconnect channel 0x%02x\n", cid_enhanced);
-                l2cap_ecbm_disconnect(cid_enhanced);
+                l2cap_disconnect(cid_enhanced);
             } else {
                 printf("Disconnect channel 0x%02x\n", cid_le);
-                l2cap_cbm_disconnect(cid_le);
+                l2cap_disconnect(cid_le);
             }
             break;
 

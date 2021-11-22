@@ -199,7 +199,7 @@ TEST(L2CAP_CHANNELS, some_functions){
     l2cap_cbm_unregister_service(TEST_PSM);
     l2cap_cbm_accept_connection(0X01, NULL, 0, 0);
     l2cap_cbm_decline_connection(0x01, L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE);
-    l2cap_cbm_disconnect(0x01);
+    l2cap_disconnect(0x01);
 }
 
 TEST(L2CAP_CHANNELS, outgoing_no_connection){
@@ -235,7 +235,7 @@ TEST(L2CAP_CHANNELS, outgoing_1){
     // print_acl("le_data_channel_data_1", mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);
     // simulate data
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, le_data_channel_data_1, sizeof(le_data_channel_data_1));
-    l2cap_cbm_disconnect(l2cap_cid);
+    l2cap_disconnect(l2cap_cid);
 }
 
 TEST(L2CAP_CHANNELS, incoming_1){

@@ -963,7 +963,7 @@ void hid_device_disconnect_interrupt_channel(uint16_t hid_cid){
     }
     log_info("Disconnect from interrupt channel HID Host");
     if (hid_device->interrupt_cid){
-        l2cap_disconnect(hid_device->interrupt_cid, 0);  // reason isn't used
+        l2cap_disconnect(hid_device->interrupt_cid);
     }
 }
 
@@ -975,7 +975,7 @@ void hid_device_disconnect_control_channel(uint16_t hid_cid){
     }
     log_info("Disconnect from control channel HID Host");
     if (hid_device->control_cid){
-        l2cap_disconnect(hid_device->control_cid, 0);  // reason isn't used
+        l2cap_disconnect(hid_device->control_cid);
     }
 }
 
@@ -987,11 +987,11 @@ void hid_device_disconnect(uint16_t hid_cid){
     }
     log_info("Disconnect from HID Host");
     if (hid_device->interrupt_cid){
-        l2cap_disconnect(hid_device->interrupt_cid, 0);  // reason isn't used
+        l2cap_disconnect(hid_device->interrupt_cid);
     }
     if (hid_device->control_cid){
-        l2cap_disconnect(hid_device->control_cid, 0); // reason isn't used
-    }
+        l2cap_disconnect(hid_device->control_cid);
+        }
 }
 
 int hid_device_in_boot_protocol_mode(uint16_t hid_cid){

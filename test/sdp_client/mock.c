@@ -21,7 +21,7 @@ extern "C" uint8_t l2cap_create_channel(btstack_packet_handler_t handler, bd_add
 	packet_handler = handler;
     return 0x41;
 }
-extern "C" void l2cap_disconnect(uint16_t local_cid, uint8_t reason){
+extern "C" void l2cap_disconnect(uint16_t local_cid){
 }
 extern "C" uint8_t *l2cap_get_outgoing_buffer(void){
     return NULL;
