@@ -878,13 +878,18 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     bd_addr_type_t addr_type;
     hci_con_handle_t handle;
 #endif
-    uint16_t cid;
-    uint16_t psm;
-    uint16_t service_channel;
-    uint16_t mtu;
+#ifdef ENABLE_CLASSIC
+    uint8_t  reason;
     uint8_t  rfcomm_channel;
     uint8_t  rfcomm_credits;
+    uint16_t mtu;
     uint32_t service_record_handle;
+    uint16_t cid;
+    uint16_t service_channel;
+    uint16_t serviceSearchPatternLen;
+    uint16_t attributeIDListLen;
+    uint16_t psm;
+#endif
     client_state_t *client;
     uint8_t status;
     uint8_t  * data;
@@ -897,8 +902,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     btstack_linked_list_gatt_client_helper_t * gatt_helper;
 #endif
 
-    uint16_t serviceSearchPatternLen;
-    uint16_t attributeIDListLen;
 
     // verbose log info before other info to allow for better tracking
     hci_dump_packet( HCI_COMMAND_DATA_PACKET, 1, packet, size);
