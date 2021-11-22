@@ -172,13 +172,13 @@ static void streamer(void){
     memset(le_cbm_connection.test_data, le_cbm_connection.counter, le_cbm_connection.test_data_len);
 
     // send
-    l2cap_cbm_send_data(le_cbm_connection.cid, (uint8_t *) le_cbm_connection.test_data, le_cbm_connection.test_data_len);
+    l2cap_send(le_cbm_connection.cid, (uint8_t *) le_cbm_connection.test_data, le_cbm_connection.test_data_len);
 
     // track
     test_track_data(&le_cbm_connection, le_cbm_connection.test_data_len);
 
     // request another packet
-    l2cap_cbm_request_can_send_now_event(le_cbm_connection.cid);
+    l2cap_request_can_send_now_event(le_cbm_connection.cid);
 } 
 /* LISTING_END */
 #endif
@@ -274,7 +274,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         printf("Test packet size: %u\n", le_cbm_connection.test_data_len);
                         test_reset(&le_cbm_connection);
 #ifdef TEST_STREAM_DATA
-                        l2cap_cbm_request_can_send_now_event(le_cbm_connection.cid);
+                        l2cap_request_can_send_now_event(le_cbm_connection.cid);
 #endif
                     } else {
                         printf("L2CAP: Connection to device %s failed. status code 0x%02x\n", bd_addr_to_str(event_address), status);

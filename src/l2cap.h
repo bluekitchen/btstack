@@ -513,8 +513,13 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 
 /** 
  * @brief Sends L2CAP data packet to the channel with given identifier.
+ * @note For channel in credit-based flow control mode, data needs to stay valid until .. event
+ * @param local_cid
+ * @param data to send
+ * @param len of data
+ * @return status
  */
-uint8_t l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len);
+uint8_t l2cap_send(uint16_t local_cid, const uint8_t *data, uint16_t len);
 
 /** 
  * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler. 
@@ -694,15 +699,6 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
  */
 uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits);
 
-/**
- * @brief Send data for channel in LE Credit-Based Flow-Control Mode
- * @note Since data larger then the maximum PDU needs to be segmented into multiple PDUs, data needs to stay valid until ... event
- * @param local_cid             L2CAP Channel Identifier
- * @param data                  data to send
- * @param size                  data size
- */
-uint8_t l2cap_cbm_send_data(uint16_t local_cid, uint8_t * data, uint16_t size);
-
 //
 // L2CAP Connection-Oriented Channels in Enhanced Credit-Based Flow-Control Mode - ECBM
 //
@@ -806,16 +802,6 @@ uint8_t l2cap_ecbm_request_can_send_now_event(uint16_t local_cid);
 uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers);
 
 /**
- * @brief Send data for channel in Enhanced Credit-Based Flow-Control Mode
- * @note Since data larger then the maximum PDU needs to be segmented into multiple PDUs, data needs to stay valid until ... event
- * @param local_cid             L2CAP Channel Identifier
- * @param data                  data to send
- * @param size                  data size
- * @return status
- */
-uint8_t l2cap_ecbm_send_data(uint16_t local_cid, const uint8_t * data, uint16_t size);
-
-/**
  * @brief De-Init L2CAP
  */
 void l2cap_deinit(void);
@@ -855,8 +841,8 @@ bool l2cap_le_can_send_now(uint16_t local_cid);
 // @deprecated - please use l2cap_cbm_request_can_send_now_event
 uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid);
 
-// @deprecated - please use l2cap_cbm_send_data
-uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size);
+// @deprecated - please use l2cap_send_data
+uint8_t l2cap_le_send_data(uint16_t local_cid, const uint8_t * data, uint16_t size);
 
 // @deprecated - please use l2cap_disconnect
 uint8_t l2cap_le_disconnect(uint16_t local_cid);

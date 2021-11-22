@@ -164,6 +164,7 @@ static void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
 static void l2cap_emit_channel_closed(l2cap_channel_t *channel);
 static void l2cap_emit_incoming_connection(l2cap_channel_t *channel);
 static int  l2cap_channel_ready_for_open(l2cap_channel_t *channel);
+static uint8_t l2cap_classic_send(l2cap_channel_t * channel, const uint8_t *data, uint16_t len);
 #endif
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 static void l2cap_cbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
@@ -174,6 +175,7 @@ static void l2cap_cbm_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_cbm_get_service(uint16_t le_psm);
 #endif
 #ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
+static uint8_t l2cap_credit_based_send_data(l2cap_channel_t * channel, const uint8_t * data, uint16_t size);
 static void l2cap_credit_based_send_pdu(l2cap_channel_t *channel);
 static void l2cap_credit_based_send_credits(l2cap_channel_t *channel);
 static bool l2cap_credit_based_handle_credit_indication(hci_con_handle_t handle, const uint8_t * command, uint16_t len);
@@ -417,7 +419,7 @@ static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int inde
     return l2cap_send_prepared(channel->local_cid, 2 + tx_state->len);
 }
 
-static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentation_and_reassembly_t sar, uint16_t sdu_length, uint8_t * data, uint16_t len){
+static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentation_and_reassembly_t sar, uint16_t sdu_length, const uint8_t * data, uint16_t len){
     // get next index for storing packets
     int index = channel->tx_write_index;
 
@@ -445,7 +447,7 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
 
 }
 
-static uint8_t l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t len){
+static uint8_t l2cap_ertm_send(l2cap_channel_t * channel, const uint8_t * data, uint16_t len){
     if (len > channel->remote_mtu){
         log_error("l2cap_ertm_send cid 0x%02x, data length exceeds remote MTU.", channel->local_cid);
         return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
@@ -1289,6 +1291,28 @@ bool l2cap_can_send_packet_now(uint16_t local_cid){
             return false;
     }
 }
+
+uint8_t l2cap_send(uint16_t local_cid, const uint8_t *data, uint16_t len){
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
+    if (!channel) {
+        log_error("l2cap_send no channel for cid 0x%02x", local_cid);
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    }
+    switch (channel->channel_type){
+        case L2CAP_CHANNEL_TYPE_CLASSIC:
+            return l2cap_classic_send(channel, data, len);
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
+        case L2CAP_CHANNEL_TYPE_CHANNEL_CBM:
+            return l2cap_credit_based_send_data(channel, data, len);
+#endif
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
+        case L2CAP_CHANNEL_TYPE_CHANNEL_ECBM:
+            return l2cap_credit_based_send_data(channel, data, len);
+#endif
+        default:
+            return ERROR_CODE_UNSPECIFIED_ERROR;
+    }
+}
 #endif
 
 #ifdef ENABLE_CLASSIC
@@ -1464,12 +1488,7 @@ uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len){
 }
 
 // assumption - only on Classic connections
-uint8_t l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
-    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (!channel) {
-        log_error("l2cap_send no channel for cid 0x%02x", local_cid);
-        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
-    }
+static uint8_t l2cap_classic_send(l2cap_channel_t * channel, const uint8_t *data, uint16_t len){
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     // send in ERTM
@@ -1479,19 +1498,19 @@ uint8_t l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
 #endif
 
     if (len > channel->remote_mtu){
-        log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", local_cid);
+        log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", channel->local_cid);
         return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
     }
 
     if (!hci_can_send_acl_packet_now(channel->con_handle)){
-        log_info("l2cap_send cid 0x%02x, cannot send", local_cid);
+        log_info("l2cap_send cid 0x%02x, cannot send", channel->local_cid);
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
     hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
     (void)memcpy(&acl_buffer[8], data, len);
-    return l2cap_send_prepared(local_cid, len);
+    return l2cap_send_prepared(channel->local_cid, len);
 }
 
 int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t len){
@@ -4824,21 +4843,15 @@ static void l2cap_credit_based_send_pdu(l2cap_channel_t *channel) {
     }
 }
 
-static uint8_t l2cap_credit_based_send_data(uint16_t local_cid, const uint8_t * data, uint16_t size){
-
-    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (!channel) {
-        log_error("l2cap send, no channel for cid 0x%02x", local_cid);
-        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
-    }
+static uint8_t l2cap_credit_based_send_data(l2cap_channel_t * channel, const uint8_t * data, uint16_t size){
 
     if (size > channel->remote_mtu){
-        log_error("l2cap send, cid 0x%02x, data length exceeds remote MTU.", local_cid);
+        log_error("l2cap send, cid 0x%02x, data length exceeds remote MTU.", channel->local_cid);
         return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
     }
 
     if (channel->send_sdu_buffer){
-        log_info("l2cap send, cid 0x%02x, cannot send", local_cid);
+        log_info("l2cap send, cid 0x%02x, cannot send", channel->local_cid);
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
@@ -5212,10 +5225,6 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
 uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_credit_based_provide_credits(local_cid, credits);
 }
-
-uint8_t l2cap_cbm_send_data(uint16_t local_cid, uint8_t * data, uint16_t size){
-    return l2cap_credit_based_send_data(local_cid, data, size);
-}
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
@@ -5439,10 +5448,6 @@ uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids,
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_ecbm_send_data(uint16_t local_cid, const uint8_t * data, uint16_t size){
-    return l2cap_credit_based_send_data(local_cid, data, size);
-}
-
 uint8_t l2cap_ecbm_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_credit_based_provide_credits(local_cid, credits);
 }
@@ -5515,9 +5520,9 @@ uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid){
 }
 
 // @deprecated - please use l2cap_cbm_send_data
-uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size){
+uint8_t l2cap_le_send_data(uint16_t local_cid, const uint8_t * data, uint16_t size){
     log_error("deprecated - please use l2cap_cbm_send_data");
-    return l2cap_cbm_send_data(local_cid, data, size);
+    return l2cap_send(local_cid, data, size);
 }
 
 // @deprecated - please use l2cap_disconnect

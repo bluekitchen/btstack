@@ -229,7 +229,7 @@ TEST(L2CAP_CHANNELS, outgoing_1){
     CHECK(can_send_now);
     l2cap_request_can_send_now_event(l2cap_cid);
     CHECK(hci_number_free_acl_slots_for_handle(HCI_CON_HANDLE_TEST_LE) > 0);
-    l2cap_cbm_send_data(l2cap_cid, (uint8_t *) "hallo", 5);
+    l2cap_send(l2cap_cid, (uint8_t *) "hallo", 5);
     // CHECK(hci_number_free_acl_slots_for_handle(HCI_CON_HANDLE_TEST) > 0);
     // fix_boundary_flags(mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);
     // print_acl("le_data_channel_data_1", mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);
