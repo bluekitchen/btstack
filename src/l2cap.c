@@ -4927,16 +4927,6 @@ static void l2cap_credit_based_handle_pdu(l2cap_channel_t * l2cap_channel, const
         l2cap_channel->receive_sdu_len = 0;
     }
 }
-
-static uint8_t l2cap_credit_based_disconnect(uint16_t local_cid){
-    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (!channel) {
-        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
-    }
-    channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
-    l2cap_run();
-    return ERROR_CODE_SUCCESS;
-}
 #endif
 
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
@@ -5222,10 +5212,6 @@ uint8_t l2cap_cbm_request_can_send_now_event(uint16_t local_cid){
 uint8_t l2cap_cbm_send_data(uint16_t local_cid, uint8_t * data, uint16_t size){
     return l2cap_credit_based_send_data(local_cid, data, size);
 }
-
-uint8_t l2cap_cbm_disconnect(uint16_t local_cid){
-    return l2cap_credit_based_disconnect(local_cid);
-}
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
@@ -5467,10 +5453,6 @@ uint8_t l2cap_ecbm_send_data(uint16_t local_cid, const uint8_t * data, uint16_t 
 uint8_t l2cap_ecbm_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_credit_based_provide_credits(local_cid, credits);
 }
-
-uint8_t l2cap_ecbm_disconnect(uint16_t local_cid){
-    return l2cap_credit_based_disconnect(local_cid);
-}
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -5545,9 +5527,9 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size){
     return l2cap_cbm_send_data(local_cid, data, size);
 }
 
-// @deprecated - please use l2cap_cbm_disconnect
+// @deprecated - please use l2cap_disconnect
 uint8_t l2cap_le_disconnect(uint16_t local_cid){
-    log_error("deprecated - please use l2cap_cbm_disconnect");
-    return l2cap_cbm_disconnect(local_cid);
+    log_error("deprecated - please use l2cap_disconnect");
+    return l2cap_disconnect(local_cid);
 }
 #endif

@@ -717,12 +717,6 @@ uint8_t l2cap_cbm_request_can_send_now_event(uint16_t local_cid);
  */
 uint8_t l2cap_cbm_send_data(uint16_t local_cid, uint8_t * data, uint16_t size);
 
-/**
- * @brief Disconnect channel in LE Credit-Based Flow-Control Mode
- * @param local_cid             L2CAP Channel Identifier
- */
-uint8_t l2cap_cbm_disconnect(uint16_t local_cid);
-
 //
 // L2CAP Connection-Oriented Channels in Enhanced Credit-Based Flow-Control Mode - ECBM
 //
@@ -836,13 +830,6 @@ uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids,
 uint8_t l2cap_ecbm_send_data(uint16_t local_cid, const uint8_t * data, uint16_t size);
 
 /**
- * @brief Disconnect channel in Enhanced Credit-Based Flow-Control Mode
- * @param local_cid             L2CAP Channel Identifier
- * @return status
- */
-uint8_t l2cap_ecbm_disconnect(uint16_t local_cid);
-
-/**
  * @brief De-Init L2CAP
  */
 void l2cap_deinit(void);
@@ -885,7 +872,7 @@ uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid);
 // @deprecated - please use l2cap_cbm_send_data
 uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size);
 
-// @deprecated - please use l2cap_cbm_disconnect
+// @deprecated - please use l2cap_disconnect
 uint8_t l2cap_le_disconnect(uint16_t local_cid);
 
 #if defined __cplusplus
