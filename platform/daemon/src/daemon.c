@@ -879,7 +879,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     hci_con_handle_t handle;
 #endif
 #ifdef ENABLE_CLASSIC
-    uint8_t  reason;
     uint8_t  rfcomm_channel;
     uint8_t  rfcomm_credits;
     uint16_t mtu;
@@ -1007,7 +1006,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case L2CAP_DECLINE_CONNECTION:
             cid    = little_endian_read_16(packet, 3);
-            reason = packet[7];
             l2cap_decline_connection(cid);
             break;
         case RFCOMM_CREATE_CHANNEL:
@@ -1033,7 +1031,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case RFCOMM_DISCONNECT:
             cid = little_endian_read_16(packet, 3);
-            reason = packet[5];
             rfcomm_disconnect(cid);
             break;
         case RFCOMM_REGISTER_SERVICE:
@@ -1060,7 +1057,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case RFCOMM_DECLINE_CONNECTION:
             cid    = little_endian_read_16(packet, 3);
-            reason = packet[7];
             rfcomm_decline_connection(cid);
             break;            
         case RFCOMM_GRANT_CREDITS:
