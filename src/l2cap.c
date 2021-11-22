@@ -1235,17 +1235,18 @@ static l2cap_channel_t * l2cap_get_channel_for_remote_handle_and_cid(hci_con_han
 #endif
 
 #ifdef ENABLE_CLASSIC
-void l2cap_request_can_send_now_event(uint16_t local_cid){
+uint8_t l2cap_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (!channel) return;
+    if (!channel) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     channel->waiting_for_can_send_now = 1;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
         l2cap_ertm_notify_channel_can_send(channel);
-        return;
+        return ERROR_CODE_SUCCESS;
     }
 #endif        
     l2cap_notify_channel_can_send();
+    return ERROR_CODE_SUCCESS;
 }
 
 bool l2cap_can_send_packet_now(uint16_t local_cid){

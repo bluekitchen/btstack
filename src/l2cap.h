@@ -552,8 +552,9 @@ bool l2cap_can_send_packet_now(uint16_t local_cid);
  * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
  * @param local_cid
+ * @return status
  */
-void l2cap_request_can_send_now_event(uint16_t local_cid);
+uint8_t l2cap_request_can_send_now_event(uint16_t local_cid);
 
 /** 
  * @brief Reserve outgoing buffer
