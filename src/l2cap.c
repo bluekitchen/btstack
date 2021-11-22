@@ -5120,7 +5120,7 @@ uint8_t l2cap_cbm_decline_connection(uint16_t local_cid, uint16_t result) {
 
     // set state decline connection
     channel->state  = L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE;
-    channel->reason = L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE;
+    channel->reason = result;
     l2cap_run();
     return ERROR_CODE_SUCCESS;
 }
