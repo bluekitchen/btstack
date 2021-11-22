@@ -35,10 +35,10 @@
  *
  */
 
-#define BTSTACK_FILE__ "le_data_channel.c"
+#define BTSTACK_FILE__ "l2cap_cbm_ecbm.c"
 
 /*
- * le_data_channel.c 
+ * l2cap_cbm_ecbm.c 
  */ 
 
 

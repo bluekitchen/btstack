@@ -152,7 +152,7 @@ AVRCP_OBJ  = $(AVRCP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 
-EXAMPLES  = iopt gatt_server_test gatt_client_test l2cap_test classic_test bnep_test le_data_channel
+EXAMPLES  = iopt gatt_server_test gatt_client_test l2cap_test classic_test bnep_test l2cap_cbm_ecbm
 EXAMPLES += hsp_ag_test hsp_hs_test sco_loopback hfp_ag_test hfp_hf_test
 EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test gatt_profiles hrp_col_test hrp_server_test
 EXAMPLES += hog_device_test hog_host_test hid_device_test hid_host_test 
@@ -231,7 +231,7 @@ gap_peripheral_test: gap_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} 
 gap_central_test: gap_central_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} att_db_util.o ad_parser.o gap_central_test.c
 	${CC} $(filter-out gap_central_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-le_data_channel: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ad_parser.o le_data_channel.c
+l2cap_cbm_ecbm: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ad_parser.o l2cap_cbm_ecbm.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c 
