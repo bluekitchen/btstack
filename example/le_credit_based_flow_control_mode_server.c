@@ -222,8 +222,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 // LE Credit-based Flow-Control Mode
 
                 case L2CAP_EVENT_CBM_INCOMING_CONNECTION: 
-                    psm = l2cap_event_le_incoming_connection_get_psm(packet);
-                    cid = l2cap_event_le_incoming_connection_get_local_cid(packet);
+                    psm = l2cap_event_cbm_incoming_connection_get_psm(packet);
+                    cid = l2cap_event_cbm_incoming_connection_get_local_cid(packet);
                     if (psm != TSPX_le_psm) break;
                     printf("L2CAP: Accepting incoming connection request for 0x%02x, PSM %02x\n", cid, psm);
                     l2cap_cbm_accept_connection(cid, data_channel_buffer, sizeof(data_channel_buffer), initial_credits);
@@ -231,11 +231,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                 case L2CAP_EVENT_CBM_CHANNEL_OPENED:
                     // inform about new l2cap connection
-                    l2cap_event_le_channel_opened_get_address(packet, event_address);
-                    psm = l2cap_event_le_channel_opened_get_psm(packet); 
-                    cid = l2cap_event_le_channel_opened_get_local_cid(packet); 
-                    handle = l2cap_event_le_channel_opened_get_handle(packet);
-                    status = l2cap_event_le_channel_opened_get_status(packet);
+                    l2cap_event_cbm_channel_opened_get_address(packet, event_address);
+                    psm = l2cap_event_cbm_channel_opened_get_psm(packet);
+                    cid = l2cap_event_cbm_channel_opened_get_local_cid(packet);
+                    handle = l2cap_event_cbm_channel_opened_get_handle(packet);
+                    status = l2cap_event_cbm_channel_opened_get_status(packet);
                     if (status == ERROR_CODE_SUCCESS) {
                         printf("L2CAP: Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
@@ -243,7 +243,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         le_cbm_connection.counter = 'A';
                         le_cbm_connection.cid = cid;
                         le_cbm_connection.connection_handle = handle;
-                        le_cbm_connection.test_data_len = btstack_min(l2cap_event_le_channel_opened_get_remote_mtu(packet), sizeof(le_cbm_connection.test_data));
+                        le_cbm_connection.test_data_len = btstack_min(l2cap_event_cbm_channel_opened_get_remote_mtu(packet), sizeof(le_cbm_connection.test_data));
                         printf("Test packet size: %u\n", le_cbm_connection.test_data_len);
                         test_reset(&le_cbm_connection);
 #ifdef TEST_STREAM_DATA

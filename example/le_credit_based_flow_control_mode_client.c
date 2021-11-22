@@ -259,17 +259,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
                 case L2CAP_EVENT_CBM_CHANNEL_OPENED:
                     // inform about new l2cap connection
-                    l2cap_event_le_channel_opened_get_address(packet, event_address);
-                    psm = l2cap_event_le_channel_opened_get_psm(packet); 
-                    cid = l2cap_event_le_channel_opened_get_local_cid(packet); 
-                    handle = l2cap_event_le_channel_opened_get_handle(packet);
-                    status = l2cap_event_le_channel_opened_get_status(packet);
+                    l2cap_event_cbm_channel_opened_get_address(packet, event_address);
+                    psm = l2cap_event_cbm_channel_opened_get_psm(packet);
+                    cid = l2cap_event_cbm_channel_opened_get_local_cid(packet);
+                    handle = l2cap_event_cbm_channel_opened_get_handle(packet);
+                    status = l2cap_event_cbm_channel_opened_get_status(packet);
                     if (status == ERROR_CODE_SUCCESS) {
                         printf("L2CAP: CBM Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
                         le_cbm_connection.cid = cid;
                         le_cbm_connection.connection_handle = handle;
-                        le_cbm_connection.test_data_len = btstack_min(l2cap_event_le_channel_opened_get_remote_mtu(packet), sizeof(le_cbm_connection.test_data));
+                        le_cbm_connection.test_data_len = btstack_min(l2cap_event_cbm_channel_opened_get_remote_mtu(packet), sizeof(le_cbm_connection.test_data));
                         state = TC_TEST_DATA;
                         printf("Test packet size: %u\n", le_cbm_connection.test_data_len);
                         test_reset(&le_cbm_connection);
@@ -288,7 +288,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 #endif
 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
-                    cid = l2cap_event_le_channel_closed_get_local_cid(packet);
+                    cid = l2cap_event_channel_closed_get_local_cid(packet);
                     printf("L2CAP: Channel closed 0x%02x\n", cid);
                     break;
 
