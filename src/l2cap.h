@@ -694,15 +694,6 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
  */
 uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits);
 
-
-/**
- * @brief Request emission of L2CAP_EVENT_CBM_CAN_SEND_NOW as soon as possible
- * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
- *       so packet handler should be ready to handle it
- * @param local_cid             L2CAP Channel Identifier
- */
-uint8_t l2cap_cbm_request_can_send_now_event(uint16_t local_cid);
-
 /**
  * @brief Send data for channel in LE Credit-Based Flow-Control Mode
  * @note Since data larger then the maximum PDU needs to be segmented into multiple PDUs, data needs to stay valid until ... event
@@ -872,6 +863,10 @@ uint8_t l2cap_le_disconnect(uint16_t local_cid);
 
 // @deprecated - please use l2cap_can_send_now
 bool l2cap_cbm_can_send_now(uint16_t local_cid);
+
+// @deprecated - please use l2cap_request_can_send_now_event
+uint8_t l2cap_cbm_request_can_send_now_event(uint16_t local_cid);
+
 
 #if defined __cplusplus
 }

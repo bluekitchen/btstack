@@ -169,7 +169,7 @@ static int  l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 static void l2cap_cbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
 static void l2cap_cbm_emit_channel_closed(l2cap_channel_t * channel);
 static void l2cap_cbm_emit_incoming_connection(l2cap_channel_t *channel);
-static void l2cap_cbm_notify_channel_can_send(l2cap_channel_t *channel);
+static void l2cap_credit_based_notify_channel_can_send(l2cap_channel_t *channel);
 static void l2cap_cbm_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_cbm_get_service(uint16_t le_psm);
 #endif
@@ -1234,21 +1234,39 @@ static l2cap_channel_t * l2cap_get_channel_for_remote_handle_and_cid(hci_con_han
 }
 #endif
 
-#ifdef ENABLE_CLASSIC
+#ifdef L2CAP_USES_CHANNELS
 uint8_t l2cap_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     channel->waiting_for_can_send_now = 1;
+    switch (channel->channel_type){
+        case L2CAP_CHANNEL_TYPE_CLASSIC:
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
-        l2cap_ertm_notify_channel_can_send(channel);
-        return ERROR_CODE_SUCCESS;
+            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                l2cap_ertm_notify_channel_can_send(channel);
+                return ERROR_CODE_SUCCESS;
+            }
+#endif
+            l2cap_notify_channel_can_send();
+            break;
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
+        case L2CAP_CHANNEL_TYPE_CHANNEL_CBM:
+            l2cap_credit_based_notify_channel_can_send(channel);
+            break;
+#endif
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
+        case L2CAP_CHANNEL_TYPE_CHANNEL_ECBM:
+            l2cap_credit_based_notify_channel_can_send(channel);
+            break;
+#endif
+        default:
+            break;
     }
-#endif        
-    l2cap_notify_channel_can_send();
     return ERROR_CODE_SUCCESS;
 }
+#endif
 
+#ifdef ENABLE_CLASSIC
 bool l2cap_can_send_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return false;
@@ -4802,7 +4820,7 @@ static void l2cap_credit_based_send_pdu(l2cap_channel_t *channel) {
         // send done event
         l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CBM_PACKET_SENT);
         // inform about can send now
-        l2cap_cbm_notify_channel_can_send(channel);
+        l2cap_credit_based_notify_channel_can_send(channel);
     }
 }
 
@@ -4942,18 +4960,17 @@ static void l2cap_credit_based_handle_pdu(l2cap_channel_t * l2cap_channel, const
         l2cap_channel->receive_sdu_len = 0;
     }
 }
-#endif
 
-#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
-
-static void l2cap_cbm_notify_channel_can_send(l2cap_channel_t *channel){
+static void l2cap_credit_based_notify_channel_can_send(l2cap_channel_t *channel){
     if (!channel->waiting_for_can_send_now) return;
     if (channel->send_sdu_buffer) return;
     channel->waiting_for_can_send_now = 0;
     log_debug("le can send now, local_cid 0x%x", channel->local_cid);
     l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CBM_CAN_SEND_NOW);
 }
+#endif
 
+#ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 // 1BH2222
 static void l2cap_cbm_emit_incoming_connection(l2cap_channel_t *channel) {
     log_info("le incoming addr_type %u, addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x, remote_mtu %u",
@@ -5196,17 +5213,6 @@ uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_credit_based_provide_credits(local_cid, credits);
 }
 
-uint8_t l2cap_cbm_request_can_send_now_event(uint16_t local_cid){
-    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (!channel) {
-        log_error("can send now, no channel for cid 0x%02x", local_cid);
-        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
-    }
-    channel->waiting_for_can_send_now = 1;
-    l2cap_cbm_notify_channel_can_send(channel);
-    return ERROR_CODE_SUCCESS;
-}
-
 uint8_t l2cap_cbm_send_data(uint16_t local_cid, uint8_t * data, uint16_t size){
     return l2cap_credit_based_send_data(local_cid, data, size);
 }
@@ -5391,17 +5397,6 @@ uint8_t l2cap_ecbm_decline_channels(uint16_t local_cid, uint16_t result){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_ecbm_request_can_send_now_event(uint16_t local_cid){
-    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (!channel) {
-        log_error("can send now, no channel for cid 0x%02x", local_cid);
-        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
-    }
-    channel->waiting_for_can_send_now = 1;
-    l2cap_cbm_notify_channel_can_send(channel);
-    return ERROR_CODE_SUCCESS;
-}
-
 uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers){
     btstack_assert(receive_buffers != NULL);
     btstack_assert(local_cids != NULL);
@@ -5513,10 +5508,10 @@ bool l2cap_le_can_send_now(uint16_t local_cid){
     return l2cap_can_send_packet_now(local_cid);
 }
 
-// @deprecated - please use l2cap_cbm_request_can_send_now_event
+// @deprecated - please use l2cap_request_can_send_now_event
 uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid){
-    log_error("deprecated - please use l2cap_cbm_request_can_send_now_event");
-    return l2cap_cbm_request_can_send_now_event(local_cid);
+    log_error("deprecated - please use l2cap_request_can_send_now_event");
+    return l2cap_request_can_send_now_event(local_cid);
 }
 
 // @deprecated - please use l2cap_cbm_send_data
