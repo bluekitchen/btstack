@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: gap_set_page_timeout to set Page Timeout
 - GAP: gap_inquiry_set_scan_activity to set Inquiry Scan Activity
 - L2CAP: emit L2CAP_EVENT_INFORMATION_RESPONSE event with extended features and fixed channels supported
+- L2CAP: support Enhanced Credit-based Flow-Control Mode for connection-oriented channels
 - POSIX: btstack_signal allows to register for callback on signal, e.g. ctrl-c
 - Windows: btstack_stdin_window_register_ctrl_c_callback allows to register for ctrl-c
 - A2DP: allow to register media codec validator for sink and source with:
@@ -51,6 +52,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: drop reason parameter in l2cap_disconnect
 - L2CAP: use official terminology for L2CAP channel modes - ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE replaces ENABLE_LE_DATA_CHANNELS
 - L2CAP: unify API for can send now, request to send, and send packet and disconnect channel
+- L2CAP: unify events for can send now, packet sent, channel closed (CbM/ECBM using existing events)
 - RFCOMM: `RFCOMM_EVENT_PORT_CONFIGURATION` contains rfcomm_cid and remote flag, emitted for query config
 - RFCOMM: provide status instead of undocumented int error code and bool for API functions
 - RFCOMM: remote port configuration, line status, and modem status are sent by channel state machine

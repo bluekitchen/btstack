@@ -168,7 +168,6 @@ static uint8_t l2cap_classic_send(l2cap_channel_t * channel, const uint8_t *data
 #endif
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 static void l2cap_cbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
-static void l2cap_cbm_emit_channel_closed(l2cap_channel_t * channel);
 static void l2cap_cbm_emit_incoming_connection(l2cap_channel_t *channel);
 static void l2cap_credit_based_notify_channel_can_send(l2cap_channel_t *channel);
 static void l2cap_cbm_finialize_channel_close(l2cap_channel_t *channel);
@@ -2747,7 +2746,7 @@ static void l2cap_handle_hci_le_disconnect_event(l2cap_channel_t * channel){
     if (l2cap_send_open_failed_on_hci_disconnect(channel)){
         l2cap_cbm_emit_channel_opened(channel, L2CAP_CONNECTION_BASEBAND_DISCONNECT);
     } else {
-        l2cap_cbm_emit_channel_closed(channel);
+        l2cap_emit_channel_closed(channel);
     }
     l2cap_free_channel_entry(channel);
 }
@@ -2894,7 +2893,7 @@ static void l2cap_handle_disconnection_complete(hci_con_handle_t handle){
                         l2cap_ecbm_emit_reconfigure_complete(channel, 0xffff);
                         break;
                     default:
-                        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ECBM_CHANNEL_CLOSED);
+                        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CHANNEL_CLOSED);
                         break;
                 }
                 l2cap_free_channel_entry(channel);
@@ -4837,7 +4836,7 @@ static void l2cap_credit_based_send_pdu(l2cap_channel_t *channel) {
 
     if (done) {
         // send done event
-        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CBM_PACKET_SENT);
+        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_PACKET_SENT);
         // inform about can send now
         l2cap_credit_based_notify_channel_can_send(channel);
     }
@@ -4979,7 +4978,7 @@ static void l2cap_credit_based_notify_channel_can_send(l2cap_channel_t *channel)
     if (channel->send_sdu_buffer) return;
     channel->waiting_for_can_send_now = 0;
     log_debug("le can send now, local_cid 0x%x", channel->local_cid);
-    l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CBM_CAN_SEND_NOW);
+    l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CAN_SEND_NOW);
 }
 #endif
 
@@ -5019,16 +5018,6 @@ static void l2cap_cbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t stat
     little_endian_store_16(event, 17, channel->remote_cid);
     little_endian_store_16(event, 19, channel->local_mtu);
     little_endian_store_16(event, 21, channel->remote_mtu); 
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
-}
-// 2
-static void l2cap_cbm_emit_channel_closed(l2cap_channel_t * channel){
-    log_info("closed local_cid 0x%x", channel->local_cid);
-    uint8_t event[4];
-    event[0] = L2CAP_EVENT_CBM_CHANNEL_CLOSED;
-    event[1] = sizeof(event) - 2u;
-    little_endian_store_16(event, 2, channel->local_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }

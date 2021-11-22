@@ -254,7 +254,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;
 
-                case L2CAP_EVENT_CBM_CHANNEL_CLOSED:
+                case L2CAP_EVENT_CHANNEL_CLOSED:
                     printf("L2CAP: Channel closed\n");
                     le_cbm_connection.cid = 0;
                     break;

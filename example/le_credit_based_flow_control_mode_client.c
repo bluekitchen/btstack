@@ -282,12 +282,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
 
 #ifdef TEST_STREAM_DATA
-                case L2CAP_EVENT_CBM_CAN_SEND_NOW:
+                case L2CAP_EVENT_CAN_SEND_NOW:
                     streamer();
                     break;
 #endif
 
-                case L2CAP_EVENT_CBM_CHANNEL_CLOSED:
+                case L2CAP_EVENT_CHANNEL_CLOSED:
                     cid = l2cap_event_le_channel_closed_get_local_cid(packet);
                     printf("L2CAP: Channel closed 0x%02x\n", cid);
                     break;

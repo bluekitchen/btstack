@@ -226,7 +226,7 @@ static void l2cap_channel_packet_handler(uint8_t packet_type, uint16_t channel, 
             switch (hci_event_packet_get_type(packet)) {
                 case L2CAP_EVENT_ECBM_INCOMING_CONNECTION:
                     printf("L2CAP_EVENT_DATA_CHANNEL_INCOMING\n");
-                    cid = l2cap_event_data_channel_incoming_get_local_cid(packet);
+                    cid = l2cap_event_ecbm_incoming_connection_get_local_cid(packet);
                     if (l2cap_channel_accept_incoming){
                         l2cap_ecbm_accept_channels(cid, 2, initial_credits, TEST_PACKET_SIZE, receive_buffers_2, cids);
                     } else {
@@ -235,16 +235,14 @@ static void l2cap_channel_packet_handler(uint8_t packet_type, uint16_t channel, 
                     }
                     break;
                 case L2CAP_EVENT_ECBM_CHANNEL_OPENED:
-                    l2cap_cids[num_l2cap_channel_opened] = l2cap_event_data_channel_opened_get_local_cid(packet);
+                    l2cap_cids[num_l2cap_channel_opened] = l2cap_event_ecbm_channel_opened_get_local_cid(packet);
                     printf("L2CAP_EVENT_DATA_CHANNEL_OPENED - cid 0x%04x\n", l2cap_cids[num_l2cap_channel_opened] );
                     num_l2cap_channel_opened++;
                     break;
                 case L2CAP_EVENT_ECBM_RECONFIGURATION_COMPLETE:
-                    reconfigure_result = l2cap_event_data_channel_reconfiguration_complete_get_reconfigure_result(packet);
+                    reconfigure_result = l2cap_event_ecbm_reconfiguration_complete_get_reconfigure_result(packet);
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
-                case L2CAP_EVENT_CBM_CHANNEL_CLOSED:
-                case L2CAP_EVENT_ECBM_CHANNEL_CLOSED:
                     num_l2cap_channel_closed++;
                     break;
                 default:

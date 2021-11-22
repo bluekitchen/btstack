@@ -225,7 +225,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     }
                     break;
 
-                case L2CAP_EVENT_CBM_CAN_SEND_NOW:
+                case L2CAP_EVENT_CAN_SEND_NOW:
                     if (todo_send_short){
                         todo_send_short = 0;
                         l2cap_send(cid_credit_based, (uint8_t *) data_short, strlen(data_short));
@@ -242,12 +242,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     }
                     break;
 
-                case L2CAP_EVENT_CBM_CHANNEL_CLOSED:
-                    cid = l2cap_event_le_channel_closed_get_local_cid(packet);
-                    printf("L2CAP: LE Data Channel closed 0x%02x\n", cid); 
-                    break;
-
-               case L2CAP_EVENT_CBM_PACKET_SENT:
+               case L2CAP_EVENT_PACKET_SENT:
                     cid = l2cap_event_le_packet_sent_get_local_cid(packet);
                     printf("L2CAP: LE Data Channel Packet sent0x%02x\n", cid); 
                     break;

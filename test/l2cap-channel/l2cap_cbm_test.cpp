@@ -129,8 +129,8 @@ static void l2cap_channel_packet_handler(uint8_t packet_type, uint16_t channel, 
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 case L2CAP_EVENT_CBM_INCOMING_CONNECTION:
-                    psm = l2cap_event_le_incoming_connection_get_psm(packet);
-                    cid = l2cap_event_le_incoming_connection_get_local_cid(packet);
+                    psm = l2cap_event_cbm_incoming_connection_get_psm(packet);
+                    cid = l2cap_event_cbm_incoming_connection_get_local_cid(packet);
                     if (l2cap_channel_accept_incoming){
                         l2cap_cbm_accept_connection(cid, data_channel_buffer, sizeof(data_channel_buffer), initial_credits);
                     } else {

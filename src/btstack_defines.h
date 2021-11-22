@@ -842,11 +842,31 @@ typedef uint8_t sm_key_t[16];
   */
 #define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE   0x77
 
+ /*
+ * @format H22
+ * @param con_handle
+ * @param extended_feature_mask
+ * @param fixed_channels_supported
+ */
+#define L2CAP_EVENT_INFORMATION_RESPONSE                   0x78
+
 /**
  * @format 2
  * @param local_cid
  */
 #define L2CAP_EVENT_CAN_SEND_NOW                           0x78
+
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_PACKET_SENT                            0x7a
+
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_ERTM_BUFFER_RELEASED                   0x7b
 
 // L2CAP Channel in LE Credit-based Flow-Control Mode (CBM)
 
@@ -860,7 +880,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_cid
  * @param remote_mtu
  */
-#define L2CAP_EVENT_CBM_INCOMING_CONNECTION                 0x79
+#define L2CAP_EVENT_CBM_INCOMING_CONNECTION                 0x7c
 
 /**
  * @format 11BH122222
@@ -875,36 +895,12 @@ typedef uint8_t sm_key_t[16];
  * @param local_mtu
  * @param remote_mtu
  */
-#define L2CAP_EVENT_CBM_CHANNEL_OPENED                      0x7a
-
-/*
- * @format 2
- * @param local_cid
- */
-#define L2CAP_EVENT_CBM_CHANNEL_CLOSED                      0x7b
-
-/*
- * @format 2
- * @param local_cid
- */
-#define L2CAP_EVENT_CBM_CAN_SEND_NOW                        0x7c
-
-/*
- * @format 2
- * @param local_cid
- */
-#define L2CAP_EVENT_CBM_PACKET_SENT                         0x7d
-
-/*
- * @format 2
- * @param local_cid
- */
-#define L2CAP_EVENT_ERTM_BUFFER_RELEASED                   0x7e
+#define L2CAP_EVENT_CBM_CHANNEL_OPENED                      0x7d
 
 /*
  * @format
  */
-#define L2CAP_EVENT_TRIGGER_RUN                            0x7f
+#define L2CAP_EVENT_TRIGGER_RUN                             0x7e
 
 /**
  * @format 1BH212
@@ -915,7 +911,7 @@ typedef uint8_t sm_key_t[16];
  * @param num_channels
  * @param local_cid first new cid
  */
-#define L2CAP_EVENT_ECBM_INCOMING_CONNECTION               0x8A
+#define L2CAP_EVENT_ECBM_INCOMING_CONNECTION               0x7f
 
 /**
  * @format 11BH122222
@@ -930,25 +926,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_mtu
  * @param remote_mtu
  */
-#define L2CAP_EVENT_ECBM_CHANNEL_OPENED                      0x8b
-
-/*
- * @format 2
- * @param local_cid
- */
-#define L2CAP_EVENT_ECBM_CHANNEL_CLOSED                      0x8c
-
-/*
- * @format 2
- * @param local_cid
- */
-#define L2CAP_EVENT_ECBM_CAN_SEND_NOW                0x8d
-
-/*
- * @format 2
- * @param local_cid
- */
-#define L2CAP_EVENT_ECBM_PACKET_SENT                 0x8e
+#define L2CAP_EVENT_ECBM_CHANNEL_OPENED              0x84
 
 /*
  * @format 222
@@ -956,22 +934,14 @@ typedef uint8_t sm_key_t[16];
  * @param mtu
  * @param mps
  */
-#define L2CAP_EVENT_ECBM_RECONFIGURED                0x8f
+#define L2CAP_EVENT_ECBM_RECONFIGURED                0x85
 
 /*
  * @format 22
  * @param local_cid
  * @param reconfigure_result
  */
-#define L2CAP_EVENT_ECBM_RECONFIGURATION_COMPLETE    0x96
-
-/*
- * @format H22
- * @param con_handle
- * @param extended_feature_mask
- * @param fixed_channels_supported
- */
-#define L2CAP_EVENT_INFORMATION_RESPONSE                   0x97
+#define L2CAP_EVENT_ECBM_RECONFIGURATION_COMPLETE    0x86
 
 
 // RFCOMM EVENTS
