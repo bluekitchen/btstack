@@ -1316,7 +1316,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 
             if (connection->now_playing_info_response){
                 connection->now_playing_info_response = false;
-                avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_ACCEPTED, AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES);
+                avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES);
                 connection->data_len = avrcp_now_playing_info_value_len_with_headers(connection);
                 break;
             }
