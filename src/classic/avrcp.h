@@ -525,10 +525,9 @@ typedef struct {
     bool wait_to_send;
     
     // PID check
-    uint8_t reject_transport_header;
-    uint8_t transport_header;
-    uint16_t invalid_pid;
-
+    // invalid pid is stored in cmd_operands 
+    bool reject_transport_header;
+    
     // transaction id 
     uint8_t transaction_id_counter;
 

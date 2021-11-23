@@ -428,14 +428,14 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
     l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
 }
 
-static void avrcp_send_reject_cmd_wrong_pid(avrcp_connection_t * connection){
+static void avctp_send_reject_cmd_wrong_pid(avrcp_connection_t * connection){
     l2cap_reserve_packet_buffer();
     uint8_t * packet = l2cap_get_outgoing_buffer();
 
     // AVCTP header
     // transport header : transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
-    packet[0] = (connection->transaction_id << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
-    big_endian_store_16(packet, 1, connection->invalid_pid);
+    packet[0] = (connection->transaction_id << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_RESPONSE_FRAME << 1) | 1;
+    big_endian_store_16(packet, 1, connection->cmd_operands[0]);
     l2cap_send_prepared(connection->l2cap_signaling_cid, 3);
 }
 
@@ -985,10 +985,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint16_t pid = big_endian_read_16(packet, 1);
 
     if (pid != BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL){
-        log_info("Invalid pid 0x%02x, expected 0x%02x", connection->invalid_pid, BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL);
-        connection->reject_transport_header = 1;
-        connection->invalid_pid = pid;
-        connection->transport_header = (connection->transaction_id << 4) | (AVRCP_SINGLE_PACKET << 2 ) | (AVRCP_RESPONSE_FRAME << 1) | 1;
+        log_info("Invalid pid 0x%02x, expected 0x%02x", pid, BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL);
+        connection->reject_transport_header = true;
+        connection->cmd_operands[0] = pid;
+        connection->state = AVCTP_W2_SEND_RESPONSE;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
         return;
     }
@@ -1368,25 +1368,22 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         return;
                     }
 
-                    if (connection->reject_transport_header){
-                        connection->reject_transport_header = 0;
-                        avrcp_send_reject_cmd_wrong_pid(connection);
-                        avrcp_request_next_avctp_segment(connection);
-                        return;
-                    }
-
                     switch (connection->state){
                         // next AVCTP segment
                         case AVCTP_W2_SEND_AVCTP_FRAGMENTED_MESSAGE:
                         case AVCTP_W2_SEND_RESPONSE:
+                            if (connection->reject_transport_header){
+                                connection->reject_transport_header = false;
+                                avctp_send_reject_cmd_wrong_pid(connection);
+                                break;
+                            } 
                             avrcp_send_response_with_avctp_fragmentation(connection);
-                            avrcp_request_next_avctp_segment(connection);
                             break;
                         
                         default:
                             break;
                     }
-
+                    avrcp_request_next_avctp_segment(connection);
                     break;
             }
             default:
@@ -1394,7 +1391,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         }
         default:
             break;
-    }
+    }   
 }
 
 void avrcp_target_init(void){
