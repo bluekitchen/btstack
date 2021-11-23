@@ -2512,16 +2512,6 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_disconnect(uint16_t local_cid){
-    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (!channel) {
-        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
-    }
-    channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
-    l2cap_run();
-    return ERROR_CODE_SUCCESS;
-}
-
 static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t status){
     // mark all channels before emitting open events as these could trigger new connetion requests to the same device
     btstack_linked_list_iterator_t it;
@@ -2688,6 +2678,16 @@ static void l2cap_notify_channel_can_send(void){
 }
 
 #ifdef L2CAP_USES_CHANNELS
+
+uint8_t l2cap_disconnect(uint16_t local_cid){
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
+    if (!channel) {
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    }
+    channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+    l2cap_run();
+    return ERROR_CODE_SUCCESS;
+}
 
 static int l2cap_send_open_failed_on_hci_disconnect(l2cap_channel_t * channel){
     // open cannot fail for for incoming connections
