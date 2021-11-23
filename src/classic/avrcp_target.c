@@ -600,12 +600,14 @@ static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     connection->state = AVCTP_W2_SEND_RESPONSE;
+
+    avrcp_target_custom_command_data_init(connection,
+                                          AVRCP_CMD_OPCODE_UNIT_INFO, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE,
+                                          AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, AVRCP_PDU_ID_UNDEFINED,
+                                          connection->company_id);
     
-    avrcp_target_custome_command_data_init(connection, 
-        AVRCP_CMD_OPCODE_UNIT_INFO, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, 
-        AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, AVRCP_PDU_ID_UNDEFINED, connection->company_id);
-    
-    uint8_t unit = 0;    
+    uint8_t unit = 0;
+    connection->data = connection->cmd_operands;
     connection->data_len = 5;
     connection->data[0] = 0x07;
     connection->data[1] = (connection->unit_type << 4) | unit;
@@ -622,12 +624,15 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
     if (offset >= 32) return AVRCP_STATUS_INVALID_PARAMETER;
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
-    
-    avrcp_target_custome_command_data_init(connection, AVRCP_CMD_OPCODE_SUBUNIT_INFO, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, 
-        AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, AVRCP_PDU_ID_UNDEFINED, connection->company_id);
+
+    avrcp_target_custom_command_data_init(connection, AVRCP_CMD_OPCODE_SUBUNIT_INFO,
+                                          AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE,
+                                          AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, AVRCP_PDU_ID_UNDEFINED,
+                                          connection->company_id);
 
     uint8_t page = offset / 4;
     uint8_t extension_code = 7;
+    connection->data = connection->cmd_operands;
     connection->data_len = 5;
     connection->data[0] = (page << 4) | extension_code;
 
