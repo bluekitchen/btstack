@@ -589,22 +589,22 @@ typedef struct {
     uint32_t song_position_ms;
     int total_tracks;
     int track_nr;
-    uint8_t track_selected;
-    uint8_t track_changed;
+    bool track_selected;
+    bool track_changed;
     
     avrcp_playback_status_t playback_status;
-    uint8_t playback_status_changed;
+    bool playback_status_changed;
 
-    uint8_t playing_content_changed;
+    bool playing_content_changed;
     
     avrcp_battery_status_t battery_status;
-    uint8_t battery_status_changed;
+    bool battery_status_changed;
     uint8_t absolute_volume;
-    uint8_t notify_absolute_volume_changed;
+    bool notify_absolute_volume_changed;
     
     bool now_playing_info_response;
     uint8_t now_playing_info_attr_bitmap;
-    uint8_t abort_continue_response;
+    bool    abort_continue_response;
     
     // used for fragmentation
     avrcp_media_attribute_id_t next_attr_id;
@@ -624,14 +624,14 @@ typedef struct {
     uint8_t  num_attributes;
     uint8_t  num_parsed_attributes;
 
-    uint8_t addressed_player_changed;
+    bool addressed_player_changed;
     uint16_t addressed_player_id;
     uint16_t uid_counter;
     // PTS requires definition of max num fragments
     uint8_t max_num_fragments;
     uint8_t num_received_fragments;
 
-    uint8_t accept_response;
+    bool accept_response;
 
 #ifdef ENABLE_AVCTP_FRAGMENTATION
     uint16_t avctp_reassembly_size;

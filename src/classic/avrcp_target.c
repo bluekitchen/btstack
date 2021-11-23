@@ -359,7 +359,6 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                             return;
 
                         case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:
-
                             packet[pos++] = connection->num_attributes;
                             max_payload_size--;
 
@@ -370,6 +369,7 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                             return;
 
                         default:
+                            // error response and other OPCODEs
                             break;
                     }
                     break;
@@ -481,7 +481,8 @@ static uint8_t avrcp_target_vendor_dependent_response_accept(avrcp_connection_t 
     connection->data_len = 1;
     connection->data[0] = status;
 
-    connection->accept_response = 1;
+    connection->accept_response = true;
+    connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -744,7 +745,7 @@ uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_stat
 
     connection->playback_status = playback_status;
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED)) {
-        connection->playback_status_changed = 1;
+        connection->playback_status_changed = true;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     } 
     return ERROR_CODE_SUCCESS;
@@ -756,7 +757,7 @@ uint8_t avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (!current_track){
-        connection->track_selected = 0;
+        connection->track_selected = false;
         connection->playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
@@ -770,10 +771,10 @@ uint8_t avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_
     avrcp_target_store_media_attr(connection, AVRCP_MEDIA_ATTR_ALBUM, current_track->album);
     avrcp_target_store_media_attr(connection, AVRCP_MEDIA_ATTR_GENRE, current_track->genre);
 
-    connection->track_selected = 1;
+    connection->track_selected = true;
 
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED)) {
-        connection->track_changed = 1;
+        connection->track_changed = true;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }
     return ERROR_CODE_SUCCESS;
@@ -790,7 +791,7 @@ uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
     
     (void)memcpy(connection->track_id, track_id, 8); 
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED)) {
-        connection->track_changed = 1;
+        connection->track_changed = true;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }
     return ERROR_CODE_SUCCESS;
@@ -802,7 +803,7 @@ uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED)) {
-        connection->playing_content_changed = 1;
+        connection->playing_content_changed = true;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }
     return ERROR_CODE_SUCCESS;
@@ -822,7 +823,7 @@ uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t playe
     connection->addressed_player_id = player_id;
 
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED)) {
-        connection->addressed_player_changed = 1;
+        connection->addressed_player_changed = true;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }
     return ERROR_CODE_SUCCESS;
@@ -840,7 +841,7 @@ uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_st
     connection->battery_status = battery_status;
     
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED)) {
-        connection->battery_status_changed = 1;
+        connection->battery_status_changed = true;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     } 
     return ERROR_CODE_SUCCESS;
@@ -868,7 +869,7 @@ uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t absolute_volume)
     connection->absolute_volume = absolute_volume;
 
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED )) {
-        connection->notify_absolute_volume_changed = 1;
+        connection->notify_absolute_volume_changed = true;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     } 
     return ERROR_CODE_SUCCESS;
@@ -1093,7 +1094,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 case AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE:
                     if ((pos + 1) > size) return;
                     connection->cmd_operands[0] = packet[pos];
-                    connection->abort_continue_response = 1;
+                    connection->abort_continue_response = true;
                     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                     break;
                 case AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE:
@@ -1302,13 +1303,13 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             // END AVCTP
 
             if (connection->accept_response){
-                connection->accept_response = 0;
+                connection->accept_response = false;
                 avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_ACCEPTED, AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE);
                 break;
             }
 
             if (connection->abort_continue_response){
-                connection->abort_continue_response = 0;
+                connection->abort_continue_response = false;
                 connection->now_playing_info_response = false;
                 avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_ACCEPTED, AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE);
                 break;
@@ -1322,14 +1323,14 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             }
             
             if (connection->track_changed){
-                connection->track_changed = 0;
+                connection->track_changed = false;
                 notification_id = AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED;
                 avrcp_target_notification_init(connection, notification_id, connection->track_id, 8);
                 break;
             }
             
             if (connection->playback_status_changed){
-                connection->playback_status_changed = 0;
+                connection->playback_status_changed = false;
                 notification_id = AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED;
                 uint8_t playback_status = (uint8_t) connection->playback_status;
                 avrcp_target_notification_init(connection, notification_id, &playback_status, 1);
@@ -1337,28 +1338,28 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             }
             
             if (connection->playing_content_changed){
-                connection->playing_content_changed = 0;
+                connection->playing_content_changed = false;
                 notification_id = AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED;
                 avrcp_target_notification_init(connection, notification_id, NULL, avrcp_now_playing_info_value_len_with_headers(connection));
                 break;
             }
             
             if (connection->battery_status_changed){
-                connection->battery_status_changed = 0;
+                connection->battery_status_changed = false;
                 notification_id = AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED;
                 avrcp_target_notification_init(connection, notification_id, (uint8_t *)&connection->battery_status, 1);
                 break;
             }
             
             if (connection->notify_absolute_volume_changed){
-                connection->notify_absolute_volume_changed = 0;
+                connection->notify_absolute_volume_changed = false;
                 notification_id = AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED;
                 avrcp_target_notification_init(connection, notification_id, &connection->absolute_volume, 1);
                 break;
             }
 
             if (connection->addressed_player_changed){
-                connection->addressed_player_changed = 0;
+                connection->addressed_player_changed = false;
                 notification_id = AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED;
                 avrcp_target_notification_addressed_player_changed_init(connection);
                 break;
