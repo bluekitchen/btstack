@@ -328,11 +328,10 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                     switch (connection->pdu_id) {
                         // message is small enough to fit the single packet, no need for extra check
                         case AVRCP_PDU_ID_GET_CAPABILITIES:
+                            // capability ID
                             packet[pos++] = connection->data[0];
-                            connection->data_offset++;
-
+                            // num_capabilities 
                             packet[pos++] = connection->data[1];
-                            connection->data_offset++;
 
                             switch ((avrcp_capability_id_t) connection->data[0]) {
                                 case AVRCP_CAPABILITY_ID_EVENT:
@@ -342,27 +341,19 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                                             continue;
                                         }
                                         packet[pos++] = i;
-                                        connection->data_offset++;
                                     }
                                     break;
                                 case AVRCP_CAPABILITY_ID_COMPANY:
                                     // use Bluetooth SIG as default company
-                                    if (connection->target_supported_companies_num == 0) {
-                                        little_endian_store_24(packet, pos, default_companies[0]);
+                                    for (i = 0; i < connection->data[1]; i++) {
+                                        little_endian_store_24(packet, pos,
+                                                               connection->target_supported_companies[i]);
                                         pos += 3;
-                                        connection->data_offset += 3;
-                                    } else {
-                                        for (i = 0; i < connection->data[1]; i++) {
-                                            little_endian_store_24(packet, pos,
-                                                                   connection->target_supported_companies[i]);
-                                            pos += 3;
-                                            connection->data_offset += 3;
-                                        }
                                     }
                                     break;
                                 default:
-                                    btstack_assert(false);
-                                    return;
+                                    // error response
+                                    break;
                             }
                             l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
                             return;
@@ -674,8 +665,13 @@ static uint8_t avrcp_target_response_vendor_dependent_supported_companies(avrcp_
     connection->state = AVCTP_W2_SEND_RESPONSE;
 
     connection->data[0] = AVRCP_CAPABILITY_ID_COMPANY;
+    if (connection->target_supported_companies_num == 0){
+        connection->target_supported_companies_num = 1;
+        connection->target_supported_companies = default_companies;
+    }
+    
     connection->data[1] = connection->target_supported_companies_num;
-    connection->data_len = 2 + connection->target_supported_companies_num * 3;
+    connection->data_len = 2 + connection->data[1] * 3;
 
     // fill the data later directly to the L2CAP outgoing buffer and
     // use Bluetooth SIG as default company
