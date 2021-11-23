@@ -170,6 +170,7 @@ typedef enum {
 } avrcp_pdu_id_t;
 
 typedef enum {
+    AVRCP_NOTIFICATION_EVENT_NONE = 0,
     AVRCP_NOTIFICATION_EVENT_FIRST_INDEX = 0x01,
     AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED = 0x01,            // Change in playback status of the current track.
     AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED = 0x02,                      // Change of current track
@@ -525,9 +526,9 @@ typedef struct {
     bool wait_to_send;
     
     // PID check
-    // invalid pid is stored in cmd_operands 
-    bool reject_transport_header;
-    
+    bool    reject_transport_header;
+    uint8_t invalid_pid;
+
     // transaction id 
     uint8_t transaction_id_counter;
 
