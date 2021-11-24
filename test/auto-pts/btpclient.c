@@ -1907,19 +1907,16 @@ int btstack_main(int argc, const char * argv[])
     sm_add_event_handler(&sm_event_callback_registration);
 
     // configure GAP
+    strcpy(gap_name,       "iut 00:00:00:00:00:00");
+    strcpy(gap_short_name, "iut");
+    gap_cod = 0x007a020c;   // smartphone
+
 #ifdef ENABLE_CLASSIC
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-#endif
-
-    strcpy(gap_name, "iut 00:00:00:00:00:00");
     gap_set_local_name(gap_name);
-
-    strcpy(gap_short_name, "iut");
-
-    gap_cod = 0x007a020c;   // smartphone
-#ifdef ENABLE_CLASSIC
     gap_set_class_of_device(gap_cod);
 #endif
+
     // delete all bonding information on start
     gap_delete_bonding_on_start = true;
 
