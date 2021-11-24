@@ -145,6 +145,11 @@ typedef struct pbap_client {
     uint8_t flow_next_triggered;
 } pbap_client_t;
 
+typedef struct {
+    uint8_t srm_value;
+    uint8_t srmp_value;
+} obex_srm_t;
+
 static uint32_t pbap_client_supported_features;
 
 static pbap_client_t pbap_client_singleton;
@@ -520,38 +525,35 @@ static void pbap_parse_authentication_challenge(pbap_client_t * context, const u
     }
 }
 
-static void pbap_process_srm_headers(pbap_client_t * context, uint8_t *packet, uint16_t size){
-
-    if (packet[0] != OBEX_RESP_CONTINUE) return;
-
-    // get SRM and SRMP Headers
-    int srm_value = OBEX_SRM_DISABLE;
-    int srmp_value = OBEX_SRMP_NEXT;
-    obex_iterator_t it;
-    for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(context->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
-        uint8_t hi = obex_iterator_get_hi(&it);
-        uint16_t     data_len = obex_iterator_get_data_len(&it);
-        const uint8_t  * data = obex_iterator_get_data(&it);
-        switch (hi){
-            case OBEX_HEADER_SINGLE_RESPONSE_MODE:
-                if (data_len != 1) break;
-                srm_value = *data;
-                break;
-            case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
-                if (data_len != 1) break;
-                srmp_value = *data;
-                break;
-            default:
-                break;
-        }
+static void obex_srm_handle_srm_header(obex_srm_t * obex_srm, uint8_t hi, uint16_t data_len, const uint8_t * data){
+    switch (hi){
+        case OBEX_HEADER_SINGLE_RESPONSE_MODE:
+            if (data_len != 1) break;
+            obex_srm->srm_value = *data;
+            break;
+        case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
+            if (data_len != 1) break;
+            obex_srm->srmp_value = *data;
+            break;
+        default:
+            btstack_unreachable();
+            break;
     }
+}
 
-    // Update SRM state based on SRM haders
+static void obex_srm_init(obex_srm_t * obex_srm){
+    obex_srm->srm_value = OBEX_SRM_DISABLE;
+    obex_srm->srmp_value = OBEX_SRMP_NEXT;
+}
+
+
+static void pbap_handle_srm_headers(pbap_client_t * context, const obex_srm_t * obex_srm){
+    // Update SRM state based on SRM headers
     switch (context->srm_state){
         case SRM_W4_CONFIRM:
-            switch (srm_value){
+            switch (obex_srm->srm_value){
                 case OBEX_SRM_ENABLE:
-                    switch (srmp_value){
+                    switch (obex_srm->srmp_value){
                         case OBEX_SRMP_WAIT:
                             context->srm_state = SRM_ENABLED_BUT_WAITING;
                             break;
@@ -566,7 +568,7 @@ static void pbap_process_srm_headers(pbap_client_t * context, uint8_t *packet, u
             }
             break;
         case SRM_ENABLED_BUT_WAITING:
-            switch (srmp_value){
+            switch (obex_srm->srmp_value){
                 case OBEX_SRMP_WAIT:
                     context->srm_state = SRM_ENABLED_BUT_WAITING;
                     break;
@@ -581,7 +583,7 @@ static void pbap_process_srm_headers(pbap_client_t * context, uint8_t *packet, u
     log_info("SRM state %u", context->srm_state);
 }
 
-static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
+static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size, obex_srm_t * obex_srm) {
     obex_iterator_t it;
     for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
 
@@ -591,6 +593,10 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
         uint16_t    char_len;
 
         switch (hi){
+            case OBEX_HEADER_SINGLE_RESPONSE_MODE:
+            case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
+                obex_srm_handle_srm_header(obex_srm, hi, data_len, data);
+                break;
             case OBEX_HEADER_BODY:
             case OBEX_HEADER_END_OF_BODY:
                 // now try parsing it
@@ -699,6 +705,10 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
     obex_iterator_t it;
     int wait_for_user = 0;
 
+    // get SRM and SRMP Headers
+    obex_srm_t obex_srm;
+    obex_srm_init(&obex_srm);
+
     // TODO: handle chunked data
     switch (pbap_client->state){
         case PBAP_W4_CONNECT_RESPONSE:
@@ -762,6 +772,10 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                 uint16_t     data_len = obex_iterator_get_data_len(&it);
                 const uint8_t  * data = obex_iterator_get_data(&it);
                 switch (hi){
+                    case OBEX_HEADER_SINGLE_RESPONSE_MODE:
+                    case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
+                        obex_srm_handle_srm_header(&obex_srm, hi, data_len, data);
+                        break;
                     case OBEX_HEADER_BODY:
                     case OBEX_HEADER_END_OF_BODY:
                         pbap_client->client_handler(PBAP_DATA_PACKET, pbap_client->cid, (uint8_t *) data, data_len);
@@ -776,7 +790,7 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
             }
             switch(packet[0]){
                 case OBEX_RESP_CONTINUE:
-                    pbap_process_srm_headers(pbap_client, packet, size);
+                    pbap_handle_srm_headers(pbap_client, &obex_srm);
                     if (pbap_client->srm_state ==  SRM_ENABLED) break;
                     pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
                     if (!pbap_client->flow_control_enabled || !wait_for_user || pbap_client->flow_next_triggered) {
@@ -828,9 +842,9 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
             switch (packet[0]){
                 case OBEX_RESP_CONTINUE:
                     // process data
-                    pbap_client_process_vcard_listing(packet, size);
+                    pbap_client_process_vcard_listing(packet, size, &obex_srm);
                     // handle continue
-                    pbap_process_srm_headers(pbap_client, packet, size);
+                    pbap_handle_srm_headers(pbap_client, &obex_srm);
                     if (pbap_client->srm_state ==  SRM_ENABLED) break;
                     pbap_client->state = PBAP_W2_GET_CARD_LIST;
                     if (!pbap_client->flow_control_enabled || !wait_for_user || pbap_client->flow_next_triggered) {
@@ -839,7 +853,7 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                     break;
                 case OBEX_RESP_SUCCESS:
                     // process data
-                    pbap_client_process_vcard_listing(packet, size);
+                    pbap_client_process_vcard_listing(packet, size, &obex_srm);
                     // done
                     pbap_client->state = PBAP_CONNECTED;
                     pbap_client_emit_operation_complete_event(pbap_client, 0);
@@ -858,7 +872,20 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
         case PBAP_W4_GET_CARD_ENTRY_COMPLETE:
             switch (packet[0]){
                 case OBEX_RESP_CONTINUE:
-                    pbap_process_srm_headers(pbap_client, packet, size);
+                    for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
+                        uint8_t hi = obex_iterator_get_hi(&it);
+                        uint16_t data_len = obex_iterator_get_data_len(&it);
+                        const uint8_t *data = obex_iterator_get_data(&it);
+                        switch (hi) {
+                            case OBEX_HEADER_SINGLE_RESPONSE_MODE:
+                            case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
+                                obex_srm_handle_srm_header(&obex_srm, hi, data_len, data);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    pbap_handle_srm_headers(pbap_client, &obex_srm);
                     if (pbap_client->srm_state ==  SRM_ENABLED) break;
                     pbap_client->state = PBAP_W2_GET_CARD_ENTRY;
                     if (!pbap_client->flow_control_enabled || !wait_for_user || pbap_client->flow_next_triggered) {
