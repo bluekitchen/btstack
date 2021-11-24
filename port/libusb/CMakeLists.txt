@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 3.5)
 SET(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
 SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-project(BTstack)
+project(BTstack-libusb)
 
 
 # pkgconfig
