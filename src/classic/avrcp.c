@@ -530,7 +530,7 @@ static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t
     connection->transaction_id = 0xFF;
     connection->transaction_id_counter = 0;
 
-    connection->max_num_fragments = 0xFF;
+    connection->controller_max_num_fragments = 0xFF;
 
     // setup default unit / subunit info
     connection->company_id = 0xffffff;

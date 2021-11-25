@@ -446,7 +446,7 @@ static void avrcp_controller_emit_operation_status(btstack_packet_handler_t call
 static void avrcp_parser_reset(avrcp_connection_t * connection){
     connection->list_offset = 0;
     connection->parser_attribute_header_pos = 0;
-    connection->num_received_fragments = 0;
+    connection->controller_num_received_fragments = 0;
     connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
 }
 
@@ -1123,9 +1123,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
                         case AVRCP_CONTINUE_PACKET:
                         case AVRCP_END_PACKET:
-                            connection->num_received_fragments++;
+                            connection->controller_num_received_fragments++;
                             
-                            if (connection->num_received_fragments < connection->max_num_fragments){
+                            if (connection->controller_num_received_fragments < connection->controller_max_num_fragments){
                                 avrcp_controller_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
 
                                 if (vendor_dependent_packet_type == AVRCP_CONTINUE_PACKET){
@@ -1719,7 +1719,7 @@ uint8_t avrcp_controller_set_max_num_fragments(uint16_t avrcp_cid, uint8_t max_n
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    connection->max_num_fragments = max_num_fragments;
+    connection->controller_max_num_fragments = max_num_fragments;
     return ERROR_CODE_SUCCESS;
 }
 

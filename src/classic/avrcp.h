@@ -395,7 +395,6 @@ typedef enum {
     AVRCP_PARSER_IGNORE_REST_OF_ATTRIBUTE_VALUE
 } avrcp_parser_state_t;
 
-
 typedef enum{
     AVRCP_CONTROLLER = 0,
     AVRCP_TARGET
@@ -561,17 +560,20 @@ typedef struct {
     uint16_t  data_offset;
     avrcp_media_attribute_id_t next_attr_id;
 
-    avrcp_parser_state_t parser_state;
-    uint8_t  parser_attribute_header[AVRCP_ATTRIBUTE_HEADER_LEN];
-    uint8_t  parser_attribute_header_pos;
 
-    uint16_t list_size;
-    uint16_t list_offset;
+    // used for parser in controller, and for fragmentation in target
     uint8_t  attribute_value[AVRCP_MAX_ATTRIBUTE_SIZE];
     uint16_t attribute_value_len;
     uint16_t attribute_value_offset;
 
     // controller only
+    // parser
+    avrcp_parser_state_t parser_state;
+    uint8_t  parser_attribute_header[AVRCP_ATTRIBUTE_HEADER_LEN];
+    uint8_t  parser_attribute_header_pos;
+    uint16_t list_size;
+    uint16_t list_offset;
+
     // limit number of pending commands to transaction id window size
     uint8_t controller_last_confirmed_transaction_id;
 
@@ -585,8 +587,11 @@ typedef struct {
     uint16_t controller_notifications_to_register;
     uint16_t controller_notifications_to_deregister;
 
-    // target only
+    // PTS requires definition of max num fragments
+    uint8_t controller_max_num_fragments;
+    uint8_t controller_num_received_fragments;
 
+    // target only
     // PID check
     bool    target_reject_transport_header;
     uint8_t target_invalid_pid;
@@ -630,9 +635,6 @@ typedef struct {
     uint32_t target_total_tracks;
     uint32_t target_track_nr;
 
-    // PTS requires definition of max num fragments
-    uint8_t max_num_fragments;
-    uint8_t num_received_fragments;
 
 #ifdef ENABLE_AVCTP_FRAGMENTATION
     uint16_t avctp_reassembly_size;
