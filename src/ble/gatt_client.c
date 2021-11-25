@@ -384,7 +384,7 @@ static uint16_t write_blob_length(gatt_client_t * gatt_client){
 }
 
 static void send_gatt_services_request(gatt_client_t *gatt_client){
-    att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_GROUP_TYPE_REQUEST, GATT_PRIMARY_SERVICE_UUID, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle);
+    att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_GROUP_TYPE_REQUEST, gatt_client->uuid16, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle);
 }
 
 static void send_gatt_by_uuid_request(gatt_client_t *gatt_client, uint16_t attribute_group_type){
@@ -1837,11 +1837,24 @@ uint8_t gatt_client_discover_primary_services(btstack_packet_handler_t callback,
     gatt_client->start_group_handle = 0x0001;
     gatt_client->end_group_handle   = 0xffff;
     gatt_client->gatt_client_state = P_W2_SEND_SERVICE_QUERY;
-    gatt_client->uuid16 = 0;
+    gatt_client->uuid16 = GATT_PRIMARY_SERVICE_UUID;
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t gatt_client_discover_secondary_services(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
+    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
+    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
+    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+
+    gatt_client->callback = callback;
+    gatt_client->start_group_handle = 0x0001;
+    gatt_client->end_group_handle   = 0xffff;
+    gatt_client->gatt_client_state = P_W2_SEND_SERVICE_QUERY;
+    gatt_client->uuid16 = GATT_SECONDARY_SERVICE_UUID;
+    gatt_client_run();
+    return ERROR_CODE_SUCCESS;
+}
 
 uint8_t gatt_client_discover_primary_services_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t uuid16){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
