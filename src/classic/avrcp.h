@@ -549,17 +549,16 @@ typedef struct {
     uint16_t notifications_enabled;
     uint16_t notifications_supported_by_target;
 
-    // message data
+    // message data, used for responses and commands that fit into a single AVCTP packet
     uint8_t   message_body[AVRCP_MAX_COMMAND_PARAMETER_LENGTH];
 
-    // pointer to command and response data (either message_body or provided by user)
+    // pointer to command and response data
     uint8_t * data;
     uint16_t  data_len;
 
     // used for fragmentation
     uint16_t  data_offset;
     avrcp_media_attribute_id_t next_attr_id;
-
 
     // used for parser in controller, and for fragmentation in target
     uint8_t  attribute_value[AVRCP_MAX_ATTRIBUTE_SIZE];

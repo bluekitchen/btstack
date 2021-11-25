@@ -1444,8 +1444,8 @@ uint8_t avrcp_controller_subunit_info(uint16_t avrcp_cid){
                                               AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, AVRCP_PDU_ID_UNDEFINED,
                                               0);
 
-    memset(connection->data, 0xFF, 5);
     connection->data = connection->message_body;
+    memset(connection->data, 0xFF, 5);
     connection->data[0] = 7; // page: 0, extension_code: 7
     connection->data_len = 5;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
