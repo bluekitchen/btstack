@@ -582,16 +582,69 @@ static void pbap_handle_srm_headers(pbap_client_t * context, const obex_srm_t * 
     }
     log_info("SRM state %u", context->srm_state);
 }
-
+static void pbap_client_process_vcard_listing_body(const uint8_t * data, uint16_t data_len){
+    while (data_len--) {
+        uint16_t    char_len;
+        yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
+        switch (r) {
+            case YXML_ELEMSTART:
+                pbap_client->parser_card_found = strcmp("card", pbap_client->xml_parser.elem) == 0;
+                break;
+            case YXML_ELEMEND:
+                if (pbap_client->parser_card_found) {
+                    pbap_client_emit_card_result_event(pbap_client, pbap_client->parser_name,
+                                                       pbap_client->parser_handle);
+                }
+                pbap_client->parser_card_found = false;
+                break;
+            case YXML_ATTRSTART:
+                if (!pbap_client->parser_card_found) break;
+                if (strcmp("name", pbap_client->xml_parser.attr) == 0) {
+                    pbap_client->parser_name_found = true;
+                    pbap_client->parser_name[0] = 0;
+                    break;
+                }
+                if (strcmp("handle", pbap_client->xml_parser.attr) == 0) {
+                    pbap_client->parser_handle_found = true;
+                    pbap_client->parser_handle[0] = 0;
+                    break;
+                }
+                break;
+            case YXML_ATTRVAL:
+                if (pbap_client->parser_name_found) {
+                    // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
+                    char_len = strlen(pbap_client->xml_parser.data);
+                    if ((strlen(pbap_client->parser_name) + char_len + 1) >=
+                        sizeof(pbap_client->parser_name))
+                        break;
+                    strcat(pbap_client->parser_name, pbap_client->xml_parser.data);
+                    break;
+                }
+                if (pbap_client->parser_handle_found) {
+                    // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
+                    char_len = strlen(pbap_client->xml_parser.data);
+                    if ((strlen(pbap_client->parser_handle) + char_len + 1) >=
+                        sizeof(pbap_client->parser_handle))
+                        break;
+                    strcat(pbap_client->parser_handle, pbap_client->xml_parser.data);
+                    break;
+                }
+                break;
+            case YXML_ATTREND:
+                pbap_client->parser_name_found = false;
+                pbap_client->parser_handle_found = false;
+                break;
+            default:
+                break;
+        }
+    }
+}
 static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size, obex_srm_t * obex_srm) {
     obex_iterator_t it;
     for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
-
         uint8_t           hi = obex_iterator_get_hi(&it);
         uint16_t    data_len = obex_iterator_get_data_len(&it);
         const uint8_t * data =  obex_iterator_get_data(&it);
-        uint16_t    char_len;
-
         switch (hi){
             case OBEX_HEADER_SINGLE_RESPONSE_MODE:
             case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
@@ -599,61 +652,7 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size, ob
                 break;
             case OBEX_HEADER_BODY:
             case OBEX_HEADER_END_OF_BODY:
-                // now try parsing it
-                while (data_len--) {
-                    yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
-                    switch (r) {
-                        case YXML_ELEMSTART:
-                            pbap_client->parser_card_found = strcmp("card", pbap_client->xml_parser.elem) == 0;
-                            break;
-                        case YXML_ELEMEND:
-                            if (pbap_client->parser_card_found) {
-                                pbap_client_emit_card_result_event(pbap_client, pbap_client->parser_name,
-                                                                   pbap_client->parser_handle);
-                            }
-                            pbap_client->parser_card_found = false;
-                            break;
-                        case YXML_ATTRSTART:
-                            if (!pbap_client->parser_card_found) break;
-                            if (strcmp("name", pbap_client->xml_parser.attr) == 0) {
-                                pbap_client->parser_name_found = true;
-                                pbap_client->parser_name[0] = 0;
-                                break;
-                            }
-                            if (strcmp("handle", pbap_client->xml_parser.attr) == 0) {
-                                pbap_client->parser_handle_found = true;
-                                pbap_client->parser_handle[0] = 0;
-                                break;
-                            }
-                            break;
-                        case YXML_ATTRVAL:
-                            if (pbap_client->parser_name_found) {
-                                // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                                char_len = strlen(pbap_client->xml_parser.data);
-                                if ((strlen(pbap_client->parser_name) + char_len + 1) >=
-                                    sizeof(pbap_client->parser_name))
-                                    break;
-                                strcat(pbap_client->parser_name, pbap_client->xml_parser.data);
-                                break;
-                            }
-                            if (pbap_client->parser_handle_found) {
-                                // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                                char_len = strlen(pbap_client->xml_parser.data);
-                                if ((strlen(pbap_client->parser_handle) + char_len + 1) >=
-                                    sizeof(pbap_client->parser_handle))
-                                    break;
-                                strcat(pbap_client->parser_handle, pbap_client->xml_parser.data);
-                                break;
-                            }
-                            break;
-                        case YXML_ATTREND:
-                            pbap_client->parser_name_found = false;
-                            pbap_client->parser_handle_found = false;
-                            break;
-                        default:
-                            break;
-                    }
-                }
+                pbap_client_process_vcard_listing_body(data, data_len);
                 break;
             default:
                 break;
