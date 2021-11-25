@@ -571,9 +571,6 @@ typedef struct {
     uint16_t attribute_value_len;
     uint16_t attribute_value_offset;
 
-    uint8_t  num_attributes;
-    uint8_t  num_parsed_attributes;
-
     // controller only
     // limit number of pending commands to transaction id window size
     uint8_t controller_last_confirmed_transaction_id;

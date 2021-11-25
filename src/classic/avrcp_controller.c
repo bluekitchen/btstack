@@ -445,8 +445,6 @@ static void avrcp_controller_emit_operation_status(btstack_packet_handler_t call
 
 static void avrcp_parser_reset(avrcp_connection_t * connection){
     connection->list_offset = 0;
-    connection->num_attributes = 0;
-    connection->num_parsed_attributes = 0;
     connection->parser_attribute_header_pos = 0;
     connection->num_received_fragments = 0;
     connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
@@ -1115,7 +1113,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         case AVRCP_SINGLE_PACKET:
                             avrcp_parser_reset(connection);
                             connection->list_size = param_length;
-                            connection->num_attributes = packet[pos++];
+                            // num_attributes
+                            pos++;
 
                             avrcp_controller_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
                             if (vendor_dependent_packet_type == AVRCP_START_PACKET){
@@ -1549,7 +1548,7 @@ uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_
             // every attribute is 4 bytes long
             big_endian_store_32(connection->data, pos, attributes[i]);
             pos += 4;  
-            connection->data[num_attributes_index]++; 
+            connection->data[num_attributes_index]++;
         }
     }
 
@@ -1625,7 +1624,7 @@ uint8_t avrcp_controller_query_shuffle_and_repeat_modes(uint16_t avrcp_cid){
     connection->data_len = 5;
     connection->data[0] = 4;                     // NumPlayerApplicationSettingAttributeID
     // PlayerApplicationSettingAttributeID1 AVRCP Spec, Appendix F, 133
-    connection->data[1] = 0x01;   // equalizer  (1-OFF, 2-ON)     
+    connection->data[1] = 0x01;   // equalizer  (1-OFF, 2-ON)
     connection->data[2] = 0x02;   // repeat     (1-off, 2-single track, 3-all tracks, 4-group repeat)
     connection->data[3] = 0x03;   // shuffle    (1-off, 2-all tracks, 3-group shuffle)
     connection->data[4] = 0x04;   // scan       (1-off, 2-all tracks, 3-group scan)

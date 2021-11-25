@@ -359,7 +359,7 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                             return;
 
                         case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:
-                            packet[pos++] = connection->num_attributes;
+                            packet[pos++] = count_set_bits_uint32(connection->target_now_playing_info_attr_bitmap);
                             max_payload_size--;
 
                             bytes_stored = avrcp_store_avctp_now_playing_info_fragment(connection, max_payload_size, packet + pos);
@@ -1124,7 +1124,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         int i;
                         connection->next_attr_id = AVRCP_MEDIA_ATTR_TITLE;
                         connection->target_now_playing_info_attr_bitmap = 0;
-                        connection->num_attributes = 0;
                         if ((pos + attribute_count * 4) > size) return;
                         for (i=0; i < attribute_count; i++){
                             uint32_t attr_id = big_endian_read_32(packet, pos);
@@ -1133,7 +1132,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         }
                     }
                     log_info("target_now_playing_info_attr_bitmap 0x%02x", connection->target_now_playing_info_attr_bitmap);
-                    connection->num_attributes = count_set_bits_uint32(connection->target_now_playing_info_attr_bitmap);
                     connection->target_now_playing_info_response = true;
                     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                     break;
