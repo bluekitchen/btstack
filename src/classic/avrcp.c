@@ -411,7 +411,7 @@ avrcp_packet_type_t avrcp_get_packet_type(avrcp_connection_t * connection){
         case AVCTP_START_PACKET:
             break;
         default:
-            return connection->packet_type;
+            return connection->avrcp_packet_type;
     }
 
     if (connection->data_offset == 0){
@@ -534,9 +534,9 @@ static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t
 
     // setup default unit / subunit info
     connection->company_id = 0xffffff;
-    connection->unit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_info_data_size = sizeof(avrcp_default_subunit_info);
-    connection->subunit_info_data = avrcp_default_subunit_info;
+    connection->target_unit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->target_subunit_info_data_size = sizeof(avrcp_default_subunit_info);
+    connection->target_subunit_info_data = avrcp_default_subunit_info;
 
     log_info("avrcp_create_connection, role %d", role);
     (void)memcpy(connection->remote_addr, remote_addr, 6);
@@ -796,9 +796,9 @@ static void avrcp_handle_open_connection(avrcp_connection_t * connection, hci_co
     connection->l2cap_mtu = l2cap_mtu;
     connection->con_handle = con_handle;
     connection->incoming_declined = false;
-    connection->song_length_ms = 0xFFFFFFFF;
-    connection->song_position_ms = 0xFFFFFFFF;
-    connection->playback_status = AVRCP_PLAYBACK_STATUS_STOPPED;
+    connection->target_song_length_ms = 0xFFFFFFFF;
+    connection->target_song_position_ms = 0xFFFFFFFF;
+    connection->target_playback_status = AVRCP_PLAYBACK_STATUS_STOPPED;
     connection->state = AVCTP_CONNECTION_OPENED;
     
     log_info("L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x, role %d, state %d", connection->avrcp_cid, connection->l2cap_signaling_cid, connection->role, connection->state);

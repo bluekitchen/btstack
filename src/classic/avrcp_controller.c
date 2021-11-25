@@ -67,7 +67,7 @@ static uint8_t avrcp_controller_get_next_transaction_label(avrcp_connection_t * 
 }
 
 static bool avrcp_controller_is_transaction_id_valid(avrcp_connection_t * connection, uint8_t transaction_id){
-    uint8_t delta = ((int8_t) transaction_id - connection->last_confirmed_transaction_id) & 0x0f;
+    uint8_t delta = ((int8_t) transaction_id - connection->controller_last_confirmed_transaction_id) & 0x0f;
     return delta < 15;
 }
 
@@ -97,7 +97,7 @@ static void avrcp_controller_vendor_dependent_command_data_init(avrcp_connection
    
     connection->command_type = command_type;
     connection->pdu_id = pdu_id;
-    connection->data = connection->cmd_operands;
+    connection->data = connection->message_body;
     connection->data_offset = 0;
     connection->data_len = 0;
 }
@@ -113,7 +113,7 @@ static void avrcp_controller_pass_through_command_data_init(avrcp_connection_t *
     connection->pdu_id = AVRCP_PDU_ID_UNDEFINED;
     connection->operation_id = opid;
 
-    connection->data = connection->cmd_operands;
+    connection->data = connection->message_body;
     connection->data_offset = 0;
     connection->data_len = 0;
 }
@@ -141,7 +141,7 @@ static void avrcp_controller_emit_supported_events(avrcp_connection_t * connecti
     uint8_t event_id;
 
     for (event_id = (uint8_t) AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; event_id < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; event_id++){
-        if ( (connection->target_supported_notifications & (1<<event_id)) == 0){
+        if ((connection->notifications_supported_by_target & (1 << event_id)) == 0){
             continue;
         }
         uint8_t event[8];
@@ -633,29 +633,29 @@ static int avrcp_send_register_notification(avrcp_connection_t * connection, uin
 static void avrcp_press_and_hold_timeout_handler(btstack_timer_source_t * timer){
     UNUSED(timer);
     avrcp_connection_t * connection = (avrcp_connection_t*) btstack_run_loop_get_timer_context(timer);
-    btstack_run_loop_set_timer(&connection->press_and_hold_cmd_timer, 2000); // 2 seconds timeout
-    btstack_run_loop_add_timer(&connection->press_and_hold_cmd_timer);
+    btstack_run_loop_set_timer(&connection->controller_press_and_hold_cmd_timer, 2000); // 2 seconds timeout
+    btstack_run_loop_add_timer(&connection->controller_press_and_hold_cmd_timer);
     connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
 static void avrcp_press_and_hold_timer_start(avrcp_connection_t * connection){
-    btstack_run_loop_remove_timer(&connection->press_and_hold_cmd_timer);
-    btstack_run_loop_set_timer_handler(&connection->press_and_hold_cmd_timer, avrcp_press_and_hold_timeout_handler);
-    btstack_run_loop_set_timer_context(&connection->press_and_hold_cmd_timer, connection);
-    btstack_run_loop_set_timer(&connection->press_and_hold_cmd_timer, 2000); // 2 seconds timeout
-    btstack_run_loop_add_timer(&connection->press_and_hold_cmd_timer);
+    btstack_run_loop_remove_timer(&connection->controller_press_and_hold_cmd_timer);
+    btstack_run_loop_set_timer_handler(&connection->controller_press_and_hold_cmd_timer, avrcp_press_and_hold_timeout_handler);
+    btstack_run_loop_set_timer_context(&connection->controller_press_and_hold_cmd_timer, connection);
+    btstack_run_loop_set_timer(&connection->controller_press_and_hold_cmd_timer, 2000); // 2 seconds timeout
+    btstack_run_loop_add_timer(&connection->controller_press_and_hold_cmd_timer);
 }
 
 static void avrcp_press_and_hold_timer_stop(avrcp_connection_t * connection){
-    connection->press_and_hold_cmd_active = false;
-    btstack_run_loop_remove_timer(&connection->press_and_hold_cmd_timer);
+    connection->controller_press_and_hold_cmd_active = false;
+    btstack_run_loop_remove_timer(&connection->controller_press_and_hold_cmd_timer);
 } 
 
 
 static uint8_t avrcp_controller_request_pass_through_release_control_cmd(avrcp_connection_t * connection){
     connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
-    if (connection->press_and_hold_cmd_active){
+    if (connection->controller_press_and_hold_cmd_active){
         avrcp_press_and_hold_timer_stop(connection);
     }
     connection->operation_id = (avrcp_operation_id_t)(0x80 | connection->operation_id);
@@ -683,8 +683,8 @@ static uint8_t avrcp_controller_request_pass_through_press_control_cmd(uint16_t 
         connection->data_len = 1;
     } 
     
-    connection->press_and_hold_cmd_active = continuous_cmd;
-    if (connection->press_and_hold_cmd_active){
+    connection->controller_press_and_hold_cmd_active = continuous_cmd;
+    if (connection->controller_press_and_hold_cmd_active){
         avrcp_press_and_hold_timer_start(connection);
     }
 
@@ -712,19 +712,19 @@ static void avrcp_controller_get_capabilities_for_connection(avrcp_connection_t 
 }
 
 static uint8_t avrcp_controller_register_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t event_id){
-    if (connection->target_supported_notifications_queried && (connection->target_supported_notifications & (1 << event_id)) == 0){
+    if (connection->controller_notifications_supported_by_target_queried && (connection->notifications_supported_by_target & (1 << event_id)) == 0){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }  
-    if ( (connection->notifications_to_deregister & (1 << event_id)) != 0){
+    if ((connection->controller_notifications_to_deregister & (1 << event_id)) != 0){
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
     if ( (connection->notifications_enabled & (1 << event_id)) != 0){
         return ERROR_CODE_SUCCESS;
     }
-    connection->notifications_to_register |= (1 << event_id);
+    connection->controller_notifications_to_register |= (1 << event_id);
 
-    if (!connection->target_supported_notifications_queried){
-        connection->target_supported_notifications_suppress_emit_result = true;
+    if (!connection->controller_notifications_supported_by_target_queried){
+        connection->controller_notifications_supported_by_target_suppress_emit_result = true;
         avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_EVENT);
         return ERROR_CODE_SUCCESS;
     }
@@ -766,9 +766,9 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
 
     switch (ctype){
         case AVRCP_CTYPE_RESPONSE_REJECTED:
-            connection->notifications_to_deregister &= reset_event_mask;
-            connection->notifications_to_register   &= reset_event_mask;
-            connection->initial_status_reported     &= reset_event_mask;
+            connection->controller_notifications_to_deregister &= reset_event_mask;
+            connection->controller_notifications_to_register   &= reset_event_mask;
+            connection->controller_initial_status_reported     &= reset_event_mask;
             avrcp_controller_emit_notification_complete(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE, event_id, false);
             return;
 
@@ -777,12 +777,12 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
             connection->notifications_enabled |= event_mask;
             
             // check if initial value is already sent
-            if ( (connection->initial_status_reported & event_mask) != 0 ){
+            if ((connection->controller_initial_status_reported & event_mask) != 0 ){
                 return;
             }
             // emit event only once, initially
             avrcp_controller_emit_notification_complete(connection, ERROR_CODE_SUCCESS, event_id, true);
-            connection->initial_status_reported |= event_mask;
+            connection->controller_initial_status_reported |= event_mask;
             // emit initial value after this switch 
             break;
         
@@ -791,12 +791,12 @@ static void avrcp_controller_handle_notification(avrcp_connection_t *connection,
             // we are re-enabling it automatically, if it is not 
             // explicitly disabled
             connection->notifications_enabled &= reset_event_mask;
-            if ((connection->notifications_to_deregister & event_mask) == 0){
+            if ((connection->controller_notifications_to_deregister & event_mask) == 0){
                 avrcp_controller_register_notification(connection, event_id);
             } else {
-                connection->notifications_to_deregister &= reset_event_mask;
-                connection->notifications_to_register   &= reset_event_mask;
-                connection->initial_status_reported     &= reset_event_mask;
+                connection->controller_notifications_to_deregister &= reset_event_mask;
+                connection->controller_notifications_to_register   &= reset_event_mask;
+                connection->controller_initial_status_reported     &= reset_event_mask;
                 avrcp_controller_emit_notification_complete(connection, ERROR_CODE_SUCCESS, event_id, false);
             }
             break;
@@ -857,7 +857,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     avrcp_packet_type_t  vendor_dependent_packet_type;
 
     uint16_t pos = 0;
-    connection->last_confirmed_transaction_id = packet[pos] >> 4;
+    connection->controller_last_confirmed_transaction_id = packet[pos] >> 4;
     avrcp_frame_type_t  frame_type =  (avrcp_frame_type_t)((packet[pos] >> 1) & 0x01);
     avctp_packet_type_t packet_type = (avctp_packet_type_t)((packet[pos] >> 2) & 0x03);
     pos++;
@@ -910,7 +910,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             pos++;
             uint8_t unit_type = packet[pos] >> 3;
             uint8_t max_subunit_ID = packet[pos] & 0x07;
-            log_info("SUBUNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, max_subunit_ID %d", ctype, subunit_type, subunit_id, opcode, unit_type, max_subunit_ID);
+            log_info("SUBUNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), target_unit_type 0x%02x, max_subunit_ID %d", ctype, subunit_type, subunit_id, opcode, unit_type, max_subunit_ID);
 #endif
             break;
         }
@@ -925,7 +925,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             uint8_t unit = packet[pos] & 0x07;
             pos++;
             uint32_t company_id = big_endian_read_24(packet, pos);
-            log_info("UNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06" PRIx32,
+            log_info("UNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), target_unit_type 0x%02x, unit %d, company_id 0x%06" PRIx32,
                 ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id);
 #endif
             break;
@@ -1052,21 +1052,21 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         case AVRCP_CAPABILITY_ID_EVENT:
                             for (i = 0; (i < capability_count) && ((size - pos) >= 1); i++){
                                 uint8_t event_id = packet[pos++];
-                                connection->target_supported_notifications |= (1 << event_id);
+                                connection->notifications_supported_by_target |= (1 << event_id);
                             }
                             
                             // if the get supported events query is triggered by avrcp_controller_enable_notification call, 
                             // avrcp_controller_emit_supported_events should be suppressed
-                            if (connection->target_supported_notifications_suppress_emit_result){
-                                connection->target_supported_notifications_suppress_emit_result = false;
+                            if (connection->controller_notifications_supported_by_target_suppress_emit_result){
+                                connection->controller_notifications_supported_by_target_suppress_emit_result = false;
                                 // also, notification might not be supported
                                 // if so, emit AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE event to app, 
-                                // and update notifications_to_register bitmap
+                                // and update controller_notifications_to_register bitmap
                                 for (i = (uint8_t)AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; i < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; i++){
-                                    if ((connection->notifications_to_register & (1<<i)) != 0){
-                                        if ((connection->target_supported_notifications & (1<<i)) == 0){
+                                    if ((connection->controller_notifications_to_register & (1 << i)) != 0){
+                                        if ((connection->notifications_supported_by_target & (1 << i)) == 0){
                                             avrcp_controller_emit_notification_complete(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE, i, false);
-                                            connection->notifications_to_register &= ~(1 << i);
+                                            connection->controller_notifications_to_register &= ~(1 << i);
                                         }
                                     }
                                 }
@@ -1154,13 +1154,13 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             switch (connection->state){
                 case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
                     // trigger release for simple command:
-                    if (!connection->press_and_hold_cmd_active){
+                    if (!connection->controller_press_and_hold_cmd_active){
                         connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
                         break;
                     }
                     // for press and hold, send release if it just has been requested, otherwise, wait for next repeat
-                    if (connection->press_and_hold_cmd_release){
-                        connection->press_and_hold_cmd_release = false;
+                    if (connection->controller_press_and_hold_cmd_release){
+                        connection->controller_press_and_hold_cmd_release = false;
                         connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
                     } else {
                         connection->state = AVCTP_W4_STOP;
@@ -1191,7 +1191,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     }
 
     // trigger pending notification reqistrations
-    if ((connection->state == AVCTP_CONNECTION_OPENED) && connection->notifications_to_register){
+    if ((connection->state == AVCTP_CONNECTION_OPENED) && connection->controller_notifications_to_register){
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }
 }
@@ -1219,11 +1219,11 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
     }
     
     // send register notification if queued
-    if (connection->notifications_to_register != 0){
+    if (connection->controller_notifications_to_register != 0){
         uint8_t event_id;
         for (event_id = (uint8_t)AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; event_id < (uint8_t)AVRCP_NOTIFICATION_EVENT_LAST_INDEX; event_id++){
-            if (connection->notifications_to_register & (1<<event_id)){
-                connection->notifications_to_register &= ~ (1 << event_id);
+            if (connection->controller_notifications_to_register & (1 << event_id)){
+                connection->controller_notifications_to_register &= ~ (1 << event_id);
                 avrcp_send_register_notification(connection, event_id);
                 return;    
             }
@@ -1365,7 +1365,7 @@ uint8_t avrcp_controller_release_press_and_hold_cmd(uint16_t avrcp_cid){
     switch (connection->state){
         // respond when we receive response for (repeated) press command
         case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
-            connection->press_and_hold_cmd_release = true;
+            connection->controller_press_and_hold_cmd_release = true;
             break;
         
         // release already sent or on the way, nothing to do
@@ -1398,11 +1398,11 @@ uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notifica
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (!connection->target_supported_notifications_queried){
+    if (!connection->controller_notifications_supported_by_target_queried){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    if ((connection->target_supported_notifications & (1 << event_id)) == 0){
+    if ((connection->notifications_supported_by_target & (1 << event_id)) == 0){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     } 
 
@@ -1410,7 +1410,7 @@ uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notifica
         return ERROR_CODE_SUCCESS;
     }
 
-    connection->notifications_to_deregister |= (1 << event_id);
+    connection->controller_notifications_to_deregister |= (1 << event_id);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1426,7 +1426,7 @@ uint8_t avrcp_controller_unit_info(uint16_t avrcp_cid){
                                               AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, AVRCP_PDU_ID_UNDEFINED,
                                               0);
 
-    connection->data = connection->cmd_operands;
+    connection->data = connection->message_body;
     memset(connection->data, 0xFF, 5);
     connection->data_len = 5;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -1446,7 +1446,7 @@ uint8_t avrcp_controller_subunit_info(uint16_t avrcp_cid){
                                               0);
 
     memset(connection->data, 0xFF, 5);
-    connection->data = connection->cmd_operands;
+    connection->data = connection->message_body;
     connection->data[0] = 7; // page: 0, extension_code: 7
     connection->data_len = 5;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -1474,8 +1474,8 @@ uint8_t avrcp_controller_get_supported_events(uint16_t avrcp_cid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    if (!connection->target_supported_notifications_queried){
-        connection->target_supported_notifications_queried = true;
+    if (!connection->controller_notifications_supported_by_target_queried){
+        connection->controller_notifications_supported_by_target_queried = true;
         avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_EVENT);
         return ERROR_CODE_SUCCESS;
     }

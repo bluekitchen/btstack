@@ -78,7 +78,7 @@ static uint8_t avrcp_browsing_target_response_general_reject(avrcp_browsing_conn
     // AVRCP_CTYPE_RESPONSE_REJECTED
     int pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_GENERAL_REJECT;
-    // connection->cmd_operands[pos++] = 0;
+    // connection->message_body[pos++] = 0;
     // param length
     big_endian_store_16(connection->cmd_operands, pos, 1);
     pos += 2;

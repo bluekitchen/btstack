@@ -228,7 +228,7 @@ typedef enum {
     AVRCP_SUBUNIT_TYPE_CAMERA_STORAGE,
     AVRCP_SUBUNIT_TYPE_VENDOR_UNIQUE = 0x1C,
     AVRCP_SUBUNIT_TYPE_RESERVED_FOR_ALL_SUBUNIT_TYPES,
-    AVRCP_SUBUNIT_TYPE_EXTENDED_TO_NEXT_BYTE, // The unit_type field may take value 1E16, which means that the field is extended to the following byte. In that case, an additional byte for extended_unit_type will be added immediately following operand[1].
+    AVRCP_SUBUNIT_TYPE_EXTENDED_TO_NEXT_BYTE, // The target_unit_type field may take value 1E16, which means that the field is extended to the following byte. In that case, an additional byte for extended_unit_type will be added immediately following operand[1].
                                               // Further extension is possible when the value of extended_unit_type is FF16, in which case another byte will be added.
     AVRCP_SUBUNIT_TYPE_UNIT = 0x1F
 } avrcp_subunit_type_t;
@@ -524,91 +524,43 @@ typedef struct {
 
     avctp_connection_state_t state;
     bool wait_to_send;
-    
-    // PID check
-    bool    reject_transport_header;
-    uint8_t invalid_pid;
+
 
     // transaction id 
     uint8_t transaction_id_counter;
 
-    // limit number of pending commands to transaction id window size
-    uint8_t last_confirmed_transaction_id;
+    btstack_timer_source_t retry_timer;
 
-    // command
-    uint8_t transaction_id;
-    
+    // AVCTP header
+    uint8_t                transaction_id;
+    avctp_packet_type_t    avctp_packet_type;
+    // AVRCP header
+    avrcp_packet_type_t    avrcp_packet_type;
+    uint16_t               avrcp_frame_bytes_sent;
+    avrcp_subunit_type_t   subunit_type;
+    avrcp_subunit_id_t     subunit_id;
+    uint32_t               company_id;
+    // message (command and response) header
+    avrcp_pdu_id_t         pdu_id;
     avrcp_command_opcode_t command_opcode;
-    avrcp_command_type_t command_type;
-    avrcp_subunit_type_t subunit_type;
-    avrcp_subunit_id_t   subunit_id;
-    avrcp_packet_type_t  packet_type;
-    avrcp_pdu_id_t pdu_id;
+    avrcp_command_type_t   command_type;
     // needed for PASS_THROUGH
-    avrcp_operation_id_t operation_id;
+    avrcp_operation_id_t   operation_id;
 
-    // regular commands
-    uint8_t cmd_operands[AVRCP_MAX_COMMAND_PARAMETER_LENGTH];
+    uint16_t notifications_enabled;
+    uint16_t notifications_supported_by_target;
 
+    // message data
+    uint8_t   message_body[AVRCP_MAX_COMMAND_PARAMETER_LENGTH];
+
+    // pointer to command and response data (either message_body or provided by user)
     uint8_t * data;
     uint16_t  data_len;
 
-
-    // long/fragmented commands
-    uint16_t  data_offset;
-    uint16_t  avrcp_frame_bytes_sent;
-    avctp_packet_type_t  avctp_packet_type;
-
-    btstack_timer_source_t retry_timer;
-    btstack_timer_source_t press_and_hold_cmd_timer;
-    bool     press_and_hold_cmd_active;
-    bool     press_and_hold_cmd_release;
-
-    uint16_t notifications_enabled;
-    uint16_t initial_status_reported;
-
-    uint16_t target_supported_notifications;
-    bool     target_supported_notifications_queried;
-    bool     target_supported_notifications_suppress_emit_result;
-    const uint32_t *target_supported_companies;
-    uint8_t  target_supported_companies_num;
-
-    uint16_t notifications_to_register;
-    uint16_t notifications_to_deregister; 
-    uint8_t  notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_MAX_VALUE+1];
-
-    avrcp_subunit_type_t unit_type;
-    uint32_t company_id;
-    avrcp_subunit_type_t subunit_info_type;
-    const uint8_t * subunit_info_data;
-    uint16_t subunit_info_data_size;
-
-    avrcp_now_playing_info_item_t now_playing_info[AVRCP_MEDIA_ATTR_COUNT];
-    uint8_t  track_id[8];
-    uint32_t song_length_ms;
-    uint32_t song_position_ms;
-    int total_tracks;
-    int track_nr;
-    bool track_selected;
-    bool track_changed;
-    
-    avrcp_playback_status_t playback_status;
-    bool playback_status_changed;
-
-    bool playing_content_changed;
-    
-    avrcp_battery_status_t battery_status;
-    bool battery_status_changed;
-    uint8_t absolute_volume;
-    bool notify_absolute_volume_changed;
-    
-    bool now_playing_info_response;
-    uint8_t now_playing_info_attr_bitmap;
-    bool    abort_continue_response;
-    
     // used for fragmentation
+    uint16_t  data_offset;
     avrcp_media_attribute_id_t next_attr_id;
-    
+
     avrcp_parser_state_t parser_state;
     uint8_t  parser_attribute_header[AVRCP_ATTRIBUTE_HEADER_LEN];
     uint8_t  parser_attribute_header_pos;
@@ -618,20 +570,72 @@ typedef struct {
     uint8_t  attribute_value[AVRCP_MAX_ATTRIBUTE_SIZE];
     uint16_t attribute_value_len;
     uint16_t attribute_value_offset;
-    
-    uint32_t attribute_id;
-    
+
     uint8_t  num_attributes;
     uint8_t  num_parsed_attributes;
 
-    bool addressed_player_changed;
-    uint16_t addressed_player_id;
-    uint16_t uid_counter;
+    // controller only
+    // limit number of pending commands to transaction id window size
+    uint8_t controller_last_confirmed_transaction_id;
+
+    btstack_timer_source_t controller_press_and_hold_cmd_timer;
+    bool     controller_press_and_hold_cmd_active;
+    bool     controller_press_and_hold_cmd_release;
+
+    bool     controller_notifications_supported_by_target_queried;
+    bool     controller_notifications_supported_by_target_suppress_emit_result;
+    uint16_t controller_initial_status_reported;
+    uint16_t controller_notifications_to_register;
+    uint16_t controller_notifications_to_deregister;
+
+    // target only
+
+    // PID check
+    bool    target_reject_transport_header;
+    uint8_t target_invalid_pid;
+
+    uint8_t  target_notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_MAX_VALUE + 1];
+
+    avrcp_subunit_type_t target_unit_type;
+    avrcp_subunit_type_t target_subunit_info_type;
+    const uint8_t *  target_subunit_info_data;
+    uint16_t         target_subunit_info_data_size;
+
+    const uint32_t * target_supported_companies;
+    uint8_t          target_supported_companies_num;
+
+    bool     target_addressed_player_changed;
+    uint16_t target_addressed_player_id;
+    uint16_t target_uid_counter;
+
+    bool     target_accept_response;
+
+    bool     target_now_playing_info_response;
+    bool     target_abort_continue_response;
+    uint8_t  target_now_playing_info_attr_bitmap;
+
+    bool     target_playback_status_changed;
+    avrcp_playback_status_t target_playback_status;
+
+    bool     target_battery_status_changed;
+    avrcp_battery_status_t target_battery_status;
+
+    bool     target_notify_absolute_volume_changed;
+    uint8_t  target_absolute_volume;
+
+    bool     target_playing_content_changed;
+    bool     target_track_selected;
+    bool     target_track_changed;
+    avrcp_now_playing_info_item_t target_now_playing_info[AVRCP_MEDIA_ATTR_COUNT];
+    uint8_t  target_track_id[8];
+    uint32_t target_song_length_ms;
+    uint32_t target_song_position_ms;
+    uint32_t target_total_tracks;
+    uint32_t target_track_nr;
+
     // PTS requires definition of max num fragments
     uint8_t max_num_fragments;
     uint8_t num_received_fragments;
-
-    bool accept_response;
 
 #ifdef ENABLE_AVCTP_FRAGMENTATION
     uint16_t avctp_reassembly_size;
