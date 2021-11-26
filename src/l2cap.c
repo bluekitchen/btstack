@@ -468,7 +468,6 @@ static uint8_t l2cap_ertm_send(l2cap_channel_t * channel, const uint8_t * data, 
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
                     chunk_len = effective_mps - 2;    // sdu_length
                     l2cap_ertm_store_fragment(channel, sar, len, data, chunk_len);
-                    len -= chunk_len;
                     sar = L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU;
                     break;
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
@@ -478,11 +477,13 @@ static uint8_t l2cap_ertm_send(l2cap_channel_t * channel, const uint8_t * data, 
                         chunk_len = len;                       
                     }
                     l2cap_ertm_store_fragment(channel, sar, len, data, chunk_len);
-                    len -= chunk_len;
                     break;
                 default:
+                    btstack_unreachable();
                     break;
             }
+            len  -= chunk_len;
+            data += chunk_len;
         }
 
     } else {
