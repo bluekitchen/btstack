@@ -757,8 +757,6 @@ uint8_t avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (!current_track){
-        connection->target_track_selected = false;
-        connection->target_playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
 
@@ -785,11 +783,15 @@ uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
-    if (!track_id){
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-    } 
+
+    if (track_id == NULL){
+        memset(connection->target_track_id, 0xFF, 8);
+        connection->target_track_selected = false;
+    } else {
+        (void)memcpy(connection->target_track_id, track_id, 8);
+        connection->target_track_selected = true;
+    }
     
-    (void)memcpy(connection->target_track_id, track_id, 8);
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED)) {
         connection->target_track_changed = true;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
