@@ -798,6 +798,8 @@ static void avrcp_handle_open_connection(avrcp_connection_t * connection, hci_co
     connection->incoming_declined = false;
     connection->target_song_length_ms = 0xFFFFFFFF;
     connection->target_song_position_ms = 0xFFFFFFFF;
+    memset(connection->target_track_id, 0xFF, 8);
+    connection->target_track_selected = false;
     connection->target_playback_status = AVRCP_PLAYBACK_STATUS_STOPPED;
     connection->state = AVCTP_CONNECTION_OPENED;
     
