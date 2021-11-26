@@ -369,7 +369,6 @@ typedef enum {
     AVCTP_W2_SEND_RESPONSE,
     AVCTP_W2_RECEIVE_PRESS_RESPONSE,
     AVCTP_W2_RECEIVE_RESPONSE,
-    AVCTP_W2_SEND_FRAGMENTED_MESSAGE,
     AVCTP_W2_SEND_AVCTP_FRAGMENTED_MESSAGE
 } avctp_connection_state_t;
 
@@ -613,6 +612,7 @@ typedef struct {
 
     bool     target_now_playing_info_response;
     bool     target_abort_continue_response;
+    bool     target_continue_response;
     uint8_t  target_now_playing_info_attr_bitmap;
 
     bool     target_playback_status_changed;

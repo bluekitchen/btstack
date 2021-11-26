@@ -1105,6 +1105,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
                         return;
                     }
+                    connection->target_continue_response = true;
                     connection->target_now_playing_info_response = true;
                     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                     break;
@@ -1317,8 +1318,13 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 
             if (connection->target_now_playing_info_response){
                 connection->target_now_playing_info_response = false;
-                avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES);
-                connection->data_len = avrcp_now_playing_info_value_len_with_headers(connection);
+                if (connection->target_continue_response){
+                    connection->target_continue_response = false;
+                } else {
+                    connection->target_now_playing_info_response = false;
+                    avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES);
+                    connection->data_len = avrcp_now_playing_info_value_len_with_headers(connection);
+                }
                 break;
             }
             
