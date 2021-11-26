@@ -418,14 +418,18 @@ avrcp_packet_type_t avrcp_get_packet_type(avrcp_connection_t * connection){
             return connection->avrcp_packet_type;
     }
 
+    uint16_t payload_offset = avctp_get_num_bytes_for_header(connection->avctp_packet_type) +
+                              avrcp_get_num_bytes_for_header(connection->command_opcode, connection->avctp_packet_type);
+    uint16_t bytes_to_send = (connection->data_len - connection->data_offset) + payload_offset;
+
     if (connection->data_offset == 0){
-        if (AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE >= connection->data_len){
+        if (bytes_to_send <= AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE){
             return AVRCP_SINGLE_PACKET;
         } else {
             return AVRCP_START_PACKET;
         }
     } else {
-        if ((connection->data_len - connection->data_offset) > AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE){
+        if (bytes_to_send > AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE){
             return AVRCP_CONTINUE_PACKET;
         } else {
             return AVRCP_END_PACKET;
