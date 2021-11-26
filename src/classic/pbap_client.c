@@ -165,6 +165,8 @@ typedef struct pbap_client {
     uint32_t vcard_selector;
     uint8_t  vcard_selector_operator;
     uint8_t  vcard_selector_supported;
+    /* property selector */
+    uint32_t property_selector;
     /* abort */
     uint8_t  abort_operation;
     /* obex parser */
@@ -622,18 +624,17 @@ static uint16_t pbap_client_application_params_add_phone_number(const pbap_clien
 static uint16_t pbap_client_application_params_add_property_selector(const pbap_client_t * client, uint8_t * application_parameters){
     // TODO: support format
     uint16_t pos = 0;
-    uint32_t property_selector_lower = 0;
-    uint32_t property_selector_higher = 0;
+    uint32_t property_selector_lower = client->property_selector;
     if (strncmp(pbap_client->vcard_name, "X-BT-UID:", 9) == 0) {
-        property_selector_lower = 1U << 31;
+        property_selector_lower |= 1U << 31;
     }
     if (strncmp(pbap_client->vcard_name, "X-BT-UCI:", 9) == 0) {
-        property_selector_lower = 1U << 30;
+        property_selector_lower |= 1U << 30;
     }
     if (property_selector_lower != 0){
         application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_PROPERTY_SELECTOR;
         application_parameters[pos++] = 8;
-        big_endian_store_32(application_parameters, pos, property_selector_higher);
+        big_endian_store_32(application_parameters, pos, 0);    // upper 32-bits are reserved/unused so far
         pos += 4;
         big_endian_store_32(application_parameters, pos, property_selector_lower);
         pos += 4;
@@ -825,7 +826,6 @@ static void pbap_handle_can_send_now(void){
                 goep_client_header_add_type(pbap_client->goep_cid, pbap_vcard_entry_type);
 
                 pos = 0;
-                pos += pbap_client_application_params_add_vcard_selector(pbap_client, &application_parameters[pos]);
                 pos += pbap_client_application_params_add_property_selector(pbap_client, &application_parameters[pos]);
                 pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
             }
@@ -1328,5 +1328,14 @@ uint8_t pbap_set_vcard_selector_operator(uint16_t pbap_cid, int vcard_selector_o
         return BTSTACK_BUSY;
     }
     pbap_client->vcard_selector_operator = vcard_selector_operator;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t pbap_set_property_selector(uint16_t pbap_cid, uint32_t property_selector){
+    UNUSED(pbap_cid);
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+    pbap_client->property_selector  = property_selector;
     return ERROR_CODE_SUCCESS;
 }

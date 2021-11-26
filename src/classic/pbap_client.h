@@ -178,6 +178,14 @@ uint8_t pbap_set_vcard_selector(uint16_t pbap_cid, uint32_t vcard_selector);
 uint8_t pbap_set_vcard_selector_operator(uint16_t pbap_cid, int vcard_selector_operator);
 
 /**
+ * @brief Set Property Selector. No event is emitted.
+ * @param pbap_cid
+ * @param property_selector - combination of PBAP_PROPERTY_MASK_* properties
+ * @return
+ */
+uint8_t pbap_set_property_selector(uint16_t pbap_cid, uint32_t property_selector);
+
+/**
  * @brief Get size of phone book from PSE. The result is reported via PBAP_SUBEVENT_PHONEBOOK_SIZE event. 
  * 
  * @param pbap_cid
