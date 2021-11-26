@@ -116,7 +116,7 @@ static void show_usage(void){
     printf("r - set path to '/telecom'\n");
     printf("R - set path to '/SIM1/telecom'\n");
     printf("u - set path to '%s'\n", phonebook_folder);
-    printf("v - set vCardSelector to N and TEL\n");
+    printf("v - set vCardSelector + PropertySelector to N and TEL\n");
     printf("V - set vCardSelectorOperator to AND\n");
 
     printf("e - select phonebook '%s'\n", pb_name);
@@ -212,7 +212,8 @@ static void stdin_process(char c){
             pbap_authentication_password(pbap_cid, "0000");
             break;
         case 'v':
-            printf("[+] Set vCardSelector 'N' and 'TEL'\n");
+            printf("[+] Set PropertySelector and vCardSelector to 'N' and 'TEL'\n");
+            pbap_set_property_selector(pbap_cid, PBAP_PROPERTY_MASK_N | PBAP_PROPERTY_MASK_TEL);
             pbap_set_vcard_selector(pbap_cid, PBAP_PROPERTY_MASK_N | PBAP_PROPERTY_MASK_TEL);
             break;
         case 'V':
