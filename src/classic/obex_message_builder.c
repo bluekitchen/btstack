@@ -163,11 +163,15 @@ uint8_t obex_message_builder_body_add_static(uint8_t * buffer, uint16_t buffer_l
 }
 
 uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t buffer_len, const char * name, uint16_t name_len){
-    if (buffer_len <  (1 + 2 + name_len*2) ) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    // non-empty string have trailing \0
+    bool add_trailing_zero = name_len > 0;
+
+    uint16_t header_len = 1 + 2 + (name_len * 2) + (add_trailing_zero ? 2 : 0);
+    if (buffer_len < header_len) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
 
     uint16_t pos = big_endian_read_16(buffer, 1);
     buffer[pos++] = OBEX_HEADER_NAME;
-    big_endian_store_16(buffer, pos, 1 + 2 + name_len*2);
+    big_endian_store_16(buffer, pos, header_len);
     pos += 2;
     int i;
     // @note name[len] == 0 
@@ -175,16 +179,16 @@ uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t b
         buffer[pos++] = 0;
         buffer[pos++] = *name++;
     }
+    if (add_trailing_zero){
+        buffer[pos++] = 0;
+        buffer[pos++] = 0;
+    }
     big_endian_store_16(buffer, 1, pos);
     return ERROR_CODE_SUCCESS;
 }
 uint8_t obex_message_builder_header_add_name(uint8_t * buffer, uint16_t buffer_len, const char * name){
-    int len = strlen(name);
-    if (len > 0) {
-        // empty string does not have trailing \0
-        len++;
-    }
-    return obex_message_builder_header_add_name_prefix(buffer, buffer_len, name, len);
+    uint16_t name_len = strlen(name);
+    return obex_message_builder_header_add_name_prefix(buffer, buffer_len, name, name_len);
 }
 
 uint8_t obex_message_builder_header_add_type(uint8_t * buffer, uint16_t buffer_len, const char * type){
