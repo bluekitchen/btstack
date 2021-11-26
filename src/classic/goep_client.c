@@ -99,7 +99,7 @@ static goep_client_t * goep_client = &goep_client_singleton;
 static uint8_t            goep_client_sdp_query_attribute_value[30];
 static const unsigned int goep_client_sdp_query_attribute_value_buffer_size = sizeof(goep_client_sdp_query_attribute_value);
 
-static uint8_t goep_packet_buffer[100];
+static uint8_t goep_packet_buffer[150];
 
 #ifdef ENABLE_GOEP_L2CAP
 static uint8_t ertm_buffer[1000];
