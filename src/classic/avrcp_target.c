@@ -444,6 +444,7 @@ static void avrcp_target_custome_command_data_init(avrcp_connection_t * connecti
     connection->data = NULL;
     connection->data_offset = 0;
     connection->data_len = 0;
+    connection->avrcp_frame_bytes_sent = 0;
 }
 
 static void avrcp_target_vendor_dependent_response_data_init(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_pdu_id_t pdu_id){
@@ -456,6 +457,7 @@ static void avrcp_target_vendor_dependent_response_data_init(avrcp_connection_t 
     connection->pdu_id = pdu_id;
     connection->data = connection->message_body;
     connection->data_offset = 0;
+    connection->data_len = 0;
     connection->avrcp_frame_bytes_sent = 0;
     connection->state = AVCTP_W2_SEND_RESPONSE;
 }
@@ -473,6 +475,7 @@ static void avrcp_target_pass_through_command_data_init(avrcp_connection_t * con
     connection->data = connection->message_body;
     connection->data_offset = 0;
     connection->data_len = 0;
+    connection->avrcp_frame_bytes_sent = 0;
 }
 
 
@@ -1261,9 +1264,6 @@ static void avrcp_request_next_avctp_segment(avrcp_connection_t * connection){
     switch (connection->avctp_packet_type){
         case AVCTP_END_PACKET:
         case AVCTP_SINGLE_PACKET:
-            connection->avrcp_frame_bytes_sent = 0;
-            connection->data_offset = 0;
-            connection->data_len = 0;
             connection->state = AVCTP_CONNECTION_OPENED;
             break;
         default:
@@ -1311,7 +1311,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 
             if (connection->target_abort_continue_response){
                 connection->target_abort_continue_response = false;
-                connection->target_now_playing_info_response = false;
                 avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_ACCEPTED, AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE);
                 break;
             }
@@ -1319,9 +1318,12 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             if (connection->target_now_playing_info_response){
                 connection->target_now_playing_info_response = false;
                 if (connection->target_continue_response){
+                    if (connection->data_len == 0){
+                        avrcp_target_response_vendor_dependent_reject(connection, connection->pdu_id, AVRCP_STATUS_INVALID_PARAMETER);
+                        return;
+                    }
                     connection->target_continue_response = false;
                 } else {
-                    connection->target_now_playing_info_response = false;
                     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES);
                     connection->data_len = avrcp_now_playing_info_value_len_with_headers(connection);
                 }
