@@ -149,23 +149,17 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
             browsing_connection->transaction_label = transport_header >> 4;
             avrcp_packet_type_t avctp_packet_type = (transport_header & 0x0F) >> 2;
             switch (avctp_packet_type){
-                case AVRCP_SINGLE_PACKET:
-                case AVRCP_START_PACKET:
+                case AVCTP_SINGLE_PACKET:
+                case AVCTP_START_PACKET:
                     browsing_connection->subunit_type = packet[pos++] >> 2;
                     browsing_connection->subunit_id = 0;
                     browsing_connection->command_opcode = packet[pos++];
                     browsing_connection->num_packets = 1;
-                    if (avctp_packet_type == AVRCP_START_PACKET){
+                    if (avctp_packet_type == AVCTP_START_PACKET){
                         browsing_connection->num_packets = packet[pos++];
                     } 
                     browsing_connection->pdu_id = packet[pos++];
-                    break;
-                default:
-                    break;
-            }
-            switch (avctp_packet_type){
-                case AVRCP_SINGLE_PACKET:
-                case AVRCP_END_PACKET:
+                   
                     switch(browsing_connection->pdu_id){
                         case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
                             browsing_connection->scope = packet[pos++];
