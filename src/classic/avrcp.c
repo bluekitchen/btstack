@@ -380,6 +380,10 @@ static uint16_t avrcp_get_num_free_bytes_for_payload(uint16_t l2cap_mtu, avrcp_c
 
 
 avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint16_t * max_payload_size){
+    if (connection->l2cap_mtu >= AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE){
+        return AVCTP_SINGLE_PACKET;
+    }
+
     if (connection->data_offset == 0){
         uint16_t max_payload_size_for_single_packet = avrcp_get_num_free_bytes_for_payload(connection->l2cap_mtu,
                                                                  connection->command_opcode,
