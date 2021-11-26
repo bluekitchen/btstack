@@ -369,8 +369,8 @@ uint16_t avrcp_get_num_bytes_for_header(avrcp_command_opcode_t command_opcode, a
     return offset;
 }
 
-static uint16_t avrcp_get_num_free_bytes_for_payload(uint16_t l2cap_cid, avrcp_command_opcode_t command_opcode, avctp_packet_type_t avctp_packet_type){
-    uint16_t max_frame_size = btstack_min(l2cap_get_remote_mtu_for_local_cid(l2cap_cid), AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
+static uint16_t avrcp_get_num_free_bytes_for_payload(uint16_t l2cap_mtu, avrcp_command_opcode_t command_opcode, avctp_packet_type_t avctp_packet_type){
+    uint16_t max_frame_size = btstack_min(l2cap_mtu, AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
     uint16_t payload_offset = avctp_get_num_bytes_for_header(avctp_packet_type) +
                               avrcp_get_num_bytes_for_header(command_opcode, avctp_packet_type);
 
@@ -381,7 +381,7 @@ static uint16_t avrcp_get_num_free_bytes_for_payload(uint16_t l2cap_cid, avrcp_c
 
 avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint16_t * max_payload_size){
     if (connection->data_offset == 0){
-        uint16_t max_payload_size_for_single_packet = avrcp_get_num_free_bytes_for_payload(connection->l2cap_signaling_cid,
+        uint16_t max_payload_size_for_single_packet = avrcp_get_num_free_bytes_for_payload(connection->l2cap_mtu,
                                                                  connection->command_opcode,
                                                                  AVCTP_SINGLE_PACKET);
         if (max_payload_size_for_single_packet >= connection->data_len){
@@ -394,7 +394,7 @@ avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint1
         }
     } else {
         // both packet types have the same single byte AVCTP header
-        *max_payload_size = avrcp_get_num_free_bytes_for_payload(connection->l2cap_signaling_cid,
+        *max_payload_size = avrcp_get_num_free_bytes_for_payload(connection->l2cap_mtu,
                                                                  connection->command_opcode,
                                                                  AVCTP_CONTINUE_PACKET);
         if ((connection->data_len - connection->data_offset) > *max_payload_size){

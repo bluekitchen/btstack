@@ -286,7 +286,7 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
     uint8_t param_len = connection->data_len;
 
     if (connection->avctp_packet_type == AVCTP_START_PACKET){
-        uint8_t max_frame_size = btstack_min(l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid), AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
+        uint8_t max_frame_size = btstack_min(connection->l2cap_mtu, AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
         // first packet: max_payload_size
         // rest packets
         uint16_t num_payload_bytes = param_len - max_payload_size;
