@@ -435,22 +435,6 @@ static void obex_srm_init(obex_srm_t * obex_srm){
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
 }
 
-static void obex_srm_handle_srm_header(obex_srm_t * obex_srm, uint8_t hi, uint16_t data_len, const uint8_t * data){
-    switch (hi){
-        case OBEX_HEADER_SINGLE_RESPONSE_MODE:
-            if (data_len != 1) break;
-            obex_srm->srm_value = *data;
-            break;
-        case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
-            if (data_len != 1) break;
-            obex_srm->srmp_value = *data;
-            break;
-        default:
-            btstack_unreachable();
-            break;
-    }
-}
-
 static void pbap_client_process_vcard_list_body(const uint8_t * data, uint16_t data_len){
     while (data_len--) {
         uint16_t char_len;
@@ -682,7 +666,6 @@ static void pbap_handle_can_send_now(void){
     uint8_t  application_parameters[PBAP_MAX_PHONE_NUMBER_LEN + 10];
     uint8_t  challenge_response[36];
     uint16_t pos;
-    uint16_t phone_number_len;
 
     MD5_CTX md5_ctx;
 
@@ -706,6 +689,7 @@ static void pbap_handle_can_send_now(void){
             pbap_client->state = PBAP_W4_CONNECT_RESPONSE;
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_CONNECT, pbap_client_parser_callback_connect, pbap_client);
+            obex_auth_parser_init(&pbap_client->obex_auth_parser);
             obex_srm_init(&pbap_client->obex_srm);
             pbap_client->obex_parser_waiting_for_response = true;
             // send packet
