@@ -1277,7 +1277,7 @@ uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
 
 uint8_t pbap_abort(uint16_t pbap_cid){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state < PBAP_CONNECTED){
         return BTSTACK_BUSY;
     }
     log_info("abort current operation, state 0x%02x", pbap_client->state);
