@@ -18,17 +18,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: gap_inquiry_set_scan_activity to set Inquiry Scan Activity
 - L2CAP: emit L2CAP_EVENT_INFORMATION_RESPONSE event with extended features and fixed channels supported
 - L2CAP: support Enhanced Credit-based Flow-Control Mode for connection-oriented channels
-- POSIX: btstack_signal allows to register for callback on signal, e.g. ctrl-c
-- Windows: btstack_stdin_window_register_ctrl_c_callback allows to register for ctrl-c
 - A2DP: allow to register media codec validator for sink and source with:
   - `a2dp_sink_register_media_config_validator`
   - `a2dp_source_register_media_config_validator`
 - A2DP Sink: allow accept or reject of stream start on A2DP_SUBEVENT_START_STREAM_REQUESTED when ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION is defined
+- OBEX: new obex_parser for chunked OBEX data
 - SM: Support Cross-Transport Key-Derivation (CTKD) of LE LTK from BR/EDR SC Link Key
 - SM: sm_remove_event_handler to remove packet handler
 - GATT Service: Bond Management Service (BMS 1.0) Server
 - GATT Service: Microphone Control Service (MICS 1.0) Server
 - GATT Service: TX Power Service (TPS 1.0) Server 
+- POSIX: btstack_signal allows to register for callback on signal, e.g. ctrl-c
+- Windows: btstack_stdin_window_register_ctrl_c_callback allows to register for ctrl-c
 
 ### Fixed
 - A2DP Source: fix reconfigure
@@ -65,6 +66,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVRCP: use PANEL as default unit + subunit info
 - AVRCP Controller: automatically query supported events when registering for notifications 
 - AVRCP Target: cache companies and events in library and remove need to answer query in application callback. Use Bluetooth SIG as default company.
+- PBAP Client: use new streaming obex_parser to handle chunked OBEX data
 - Run Loop: new functionality for HCI transport drivers and inter-process communication
   - *btstack_run_loop_poll_data_sources_from_irq*: used to transfer control from IRQ handler to main thread/run loop
   - *btstack_run_loop_execute_on_main_thread*: schedule code execution on main thread from other thread
