@@ -1163,19 +1163,6 @@ static void hfp_ag_trigger_incoming_call_during_active_one(void){
     }
 }
 
-static void hfp_ag_hf_trigger_ring_and_clip(hfp_connection_t * hfp_connection){
-    // Queue RING on this connection
-    hfp_connection->ag_ring = 1;
-
-    // HFP v1.8, 4.23 Calling Line Identification (CLI) Notification
-    // "If the calling subscriber number information is available from the network, the AG shall issue the
-    // +CLIP unsolicited result code just after every RING indication when the HF is alerted in an incoming call."
-    hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
-
-    // trigger next message
-    rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
-}
-
 static void hfp_ag_trigger_ring_and_clip(void) {
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
@@ -1185,11 +1172,17 @@ static void hfp_ag_trigger_ring_and_clip(void) {
         switch (hfp_connection->call_state){
             case HFP_CALL_INCOMING_RINGING:
             case HFP_CALL_OUTGOING_RINGING:
-                hfp_ag_hf_trigger_ring_and_clip(hfp_connection);
-                break;
             case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
-                // delay RING until audio connection has been established
-                // hfp_ag_hf_trigger_ring_and_clip is called in call_setup_state_machine
+                // Queue RING on this connection
+                hfp_connection->ag_ring = 1;
+
+                // HFP v1.8, 4.23 Calling Line Identification (CLI) Notification
+                // "If the calling subscriber number information is available from the network, the AG shall issue the
+                // +CLIP unsolicited result code just after every RING indication when the HF is alerted in an incoming call."
+                hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
+
+                // trigger next message
+                rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
                 break;
             default:
                 break;
@@ -1468,12 +1461,9 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
     switch (hfp_connection->call_state){
         case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
             if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
-
             // we got event: audio hfp_connection established
             hfp_connection->call_state = HFP_CALL_INCOMING_RINGING;
-            // now, we can (start) sending RING
-            hfp_ag_hf_trigger_ring_and_clip(hfp_connection);
-            break;        
+            break;
         case HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE:
             if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
             // we got event: audio hfp_connection established
@@ -2087,21 +2077,25 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         return 1;
     }
 
-    if (hfp_connection->ag_ring){
-        hfp_connection->ag_ring = 0;
-        hfp_connection->command = HFP_CMD_NONE;
-        hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
-        hfp_ag_send_ring(hfp_connection->rfcomm_cid);
-        return 1;
+    // delay RING/CLIP until audio connection has been established for incoming calls
+    // hfp_ag_hf_trigger_ring_and_clip is called in call_setup_state_machine
+    if (hfp_connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING){
+        if (hfp_connection->ag_ring){
+            hfp_connection->ag_ring = 0;
+            hfp_connection->command = HFP_CMD_NONE;
+            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
+            hfp_ag_send_ring(hfp_connection->rfcomm_cid);
+            return 1;
+        }
+
+        if (hfp_connection->ag_send_clip){
+            hfp_connection->ag_send_clip = 0;
+            hfp_connection->command = HFP_CMD_NONE;
+            hfp_ag_send_clip(hfp_connection->rfcomm_cid);
+            return 1;
+        }
     }
 
-    if (hfp_connection->ag_send_clip){
-        hfp_connection->ag_send_clip = 0;
-        hfp_connection->command = HFP_CMD_NONE;
-        hfp_ag_send_clip(hfp_connection->rfcomm_cid);
-        return 1;
-    }
-    
     if (hfp_connection->send_phone_number_for_voice_tag){
         hfp_connection->send_phone_number_for_voice_tag = 0;
         hfp_connection->command = HFP_CMD_NONE;
