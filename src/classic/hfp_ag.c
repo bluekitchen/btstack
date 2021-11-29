@@ -1184,10 +1184,12 @@ static void hfp_ag_trigger_ring_and_clip(void) {
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
         switch (hfp_connection->call_state){
             case HFP_CALL_INCOMING_RINGING:
-            case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
             case HFP_CALL_OUTGOING_RINGING:
                 hfp_ag_hf_trigger_ring_and_clip(hfp_connection);
                 break;
+            case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
+                // delay RING until audio connection has been established
+                // hfp_ag_hf_trigger_ring_and_clip is called in call_setup_state_machine
                 break;
             default:
                 break;
@@ -1469,6 +1471,8 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
 
             // we got event: audio hfp_connection established
             hfp_connection->call_state = HFP_CALL_INCOMING_RINGING;
+            // now, we can (start) sending RING
+            hfp_ag_hf_trigger_ring_and_clip(hfp_connection);
             break;        
         case HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE:
             if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
