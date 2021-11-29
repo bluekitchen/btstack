@@ -424,6 +424,9 @@ static void obex_auth_parser_process_data(obex_auth_parser_t * auth_parser, cons
                     auth_parser->state = OBEX_AUTH_PARSER_STATE_W4_TYPE;
                 }
                 break;
+            default:
+                btstack_unreachable();
+                break;
         }
         data_buffer += bytes_to_consume;
         data_len    -= bytes_to_consume;
