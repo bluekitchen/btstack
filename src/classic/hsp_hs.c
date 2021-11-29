@@ -127,6 +127,9 @@ static uint16_t hsp_hs_sco_packet_types;
 static btstack_packet_callback_registration_t  hsp_hs_hci_event_callback_registration;
 static btstack_context_callback_registration_t hsp_hs_handle_sdp_client_query_request;
 
+#ifdef ENABLE_RTK_PCM_WBS
+static bool hsp_hs_rtk_send_sco_config;
+#endif
 
 static void hsp_run(void);
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -509,6 +512,15 @@ static void hsp_run(void){
         return;
     }
 
+#ifdef ENABLE_RTK_PCM_WBS
+    if (hsp_hs_rtk_send_sco_config){
+        hsp_hs_rtk_send_sco_config = false;
+        log_info("RTK SCO: 16k + CVSD");
+        hci_send_cmd(&hci_rtk_configure_sco_routing, 0x81, 0x90, 0x00, 0x00, 0x1a, 0x0c, 0x0c, 0x00, 0x01);
+        return;
+    }
+#endif
+
     hsp_run_handle_state();
 }
 
@@ -647,6 +659,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 hsp_hs_rfcomm_mtu    = rfcomm_event_channel_opened_get_max_frame_size(packet);
                 log_info("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u, handle %02x", hsp_hs_rfcomm_cid, hsp_hs_rfcomm_mtu, hsp_hs_rfcomm_handle);
                 hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
+#ifdef ENABLE_RTK_PCM_WBS
+                hsp_hs_rtk_send_sco_config = true;
+#endif
             }
             emit_event_with_value(HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE, status);
             break;
