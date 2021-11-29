@@ -1163,6 +1163,19 @@ static void hfp_ag_trigger_incoming_call_during_active_one(void){
     }
 }
 
+static void hfp_ag_hf_trigger_ring_and_clip(hfp_connection_t * hfp_connection){
+    // Queue RING on this connection
+    hfp_connection->ag_ring = 1;
+
+    // HFP v1.8, 4.23 Calling Line Identification (CLI) Notification
+    // "If the calling subscriber number information is available from the network, the AG shall issue the
+    // +CLIP unsolicited result code just after every RING indication when the HF is alerted in an incoming call."
+    hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
+
+    // trigger next message
+    rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
+}
+
 static void hfp_ag_trigger_ring_and_clip(void) {
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
@@ -1173,16 +1186,8 @@ static void hfp_ag_trigger_ring_and_clip(void) {
             case HFP_CALL_INCOMING_RINGING:
             case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
             case HFP_CALL_OUTGOING_RINGING:
-                // Queue RING on this connection
-                hfp_connection->ag_ring = 1;
-
-                // HFP v1.8, 4.23 Calling Line Identification (CLI) Notification
-                // "If the calling subscriber number information is available from the network, the AG shall issue the
-                // +CLIP unsolicited result code just after every RING indication when the HF is alerted in an incoming call."
-                hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
-
-                // trigger next message
-                rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
+                hfp_ag_hf_trigger_ring_and_clip(hfp_connection);
+                break;
                 break;
             default:
                 break;
