@@ -159,12 +159,19 @@ obex_parser_object_state_t obex_parser_process_data(obex_parser_t *obex_parser, 
                 obex_parser->state = OBEX_PARSER_STATE_W4_HEADER_LEN_SECOND;
                 break;
             case OBEX_PARSER_STATE_W4_HEADER_LEN_SECOND:
-                obex_parser->item_len = obex_parser->item_len + *data_buffer - 3;
-                if ( obex_parser->item_len > 0){
-                    obex_parser->state = OBEX_PARSER_STATE_W4_HEADER_VALUE;
-                } else {
+                obex_parser->item_len = obex_parser->item_len + *data_buffer;
+                if (obex_parser->item_len < 3){
+                    // len to small to even cover header
+                    obex_parser->state = OBEX_PARSER_STATE_INVALID;
+                    break;
+                };
+                if (obex_parser->item_len == 3){
+                    // borderline: empty value
                     obex_parser->state = OBEX_PARSER_STATE_W4_HEADER_ID;
+                    break;
                 }
+                obex_parser->item_len -= 3;
+                obex_parser->state = OBEX_PARSER_STATE_W4_HEADER_VALUE;
                 break;
             case OBEX_PARSER_STATE_W4_HEADER_VALUE:
                 bytes_to_consume = btstack_min(obex_parser->item_len - obex_parser->item_pos, data_len);
