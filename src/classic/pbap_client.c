@@ -510,6 +510,8 @@ static void pbap_client_parser_callback_connect(void * user_data, uint8_t header
 }
 
 static void pbap_client_parser_callback_get_phonebook_size(void * user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t * data_buffer, uint16_t data_len){
+    UNUSED(total_len);
+    UNUSED(data_offset);
     pbap_client_t *client = (pbap_client_t *) user_data;
     switch (header_id) {
         case OBEX_HEADER_APPLICATION_PARAMETERS:
@@ -582,7 +584,7 @@ static uint16_t pbap_client_application_params_add_max_list_count(const pbap_cli
     uint16_t pos = 0;
     application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_MAX_LIST_COUNT;
     application_parameters[pos++] = 2;
-    big_endian_store_16(application_parameters, 2, 0);
+    big_endian_store_16(application_parameters, 2, max_count);
     pos += 2;
     return pos;
 }
@@ -590,9 +592,9 @@ static uint16_t pbap_client_application_params_add_max_list_count(const pbap_cli
 // max size: PBAP_MAX_PHONE_NUMBER_LEN + 5
 static uint16_t pbap_client_application_params_add_phone_number(const pbap_client_t * client, uint8_t * application_parameters){
     uint16_t pos = 0;
-    if (pbap_client->phone_number){
+    if (client->phone_number){
         // Search by phone number
-        uint16_t phone_number_len = btstack_min(PBAP_MAX_PHONE_NUMBER_LEN, strlen(pbap_client->phone_number));
+        uint16_t phone_number_len = btstack_min(PBAP_MAX_PHONE_NUMBER_LEN, strlen(client->phone_number));
         application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
         application_parameters[pos++] = phone_number_len;
         (void)memcpy(&application_parameters[pos],
@@ -640,7 +642,7 @@ static uint16_t pbap_client_application_parameters_add_supported_features(const 
 
 static void pbap_client_add_application_parameters(const pbap_client_t * client, uint8_t * application_parameters, uint16_t len){
     if (len > 0){
-        goep_client_header_add_application_parameters(pbap_client->goep_cid, &application_parameters[0], len);
+        goep_client_header_add_application_parameters(client->goep_cid, &application_parameters[0], len);
     }
 }
 
@@ -652,12 +654,10 @@ static void pbap_client_prepare_srm_header(const pbap_client_t * client){
 }
 
 static void pbap_client_prepare_get_operation(pbap_client_t * client){
-    obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_GET, pbap_client_parser_callback_get_operation, pbap_client);
-    obex_srm_init(&pbap_client->obex_srm);
-    pbap_client->obex_parser_waiting_for_response = true;
+    obex_parser_init_for_response(&client->obex_parser, OBEX_OPCODE_GET, pbap_client_parser_callback_get_operation, pbap_client);
+    obex_srm_init(&client->obex_srm);
+    client->obex_parser_waiting_for_response = true;
 }
-
-#include <stdio.h>
 
 static void pbap_handle_can_send_now(void){
     uint16_t path_element_start;
