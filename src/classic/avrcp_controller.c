@@ -1212,7 +1212,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
             } else {
                 connection->state = AVCTP_W2_RECEIVE_RESPONSE;
             }
-            break;
+            return;
         default:
             break;
     }
