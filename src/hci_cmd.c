@@ -2519,3 +2519,10 @@ const hci_cmd_t hci_ti_drpb_enable_rf_calibration = {
 const hci_cmd_t hci_ti_write_hardware_register = {
         0xFF01, "42"
 };
+
+/**
+ * @brief Configure SCO routing on Realtek Controllers
+ */
+const hci_cmd_t hci_rtk_configure_sco_routing = {
+    HCI_OPCODE (0x3f, 0x93), "111111111"
+};

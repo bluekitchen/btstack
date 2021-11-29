@@ -573,6 +573,10 @@ extern const hci_cmd_t hci_ti_wbs_disassociate;
 extern const hci_cmd_t hci_ti_write_codec_config;
 extern const hci_cmd_t hci_ti_write_hardware_register;
 
+
+// Relatek specific HCI commands
+extern const hci_cmd_t hci_rtk_configure_sco_routing;
+
 /**
  * construct HCI Command based on template
  *
