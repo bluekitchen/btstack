@@ -663,7 +663,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 hsp_hs_rtk_send_sco_config = true;
 #endif
             }
-            emit_event_with_value(HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE, status);
+            emit_event_rfcomm_connected(status);
             break;
 
         case RFCOMM_EVENT_CAN_SEND_NOW:
