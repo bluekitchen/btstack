@@ -74,6 +74,7 @@ Intel Dual Wireless 3165, 8260, 8265 | Dual mode | USB  | Yes          | Probabl
 Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |        Yes           | n.a.           |       Yes          |                | Requires HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | Don't know       | n.a    |         n.a.         | No             |       n.a.         | stlc2500d      | Custom deep sleep management not supported
 Renesas RX23W        | LE        | H4             | No           | n.a.             | Yes    |        Yes           | n.a .          |    Don't know      |                | HCI Firmware part of BTTS
+Realtek RTL8822CS    | Dual mode + Wifi | H5      | Yes          | Yes              | Don't know | Don't know       | Don't know     |    Don't know      |                | Requires initial firmware + config       
 Toshiba TC35661      | Dual mode | H4             | No           | No               | No     |         No           | No             |       No           | tc3566         | Only -007/009 models provide full HCI. See below
 TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |    Yes for CC256XC   | No             |       No           | cc256x         | Also WL185x, WL187x, and WL189x
 
@@ -129,7 +130,8 @@ BTstack supports uploading of the init script in two variants: using .hcd files 
 
 **BTstack integration**: The common code for all Broadcom chipsets is provided by *btstack_chipset_bcm.c*. During the setup, *btstack_chipset_bcm_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function.
 
-SCO Data can be routed over HCI for both USB dongles and UART connections, however BTstack does not support flow control for UART connections. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins.
+SCO Data can be routed over HCI for both USB dongles and UART connections, however BTstack does not support flow control for UART connections. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins. Newer Controllers provide an
+mSBC codec that allows to use HSP/HFP incl. WBS over PCM/I2S with ENABLE_BCM_PCM_WBS.
 
 ## CSR / Qualcomm Incorporated
 

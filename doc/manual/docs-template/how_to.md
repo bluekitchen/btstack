@@ -103,6 +103,7 @@ ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow 
 ENABLE_ATT_DELAYED_RESPONSE      | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)
 ENABLE_BCM_PCM_WBS               | Enable support for Wide-Band Speech codec in BCM controller, requires ENABLE_SCO_OVER_PCM
 ENABLE_CC256X_ASSISTED_HFP       | Enable support for Assisted HFP mode in CC256x Controller, requires ENABLE_SCO_OVER_PCM
+Enable_RTK_PCM_WBS               | Enable support for Wide-Band Speech codec in Realtek controller, requires ENABLE_SCO_OVER_PCM
 ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.
 ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.
 ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS | Force HCI to fragment ACL-LE packets to fit into over-the-air packet
