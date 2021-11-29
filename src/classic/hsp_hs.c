@@ -583,8 +583,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
             if (hsp_state < HSP_RFCOMM_CONNECTION_ESTABLISHED) return;
             hci_event_synchronous_connection_complete_get_bd_addr(packet, event_addr);
-            uint8_t status                   = hci_event_synchronous_connection_complete_get_status(packet);
-            hsp_hs_sco_handle                       = hci_event_synchronous_connection_complete_get_handle(packet);
+            status                           = hci_event_synchronous_connection_complete_get_status(packet);
+            hsp_hs_sco_handle                = hci_event_synchronous_connection_complete_get_handle(packet);
             uint8_t  link_type               = hci_event_synchronous_connection_complete_get_link_type(packet);
             uint8_t  transmission_interval   = hci_event_synchronous_connection_complete_get_transmission_interval(packet);   // measured in slots
             uint8_t  retransmission_interval = hci_event_synchronous_connection_complete_get_retransmission_interval(packet); // measured in slots
