@@ -4152,25 +4152,52 @@ static inline uint8_t hci_subevent_le_enhanced_connection_complete_get_master_cl
 }
 
 /**
+ * @brief Get field acl_handle from event HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hsp_subevent_rfcomm_connection_complete_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
  * @brief Get field status from event HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
 static inline uint8_t hsp_subevent_rfcomm_connection_complete_get_status(const uint8_t * event){
-    return event[3];
+    return event[5];
+}
+/**
+ * @brief Get field bd_addr from event HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hsp_subevent_rfcomm_connection_complete_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bytes(&event[6], bd_addr, 6);
 }
 
 /**
- * @brief Get field status from event HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE
+ * @brief Get field acl_handle from event HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE
  * @param event packet
- * @return status
- * @note: btstack_type 1
+ * @return acl_handle
+ * @note: btstack_type H
  */
-static inline uint8_t hsp_subevent_rfcomm_disconnection_complete_get_status(const uint8_t * event){
-    return event[3];
+static inline hci_con_handle_t hsp_subevent_rfcomm_disconnection_complete_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 
+/**
+ * @brief Get field acl_handle from event HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hsp_subevent_audio_connection_complete_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field status from event HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE
  * @param event packet
@@ -4178,29 +4205,56 @@ static inline uint8_t hsp_subevent_rfcomm_disconnection_complete_get_status(cons
  * @note: btstack_type 1
  */
 static inline uint8_t hsp_subevent_audio_connection_complete_get_status(const uint8_t * event){
-    return event[3];
+    return event[5];
 }
 /**
- * @brief Get field handle from event HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE
+ * @brief Get field sco_handle from event HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE
  * @param event packet
- * @return handle
+ * @return sco_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hsp_subevent_audio_connection_complete_get_handle(const uint8_t * event){
-    return little_endian_read_16(event, 4);
+static inline hci_con_handle_t hsp_subevent_audio_connection_complete_get_sco_handle(const uint8_t * event){
+    return little_endian_read_16(event, 6);
 }
 
 /**
- * @brief Get field status from event HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE
+ * @brief Get field acl_handle from event HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE
  * @param event packet
- * @return status
- * @note: btstack_type 1
+ * @return acl_handle
+ * @note: btstack_type H
  */
-static inline uint8_t hsp_subevent_audio_disconnection_complete_get_status(const uint8_t * event){
-    return event[3];
+static inline hci_con_handle_t hsp_subevent_audio_disconnection_complete_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field sco_handle from event HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE
+ * @param event packet
+ * @return sco_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hsp_subevent_audio_disconnection_complete_get_sco_handle(const uint8_t * event){
+    return little_endian_read_16(event, 5);
 }
 
+/**
+ * @brief Get field acl_handle from event HSP_SUBEVENT_RING
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hsp_subevent_ring_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 
+/**
+ * @brief Get field acl_handle from event HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hsp_subevent_microphone_gain_changed_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field gain from event HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED
  * @param event packet
@@ -4208,9 +4262,18 @@ static inline uint8_t hsp_subevent_audio_disconnection_complete_get_status(const
  * @note: btstack_type 1
  */
 static inline uint8_t hsp_subevent_microphone_gain_changed_get_gain(const uint8_t * event){
-    return event[3];
+    return event[5];
 }
 
+/**
+ * @brief Get field acl_handle from event HSP_SUBEVENT_SPEAKER_GAIN_CHANGED
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hsp_subevent_speaker_gain_changed_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field gain from event HSP_SUBEVENT_SPEAKER_GAIN_CHANGED
  * @param event packet
@@ -4218,9 +4281,18 @@ static inline uint8_t hsp_subevent_microphone_gain_changed_get_gain(const uint8_
  * @note: btstack_type 1
  */
 static inline uint8_t hsp_subevent_speaker_gain_changed_get_gain(const uint8_t * event){
-    return event[3];
+    return event[5];
 }
 
+/**
+ * @brief Get field acl_handle from event HSP_SUBEVENT_HS_COMMAND
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hsp_subevent_hs_command_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field value_length from event HSP_SUBEVENT_HS_COMMAND
  * @param event packet
@@ -4228,7 +4300,7 @@ static inline uint8_t hsp_subevent_speaker_gain_changed_get_gain(const uint8_t *
  * @note: btstack_type J
  */
 static inline uint8_t hsp_subevent_hs_command_get_value_length(const uint8_t * event){
-    return event[3];
+    return event[5];
 }
 /**
  * @brief Get field value from event HSP_SUBEVENT_HS_COMMAND
@@ -4237,9 +4309,18 @@ static inline uint8_t hsp_subevent_hs_command_get_value_length(const uint8_t * e
  * @note: btstack_type V
  */
 static inline const uint8_t * hsp_subevent_hs_command_get_value(const uint8_t * event){
-    return &event[4];
+    return &event[6];
 }
 
+/**
+ * @brief Get field acl_handle from event HSP_SUBEVENT_AG_INDICATION
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hsp_subevent_ag_indication_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field value_length from event HSP_SUBEVENT_AG_INDICATION
  * @param event packet
@@ -4247,7 +4328,7 @@ static inline const uint8_t * hsp_subevent_hs_command_get_value(const uint8_t * 
  * @note: btstack_type J
  */
 static inline uint8_t hsp_subevent_ag_indication_get_value_length(const uint8_t * event){
-    return event[3];
+    return event[5];
 }
 /**
  * @brief Get field value from event HSP_SUBEVENT_AG_INDICATION
@@ -4256,9 +4337,18 @@ static inline uint8_t hsp_subevent_ag_indication_get_value_length(const uint8_t 
  * @note: btstack_type V
  */
 static inline const uint8_t * hsp_subevent_ag_indication_get_value(const uint8_t * event){
-    return &event[4];
+    return &event[6];
 }
 
+/**
+ * @brief Get field acl_handle from event HSP_SUBEVENT_BUTTON_PRESSED
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hsp_subevent_button_pressed_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 
 /**
  * @brief Get field acl_handle from event HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED

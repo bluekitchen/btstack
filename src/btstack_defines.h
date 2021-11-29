@@ -1512,74 +1512,83 @@ typedef uint8_t sm_key_t[16];
 /** HSP Subevent */
 
 /**
- * @format 11
+ * @format 1H1B
  * @param subevent_code
+ * @param acl_handle
  * @param status 0 == OK
+ * @param bd_addr
  */
 #define HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE             0x01
 
 /**
- * @format 11
+ * @format 1H
  * @param subevent_code
- * @param status 0 == OK
+ * @param acl_handle
  */
 #define HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE           0x02
 
-
 /**
- * @format 11H
+ * @format 1H1H
  * @param subevent_code
+ * @param acl_handle
  * @param status 0 == OK
- * @param handle
+ * @param sco_handle
  */
 #define HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x03
 
 /**
- * @format 11
+ * @format 1HH
  * @param subevent_code
- * @param status 0 == OK
+ * @param acl_handle
+ * @param sco_handle
  */
 #define HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE          0x04
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param acl_handle
  */
 #define HSP_SUBEVENT_RING                                  0x05
 
 /**
- * @format 11
+ * @format 1H1
  * @param subevent_code
+ * @param acl_handle
  * @param gain Valid range: [0,15]
  */
 #define HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED               0x06
 
 /**
- * @format 11
+ * @format 1H1
  * @param subevent_code
+ * @param acl_handle
  * @param gain Valid range: [0,15]
  */
 #define HSP_SUBEVENT_SPEAKER_GAIN_CHANGED                  0x07
 
 /**
- * @format 1JV
+ * @format 1HJV
  * @param subevent_code
+ * @param acl_handle
  * @param value_length
  * @param value
  */
 #define HSP_SUBEVENT_HS_COMMAND                            0x08
 
 /**
- * @format 1JV
+ * @format 1HJV
  * @param subevent_code
+ * @param acl_handle
  * @param value_length
  * @param value
  */
 #define HSP_SUBEVENT_AG_INDICATION                         0x09
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param acl_handle
  */
 #define HSP_SUBEVENT_BUTTON_PRESSED                        0x0a
 

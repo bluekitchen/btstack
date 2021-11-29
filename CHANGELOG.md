@@ -62,6 +62,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP: merged legacy and enhanced Voice Recognition Activation (VRA) API. If available enhanced mode will be preferred.
 - HFP: separate events for activation (HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED) and deactivation (HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED) instead of combined HFP_SUBEVENT_VOICE_RECOGNITION_STATUS with status field. HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED contains field "enhanced" to indicate if enhanced mode is used. 
 - HFP: enhanced VRA: HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED is emitted after VRA is ready and the the audio connection is established. This simplifies HFP HF client logic, i.e. client can call `hfp_hf_enhanced_voice_recognition_report_ready_for_audio directly` upon reception of HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED event.
+- HSP: add ACL Connection to all events and BD ADDR to HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE
 - AVDTP: media config validator is called with preview of media codec configuration event and configured separately for sink/source
 - AVRCP: use PANEL as default unit + subunit info
 - AVRCP Controller: automatically query supported events when registering for notifications 
