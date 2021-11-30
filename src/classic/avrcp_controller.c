@@ -1222,7 +1222,6 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
         case AVCTP_W2_SEND_PRESS_COMMAND:
         case AVCTP_W2_SEND_COMMAND:
         case AVCTP_W2_SEND_RELEASE_COMMAND:
-        case AVCTP_W2_SEND_AVCTP_FRAGMENTED_MESSAGE:
             avrcp_send_cmd_with_avctp_fragmentation(connection);
             
             if (connection->data_offset < connection->data_len){
@@ -1758,7 +1757,7 @@ uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid,
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     
-    connection->state = AVCTP_W2_SEND_AVCTP_FRAGMENTED_MESSAGE;
+    connection->state = AVCTP_W2_SEND_COMMAND;
     avrcp_controller_custom_command_data_init(connection, AVRCP_CMD_OPCODE_VENDOR_DEPENDENT, command_type, subunit_type,
                                               subunit_id, pdu_id, company_id);
 
