@@ -873,7 +873,7 @@ static void avctp_reassemble_message(avrcp_connection_t * connection, avctp_pack
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     if (size < 6u) return;
     uint8_t  pdu_id;
-    avrcp_packet_type_t  vendor_dependent_packet_type;
+    avrcp_packet_type_t  vendor_dependent_avrcp_packet_type;
 
     uint16_t pos = 0;
     connection->controller_last_confirmed_transaction_id = packet[pos] >> 4;
@@ -956,7 +956,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             // Company ID (3)
             pos += 3;
             pdu_id = packet[pos++];
-            vendor_dependent_packet_type = (avrcp_packet_type_t)(packet[pos++] & 0x03);            
+            vendor_dependent_avrcp_packet_type = (avrcp_packet_type_t)(packet[pos++] & 0x03);
             param_length = big_endian_read_16(packet, pos);
             pos += 2;
             
@@ -1129,7 +1129,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
                     // TODO Review
-                    switch (vendor_dependent_packet_type){
+                    switch (vendor_dependent_avrcp_packet_type){
                         case AVRCP_START_PACKET:
                         case AVRCP_SINGLE_PACKET:
                             avrcp_parser_reset(connection);
@@ -1138,7 +1138,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             pos++;
 
                             avrcp_controller_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
-                            if (vendor_dependent_packet_type == AVRCP_START_PACKET){
+                            if (vendor_dependent_avrcp_packet_type == AVRCP_START_PACKET){
                                 avrcp_controller_request_continue_response(connection);
                             }
                             break;
@@ -1149,7 +1149,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             if (connection->controller_num_received_fragments < connection->controller_max_num_fragments){
                                 avrcp_controller_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
 
-                                if (vendor_dependent_packet_type == AVRCP_CONTINUE_PACKET){
+                                if (vendor_dependent_avrcp_packet_type == AVRCP_CONTINUE_PACKET){
                                     avrcp_controller_request_continue_response(connection);
                                 } 
                             } else {
