@@ -59,7 +59,7 @@ SUBDIRS_BLE = \
 	gatt_server \
 	gatt_service \
 	hid_parser \
-	l2cap-le \
+	l2cap-channel \
 	le_device_db_tlv \
 	linked_list \
 	ring_buffer \
