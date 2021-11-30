@@ -9187,6 +9187,43 @@ static inline uint8_t avrcp_subevent_get_capability_company_id_done_get_status(c
 }
 
 /**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_custom_command_response_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field pdu_id from event AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE
+ * @param event packet
+ * @return pdu_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_custom_command_response_get_pdu_id(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field params_len from event AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE
+ * @param event packet
+ * @return params_len
+ * @note: btstack_type L
+ */
+static inline uint16_t avrcp_subevent_custom_command_response_get_params_len(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field params from event AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE
+ * @param event packet
+ * @return params
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_custom_command_response_get_params(const uint8_t * event){
+    return &event[8];
+}
+
+/**
  * @brief Get field bd_addr from event AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION
  * @param event packet
  * @param Pointer to storage for bd_addr

@@ -2948,6 +2948,15 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE                         0x27
 
+/**
+ * @format 121LV
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param pdu_id
+ * @param params_len
+ * @param params
+*/
+#define AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE                               0x28
 
 
 /**

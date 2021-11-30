@@ -121,6 +121,20 @@ static int avrcp_controller_supports_browsing(uint16_t controller_supported_feat
     return controller_supported_features & AVRCP_FEATURE_MASK_BROWSING;
 }
 
+static void avrcp_controller_prepare_custom_command_response(avrcp_connection_t * connection, uint8_t response_len, uint8_t * in_place_buffer){
+    uint8_t pos = 0;
+    in_place_buffer[pos++] = HCI_EVENT_AVRCP_META;
+    // skip len
+    pos++;
+    in_place_buffer[pos++] = AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE;
+    little_endian_store_16(in_place_buffer, pos, connection->avrcp_cid);
+    pos += 2;
+    in_place_buffer[pos++] = connection->pdu_id;
+    little_endian_store_16(in_place_buffer, pos, response_len);
+    pos += 2;
+    in_place_buffer[1] = pos + response_len - 2;
+}
+
 static void avrcp_controller_emit_notification_complete(avrcp_connection_t * connection, uint8_t status, uint8_t event_id, bool enabled){
     uint8_t event[8];
     uint8_t pos = 0;
@@ -1144,6 +1158,14 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     }
                 }
                 default:
+                    // custom command response comes here
+                    if (pdu_id == connection->pdu_id) {
+                        uint8_t *in_place_buffer = packet + pos - 8;
+                        avrcp_controller_prepare_custom_command_response(connection, param_length,
+                                                                         in_place_buffer);
+                        (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, in_place_buffer,
+                                                                   param_length + 8);
+                    }
                     break;
             }
             break;
