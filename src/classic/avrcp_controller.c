@@ -549,6 +549,7 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
 
     uint16_t max_payload_size;
     connection->avctp_packet_type = avctp_get_packet_type(connection, &max_payload_size);
+    connection->avrcp_packet_type = avrcp_get_packet_type(connection);
 
     // non-fragmented: transport header (1) + PID (2)
     // fragmented:     transport header (1) + num packets (1) + PID (2)
@@ -588,7 +589,7 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
                     big_endian_store_24(packet, pos, connection->company_id);
                     pos += 3;
                     packet[pos++] = connection->pdu_id;
-                    packet[pos++] = 0;                       // reserved(upper 6) | packet_type -> 0
+                    packet[pos++] = connection->avrcp_packet_type;              // reserved(upper 6) | AVRCP packet_type
                     big_endian_store_16(packet, pos, connection->data_len);     // parameter length
                     pos += 2;
                     break;
