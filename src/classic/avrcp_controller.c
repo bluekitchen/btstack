@@ -548,24 +548,30 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
     uint8_t * packet = l2cap_get_outgoing_buffer();
 
     uint16_t max_payload_size;
-    avctp_packet_type_t avctp_packet_type = avctp_get_packet_type(connection, &max_payload_size);
+    connection->avctp_packet_type = avctp_get_packet_type(connection, &max_payload_size);
 
     // non-fragmented: transport header (1) + PID (2)
     // fragmented:     transport header (1) + num packets (1) + PID (2)
 
+    uint16_t param_len = connection->data_len;
     // AVCTP header
     // transport header : transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
     uint16_t pos = 0;
     packet[pos++] = (connection->transaction_id << 4) | (connection->avctp_packet_type << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
 
-    switch (avctp_packet_type){
+    if (connection->avctp_packet_type == AVCTP_START_PACKET){
+        uint16_t max_frame_size = btstack_min(connection->l2cap_mtu, AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
+        // first packet: max_payload_size
+        // rest packets
+        uint16_t num_payload_bytes = param_len - max_payload_size;
+        uint16_t frame_size_for_continue_packet = max_frame_size - avctp_get_num_bytes_for_header(AVCTP_CONTINUE_PACKET);
+        uint16_t num_avctp_packets = (num_payload_bytes + frame_size_for_continue_packet - 1)/frame_size_for_continue_packet + 1;
+        packet[pos++] = num_avctp_packets;
+    }
+
+    switch (connection->avctp_packet_type){
         case AVCTP_SINGLE_PACKET:
         case AVCTP_START_PACKET:
-            if (avctp_packet_type == AVCTP_START_PACKET){
-                // num packets
-                packet[pos++] = ((connection->data_len + max_payload_size - 1) / max_payload_size);
-            }
-
             // Profile IDentifier (PID)
             packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
             packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
