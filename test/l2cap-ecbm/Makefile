@@ -43,7 +43,6 @@ COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
 
 all: \
-	build-coverage/l2cap_cbm_test build-asan/l2cap_cbm_test \
 	build-coverage/l2cap_ecbm_test build-asan/l2cap_ecbm_test \
 
 build-%:
@@ -61,12 +60,6 @@ build-asan/%.o: %.c | build-asan
 build-asan/%.o: %.cpp | build-asan
 	${CXX} -c $(CFLAGS_ASAN) $< -o $@
 
-build-coverage/l2cap_cbm_test: ${COMMON_OBJ_COVERAGE} build-coverage/l2cap_cbm_test.o | build-coverage
-	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
-
-build-asan/l2cap_cbm_test: ${COMMON_OBJ_ASAN} build-asan/l2cap_cbm_test.o | build-asan
-	${CXX} $^ ${LDFLAGS_ASAN} -o $@
-
 build-coverage/l2cap_ecbm_test: ${COMMON_OBJ_COVERAGE} build-coverage/l2cap_ecbm_test.o | build-coverage
 	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
@@ -74,12 +67,10 @@ build-asan/l2cap_ecbm_test: ${COMMON_OBJ_ASAN} build-asan/l2cap_ecbm_test.o | bu
 	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
-	build-asan/l2cap_cbm_test
 	build-asan/l2cap_ecbm_test
 
 coverage: all
 	rm -f build-coverage/*.gcda
-	build-coverage/l2cap_cbm_test
 	build-coverage/l2cap_ecbm_test
 
 clean:
