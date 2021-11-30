@@ -2129,7 +2129,7 @@ static void handle_event_for_current_stack_state(const uint8_t * packet, uint16_
     // help with BT sleep
     if ((hci_stack->state == HCI_STATE_FALLING_ASLEEP)
         && (hci_stack->substate == HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE)
-        && HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable)) {
+        && (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable))) {
         hci_initializing_next_state();
     }
 }
