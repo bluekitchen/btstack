@@ -129,7 +129,8 @@ static void avrcp_controller_prepare_custom_command_response(avrcp_connection_t 
     in_place_buffer[pos++] = AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE;
     little_endian_store_16(in_place_buffer, pos, connection->avrcp_cid);
     pos += 2;
-    in_place_buffer[pos++] = connection->pdu_id;
+    in_place_buffer[pos++] = (uint8_t)connection->command_type;
+    in_place_buffer[pos++] = (uint8_t)connection->pdu_id;
     little_endian_store_16(in_place_buffer, pos, response_len);
     pos += 2;
     in_place_buffer[1] = pos + response_len - 2;
@@ -1166,12 +1167,21 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
                 default:
                     // custom command response comes here
-                    if (pdu_id == connection->pdu_id) {
-                        uint8_t *in_place_buffer = packet + pos - 8;
-                        avrcp_controller_prepare_custom_command_response(connection, param_length,
-                                                                         in_place_buffer);
-                        (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, in_place_buffer,
-                                                                   param_length + 8);
+                    switch (pdu_id){
+                        case AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE:
+                            avrcp_controller_emit_now_playing_info_event_done(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, 0);
+                            break;
+                        default:
+                            if (pdu_id != connection->pdu_id) {
+                                break;
+                            }
+                            uint8_t *in_place_buffer = packet + pos - 9;
+                            avrcp_controller_prepare_custom_command_response(connection, param_length,
+                                                                             in_place_buffer);
+                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, in_place_buffer,
+                                                                       param_length + 9);
+
+                            break;
                     }
                     break;
             }

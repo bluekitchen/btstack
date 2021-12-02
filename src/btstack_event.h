@@ -9196,13 +9196,22 @@ static inline uint16_t avrcp_subevent_custom_command_response_get_avrcp_cid(cons
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_custom_command_response_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
  * @brief Get field pdu_id from event AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE
  * @param event packet
  * @return pdu_id
  * @note: btstack_type 1
  */
 static inline uint8_t avrcp_subevent_custom_command_response_get_pdu_id(const uint8_t * event){
-    return event[5];
+    return event[6];
 }
 /**
  * @brief Get field params_len from event AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE
@@ -9211,7 +9220,7 @@ static inline uint8_t avrcp_subevent_custom_command_response_get_pdu_id(const ui
  * @note: btstack_type L
  */
 static inline uint16_t avrcp_subevent_custom_command_response_get_params_len(const uint8_t * event){
-    return little_endian_read_16(event, 6);
+    return little_endian_read_16(event, 7);
 }
 /**
  * @brief Get field params from event AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE
@@ -9220,7 +9229,7 @@ static inline uint16_t avrcp_subevent_custom_command_response_get_params_len(con
  * @note: btstack_type V
  */
 static inline const uint8_t * avrcp_subevent_custom_command_response_get_params(const uint8_t * event){
-    return &event[8];
+    return &event[9];
 }
 
 /**
