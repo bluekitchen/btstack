@@ -2004,6 +2004,11 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 }
 
 static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status){
+    // CC2564C might emit Connection Complete for rejected incoming SCO connection
+    // To prevent accidentally free'ing the CHI connection for the ACL connection,
+    // check if the hci connection has been outgoing
+    if (conn->state != SENT_CREATE_CONNECTION) return;
+
     log_info("Outgoing connection to %s failed", bd_addr_to_str(conn->address));
     bd_addr_t bd_address;
     (void)memcpy(&bd_address, conn->address, 6);
