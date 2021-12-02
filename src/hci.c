@@ -2568,7 +2568,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 // CONNECTION REJECTED DUE TO LIMITED RESOURCES (0X0D)
                 hci_stack->decline_reason = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES;
                 bd_addr_copy(hci_stack->decline_addr, addr);
-                break;
+                hci_run();
+                // avoid event to higher layer
+                return;
             }
             conn->role  = HCI_ROLE_SLAVE;
             conn->state = RECEIVED_CONNECTION_REQUEST;
