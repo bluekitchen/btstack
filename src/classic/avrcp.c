@@ -173,8 +173,10 @@ static const char * avrcp_ctype_name[] = {
     "RESERVED",
     "INTERIM"            
 };
+static const avrcp_ctype_name_num = 16;
+
 const char * avrcp_ctype2str(uint8_t index){
-    if (index < sizeof(avrcp_ctype_name)){
+    if (index < avrcp_ctype_name_num){
         return avrcp_ctype_name[index];
     }
     return "NONE";
