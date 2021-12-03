@@ -1584,7 +1584,7 @@ uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_
     uint8_t i;
     for (i = 0; i < num_attributes; i++){
         // ignore invalid attribute ID and "get all attributes"
-        if (AVRCP_MEDIA_ATTR_ALL > attributes[i] && attributes[i] < AVRCP_MEDIA_ATTR_RESERVED){
+        if (AVRCP_MEDIA_ATTR_ALL < attributes[i] && attributes[i] < AVRCP_MEDIA_ATTR_RESERVED){
             // every attribute is 4 bytes long
             big_endian_store_32(connection->data, pos, attributes[i]);
             pos += 4;  
