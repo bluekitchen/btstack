@@ -1607,7 +1607,9 @@ uint8_t avrcp_controller_get_now_playing_info_for_media_attribute_id(uint16_t av
     if (media_attribute_id == AVRCP_MEDIA_ATTR_ALL){
         return avrcp_controller_get_now_playing_info(avrcp_cid);
     }
-    return avrcp_controller_get_element_attributes(avrcp_cid, 1, &media_attribute_id);
+    avrcp_media_attribute_id_t media_attrs[1];
+    media_attrs[0] = media_attribute_id;
+    return avrcp_controller_get_element_attributes(avrcp_cid, 1, media_attrs);
 }
 
 uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume){
