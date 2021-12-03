@@ -2045,7 +2045,13 @@ static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status
     // CC2564C might emit Connection Complete for rejected incoming SCO connection
     // To prevent accidentally free'ing the CHI connection for the ACL connection,
     // check if the hci connection has been outgoing
-    if (conn->state != SENT_CREATE_CONNECTION) return;
+    switch (conn->state){
+        case SEND_CREATE_CONNECTION:
+        case RECEIVED_CONNECTION_REQUEST:
+            break;
+        default:
+            return;
+    }
 
     log_info("Outgoing connection to %s failed", bd_addr_to_str(conn->address));
     bd_addr_t bd_address;
@@ -2599,6 +2605,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_create_connection)){
                 create_connection_cmd = 1;
             }
+            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_accept_synchronous_connection)){
+                create_connection_cmd = 1;
+            }
 #endif
 #ifdef ENABLE_LE_CENTRAL
             if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_create_connection)){
@@ -2764,12 +2773,15 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:
             reverse_bd_addr(&packet[5], addr);
-            log_info("Synchronous Connection Complete (status=%u) %s", packet[2], bd_addr_to_str(addr));
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
+            log_info("Synchronous Connection Complete for %p (status=%u) %s", conn, packet[2], bd_addr_to_str(addr));
             if (packet[2]){
                 // connection failed
+                if (conn){
+                    hci_handle_connection_failed(conn, packet[2]);
+                }
                 break;
             }
-            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
             if (!conn) {
                 conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
             }
@@ -5227,6 +5239,9 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             // accept_synchronous_connection? Voice setting at offset 18
             // TODO: compare to current setting if sco connection already active
             hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 19);
+            // track outgoing connection
+            hci_stack->outgoing_addr_type = BD_ADDR_TYPE_SCO;
+            reverse_bd_addr(&packet[3], hci_stack->outgoing_addr);
             break;
 #endif
 #endif
