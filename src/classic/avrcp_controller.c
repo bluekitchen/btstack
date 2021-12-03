@@ -953,29 +953,28 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             break;
         }
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
+            if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
+            connection->state = AVCTP_CONNECTION_OPENED;
 
-            if ((size - pos) < 7) return;
-
+            if ((size - pos) < 7){
+                return;
+            }
             // Company ID (3)
             pos += 3;
             pdu_id = packet[pos++];
             vendor_dependent_avrcp_packet_type = (avrcp_packet_type_t)(packet[pos++] & 0x03);
             param_length = big_endian_read_16(packet, pos);
             pos += 2;
-            
-            if ((size - pos) < param_length) return;
+
+            if ((size - pos) < param_length) {
+                return;
+            }
 
             // handle asynchronous notifications, without changing state
             if (pdu_id == AVRCP_PDU_ID_REGISTER_NOTIFICATION){
                 avrcp_controller_handle_notification(connection, ctype, packet + pos, size - pos);
                 break;
             }
-
-            if (connection->state != AVCTP_W2_RECEIVE_RESPONSE){
-                log_info("AVRCP_CMD_OPCODE_VENDOR_DEPENDENT state %d", connection->state);
-                return;
-            } 
-            connection->state = AVCTP_CONNECTION_OPENED;
 
             log_info("VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d, status %s", pdu_id, param_length, avrcp_ctype2str(ctype));
             switch (pdu_id){
@@ -1131,7 +1130,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
                 
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
-                    // TODO Review
                     switch (vendor_dependent_avrcp_packet_type){
                         case AVRCP_START_PACKET:
                         case AVRCP_SINGLE_PACKET:
@@ -1143,6 +1141,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             avrcp_controller_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
                             if (vendor_dependent_avrcp_packet_type == AVRCP_START_PACKET){
                                 avrcp_controller_request_continue_response(connection);
+                                return;
                             }
                             break;
                         case AVRCP_CONTINUE_PACKET:
@@ -1154,15 +1153,16 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
                                 if (vendor_dependent_avrcp_packet_type == AVRCP_CONTINUE_PACKET){
                                     avrcp_controller_request_continue_response(connection);
+                                    return;
                                 } 
                             } else {
                                 avrcp_controller_emit_now_playing_info_event_done(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, 1);
                                 avrcp_parser_reset(connection);
                                 avrcp_controller_request_abort_continuation(connection);
+                                return;
                             }
                             break;
                         default:
-                            // TODO check
                             btstack_assert(false);
                             break;
                     }
