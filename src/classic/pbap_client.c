@@ -1033,15 +1033,16 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                     case OBEX_RESP_SUCCESS:
                         if (pbap_client->phonebook_size_parser.have_size) {
                             uint16_t phonebook_size = big_endian_read_16(pbap_client->phonebook_size_parser.size_buffer, 0);
+                            pbap_client->state = PBAP_CONNECTED;
                             pbap_client_emit_phonebook_size_event(pbap_client, 0, phonebook_size);
                             break;
                         }
                         /* fall through */
                     default:
+                        pbap_client->state = PBAP_CONNECTED;
                         pbap_client_emit_phonebook_size_event(pbap_client, OBEX_UNKNOWN_ERROR, 0);
                         break;
                 }
-                pbap_client->state = PBAP_CONNECTED;
                 break;
             case PBAP_W4_GET_CARD_LIST_COMPLETE:
                 switch (op_info.response_code) {
