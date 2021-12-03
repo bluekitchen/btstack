@@ -88,8 +88,10 @@ static void avrcp_controller_custom_command_data_init(avrcp_connection_t * conne
     connection->data_len = 0;
 }
 
-static void avrcp_controller_vendor_dependent_command_data_init(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_pdu_id_t pdu_id){
-    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
+static void avrcp_controller_vendor_dependent_command_data_init(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_pdu_id_t pdu_id, bool get_next_transaction_label){
+    if (get_next_transaction_label){
+        connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
+    }
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = AVRCP_SUBUNIT_ID;
@@ -722,7 +724,7 @@ static uint8_t request_continuous_pass_through_press_control_cmd(uint16_t avrcp_
 
 static void avrcp_controller_get_capabilities_for_connection(avrcp_connection_t * connection, uint8_t capability_id){
     connection->state = AVCTP_W2_SEND_COMMAND;
-    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_CAPABILITIES);
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_CAPABILITIES, true);
 
     // Parameter Length
     connection->data_len = 1;
@@ -754,7 +756,7 @@ static uint8_t avrcp_controller_register_notification(avrcp_connection_t * conne
 
 static uint8_t avrcp_controller_request_continuation(avrcp_connection_t * connection, avrcp_pdu_id_t pdu_id){
     connection->state = AVCTP_W2_SEND_COMMAND;
-    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, pdu_id);
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, pdu_id, false);
 
     // Parameter Length
     connection->data_len = 3;
@@ -1529,7 +1531,7 @@ uint8_t avrcp_controller_get_play_status(uint16_t avrcp_cid){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
 
     connection->state = AVCTP_W2_SEND_COMMAND;
-    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_PLAY_STATUS);
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_PLAY_STATUS, true);
 
     connection->data_len = 0;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -1544,7 +1546,7 @@ uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addre
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
 
     connection->state = AVCTP_W2_SEND_COMMAND;
-    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_SET_ADDRESSED_PLAYER);
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_SET_ADDRESSED_PLAYER, true);
 
     connection->data_len = 2;
     big_endian_store_16(connection->data, 0, addressed_player_id);
@@ -1566,7 +1568,7 @@ uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_
     }
 
     connection->state = AVCTP_W2_SEND_COMMAND;
-    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES);
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES, true);
 
     uint8_t pos = 0;
     // write 8 bytes value
@@ -1639,7 +1641,7 @@ uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume)
     if (status != ERROR_CODE_SUCCESS) return status;
 
     connection->state = AVCTP_W2_SEND_COMMAND;
-    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME);
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME, true);
 
     // Parameter Length
     connection->data_len = 1;
@@ -1657,7 +1659,7 @@ uint8_t avrcp_controller_query_shuffle_and_repeat_modes(uint16_t avrcp_cid){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     
     connection->state = AVCTP_W2_SEND_COMMAND;
-    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_CURRENT_PLAYER_APPLICATION_SETTING_VALUE);
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_CURRENT_PLAYER_APPLICATION_SETTING_VALUE, true);
 
     connection->data_len = 5;
     connection->data[0] = 4;                     // NumPlayerApplicationSettingAttributeID
@@ -1679,7 +1681,7 @@ static uint8_t avrcp_controller_set_current_player_application_setting_value(uin
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     
     connection->state = AVCTP_W2_SEND_COMMAND;
-    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_SET_PLAYER_APPLICATION_SETTING_VALUE);
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_SET_PLAYER_APPLICATION_SETTING_VALUE, true);
 
     // Parameter Length
     connection->data_len = 3;
@@ -1711,7 +1713,7 @@ uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, 
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
     connection->state = AVCTP_W2_SEND_COMMAND;
-    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_PLAY_ITEM);
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_PLAY_ITEM, true);
 
     // Parameter Length
     connection->data_len = 11;
@@ -1737,7 +1739,7 @@ uint8_t avrcp_controller_add_item_from_scope_to_now_playing_list(uint16_t avrcp_
     } 
     
     connection->state = AVCTP_W2_SEND_COMMAND;
-    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_ADD_TO_NOW_PLAYING);
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_ADD_TO_NOW_PLAYING, true);
 
     // Parameter Length
     connection->data_len = 11;
