@@ -31,5 +31,6 @@ int main(void){
 
 	// test invalid key len
 	uint32_t rk[RKLENGTH(KEYBITS)];
-	btstack_assert(rijndaelSetupEncrypt(rk, &key[0], 0) == 0);
+    int result = rijndaelSetupEncrypt(rk, &key[0], 0);
+    btstack_assert(result == 0);
 }
