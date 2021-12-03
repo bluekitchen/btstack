@@ -4800,8 +4800,9 @@ static bool hci_run_general_pending_commands(void){
                     log_info("sending hci_accept_connection_request");
                     connection->state = ACCEPTED_CONNECTION_REQUEST;
                     hci_send_cmd(&hci_accept_connection_request, connection->address, hci_stack->master_slave_policy);
+                    return true;
                 }
-                return true;
+                break;
 #endif
 
 #ifdef ENABLE_BLE
