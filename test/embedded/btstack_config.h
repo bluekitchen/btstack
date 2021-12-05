@@ -9,7 +9,7 @@
 #define HAVE_BTSTACK_STDIN
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
-#define HAVE_POSIX_TIME
+#define HAVE_EMBEDDED_TIME_MS
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
