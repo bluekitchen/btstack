@@ -243,6 +243,7 @@ static int transport_open(void){
 
         esp_vhci_host_register_callback(&vhci_host_cb);
     }
+#if CONFIG_BTDM_CTRL_MODE_BTDM
 
     // enable dual mode
     ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
@@ -250,6 +251,17 @@ static int transport_open(void){
         log_error("transport: esp_bt_controller_enable failed");
         return -1;
     }
+
+#elif 
+
+    // enable classic mode
+    ret = esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT);
+    if (ret) {
+        log_error("transport: esp_bt_controller_enable failed");
+        return -1;
+    }
+
+#endif
 
     return 0;
 }
