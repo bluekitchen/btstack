@@ -2760,7 +2760,12 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     // restart timer
                     btstack_run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
                     btstack_run_loop_add_timer(&conn->timeout);
-                    
+
+                    // trigger remote features for dedicated bonding
+                    if ((conn->bonding_flags & BONDING_DEDICATED) != 0){
+                        hci_trigger_remote_features_for_connection(conn);
+                    }
+
                     log_info("New connection: handle %u, %s", conn->con_handle, bd_addr_to_str(conn->address));
                     
                     hci_emit_nr_connections_changed();
