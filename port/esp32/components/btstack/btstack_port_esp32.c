@@ -385,7 +385,10 @@ uint8_t btstack_init(void){
 
     // setup i2s audio sink
     btstack_audio_sink_set_instance(btstack_audio_esp32_sink_get_instance());
-
+    
+	// setup i2s audio source
+	btstack_audio_source_set_instance(btstack_audio_esp32_source_get_instance());
+    
     return ERROR_CODE_SUCCESS;
 }
 
