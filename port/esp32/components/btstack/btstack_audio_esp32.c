@@ -187,7 +187,7 @@ static int btstack_audio_esp32_sink_init(
                     .bck_io_num           = 26,
                     .ws_io_num            = 25,
                     .data_out_num         = 22,
-                    .data_in_num          = I2S_PIN_NO_CHANGE 
+                    .data_in_num          = I2S_PIN_NO_CHANGE
             };
 #endif
 
@@ -417,7 +417,7 @@ static void btstack_audio_esp32_source_set_volume(uint8_t volume){
 
 static const btstack_audio_source_t btstack_audio_source_esp32 = {
     /* int (*init)(..);*/                                       &btstack_audio_esp32_source_init,
-    /* void (*set_volume(uint8_t)); */							&btstack_audio_esp32_source_set_volume,
+    /* void (*set_volume(uint8_t)); */				&btstack_audio_esp32_source_set_volume,
     /* void (*start_stream(void));*/                            &btstack_audio_esp32_source_start_stream,
     /* void (*stop_stream)(void)  */                            &btstack_audio_esp32_source_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_esp32_source_close
