@@ -133,9 +133,9 @@ static void show_usage(void);
 static void update_advertisements(void);
 
 
-static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
+// static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
 // static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x06, 0x07, 0x5F};
-// static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x72};
+static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x72};
 static int tester_address_type = 0;
 
 // general discoverable flags
@@ -742,7 +742,7 @@ void show_usage(void){
     printf("6   - AD Services             | - - AD Appearance\n");
     printf("---\n");
     printf("p/P - privacy flag off\n");
-    printf("F   - delete bonding information");
+    printf("F   - delete bonding information\n");
     printf("s   - send security request\n");
     printf("z   - send Connection Parameter Update Request\n");
     printf("Z   - terminate connection\n");
@@ -754,6 +754,7 @@ void show_usage(void){
     printf("g   - IO_CAPABILITY_NO_INPUT_NO_OUTPUT\n");
     printf("h   - IO_CAPABILITY_KEYBOARD_ONLY\n");
     printf("i   - IO_CAPABILITY_KEYBOARD_DISPLAY\n");
+    printf("E   - Reject SSP bonding\n");
     printf("o/O - OOB data off/on ('%s')\n", sm_oob_data);
     printf("m/M - MITM protection off\n");
     printf("k/k - encryption key range [7..16]/[16..16]\n");
@@ -1028,27 +1029,26 @@ static void stdin_process(char c){
         case 'e':
             sm_io_capabilities = "IO_CAPABILITY_DISPLAY_ONLY";
             sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
-            // show_usage();
             break;
         case 'f':
             sm_io_capabilities = "IO_CAPABILITY_DISPLAY_YES_NO";
             sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
-            // show_usage();
             break;
         case 'g':
             sm_io_capabilities = "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
             sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-            // show_usage();
             break;
         case 'h':
             sm_io_capabilities = "IO_CAPABILITY_KEYBOARD_ONLY";
             sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_ONLY);
-            // show_usage();
             break;
         case 'i':
             sm_io_capabilities = "IO_CAPABILITY_KEYBOARD_DISPLAY";
             sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_DISPLAY);
-            // show_usage();
+            break;
+        case 'E':
+            printf("Reject SSP bonding\n");
+            gap_ssp_set_io_capability(SSP_IO_CAPABILITY_UNKNOWN);
             break;
         case 'Z':
             printf("Terminating connection\n");
@@ -1070,39 +1070,31 @@ static void stdin_process(char c){
             break;
         case 'p':
             gap_privacy = 0;
-            // show_usage();
             break;
         case 'P':
             gap_privacy = 1;
-            // show_usage();
             break;
         case 'o':
             sm_have_oob_data = 0;
-            // show_usage();
             break;
         case 'O':
             sm_have_oob_data = 1;
-            // show_usage();
             break;
         case 'k':
             sm_min_key_size = 7;
             sm_set_encryption_key_size_range(7, 16);
-            // show_usage();
             break;
         case 'K':
             sm_min_key_size = 16;
             sm_set_encryption_key_size_range(16, 16);
-            // show_usage();
             break;
         case 'm':
             sm_mitm_protection = 0;
             update_auth_req();
-            // show_usage();
             break;
         case 'M':
             sm_mitm_protection = 1;
             update_auth_req();
-            // show_usage();
             break;
         case 'j':
             printf("Create L2CAP Connection to %s\n", bd_addr_to_str(tester_address));
@@ -1188,8 +1180,9 @@ int btstack_main(int argc, const char * argv[]){
     hci_disable_l2cap_timeout_check();
 
     // provide L2CAP Service
-    gap_set_security_level(LEVEL_3);
-    l2cap_register_service(l2cap_packet_handler, 0x1001, 100, LEVEL_3);
+    gap_security_level_t security_level = LEVEL_2;
+    gap_set_security_level(security_level);
+    l2cap_register_service(l2cap_packet_handler, 0x1001, 100, security_level);
 
     // register for HCI Events
     hci_event_callback_registration.callback = &app_packet_handler;
