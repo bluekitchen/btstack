@@ -587,12 +587,10 @@ uint8_t avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t s
     return ERROR_CODE_SUCCESS;
 }
 
-// TODO Review
 static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
     if (connection->state != AVCTP_CONNECTION_OPENED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    connection->state = AVCTP_W2_SEND_RESPONSE;
 
     avrcp_target_custom_command_data_init(connection,
                                           AVRCP_CMD_OPCODE_UNIT_INFO, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE,
@@ -606,17 +604,15 @@ static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
     connection->data[1] = (connection->target_unit_type << 4) | unit;
     // company id is 3 bytes long
     big_endian_store_24(connection->data, 2, connection->company_id);
-    
+
+    connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
 
-// TODO Review
 static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_t offset){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     if (offset >= 32) return AVRCP_STATUS_INVALID_PARAMETER;
-
-    connection->state = AVCTP_W2_SEND_RESPONSE;
 
     avrcp_target_custom_command_data_init(connection, AVRCP_CMD_OPCODE_SUBUNIT_INFO,
                                           AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE,
@@ -636,6 +632,7 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
         memcpy(&connection->data[1], &connection->target_subunit_info_data[offset], bytes_to_copy);
     }
 
+    connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -1295,15 +1292,16 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             }
 
             if (connection->state == AVCTP_W2_SEND_RESPONSE){
-                // START AVCTP
+                // start AVCTP
                 if (connection->target_reject_transport_header){
                     connection->target_reject_transport_header = false;
                     avctp_send_reject_cmd_wrong_pid(connection);
                     connection->state = AVCTP_CONNECTION_OPENED;
                     return;
                 }
-                // END AVCTP
+                // end AVCTP
 
+                // start AVRCP
                 if (connection->target_abort_continue_response){
                     connection->target_abort_continue_response = false;
                     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_ACCEPTED, AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE);
@@ -1328,7 +1326,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                 // data already prepared
                 break;
             }
-            
 
             // Notifications
 
@@ -1338,7 +1335,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                 avrcp_target_notification_init(connection, notification_id, connection->target_track_id, 8);
                 break;
             }
-            
+
             if (connection->target_playback_status_changed){
                 connection->target_playback_status_changed = false;
                 notification_id = AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED;
