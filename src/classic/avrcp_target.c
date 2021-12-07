@@ -749,7 +749,7 @@ uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_stat
     return ERROR_CODE_SUCCESS;
 }
 
-static void avrcp_target_register_track_changed(avrcp_connection_t * connection, uint8_t * track_id){
+static void avrcp_target_register_track_changed(avrcp_connection_t * connection, const uint8_t * track_id){
     if (track_id == NULL){
         memset(connection->target_track_id, 0xFF, 8);
         connection->target_track_selected = false;
@@ -1225,14 +1225,12 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 }
 
 static void avrcp_target_notification_init(avrcp_connection_t * connection, avrcp_notification_event_id_t notification_id, uint8_t * value, uint16_t value_len){
-    btstack_assert((value_len == 0) || (value != NULL));
-
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_CHANGED_STABLE, AVRCP_PDU_ID_REGISTER_NOTIFICATION);
     connection->transaction_id = avrcp_target_get_transaction_label_for_notification(connection, notification_id);
 
     connection->data_len = 1 + value_len;
     connection->data[0] = notification_id;
-    if (value_len > 0){
+    if (value != NULL){
         (void)memcpy(connection->data + 1, value, value_len);
     }
 }
@@ -1346,7 +1344,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             if (connection->target_playing_content_changed){
                 connection->target_playing_content_changed = false;
                 notification_id = AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED;
-                avrcp_target_notification_init(connection, notification_id, NULL, avrcp_now_playing_info_value_len_with_headers(connection));
+                avrcp_target_notification_init(connection, notification_id, NULL, 0);
                 break;
             }
             
