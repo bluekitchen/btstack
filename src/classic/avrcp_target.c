@@ -1303,6 +1303,10 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             } 
             // END AVCTP
 
+            if (connection->state == AVCTP_W2_SEND_RESPONSE){
+                break;
+            }
+
             if (connection->target_accept_response){
                 connection->target_accept_response = false;
                 avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_ACCEPTED, AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE);
