@@ -1275,7 +1275,6 @@ static void avrcp_request_next_avctp_segment(avrcp_connection_t * connection){
 
 static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avrcp_connection_t * connection;
-    bool send_response = true;
     avrcp_notification_event_id_t notification_id = AVRCP_NOTIFICATION_EVENT_NONE;
 
     switch (packet_type){
@@ -1304,6 +1303,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             // END AVCTP
 
             if (connection->state == AVCTP_W2_SEND_RESPONSE){
+                // data already prepared
                 break;
             }
 
@@ -1377,18 +1377,16 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                 break;
             }
 
-            send_response = false;
-            break;
+            // nothing to send, exit
+            return;
 
         default:
             return;
     }   
 
-    if (connection != NULL && (send_response || connection->state == AVCTP_W2_SEND_RESPONSE)){
-        avrcp_send_response_with_avctp_fragmentation(connection);
-        avrcp_target_reset_notification(connection, notification_id);
-        avrcp_request_next_avctp_segment(connection);
-    }
+    avrcp_send_response_with_avctp_fragmentation(connection);
+    avrcp_target_reset_notification(connection, notification_id);
+    avrcp_request_next_avctp_segment(connection);
 }
 
 void avrcp_target_init(void){
