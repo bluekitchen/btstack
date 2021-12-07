@@ -147,7 +147,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
             uint8_t transport_header = packet[pos++];
             // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
             browsing_connection->transaction_label = transport_header >> 4;
-            avrcp_packet_type_t avctp_packet_type = (transport_header & 0x0F) >> 2;
+            avctp_packet_type_t avctp_packet_type = (avctp_packet_type_t)((transport_header & 0x0F) >> 2);
             switch (avctp_packet_type){
                 case AVCTP_SINGLE_PACKET:
                 case AVCTP_START_PACKET:
