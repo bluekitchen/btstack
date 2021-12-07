@@ -173,7 +173,7 @@ static const char * avrcp_ctype_name[] = {
     "RESERVED",
     "INTERIM"            
 };
-static const avrcp_ctype_name_num = 16;
+static const uint16_t avrcp_ctype_name_num = 16;
 
 const char * avrcp_ctype2str(uint8_t index){
     if (index < avrcp_ctype_name_num){
@@ -810,6 +810,7 @@ static void avrcp_handle_open_connection(avrcp_connection_t * connection, hci_co
     connection->target_song_position_ms = 0xFFFFFFFF;
     memset(connection->target_track_id, 0xFF, 8);
     connection->target_track_selected = false;
+    connection->target_track_changed = false;
     connection->target_playback_status = AVRCP_PLAYBACK_STATUS_STOPPED;
     connection->state = AVCTP_CONNECTION_OPENED;
     

@@ -749,6 +749,30 @@ uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_stat
     return ERROR_CODE_SUCCESS;
 }
 
+static void avrcp_target_register_track_changed(avrcp_connection_t * connection, uint8_t * track_id){
+    if (track_id == NULL){
+        memset(connection->target_track_id, 0xFF, 8);
+        connection->target_track_selected = false;
+    } else {
+        (void)memcpy(connection->target_track_id, track_id, 8);
+        connection->target_track_selected = true;
+    }
+
+    if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED)) {
+        connection->target_track_changed = true;
+        avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    }
+}
+
+uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    avrcp_target_register_track_changed(connection, track_id);
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t * current_track, uint16_t total_tracks){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
@@ -767,35 +791,10 @@ uint8_t avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_
     avrcp_target_store_media_attr(connection, AVRCP_MEDIA_ATTR_ALBUM, current_track->album);
     avrcp_target_store_media_attr(connection, AVRCP_MEDIA_ATTR_GENRE, current_track->genre);
 
-    connection->target_track_selected = true;
-
-    if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED)) {
-        connection->target_track_changed = true;
-        avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-    }
+    avrcp_target_register_track_changed(connection, current_track->track_id);
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
-    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
-    if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
-    }
-
-    if (track_id == NULL){
-        memset(connection->target_track_id, 0xFF, 8);
-        connection->target_track_selected = false;
-    } else {
-        (void)memcpy(connection->target_track_id, track_id, 8);
-        connection->target_track_selected = true;
-    }
-    
-    if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED)) {
-        connection->target_track_changed = true;
-        avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-    }
-    return ERROR_CODE_SUCCESS;
-}
 
 uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
