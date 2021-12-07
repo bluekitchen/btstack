@@ -993,6 +993,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
         log_info("Invalid pid 0x%02x, expected 0x%02x", pid, BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL);
         connection->target_reject_transport_header = true;
         connection->target_invalid_pid = pid;
+        connection->state = AVCTP_W2_SEND_RESPONSE;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
         return;
     }
@@ -1096,8 +1097,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 case AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE:
                     if ((pos + 1) > size) return;
-                    connection->message_body[0] = packet[pos];
                     connection->target_abort_continue_response = true;
+                    connection->state = AVCTP_W2_SEND_RESPONSE;
                     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                     break;
                 case AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE:
@@ -1108,6 +1109,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     }
                     connection->target_continue_response = true;
                     connection->target_now_playing_info_response = true;
+                    connection->state = AVCTP_W2_SEND_RESPONSE;
                     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                     break;
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
@@ -1137,6 +1139,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     }
                     log_info("target_now_playing_info_attr_bitmap 0x%02x", connection->target_now_playing_info_attr_bitmap);
                     connection->target_now_playing_info_response = true;
+                    connection->state = AVCTP_W2_SEND_RESPONSE;
                     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                     break;
                 }
@@ -1291,47 +1294,44 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                 return;
             }
 
-            // START AVCTP
-            if (connection->target_reject_transport_header){
-                connection->target_reject_transport_header = false;
-                avctp_send_reject_cmd_wrong_pid(connection);
-                connection->state = AVCTP_CONNECTION_OPENED;
-                return;
-            } 
-            // END AVCTP
-
             if (connection->state == AVCTP_W2_SEND_RESPONSE){
+                // START AVCTP
+                if (connection->target_reject_transport_header){
+                    connection->target_reject_transport_header = false;
+                    avctp_send_reject_cmd_wrong_pid(connection);
+                    connection->state = AVCTP_CONNECTION_OPENED;
+                    return;
+                }
+                // END AVCTP
+
+                if (connection->target_abort_continue_response){
+                    connection->target_abort_continue_response = false;
+                    avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_ACCEPTED, AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE);
+                    break;
+                }
+
+                if (connection->target_now_playing_info_response){
+                    connection->target_now_playing_info_response = false;
+                    if (connection->target_continue_response){
+                        connection->target_continue_response = false;
+                        if (connection->data_len == 0){
+                            avrcp_target_response_vendor_dependent_reject(connection, connection->pdu_id, AVRCP_STATUS_INVALID_PARAMETER);
+                            return;
+                        }
+                    } else {
+                        avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES);
+                        connection->data_len = avrcp_now_playing_info_value_len_with_headers(connection);
+                    }
+                    break;
+                }
+
                 // data already prepared
                 break;
             }
-
-            if (connection->target_accept_response){
-                connection->target_accept_response = false;
-                avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_ACCEPTED, AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE);
-                break;
-            }
-
-            if (connection->target_abort_continue_response){
-                connection->target_abort_continue_response = false;
-                avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_ACCEPTED, AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE);
-                break;
-            }
-
-            if (connection->target_now_playing_info_response){
-                connection->target_now_playing_info_response = false;
-                if (connection->target_continue_response){
-                    if (connection->data_len == 0){
-                        avrcp_target_response_vendor_dependent_reject(connection, connection->pdu_id, AVRCP_STATUS_INVALID_PARAMETER);
-                        return;
-                    }
-                    connection->target_continue_response = false;
-                } else {
-                    avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES);
-                    connection->data_len = avrcp_now_playing_info_value_len_with_headers(connection);
-                }
-                break;
-            }
             
+
+            // Notifications
+
             if (connection->target_track_changed){
                 connection->target_track_changed = false;
                 notification_id = AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED;
