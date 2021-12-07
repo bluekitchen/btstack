@@ -1,0 +1,74 @@
+[00:02:00.603] LOG -- hci.c.2309: LE Connection_complete (status=0) type 1, 72:02:36:03:39:1A
+[00:02:00.605] LOG -- hci.c.203: create_connection_for_addr 72:02:36:03:39:1A, type 1
+[00:02:00.607] LOG -- hci.c.1221: state 7, role 1, le_con 1
+[00:02:00.608] LOG -- hci.c.1227: Num LE Peripheral roles: 1 of 1
+[00:02:00.610] LOG -- hci.c.2386: New connection: handle 73, 72:02:36:03:39:1A
+[00:02:00.611] LOG -- hci.c.5410: BTSTACK_EVENT_NR_CONNECTIONS_CHANGED 1
+[00:02:00.613] LOG -- sm.c.3501: sm: connected
+[00:02:00.614] LOG -- att_server.c.405: SM_EVENT_IDENTITY_RESOLVING_STARTED
+[00:02:00.615] LOG -- sm.c.2130: LE Device Lookup: device 0/16
+[00:02:00.617] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.618] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.620] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.621] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.623] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.624] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.626] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.627] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.628] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.630] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.631] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.633] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.634] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.636] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.637] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.639] LOG -- sm.c.2136: device type 254, addr: 00:00:00:00:00:00
+[00:02:00.640] LOG -- sm.c.2170: LE Device Lookup: not found
+[00:02:00.642] LOG -- att_server.c.423: SM_EVENT_IDENTITY_RESOLVING_FAILED
+[00:02:00.770] LOG -- att_db.c.555: ATT_READ_BY_TYPE_REQUEST: from 0008 to 000A, type: 
+[00:02:00.772] LOG -- btstack_util.c.258: 0x03, 0x28, 
+[00:02:02.810] LOG -- att_db.c.555: ATT_READ_BY_TYPE_REQUEST: from 0001 to 0003, type: 
+[00:02:02.812] LOG -- btstack_util.c.258: 0x00, 0x2A, 
+[00:03:12.919] LOG -- att_db.c.677: ATT_READ_REQUEST: handle 0006
+[00:03:29.029] LOG -- att_db.c.677: ATT_READ_REQUEST: handle 0006
+[00:03:30.949] LOG -- att_server.c.905: Store CCC value 0x0001 for handle 0x0007 of remote 72:02:36:03:39:1A, le device id -1
+[00:03:59.059] LOG -- att_server.c.905: Store CCC value 0x0000 for handle 0x0007 of remote 72:02:36:03:39:1A, le device id -1
+[00:05:14.569] LOG -- att_server.c.905: Store CCC value 0x0001 for handle 0x0007 of remote 72:02:36:03:39:1A, le device id -1
+[00:05:50.779] LOG -- att_db.c.677: ATT_READ_REQUEST: handle 0007
+[00:06:00.289] LOG -- att_server.c.905: Store CCC value 0x0001 for handle 0x000e of remote 72:02:36:03:39:1A, le device id -1
+BTstack counter 0002
+BTstack counter 0003
+BTstack counter 0004
+BTstack counter 0005
+BTstack counter 0006
+BTstack counter 0007
+BTstack counter 0008
+BTstack counter 0009
+BTstack counter 0010
+BTstack counter 0011
+BTstack counter 0012
+BTstack counter 0013
+BTstack counter 0014
+BTstack counter 0015
+BTstack counter 0016
+BTstack counter 0017
+BTstack counter 0018
+BTstack counter 0019
+BTstack counter 0020
+BTstack counter 0021
+[00:06:20.059] LOG -- att_server.c.905: Store CCC value 0x0000 for handle 0x000e of remote 72:02:36:03:39:1A, le device id -1
+[00:06:22.519] LOG -- att_db.c.677: ATT_READ_REQUEST: handle 000e
+[00:06:24.049] LOG -- att_db.c.677: ATT_READ_REQUEST: handle 000e
+[00:06:32.539] LOG -- att_server.c.905: Store CCC value 0x0001 for handle 0x000e of remote 72:02:36:03:39:1A, le device id -1
+BTstack counter 0022
+BTstack counter 0023
+BTstack counter 0024
+BTstack counter 0025
+BTstack counter 0026
+BTstack counter 0027
+BTstack counter 0028
+[00:06:40.099] LOG -- att_server.c.905: Store CCC value 0x0000 for handle 0x000e of remote 72:02:36:03:39:1A, le device id -1
+[00:12:22.219] LOG -- hci.c.1221: state 10, role 1, le_con 1
+[00:12:22.220] LOG -- hci.c.1227: Num LE Peripheral roles: 0 of 1
+[00:12:22.222] LOG -- hci.c.1014: Connection closed: handle 0x49, 72:02:36:03:39:1A
+[00:12:22.223] LOG -- hci.c.5410: BTSTACK_EVENT_NR_CONNECTIONS_CHANGED 0

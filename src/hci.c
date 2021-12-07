@@ -1720,7 +1720,7 @@ static bool hci_initializing_event_handler_command_completed(const uint8_t * pac
 static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size){
 
     UNUSED(size);   // ok: less than 6 bytes are read from our buffer
-    
+    //log_info("hci_stack_substate = %d", hci_stack->substate);
     bool command_completed =  hci_initializing_event_handler_command_completed(packet);
 
 #if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)

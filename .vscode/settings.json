@@ -23,4 +23,6 @@
     "btstack_port.h": "c"
 },
 "cortex-debug.variableUseNaturalFormat": false,
+
+"terminal.integrated.Shell.windows": "D:\\tools\\study_tool\\git bush\\Git\\bin\\bash.exe",
 }

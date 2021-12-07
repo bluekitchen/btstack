@@ -141,9 +141,10 @@ endif
 #C_SOURCES += ${BTSTACK_ROOT}/3rd-party/md5/md5.c
 C_SOURCES += ${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c
 #C_SOURCES += ${BTSTACK_ROOT}/example/gap_le_advertisements.c
-C_SOURCES += ${BTSTACK_ROOT}/example/gap_link_keys.c
+#C_SOURCES += ${BTSTACK_ROOT}/example/gap_link_keys.c
 #C_SOURCES += ${BTSTACK_ROOT}/example/hid_mouse_demo.c
 #C_SOURCES += ${BTSTACK_ROOT}/example/gatt_device_information_query.c
+C_SOURCES += ${BTSTACK_ROOT}/example/gatt_counter.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_audio.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_crypto.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_hid_parser.c
@@ -340,7 +341,7 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
-EXAMPLES = gap_link_keys
+EXAMPLES = gatt_counter
 
 #ifeq (${EXAMPLE_PLUS_ENABLE}, y)
 #EXAMPLES += 				\

@@ -201,6 +201,7 @@ void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
 int  hal_uart_dma_set_baud(uint32_t baud){
 	huart2.Init.BaudRate = baud;
 	HAL_UART_Init(&huart2);
+	//HAL_Delay( 500 );
 	return 0;
 }
 
