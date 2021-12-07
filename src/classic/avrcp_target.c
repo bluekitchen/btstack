@@ -459,7 +459,6 @@ static void avrcp_target_vendor_dependent_response_data_init(avrcp_connection_t 
     connection->data_offset = 0;
     connection->data_len = 0;
     connection->avrcp_frame_bytes_sent = 0;
-    connection->state = AVCTP_W2_SEND_RESPONSE;
 }
 
 static void avrcp_target_pass_through_command_data_init(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_operation_id_t opid){
@@ -512,7 +511,6 @@ static uint8_t avrcp_target_response_vendor_dependent_not_implemented(avrcp_conn
 
 static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t * connection, avrcp_pdu_id_t pdu_id, uint8_t event_id, const uint8_t * value, uint16_t value_len){
     btstack_assert(value_len + 1 < AVRCP_MAX_COMMAND_PARAMETER_LENGTH);
-
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_INTERIM, pdu_id);
     connection->data_len = 1 + value_len;
     connection->data[0] = event_id;
@@ -644,8 +642,7 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
 
 static uint8_t avrcp_target_response_vendor_dependent_supported_events(avrcp_connection_t * connection){
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, AVRCP_PDU_ID_GET_CAPABILITIES);
-    connection->state = AVCTP_W2_SEND_RESPONSE;
-    
+
     uint8_t event_id;
     uint8_t num_events = 0;
     for (event_id = (uint8_t) AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; event_id < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; event_id++){
@@ -660,13 +657,13 @@ static uint8_t avrcp_target_response_vendor_dependent_supported_events(avrcp_con
     connection->data_len = 2 + num_events;
     
     // fill the data later directly to the L2CAP outgoing buffer
+    connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
 
 static uint8_t avrcp_target_response_vendor_dependent_supported_companies(avrcp_connection_t * connection){
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, AVRCP_PDU_ID_GET_CAPABILITIES);
-    connection->state = AVCTP_W2_SEND_RESPONSE;
 
     connection->data[0] = AVRCP_CAPABILITY_ID_COMPANY;
     if (connection->target_supported_companies_num == 0){
@@ -679,6 +676,7 @@ static uint8_t avrcp_target_response_vendor_dependent_supported_companies(avrcp_
 
     // fill the data later directly to the L2CAP outgoing buffer and
     // use Bluetooth SIG as default company
+    connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -723,7 +721,7 @@ uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, ui
     big_endian_store_32(connection->data, 0, song_length_ms);
     big_endian_store_32(connection->data, 4, song_position_ms);
     connection->data[8] = play_status;
-    
+
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
