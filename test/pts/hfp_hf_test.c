@@ -69,6 +69,7 @@ static const int wide_band_speech = 1;
     
 #ifdef HAVE_BTSTACK_STDIN
 // static const char * device_addr_string = "6C:72:E7:10:22:EE";
+// static const char * device_addr_string = "00:80:98:09:0B:32";
 static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 #endif
 
@@ -424,6 +425,14 @@ static void stdin_process(char c){
             log_info("USER:\'%c\'", cmd);
             printf("Update HF indicator with assigned number 1 (HFI)\n");
             hfp_hf_set_hf_indicator(acl_handle, 1, 1);
+            break;
+        case 'R':
+            log_info("USER:\'%c\'", cmd);
+            printf("eVRA ready for audio\n");
+            hfp_hf_enhanced_voice_recognition_report_ready_for_audio(acl_handle);
+            break;
+        case '\n':
+        case '\r':
             break;
         default:
             show_usage();

@@ -70,6 +70,7 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "HFP AG Demo";
 
 static bd_addr_t device_addr;
+// static const char * device_addr_string = "00:80:98:09:0B:32";
 static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 
 // configuration

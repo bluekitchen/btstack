@@ -19,7 +19,7 @@ HFP/AG/ACS/BV-10-I: a, c, B, b, C, A
 HFP/AG/ACS/BV-11-I: a, c, B, C, A
 HFP/AG/ACS/BV-14-I: a, c, B, C, A
 HFP/AG/ACS/BV-16-I: a, c, B, C, A
-** HFP/AG/ACS/BV-18-I: a, c, B, b, C, A
+HFP/AG/ACS/BV-18-I: a, c, B, b, C, A (requires Controller with Secure Connection)
 
 HFP/AG/ACR/BV-01-I: a, b, A
 HFP/AG/ACR/BV-02-I: a, b, B, A
@@ -112,19 +112,18 @@ HFP/AG/RHH/BV-08-I: c, w, a, C, t
 
 HFP/AG/NUM/BV-01-I: a, t
 
-HFP/AG/SLC/BV-01-C: a, t
+HFP/AG/SLC/BV-01-C: t
 HFP/AG/SLC/BV-02-C: a, t
 HFP/AG/SLC/BV-03-C: t 
 HFP/AG/SLC/BV-04-C: a, t 
 HFP/AG/SLC/BV-05-C: t 
 HFP/AG/SLC/BV-06-C: a, t 
 HFP/AG/SLC/BV-07-C: t 
-HFP/AG/SLC/BV-08-C: a, t 
 HFP/AG/SLC/BV-09-C: a, t 
-HFP/AG/SLC/BV-10-C: t 
+HFP/AG/SLC/BV-10-C: a, t 
 
-HFP/AG/ACC/BV-08-I: c, 
-HFP/AG/ACC/BV-09-I: c, t 
+HFP/AG/ACC/BV-08-I: c, C, t
+HFP/AG/ACC/BV-09-I: c, C, t 
 HFP/AG/ACC/BV-10-I: c, b, C, A
 HFP/AG/ACC/BV-11-I: c, b, b, C, A
 HFP/AG/ACC/BI-12-I: c, b, b, C, A
@@ -159,7 +158,7 @@ HFP/AG/EVR/BV-01-I: a, 1, 2, 5, A
 HFP/AG/EVR/BV-02-I: a, 1, 3, 5, A
 HFP/AG/EVR/BV-03-I: a, 1, 4, 5, A
 
-HFP/AG/VRT/BV-01-I: a, 1, 6, 5, A
+HFP/AG/VRT/BV-01-I: a, 6, A
 HFP/AG/VRT/BV-02-I: a, 1, 6, 7, 5, A
 HFP/AG/VRT/BV-03-I: a, 1, 6, 7, 5, A
 HFP/AG/VRT/BV-04-I: a, 1, 6, 8, 5, A
