@@ -947,6 +947,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     hfp_reset_voice_recognition(hfp_connection);
                     hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
                     hfp_finalize_connection_context(hfp_connection);
+                    break;
                 } else if (hfp_connection->release_slc_connection == 1){
                     hfp_connection->release_slc_connection = 0;
                     hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
