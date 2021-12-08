@@ -2077,25 +2077,6 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         return 1;
     }
 
-    // delay RING/CLIP until audio connection has been established for incoming calls
-    // hfp_ag_hf_trigger_ring_and_clip is called in call_setup_state_machine
-    if (hfp_connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING){
-        if (hfp_connection->ag_ring){
-            hfp_connection->ag_ring = 0;
-            hfp_connection->command = HFP_CMD_NONE;
-            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
-            hfp_ag_send_ring(hfp_connection->rfcomm_cid);
-            return 1;
-        }
-
-        if (hfp_connection->ag_send_clip){
-            hfp_connection->ag_send_clip = 0;
-            hfp_connection->command = HFP_CMD_NONE;
-            hfp_ag_send_clip(hfp_connection->rfcomm_cid);
-            return 1;
-        }
-    }
-
     if (hfp_connection->send_phone_number_for_voice_tag){
         hfp_connection->send_phone_number_for_voice_tag = 0;
         hfp_connection->command = HFP_CMD_NONE;
@@ -2137,6 +2118,29 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         return 1;
     }
 
+    return 0;
+}
+
+// sends pending command, returns if command was sent
+static int hfp_ag_run_ring_and_clip(hfp_connection_t *hfp_connection){
+    // delay RING/CLIP until audio connection has been established for incoming calls
+    // hfp_ag_hf_trigger_ring_and_clip is called in call_setup_state_machine
+    if (hfp_connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING){
+        if (hfp_connection->ag_ring){
+            hfp_connection->ag_ring = 0;
+            hfp_connection->command = HFP_CMD_NONE;
+            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
+            hfp_ag_send_ring(hfp_connection->rfcomm_cid);
+            return 1;
+        }
+
+        if (hfp_connection->ag_send_clip){
+            hfp_connection->ag_send_clip = 0;
+            hfp_connection->command = HFP_CMD_NONE;
+            hfp_ag_send_clip(hfp_connection->rfcomm_cid);
+            return 1;
+        }
+    }
     return 0;
 }
 
@@ -2247,6 +2251,10 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
 
     if (!cmd_sent){
         cmd_sent = hfp_ag_run_for_audio_connection(hfp_connection);
+    }
+
+    if (!cmd_sent){
+        cmd_sent = hfp_ag_run_ring_and_clip(hfp_connection);
     }
 
     if (!cmd_sent){
