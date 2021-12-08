@@ -2369,8 +2369,7 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
         if ((gap_get_security_mode() == GAP_SECURITY_MODE_4)
         && gap_ssp_supported_on_both_sides(channel->con_handle)
         && (channel->psm != PSM_SDP)
-        && (gap_encryption_key_size(channel->con_handle) == 0)
-        && (gap_bonded(channel->con_handle) == false)){
+        && (gap_encryption_key_size(channel->con_handle) == 0)){
             hci_disconnect_security_block(channel->con_handle);
             return;
         }
