@@ -19,7 +19,7 @@ HFP/AG/ACS/BV-10-I: a, c, B, b, C, A
 HFP/AG/ACS/BV-11-I: a, c, B, C, A
 HFP/AG/ACS/BV-14-I: a, c, B, C, A
 HFP/AG/ACS/BV-16-I: a, c, B, C, A
-HFP/AG/ACS/BV-18-I: a, c, B, b, C, A
+** HFP/AG/ACS/BV-18-I: a, c, B, b, C, A
 
 HFP/AG/ACR/BV-01-I: a, b, A
 HFP/AG/ACR/BV-02-I: a, b, B, A
@@ -45,6 +45,8 @@ HFP/AG/TCA/BV-04-I: a, B, A
 HFP/AG/TCA/BV-05-I: a, c, m, A
 HFP/AG/TCA/BV-06-I: a, c, B, f, t
 
+HFP/AG/TDS/BV-01-I: c, b, C, A
+
 HFP/AG/ATH/BV-03-I: c, e, C, A
 HFP/AG/ATH/BV-04-I: a, c, B, C, A
 HFP/AG/ATH/BV-05-I: c, e, a, b, C, A
@@ -58,9 +60,9 @@ HFP/AG/ATA/BV-03-I: a, c, C
 HFP/AG/OCN/BV-01-I: a, j, C, A
 
 HFP/AG/OCM/BV-01-I: a, j, C, A 
-HFP/AG/OCM/BV-02-I: k, A
+HFP/AG/OCM/BV-02-I: a, k, A
 
-HFP/AG/OCL/BV-01-I: L, a, OK, OK, C, A
+HFP/AG/OCL/BV-01-I: L, a, OK, OK, j, C, A
 HFP/AG/OCL/BV-02-I: a, l, A
 
 HFP/AG/TWC/BV-01-I: a, c, m, C, A
@@ -74,10 +76,10 @@ HFP/AG/CIT/BV-01-I: a, c, C, A
 
 HFP/AG/ENO/BV-01-I: a, c, C, A
 
-HFP/AG/VRA/BV-01-I: a, N, n, t
+HFP/AG/VRA/BV-01-I: a, t
 HFP/AG/VRA/BV-02-I: a, N, n, t 
 HFP/AG/VRA/BI-01-I: N, n, A
-HFP/AG/VRA/BV-03-I: a, N, n, t 
+HFP/AG/VRA/BV-03-I: a, t 
 
 HFP/AG/VTG/BV-01-I: a, A
 
