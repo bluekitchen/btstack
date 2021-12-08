@@ -2349,17 +2349,8 @@ static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_
 
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel){
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
-    // double check if all feature pages are complete
 
     bool security_required = channel->required_security_level > LEVEL_0;
-
-    // abort if Secure Connections Only Mode with legacy connection
-    if (security_required && gap_get_secure_connections_only_mode() && gap_secure_connection(channel->con_handle) == 0){
-        l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY);
-        btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t  *) channel);
-        l2cap_free_channel_entry(channel);
-        return;
-    }
 
     if ((channel->state_var & L2CAP_CHANNEL_STATE_VAR_INCOMING) != 0){
 
