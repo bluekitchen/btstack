@@ -35,10 +35,12 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 GATT Services are in general easy to implement and require short development time. For more GATT Services please contact us, or follow the [implementation guidelines](https://bluekitchen-gmbh.com/btstack/profiles/#gatt-generic-attribute-profile).  
 
-**In Development:** BLE Mesh and more.
+**In Development:** LE Audio and more.
 
 It has been qualified with the Bluetooth SIG (QDID 166433) for A2DP 1.3.2, AVCTP 1.4, AVDTP 1.3, AVRCP 1.6.2, DID 1.3, GAVDP 1.3, HFP 1.8, HSP 1.2, PAN 1.0, PBAP Client 1.2, RFCOMM 1.2, SPP 1.2 BR/EDR protocol/profiles, 
-BAS 1.0, CPP 1.1, CPS 1.1, CSCP 1.0, CSCS 1.0, DIS 1.1, HIDS 1.0, HOGP 1.0, HRP 1.0, HRS 1.0, SCPP 1.0, SCPS 1.0 GATT profiles as well as and GAP, GATT, IOP, SM of the Bluetooth Core 5.2 specification. For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
+BAS 1.0, CPP 1.1, CPS 1.1, CSCP 1.0, CSCS 1.0, DIS 1.1, HIDS 1.0, HOGP 1.0, HRP 1.0, HRS 1.0, SCPP 1.0, SCPS 1.0 GATT profiles as well as and GAP, GATT, IOP, SM of the Bluetooth Core 5.2 specification. 
+
+For information on Apple's MFi/iAP2 and Find My profiles, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us directly</a>.
 
 ## Evaluation Platforms
 
