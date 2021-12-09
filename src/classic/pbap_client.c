@@ -201,6 +201,22 @@ static uint32_t pbap_client_supported_features;
 static pbap_client_t pbap_client_singleton;
 static pbap_client_t * pbap_client = &pbap_client_singleton;
 
+
+static void pbap_client_emit_vcard_entry_result_event(pbap_client_t * context, size_t data_len, char* data){
+    uint8_t event[5 + sizeof(size_t) + data_len];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_PBAP_META;
+    pos++;  // skip len
+    event[pos++] = PBAP_SUBEVENT_VCARD_ENTRY_RESULT;
+    little_endian_store_16(event,pos,context->cid);
+    pos+=2;
+    event[pos] = data_len;
+    pos+= sizeof(size_t);
+    (void)memcpy(&event[pos], data, data_len);    
+    event[1] = pos - 2;
+    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+}
+
 static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t status){
     uint8_t event[15];
     int pos = 0;
@@ -538,7 +554,8 @@ static void pbap_client_parser_callback_get_operation(void * user_data, uint8_t 
         case OBEX_HEADER_END_OF_BODY:
             switch(pbap_client->state){
                 case PBAP_W4_PHONEBOOK:
-                    client->client_handler(PBAP_DATA_PACKET, client->cid, (uint8_t *) data_buffer, data_len);
+                    pbap_client_emit_vcard_entry_result_event(client, data_len, data_buffer);
+                    //client->client_handler(PBAP_DATA_PACKET, client->cid, (uint8_t *) data_buffer, data_len);
                     if (data_offset + data_len == total_len){
                         client->flow_wait_for_user = true;
                     }
