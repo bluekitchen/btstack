@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -54,7 +54,6 @@
 #include "freertos/queue.h"
 #include "driver/i2s.h"
 
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
 #include "driver/i2c.h"
 #include "driver/gpio.h"
 #include "es8388.h"
@@ -70,8 +69,6 @@ static void set_i2s0_mclk(void)
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
     WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
 }
-
-#endif
 
 #define DRIVER_POLL_INTERVAL_MS          5
 #define DMA_BUFFER_COUNT                 2
@@ -101,6 +98,7 @@ static int i2s_num_out = I2S_NUM_0;
 static int i2s_num_in = I2S_NUM_1;
 
 static int sink_streaming;
+static int source_streaming;
 
 static void fill_buffer(void){
     size_t bytes_written;
@@ -123,7 +121,7 @@ static void driver_timer_handler(btstack_timer_source_t * ts){
         // read from i2s event queue
         i2s_event_t i2s_event;
         if( xQueueReceive( i2s_event_queue, &i2s_event, 0) ){
-            // fill buffer when DMA buffer was sent            
+            // fill buffer when DMA buffer was sent
             if (i2s_event.type == I2S_EVENT_TX_DONE){
                 fill_buffer();
             }
@@ -154,7 +152,7 @@ static void driver_timer_handler_2(btstack_timer_source_t *ts) {
 
 static int btstack_audio_esp32_sink_init(
     uint8_t channels,
-    uint32_t samplerate, 
+    uint32_t samplerate,
     void (*playback)(int16_t * buffer, uint16_t num_samples)){
 
     playback_callback  = playback;
@@ -173,40 +171,26 @@ static int btstack_audio_esp32_sink_init(
                     .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
             };
 
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     i2s_pin_config_t pins =
     {
         .bck_io_num           = GPIO_NUM_5,
         .ws_io_num            = GPIO_NUM_25,
         .data_out_num         = GPIO_NUM_26,
-        .data_in_num          = I2S_PIN_NO_CHANGE
+        .data_in_num          = GPIO_NUM_35
     };
-#else
-    i2s_pin_config_t pins =
-            {
-                    .bck_io_num           = 26,
-                    .ws_io_num            = 25,
-                    .data_out_num         = 22,
-                    .data_in_num          = I2S_PIN_NO_CHANGE
-            };
-#endif
 
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-    set_i2s0_mclk();
-#endif
+    log_info("Sink init");
     i2s_driver_install(i2s_num_out, &config, DMA_BUFFER_COUNT, &i2s_event_queue);
     i2s_set_pin(i2s_num_out, &pins);
     i2s_zero_dma_buffer(i2s_num_out);
 
-
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-    es8388_init(&es8388_i2c_cfg); 
+	set_i2s0_mclk();
+	es8388_init(&es8388_i2c_cfg);
     es8388_config_fmt(ES_MODULE_ADC_DAC, ES_I2S_NORMAL);
     es8388_set_bits_per_sample(ES_MODULE_ADC_DAC, BIT_LENGTH_16BITS);
     es8388_set_volume(100);
     es8388_start(ES_MODULE_ADC_DAC);
     es8388_set_mute(false);
-#endif
 
     return 0;
 }
@@ -271,7 +255,7 @@ static const btstack_audio_sink_t btstack_audio_sink_esp32 = {
 };
 
 static int btstack_audio_esp32_source_init(
-    uint8_t channels, 
+    uint8_t channels,
     uint32_t samplerate,
     void (*recording)(const int16_t *buffer, uint16_t num_samples)
 ) {
@@ -290,23 +274,13 @@ static int btstack_audio_esp32_source_init(
                     .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
             };
 
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-    i2s_pin_config_t pins =
-    {
-        .bck_io_num           = GPIO_NUM_5,
-        .ws_io_num            = GPIO_NUM_25,
-        .data_out_num         = I2S_PIN_NO_CHANGE,
-        .data_in_num          = GPIO_NUM_35
-    };
-#else
     i2s_pin_config_t pins =
             {
                     .bck_io_num           = 26,
                     .ws_io_num            = 25,
-                    .data_out_num         = I2S_PIN_NO_CHANGE,
-                    .data_in_num          = I2S_PIN_NO_CHANGE // TODO fix this pin number
+                    .data_out_num         = -1,
+                    .data_in_num          = 4
             };
-#endif
     log_info("source init");
     i2s_driver_install(i2s_num_in, &config, DMA_BUFFER_COUNT_SOURCE, &i2s_event_queue_source);
     i2s_set_pin(i2s_num_in, &pins);
@@ -370,7 +344,7 @@ static void btstack_audio_esp32_source_set_volume(uint8_t volume){
 		case 0:{
 			es8388_set_mic_gain(MIC_GAIN_MIN);
 			break;
-		}		
+		}
 		case 1:{
 			es8388_set_mic_gain(MIC_GAIN_0DB);
 			break;
@@ -417,7 +391,7 @@ static void btstack_audio_esp32_source_set_volume(uint8_t volume){
 
 static const btstack_audio_source_t btstack_audio_source_esp32 = {
     /* int (*init)(..);*/                                       &btstack_audio_esp32_source_init,
-    /* void (*set_volume(uint8_t)); */				&btstack_audio_esp32_source_set_volume,
+    /* void (*set_volume(uint8_t)); */							&btstack_audio_esp32_source_set_volume,
     /* void (*start_stream(void));*/                            &btstack_audio_esp32_source_start_stream,
     /* void (*stop_stream)(void)  */                            &btstack_audio_esp32_source_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_esp32_source_close
@@ -428,5 +402,5 @@ const btstack_audio_sink_t * btstack_audio_esp32_sink_get_instance(void){
 }
 
 const btstack_audio_source_t * btstack_audio_esp32_source_get_instance(void){
-    return &btstack_audio_esp32_source;
+    return &btstack_audio_source_esp32;
 }
