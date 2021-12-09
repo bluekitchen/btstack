@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -84,19 +84,19 @@ void le_device_db_set_local_bd_addr(bd_addr_t bd_addr);
  * @brief add device to db
  * @param addr_type, address of the device
  * @param irk of the device
- * @returns index if successful, -1 otherwise
+ * @return index if successful, -1 otherwise
  */
 int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk);
 
 /**
  * @brief get number of devices in db
- * @returns number of device in db
+ * @return number of device in db
  */
 int le_device_db_count(void);
 
 /**
  * @brief get max number of devices in db for enumeration
- * @returns max number of device in db
+ * @return max number of device in db
  */
 int le_device_db_max_count(void);
 
@@ -168,7 +168,7 @@ void le_device_db_remote_csrk_get(int index, sm_key_t csrk);
 /**
  * @brief query last used/seen signing counter
  * @param index
- * @returns next expected counter, 0 after devices was added
+ * @return next expected counter, 0 after devices was added
  */
 uint32_t le_device_db_remote_counter_get(int index);
 
@@ -182,7 +182,7 @@ void le_device_db_remote_counter_set(int index, uint32_t counter);
 /**
  * @brief query last used/seen signing counter
  * @param index
- * @returns next expected counter, 0 after devices was added
+ * @return next expected counter, 0 after devices was added
  */
 uint32_t le_device_db_local_counter_get(int index);
 

@@ -1,9 +1,0 @@
-Package: ch.ringwald.btstackconfig
-Name: BTstackConfig
-Depends: ch.ringwald.btstack
-Version: 0.0.1
-Architecture: iphoneos-arm
-Description: Bluetooth control for BTstack and iOS Bluetooth
-Maintainer: Matthias Ringwald
-Author: Matthias Ringwald
-Section: Utilities

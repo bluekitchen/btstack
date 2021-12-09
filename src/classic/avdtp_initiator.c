@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -171,6 +171,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     sep.in_use = 1;
                     
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
+                    stream_endpoint->sep.in_use = 1;
                     stream_endpoint->remote_sep = sep;
                     stream_endpoint->connection = connection;
                     connection->configuration_state = AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED;
@@ -237,7 +238,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         case AVDTP_STREAM_ENDPOINT_STREAMING:
                             stream_endpoint_for_event = stream_endpoint;
                             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CLOSING;
-                            l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
+                            l2cap_disconnect(stream_endpoint->l2cap_media_cid);
                             break;
                         default:
                             break;
@@ -255,7 +256,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         case AVDTP_STREAM_ENDPOINT_STREAMING:
                             stream_endpoint_for_event = stream_endpoint;
                             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
-                            l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
+                            l2cap_disconnect(stream_endpoint->l2cap_media_cid);
                             break;
                         default:
                             break;
@@ -283,6 +284,10 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                 case AVDTP_SI_SET_CONFIGURATION:
                     connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
                     log_info("Received reject for set configuration, role changed from initiator to acceptor. TODO: implement retry.");
+                    break;
+                case AVDTP_SI_RECONFIGURE:
+                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+                    log_info("Received reject for reconfigure, state = opened");
                     break;
                 default:
                     break;

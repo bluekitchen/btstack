@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -67,7 +67,7 @@ typedef struct {
 /**
  * @brief Test if list is empty.
  * @param list
- * @returns true if list is empty
+ * @return true if list is empty
  */
 bool btstack_linked_list_empty(btstack_linked_list_t * list);
 
@@ -75,7 +75,7 @@ bool btstack_linked_list_empty(btstack_linked_list_t * list);
  * @brief Add item to list as first element.
  * @param list
  * @param item
- * @returns true if item was added, false if item already in list
+ * @return true if item was added, false if item already in list
  */
 bool btstack_linked_list_add(btstack_linked_list_t * list, btstack_linked_item_t *item);
 
@@ -83,14 +83,14 @@ bool btstack_linked_list_add(btstack_linked_list_t * list, btstack_linked_item_t
  * @brief Add item to list as last element.
  * @param list
  * @param item
- * @returns true if item was added, false if item already in list
+ * @return true if item was added, false if item already in list
  */
 bool btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_item_t *item);
 
 /**
  * @brief Pop (get + remove) first element.
  * @param list
- * @returns first element or NULL if list is empty
+ * @return first element or NULL if list is empty
  */
 btstack_linked_item_t * btstack_linked_list_pop(btstack_linked_list_t * list);
 
@@ -98,27 +98,27 @@ btstack_linked_item_t * btstack_linked_list_pop(btstack_linked_list_t * list);
  * @brief Remove item from list
  * @param list
  * @param item
- * @returns true if item was removed, false if it is no't in list
+ * @return true if item was removed, false if it is no't in list
  */
 bool btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item);
 
 /**
  * @brief Get first element.
  * @param list
- * @returns first element or NULL if list is empty
+ * @return first element or NULL if list is empty
  */
 btstack_linked_item_t * btstack_linked_list_get_first_item(btstack_linked_list_t * list);
 
 /**
  * @brief Get last element.
  * @param list
- * @returns first element or NULL if list is empty
+ * @return first element or NULL if list is empty
  */
 btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t * list);   
 
 /**
  * @brief Counts number of items in list
- * @returns number of items in list
+ * @return number of items in list
  */
 int btstack_linked_list_count(btstack_linked_list_t * list);
 
@@ -135,14 +135,14 @@ void btstack_linked_list_iterator_init(btstack_linked_list_iterator_t * it, btst
 /**
  * @brief Has next element
  * @param it iterator context
- * @returns true if next element is available
+ * @return true if next element is available
  */
 bool btstack_linked_list_iterator_has_next(btstack_linked_list_iterator_t * it);
 
 /**
  * @brief Get next list eleemnt
  * @param it iterator context
- * @returns list element
+ * @return list element
  */
 btstack_linked_item_t * btstack_linked_list_iterator_next(btstack_linked_list_iterator_t * it);
 

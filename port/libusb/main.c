@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "main.c"
+#define BTSTACK_FILE__ "main.c"
 
 // *****************************************************************************
 //
@@ -51,24 +51,25 @@
 
 #include "btstack_config.h"
 
+#include "ble/le_device_db_tlv.h"
 #include "bluetooth_company_id.h"
+#include "btstack_audio.h"
+#include "btstack_chipset_zephyr.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "ble/le_device_db_tlv.h"
-#include "classic/btstack_link_key_db_tlv.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
+#include "btstack_signal.h"
+#include "btstack_stdin.h"
+#include "btstack_tlv_posix.h"
+#include "classic/btstack_link_key_db_tlv.h"
 #include "hal_led.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "hci_dump_posix_fs.h"
 #include "hci_transport.h"
 #include "hci_transport_usb.h"
-#include "btstack_stdin.h"
-#include "btstack_audio.h"
-#include "btstack_tlv_posix.h"
-#include "btstack_chipset_zephyr.h"
 
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
@@ -85,6 +86,9 @@ static bd_addr_t static_address;
 static int using_static_address;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+// shutdown
+static bool shutdown_triggered;
 
 static void local_version_information_handler(uint8_t * packet){
     printf("Local version information:\n");
@@ -138,11 +142,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
                 case HCI_STATE_OFF:
                     btstack_tlv_posix_deinit(&tlv_context);
+                    if (!shutdown_triggered) break;
+                    // reset stdin
+                    btstack_stdin_reset();
+                    log_info("Good bye, see you.\n");
+                    exit(0);
                     break;
                 default:
                     break;
             }
-            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
@@ -159,20 +167,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void sigint_handler(int param){
-    UNUSED(param);
-
-    printf("CTRL-C - SIGINT received, shutting down..\n");   
+static void trigger_shutdown(void){
+    printf("CTRL-C - SIGINT received, shutting down..\n");
     log_info("sigint_handler: shutting down");
-
-    // reset anyway
-    btstack_stdin_reset();
-
-    // power down
+    shutdown_triggered = true;
     hci_power_control(HCI_POWER_OFF);
-    hci_close();
-    log_info("Good bye, see you.\n");    
-    exit(0);
 }
 
 static int led_state = 0;
@@ -239,8 +238,8 @@ int main(int argc, const char * argv[]){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    // handle CTRL-c
-    signal(SIGINT, sigint_handler);
+    // register callback for CTRL-c
+    btstack_signal_register_callback(SIGINT, &trigger_shutdown);
 
     // setup app
     btstack_main(argc, argv);

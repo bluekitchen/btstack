@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -156,4 +156,25 @@ void hci_dump_setup_header_bluez(uint8_t * buffer, uint32_t tv_sec, uint32_t tv_
     little_endian_store_32( buffer, 4, tv_sec);
     little_endian_store_32( buffer, 8, tv_us);
     buffer[12] = packet_type;
+}
+
+// From https://fte.com/webhelpii/hsu/Content/Technical_Information/BT_Snoop_File_Format.htm
+void hci_dump_setup_header_btsnoop(uint8_t * buffer, uint32_t ts_usec_high, uint32_t ts_usec_low, uint32_t cumulative_drops, uint8_t packet_type, uint8_t in, uint16_t len) {
+    uint32_t packet_flags = 0;
+    if (in){
+        packet_flags |= 1;
+    }
+    switch (packet_type){
+        case HCI_COMMAND_DATA_PACKET:
+        case HCI_EVENT_PACKET:
+            packet_flags |= 2;
+        default:
+            break;
+    }
+    big_endian_store_32(buffer,  0, len);               // Original Length
+    big_endian_store_32(buffer,  4, len);               // Included Length
+    big_endian_store_32(buffer,  8, packet_flags);      // Packet Flags
+    big_endian_store_32(buffer, 12, cumulative_drops);  // Cumulativ Drops
+    big_endian_store_32(buffer, 16, ts_usec_high);            // Timestamp Microseconds High
+    big_endian_store_32(buffer, 20, ts_usec_low);             // Timestamp Microseconds Low
 }

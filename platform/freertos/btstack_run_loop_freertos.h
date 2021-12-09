@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -52,29 +52,37 @@ extern "C" {
 #endif
 
 /**
- * @brief Provide btstack_run_loop_freertos instance for use with btstack_run_loop_init
+ * @brief Get btstack_run_loop_freertos instance for use with btstack_run_loop_init
  */
 const btstack_run_loop_t * btstack_run_loop_freertos_get_instance(void);
 
-/*
+/**
  * @brief Execute code on BTstack run loop. Can be used to control BTstack from a different thread
+
+ * @deprecated Please use btstack_run_loop_execute_on_main_thread() instead
  */
 void btstack_run_loop_freertos_execute_code_on_main_thread(void (*fn)(void *arg), void * arg);
 
 /**
  * @brief Triggers processing of data sources from thread context. 
  * Has to be called after enabling a poll data source to wake-pup run loop.
+ *
+ * @deprecated Please use btstack_run_loop_execute_on_main_thread() instead
  */
 void btstack_run_loop_freertos_trigger(void);    
 
 /**
  * @brief Triggers processing of data sources from an ISR.
  * Has to be called after enabling a poll data source to wake-pup run loop.
+ *
+ * @deprecated Please call btstack_run_loop_poll_data_sources_from_irq() instead
  */
 void btstack_run_loop_freertos_trigger_from_isr(void);
 
 /**
  * @brief Triggers exit of run loop from BTstack main thread, causes call to btstack_run_loop_execute to return
+ *
+ * @deprecated Please call btstack_run_loop_trigger_exit() instead
  */
 void btstack_run_loop_freertos_trigger_exit(void);
 

@@ -4,7 +4,7 @@ import re
 import sys
 
 copyrightTitle = ".*(Copyright).*(BlueKitchen GmbH)"
-copyrightSubtitle = ".*All rights reserved.*" 
+copyrightEndString = "Please inquire about"
 
 findAndReplace = {
 	"MATTHIAS" : "BLUEKITCHEN",
@@ -21,7 +21,7 @@ class State:
 	CopyrightEnd = 2
 
 def updateCopyright(dir_name, file_name):
-	global copyrightTitle, copyrightSubtitle
+	global copyrightTitle
 
 	infile = dir_name + "/" + file_name
 	outfile = dir_name + "/tmp_" + file_name
@@ -37,15 +37,10 @@ def updateCopyright(dir_name, file_name):
 					fout.write(line)
 					parts = re.match(copyrightTitle, line)
 					if parts:
-						fout.write(" * All rights reserved\n")
 						state = State.SearchEndCopyright
 						continue
 					
 				if state == State.SearchEndCopyright:
-					parts = re.match(copyrightSubtitle, line)
-					if parts:
-						continue
-
 					# search end of Copyright
 					parts = re.match('\s*(\*\/)\s*',line)
 					if parts:
@@ -65,7 +60,7 @@ def updateCopyright(dir_name, file_name):
 
 
 def requiresCopyrightUpdate(file_name):
-	global copyrightTitle, copyrightSubtitle
+	global copyrightTitle, copyrightEndString
 
 	state = State.SearchStartCopyright
 	with open(file_name, "rt") as fin:
@@ -77,7 +72,7 @@ def requiresCopyrightUpdate(file_name):
 						state = State.SearchEndCopyright
 						continue
 				if state == State.SearchEndCopyright:
-					parts = re.match(copyrightSubtitle, line)
+					parts = re.match(copyrightEndString, line)
 					if parts:
 						return False
 					return True
@@ -88,12 +83,12 @@ def requiresCopyrightUpdate(file_name):
 	return False
 
 
-btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/../..')
+btstack_root = os.path.abspath(os.path.dirname(sys.argv[0])) + "/../../"
 
-# file_name = btstack_root + "/example/panu_demo.c"
+# file_name = btstack_root + "/panu_demo.c"
 # if requiresCopyrightUpdate(file_name):
-# 	print(file_name, ": update")
-	# updateCopyright(btstack_root + "/example", "panu_demo.c")
+#  	print(file_name, ": update")
+# 	# updateCopyright(btstack_root + "/example", "panu_demo.c")
 
 
 for root, dirs, files in os.walk(btstack_root, topdown=True):
@@ -104,5 +99,5 @@ for root, dirs, files in os.walk(btstack_root, topdown=True):
 			file_name = root + "/" + f
 			if requiresCopyrightUpdate(file_name):
 				print(file_name)
-    			updateCopyright(root, f)
+				updateCopyright(root, f)
 				

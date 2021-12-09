@@ -63,19 +63,12 @@ TEST_GROUP(LE_DEVICE_DB_TLV){
     const btstack_tlv_t *      btstack_tlv_impl;
     btstack_tlv_flash_bank_t btstack_tlv_context;
 
-    bd_addr_t addr_aa, addr_bb, addr_cc;
-    sm_key_t sm_key_aa, sm_key_bb, sm_key_cc;
+    bd_addr_t addr_zero,    addr_aa,  addr_bb,   addr_cc;
+    sm_key_t  sm_key_zero, sm_key_aa, sm_key_bb, sm_key_cc;
 
-	bd_addr_t addr;
-	sm_key_t sm_key;
-
-	void init_addr_and_key(uint8_t a){
-		uint8_t value = 0;
-		if (a <= 0x0F){
-			value = 0x11 * a;
-		} 
-		memset(sm_key, value, 16);
-		memset(addr,   value,  6);
+	void set_addr_and_sm_key(uint8_t value, bd_addr_t addr, sm_key_t sm_key){
+	    memset(addr, value, 6);
+	    memset(sm_key, value, 16);
 	}
 
     void setup(void){
@@ -89,13 +82,10 @@ TEST_GROUP(LE_DEVICE_DB_TLV){
         le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_context);
         le_device_db_init();
 
-        memset(addr_aa, 0xaa, 6);
-        memset(addr_bb, 0xbb, 6);
-        memset(addr_cc, 0xcc, 6);
-
-        memset(sm_key_aa, 0xaa, 16);
-        memset(sm_key_bb, 0xbb, 16);
-        memset(sm_key_cc, 0xcc, 16);
+        set_addr_and_sm_key(0x00, addr_zero, sm_key_zero);
+        set_addr_and_sm_key(0xaa, addr_aa,   sm_key_aa);
+        set_addr_and_sm_key(0xbb, addr_bb,   sm_key_bb);
+        set_addr_and_sm_key(0xcc, addr_cc,   sm_key_cc);
 	}
 };
 
@@ -105,7 +95,7 @@ TEST(LE_DEVICE_DB_TLV, Empty){
 }
 
 TEST(LE_DEVICE_DB_TLV, AddZero){
-    int index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
+    int index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_zero, sm_key_zero);
 
     CHECK_TRUE(index >= 0);
     CHECK_EQUAL(1, le_device_db_count());
@@ -197,6 +187,28 @@ TEST(LE_DEVICE_DB_TLV, AddExisting){
     index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
     CHECK_TRUE(index >= 0);
     CHECK_EQUAL(1, le_device_db_count());
+}
+
+TEST(LE_DEVICE_DB_TLV, ReplaceOldest){
+    bd_addr_t addr;
+    sm_key_t  sm_key;
+    set_addr_and_sm_key(0x10, addr, sm_key);
+    int oldest_index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
+    CHECK_TRUE(oldest_index >= 0);
+    // fill table
+    int i;
+    for (i=1;i<NVM_NUM_DEVICE_DB_ENTRIES;i++){
+        set_addr_and_sm_key(0x10 + i, addr, sm_key);
+        int index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
+        CHECK_TRUE(index >= 0);
+    }
+    uint16_t num_entries = le_device_db_count();
+    // add another one that overwrites first one
+    set_addr_and_sm_key(0x22 + i, addr, sm_key);
+    int index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
+    CHECK_EQUAL(oldest_index, index);
+    uint16_t num_entries_test = le_device_db_count();
+    CHECK_EQUAL(num_entries, num_entries_test);
 }
 
 

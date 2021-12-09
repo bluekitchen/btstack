@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -200,32 +200,6 @@ static modcontext mod_context;
 static tracker_buffer_state trkbuf;
 
 /* AVRCP Target context START */
-static const uint8_t subunit_info[] = {
-    0,0,0,0,
-    1,1,1,1,
-    2,2,2,2,
-    3,3,3,3,
-    4,4,4,4,
-    5,5,5,5,
-    6,6,6,6,
-    7,7,7,7
-};
-
-static uint32_t company_id = 0x112233;
-static uint8_t  companies_num = 1;
-static uint8_t  companies[] = {
-    0x00, 0x19, 0x58 //BT SIG registered CompanyID
-};
-
-static uint8_t events_num = 6;
-static uint8_t events[] = {
-    AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED
-};
 
 typedef struct {
     uint8_t track_id[8];
@@ -300,6 +274,7 @@ static int a2dp_source_and_avrcp_services_init(void){
     // Initialize AVRCP Target
     avrcp_target_init();
     avrcp_target_register_packet_handler(&avrcp_target_packet_handler);
+
     // Initialize AVRCP Controller
     avrcp_controller_init();
     avrcp_controller_register_packet_handler(&avrcp_controller_packet_handler);
@@ -764,13 +739,17 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             media_tracker.avrcp_cid = local_cid;
             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
 
+            printf("AVRCP: Channel to %s successfully opened, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), media_tracker.avrcp_cid);
+             
+            avrcp_target_support_event(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+            avrcp_target_support_event(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            avrcp_target_support_event(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
             avrcp_target_set_now_playing_info(media_tracker.avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
-            avrcp_target_set_unit_info(media_tracker.avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, company_id);
-            avrcp_target_set_subunit_info(media_tracker.avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, (uint8_t *)subunit_info, sizeof(subunit_info));
             
-            avrcp_controller_get_supported_events(media_tracker.avrcp_cid);
-            
-            printf("AVRCP: Channel successfully opened:  media_tracker.avrcp_cid 0x%02x\n", media_tracker.avrcp_cid);
+            printf("Enable Volume Change notification\n");
+            avrcp_controller_enable_notification(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+            printf("Enable Battery Status Change notification\n");
+            avrcp_controller_enable_notification(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
             return;
         
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
@@ -799,16 +778,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     avrcp_operation_id_t operation_id;
 
     switch (packet[2]){
-        case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
-            media_tracker.volume = avrcp_subevent_notification_volume_changed_get_absolute_volume(packet);
-            printf("AVRCP Target: Volume set to %d%% (%d)\n", media_tracker.volume * 127/100, media_tracker.volume);
-            break;
-        case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
-            status = avrcp_target_supported_events(media_tracker.avrcp_cid, events_num, events, sizeof(events));
-            break;
-        case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
-            status = avrcp_target_supported_companies(media_tracker.avrcp_cid, companies_num, companies, sizeof(companies));
-            break;
         case AVRCP_SUBEVENT_PLAY_STATUS_QUERY:
             status = avrcp_target_play_status(media_tracker.avrcp_cid, play_info.song_length_ms, play_info.song_position_ms, play_info.status);            
             break;
@@ -851,27 +820,23 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    uint8_t  status = 0xFF;
     
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
-
-    status = packet[5];
     if (!media_tracker.avrcp_cid) return;
-
-    // ignore INTERIM status
-    if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
-            
+    
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
-            printf("AVRCP Controller: notification absolute volume changed %d %%\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet) * 100 / 127);
+            printf("AVRCP Controller: Notification Absolute Volume %d %%\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet) * 100 / 127);
             break;
-        case AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID:  
-            printf("Remote supports EVENT_ID 0x%02x\n", avrcp_subevent_get_capability_event_id_get_event_id(packet));
+        case AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:
+            // see avrcp_battery_status_t
+            printf("AVRCP Controller: Notification Battery Status %d\n", avrcp_subevent_notification_event_batt_status_changed_get_battery_status(packet));
             break;
-        case AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE:  
-            printf("automatically enable notifications\n");
-            avrcp_controller_enable_notification(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+        case AVRCP_SUBEVENT_NOTIFICATION_STATE:
+            printf("AVRCP Controller: Notification %s - %s\n", 
+                avrcp_event2str(avrcp_subevent_notification_state_get_event_id(packet)), 
+                avrcp_subevent_notification_state_get_enabled(packet) != 0 ? "enabled" : "disabled");
             break;
         default:
             break;
@@ -946,7 +911,7 @@ static void stdin_process(char cmd){
             } else {
                 media_tracker.volume += 10;
             }
-            printf(" - volume up (via set absolute volume) %d%% (%d)\n",  media_tracker.volume * 127/100,  media_tracker.volume);
+            printf(" - volume up (via set absolute volume) %d%% (%d)\n",  media_tracker.volume * 100 / 127,  media_tracker.volume);
             status = avrcp_controller_set_absolute_volume(media_tracker.avrcp_cid, media_tracker.volume);
             break;
         case 'V':
@@ -955,7 +920,7 @@ static void stdin_process(char cmd){
             } else {
                 media_tracker.volume -= 10;
             }
-            printf(" - volume down (via set absolute volume) %d%% (%d)\n",  media_tracker.volume * 127/100,  media_tracker.volume);
+            printf(" - volume down (via set absolute volume) %d%% (%d)\n",  media_tracker.volume * 100 / 127,  media_tracker.volume);
             status = avrcp_controller_set_absolute_volume(media_tracker.avrcp_cid, media_tracker.volume);
             break;
         

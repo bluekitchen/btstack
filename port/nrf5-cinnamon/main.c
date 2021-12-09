@@ -100,7 +100,7 @@ void hal_cpu_enable_irqs(void){
 
 void hal_cpu_enable_irqs_and_sleep(void){
     __enable_irq();
-    // __asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+    __asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
 }
 
 static void lf_clock_init(void) {
@@ -151,7 +151,7 @@ int main(void){
     // init HCI
     hci_init(hci_transport, NULL);
 
-    // uncomment to enable packet logger
+    // uncomment one of the options to enable packet logger
 #ifdef ENABLE_SEGGER_RTT
     // hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
 

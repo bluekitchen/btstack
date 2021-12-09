@@ -86,7 +86,7 @@ void btstack_network_packet_sent(void);
 /**
  * @brief Get network name after network was activated
  * @note e.g. tapX on Linux, might not be useful on all platforms
- * @returns network name
+ * @return network name
  */
 const char * btstack_network_get_name(void);
 

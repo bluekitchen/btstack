@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -70,7 +70,7 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "HFP AG Demo";
 
 static bd_addr_t device_addr;
-static const char * device_addr_string = "00:21:3C:AC:F7:38";
+static const char * device_addr_string = "00:1A:7D:DA:71:13";
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
@@ -84,6 +84,8 @@ static hci_con_handle_t acl_handle = HCI_CON_HANDLE_INVALID;
 static hci_con_handle_t sco_handle = HCI_CON_HANDLE_INVALID;
 static int memory_1_enabled = 1;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static btstack_timer_source_t hfp_outgoing_call_ringing_timer;
 
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
@@ -104,6 +106,10 @@ static int hf_indicators_nr = 2;
 static hfp_generic_status_indicator_t hf_indicators[] = {
     {1, 1},
     {2, 1},
+};
+
+static hfp_voice_recognition_message_t msg = {
+    0xABCD, HFP_TEXT_TYPE_MESSAGE_FROM_AG, HFP_TEXT_OPERATION_REPLACE, "The temperature in Munich is 30 degrees."
 };
 
 #define INQUIRY_INTERVAL 5
@@ -154,7 +160,7 @@ static void show_usage(void){
     printf("c - simulate incoming call from 1234567 | C - simulate call from 1234567 dropped\n");
     printf("d - report AG failure\n");
     printf("D - delete all link keys\n");
-    printf("e - answer call on AG                   | E - reject call on AG\n");
+    printf("e - answer call on AG                   | E - terminate call on AG\n");
     printf("r - disable in-band ring tone           | R - enable in-band ring tone\n");
     printf("f - Disable cellular network            | F - Enable cellular network\n");
     printf("g - Set signal strength to 0            | G - Set signal strength to 5\n");
@@ -165,7 +171,10 @@ static void show_usage(void){
     printf("l - Clear last number                   | L - Set last number\n");
     printf("m - simulate incoming call from 7654321\n");
     // printf("M - simulate call from 7654321 dropped\n");
-    printf("n - Disable Voice Regocnition           | N - Enable Voice Recognition\n");
+    printf("n - Disable Voice Recognition           | N - Enable Voice Recognition\n");
+    printf("1 - EVR play sound                      | 2 - EVR report ready for audio input\n");
+    printf("3 - EVR report processing input         | 4 - EVR send message\n");
+    
     printf("o - Set speaker volume to 0  (minimum)  | O - Set speaker volume to 9  (default)\n");
     printf("p - Set speaker volume to 12 (higher)   | P - Set speaker volume to 15 (maximum)\n");
     printf("q - Set microphone gain to 0  (minimum) | Q - Set microphone gain to 9  (default)\n");
@@ -180,31 +189,29 @@ static void show_usage(void){
 }
 
 static void stdin_process(char cmd){
+    uint8_t status = ERROR_CODE_SUCCESS;
+
     switch (cmd){
         case 'a':
             log_info("USER:\'%c\'", cmd);
             printf("Establish HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
-            hfp_ag_establish_service_level_connection(device_addr);
+            status = hfp_ag_establish_service_level_connection(device_addr);
             break;
         case 'A':
             log_info("USER:\'%c\'", cmd);
             printf("Release HFP service level connection.\n");
-            hfp_ag_release_service_level_connection(acl_handle);
+            status = hfp_ag_release_service_level_connection(acl_handle);
             break;
-        case 'Z':
-            log_info("USER:\'%c\'", cmd);
-            printf("Release HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
-            hfp_ag_release_service_level_connection(acl_handle);
-            break;
+            
         case 'b':
             log_info("USER:\'%c\'", cmd);
             printf("Establish Audio connection %s...\n", bd_addr_to_str(device_addr));
-            hfp_ag_establish_audio_connection(acl_handle);
+            status = hfp_ag_establish_audio_connection(acl_handle);
             break;
         case 'B':
             log_info("USER:\'%c\'", cmd);
             printf("Release Audio connection.\n");
-            hfp_ag_release_audio_connection(acl_handle);
+            status = hfp_ag_release_audio_connection(acl_handle);
             break;
         case 'c':
             log_info("USER:\'%c\'", cmd);
@@ -230,7 +237,7 @@ static void stdin_process(char cmd){
         case 'd':
             log_info("USER:\'%c\'", cmd);
             printf("Report AG failure\n");
-            hfp_ag_report_extended_audio_gateway_error_result_code(acl_handle, HFP_CME_ERROR_AG_FAILURE);
+            status = hfp_ag_report_extended_audio_gateway_error_result_code(acl_handle, HFP_CME_ERROR_AG_FAILURE);
             break;
         case 'e':
             log_info("USER:\'%c\'", cmd);
@@ -239,48 +246,48 @@ static void stdin_process(char cmd){
             break;
         case 'E':
             log_info("USER:\'%c\'", cmd);
-            printf("Reject call on AG\n");
+            printf("Terminate call on AG\n");
             hfp_ag_terminate_call();
             break;
         case 'f':
             log_info("USER:\'%c\'", cmd);
             printf("Disable cellular network\n");
-            hfp_ag_set_registration_status(0);
+            status = hfp_ag_set_registration_status(0);
             break;
         case 'F':
             log_info("USER:\'%c\'", cmd);
             printf("Enable cellular network\n");
-            hfp_ag_set_registration_status(1);
+            status = hfp_ag_set_registration_status(1);
             break;
         case 'g':
             log_info("USER:\'%c\'", cmd);
             printf("Set signal strength to 0\n");
-            hfp_ag_set_signal_strength(0);
+            status = hfp_ag_set_signal_strength(0);
             break;
         case 'G':
             log_info("USER:\'%c\'", cmd);
             printf("Set signal strength to 5\n");
-            hfp_ag_set_signal_strength(5);
+            status = hfp_ag_set_signal_strength(5);
             break;
         case 'h':
             log_info("USER:\'%c\'", cmd);
             printf("Disable roaming\n");
-            hfp_ag_set_roaming_status(0);
+            status = hfp_ag_set_roaming_status(0);
             break;
         case 'H':
             log_info("USER:\'%c\'", cmd);
             printf("Enable roaming\n");
-            hfp_ag_set_roaming_status(1);
+            status = hfp_ag_set_roaming_status(1);
             break;
         case 'i':
             log_info("USER:\'%c\'", cmd);
             printf("Set battery level to 3\n");
-            hfp_ag_set_battery_level(3);
+            status = hfp_ag_set_battery_level(3);
             break;
         case 'I':
             log_info("USER:\'%c\'", cmd);
             printf("Set battery level to 5\n");
-            hfp_ag_set_battery_level(5);
+            status = hfp_ag_set_battery_level(5);
             break;
         case 'j':
             log_info("USER:\'%c\'", cmd);
@@ -315,52 +322,74 @@ static void stdin_process(char cmd){
         case 'n':
             log_info("USER:\'%c\'", cmd);
             printf("Disable Voice Recognition\n");
-            hfp_ag_activate_voice_recognition(acl_handle, 0);
+            status = hfp_ag_deactivate_voice_recognition(acl_handle);
             break;
         case 'N':
             log_info("USER:\'%c\'", cmd);
             printf("Enable Voice Recognition\n");
-            hfp_ag_activate_voice_recognition(acl_handle, 1);
+            status = hfp_ag_activate_voice_recognition(acl_handle);
             break;
+
+        case '1':
+            log_info("USER:\'%c\'", cmd);
+            printf("Enhanced_Voice Recognition: play sound\n");
+            status = hfp_ag_enhanced_voice_recognition_report_sending_audio(acl_handle);
+            break;
+        case '2':
+            log_info("USER:\'%c\'", cmd);
+            printf("Enhanced_Voice Recognition: report ready for audio input\n");
+            status = hfp_ag_enhanced_voice_recognition_report_ready_for_audio(acl_handle);
+            break;
+        case '3':
+            log_info("USER:\'%c\'", cmd);
+            printf("Enhanced_Voice Recognition: report processing input\n");
+            status = hfp_ag_enhanced_voice_recognition_report_processing_input(acl_handle);
+            break;
+        case '4':
+            log_info("USER:\'%c\'", cmd);
+            printf("Enhanced_Voice Recognition: send message\n");
+            status = hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
+            break;
+
         case 'o':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 0 (minimum)\n");
-            hfp_ag_set_speaker_gain(acl_handle, 0);
+            status = hfp_ag_set_speaker_gain(acl_handle, 0);
             break;
         case 'O':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 9 (default)\n");
-            hfp_ag_set_speaker_gain(acl_handle, 9);
+            status = hfp_ag_set_speaker_gain(acl_handle, 9);
             break;
         case 'p':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 12 (higher)\n");
-            hfp_ag_set_speaker_gain(acl_handle, 12);
+            status = hfp_ag_set_speaker_gain(acl_handle, 12);
             break;
         case 'P':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 15 (maximum)\n");
-            hfp_ag_set_speaker_gain(acl_handle, 15);
+            status = hfp_ag_set_speaker_gain(acl_handle, 15);
             break;
         case 'q':
             log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 0\n");
-            hfp_ag_set_microphone_gain(acl_handle, 0);
+            status = hfp_ag_set_microphone_gain(acl_handle, 0);
             break;
         case 'Q':
             log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 9\n");
-            hfp_ag_set_microphone_gain(acl_handle, 9);
+            status = hfp_ag_set_microphone_gain(acl_handle, 9);
             break;
         case 's':
             log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 12\n");
-            hfp_ag_set_microphone_gain(acl_handle, 12);
+            status = hfp_ag_set_microphone_gain(acl_handle, 12);
             break;
         case 'S':
             log_info("USER:\'%c\'", cmd);
             printf("Set microphone gain to 15\n");
-            hfp_ag_set_microphone_gain(acl_handle, 15);
+            status = hfp_ag_set_microphone_gain(acl_handle, 15);
             break;
         case 'R':
             log_info("USER:\'%c\'", cmd);
@@ -400,8 +429,32 @@ static void stdin_process(char cmd){
             show_usage();
             break;
     }
+
+    if (status != ERROR_CODE_SUCCESS){
+        printf("Could not perform command, status 0x%02x\n", status);
+    }
 }
 #endif
+
+static void report_status(uint8_t status, const char * message){
+    if (status != ERROR_CODE_SUCCESS){
+        printf("%s command failed, status 0x%02x\n", message, status);
+    } else {
+        printf("%s command successful\n", message);
+    }
+}
+
+static void hfp_outgoing_call_ringing_handler(btstack_timer_source_t * timer){
+    UNUSED(timer);
+    printf("Simulate call connected -> start ringing\n");
+    hfp_ag_outgoing_call_ringing();
+}
+
+static void hfp_outgoing_call_ringing_start(void){
+    btstack_run_loop_set_timer_handler(&hfp_outgoing_call_ringing_timer, hfp_outgoing_call_ringing_handler);
+    btstack_run_loop_set_timer(&hfp_outgoing_call_ringing_timer, 1000); // 1 second timeout
+    btstack_run_loop_add_timer(&hfp_outgoing_call_ringing_timer);
+}
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     UNUSED(channel);
@@ -455,7 +508,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     status = hfp_subevent_service_level_connection_established_get_status(event);
                     if (status != ERROR_CODE_SUCCESS){
-                        printf("Connection failed, staus 0x%02x\n", status);
+                        printf("Connection failed, status 0x%02x\n", status);
                         break;
                     }
                     acl_handle = hfp_subevent_service_level_connection_established_get_acl_handle(event);
@@ -494,16 +547,28 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         hci_request_sco_can_send_now_event();
                     }
                     break;
+          
+                case HFP_SUBEVENT_CALL_ANSWERED:
+                    printf("Call answered\n");
+                    break;
+          
+                case HFP_SUBEVENT_CALL_TERMINATED:
+                    printf("Call terminated\n");
+                    break;
+          
                 case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
                     printf("Audio connection released\n");
                     sco_handle = HCI_CON_HANDLE_INVALID;
                     sco_demo_close();
                     break;
-                case HFP_SUBEVENT_START_RINGINIG:
-                    printf("Start Ringing\n");
-                    break;        
-                case HFP_SUBEVENT_STOP_RINGINIG:
-                    printf("Stop Ringing\n");
+                case HFP_SUBEVENT_START_RINGING:
+                    printf("** START Ringing **\n");
+                    break;
+                case HFP_SUBEVENT_RING:
+                    printf("** Ring **\n");
+                    break;
+                case HFP_SUBEVENT_STOP_RINGING:
+                    printf("** STOP Ringing **\n");
                     break;
                 case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
                     printf("Outgoing call '%s'\n", hfp_subevent_place_call_with_number_get_number(event));
@@ -511,10 +576,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     if ( strcmp("1234567", hfp_subevent_place_call_with_number_get_number(event)) == 0
                       || strcmp("7654321", hfp_subevent_place_call_with_number_get_number(event)) == 0
                       || (memory_1_enabled && strcmp(">1", hfp_subevent_place_call_with_number_get_number(event)) == 0)){
-                        printf("Dialstring valid: accept call\n");
+                        printf("Dial string valid: accept call\n");
                         hfp_ag_outgoing_call_accepted();
+                        hfp_outgoing_call_ringing_start();
                     } else {
-                        printf("Dialstring invalid: reject call\n");
+                        printf("Dial string invalid: reject call\n");
                         hfp_ag_outgoing_call_rejected();
                     }
                     break;
@@ -523,12 +589,81 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     printf("Attach number to voice tag. Sending '1234567\n");
                     hfp_ag_send_phone_number_for_voice_tag(acl_handle, "1234567");
                     break;
+               
                 case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
                     printf("Send DTMF Codes: '%s'\n", hfp_subevent_transmit_dtmf_codes_get_dtmf(event));
                     hfp_ag_send_dtmf_code_done(acl_handle);
                     break;
-                case HFP_SUBEVENT_CALL_ANSWERED:
-                    printf("Call answered by HF\n");
+               
+                case HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED:
+                    status = hfp_subevent_voice_recognition_activated_get_status(event);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("Voice Recognition Activate command failed\n");
+                        break;
+                    }
+
+                    switch (hfp_subevent_voice_recognition_activated_get_enhanced(event)){
+                        case 0:
+                            printf("\nVoice recognition ACTVATED\n\n");
+                            break;
+                        default:
+                            printf("\nEnhanced voice recognition ACTVATED\n\n");
+                            break;
+                    }
+                    break;
+                
+                case HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED:
+                    status = hfp_subevent_voice_recognition_deactivated_get_status(event);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("Voice Recognition Deactivate command failed\n");
+                        break;
+                    }
+                    printf("\nVoice Recognition DEACTIVATED\n\n");
+                    break;
+
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO:
+                    status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
+                    report_status(status, "Enhanced Voice recognition: READY FOR AUDIO");
+                    break;
+
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT:
+                    status = hfp_subevent_enhanced_voice_recognition_ag_ready_to_accept_audio_input_get_status(event);
+                    report_status(status, "Enhanced Voice recognition: AG READY TO ACCEPT AUDIO INPUT");                   
+                    break;
+
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND:
+                    status = hfp_subevent_enhanced_voice_recognition_ag_is_starting_sound_get_status(event);
+                    report_status(status, "Enhanced Voice recognition: AG IS STARTING SOUND");          
+                    break;
+
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT:
+                    status = hfp_subevent_enhanced_voice_recognition_ag_is_processing_audio_input_get_status(event);
+                    report_status(status, "Enhanced Voice recognition: AG IS PROCESSING AUDIO INPUT");           
+                    break;
+
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT:
+                    status = hfp_subevent_enhanced_voice_recognition_ag_message_sent_get_status(event);
+                    report_status(status, "Enhanced Voice recognition: AG MESSAGE SENT");
+                    printf("Enhanced Voice recognition: \'%s\'\n\n", msg.text);   
+                    break;
+
+                case HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE:
+                    status = hfp_subevent_echo_canceling_and_noise_reduction_deactivate_get_status(event);
+                    report_status(status, "Echo Canceling and Noise Reduction Deactivate");
+                    break;
+
+                case HFP_SUBEVENT_HF_INDICATOR:
+                    switch (hfp_subevent_hf_indicator_get_uuid(event)){
+                        case HFP_HF_INDICATOR_UUID_ENHANCED_SAFETY:
+                            printf("Received ENHANCED SAFETY indicator, value %d\n", hfp_subevent_hf_indicator_get_value(event));
+                            break;
+                        case HFP_HF_INDICATOR_UUID_BATTERY_LEVEL:
+                            printf("Received BATTERY LEVEL indicator, value %d\n", hfp_subevent_hf_indicator_get_value(event));
+                            break;
+                        default:
+                            printf("Received HF INDICATOR indicator, UUID 0x%4X, value %d\n", hfp_subevent_hf_indicator_get_uuid(event), hfp_subevent_hf_indicator_get_value(event));
+                            break;
+                    }
                     break;
                 default:
                     break;
@@ -581,6 +716,9 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_AGSF_ABILITY_TO_REJECT_A_CALL)    |
         (1<<HFP_AGSF_IN_BAND_RING_TONE)           |
         (1<<HFP_AGSF_VOICE_RECOGNITION_FUNCTION)  |
+        (1<<HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
+        (1<<HFP_AGSF_VOICE_RECOGNITION_TEXT) |
+        (1<<HFP_AGSF_EC_NR_FUNCTION) |
         (1<<HFP_AGSF_THREE_WAY_CALLING);
     int wide_band_speech = 1;
 
@@ -609,7 +747,7 @@ int btstack_main(int argc, const char * argv[]){
     // register for HFP events
     hfp_ag_register_packet_handler(&packet_handler);
 
-    // parse humand readable Bluetooth address
+    // parse human readable Bluetooth address
     sscanf_bd_addr(device_addr_string, device_addr);
 
 #ifdef HAVE_BTSTACK_STDIN

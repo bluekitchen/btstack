@@ -14,11 +14,11 @@
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY MATTHIAS RINGWALD AND CONTRIBUTORS
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -54,6 +54,9 @@
 // - Value: Len in bytes
 
 #define BTSTACK_TLV_HEADER_LEN 8
+
+#define MAX_TLV_VALUE_SIZE 2048
+
 static const char * btstack_tlv_header_magic = "BTstack";
 
 #define DUMMY_SIZE 4
@@ -141,6 +144,9 @@ static int btstack_tlv_posix_get_tag(void * context, uint32_t tag, uint8_t * buf
 static int btstack_tlv_posix_store_tag(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size){
 	btstack_tlv_posix_t * self = (btstack_tlv_posix_t *) context;
 
+	// enforce arbitrary max value size
+	btstack_assert(data_size <= MAX_TLV_VALUE_SIZE);
+
 	// remove old entry
 	tlv_entry_t * old_entry = btstack_tlv_posix_find_entry(self, tag);
 	if (old_entry){
@@ -193,8 +199,8 @@ static int btstack_tlv_posix_read_db(btstack_tlv_posix_t * self){
                     uint32_t tag = big_endian_read_32(entry, 0);
                     uint32_t len = big_endian_read_32(entry, 4);
 
-                    // arbitrary safety check: values < 1000 bytes each
-                    if (len > 1000) break;
+                    // arbitrary safety check: values <= MAX_TLV_VALUE_SIZE
+                    if (len > MAX_TLV_VALUE_SIZE) break;
 
                     // create new entry for regular tag
                     tlv_entry_t * new_entry = NULL;

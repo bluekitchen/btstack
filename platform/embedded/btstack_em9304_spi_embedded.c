@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -43,7 +43,7 @@
  */
 
 #include "btstack_debug.h"
-#include "btstack_run_loop_embedded.h"
+#include "btstack_run_loop.h"
 #include "btstack_em9304_spi.h"
 #include "hal_em9304_spi.h"
 
@@ -58,12 +58,12 @@ static int btstack_em9304_spi_embedded_notify_transfer_done;
 
 static void btstack_em9304_spi_embedded_ready(void){
     btstack_em9304_spi_embedded_notify_ready = 1;
-    btstack_run_loop_embedded_trigger();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static void btstack_em9304_spi_transfer_done(void){
     btstack_em9304_spi_embedded_notify_transfer_done = 1;
-    btstack_run_loop_embedded_trigger();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static void btstack_em9304_spi_embedded_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {

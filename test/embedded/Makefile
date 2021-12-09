@@ -62,6 +62,7 @@ all: build-coverage/embedded_test build-asan/embedded_test \
 	 build-coverage/btstack_util_test build-asan/btstack_util_test \
 	 build-coverage/l2cap_le_signaling_test build-asan/l2cap_le_signaling_test \
 	 build-coverage/hci_cmd_test build-asan/hci_cmd_test \
+	 build-coverage/hci_dump_test build-asan/hci_dump_test \
 	 build-coverage/freertos_test build-asan/freertos_test \
 
 build-%:
@@ -115,6 +116,11 @@ build-coverage/hci_cmd_test: ${COMMON_OBJ_COVERAGE} build-coverage/hci_cmd_test.
 build-asan/hci_cmd_test: ${COMMON_OBJ_ASAN} build-asan/hci_cmd_test.o | build-asan
 	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
+build-coverage/hci_dump_test: ${COMMON_OBJ_COVERAGE} build-coverage/hci_dump_test.o build-coverage/hci_dump.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/hci_dump_test: ${COMMON_OBJ_ASAN} build-asan/hci_dump_test.o build-asan/hci_dump.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
 	build-asan/embedded_test
@@ -123,6 +129,7 @@ test: all
 	build-asan/btstack_util_test
 	build-asan/l2cap_le_signaling_test
 	build-asan/hci_cmd_test
+	build-asan/hci_dump_test
 
 coverage: all
 	rm -f build-coverage/*.gcda
@@ -132,6 +139,7 @@ coverage: all
 	build-coverage/btstack_util_test
 	build-coverage/l2cap_le_signaling_test
 	build-coverage/hci_cmd_test
+	build-coverage/hci_dump_test
 
 clean:
 	rm -rf build-coverage build-asan *.dSYM

@@ -62,7 +62,9 @@ extern "C" uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
 }
 extern "C" void avdtp_emit_sink_and_source(uint8_t * packet, uint16_t size){}
 extern "C" void avdtp_emit_source(uint8_t * packet, uint16_t size){}
-extern "C" void l2cap_request_can_send_now_event(uint16_t local_cid){}
+extern "C" uint8_t l2cap_request_can_send_now_event(uint16_t local_cid){
+    return ERROR_CODE_SUCCESS;
+}
 extern "C" btstack_packet_handler_t avdtp_packet_handler_for_stream_endpoint(const avdtp_stream_endpoint_t * stream_endpoint){
     UNUSED(stream_endpoint);
     return NULL;

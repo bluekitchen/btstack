@@ -251,8 +251,8 @@ SRCS += $(CVSD_PLC_OBJ)
 SRCS += $(HXCMOD_PLAYER_OBJ)
 SRCS += $(HFP_OBJ)
 SRCS += hsp_hs.o hsp_ag.o 
-SRCS += obex_iterator.o goep_client.o pbap_client.o md5.o yxml.o
-SRCS +=  pan.c bnep.c bnep_lwip.c
+SRCS += obex_parser.o goep_client.o pbap_client.o md5.o yxml.o
+SRCS += pan.c bnep.c bnep_lwip.c
 SRCS += ${LWIP_SRC}
 
 # Enable assertion checking for development

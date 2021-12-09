@@ -18,7 +18,6 @@ include ${BTSTACK_ROOT}/example/Makefile.inc
 
 # CC = gcc-fsf-4.9
 CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
-# CFLAGS += -Werror
 
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
 		  -I${BTSTACK_ROOT}/platform/windows \

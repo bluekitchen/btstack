@@ -2,7 +2,7 @@
 BTSTACK_ROOT ?= ../..
 
 CORE += \
-	bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c \
+	bluetooth_init_cc2564C_1.5.c \
 	btstack_chipset_cc256x.c \
 	btstack_chipset_csr.c \
 	btstack_chipset_em9301.c \
@@ -19,6 +19,7 @@ CORE += \
 	main.c \
 	wav_util.c 					\
 	btstack_stdin_posix.c \
+	btstack_signal.c \
 
 # TI-WL183x requires TIInit_11.8.32.c
 
@@ -37,6 +38,9 @@ CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/chipset/stlc2500d \
 	-I$(BTSTACK_ROOT)/chipset/tc3566x \
 	-I${BTSTACK_ROOT}/3rd-party/tinydir
+
+# add pthread for ctrl-c signal handler
+LDFLAGS += -lpthread
 
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded

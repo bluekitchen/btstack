@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -93,18 +93,22 @@ static uint16_t pbap_cid;
 
 static int sim1_selected;
 
-static void select_phonebook(const char * phonebook){
-    phonebook_name = phonebook;
-    sprintf(phonebook_path, "%s%s.vcf", sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook);
-    sprintf(phonebook_folder, "%s%s",   sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook);
-    printf("[-] Phonebook name   '%s'\n", phonebook_name);
+static void refresh_phonebook_folder_and_path(void){
+    sprintf(phonebook_path, "%s%s.vcf", sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook_name);
+    sprintf(phonebook_folder, "%s%s",   sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook_name);
     printf("[-] Phonebook folder '%s'\n", phonebook_folder);
     printf("[-] Phonebook path   '%s'\n", phonebook_path);
 }
 
+static void select_phonebook(const char * phonebook){
+    phonebook_name = phonebook;
+    printf("[-] Phonebook name   '%s'\n", phonebook_name);
+    refresh_phonebook_folder_and_path();
+}
+
 #ifdef HAVE_BTSTACK_STDIN
 
-// Testig User Interface 
+// Testing User Interface
 static void show_usage(void){
     bd_addr_t iut_address;
     gap_local_bd_addr(iut_address);
@@ -152,7 +156,7 @@ static void stdin_process(char c){
         case 'b':
             printf("[+] SIM1 selected'\n");
             sim1_selected = 1;
-            select_phonebook(phonebook_folder);
+            refresh_phonebook_folder_and_path();
             break;
 
         case 'd':
@@ -285,7 +289,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             if (status){
                                 printf("[!] Get Phonebook size error: 0x%x\n", status);
                             } else {
-                                printf("[+] Phonebook size: %u\n", pbap_subevent_phonebook_size_get_phoneboook_size(packet));
+                                printf("[+] Phonebook size: %u\n", pbap_subevent_phonebook_size_get_phonebook_size(packet));
                             }
                             break;
                         case PBAP_SUBEVENT_CARD_RESULT:

@@ -9,7 +9,7 @@ nav:
   - 'Welcome': index.md
   - 'Quick Start': quick_start.md
   - 'BTstack Architecture': architecture.md
-  - 'How to configure Btstack': how_to.md
+  - 'How to configure BTstack': how_to.md
   - 'Protocols': protocols.md
   - 'Profiles':  profiles.md
   - 'Implemented GATT Services': gatt_services.md

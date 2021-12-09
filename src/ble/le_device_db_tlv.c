@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -109,7 +109,7 @@ static uint32_t le_device_db_tlv_tag_for_index(uint8_t index){
     return (tag_0 << 24u) | (tag_1 << 16u) | (tag_2 << 8u) | index;
 }
 
-// @returns success
+// @return success
 // @param index = entry_pos
 static bool le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
     btstack_assert(le_device_db_tlv_btstack_tlv_impl != NULL);
@@ -121,7 +121,7 @@ static bool le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
 	return size == sizeof(le_device_db_entry_t);
 }
 
-// @returns success
+// @return success
 // @param index = entry_pos
 static bool le_device_db_tlv_store(int index, le_device_db_entry_t * entry){
     btstack_assert(le_device_db_tlv_btstack_tlv_impl != NULL);
@@ -170,7 +170,7 @@ void le_device_db_set_local_bd_addr(bd_addr_t bd_addr){
     (void)bd_addr;
 }
 
-// @returns number of device in db
+// @return number of device in db
 int le_device_db_count(void){
 	return num_valid_entries;
 }
@@ -203,6 +203,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     int index_for_lowest_seq_nr = -1;
     int index_for_addr  = -1;
     int index_for_empty = -1;
+    bool new_entry = false;
 
 	// find unused entry in the used list
     int i;
@@ -234,6 +235,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     if (index_for_addr >= 0){
         index_to_use = index_for_addr;
     } else if (index_for_empty >= 0){
+        new_entry = true;
         index_to_use = index_for_empty;
     } else if (index_for_lowest_seq_nr >= 0){
         index_to_use = index_for_lowest_seq_nr;
@@ -268,8 +270,8 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     // set in entry_mape
     entry_map[index_to_use] = 1;
 
-    // keep track - don't increase if old entry found
-    if (index_for_addr < 0){
+    // keep track - don't increase if old entry found or replaced
+    if (new_entry){
         num_valid_entries++;
     }
 

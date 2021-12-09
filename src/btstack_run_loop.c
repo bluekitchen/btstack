@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -60,12 +60,14 @@ extern const btstack_run_loop_t btstack_run_loop_embedded;
  */
 
 // private data (access only by run loop implementations)
-btstack_linked_list_t btstack_run_loop_base_timers;
-btstack_linked_list_t btstack_run_loop_base_data_sources;
+btstack_linked_list_t  btstack_run_loop_base_timers;
+btstack_linked_list_t  btstack_run_loop_base_data_sources;
+btstack_linked_list_t  btstack_run_loop_base_callbacks;
 
 void btstack_run_loop_base_init(void){
     btstack_run_loop_base_timers = NULL;
     btstack_run_loop_base_data_sources = NULL;
+    btstack_run_loop_base_callbacks = NULL;
 }
 
 void btstack_run_loop_base_add_data_source(btstack_data_source_t * data_source){
@@ -117,14 +119,14 @@ void btstack_run_loop_base_dump_timer(void){
     uint16_t i = 0;
     for (it = (btstack_linked_item_t *) btstack_run_loop_base_timers; it ; it = it->next){
         btstack_timer_source_t * timer = (btstack_timer_source_t*) it;
-        log_info("timer %u (%p): timeout %" PRIu32 "u\n", i, timer, timer->timeout);
+        log_info("timer %u (%p): timeout %" PRIu32 "u\n", i, (void *) timer, timer->timeout);
     }
 #endif
 
 }
 /**
  * @brief Get time until first timer fires
- * @returns -1 if no timers, time until next timeout otherwise
+ * @return -1 if no timers, time until next timeout otherwise
  */
 int32_t btstack_run_loop_base_get_time_until_timeout(uint32_t now){
     if (btstack_run_loop_base_timers == NULL) return -1;
@@ -149,6 +151,22 @@ void btstack_run_loop_base_poll_data_sources(void){
     }
 }
 
+void btstack_run_loop_base_add_callback(btstack_context_callback_registration_t * callback_registration){
+    btstack_linked_list_add_tail(&btstack_run_loop_base_callbacks, (btstack_linked_item_t *) callback_registration);
+}
+
+
+void btstack_run_loop_base_execute_callbacks(void){
+    while (1){
+        btstack_context_callback_registration_t * callback_registration = (btstack_context_callback_registration_t *) btstack_linked_list_pop(&btstack_run_loop_base_callbacks);
+        if (callback_registration == NULL){
+            break;
+        }
+        (*callback_registration->callback)(callback_registration->context);
+    }
+}
+
+
 /**
  * BTstack Run Loop Implementation, mainly dispatches to port-specific implementation
  */
@@ -157,11 +175,11 @@ void btstack_run_loop_base_poll_data_sources(void){
 
 void btstack_run_loop_set_timer_handler(btstack_timer_source_t * timer, void (*process)(btstack_timer_source_t * _timer)){
     timer->process = process;
-};
+}
 
 void btstack_run_loop_set_data_source_handler(btstack_data_source_t * data_source, void (*process)(btstack_data_source_t *_data_source,  btstack_data_source_callback_type_t callback_type)){
     data_source->process = process;
-};
+}
 
 void btstack_run_loop_set_data_source_fd(btstack_data_source_t * data_source, int fd){
     data_source->source.fd = fd;
@@ -211,7 +229,13 @@ int btstack_run_loop_remove_data_source(btstack_data_source_t * data_source){
     return the_run_loop->remove_data_source(data_source);
 }
 
-void btstack_run_loop_set_timer(btstack_timer_source_t * timer, uint32_t timeout_in_ms){
+void btstack_run_loop_poll_data_sources_from_irq(void){
+    btstack_assert(the_run_loop != NULL);
+    btstack_assert(the_run_loop->poll_data_sources_from_irq != NULL);
+    the_run_loop->poll_data_sources_from_irq();
+}
+
+void btstack_run_loop_set_timer(btstack_timer_source_t *timer, uint32_t timeout_in_ms){
     btstack_assert(the_run_loop != NULL);
     the_run_loop->set_timer(timer, timeout_in_ms);
 }
@@ -267,6 +291,18 @@ void btstack_run_loop_timer_dump(void){
 void btstack_run_loop_execute(void){
     btstack_assert(the_run_loop != NULL);
     the_run_loop->execute();
+}
+
+void btstack_run_loop_trigger_exit(void){
+    btstack_assert(the_run_loop != NULL);
+    btstack_assert(the_run_loop->trigger_exit != NULL);
+    the_run_loop->trigger_exit();
+}
+
+void btstack_run_loop_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration){
+    btstack_assert(the_run_loop != NULL);
+    btstack_assert(the_run_loop->execute_on_main_thread != NULL);
+    the_run_loop->execute_on_main_thread(callback_registration);
 }
 
 // init must be called before any other run_loop call

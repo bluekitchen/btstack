@@ -2,6 +2,7 @@
 
 ## Setup
 - tool: `pbap_pce_test`
+- assert TSPX_bd_addr_iut matches our addrewss
 - required config flags: 
     - `ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE`
     - `ENABLE_GOEP_L2CAP`
@@ -16,12 +17,13 @@
 
 ## Test Cases
 - PBAP/PCE/GOEP/BC/BV-04-I: a, L, t, confirm match
-- PBAP/PCE/GOEP/CON/BV-01-C: a, L, t, confirm match
+- PBAP/PCE/GOEP/CON/BV-01-C: (wait)
 - PBAP/PCE/GOEP/SRM/BV-05: a, g (wait)
   PBAP/PCE/GOEP/SRM/BV-07: a, g (wait)
-- PBAP/PCE/GOEP/SRMP/BV-04: a, g (wait)
-  PBAP/PCE/GOEP/SRMP/BV-05: a, g
-  PBAP/PCE/GOEP/SRMP/BV-06: a, g
+- TSPC_PBAP_25_5 "Send OBEX SRMP header" disabled in last listing
+  - PBAP/PCE/GOEP/SRMP/BV-04: a, g (wait)
+  - PBAP/PCE/GOEP/SRMP/BV-05: a, g
+- PBAP/PCE/GOEP/SRMP/BV-06: a, g
 - PBAP/PCE/GOEP/SRMP/BI-01: a, g
  
 - PBAP/PCE/PBB/BV-01-C: a, r
@@ -44,9 +46,9 @@
 - PBAP/PCE/PBF/BV-03-I: a, r, hx (press x right after starting the list download)
   
 - PBAP/PCE/PDF/BV-01-I: a, g (just wait)
-- PBAP/PCE/PDF/BV-02-I: a, g (just wait)
-- PBAP/PCE/PDF/BV-03-I: a, g
-- PBAP/PCE/PDF/BV-04-I: a, g, x
+- PBAP/PCE/PDF/BV-02-I: a, g, (wait), t
+- PBAP/PCE/PDF/BV-04-I: a, g, t
+- PBAP/PCE/PDF/BV-06-I: a, g, x
 
 - PBAP/PCE/SSM/BV-01-C: a
 - PBAP/PCE/SSM/BV-02-C: a, t

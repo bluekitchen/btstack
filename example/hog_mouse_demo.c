@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -98,6 +98,7 @@ const uint8_t hid_descriptor_mouse_boot_mode[] = {
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t l2cap_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static uint8_t battery = 100;
 static hci_con_handle_t con_handle = HCI_CON_HANDLE_INVALID;
@@ -119,10 +120,8 @@ const uint8_t adv_data_len = sizeof(adv_data);
 
 static void hog_mouse_setup(void){
 
-
-    // setup l2cap and register for connection parameter updates
+    // setup l2cap and
     l2cap_init();
-    l2cap_register_packet_handler(&packet_handler);
 
     // setup le device db
     le_device_db_init();
@@ -158,6 +157,10 @@ static void hog_mouse_setup(void){
     // register for events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for connection parameter updates
+    l2cap_event_callback_registration.callback = &packet_handler;
+    l2cap_add_event_handler(&l2cap_event_callback_registration);
 
     sm_event_callback_registration.callback = &packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);

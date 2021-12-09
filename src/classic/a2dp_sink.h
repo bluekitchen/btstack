@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -117,15 +117,40 @@ void a2dp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8
  * @brief Establish stream.
  * @param remote
  * @param local_seid  		ID of a local stream endpoint.
- * @param out_a2dp_cid 		Assigned A2DP channel identifyer used for furhter A2DP commands.   
+ * @param out_a2dp_cid 		Assigned A2DP channel identifier used for furhter A2DP commands.   
  */
 uint8_t a2dp_sink_establish_stream(bd_addr_t remote, uint8_t local_seid, uint16_t * out_a2dp_cid);
 
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+/**
+ * @brief Accept starting the stream on A2DP_SUBEVENT_START_STREAM_REQUESTED event.
+ * @param a2dp_cid      A2DP channel identifier.   
+ * @param local_seid        ID of a local stream endpoint.
+ */
+uint8_t a2dp_sink_start_stream_accept(uint16_t a2dp_cid, uint8_t local_seid);
+
+/**
+ * @brief Reject starting the stream on A2DP_SUBEVENT_START_STREAM_REQUESTED event.
+ * @param a2dp_cid      A2DP channel identifier.
+ * @param local_seid        ID of a local stream endpoint.
+ */
+uint8_t a2dp_sink_start_stream_reject(uint16_t a2dp_cid, uint8_t local_seid);
+#endif
+
 /**
  * @brief Release stream and disconnect from remote.
- * @param a2dp_cid 			A2DP channel identifyer.
+ * @param a2dp_cid 			A2DP channel identifier.
  */
 void a2dp_sink_disconnect(uint16_t a2dp_cid);
+
+/**
+ * @brief Register media configuration validator. Can reject insuitable configuration or report stream endpoint as currently busy
+ * @note validator has to return AVDTP error codes like: AVDTP_ERROR_CODE_SEP_IN_USE or AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION
+ *       the callback receives the media configuration in the same format as the existing A2dP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ *       and similar
+ * @param callback
+ */
+void a2dp_sink_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size));
 
 /**
  * @brief De-Init A2DP Sink device.

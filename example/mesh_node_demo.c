@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -48,8 +48,6 @@
 
 #include "btstack.h"
 #include "mesh_node_demo.h"
-
-const char * device_uuid_string = "001BDC0810210B0E0A0C000B0E0A0C00";
 
 // general
 #define MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER   0x0000u
@@ -181,34 +179,6 @@ static void stdin_process(char cmd){
     }
 }
 
-static int scan_hex_byte(const char * byte_string){
-    int upper_nibble = nibble_for_char(*byte_string++);
-    if (upper_nibble < 0) return -1;
-    int lower_nibble = nibble_for_char(*byte_string);
-    if (lower_nibble < 0) return -1;
-    return (upper_nibble << 4) | lower_nibble;
-}
-
-static int btstack_parse_hex(const char * string, uint16_t len, uint8_t * buffer){
-    int i;
-    for (i = 0; i < len; i++) {
-        int single_byte = scan_hex_byte(string);
-        if (single_byte < 0) return 0;
-        string += 2;
-        buffer[i] = (uint8_t)single_byte;
-        // don't check seperator after last byte
-        if (i == len - 1) {
-            return 1;
-        }
-        // optional seperator
-        char separator = *string;
-        if (separator == ':' && separator == '-' && separator == ' ') {
-            string++;
-        }
-    }
-    return 1;
-}
-
 int btstack_main(void);
 int btstack_main(void)
 {
@@ -281,10 +251,6 @@ int btstack_main(void)
     gap_set_scan_parameters(0, 0x300, 0x300);
     gap_start_scan();
 #endif
-
-    uint8_t device_uuid[16];
-    btstack_parse_hex(device_uuid_string, 16, device_uuid);
-    mesh_node_set_device_uuid(device_uuid);
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);

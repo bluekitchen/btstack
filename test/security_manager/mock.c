@@ -135,11 +135,11 @@ void gap_local_bd_addr(bd_addr_t address_buffer){
 void hci_halting_defer(void){
 }
 
-int hci_can_send_command_packet_now(void){
-	return 1;
+bool hci_can_send_command_packet_now(void){
+	return true;
 }
-int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
-	return 1;
+bool hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
+	return true;
 }
 
 hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type){
@@ -176,6 +176,9 @@ uint16_t hci_get_manufacturer(void){
 void hci_le_set_own_address_type(uint8_t own_address){
 }
 
+void hci_le_random_address_set(const bd_addr_t addr){
+}
+
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t cid){
 	if (packet_buffer_len) return;
     uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 0, 0};
@@ -183,15 +186,15 @@ void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, u
     le_data_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-int  l2cap_can_send_connectionless_packet_now(void){
+bool l2cap_can_send_connectionless_packet_now(void){
 	return packet_buffer_len == 0;
 }
 
-int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
+bool l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
 	return packet_buffer_len == 0;
 }
 
-int hci_send_cmd(const hci_cmd_t *cmd, ...){
+uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
     uint16_t len = hci_cmd_create_from_template(packet_buffer, cmd, argptr);
@@ -216,7 +219,7 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 	    // printf("le_encrypt res ");
 	    // hexdump(aes128_cyphertext, 16);
 	}
-	return 0;
+	return ERROR_CODE_SUCCESS;
 }
 
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {
@@ -227,17 +230,17 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 	btstack_linked_list_add(&event_packet_handlers, (btstack_linked_item_t *) callback_handler);
 }
 
-int l2cap_reserve_packet_buffer(void){
+bool l2cap_reserve_packet_buffer(void){
 	printf("l2cap_reserve_packet_buffer\n");
-	return 1;
+	return true;
 }
 
-int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
+uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
 	printf("l2cap_send_prepared_connectionless\n");
 	return 0;
 }
 
-int l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t * buffer, uint16_t len){
+uint8_t l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t * buffer, uint16_t len){
 	// printf("l2cap_send_connectionless\n");
 
     int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
@@ -257,15 +260,15 @@ int l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t * buffer, u
 	dump_packet(HCI_ACL_DATA_PACKET, packet_buffer, len + 8);
 	packet_buffer_len = len + 8;
 
-	return 0;
+	return ERROR_CODE_SUCCESS;
 }
 
 void hci_disconnect_security_block(hci_con_handle_t con_handle){
 	printf("hci_disconnect_security_block \n");	
 }
 
-int hci_non_flushable_packet_boundary_flag_supported(void){
-	return 1;
+bool hci_non_flushable_packet_boundary_flag_supported(void){
+	return true;
 }
 
 void l2cap_run(void){

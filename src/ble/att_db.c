@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -339,7 +339,7 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
     if (required_encryption_size != 0) required_encryption_size++;   // store -1 to fit into 4 bit
 
     log_debug("att_validate_security. flags 0x%04x (=> security level %u, key size %u) authorized %u, authenticated %u, encryption_key_size %u, secure connection %u",
-        it->flags, required_security_level, required_encryption_size, att_connection->authorized, att_connection->authenticated, att_connection->encryption_key_size, att_connection->secure_connection);
+        it->flags, security_settings.required_security_level, required_encryption_size, att_connection->authorized, att_connection->authenticated, att_connection->encryption_key_size, att_connection->secure_connection);
 
     bool sc_missing = security_settings.requires_secure_connection && (att_connection->secure_connection == 0u);
     switch (security_settings.required_security_level){
@@ -499,7 +499,7 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
     }
 
     uint16_t offset      = 1;
-    uint16_t in_group    = 0;
+    bool in_group        = false;
     uint16_t prev_handle = 0;
 
     att_iterator_t it;
@@ -517,7 +517,7 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
             log_info("End of group, handle 0x%04x", prev_handle);
             little_endian_store_16(response_buffer, offset, prev_handle);
             offset += 2u;
-            in_group = 0;
+            in_group = false;
 
             // check if space for another handle pair available
             if ((offset + 4u) > response_buffer_size){
@@ -533,7 +533,7 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
             log_info("Begin of group, handle 0x%04x", it.handle);
             little_endian_store_16(response_buffer, offset, it.handle);
             offset += 2u;
-            in_group = 1;
+            in_group = true;
         }
     }
 
@@ -903,7 +903,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
 
     uint16_t offset   = 1;
     uint16_t pair_len = 0;
-    uint16_t in_group = 0;
+    bool     in_group = false;
     uint16_t group_start_handle = 0;
     uint8_t const * group_start_value = NULL;
     uint16_t prev_handle = 0;
@@ -930,7 +930,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
             (void)memcpy(response_buffer + offset, group_start_value,
                          pair_len - 4u);
             offset += pair_len - 4u;
-            in_group = 0;
+            in_group = false;
             
             // check if space for another handle pair available
             if ((offset + pair_len) > response_buffer_size){
@@ -964,7 +964,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
             
             group_start_handle = it.handle;
             group_start_value  = it.value;
-            in_group = 1;
+            in_group = true;
         }
     }        
     
@@ -1253,7 +1253,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
 
 // returns 1 if service found. only primary service.
 bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle){
-    uint16_t in_group    = 0;
+    bool in_group    = false;
     uint16_t prev_handle = 0;
 
     uint8_t attribute_value[2];
@@ -1335,9 +1335,9 @@ uint16_t gatt_server_get_server_configuration_handle_for_characteristic_with_uui
     return gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(start_handle, end_handle, characteristic_uuid16, GATT_SERVER_CHARACTERISTICS_CONFIGURATION);
 }
 
-// returns 1 if service found. only primary service.
-int gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle){
-    uint16_t in_group    = 0;
+// returns true if service found. only primary service.
+bool gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle){
+    bool in_group    = false;
     uint16_t prev_handle = 0;
 
     uint8_t attribute_value[16];
@@ -1354,7 +1354,7 @@ int gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid12
         if (in_group &&
             ((it.handle == 0u) || new_service_started)){
             *end_handle = prev_handle;
-            return 1;
+            return true;
         }
         
         // keep track of previous handle
@@ -1363,10 +1363,10 @@ int gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid12
         // check if found
         if (it.handle && new_service_started && (attribute_len == it.value_len) && (memcmp(attribute_value, it.value, it.value_len) == 0)){
             *start_handle = it.handle;
-            in_group = 1;
+            in_group = true;
         }
     }
-    return 0;
+    return false;
 }
 
 // returns 0 if not found

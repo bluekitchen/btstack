@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -67,8 +67,8 @@
 const char * const type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOOL", "DES", "DEA", "URL"};
 #endif
 
-static uint8_t des_serviceSearchPatternUUID16[]  = {0x35, 0x03, 0x19, 0x00, 0x00};
-static uint8_t des_serviceSearchPatternUUID128[] = {
+static uint8_t des_service_search_pattern_uuid16[]  = {0x35, 0x03, 0x19, 0x00, 0x00};
+static uint8_t des_service_search_pattern_uuid128[] = {
     0x35, 0x11, 0x1c, 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -132,14 +132,14 @@ uint32_t de_get_len_safe(const uint8_t * header, uint32_t size){
     return de_len;
 }
 
-// @returns OK, if UINT16 value was read
+// @return OK, if UINT16 value was read
 int de_element_get_uint16(const uint8_t * element, uint16_t * value){
     if (de_get_size_type(element) != DE_SIZE_16) return 0;
     *value = big_endian_read_16(element, de_get_header_size(element));
     return 1;
 }
 
-// @returns: element is valid UUID
+// @return: element is valid UUID
 int de_get_normalized_uuid(uint8_t *uuid128, const uint8_t *element){
     de_type_t uuidType = de_get_element_type(element);
     de_size_t uuidSize = de_get_size_type(element);
@@ -162,7 +162,7 @@ int de_get_normalized_uuid(uint8_t *uuid128, const uint8_t *element){
     return 1;
 }
 
-// @returns 0 if no UUID16 or UUID32 is present, and UUID32 otherwise
+// @return 0 if no UUID16 or UUID32 is present, and UUID32 otherwise
 uint32_t de_get_uuid32(const uint8_t * element){
     uint8_t uuid128[16];
     int validUuid128 = de_get_normalized_uuid(uuid128, element);
@@ -206,7 +206,7 @@ void de_create_sequence(uint8_t *header){
     de_store_descriptor_with_len( header, DE_DES, DE_SIZE_VAR_16, 0); // DES, 2 Byte Length
 }
 
-/* starts a sub-sequence, @returns handle for sub-sequence */
+/* starts a sub-sequence, @return handle for sub-sequence */
 uint8_t * de_push_sequence(uint8_t *header){
     int element_len = de_get_len(header);
     de_store_descriptor_with_len(header+element_len, DE_DES, DE_SIZE_VAR_16, 0); // DES, 2 Byte Length
@@ -725,12 +725,12 @@ UNUSED(record);
 }
 
 uint8_t* sdp_service_search_pattern_for_uuid16(uint16_t uuid16){
-    big_endian_store_16(des_serviceSearchPatternUUID16, 3, uuid16);
-    return (uint8_t*)des_serviceSearchPatternUUID16;
+    big_endian_store_16(des_service_search_pattern_uuid16, 3, uuid16);
+    return (uint8_t*)des_service_search_pattern_uuid16;
 }
 
 uint8_t* sdp_service_search_pattern_for_uuid128(const uint8_t * uuid128){
-    (void)memcpy(&des_serviceSearchPatternUUID128[3], uuid128, 16);
-    return (uint8_t*)des_serviceSearchPatternUUID128;
+    (void)memcpy(&des_service_search_pattern_uuid128[3], uuid128, 16);
+    return (uint8_t*)des_service_search_pattern_uuid128;
 }
 

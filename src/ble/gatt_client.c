@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -152,7 +152,7 @@ static gatt_client_t * gatt_client_get_context_for_handle(uint16_t handle){
 }
 
 
-// @returns gatt_client context
+// @return gatt_client context
 // returns existing one, or tries to setup new one
 static gatt_client_t * gatt_client_provide_context_for_handle(hci_con_handle_t con_handle){
     gatt_client_t * gatt_client = gatt_client_get_context_for_handle(con_handle);
@@ -384,7 +384,7 @@ static uint16_t write_blob_length(gatt_client_t * gatt_client){
 }
 
 static void send_gatt_services_request(gatt_client_t *gatt_client){
-    att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_GROUP_TYPE_REQUEST, GATT_PRIMARY_SERVICE_UUID, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle);
+    att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_GROUP_TYPE_REQUEST, gatt_client->uuid16, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle);
 }
 
 static void send_gatt_by_uuid_request(gatt_client_t *gatt_client, uint16_t attribute_group_type){
@@ -702,7 +702,7 @@ static void report_gatt_included_service_uuid128(gatt_client_t * gatt_client, ui
                                                   gatt_client->query_end_handle, uuid128);
 }
 
-// @returns packet pointer
+// @return packet pointer
 // @note assume that value is part of an l2cap buffer - overwrite HCI + L2CAP packet headers
 static const int characteristic_value_event_header_size = 8;
 static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t * value, uint16_t length){
@@ -720,7 +720,7 @@ static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_
     return packet;
 }
 
-// @returns packet pointer
+// @return packet pointer
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static const int long_characteristic_value_event_header_size = 10;
 static uint8_t * setup_long_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * value, uint16_t length){
@@ -1837,11 +1837,24 @@ uint8_t gatt_client_discover_primary_services(btstack_packet_handler_t callback,
     gatt_client->start_group_handle = 0x0001;
     gatt_client->end_group_handle   = 0xffff;
     gatt_client->gatt_client_state = P_W2_SEND_SERVICE_QUERY;
-    gatt_client->uuid16 = 0;
+    gatt_client->uuid16 = GATT_PRIMARY_SERVICE_UUID;
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t gatt_client_discover_secondary_services(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
+    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
+    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
+    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+
+    gatt_client->callback = callback;
+    gatt_client->start_group_handle = 0x0001;
+    gatt_client->end_group_handle   = 0xffff;
+    gatt_client->gatt_client_state = P_W2_SEND_SERVICE_QUERY;
+    gatt_client->uuid16 = GATT_SECONDARY_SERVICE_UUID;
+    gatt_client_run();
+    return ERROR_CODE_SUCCESS;
+}
 
 uint8_t gatt_client_discover_primary_services_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t uuid16){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);

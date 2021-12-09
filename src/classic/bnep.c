@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -814,7 +814,7 @@ static void bnep_channel_finalize(bnep_channel_t *channel)
     
     /* Free ressources and then close the l2cap channel */
     bnep_channel_free(channel);
-    l2cap_disconnect(l2cap_cid, 0x13);
+    l2cap_disconnect(l2cap_cid);
 }
 
 static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *packet, uint16_t size)
@@ -1590,12 +1590,13 @@ static void bnep_handle_can_send_now(uint16_t l2cap_cid){
 /* BNEP BTStack API */
 void bnep_init(void)
 {
-    bnep_services = NULL;
-    bnep_channels = NULL;
     bnep_security_level = gap_get_security_level();
 }
 
 void bnep_deinit(void){
+    bnep_services = NULL;
+    bnep_channels = NULL;
+    bnep_security_level = 0;
 }
 
 void bnep_set_required_security_level(gap_security_level_t security_level)

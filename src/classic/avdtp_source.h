@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -238,7 +238,7 @@ void avdtp_source_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endp
 
 /**
  * @brief Send media packet
- * @param avdtp_cid         AVDTP channel identifyer.
+ * @param avdtp_cid         AVDTP channel identifier.
  * @param local_seid        ID of a local stream endpoint.
  * @param packet
  * @param size
@@ -248,7 +248,7 @@ uint8_t avdtp_source_stream_send_media_packet(uint16_t avdtp_cid, uint8_t local_
 
 /**
  * @brief Send media payload including RTP header
- * @param avdtp_cid         AVDTP channel identifyer.
+ * @param avdtp_cid         AVDTP channel identifier.
  * @param local_seid        ID of a local stream endpoint.
  * @param marker
  * @param payload
@@ -260,7 +260,7 @@ uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t l
 /**
  * @brief Send media payload including RTP header and the SBC media header
  * @deprecated Please use avdtp_source_stream_send_media_payload_rtp
- * @param avdtp_cid         AVDTP channel identifyer.
+ * @param avdtp_cid         AVDTP channel identifier.
  * @param local_seid        ID of a local stream endpoint.
  * @param storage
  * @param num_bytes_to_copy
@@ -270,21 +270,28 @@ uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t l
  */
 int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
 
-
-
 /**
  * @brief Request to send a media packet. Packet can be then sent on reception of AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW event.
- * @param avdtp_cid         AVDTP channel identifyer.
+ * @param avdtp_cid         AVDTP channel identifier.
  * @param local_seid        ID of a local stream endpoint.
  */
 void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avddp_cid, uint8_t local_seid);
 
 /**
  * @brief Return maximal media payload size, does not include media header.
- * @param avdtp_cid         AVDTP channel identifyer.
+ * @param avdtp_cid         AVDTP channel identifier.
  * @param local_seid        ID of a local stream endpoint.
  */
 int avdtp_max_media_payload_size(uint16_t avdtp_cid, uint8_t local_seid);
+
+/**
+ * @brief Register media configuration validator. Can reject insuitable configuration or report stream endpoint as currently busy
+ * @note validator has to return AVDTP error codes like: AVDTP_ERROR_CODE_SEP_IN_USE or AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION
+ *       the callback receives the media configuration in the same format as the existing AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ *       and similar
+ * @param callback
+ */
+void avdtp_source_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size));
 
 /**
  * @brief De-Init AVDTP Source.

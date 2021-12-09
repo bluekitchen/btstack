@@ -42,12 +42,12 @@ list_of_examples = {
                     ["gatt_battery_query"], ["gatt_device_information_query"], ["gatt_heart_rate_client"], 
                     ["nordic_spp_le_counter"], ["nordic_spp_le_streamer"], ["ublox_spp_le_counter"], 
                     ["sm_pairing_central"], ["sm_pairing_peripheral"], 
-                    ["le_data_channel_client"], ["le_data_channel_server"], 
+                    ["le_credit_based_flow_control_mode_client"], ["le_credit_based_flow_control_mode_server"], 
                     ["att_delayed_response"], ["ancs_client_demo"], ["le_mitm"]],
     
     "Networking"    :  [["pan_lwip_http_server"], ["panu_demo"]],
     
-    "Performance" : [["le_streamer_client"], ["gatt_streamer_server"], ["le_data_channel_client"], ["le_data_channel_server"], ["spp_streamer_client"], ["spp_streamer"]],
+    "Performance" : [["le_streamer_client"], ["gatt_streamer_server"], ["le_credit_based_flow_control_mode_client"], ["le_credit_based_flow_control_mode_server"], ["spp_streamer_client"], ["spp_streamer"]],
     "Phone Book Access" : [["pbap_client_demo"]],
     
     "SDP Queries" : [["sdp_general_query"], ["sdp_rfcomm_query"], ["sdp_bnep_query"]],

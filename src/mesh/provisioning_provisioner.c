@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -91,6 +91,7 @@ static uint8_t  prov_start_authentication_method;
 static uint8_t  prov_start_authentication_action;
 static uint8_t  prov_start_authentication_size;
 static uint8_t  prov_authentication_string;
+// ConfirmationInputs = ProvisioningInvitePDUValue || ProvisioningCapabilitiesPDUValue || ProvisioningStartPDUValue || PublicKeyProvisioner || PublicKeyDevice
 static uint8_t  prov_confirmation_inputs[1 + 11 + 5 + 64 + 64];
 static uint8_t  confirmation_provisioner[16];
 static uint8_t  random_provisioner[16];
@@ -99,8 +100,6 @@ static uint8_t  remote_ec_q[64];
 static uint8_t  dhkey[32];
 static uint8_t  confirmation_salt[16];
 static uint8_t  confirmation_key[16];
-// ConfirmationInputs = ProvisioningInvitePDUValue || ProvisioningCapabilitiesPDUValue || ProvisioningStartPDUValue || PublicKeyProvisioner || PublicKeyDevice
-static uint8_t  prov_confirmation_inputs[1 + 11 + 5 + 64 + 64];
 static uint8_t provisioning_salt[16];
 static uint8_t session_key[16];
 static uint8_t session_nonce[16];

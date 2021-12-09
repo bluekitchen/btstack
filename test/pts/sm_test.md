@@ -8,11 +8,14 @@ Current test device: the other Bluetooth 5.0 PTS dongle
 
 # Sequences
 
-SM/CEN/SCCT/BV-07-C: S, p, b, t, 9, t
-SM/CEN/SCCT/BV-09-C: S, p, b, t, 9, t
-
-SM/PER/SCCT/BV-08-C: S, C, a
-SM/PER/SCCT/BV-10-C: S, C, a
-
-SM/CEN/KDU/BI-01-C: { p, t }
-SM/PER/KDU/BI-01-C: C, a
+- SM/CEN/SCCT/BV-03-C: 9, B, t, p, b, t
+- SM/CEN/SCCT/BV-05-C: 9, B, t, p, b, t  
+- SM/CEN/SCCT/BV-07-C: S, p, b, t, 9, t
+- SM/CEN/SCCT/BV-09-C: S, p, b, t, 9, t
+- SM/CEN/KDU/BI-01-C: { p, t }
+- 
+- SM/PER/SCCT/BV-04-C: C, a
+- SM/PER/SCCT/BV-06-C: C, a
+- SM/PER/SCCT/BV-08-C: S, C, a
+- SM/PER/SCCT/BV-10-C: S, C, a
+- SM/PER/KDU/BI-01-C: C, a

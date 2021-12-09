@@ -21,8 +21,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -181,7 +181,7 @@ static void avdtp_source_setup_media_header(uint8_t * media_packet, uint8_t mark
     // rtp header (min size 12B)
     uint16_t pos = 0;
     media_packet[pos++] = (rtp_version << 6) | (padding << 5) | (extension << 4) | csrc_count;
-    media_packet[pos++] = (marker << 1) | payload_type;
+    media_packet[pos++] = (marker << 7) | payload_type;
     big_endian_store_16(media_packet, pos, sequence_number);
     pos += 2;
     big_endian_store_32(media_packet, pos, timestamp);
@@ -234,7 +234,7 @@ uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t l
 
     uint16_t buffer_size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
     uint16_t packet_size = AVDTP_MEDIA_PAYLOAD_HEADER_SIZE + payload_size;
-    if (packet_size >= buffer_size) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    if (packet_size > buffer_size) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     l2cap_reserve_packet_buffer();
     uint8_t * media_packet = l2cap_get_outgoing_buffer();
     avdtp_source_setup_media_header(media_packet, marker, stream_endpoint->sequence_number);

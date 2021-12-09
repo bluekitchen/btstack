@@ -47,7 +47,7 @@ project(EXAMPLE)
 
 main_cmake_template = '''
 idf_component_register(
-        SRCS "EXAMPLE.c" "main.c"
+        SRCS MAIN_FILES
         INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}")
 '''
 
@@ -121,12 +121,14 @@ def create_examples(script_path, suffix):
         shutil.copyfile(script_path + '/template/main/main.c', apps_folder + "/main/main.c")
 
         # copy example file
+        main_files = '"main.c" "' + example + '.c"'
         shutil.copyfile(examples_embedded + file, apps_folder + "/main/" + example + ".c")
 
         # add sco_demo_util.c for audio examples
         if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hs_demo']:
             shutil.copy(examples_embedded + 'sco_demo_util.c', apps_folder + '/main/')
             shutil.copy(examples_embedded + 'sco_demo_util.h', apps_folder + '/main/')
+            main_files += ' "sco_demo_util.c"'
 
         # add component.mk file to main folder
         main_component_mk = apps_folder + "/main/component.mk"
@@ -135,7 +137,7 @@ def create_examples(script_path, suffix):
         # create CMakeLists.txt file
         main_cmake_file = apps_folder + "/main/CMakeLists.txt"
         with open(main_cmake_file, "wt") as fout:
-            fout.write(main_cmake_template.replace("EXAMPLE", example))
+            fout.write(main_cmake_template.replace("MAIN_FILES", main_files))
 
         # add rules to compile gatt db if .gatt file is present
         gatt_path = examples_embedded + example + ".gatt"

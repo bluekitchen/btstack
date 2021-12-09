@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -49,6 +49,15 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+#define AVDTP_MAX_MEDIA_CODEC_INFORMATION_LENGTH 30
+
+    // assume AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN greater or equal to all others
+#define AVDTP_MEDIA_CONFIG_SBC_EVENT_LEN 18
+#define AVDTP_MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN 18
+#define AVDTP_MEDIA_CONFIG_MPEG_AAC_EVENT_LEN 18
+#define AVDTP_MEDIA_CONFIG_ATRAC_EVENT_LEN 18
+#define AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN (13 + AVDTP_MAX_MEDIA_CODEC_INFORMATION_LENGTH)
 
 static inline uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_type, avdtp_message_type_t msg_type){
     return (tr_label<<4) | ((uint8_t)packet_type<<2) | (uint8_t)msg_type;
@@ -94,6 +103,10 @@ void
 avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t reconfigure,
                                    avdtp_capabilities_t *configuration, uint16_t configured_service_categories);
 
+uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, const avdtp_stream_endpoint_t *stream_endpoint,
+                                              uint16_t avdtp_cid, uint8_t reconfigure,
+                                              const adtvp_media_codec_capabilities_t * media_codec);
+
 void avdtp_streaming_emit_connection_established(avdtp_stream_endpoint_t *stream_endpoint, uint8_t status);
 
 void avdtp_streaming_emit_connection_released(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t local_seid);
@@ -107,14 +120,9 @@ uint8_t avdtp_request_can_send_now_initiator(avdtp_connection_t *connection);
 void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
 
 // uint16_t avdtp_cid(avdtp_stream_endpoint_t * stream_endpoint);
-uint8_t  avdtp_local_seid(avdtp_stream_endpoint_t * stream_endpoint);
-uint8_t  avdtp_remote_seid(avdtp_stream_endpoint_t * stream_endpoint);
+uint8_t  avdtp_local_seid(const avdtp_stream_endpoint_t * stream_endpoint);
+uint8_t  avdtp_remote_seid(const avdtp_stream_endpoint_t * stream_endpoint);
 const char * avdtp_si2str(uint16_t index);
-
-void a2dp_replace_subevent_id_and_emit_cmd(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id);
-
-void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t subevent_id);
-
 
 // helper to set/get configuration
 void avdtp_config_sbc_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
@@ -126,6 +134,10 @@ void avdtp_config_mpeg_aac_store(uint8_t * config, const avdtp_configuration_mpe
 void avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
 void avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atrac_t * configuration);
 
+// a2dp helper functions for both sink and source
+uint8_t a2dp_subevent_id_for_avdtp_subevent_id(uint8_t subevent);
+void a2dp_replace_subevent_id_and_emit_cmd(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id);
+void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t subevent_id);
 
 #if defined __cplusplus
 }

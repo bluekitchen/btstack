@@ -14,7 +14,7 @@ The CC2564x needs the correct init script to start up. The Makfile already has e
 
 - CC2560:  bluetooth_init_cc2564_2.14.c
 - CC2564B: bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c
-- CC2564C: bluetooth_init_cc2564C_1.4.c
+- CC2564C: bluetooth_init_cc2564C_1.5.c
 
 Please pick the correct one. The main.c verifies that the correct script is loaded, but the init script is linked to the executable.
 

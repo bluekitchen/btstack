@@ -631,7 +631,7 @@ static void stdin_process(char c){
             break;
         case 's':
             printf("L2CAP Channel Closed\n");
-            l2cap_disconnect(local_cid, 0);
+            l2cap_disconnect(local_cid);
             break;
         case 'x':
             printf("Outgoing L2CAP Channels to SDP will also require SSP\n");

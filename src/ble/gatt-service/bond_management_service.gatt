@@ -1,0 +1,7 @@
+// Specification Type org.bluetooth.service.bond_management
+// https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Services/org.bluetooth.service.bond_management.xml
+
+// Bond Management Service 181E
+PRIMARY_SERVICE, ORG_BLUETOOTH_SERVICE_BOND_MANAGEMENT
+CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_BOND_MANAGEMENT_CONTROL_POINT, DYNAMIC | WRITE | RELIABLE_WRITE,
+CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_BOND_MANAGEMENT_FEATURE, DYNAMIC | READ,

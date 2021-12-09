@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -51,22 +51,23 @@
 
 #include "btstack_config.h"
 
+#include "ble/le_device_db_tlv.h"
+#include "bluetooth_company_id.h"
+#include "btstack_chipset_zephyr.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
+#include "btstack_signal.h"
+#include "btstack_stdin.h"
+#include "btstack_tlv_posix.h"
 #include "btstack_uart.h"
-#include "bluetooth_company_id.h"
-#include "ble/le_device_db_tlv.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "hci_dump_posix_fs.h"
 #include "hci_transport.h"
 #include "hci_transport_h4.h"
-#include "btstack_stdin.h"
-#include "btstack_chipset_zephyr.h"
-#include "btstack_tlv_posix.h"
 
 int btstack_main(int argc, const char * argv[]);
 
@@ -75,6 +76,7 @@ int btstack_main(int argc, const char * argv[]);
 static char tlv_db_path[100];
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
+static bool shutdown_triggered;
 
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
@@ -93,15 +95,28 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
-            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            printf("BTstack up and running as %s\n",  bd_addr_to_str(static_address));
-            // setup TLV
-            strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
-            strcat(tlv_db_path, bd_addr_to_str(static_address));
-            strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
-            tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
-            btstack_tlv_set_instance(tlv_impl, &tlv_context);
-            le_device_db_tlv_configure(tlv_impl, &tlv_context);
+            switch(btstack_event_state_get_state(packet)){
+                case HCI_STATE_WORKING:
+                    printf("BTstack up and running as %s\n",  bd_addr_to_str(static_address));
+                    // setup TLV
+                    strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
+                    strcat(tlv_db_path, bd_addr_to_str(static_address));
+                    strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+                    tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
+                    btstack_tlv_set_instance(tlv_impl, &tlv_context);
+                    le_device_db_tlv_configure(tlv_impl, &tlv_context);
+                    break;
+                case HCI_STATE_OFF:
+                    btstack_tlv_posix_deinit(&tlv_context);
+                    if (!shutdown_triggered) break;
+                    // reset stdin
+                    btstack_stdin_reset();
+                    log_info("Good bye, see you.\n");
+                    exit(0);
+                    break;
+                default:
+                    break;
+            }
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (memcmp(packet, read_static_address_command_complete_prefix, sizeof(read_static_address_command_complete_prefix)) == 0){
@@ -114,20 +129,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void sigint_handler(int param){
-    UNUSED(param);
 
-    printf("CTRL-C - SIGINT received, shutting down..\n");   
+static void trigger_shutdown(void){
+    printf("CTRL-C - SIGINT received, shutting down..\n");
     log_info("sigint_handler: shutting down");
-
-    // reset anyway
-    btstack_stdin_reset();
-
-    // power down
+    shutdown_triggered = true;
     hci_power_control(HCI_POWER_OFF);
-    hci_close();
-    log_info("Good bye, see you.\n");    
-    exit(0);
 }
 
 static int led_state = 0;
@@ -170,8 +177,8 @@ int main(int argc, const char * argv[]){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    // handle CTRL-c
-    signal(SIGINT, sigint_handler);
+    // register callback for CTRL-c
+    btstack_signal_register_callback(SIGINT, &trigger_shutdown);
 
     // setup app
     btstack_main(argc, argv);

@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -117,10 +117,9 @@ const hci_cmd_t l2cap_create_channel_mtu_cmd = {
 
 /**
  * @param channel (16)
- * @param reason (16)
  */
 const hci_cmd_t l2cap_disconnect_cmd = {
-    DAEMON_OPCODE_L2CAP_DISCONNECT, "21"
+    DAEMON_OPCODE_L2CAP_DISCONNECT, "2"
 };
 
 /**
@@ -273,6 +272,58 @@ const hci_cmd_t rfcomm_persistent_channel_for_service_cmd = {
 const hci_cmd_t gap_disconnect_cmd = {
     DAEMON_OPCODE_GAP_DISCONNECT, "H"
 };
+
+/**
+ * @param duration in 1.28s units
+ */
+const hci_cmd_t gap_inquiry_start_cmd = {
+    DAEMON_OPCODE_GAP_INQUIRY_START, "1"
+};
+
+/**
+ */
+const hci_cmd_t gap_inquiry_stop_cmd = {
+    DAEMON_OPCODE_GAP_INQUIRY_STOP, ""
+};
+
+/**
+* @param addr
+* @param page_scan_repetition_mode
+* @param clock_offset only used when bit 15 is set - pass 0 if not known
+ */
+const hci_cmd_t gap_remote_name_request_cmd = {
+    DAEMON_OPCODE_GAP_REMOTE_NAME_REQUEST, "B12"
+};
+
+/**
+* @param addr
+ */
+const hci_cmd_t gap_drop_link_key_cmd = {
+    DAEMON_OPCODE_GAP_DROP_LINK_KEY_FOR_BD_ADDR, "B"
+};
+
+/**
+ */
+const hci_cmd_t gap_delete_all_link_keys_cmd = {
+    DAEMON_OPCODE_GAP_DELETE_ALL_LINK_KEYS, ""
+};
+
+/**
+ * @param bd_addr
+ * @param pin_length
+ * @param pin (c-string)
+ */
+const hci_cmd_t gap_pin_code_response_cmd = {
+    DAEMON_OPCODE_GAP_PIN_CODE_RESPONSE, "B1P"
+};
+
+/**
+ * @param bd_addr
+ */
+const hci_cmd_t gap_pin_code_negative_cmd = {
+    DAEMON_OPCODE_GAP_PIN_CODE_NEGATIVE, "B"
+};
+
 
 /**
  */

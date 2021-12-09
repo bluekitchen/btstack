@@ -4,7 +4,7 @@ BTSTACK_ROOT ?= ../..
 CORE += main.c btstack_stdin_posix.c btstack_tlv_posix.c hci_dump_posix_fs.c
 
 COMMON += hci_transport_h2_libusb.c btstack_run_loop_posix.c le_device_db_tlv.c btstack_link_key_db_tlv.c wav_util.c btstack_network_posix.c
-COMMON += btstack_audio_portaudio.c btstack_chipset_zephyr.c rijndael.c
+COMMON += btstack_audio_portaudio.c btstack_chipset_zephyr.c rijndael.c btstack_signal.c
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
@@ -33,6 +33,9 @@ VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 # use pkg-config
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
+
+# add pthread for ctrl-c signal handler
+LDFLAGS += -lpthread
 
 EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE}
 EXAMPLES += pan_lwip_http_server

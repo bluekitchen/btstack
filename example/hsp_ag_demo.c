@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -217,19 +217,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 #endif
                             break;
                         case HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE:
-                            status = hsp_subevent_rfcomm_disconnection_complete_get_status(event);
-                            if (status != ERROR_CODE_SUCCESS){
-                                printf("RFCOMM disconnection failed with status %u.\n", status);
-                            } else {
-                                printf("RFCOMM disconnected.\n");
-                            }
+                            printf("RFCOMM disconnected.\n");
                             break;
                         case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
                             status = hsp_subevent_audio_connection_complete_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
                                 printf("Audio connection establishment failed with status %u\n", status);
                             } else {
-                                sco_handle = hsp_subevent_audio_connection_complete_get_handle(event);
+                                sco_handle = hsp_subevent_audio_connection_complete_get_sco_handle(event);
                                 printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
                                 hci_request_sco_can_send_now_event();
                             }
