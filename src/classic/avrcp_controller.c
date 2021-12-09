@@ -953,9 +953,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             break;
         }
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
-            if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
-            connection->state = AVCTP_CONNECTION_OPENED;
-
             if ((size - pos) < 7){
                 return;
             }
@@ -975,6 +972,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 avrcp_controller_handle_notification(connection, ctype, packet + pos, size - pos);
                 break;
             }
+            if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
+            connection->state = AVCTP_CONNECTION_OPENED;
 
             log_info("VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d, status %s", pdu_id, param_length, avrcp_ctype2str(ctype));
             switch (pdu_id){
