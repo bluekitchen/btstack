@@ -9590,6 +9590,26 @@ static inline const uint8_t * pbap_subevent_card_result_get_handle(const uint8_t
 }
 
 /**
+ * @brief Get field handle from event PBAP_SUBEVENT_VCARD_ENTRY_RESULT
+ * @param event packet
+ * @return the size of the data
+ * @note: btstack_type V
+ */
+static inline const size_t pbap_subevent_vcard_entry_result_get_data_len(const uint8_t * event){
+    return &event[5];
+}
+
+/**
+ * @brief Get field handle from event PBAP_SUBEVENT_VCARD_ENTRY_RESULT
+ * @param event packet
+ * @return the data
+ * @note: btstack_type V
+ */
+static inline const uint8_t* pbap_subevent_vcard_entry_result_get_data(const uint8_t * event){
+    return &event[5 + sizeof(size_t)];
+}
+
+/**
  * @brief Get field hid_cid from event HID_SUBEVENT_INCOMING_CONNECTION
  * @param event packet
  * @return hid_cid
