@@ -1,5 +1,7 @@
 //
-// btstack_config.h for generic POSIX H4 port
+// btstack_config.h for Windows H4 + DA14585 port
+//
+// Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
 //
 
 #ifndef BTSTACK_CONFIG_H

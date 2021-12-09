@@ -1,6 +1,8 @@
 //
 // btstack_config.h for mRF5-Zephyr port
 //
+// Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
+//
 
 #ifndef BTSTACK_CONFIG_H
 #define BTSTACK_CONFIG_H

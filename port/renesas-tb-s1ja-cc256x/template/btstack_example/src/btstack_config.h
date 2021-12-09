@@ -1,5 +1,7 @@
 //
-// btstack_config.h for STM32F103RB Nucleo + TI CC256B port
+// btstack_config.h for Renesas TB-S1JA + TI CC256x port
+//
+// Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
 //
 
 #ifndef BTSTACK_CONFIG_H

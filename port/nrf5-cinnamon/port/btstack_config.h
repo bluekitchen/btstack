@@ -1,5 +1,8 @@
 //
-// btstack_config.h for nRF5x LL
+// btstack_config.h for nrf5-cinnamon port
+//
+// Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
+//
 //
 
 #ifndef BTSTACK_CONFIG_H

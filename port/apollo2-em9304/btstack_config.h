@@ -1,5 +1,7 @@
 //
-// btstack_config.h for EM9304 DVK
+// btstack_config.h for Apollo 2 + EM9304 port
+//
+// Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
 //
 
 #ifndef BTSTACK_CONFIG_H

@@ -1,5 +1,7 @@
 //
-// btstack_config.h for generic POSIX H4 port
+// btstack_config.h for POSIX H4 + Zephyr HCI Controller port
+//
+// Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
 //
 
 #ifndef BTSTACK_CONFIG_H

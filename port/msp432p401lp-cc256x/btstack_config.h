@@ -1,6 +1,8 @@
 //
 // btstack_config.h for MSP432P401R + TI CC256B port
 //
+// Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
+//
 
 #ifndef __BTSTACK_CONFIG
 #define __BTSTACK_CONFIG

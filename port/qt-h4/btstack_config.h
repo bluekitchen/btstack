@@ -1,5 +1,7 @@
 //
-// btstack_config.h for libusb port
+// btstack_config.h for Qt H4 port
+//
+// Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
 //
 
 #ifndef BTSTACK_CONFIG_H
