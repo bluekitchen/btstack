@@ -3091,6 +3091,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define PBAP_SUBEVENT_CARD_RESULT                                          0x06
 
+/**
+ * @format 12JVJV
+ * @param subevent_code
+ * @param goep_cid
+ * @param data_len
+ * @param data
+ */
+#define PBAP_SUBEVENT_VCARD_ENTRY_RESULT                                   0x07
 
 // HID Meta Event Group
 
