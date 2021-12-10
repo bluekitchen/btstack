@@ -54,6 +54,7 @@
 
 #define HAL_FLASH_BANK_MEMORY_STORAGE_SIZE 4096
 static uint8_t hal_flash_bank_memory_storage[HAL_FLASH_BANK_MEMORY_STORAGE_SIZE];
+static int empty_db_index = NVM_NUM_DEVICE_DB_ENTRIES-1;
 
 
 TEST_GROUP(LE_DEVICE_DB_TLV){
@@ -283,12 +284,12 @@ TEST(LE_DEVICE_DB_TLV, le_device_db_encryption_set){
 }
 
 TEST(LE_DEVICE_DB_TLV, le_device_db_remote_csrk_set){
-    le_device_db_remote_csrk_set(-1, NULL);
+    le_device_db_remote_csrk_set(empty_db_index, NULL);
 
     sm_key_t csrk;
     (void)memset(csrk, 5, 16);
 
-    le_device_db_remote_csrk_set(-1, csrk);
+    le_device_db_remote_csrk_set(empty_db_index, csrk);
 
     bd_addr_t addr;
     sm_key_t  sm_key;
@@ -300,7 +301,7 @@ TEST(LE_DEVICE_DB_TLV, le_device_db_remote_csrk_set){
 }
 
 TEST(LE_DEVICE_DB_TLV, le_device_db_remote_csrk_get){
-    le_device_db_remote_csrk_get(-1, NULL);
+    le_device_db_remote_csrk_get(empty_db_index, NULL);
 
     bd_addr_t addr;
     sm_key_t  sm_key;
@@ -319,12 +320,12 @@ TEST(LE_DEVICE_DB_TLV, le_device_db_remote_csrk_get){
 }
 
 TEST(LE_DEVICE_DB_TLV, le_device_db_local_csrk_set){
-    le_device_db_local_csrk_set(-1, NULL);
+    le_device_db_local_csrk_set(empty_db_index, NULL);
 
     sm_key_t csrk;
     (void)memset(csrk, 5, 16);
 
-    le_device_db_local_csrk_set(-1, csrk);
+    le_device_db_local_csrk_set(empty_db_index, csrk);
 
     bd_addr_t addr;
     sm_key_t  sm_key;
@@ -336,7 +337,7 @@ TEST(LE_DEVICE_DB_TLV, le_device_db_local_csrk_set){
 }
 
 TEST(LE_DEVICE_DB_TLV, le_device_db_local_csrk_get){
-    le_device_db_local_csrk_get(-1, NULL);
+    le_device_db_local_csrk_get(empty_db_index, NULL);
 
     bd_addr_t addr;
     sm_key_t  sm_key;
@@ -355,7 +356,7 @@ TEST(LE_DEVICE_DB_TLV, le_device_db_local_csrk_get){
 }
 
 TEST(LE_DEVICE_DB_TLV, le_device_db_remote_counter){
-    le_device_db_remote_counter_set(-1, 0);
+    le_device_db_remote_counter_set(empty_db_index, 0);
 
     bd_addr_t addr;
     sm_key_t  sm_key;
@@ -372,7 +373,7 @@ TEST(LE_DEVICE_DB_TLV, le_device_db_remote_counter){
 }
 
 TEST(LE_DEVICE_DB_TLV, le_device_db_local_counter){
-    le_device_db_local_counter_set(-1, 0);
+    le_device_db_local_counter_set(empty_db_index, 0);
 
     bd_addr_t addr;
     sm_key_t  sm_key;
