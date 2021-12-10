@@ -358,6 +358,9 @@ TEST(LE_DEVICE_DB_TLV, le_device_db_local_csrk_get){
 TEST(LE_DEVICE_DB_TLV, le_device_db_remote_counter){
     le_device_db_remote_counter_set(empty_db_index, 0);
 
+    uint32_t expected_counter = le_device_db_remote_counter_get(empty_db_index);
+    CHECK_EQUAL(expected_counter, 0);
+    
     bd_addr_t addr;
     sm_key_t  sm_key;
     set_addr_and_sm_key(0x10, addr, sm_key);
@@ -365,8 +368,6 @@ TEST(LE_DEVICE_DB_TLV, le_device_db_remote_counter){
 
     le_device_db_remote_counter_set(le_db_index, 10);
 
-    uint32_t expected_counter = le_device_db_remote_counter_get(-1);
-    CHECK_EQUAL(expected_counter, 0);
 
     expected_counter = le_device_db_remote_counter_get(le_db_index);
     CHECK_EQUAL(expected_counter, 10);
@@ -375,15 +376,15 @@ TEST(LE_DEVICE_DB_TLV, le_device_db_remote_counter){
 TEST(LE_DEVICE_DB_TLV, le_device_db_local_counter){
     le_device_db_local_counter_set(empty_db_index, 0);
 
+    uint32_t expected_counter = le_device_db_local_counter_get(empty_db_index);
+    CHECK_EQUAL(expected_counter, 0);
+
     bd_addr_t addr;
     sm_key_t  sm_key;
     set_addr_and_sm_key(0x10, addr, sm_key);
     int le_db_index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
 
     le_device_db_local_counter_set(le_db_index, 10);
-
-    uint32_t expected_counter = le_device_db_local_counter_get(-1);
-    CHECK_EQUAL(expected_counter, 0);
 
     expected_counter = le_device_db_local_counter_get(le_db_index);
     CHECK_EQUAL(expected_counter, 10);
