@@ -211,6 +211,182 @@ TEST(LE_DEVICE_DB_TLV, ReplaceOldest){
     CHECK_EQUAL(num_entries, num_entries_test);
 }
 
+TEST(LE_DEVICE_DB_TLV, le_device_db_encryption_set_non_existing){
+    uint16_t ediv = 16;
+    int encryption_key_size = 10;
+    int le_db_index = 10;
+
+    le_device_db_encryption_set(le_db_index, ediv, NULL, NULL, encryption_key_size, 1, 1, 1);
+    
+    int expected_authenticated = 0;
+    int expected_authorized = 0;
+    int expected_secure_connection = 0;
+    uint16_t expected_ediv = 0;
+    uint8_t  expected_rand[8];
+    sm_key_t expected_ltk;
+    int      expected_encryption_key_size = 0;
+
+    le_device_db_encryption_get(le_db_index, &expected_ediv, expected_rand, expected_ltk, &expected_encryption_key_size, 
+        &expected_authenticated, &expected_authorized, &expected_secure_connection);
+
+    CHECK_TRUE(expected_ediv != ediv);
+    CHECK_TRUE(expected_authenticated != 1);
+    CHECK_TRUE(expected_authorized != 1);
+    CHECK_TRUE(expected_secure_connection != 1);
+    CHECK_TRUE(expected_encryption_key_size != encryption_key_size);
+}
+
+TEST(LE_DEVICE_DB_TLV, le_device_db_encryption_set_zero_ltk){
+    uint16_t ediv = 16;
+    int encryption_key_size = 10;
+    
+    int le_db_index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_zero, sm_key_zero);
+    CHECK_TRUE(le_db_index >= 0);
+
+    le_device_db_encryption_set(le_db_index, ediv, NULL, NULL, encryption_key_size, 1, 1, 1);
+    
+    le_device_db_encryption_get(le_db_index, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+}
+
+TEST(LE_DEVICE_DB_TLV, le_device_db_encryption_set){
+    bd_addr_t addr;
+    sm_key_t  sm_key;
+    set_addr_and_sm_key(0x10, addr, sm_key);
+
+    uint16_t ediv = 1;
+    int encryption_key_size = 10;
+    uint8_t zero_rand[8];
+    memset(zero_rand, 5, 8);
+
+    int le_db_index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
+    CHECK_TRUE(le_db_index >= 0);
+    le_device_db_encryption_set(le_db_index, ediv, zero_rand, sm_key, encryption_key_size, 1, 1, 1);
+
+    int expected_authenticated;
+    int expected_authorized;
+    int expected_secure_connection;
+
+    uint16_t expected_ediv;
+    uint8_t  expected_rand[8];
+    sm_key_t expected_ltk;
+    int      expected_encryption_key_size;
+
+    le_device_db_encryption_get(le_db_index, &expected_ediv, expected_rand, expected_ltk, &expected_encryption_key_size, 
+        &expected_authenticated, &expected_authorized, &expected_secure_connection);
+
+    CHECK_EQUAL(expected_ediv, ediv);
+    CHECK_EQUAL(expected_authenticated, 1);
+    CHECK_EQUAL(expected_authorized, 1);
+    CHECK_EQUAL(expected_secure_connection, 1);
+    CHECK_EQUAL(expected_encryption_key_size, encryption_key_size);
+    MEMCMP_EQUAL(expected_rand, zero_rand, 8);
+}
+
+TEST(LE_DEVICE_DB_TLV, le_device_db_remote_csrk_set){
+    le_device_db_remote_csrk_set(-1, NULL);
+
+    sm_key_t csrk;
+    (void)memset(csrk, 5, 16);
+
+    le_device_db_remote_csrk_set(-1, csrk);
+
+    bd_addr_t addr;
+    sm_key_t  sm_key;
+    set_addr_and_sm_key(0x10, addr, sm_key);
+    int le_db_index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
+
+    le_device_db_remote_csrk_set(le_db_index, NULL);
+    le_device_db_remote_csrk_set(le_db_index, csrk);
+}
+
+TEST(LE_DEVICE_DB_TLV, le_device_db_remote_csrk_get){
+    le_device_db_remote_csrk_get(-1, NULL);
+
+    bd_addr_t addr;
+    sm_key_t  sm_key;
+    set_addr_and_sm_key(0x10, addr, sm_key);
+    int le_db_index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
+
+    le_device_db_remote_csrk_get(le_db_index, NULL);
+    
+    sm_key_t csrk;
+    (void)memset(csrk, 5, 16);
+    le_device_db_remote_csrk_set(le_db_index, csrk);
+    
+    sm_key_t expected_csrk;
+    le_device_db_remote_csrk_get(le_db_index, expected_csrk);
+    MEMCMP_EQUAL(expected_csrk, csrk, 16);
+}
+
+TEST(LE_DEVICE_DB_TLV, le_device_db_local_csrk_set){
+    le_device_db_local_csrk_set(-1, NULL);
+
+    sm_key_t csrk;
+    (void)memset(csrk, 5, 16);
+
+    le_device_db_local_csrk_set(-1, csrk);
+
+    bd_addr_t addr;
+    sm_key_t  sm_key;
+    set_addr_and_sm_key(0x10, addr, sm_key);
+    int le_db_index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
+
+    le_device_db_local_csrk_set(le_db_index, NULL);
+    le_device_db_local_csrk_set(le_db_index, csrk);
+}
+
+TEST(LE_DEVICE_DB_TLV, le_device_db_local_csrk_get){
+    le_device_db_local_csrk_get(-1, NULL);
+
+    bd_addr_t addr;
+    sm_key_t  sm_key;
+    set_addr_and_sm_key(0x10, addr, sm_key);
+    int le_db_index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
+
+    le_device_db_local_csrk_get(le_db_index, NULL);
+    
+    sm_key_t csrk;
+    (void)memset(csrk, 5, 16);
+    le_device_db_local_csrk_set(le_db_index, csrk);
+    
+    sm_key_t expected_csrk;
+    le_device_db_local_csrk_get(le_db_index, expected_csrk);
+    MEMCMP_EQUAL(expected_csrk, csrk, 16);
+}
+
+TEST(LE_DEVICE_DB_TLV, le_device_db_remote_counter){
+    le_device_db_remote_counter_set(-1, 0);
+
+    bd_addr_t addr;
+    sm_key_t  sm_key;
+    set_addr_and_sm_key(0x10, addr, sm_key);
+    int le_db_index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
+
+    le_device_db_remote_counter_set(le_db_index, 10);
+
+    uint32_t expected_counter = le_device_db_remote_counter_get(-1);
+    CHECK_EQUAL(expected_counter, 0);
+
+    expected_counter = le_device_db_remote_counter_get(le_db_index);
+    CHECK_EQUAL(expected_counter, 10);
+}
+
+TEST(LE_DEVICE_DB_TLV, le_device_db_local_counter){
+    le_device_db_local_counter_set(-1, 0);
+
+    bd_addr_t addr;
+    sm_key_t  sm_key;
+    set_addr_and_sm_key(0x10, addr, sm_key);
+    int le_db_index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
+
+    le_device_db_local_counter_set(le_db_index, 10);
+
+    uint32_t expected_counter = le_device_db_local_counter_get(-1);
+    CHECK_EQUAL(expected_counter, 0);
+
+    expected_counter = le_device_db_local_counter_get(le_db_index);
+    CHECK_EQUAL(expected_counter, 10);
+}
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
