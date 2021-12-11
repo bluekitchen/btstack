@@ -4081,71 +4081,71 @@ int hci_power_control(HCI_POWER_MODE power_mode){
 }
 
 
-static void hci_halting_run(void){
+static void hci_halting_run(void) {
 
     log_info("HCI_STATE_HALTING, substate %x\n", hci_stack->substate);
 
-    hci_connection_t * connection;
+    hci_connection_t *connection;
 
     switch (hci_stack->substate) {
         case HCI_HALTING_DISCONNECT_ALL_NO_TIMER:
-            case HCI_HALTING_DISCONNECT_ALL_TIMER:
+        case HCI_HALTING_DISCONNECT_ALL_TIMER:
 
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
-    hci_whitelist_free();
+            hci_whitelist_free();
 #endif
 #endif
-    // close all open connections
-    connection = (hci_connection_t *) hci_stack->connections;
-    if (connection) {
-        hci_con_handle_t con_handle = (uint16_t) connection->con_handle;
-        if (!hci_can_send_command_packet_now()) return;
+            // close all open connections
+            connection = (hci_connection_t *) hci_stack->connections;
+            if (connection) {
+                hci_con_handle_t con_handle = (uint16_t) connection->con_handle;
+                if (!hci_can_send_command_packet_now()) return;
 
-        // check state
-        if (connection->state == SENT_DISCONNECT) return;
-        connection->state = SENT_DISCONNECT;
+                // check state
+                if (connection->state == SENT_DISCONNECT) return;
+                connection->state = SENT_DISCONNECT;
 
-        log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, con_handle);
+                log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, con_handle);
 
-        // cancel all l2cap connections right away instead of waiting for disconnection complete event ...
-        hci_emit_disconnection_complete(con_handle, 0x16); // terminated by local host
+                // cancel all l2cap connections right away instead of waiting for disconnection complete event ...
+                hci_emit_disconnection_complete(con_handle, 0x16); // terminated by local host
 
-        // ... which would be ignored anyway as we shutdown (free) the connection now
-        hci_shutdown_connection(connection);
+                // ... which would be ignored anyway as we shutdown (free) the connection now
+                hci_shutdown_connection(connection);
 
-        // finally, send the disconnect command
-        hci_send_cmd(&hci_disconnect, con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
-        return;
-    }
+                // finally, send the disconnect command
+                hci_send_cmd(&hci_disconnect, con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
+                return;
+            }
 
-    btstack_run_loop_remove_timer(&hci_stack->timeout);
+            btstack_run_loop_remove_timer(&hci_stack->timeout);
 
-    if (hci_stack->substate == HCI_HALTING_DISCONNECT_ALL_TIMER) {
-        // no connections left, wait a bit to assert that btstack_cyrpto isn't waiting for an HCI event
-        log_info("HCI_STATE_HALTING: wait 50 ms");
-        hci_stack->substate = HCI_HALTING_W4_TIMER;
-        btstack_run_loop_set_timer(&hci_stack->timeout, 50);
-        btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
-        btstack_run_loop_add_timer(&hci_stack->timeout);
-        break;
-    }
+            if (hci_stack->substate == HCI_HALTING_DISCONNECT_ALL_TIMER) {
+                // no connections left, wait a bit to assert that btstack_cyrpto isn't waiting for an HCI event
+                log_info("HCI_STATE_HALTING: wait 50 ms");
+                hci_stack->substate = HCI_HALTING_W4_TIMER;
+                btstack_run_loop_set_timer(&hci_stack->timeout, 50);
+                btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
+                btstack_run_loop_add_timer(&hci_stack->timeout);
+                break;
+            }
 
-    /* fall through */
+            /* fall through */
 
-    case HCI_HALTING_CLOSE:
-        // close left over connections (that had not been properly closed before)
-        hci_discard_connections();
+        case HCI_HALTING_CLOSE:
+            // close left over connections (that had not been properly closed before)
+            hci_discard_connections();
 
-        log_info("HCI_STATE_HALTING, calling off");
+            log_info("HCI_STATE_HALTING, calling off");
 
-        // switch mode
-        hci_power_control_off();
+            // switch mode
+            hci_power_control_off();
 
-        log_info("HCI_STATE_HALTING, emitting state");
-        hci_emit_state();
-        log_info("HCI_STATE_HALTING, done");
-        break;
+            log_info("HCI_STATE_HALTING, emitting state");
+            hci_emit_state();
+            log_info("HCI_STATE_HALTING, done");
+            break;
 
         case HCI_HALTING_W4_TIMER:
             // keep waiting
