@@ -26,6 +26,19 @@ targets['LEVEL']  = 6
 targets['RETURN'] = 1
 
 excluded_functions = [
+    # deprecated functions
+    'src/l2cap.c:l2cap_le_register_service',
+    'src/l2cap.c:l2cap_le_unregister_service',
+    'src/l2cap.c:l2cap_le_accept_connection',
+    'src/l2cap.c:l2cap_le_decline_connection',
+    'src/l2cap.c:l2cap_le_provide_credits',
+    'src/l2cap.c:l2cap_le_create_channel',
+    'src/l2cap.c:l2cap_le_can_send_now',
+    'src/l2cap.c:l2cap_le_request_can_send_now_event',
+    'src/l2cap.c:l2cap_le_send_data',
+    'src/l2cap.c:l2cap_le_disconnect',
+    'src/l2cap.c:l2cap_cbm_can_send_now',
+    'src/l2cap.c:l2cap_cbm_request_can_send_now_even'
 ]
 
 def metric_sum(name, value):
@@ -94,12 +107,10 @@ def analyze_folders(btstack_root, folders):
             if file.endswith('.h'):
                 continue
             qualified_function_name = file+':'+function_name
-            if qualified_function_name != last_function_name:
-                last_function_name = qualified_function_name
-                metric_sum('FUNC', 1)
-                # exclude functions
-                if qualified_function_name in excluded_functions:
-                    continue
+            # excluded functions
+            if qualified_function_name in excluded_functions:
+                continue
+            metric_sum('FUNC', 1)
             for key,value in function_metrics.items():
                 metric_measure(key, qualified_function_name, int(function_metrics[key]))
 
