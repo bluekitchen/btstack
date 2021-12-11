@@ -4006,6 +4006,49 @@ static int sm_validate_stk_generation_method(void){
     }
 }
 
+#ifdef ENABLE_LE_CENTRAL
+static void sm_initiator_connected_handle_security_request(sm_connection_t * sm_conn, const uint8_t *packet){
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    if (sm_sc_only_mode){
+        uint8_t auth_req = packet[1];
+        if ((auth_req & SM_AUTHREQ_SECURE_CONNECTION) == 0){
+            sm_pairing_error(sm_conn, SM_REASON_AUTHENTHICATION_REQUIREMENTS);
+            return;
+        }
+    }
+#else
+    UNUSED(packet);
+#endif
+
+    int have_ltk;
+    uint8_t ltk[16];
+
+    // IRK complete?
+    switch (sm_conn->sm_irk_lookup_state){
+        case IRK_LOOKUP_FAILED:
+            // start pairing
+            sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
+            break;
+        case IRK_LOOKUP_SUCCEEDED:
+            le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
+            have_ltk = !sm_is_null_key(ltk);
+            log_info("central: security request - have_ltk %u, encryption %u", have_ltk, sm_conn->sm_connection_encrypted);
+            if (have_ltk && (sm_conn->sm_connection_encrypted == 0)){
+                // start re-encrypt if we have LTK and the connection is not already encrypted
+                sm_conn->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
+            } else {
+                // start pairing
+                sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
+            }
+            break;
+        default:
+            // otherwise, store security request
+            sm_conn->sm_security_request_received = 1;
+            break;
+    }
+}
+#endif
+
 static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
 
     // size of complete sm_pdu used to validate input
@@ -4065,12 +4108,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         sm_dispatch_event(HCI_EVENT_PACKET, 0, buffer, sizeof(buffer));
         return;
     }
-
-#ifdef ENABLE_LE_CENTRAL
-    int have_ltk;
-    uint8_t ltk[16];
-#endif
-
+    
     switch (sm_conn->sm_engine_state){
 
         // a sm timeout requires a new physical connection
@@ -4085,40 +4123,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
-
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-            if (sm_sc_only_mode){
-                uint8_t auth_req = packet[1];
-                if ((auth_req & SM_AUTHREQ_SECURE_CONNECTION) == 0){
-                    sm_pairing_error(sm_conn, SM_REASON_AUTHENTHICATION_REQUIREMENTS);
-                    break;
-                }
-            }
-#endif
-
-            // IRK complete?
-            switch (sm_conn->sm_irk_lookup_state){
-                case IRK_LOOKUP_FAILED:
-                    // start pairing
-                    sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
-                    break;
-                case IRK_LOOKUP_SUCCEEDED:
-                    le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
-                    have_ltk = !sm_is_null_key(ltk);
-                    log_info("central: security request - have_ltk %u, encryption %u", have_ltk, sm_conn->sm_connection_encrypted);
-                    if (have_ltk && (sm_conn->sm_connection_encrypted == 0)){
-                        // start re-encrypt if we have LTK and the connection is not already encrypted
-                        sm_conn->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
-                    } else {
-                        // start pairing
-                        sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
-                    }
-                    break;
-                default:
-                    // otherwise, store security request
-                    sm_conn->sm_security_request_received = 1;
-                    break;
-            }
+            sm_initiator_connected_handle_security_request(sm_conn, packet);
             break;
 
         case SM_INITIATOR_PH1_W4_PAIRING_RESPONSE:
