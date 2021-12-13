@@ -54,57 +54,57 @@ extern "C" {
 #endif
 
 // MARK: Attribute PDU Opcodes 
-#define ATT_ERROR_RESPONSE              0x01
+#define ATT_ERROR_RESPONSE              0x01u
 
-#define ATT_EXCHANGE_MTU_REQUEST        0x02
-#define ATT_EXCHANGE_MTU_RESPONSE       0x03
+#define ATT_EXCHANGE_MTU_REQUEST        0x02u
+#define ATT_EXCHANGE_MTU_RESPONSE       0x03u
 
-#define ATT_FIND_INFORMATION_REQUEST    0x04
-#define ATT_FIND_INFORMATION_REPLY      0x05
-#define ATT_FIND_BY_TYPE_VALUE_REQUEST  0x06
-#define ATT_FIND_BY_TYPE_VALUE_RESPONSE 0x07
+#define ATT_FIND_INFORMATION_REQUEST    0x04u
+#define ATT_FIND_INFORMATION_REPLY      0x05u
+#define ATT_FIND_BY_TYPE_VALUE_REQUEST  0x06u
+#define ATT_FIND_BY_TYPE_VALUE_RESPONSE 0x07u
 
-#define ATT_READ_BY_TYPE_REQUEST        0x08
-#define ATT_READ_BY_TYPE_RESPONSE       0x09
-#define ATT_READ_REQUEST                0x0a
-#define ATT_READ_RESPONSE               0x0b
-#define ATT_READ_BLOB_REQUEST           0x0c
-#define ATT_READ_BLOB_RESPONSE          0x0d
-#define ATT_READ_MULTIPLE_REQUEST       0x0e
-#define ATT_READ_MULTIPLE_RESPONSE      0x0f
-#define ATT_READ_BY_GROUP_TYPE_REQUEST  0x10
-#define ATT_READ_BY_GROUP_TYPE_RESPONSE 0x11
+#define ATT_READ_BY_TYPE_REQUEST        0x08u
+#define ATT_READ_BY_TYPE_RESPONSE       0x09u
+#define ATT_READ_REQUEST                0x0au
+#define ATT_READ_RESPONSE               0x0bu
+#define ATT_READ_BLOB_REQUEST           0x0cu
+#define ATT_READ_BLOB_RESPONSE          0x0du
+#define ATT_READ_MULTIPLE_REQUEST       0x0eu
+#define ATT_READ_MULTIPLE_RESPONSE      0x0fu
+#define ATT_READ_BY_GROUP_TYPE_REQUEST  0x10u
+#define ATT_READ_BY_GROUP_TYPE_RESPONSE 0x11u
 
-#define ATT_WRITE_REQUEST               0x12
-#define ATT_WRITE_RESPONSE              0x13
+#define ATT_WRITE_REQUEST               0x12u
+#define ATT_WRITE_RESPONSE              0x13u
 
-#define ATT_PREPARE_WRITE_REQUEST       0x16
-#define ATT_PREPARE_WRITE_RESPONSE      0x17
-#define ATT_EXECUTE_WRITE_REQUEST       0x18
-#define ATT_EXECUTE_WRITE_RESPONSE      0x19
+#define ATT_PREPARE_WRITE_REQUEST       0x16u
+#define ATT_PREPARE_WRITE_RESPONSE      0x17u
+#define ATT_EXECUTE_WRITE_REQUEST       0x18u
+#define ATT_EXECUTE_WRITE_RESPONSE      0x19u
 
-#define ATT_HANDLE_VALUE_NOTIFICATION   0x1b
-#define ATT_HANDLE_VALUE_INDICATION     0x1d
-#define ATT_HANDLE_VALUE_CONFIRMATION   0x1e
+#define ATT_HANDLE_VALUE_NOTIFICATION   0x1bu
+#define ATT_HANDLE_VALUE_INDICATION     0x1du
+#define ATT_HANDLE_VALUE_CONFIRMATION   0x1eu
 
-#define ATT_READ_MULTIPLE_VARIABLE_REQ  0x20
-#define ATT_READ_MULTIPLE_VARIABLE_RSP  0x21
-#define ATT_MULTIPLE_HANDLE_VALUE_NTF   0x23
+#define ATT_READ_MULTIPLE_VARIABLE_REQ  0x20u
+#define ATT_READ_MULTIPLE_VARIABLE_RSP  0x21u
+#define ATT_MULTIPLE_HANDLE_VALUE_NTF   0x23u
 
-#define ATT_WRITE_COMMAND                0x52
-#define ATT_SIGNED_WRITE_COMMAND         0xD2
+#define ATT_WRITE_COMMAND                0x52u
+#define ATT_SIGNED_WRITE_COMMAND         0xD2u
 
 
 // internal additions
 // 128 bit UUID used
-#define ATT_PROPERTY_UUID128             0x200
+#define ATT_PROPERTY_UUID128             0x200u
 // Read/Write Permission bits
-#define ATT_PROPERTY_READ_PERMISSION_BIT_0  0x0400
-#define ATT_PROPERTY_READ_PERMISSION_BIT_1  0x0800
-#define ATT_PROPERTY_WRITE_PERMISSION_BIT_0 0x0001
-#define ATT_PROPERTY_WRITE_PERMISSION_BIT_1 0x0010
-#define ATT_PROPERTY_READ_PERMISSION_SC     0x0020
-#define ATT_PROPERTY_WRITE_PERMISSION_SC    0x0080
+#define ATT_PROPERTY_READ_PERMISSION_BIT_0  0x0400u
+#define ATT_PROPERTY_READ_PERMISSION_BIT_1  0x0800u
+#define ATT_PROPERTY_WRITE_PERMISSION_BIT_0 0x0001u
+#define ATT_PROPERTY_WRITE_PERMISSION_BIT_1 0x0010u
+#define ATT_PROPERTY_READ_PERMISSION_SC     0x0020u
+#define ATT_PROPERTY_WRITE_PERMISSION_SC    0x0080u
 
 
 typedef struct att_connection {
@@ -121,13 +121,13 @@ typedef struct att_connection {
 /* API_START */
 
 // map ATT ERROR CODES on to att_read_callback length
-#define ATT_READ_ERROR_CODE_OFFSET       0xfe00
+#define ATT_READ_ERROR_CODE_OFFSET       0xfe00u
 
 // custom BTstack ATT Response Pending for att_read_callback
-#define ATT_READ_RESPONSE_PENDING                 0xffff
+#define ATT_READ_RESPONSE_PENDING                 0xffffu
 
 // internally used to signal write response pending
-#define ATT_INTERNAL_WRITE_RESPONSE_PENDING       0xfffe
+#define ATT_INTERNAL_WRITE_RESPONSE_PENDING       0xfffeu
 
 /**
  * @brief ATT Client Read Callback for Dynamic Data
