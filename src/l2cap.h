@@ -281,7 +281,7 @@ typedef struct {
     uint16_t credits_incoming;
 
     // automatic credits incoming
-    uint16_t automatic_credits;
+    bool automatic_credits;
 
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
     uint8_t cid_index;
