@@ -620,7 +620,7 @@ int gap_encryption_key_size(hci_con_handle_t con_handle);
  * @param con_handle
  * @return 1 if bonded with OOB/Passkey (AND MITM protection)
  */
-int gap_authenticated(hci_con_handle_t con_handle);
+bool gap_authenticated(hci_con_handle_t con_handle);
 
 /**
  * @brief Get secure connection property

@@ -360,7 +360,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server = &hci_connection->att_server;
                     att_connection = &hci_connection->att_connection;
                     att_connection->encryption_key_size = gap_encryption_key_size(con_handle);
-                    att_connection->authenticated = gap_authenticated(con_handle);
+                    att_connection->authenticated = gap_authenticated(con_handle) ? 1 : 0;
                     att_connection->secure_connection = gap_secure_connection(con_handle);
                     log_info("encrypted key size %u, authenticated %u, secure connection %u",
                         att_connection->encryption_key_size, att_connection->authenticated, att_connection->secure_connection);

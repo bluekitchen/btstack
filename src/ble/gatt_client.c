@@ -134,7 +134,7 @@ static gap_security_level_t gatt_client_le_security_level_for_connection(hci_con
     uint8_t encryption_key_size = gap_encryption_key_size(con_handle);
     if (encryption_key_size == 0) return LEVEL_0;
 
-    uint8_t authenticated = gap_authenticated(con_handle);
+    bool authenticated = gap_authenticated(con_handle);
     if (!authenticated) return LEVEL_2;
 
     return encryption_key_size == 16 ? LEVEL_4 : LEVEL_3;
