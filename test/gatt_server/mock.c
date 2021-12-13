@@ -232,17 +232,17 @@ void l2cap_run(void){
 void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
 }
 
-int gap_authenticated(hci_con_handle_t con_handle){
-	return 0;
+bool gap_authenticated(hci_con_handle_t con_handle){
+	return false;
 }
 authorization_state_t gap_authorization_state(hci_con_handle_t con_handle){
 	return AUTHORIZATION_UNKNOWN;
 }
-int gap_encryption_key_size(hci_con_handle_t con_handle){
+uint8_t gap_encryption_key_size(hci_con_handle_t con_handle){
 	return 0;
 }
-int gap_secure_connection(hci_con_handle_t con_handle){
-	return 0;
+bool gap_secure_connection(hci_con_handle_t con_handle){
+	return false;
 }
 gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle){
 	return GAP_CONNECTION_INVALID;

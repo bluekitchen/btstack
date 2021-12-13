@@ -46,11 +46,11 @@ void mock_simulate_scan_response(void){
 	uint8_t packet[] = {GAP_EVENT_ADVERTISING_REPORT, 0x13, 0xE2, 0x01, 0x34, 0xB1, 0xF7, 0xD1, 0x77, 0x9B, 0xCC, 0x09, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 	registered_hci_event_handler(HCI_EVENT_PACKET, 0, (uint8_t *)&packet, sizeof(packet));
 }
-int gap_authenticated(hci_con_handle_t con_handle){
+bool gap_authenticated(hci_con_handle_t con_handle){
 	UNUSED(con_handle);
 	return false;
 }
-int gap_encryption_key_size(hci_con_handle_t con_handle){
+uint8_t gap_encryption_key_size(hci_con_handle_t con_handle){
 	UNUSED(con_handle);
 	return 0;
 }
