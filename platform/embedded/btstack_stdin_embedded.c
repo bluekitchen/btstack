@@ -73,7 +73,9 @@ static void btstack_stdin_handler(char c){
 }
 
 static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type){
-	if (!stdin_character_received) return;
+	if (!stdin_character_received) {
+        return;
+    }
 	(*stdin_handler)(stdin_character);
 	stdin_character_received = 0;
 }
