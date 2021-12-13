@@ -5744,7 +5744,7 @@ bool gap_authenticated_for_link_key_type(link_key_type_t link_key_type){
     }
 }
 
-int gap_mitm_protection_required_for_security_level(gap_security_level_t level){
+bool gap_mitm_protection_required_for_security_level(gap_security_level_t level){
     log_info("gap_mitm_protection_required_for_security_level %u", level);
     return level > LEVEL_2;
 }

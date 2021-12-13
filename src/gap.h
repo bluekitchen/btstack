@@ -344,7 +344,7 @@ gap_security_level_t gap_security_level(hci_con_handle_t con_handle);
 
 void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
 
-int  gap_mitm_protection_required_for_security_level(gap_security_level_t level);
+bool gap_mitm_protection_required_for_security_level(gap_security_level_t level);
 
 /**
  * @brief Set Page Scan Type
