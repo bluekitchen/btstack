@@ -2475,7 +2475,7 @@ static bool sm_ctkd_from_le(sm_connection_t *sm_connection) {
     uint8_t link_key[16];
     link_key_type_t link_key_type;
     bool have_link_key             = gap_get_link_key_for_bd_addr(setup->sm_peer_address, link_key, &link_key_type);
-    bool link_key_authenticated    = gap_authenticated_for_link_key_type(link_key_type) != 0;
+    bool link_key_authenticated    = gap_authenticated_for_link_key_type(link_key_type);
     bool derived_key_authenticated = sm_connection->sm_connection_authenticated != 0;
     if (have_link_key && link_key_authenticated && !derived_key_authenticated) {
         return false;

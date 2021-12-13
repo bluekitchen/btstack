@@ -338,7 +338,7 @@ int gap_secure_connection_for_link_key_type(link_key_type_t link_key_type);
 /**
  * @brief map link keys to authenticated
  */
-int gap_authenticated_for_link_key_type(link_key_type_t link_key_type);
+bool gap_authenticated_for_link_key_type(link_key_type_t link_key_type);
 
 gap_security_level_t gap_security_level(hci_con_handle_t con_handle);
 

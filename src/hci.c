@@ -5734,13 +5734,13 @@ int gap_secure_connection_for_link_key_type(link_key_type_t link_key_type){
 /**
  * @brief map link keys to authenticated
  */
-int gap_authenticated_for_link_key_type(link_key_type_t link_key_type){
+bool gap_authenticated_for_link_key_type(link_key_type_t link_key_type){
     switch (link_key_type){
         case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256:
         case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192:
-            return 1;
+            return true;
         default:
-            return 0;
+            return false;
     }
 }
 
@@ -6798,7 +6798,7 @@ int gap_authenticated(hci_con_handle_t con_handle){
 #ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
         case BD_ADDR_TYPE_ACL:
-            return gap_authenticated_for_link_key_type(hci_connection->link_key_type);
+            return gap_authenticated_for_link_key_type(hci_connection->link_key_type) ? 1 : 0;
 #endif
         default:
             return 0;
