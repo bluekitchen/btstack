@@ -480,7 +480,7 @@ typedef struct {
     uint8_t                 ir_lookup_active;
     uint8_t                 pairing_active;
 
-    int                     value_indication_handle;    
+    uint16_t                value_indication_handle;    
     btstack_timer_source_t  value_indication_timer;
 
     btstack_linked_list_t   notification_requests;
