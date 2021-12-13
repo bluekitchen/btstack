@@ -6805,7 +6805,7 @@ bool gap_authenticated(hci_con_handle_t con_handle){
     }
 }
 
-int gap_secure_connection(hci_con_handle_t con_handle){
+bool gap_secure_connection(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (hci_connection == NULL) return 0;
 
@@ -6813,16 +6813,16 @@ int gap_secure_connection(hci_con_handle_t con_handle){
 #ifdef ENABLE_BLE
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
-            if (hci_connection->sm_connection.sm_connection_encrypted == 0) return 0; // unencrypted connection cannot be authenticated
-            return hci_connection->sm_connection.sm_connection_sc;
+            if (hci_connection->sm_connection.sm_connection_encrypted == 0) return false; // unencrypted connection cannot be authenticated
+            return hci_connection->sm_connection.sm_connection_sc != 0;
 #endif
 #ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
         case BD_ADDR_TYPE_ACL:
-            return gap_secure_connection_for_link_key_type(hci_connection->link_key_type) ? 1 : 0;
+            return gap_secure_connection_for_link_key_type(hci_connection->link_key_type);
 #endif
         default:
-            return 0;
+            return false;
     }
 }
 
