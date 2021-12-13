@@ -73,8 +73,8 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
         case ATT_DATA_PACKET:
             // parse opcode
             opcode  = packet[0u];
-            invalid = method > ATT_MULTIPLE_HANDLE_VALUE_NTF;
             method  = opcode & 0x03fu;
+            invalid = method > ATT_MULTIPLE_HANDLE_VALUE_NTF;
             // odd PDUs are sent from server to client - even PDUs are sent from client to server, also let server handle invalid ones
             for_server = ((method & 1u) == 0u) || invalid;
             index = for_server ? ATT_SERVER : ATT_CLIENT;

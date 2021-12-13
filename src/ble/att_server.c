@@ -797,8 +797,8 @@ static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t
     att_connection_t * att_connection = &hci_connection->att_connection;
 
     uint8_t opcode  = packet[0u];
-    bool invalid = method > ATT_MULTIPLE_HANDLE_VALUE_NTF;
     uint8_t method  = opcode & 0x03fu;
+    bool invalid = method > ATT_MULTIPLE_HANDLE_VALUE_NTF;
     bool command = (opcode & 0x40u) != 0u;
 
     // ignore invalid commands
