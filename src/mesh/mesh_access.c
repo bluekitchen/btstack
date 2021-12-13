@@ -132,8 +132,6 @@ void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions
     mesh_upper_transport_send_access_pdu(pdu);
 }
 
-#define MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED                                        0x30
-
 static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
     UNUSED(ts);
 
