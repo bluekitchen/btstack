@@ -3037,7 +3037,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         }
 
                         // Detect Secure Connection -> Legacy Connection Downgrade Attack (BIAS)
-                        bool sc_used_during_pairing = gap_secure_connection_for_link_key_type(conn->link_key_type) != 0;
+                        bool sc_used_during_pairing = gap_secure_connection_for_link_key_type(conn->link_key_type);
                         bool connected_uses_aes_ccm = encryption_enabled == 2;
                         if (hci_stack->secure_connections_active && sc_used_during_pairing && !connected_uses_aes_ccm){
                             log_info("SC during pairing, but only E0 now -> abort");
@@ -5721,13 +5721,13 @@ gap_security_level_t gap_security_level_for_link_key_type(link_key_type_t link_k
 /**
  * @brief map link keys to secure connection yes/no
  */
-int gap_secure_connection_for_link_key_type(link_key_type_t link_key_type){
+bool gap_secure_connection_for_link_key_type(link_key_type_t link_key_type){
     switch (link_key_type){
         case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256:
         case UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256:
-            return 1;
+            return true;
         default:
-            return 0;
+            return false;
     }
 }
 
@@ -6819,7 +6819,7 @@ int gap_secure_connection(hci_con_handle_t con_handle){
 #ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
         case BD_ADDR_TYPE_ACL:
-            return gap_secure_connection_for_link_key_type(hci_connection->link_key_type);
+            return gap_secure_connection_for_link_key_type(hci_connection->link_key_type) ? 1 : 0;
 #endif
         default:
             return 0;

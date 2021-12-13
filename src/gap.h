@@ -333,7 +333,7 @@ gap_security_level_t gap_security_level_for_link_key_type(link_key_type_t link_k
 /**
  * @brief map link keys to secure connection yes/no
  */
-int gap_secure_connection_for_link_key_type(link_key_type_t link_key_type);
+bool gap_secure_connection_for_link_key_type(link_key_type_t link_key_type);
 
 /**
  * @brief map link keys to authenticated
