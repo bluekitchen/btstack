@@ -613,7 +613,7 @@ uint16_t gap_le_connection_interval(hci_con_handle_t con_handle);
  * @param con_handle
  * @return 0 if not encrypted, 7-16 otherwise
  */
-int gap_encryption_key_size(hci_con_handle_t con_handle);
+uint8_t gap_encryption_key_size(hci_con_handle_t con_handle);
 
 /**
  * @brief Get authentication property.

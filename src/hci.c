@@ -6764,7 +6764,7 @@ static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handl
 // without sm.c default values from create_connection_for_bd_addr_and_type() resulg in non-encrypted, not-authenticated
 #endif
 
-int gap_encryption_key_size(hci_con_handle_t con_handle){
+uint8_t gap_encryption_key_size(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (hci_connection == NULL) return 0;
     if (hci_is_le_connection(hci_connection)){
