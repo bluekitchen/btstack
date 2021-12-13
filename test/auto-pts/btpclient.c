@@ -125,28 +125,25 @@ static btstack_timer_source_t heartbeat;
 // static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef};
 static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x08, 0xe2, 0x5c};
 
-// GCOV Flush
+// flush gcov data
+#ifdef HAVE_GCOV_FLUSH
+void __gcov_flush(void);
+#endif
+#ifdef HAVE_GCOV_DUMP
+void __gcov_dump(void);
+void __gcov_reset(void);
+#endif
+
 static void my_gcov_flush(void){
 #ifdef COVERAGE
-    static void (*gcov_flush_fn)(void) = NULL;
-    if (gcov_flush_fn == NULL){
-        // look up __gov_flush
-        gcov_flush_fn = dlsym(RTLD_DEFAULT, "__gcov_flush");
-        if (gcov_flush_fn != NULL){
-            printf("Using __gcov_flush %p\n", gcov_flush_fn);
-        }
-    }
-    if (gcov_flush_fn == NULL){
-        // lookup __gov_dump
-        gcov_flush_fn = dlsym(RTLD_DEFAULT, "__gcov_dump");
-        if (gcov_flush_fn != NULL){
-            printf("Using __gcov_dump %p\n", gcov_flush_fn);
-        }
-    }
-    if (gcov_flush_fn != NULL){
-        // call either one
-        (*gcov_flush_fn)();
-    }
+#ifdef HAVE_GCOV_DUMP
+    __gcov_dump();
+    __gcov_reset();
+#elif defined(HAVE_GCOV_FLUSH)
+    __gcov_flush();
+#else
+#error "COVERAGE defined, but neither HAVE_GCOV_DUMP nor HAVE_GCOV_FLUSH"
+#endif
 #endif
 }
 
