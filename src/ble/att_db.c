@@ -249,7 +249,7 @@ static void att_prepare_write_reset(void){
 
 static void att_prepare_write_update_errors(uint8_t error_code, uint16_t handle){
     // first ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH has highest priority
-    if ((error_code == (uint8_t)ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH) && (error_code != att_prepare_write_error_code)){
+    if ((error_code == (uint8_t)ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH) && (error_code != (uint8_t)att_prepare_write_error_code)){
         att_prepare_write_error_code = error_code;
         att_prepare_write_error_handle = handle;
         return;
@@ -507,7 +507,7 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
 
-        if (it.handle && (it.handle < start_handle)) continue;
+        if ((it.handle != 0u) && (it.handle < start_handle)) continue;
         if (it.handle > end_handle) break;  // (1)
 
         // close current tag, if within a group and a new service definition starts or we reach end of att db
@@ -529,7 +529,7 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
         prev_handle = it.handle;
 
         // does current attribute match
-        if (it.handle && att_iterator_match_uuid16(&it, attribute_type) && (attribute_len == it.value_len) && (memcmp(attribute_value, it.value, it.value_len) == 0)){
+        if ((it.handle != 0u) && att_iterator_match_uuid16(&it, attribute_type) && (attribute_len == it.value_len) && (memcmp(attribute_value, it.value, it.value_len) == 0)){
             log_info("Begin of group, handle 0x%04x", it.handle);
             little_endian_store_16(response_buffer, offset, it.handle);
             offset += 2u;
@@ -751,7 +751,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     att_update_value_len(&it, att_connection->con_handle);
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
-    if (it.value_len == ATT_READ_RESPONSE_PENDING) return ATT_READ_RESPONSE_PENDING;
+    if (it.value_len == (uint16_t)ATT_READ_RESPONSE_PENDING) return ATT_READ_RESPONSE_PENDING;
 #endif
 
     // allow to return ATT Error Code in ATT Read Callback
@@ -913,7 +913,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         
-        if (it.handle && (it.handle < start_handle)) continue;
+        if ((it.handle != 0u) && (it.handle < start_handle)) continue;
         if (it.handle > end_handle) break;  // (1)
 
         // log_info("Handle 0x%04x", it.handle);
@@ -943,7 +943,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
         
         // does current attribute match
         // log_info("compare: %04x == %04x", *(uint16_t*) context->attribute_type, *(uint16_t*) uuid);
-        if (it.handle && att_iterator_match_uuid(&it, attribute_type, attribute_type_len)) {
+        if ((it.handle != 0u) && att_iterator_match_uuid(&it, attribute_type, attribute_type_len)) {
             
             // check if value has same len as last one
             uint16_t this_pair_len = 4u + it.value_len;
@@ -1032,10 +1032,10 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     if (error_code == ATT_ERROR_WRITE_RESPONSE_PENDING) return ATT_INTERNAL_WRITE_RESPONSE_PENDING;
 #endif
 
-    if (error_code != 0u) {
+    if (error_code != 0) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
-    response_buffer[0] = ATT_WRITE_RESPONSE;
+    response_buffer[0] = (uint8_t)ATT_WRITE_RESPONSE;
     return 1;
 }
 
@@ -1065,7 +1065,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     }
     // check security requirements
     int error_code = att_validate_security(att_connection, ATT_WRITE, &it);
-    if (error_code != 0u) {
+    if (error_code != 0) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
 
@@ -1277,7 +1277,7 @@ bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint1
         prev_handle = it.handle;
         
         // check if found
-        if (it.handle && new_service_started && (attribute_len == it.value_len) && (memcmp(attribute_value, it.value, it.value_len) == 0)){
+        if ( (it.handle != 0u) && new_service_started && (attribute_len == it.value_len) && (memcmp(attribute_value, it.value, it.value_len) == 0)){
             *start_handle = it.handle;
             in_group = true;
         }
@@ -1291,7 +1291,7 @@ uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t st
     att_iterator_init(&it);
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
-        if (it.handle && (it.handle < start_handle)) continue;
+        if ((it.handle != 0u) && (it.handle < start_handle)) continue;
         if (it.handle > end_handle) break;  // (1)
         if (it.handle == 0u) break;
         if (att_iterator_match_uuid16(&it, uuid16)) return it.handle;
@@ -1305,7 +1305,7 @@ uint16_t gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(uint16
     bool characteristic_found = false;
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
-        if (it.handle && (it.handle < start_handle)) continue;
+        if ((it.handle != 0u) && (it.handle < start_handle)) continue;
         if (it.handle > end_handle) break;  // (1)
         if (it.handle == 0u) break;
         if (att_iterator_match_uuid16(&it, characteristic_uuid16)){
@@ -1341,7 +1341,7 @@ bool gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid1
     uint16_t prev_handle = 0;
 
     uint8_t attribute_value[16];
-    int attribute_len = sizeof(attribute_value);
+    uint16_t attribute_len = (uint16_t)sizeof(attribute_value);
     reverse_128(uuid128, attribute_value);
 
     att_iterator_t it;
@@ -1377,7 +1377,7 @@ uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid128(uint16_t s
     att_iterator_init(&it);
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
-        if (it.handle && (it.handle < start_handle)) continue;
+        if ((it.handle != 0u) && (it.handle < start_handle)) continue;
         if (it.handle > end_handle) break;  // (1)
         if (it.handle == 0u) break;
         if (att_iterator_match_uuid(&it, attribute_value, 16)) return it.handle;
@@ -1394,7 +1394,7 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
     int characteristic_found = 0;
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
-        if (it.handle && (it.handle < start_handle)) continue;
+        if ((it.handle != 0u) && (it.handle < start_handle)) continue;
         if (it.handle > end_handle) break;  // (1)
         if (it.handle == 0u) break;
         if (att_iterator_match_uuid(&it, attribute_value, 16)){

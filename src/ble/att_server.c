@@ -84,7 +84,7 @@ static void att_server_persistent_ccc_clear(hci_connection_t * hci_connection);
 static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t * packet, uint16_t size);
 
 typedef enum {
-    ATT_SERVER_RUN_PHASE_1_REQUESTS,
+    ATT_SERVER_RUN_PHASE_1_REQUESTS = 0,
     ATT_SERVER_RUN_PHASE_2_INDICATIONS,
     ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS,
 } att_server_run_phase_t;
@@ -241,7 +241,7 @@ static void att_handle_value_indication_timeout(btstack_timer_source_t *ts){
     att_server_t * att_server = &hci_connection->att_server;
     uint16_t att_handle = att_server->value_indication_handle;
     att_connection_t * att_connection = &hci_connection->att_connection;
-    att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_connection->con_handle, att_handle);
+    att_handle_value_indication_notify_client((uint8_t)ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_connection->con_handle, att_handle);
 }
 
 static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -331,13 +331,13 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             if (att_connection->max_mtu > ATT_REQUEST_BUFFER_SIZE){
                                 att_connection->max_mtu = ATT_REQUEST_BUFFER_SIZE;
                             }
-                            att_connection->encryption_key_size = 0;
-                            att_connection->authenticated = 0;
-		                	att_connection->authorized = 0;
+                            att_connection->encryption_key_size = 0u;
+                            att_connection->authenticated = 0u;
+		                	att_connection->authorized = 0u;
                             // workaround: identity resolving can already be complete, at least store result
                             att_server->ir_le_device_db_index = sm_le_device_index(con_handle);
-                            att_server->ir_lookup_active = 0;
-                            att_server->pairing_active = 0;
+                            att_server->ir_lookup_active = 0u;
+                            att_server->pairing_active = 0u;
                             // notify all - old
                             att_emit_event_to_all(packet, size);
                             // notify all - new
@@ -384,11 +384,11 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_connection->con_handle = 0;
                     att_server->pairing_active = 0;
                     att_server->state = ATT_SERVER_IDLE;
-                    if (att_server->value_indication_handle){
+                    if (att_server->value_indication_handle != 0u){
                         btstack_run_loop_remove_timer(&att_server->value_indication_timer);
                         uint16_t att_handle = att_server->value_indication_handle;
-                        att_server->value_indication_handle = 0; // reset error state
-                        att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_DISCONNECT, att_connection->con_handle, att_handle);
+                        att_server->value_indication_handle = 0u; // reset error state
+                        att_handle_value_indication_notify_client((uint8_t)ATT_HANDLE_VALUE_INDICATION_DISCONNECT, att_connection->con_handle, att_handle);
                     }
                     // notify all - new
                     att_emit_disconnected_event(con_handle);
@@ -561,7 +561,7 @@ static int att_server_process_validated_request(hci_connection_t * hci_connectio
     if ((att_response_size     >= 4u)
     && (att_response_buffer[0] == ATT_ERROR_RESPONSE)
     && (att_response_buffer[4] == ATT_ERROR_INSUFFICIENT_AUTHORIZATION)
-    && (att_connection->authenticated)){
+    && (att_connection->authenticated != 0u)){
 
         switch (gap_authorization_state(att_connection->con_handle)){
             case AUTHORIZATION_UNKNOWN:
@@ -583,7 +583,7 @@ static int att_server_process_validated_request(hci_connection_t * hci_connectio
     }
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
-    if (att_server->l2cap_cid != 0){
+    if (att_server->l2cap_cid != 0u){
         l2cap_send_prepared(att_server->l2cap_cid, att_response_size);
     } else
 #endif
@@ -689,7 +689,7 @@ static bool att_server_data_ready_for_phase(att_server_t * att_server,  att_serv
         case ATT_SERVER_RUN_PHASE_1_REQUESTS:
             return att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
         case ATT_SERVER_RUN_PHASE_2_INDICATIONS:
-             return (!btstack_linked_list_empty(&att_server->indication_requests) && (att_server->value_indication_handle == 0));
+             return (!btstack_linked_list_empty(&att_server->indication_requests) && (att_server->value_indication_handle == 0u));
         case ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS:
             return (!btstack_linked_list_empty(&att_server->notification_requests));
         default:
@@ -726,7 +726,7 @@ static void att_server_handle_can_send_now(void){
     hci_con_handle_t last_send_con_handle = HCI_CON_HANDLE_INVALID;
     hci_connection_t * request_hci_connection   = NULL;
     bool can_send_now = true;
-    int phase_index;
+    uint8_t phase_index;
 
     for (phase_index = ATT_SERVER_RUN_PHASE_1_REQUESTS; phase_index <= ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS; phase_index++){
         att_server_run_phase_t phase = (att_server_run_phase_t) phase_index;
@@ -797,9 +797,9 @@ static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t
     att_connection_t * att_connection = &hci_connection->att_connection;
 
     uint8_t opcode  = packet[0u];
-    uint8_t method  = opcode & 0x03f;
     bool invalid = method > ATT_MULTIPLE_HANDLE_VALUE_NTF;
-    bool command = (opcode & 0x40) != 0;
+    uint8_t method  = opcode & 0x03fu;
+    bool command = (opcode & 0x40u) != 0u;
 
     // ignore invalid commands
     if (invalid && command){
@@ -807,11 +807,11 @@ static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t
     }
 
     // handle value indication confirms
-    if ((opcode == ATT_HANDLE_VALUE_CONFIRMATION) && att_server->value_indication_handle){
+    if ((opcode == ATT_HANDLE_VALUE_CONFIRMATION) && (att_server->value_indication_handle != 0u)){
         btstack_run_loop_remove_timer(&att_server->value_indication_timer);
         uint16_t att_handle = att_server->value_indication_handle;
-        att_server->value_indication_handle = 0;    
-        att_handle_value_indication_notify_client(0, att_connection->con_handle, att_handle);
+        att_server->value_indication_handle = 0u;    
+        att_handle_value_indication_notify_client(0u, att_connection->con_handle, att_handle);
         att_server_request_can_send_now(hci_connection);
         return;
     }
@@ -920,7 +920,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
     uint32_t tag_for_lowest_seq_nr = 0;
     uint32_t tag_for_empty = 0;
     persistent_ccc_entry_t entry;
-    for (index=0;index<NVN_NUM_GATT_SERVER_CCC;index++){
+    for (index=0; index<NVN_NUM_GATT_SERVER_CCC; index++){
         uint32_t tag = att_server_persistent_ccc_tag_for_index(index);
         int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
 
@@ -971,8 +971,8 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
         return;
     }
 
-    uint32_t tag_to_use = 0;
-    if (tag_for_empty != 0){
+    uint32_t tag_to_use = 0u;
+    if (tag_for_empty != 0u){
         tag_to_use = tag_for_empty;
     } else if (tag_for_lowest_seq_nr){
         tag_to_use = tag_for_lowest_seq_nr;
@@ -1105,7 +1105,7 @@ static uint8_t att_validate_prepared_write(hci_con_handle_t con_handle){
         att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
         if (!handler->write_callback) continue;
         uint8_t error_code = (*handler->write_callback)(con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
-        if (error_code != 0) return error_code;
+        if (error_code != 0u) return error_code;
     }
     if (!att_server_client_write_callback) return 0;
     return (*att_server_client_write_callback)(con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
@@ -1252,7 +1252,7 @@ int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, 
     att_server_t * att_server = &hci_connection->att_server;
     att_connection_t * att_connection = &hci_connection->att_connection;
 
-    if (att_server->value_indication_handle) return ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS;
+    if (att_server->value_indication_handle != 0u) return ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS;
     if (!att_server_can_send_packet(hci_connection)) return BTSTACK_ACL_BUFFERS_FULL;
 
     // track indication

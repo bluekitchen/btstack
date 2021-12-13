@@ -67,25 +67,25 @@ static uint16_t  att_db_hash_len;
 
 static void att_db_util_set_end_tag(void){
 	// end tag
-	att_db[att_db_size] = 0;
+	att_db[att_db_size] = 0u;
 	att_db[att_db_size+1u] = 0u;
 }
 
 void att_db_util_init(void){
 #ifdef HAVE_MALLOC
     if (att_db == NULL){
-        att_db = (uint8_t*) malloc(ATT_DB_BUFFER_INCREMENT);
-        att_db_max_size = ATT_DB_BUFFER_INCREMENT;
+        att_db = (uint8_t*) malloc((size_t)ATT_DB_BUFFER_INCREMENT);
+        att_db_max_size = (uint16_t)ATT_DB_BUFFER_INCREMENT;
     }
 #else
 	att_db = att_db_storage;
 	att_db_max_size = sizeof(att_db_storage);
 #endif
 	// store att version
-	att_db[0] = ATT_DB_VERSION;
-	att_db_size = 1;
-	att_db_next_handle = 1;
-	att_db_hash_len = 0;
+	att_db[0] = (uint8_t)ATT_DB_VERSION;
+	att_db_size = 1u;
+	att_db_next_handle = 1u;
+	att_db_hash_len = 0u;
 	att_db_util_set_end_tag();
 }
 
@@ -363,7 +363,7 @@ uint16_t att_db_util_hash_len(void){
 void att_db_util_hash_init(void){
     // skip version info
     att_db_util_hash_att_ptr = &att_db[1];
-    att_db_util_hash_bytes_available = 0;
+    att_db_util_hash_bytes_available = 0u;
 }
 
 uint8_t att_db_util_hash_get_next(void){
