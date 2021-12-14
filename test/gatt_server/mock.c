@@ -62,12 +62,19 @@ int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
 	return 0;
 }
 
-static void att_init_connection(att_connection_t * att_connection){
-    att_connection->mtu = 23;
-    att_connection->max_mtu = 23;
-    att_connection->encryption_key_size = 0;
-    att_connection->authenticated = 0;
-	att_connection->authorized = 0;
+void att_init_connection(uint16_t con_handle){
+    hci_connection.att_connection.mtu = 23;
+    hci_connection.att_connection.con_handle = con_handle;
+    hci_connection.att_connection.max_mtu = 23;
+    hci_connection.att_connection.encryption_key_size = 0;
+    hci_connection.att_connection.authenticated = 0;
+    hci_connection.att_connection.authorized = 0;
+
+    hci_connection.att_server.ir_le_device_db_index = 0;
+
+    if (btstack_linked_list_empty(&connections)){
+        btstack_linked_list_add(&connections, (btstack_linked_item_t *)&hci_connection);
+    }
 }
 
 void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
@@ -143,7 +150,7 @@ void l2cap_request_can_send_fix_channel_now_event(uint16_t handle, uint16_t chan
 
 uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
 	att_connection_t att_connection;
-	att_init_connection(&att_connection);
+	att_init_connection(handle);
 	uint8_t response[max_mtu];
 	uint16_t response_len = att_handle_request(&att_connection, l2cap_get_outgoing_buffer(), len, &response[0]);
 	if (response_len){
@@ -197,7 +204,7 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_
 	return NULL;
 }
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
-	if (con_handle != 0) return NULL;
+	if (con_handle != hci_connection.con_handle) return NULL;
 	return &hci_connection;
 }
 void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
@@ -267,5 +274,6 @@ void att_dispatch_server_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new
 }
 
 void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle){
-    UNUSED(con_handle);
+    uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 1, 0};
+    att_server_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*)event, sizeof(event));
 }
