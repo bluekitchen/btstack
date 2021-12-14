@@ -21,7 +21,6 @@ COMMON = \
 	ad_parser.c                 \
 	att_db.c                    \
 	att_db_util.c 				\
-	att_dispatch.c              \
 	att_server.c                \
 	battery_service_server.c \
 	btstack_crypto.c            \

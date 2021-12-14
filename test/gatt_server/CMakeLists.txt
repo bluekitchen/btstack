@@ -20,10 +20,9 @@ set(SOURCES
     ../../3rd-party/rijndael/rijndael.c     
     ../../3rd-party/micro-ecc/uECC.c       
     ../../src/ad_parser.c                 
-    ../../src/ble/att_db.c                    
-    ../../src/ble/att_db_util.c               
-    ../../src/ble/att_dispatch.c              
-    ../../src/ble/att_server.c                
+    ../../src/ble/att_db.c
+    ../../src/ble/att_db_util.c
+    ../../src/ble/att_server.c
     ../../src/ble/gatt-service/battery_service_server.c 
     ../../src/ble/gatt-service/cycling_power_service_server.c 
     ../../src/ble/gatt-service/cycling_speed_and_cadence_service_server.c 

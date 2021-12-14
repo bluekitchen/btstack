@@ -9,12 +9,12 @@
 #include "l2cap.h"
 
 #include "ble/att_db.h"
-#include "ble/gatt_client.h"
+#include "ble/att_dispatch.h"
 #include "ble/sm.h"
 
 #include "btstack_debug.h"
 
-static btstack_packet_handler_t att_packet_handler;
+static btstack_packet_handler_t att_server_packet_handler;
 static void (*registered_hci_event_handler) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = NULL;
 
 static btstack_linked_list_t     connections;
@@ -119,10 +119,6 @@ uint16_t l2cap_max_le_mtu(void){
 
 void l2cap_init(void){}
 
-void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {
-    att_packet_handler = packet_handler;
-}
-
 bool l2cap_reserve_packet_buffer(void){
 	return true;
 }
@@ -142,7 +138,7 @@ bool l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_i
 
 void l2cap_request_can_send_fix_channel_now_event(uint16_t handle, uint16_t channel_id){
 	uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 1, 0};
-	att_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*)event, sizeof(event));
+    att_server_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*)event, sizeof(event));
 }
 
 uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
@@ -151,7 +147,7 @@ uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16
 	uint8_t response[max_mtu];
 	uint16_t response_len = att_handle_request(&att_connection, l2cap_get_outgoing_buffer(), len, &response[0]);
 	if (response_len){
-		att_packet_handler(ATT_DATA_PACKET, gatt_client_handle, &response[0], response_len);
+        att_server_packet_handler(ATT_DATA_PACKET, gatt_client_handle, &response[0], response_len);
 	}
 	return ERROR_CODE_SUCCESS;
 }
@@ -250,4 +246,26 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle
 int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_t conn_interval_min,
 	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout){
 	return 0;	
+}
+
+void mock_call_att_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    (*att_server_packet_handler)(packet_type, channel, packet, size);
+}
+
+void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
+    att_server_packet_handler = packet_handler;
+}
+
+int att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
+    UNUSED(con_handle);
+    return l2cap_can_send_fixed_channel_packet_now_status;
+}
+
+void att_dispatch_server_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new_mtu){
+    UNUSED(con_handle);
+    UNUSED(new_mtu);
+}
+
+void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle){
+    UNUSED(con_handle);
 }
