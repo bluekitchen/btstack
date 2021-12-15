@@ -18,8 +18,8 @@ static btstack_packet_handler_t att_server_packet_handler;
 static void (*registered_hci_event_handler) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = NULL;
 
 static btstack_linked_list_t     connections;
-static const uint16_t max_mtu = 23;
-static uint8_t  l2cap_stack_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 8 + max_mtu];	// pre buffer + HCI Header + L2CAP header
+static uint16_t max_mtu = 23;
+static uint8_t  l2cap_stack_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 8 + ATT_DEFAULT_MTU];	// pre buffer + HCI Header + L2CAP header
 static uint16_t gatt_client_handle = 0x40;
 static hci_connection_t hci_connection;
 
@@ -62,7 +62,7 @@ int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
 	return 0;
 }
 
-void att_init_connection(uint16_t con_handle){
+void hci_setup_le_connection(uint16_t con_handle){
     hci_connection.att_connection.mtu = 23;
     hci_connection.att_connection.con_handle = con_handle;
     hci_connection.att_connection.max_mtu = 23;
@@ -72,17 +72,32 @@ void att_init_connection(uint16_t con_handle){
 
     hci_connection.att_server.ir_le_device_db_index = 0;
 
+    hci_connection.con_handle = con_handle;
+
     if (btstack_linked_list_empty(&connections)){
         btstack_linked_list_add(&connections, (btstack_linked_item_t *)&hci_connection);
     }
 }
 
-void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
-    registered_hci_event_handler = callback_handler->callback;
+void mock_l2cap_set_max_mtu(uint16_t mtu){
+    max_mtu = mtu;
 }
 
-bool hci_can_send_acl_le_packet_now(void){
-	return true;
+void hci_deinit(void){
+    hci_connection.att_connection.mtu = 0;
+    hci_connection.att_connection.con_handle = HCI_CON_HANDLE_INVALID;
+    hci_connection.att_connection.max_mtu = 0;
+    hci_connection.att_connection.encryption_key_size = 0;
+    hci_connection.att_connection.authenticated = 0;
+    hci_connection.att_connection.authorized = 0;
+    hci_connection.att_server.ir_le_device_db_index = 0;
+    hci_connection.att_server.notification_requests = NULL;
+    hci_connection.att_server.indication_requests = NULL;
+    connections = NULL;
+}
+
+void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    registered_hci_event_handler = callback_handler->callback;
 }
 
 bool hci_can_send_command_packet_now(void){
@@ -120,8 +135,7 @@ uint16_t l2cap_max_mtu(void){
 }
 
 uint16_t l2cap_max_le_mtu(void){
-	// printf("l2cap_max_mtu\n");
-    return max_mtu;
+	return max_mtu;
 }
 
 void l2cap_init(void){}
@@ -150,7 +164,7 @@ void l2cap_request_can_send_fix_channel_now_event(uint16_t handle, uint16_t chan
 
 uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
 	att_connection_t att_connection;
-	att_init_connection(handle);
+    hci_setup_le_connection(handle);
 	uint8_t response[max_mtu];
 	uint16_t response_len = att_handle_request(&att_connection, l2cap_get_outgoing_buffer(), len, &response[0]);
 	if (response_len){
@@ -204,30 +218,17 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_
 	return NULL;
 }
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
-	if (con_handle != hci_connection.con_handle) return NULL;
-	return &hci_connection;
+    if (hci_connection.con_handle != con_handle){
+        return NULL;
+    }
+    return &hci_connection;
 }
+
 void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
 	// printf("hci_connections_get_iterator not implemented in mock backend\n");
     btstack_linked_list_iterator_init(it, &connections);
 }
 
-// int hci_send_cmd(const hci_cmd_t *cmd, ...){
-// //	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
-// 	return 0;
-// }
-
-// int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
-// 	return 1;
-// }
-
-// void hci_disconnect_security_block(hci_con_handle_t con_handle){
-// 	printf("hci_disconnect_security_block \n");	
-// }
-
-// void hci_dump_log(const char * format, ...){
-// 	printf("hci_disconnect_security_block \n");	
-// }
 
 void l2cap_run(void){
 }
@@ -259,6 +260,10 @@ void mock_call_att_server_packet_handler(uint8_t packet_type, uint16_t channel, 
     (*att_server_packet_handler)(packet_type, channel, packet, size);
 }
 
+void mock_call_att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    (*registered_hci_event_handler)(packet_type, channel, packet, size);
+}
+
 void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
     att_server_packet_handler = packet_handler;
 }
@@ -279,3 +284,4 @@ void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle)
         att_server_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*)event, sizeof(event));
     }
 }
+

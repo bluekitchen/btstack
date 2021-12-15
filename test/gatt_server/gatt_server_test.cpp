@@ -31,7 +31,9 @@ static const uint8_t uuid128_no_bluetooth_base[] =   { 0xFB, 0x34, 0x9B, 0x5F, 0
 
 extern "C" void l2cap_can_send_fixed_channel_packet_now_set_status(uint8_t status);
 extern "C" void mock_call_att_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-extern "C" void att_init_connection(uint16_t con_handle);
+extern "C" void hci_setup_le_connection(uint16_t con_handle);
+extern "C" void mock_call_att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+extern "C" void mock_l2cap_set_max_mtu(uint16_t mtu);
 
 static uint8_t att_request[255];
 static uint16_t att_write_request(uint16_t request_type, uint16_t attribute_handle, uint16_t value_length, const uint8_t * value){
@@ -64,20 +66,30 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 
 static void att_client_indication_callback(void * context){
 }
+static void att_client_notification_callback(void * context){
+}
+static void att_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+}
+
 
 TEST_GROUP(ATT_SERVER){ 
     uint16_t att_con_handle;
     mock_btstack_tlv_t tlv_context;
     const btstack_tlv_t * tlv_impl;
+    btstack_context_callback_registration_t indication_callback;
+    btstack_context_callback_registration_t notification_callback;
 
     void setup(void){
-        att_con_handle = 0x00;
+        att_con_handle = 0x01;
 
-        att_init_connection(att_con_handle);
+        hci_setup_le_connection(att_con_handle);
+
         tlv_impl = mock_btstack_tlv_init_instance(&tlv_context);
         btstack_tlv_set_instance(tlv_impl, &tlv_context);
 
         l2cap_can_send_fixed_channel_packet_now_set_status(1);
+        indication_callback.callback = &att_client_indication_callback;
+        notification_callback.callback = &att_client_notification_callback;
 
         // init att db util and add a service and characteristic
         att_db_util_init();
@@ -111,9 +123,9 @@ TEST_GROUP(ATT_SERVER){
 
     void teardown(void) {
         mock_btstack_tlv_deinit(&tlv_context);
+        hci_deinit();
     }
 };
-
 
 TEST(ATT_SERVER, gatt_server_get_value_handle_for_characteristic_with_uuid16){
     // att_dump_attributes();
@@ -207,7 +219,6 @@ TEST(ATT_SERVER, att_server_get_mtu){
 
 TEST(ATT_SERVER, att_server_request_can_send_now_event){
     att_server_request_can_send_now_event(att_con_handle);
-
 }
 
 TEST(ATT_SERVER, att_server_can_send_packet_now){
@@ -218,11 +229,7 @@ TEST(ATT_SERVER, att_server_can_send_packet_now){
     CHECK_EQUAL(0, status);
 }
 
-static btstack_context_callback_registration_t indication_callback;
-
 TEST(ATT_SERVER, att_server_request_to_send_indication){
-
-    indication_callback.callback = &att_client_indication_callback;
     int status = att_server_request_to_send_indication(&indication_callback, 0x55);
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
@@ -235,12 +242,72 @@ TEST(ATT_SERVER, att_server_request_to_send_indication){
     CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
 }
 
+TEST(ATT_SERVER, att_server_request_to_send_notification){
+    int status = att_server_request_to_send_notification(&notification_callback, 0x55);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    l2cap_can_send_fixed_channel_packet_now_set_status(0);
+
+    status = att_server_request_to_send_notification(&notification_callback, att_con_handle);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    status = att_server_request_to_send_notification(&notification_callback, att_con_handle);
+    CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
+}
+
+TEST(ATT_SERVER, att_server_register_can_send_now_callback){
+    int status = att_server_register_can_send_now_callback(&notification_callback, 0x55);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    att_server_register_packet_handler(&att_event_packet_handler);
+}
+
 TEST(ATT_SERVER, opcode_ATT_WRITE_REQUEST){
     uint16_t value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
     uint8_t buffer[] = {1, 0};
+
     uint16_t att_request_len = att_write_request(ATT_WRITE_REQUEST, value_handle, sizeof(buffer), buffer);
     mock_call_att_server_packet_handler(ATT_DATA_PACKET, att_con_handle, &att_request[0], att_request_len);
 }
+
+TEST(ATT_SERVER, connection_complete_event){
+    uint8_t buffer[21];
+    buffer[0] = HCI_EVENT_LE_META;
+    buffer[1] = 19;
+    buffer[2] = HCI_SUBEVENT_LE_CONNECTION_COMPLETE;
+
+    // call with wrong con_handle
+    little_endian_store_16(buffer,4,HCI_CON_HANDLE_INVALID);
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
+
+    // call with correct con_handle
+    little_endian_store_16(buffer,4,att_con_handle);
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
+
+    // use max MTU > ATT_REQUEST_BUFFER_SIZE
+    mock_l2cap_set_max_mtu(ATT_REQUEST_BUFFER_SIZE + 10);
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
+
+    // wrong subevent
+    buffer[2] = 0xFF;
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
+}
+
+TEST(ATT_SERVER, connection_disconnect_complete_event) {
+    uint8_t buffer[6];
+    buffer[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
+    buffer[1] = 19;
+    buffer[2] = 0;
+
+    // call with wrong con_handle
+    little_endian_store_16(buffer, 3, HCI_CON_HANDLE_INVALID);
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
+
+    // call with correct con_handle
+    little_endian_store_16(buffer, 3, att_con_handle);
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
+}
+
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
