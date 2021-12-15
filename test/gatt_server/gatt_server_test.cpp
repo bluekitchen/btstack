@@ -127,6 +127,7 @@ TEST_GROUP(ATT_SERVER){
     }
 };
 
+
 TEST(ATT_SERVER, gatt_server_get_value_handle_for_characteristic_with_uuid16){
     // att_dump_attributes();
     uint16_t value_handle;
@@ -300,13 +301,26 @@ TEST(ATT_SERVER, connection_disconnect_complete_event) {
     buffer[2] = 0;
 
     // call with wrong con_handle
+    hci_setup_le_connection(att_con_handle);
     little_endian_store_16(buffer, 3, HCI_CON_HANDLE_INVALID);
     mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
 
     // call with correct con_handle
+    hci_setup_le_connection(att_con_handle);
     little_endian_store_16(buffer, 3, att_con_handle);
     mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
+
+    hci_setup_le_connection(att_con_handle);
+    static uint8_t value[] = {0x55};
+    uint16_t value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+    l2cap_can_send_fixed_channel_packet_now_set_status(1);
+    // correct command
+    uint8_t status = att_server_indicate(att_con_handle, value_handle, &value[0], 0);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
 }
+
 
 
 int main (int argc, const char * argv[]){
