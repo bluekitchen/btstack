@@ -1166,7 +1166,7 @@ uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t 
 
 uint8_t pbap_disconnect(uint16_t pbap_cid){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state < PBAP_CONNECTED){
         return BTSTACK_BUSY;
     }
     pbap_client->state = PBAP_W2_SEND_DISCONNECT_REQUEST;
