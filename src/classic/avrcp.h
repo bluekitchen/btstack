@@ -425,7 +425,11 @@ typedef enum {
     AVRCP_BROWSING_NOW_PLAYING
 } avrcp_browsing_scope_t;
 
-
+typedef enum{
+    AVRCP_REMOTE_CAPABILITIES_NONE = 0,
+    AVRCP_REMOTE_CAPABILITIES_W4_QUERY_RESULT,
+    AVRCP_REMOTE_CAPABILITIES_KNOWN
+} avrcp_remote_capabilities_state_t;
 
 
 // BROWSING 
@@ -579,7 +583,7 @@ typedef struct {
     bool     controller_press_and_hold_cmd_active;
     bool     controller_press_and_hold_cmd_release;
 
-    bool     controller_notifications_supported_by_target_queried;
+    avrcp_remote_capabilities_state_t remote_capabilities_state;
     bool     controller_notifications_supported_by_target_suppress_emit_result;
     uint16_t controller_initial_status_reported;
     uint16_t controller_notifications_to_register;

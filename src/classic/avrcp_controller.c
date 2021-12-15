@@ -734,7 +734,7 @@ static void avrcp_controller_get_capabilities_for_connection(avrcp_connection_t 
 }
 
 static uint8_t avrcp_controller_register_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t event_id){
-    if (connection->controller_notifications_supported_by_target_queried && (connection->notifications_supported_by_target & (1 << event_id)) == 0){
+    if ((connection->remote_capabilities_state == AVRCP_REMOTE_CAPABILITIES_KNOWN) && (connection->notifications_supported_by_target & (1 << event_id)) == 0){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }  
     if ((connection->controller_notifications_to_deregister & (1 << event_id)) != 0){
@@ -745,12 +745,18 @@ static uint8_t avrcp_controller_register_notification(avrcp_connection_t * conne
     }
     connection->controller_notifications_to_register |= (1 << event_id);
 
-    if (!connection->controller_notifications_supported_by_target_queried){
-        connection->controller_notifications_supported_by_target_suppress_emit_result = true;
-        avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_EVENT);
-        return ERROR_CODE_SUCCESS;
+    switch (connection->remote_capabilities_state){
+        case AVRCP_REMOTE_CAPABILITIES_NONE:
+            connection->remote_capabilities_state = AVRCP_REMOTE_CAPABILITIES_W4_QUERY_RESULT;
+            connection->controller_notifications_supported_by_target_suppress_emit_result = true;
+            avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_EVENT);
+            break;
+        case AVRCP_REMOTE_CAPABILITIES_KNOWN:
+            avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+            break;
+        default:
+            break;
     }
-    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1074,8 +1080,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                                 uint8_t event_id = packet[pos++];
                                 connection->notifications_supported_by_target |= (1 << event_id);
                             }
-                            
-                            // if the get supported events query is triggered by avrcp_controller_enable_notification call, 
+
+                            connection->remote_capabilities_state = AVRCP_REMOTE_CAPABILITIES_KNOWN;
+
+                            // if the get supported events query is triggered by avrcp_controller_enable_notification call,
                             // avrcp_controller_emit_supported_events should be suppressed
                             if (connection->controller_notifications_supported_by_target_suppress_emit_result){
                                 connection->controller_notifications_supported_by_target_suppress_emit_result = false;
@@ -1238,19 +1246,23 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection){
     switch (connection->state){
         case AVCTP_W2_SEND_PRESS_COMMAND:
-        case AVCTP_W2_SEND_COMMAND:
+            avrcp_send_cmd_with_avctp_fragmentation(connection);
+            connection->state = AVCTP_W2_RECEIVE_PRESS_RESPONSE;
+            break;
+
         case AVCTP_W2_SEND_RELEASE_COMMAND:
+            avrcp_send_cmd_with_avctp_fragmentation(connection);
+            connection->state = AVCTP_W2_RECEIVE_RESPONSE;
+            break;
+
+        case AVCTP_W2_SEND_COMMAND:
             avrcp_send_cmd_with_avctp_fragmentation(connection);
             if (connection->data_offset < connection->data_len){
                 // continue AVCTP fragmentation
                 avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                 return;
             }
-            if (connection->state == AVCTP_W2_SEND_PRESS_COMMAND){
-                connection->state = AVCTP_W2_RECEIVE_PRESS_RESPONSE;
-            } else {
-                connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-            }
+            connection->state = AVCTP_W2_RECEIVE_RESPONSE;
             return;
         default:
             break;
@@ -1436,7 +1448,7 @@ uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notifica
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (!connection->controller_notifications_supported_by_target_queried){
+    if (connection->remote_capabilities_state != AVRCP_REMOTE_CAPABILITIES_KNOWN){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -1512,13 +1524,17 @@ uint8_t avrcp_controller_get_supported_events(uint16_t avrcp_cid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    if (!connection->controller_notifications_supported_by_target_queried){
-        connection->controller_notifications_supported_by_target_queried = true;
-        avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_EVENT);
-        return ERROR_CODE_SUCCESS;
+    switch (connection->remote_capabilities_state){
+        case AVRCP_REMOTE_CAPABILITIES_NONE:
+            connection->remote_capabilities_state = AVRCP_REMOTE_CAPABILITIES_W4_QUERY_RESULT;
+            avrcp_controller_get_capabilities_for_connection(connection, AVRCP_CAPABILITY_ID_EVENT);
+            break;
+        case AVRCP_REMOTE_CAPABILITIES_KNOWN:
+            avrcp_controller_emit_supported_events(connection);
+            break;
+        default:
+            break;
     }
-
-    avrcp_controller_emit_supported_events(connection);
     return ERROR_CODE_SUCCESS;
 }
 
