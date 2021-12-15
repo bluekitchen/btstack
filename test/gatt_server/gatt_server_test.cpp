@@ -62,6 +62,8 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
     return 0;
 }
 
+static void att_client_indication_callback(void * context){
+}
 
 TEST_GROUP(ATT_SERVER){ 
     uint16_t att_con_handle;
@@ -70,9 +72,12 @@ TEST_GROUP(ATT_SERVER){
 
     void setup(void){
         att_con_handle = 0x00;
+
         att_init_connection(att_con_handle);
         tlv_impl = mock_btstack_tlv_init_instance(&tlv_context);
         btstack_tlv_set_instance(tlv_impl, &tlv_context);
+
+        l2cap_can_send_fixed_channel_packet_now_set_status(1);
 
         // init att db util and add a service and characteristic
         att_db_util_init();
@@ -213,26 +218,29 @@ TEST(ATT_SERVER, att_server_can_send_packet_now){
     CHECK_EQUAL(0, status);
 }
 
-//static btstack_context_callback_registration_t indication_callback;
-//
-//TEST(ATT_SERVER, att_server_request_to_send_indication){
-//    int status = att_server_request_to_send_indication(&indication_callback, 0x55);
-//    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
-//
-//    status = att_server_request_to_send_indication(&indication_callback, att_con_handle);
-//    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
-//
-//    status = att_server_request_to_send_indication(&indication_callback, att_con_handle);
-//    CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
-//}
+static btstack_context_callback_registration_t indication_callback;
 
+TEST(ATT_SERVER, att_server_request_to_send_indication){
+
+    indication_callback.callback = &att_client_indication_callback;
+    int status = att_server_request_to_send_indication(&indication_callback, 0x55);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    l2cap_can_send_fixed_channel_packet_now_set_status(0);
+
+    status = att_server_request_to_send_indication(&indication_callback, att_con_handle);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    status = att_server_request_to_send_indication(&indication_callback, att_con_handle);
+    CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
+}
 
 TEST(ATT_SERVER, opcode_ATT_WRITE_REQUEST){
     uint16_t value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
-    uint16_t att_request_len = att_write_request(ATT_WRITE_REQUEST, value_handle, 1, (uint8_t *)"a");
+    uint8_t buffer[] = {1, 0};
+    uint16_t att_request_len = att_write_request(ATT_WRITE_REQUEST, value_handle, sizeof(buffer), buffer);
     mock_call_att_server_packet_handler(ATT_DATA_PACKET, att_con_handle, &att_request[0], att_request_len);
 }
-// ATT_SIGNED_WRITE_COMMAND
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
