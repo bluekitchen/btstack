@@ -274,6 +274,8 @@ void att_dispatch_server_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new
 }
 
 void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle){
-    uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 1, 0};
-    att_server_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*)event, sizeof(event));
+    if (l2cap_can_send_fixed_channel_packet_now_status){
+        uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 1, 0};
+        att_server_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*)event, sizeof(event));
+    }
 }
