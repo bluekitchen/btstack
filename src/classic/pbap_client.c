@@ -929,7 +929,7 @@ static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
                     }
                     break;
                 case GOEP_SUBEVENT_CONNECTION_CLOSED:
-                    if (pbap_client->state != PBAP_CONNECTED){
+                    if (pbap_client->state > PBAP_CONNECTED){
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_DISCONNECTED);
                     }
                     pbap_client->state = PBAP_INIT;
