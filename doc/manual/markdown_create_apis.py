@@ -35,8 +35,7 @@ api_description = """
 
 """
 
-code_ref = """GITHUBFPATH#LLINENR"""
-
+code_ref = """GITHUB/FPATH#LLINENR"""
 
 def isEndOfComment(line):
     return re.match('\s*\*/.*', line) 
@@ -47,10 +46,10 @@ def isStartOfComment(line):
 def isTypedefStart(line):
     return re.match('.*typedef\s+struct.*', line)
 
-def codeReference(fname, githuburl, filepath, linenr):
+def codeReference(fname, githuburl, filename_without_extension, filepath, linenr):
     global code_ref
     ref = code_ref.replace("GITHUB", githuburl)
-    ref = ref.replace("FPATH", filepath)
+    ref = ref.replace("FPATH", filename_without_extension)
     ref = ref.replace("LINENR", str(linenr))
     return ref
 
@@ -88,7 +87,7 @@ def writeAPI(fout, fin, mk_codeidentation):
 
 
 
-def createIndex(fin, api_filepath, api_title, api_label, githuburl):
+def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
     global typedefs, functions
     global linenr, multiline_function_def, typedefFound, state
     
@@ -136,12 +135,12 @@ def createIndex(fin, api_filepath, api_title, api_label, githuburl):
             typedef = re.match('}\s*(.*);\n', line)
             if typedef:
                 typedefFound = 0
-                typedefs[typedef.group(1)] = codeReference(typedef.group(1), githuburl, api_filepath, linenr)
+                typedefs[typedef.group(1)] = codeReference(typedef.group(1), githuburl, filename, api_filepath, linenr)
             continue
 
         ref_function =  re.match('.*typedef\s+void\s+\(\s*\*\s*(.*?)\)\(.*', line)
         if ref_function:
-            functions[ref_function.group(1)] = codeReference(ref_function.group(1), githuburl, api_filepath, linenr)
+            functions[ref_function.group(1)] = codeReference(ref_function.group(1), githuburl, filename, api_filepath, linenr)
             continue
 
 
@@ -152,7 +151,7 @@ def createIndex(fin, api_filepath, api_title, api_label, githuburl):
             if len(name) == 0:
                 print(parts);
                 sys.exit(10)
-            functions[name] = codeReference( name, githuburl, api_filepath, linenr)
+            functions[name] = codeReference( name, githuburl, filename, api_filepath, linenr)
             continue
 
         multi_line_function_definition = re.match('.(.*?)\s*\(.*\(*.*', line)
@@ -164,7 +163,7 @@ def createIndex(fin, api_filepath, api_title, api_label, githuburl):
                 print(parts);
                 sys.exit(10)
             multiline_function_def = 1
-            functions[name] = codeReference(name, githuburl, api_filepath, linenr)
+            functions[name] = codeReference(name, githuburl, filename, api_filepath, linenr)
 
 
 def findTitle(fin):
@@ -199,7 +198,8 @@ def main(argv):
     mk_codeidentation = "    "
     git_branch_name = "master"
     btstackfolder = "../../"
-    githuburl  = "https://github.com/bluekitchen/btstack/blob/master/"
+    githuburl_template  = "https://github.com/bluekitchen/btstack/blob/"
+    githuburl = "master/src/"
     markdownfolder = "docs-markdown/"
     
     cmd = 'markdown_create_apis.py [-r <root_btstackfolder>] [-g <githuburl>] [-o <output_markdownfolder>]'
@@ -218,7 +218,7 @@ def main(argv):
             githuburl = arg
         elif opt in ("-o", "--ofolder"):
             markdownfolder = arg
-        
+
     apifile   = markdownfolder + "appendix/apis.md"
     # indexfile = markdownfolder + "api_index.md"
     btstack_srcfolder = btstackfolder + "src/"
@@ -231,7 +231,7 @@ def main(argv):
     else:
         print ('GIT branch name :  %s' % git_branch_name)
 
-    githuburl = githuburl + git_branch_name
+    githuburl = githuburl_template + git_branch_name
 
     print ('BTstack src folder is : ' + btstack_srcfolder)
     print ('API file is       : ' + apifile)
@@ -259,7 +259,9 @@ def main(argv):
     
     # create an >md file, for each header file in header_files dictionary
     for header_filepath in sorted(header_files.keys()):
-        filename = os.path.basename(header_filepath)
+        filename = str(header_filepath)
+        filename = filename.split("../../")[1]
+
         filename_without_extension = filename_stem(header_filepath) # file name without .h
         filetitle = header_files[header_filepath][0]
         description = header_files[header_filepath][1]
@@ -277,13 +279,13 @@ def main(argv):
                 fout.write(header_title)
                 fout.write(header_description)
                 writeAPI(fout, fin, mk_codeidentation)
-            
+
         with open(header_filepath, 'rt') as fin:
             linenr = 0
             typedefFound = 0
             multiline_function_def = 0
             state = State.SearchStartAPI
-            createIndex(fin, markdown_filepath, header_title, filename_without_extension, githuburl)
+            createIndex(fin, filename, markdown_filepath, header_title, filename_without_extension, githuburl)
      
     # add API list to the navigation menu           
     with open("mkdocs-temp.yml", 'rt') as fin:
