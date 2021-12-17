@@ -3,6 +3,18 @@
 In the following, we explain how the various Bluetooth profiles are used
 in BTstack.
 
+## A2DP - Advanced Audio Distribution
+
+The A2DP profile defines how to stream audio over a Bluetooth connection from one device, such as a mobile phone, to another device such as a headset.  A device that acts as source of audio stream implements the A2DP Source role. Similarly, a device that receives an audio stream implements the A2DP Sink role. As such, the A2DP service allows uni-directional transfer of an audio stream, from single channel mono, up to two channel stereo. Our implementation includes mandatory support for the low-complexity SBC codec. Signaling for optional codes (FDK AAC, LDAC, APTX) is supported as well, by you need to provide your own codec library.
+
+
+## AVRCP - Audio/Video Remote Control Profile
+
+The AVRCP profile defines how audio playback on a remote device (e.g. a music app on a smartphone) can be controlled as well as how to state changes such as volume, information on currently played media, battery, etc. can be received from a remote device (e.g. a speaker). Usually, each device implements two roles: 
+- The Controller role allows to query information on currently played media, such are title, artist and album, as well as to control the playback, i.e. to play, stop, repeat, etc. 
+- The Target role responds to commands, e.g. playback control, and queries, e.g. playback status, media info, from the Controller currently played media.
+
+
 ## GAP - Generic Access Profile: Classic
 
 
