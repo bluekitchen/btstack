@@ -589,7 +589,7 @@ constant value.
 Adding NOTIFY and/or INDICATE automatically creates an additional Client
 Configuration Characteristic.
 
-Property                | Meaning
+Property                | Description
 ------------------------|-----------------------------------------------
 READ                    | Characteristic can be read
 WRITE                   | Characteristic can be written using Write Request
@@ -601,7 +601,7 @@ DYNAMIC                 | Read or writes to Characteristic are handled by applic
 To require encryption or authentication before a Characteristic can be
 accessed, you can add one or more of the following properties:
 
-Property                | Meaning
+Property                | Description
 ------------------------|-----------------------------------------------
 AUTHENTICATION_REQUIRED | Read and Write operations require Authentication
 READ_ENCRYPTED          | Read operations require Encryption
@@ -612,7 +612,7 @@ ENCRYPTION_KEY_SIZE_X   | Require encryption size >= X, with W in [7..16]
 
 For example, Volume State Characteristic (Voice Control Service) requires:
 - Mandatory Properties: Read, Notify
-- Security Permittions: Encryption Required
+- Security Permissions: Encryption Required
 
 In addition, its read is handled by application. We can model this Characteristic as follows:
 
