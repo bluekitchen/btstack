@@ -297,6 +297,11 @@ int btstack_main(int argc, const char * argv[]){
     // L2CAP
     l2cap_init();
 
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
+
     // SDP Server
     sdp_init();
     memset(hid_service_buffer, 0, sizeof(hid_service_buffer));

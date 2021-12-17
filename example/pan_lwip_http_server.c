@@ -175,6 +175,11 @@ static void pan_bnep_setup(void){
     // Initialize L2CAP
     l2cap_init();
 
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
+
     // Initialize BNEP
     bnep_init();
 

@@ -277,6 +277,11 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
 
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
+
     sdp_init();
     memset(hsp_service_buffer, 0, sizeof(hsp_service_buffer));
     hsp_hs_create_sdp_record(hsp_service_buffer, 0x10001, rfcomm_channel_nr, hsp_hs_service_name, 0);

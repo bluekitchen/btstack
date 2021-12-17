@@ -249,10 +249,17 @@ static void stdin_process(char cmd);
 static void a2dp_demo_hexcmod_configure_sample_rate(int sample_rate);
 
 static int a2dp_source_and_avrcp_services_init(void){
+
     // Request role change on reconnecting headset to always use them in slave mode
     hci_set_master_slave_policy(0);
 
     l2cap_init();
+
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
+
     // Initialize  A2DP Source
     a2dp_source_init();
     a2dp_source_register_packet_handler(&a2dp_source_packet_handler);

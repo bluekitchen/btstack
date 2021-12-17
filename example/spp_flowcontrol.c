@@ -200,6 +200,13 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 
+    l2cap_init();
+
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
+
     spp_service_setup();
     one_shot_timer_setup();
     

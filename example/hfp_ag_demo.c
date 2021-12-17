@@ -706,6 +706,11 @@ int btstack_main(int argc, const char * argv[]){
     // L2CAP
     l2cap_init();
 
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
+
     uint16_t supported_features                   =
         (1<<HFP_AGSF_ESCO_S4)                     |
         (1<<HFP_AGSF_HF_INDICATORS)               |

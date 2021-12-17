@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 ### Changed
 
+## Release v1.5.1
+
+### Fixed
+- pbap_client: support disconnect while operation is ongoing
+
+### Changed
+- Example: init SM if LE supported to avoid issue with Android Cross-Transport Key-Derivation
+
 
 ## Release v1.5.0
 

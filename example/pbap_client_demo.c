@@ -54,12 +54,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack_run_loop.h"
-#include "l2cap.h"
-#include "classic/rfcomm.h"
-#include "btstack_event.h"
-#include "classic/goep_client.h"
-#include "classic/pbap_client.h"
+#include "btstack.h"
 
 #ifdef HAVE_BTSTACK_STDIN
 #include "btstack_stdin.h"
@@ -370,12 +365,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-
     (void)argc;
     (void)argv;
-        
+
     // init L2CAP
     l2cap_init();
+
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
 
     // init RFCOM
     rfcomm_init();

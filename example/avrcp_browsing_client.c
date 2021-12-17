@@ -246,6 +246,11 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize L2CAP.
     l2cap_init();
 
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
+
     a2dp_sink_init();
     a2dp_sink_register_packet_handler(&a2dp_sink_packet_handler);
 

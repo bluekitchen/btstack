@@ -112,9 +112,13 @@ static void network_send_packet_callback(const uint8_t * packet, uint16_t size);
 
 static void panu_setup(void){
 
-    // Initialize L2CAP 
+    // Initialize L2CAP
     l2cap_init();
 
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
 
     // init SDP, create record for PANU and register with SDP
     sdp_init();

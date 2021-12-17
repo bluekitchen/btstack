@@ -213,7 +213,14 @@ static void stdin_process(char cmd);
 #endif
 
 static int a2dp_and_avrcp_setup(void){
+
     l2cap_init();
+
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
+
     // Initialize AVDTP Sink
     a2dp_sink_init();
     a2dp_sink_register_packet_handler(&a2dp_sink_packet_handler);

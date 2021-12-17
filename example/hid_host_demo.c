@@ -138,10 +138,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 static void hid_host_setup(void){
 
-    // Initialize L2CAP 
+    // Initialize L2CAP
     l2cap_init();
 
-    // Initialize HID Host    
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
+
+    // Initialize HID Host
     hid_host_init(hid_descriptor_storage, sizeof(hid_descriptor_storage));
     hid_host_register_packet_handler(packet_handler);
 
