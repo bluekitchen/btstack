@@ -124,9 +124,6 @@ int btstack_main(int argc, const char * argv[]){
     // set up l2cap_le
     l2cap_init();
     
-    // setup le device db
-    le_device_db_init();
-
     // setup SM: Display only
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);

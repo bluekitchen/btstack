@@ -123,9 +123,6 @@ static void hog_mouse_setup(void){
     // setup l2cap and
     l2cap_init();
 
-    // setup le device db
-    le_device_db_init();
-
     // setup SM: Display only
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);

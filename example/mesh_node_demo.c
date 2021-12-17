@@ -194,9 +194,6 @@ int btstack_main(void)
     // l2cap
     l2cap_init();
 
-    // setup le device db
-    le_device_db_init();
-
     // setup ATT server
     att_server_init(profile_data, &att_read_callback, NULL);    
 

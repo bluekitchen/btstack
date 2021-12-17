@@ -468,9 +468,6 @@ int btstack_main(int argc, const char * argv[])
 
     gap_discoverable_control(1);
 
-    // setup le device db
-    le_device_db_init();
-
     // setup SM: Display only
     sm_init();
 

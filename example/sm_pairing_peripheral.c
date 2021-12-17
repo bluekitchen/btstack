@@ -85,9 +85,6 @@ static void sm_peripheral_setup(void){
 
     l2cap_init();
 
-    // setup le device db
-    le_device_db_init();
-
     // setup SM: Display only
     sm_init();
 

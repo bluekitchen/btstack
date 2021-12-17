@@ -603,9 +603,6 @@ int btstack_main(int argc, const char * argv[]){
     sm_event_callback_registration.callback = &sm_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
 
-    // setup le device db
-    le_device_db_init();
-
     //
     l2cap_init();
     sm_init();

@@ -184,9 +184,6 @@ int btstack_main(void)
 
     l2cap_init();
 
-    // setup LE device DB
-    le_device_db_init();
-
     // setup SM: Display only
     sm_init();
 

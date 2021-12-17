@@ -285,9 +285,6 @@ int btstack_main(void)
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
     gap_discoverable_control(1);
 
-    // setup le device db
-    le_device_db_init();
-
     // setup SM: Display only
     sm_init();
 

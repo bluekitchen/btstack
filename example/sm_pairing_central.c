@@ -89,9 +89,6 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 static void sm_pairing_central_setup(void){
     l2cap_init();
 
-    // setup le device db
-    le_device_db_init();
-
     // setup SM: Display only
     sm_init();
 
