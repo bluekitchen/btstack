@@ -1,0 +1,15 @@
+#import <audio_input_control_service.gatt>
+#import <audio_input_control_service.gatt>
+#import <audio_input_control_service.gatt>
+
+// add microphone control service (MICS)
+#import <microphone_control_service.gatt>
+
+#import <volume_offset_control_service.gatt>
+#import <volume_offset_control_service.gatt>
+#import <volume_offset_control_service.gatt>
+
+#import <audio_input_control_service.gatt>
+#import <audio_input_control_service.gatt>
+
+#import <volume_control_service.gatt>
