@@ -595,6 +595,32 @@ static uint8_t l2cap_ertm_validate_local_config(l2cap_ertm_config_t * ertm_confi
     return result;
 }
 
+static void l2cap_ertm_setup_buffers(l2cap_channel_t * channel, uint8_t * buffer, uint32_t size){
+    btstack_assert( (((uintptr_t) buffer) & 0x0f) == 0);
+
+    // setup state buffers - use void cast to avoid -Wcast-align warning
+    uint32_t pos = 0;
+    channel->rx_packets_state = (l2cap_ertm_rx_packet_state_t *) (void *) &buffer[pos];
+    pos += channel->num_rx_buffers * sizeof(l2cap_ertm_rx_packet_state_t);
+    channel->tx_packets_state = (l2cap_ertm_tx_packet_state_t *) (void *) &buffer[pos];
+    pos += channel->num_tx_buffers * sizeof(l2cap_ertm_tx_packet_state_t);
+
+    // setup reassembly buffer
+    channel->reassembly_buffer = &buffer[pos];
+    pos += channel->local_mtu;
+
+    // setup rx buffers
+    channel->rx_packets_data = &buffer[pos];
+    pos += channel->num_rx_buffers * channel->local_mps;
+
+    // setup tx buffers
+    channel->tx_packets_data = &buffer[pos];
+    pos += channel->num_rx_buffers * channel->remote_mps;
+
+    btstack_assert(pos <= size);
+    UNUSED(pos);
+}
+
 static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_config_t * ertm_config, uint8_t * buffer, uint32_t size){
 
     channel->mode  = L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION;
@@ -605,31 +631,24 @@ static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_c
     channel->local_mtu = ertm_config->local_mtu;
     channel->num_rx_buffers = ertm_config->num_rx_buffers;
     channel->num_tx_buffers = ertm_config->num_tx_buffers;
+    channel->fcs_option = ertm_config->fcs_option;
 
     // align buffer to 16-byte boundary to assert l2cap_ertm_rx_packet_state_t is aligned
     int bytes_till_alignment = 16 - (((uintptr_t) buffer) & 0x0f);
     buffer += bytes_till_alignment;
     size   -= bytes_till_alignment;
 
-    // setup state buffers - use void cast to avoid -Wcast-align warning
-    uint32_t pos = 0;
-    channel->rx_packets_state = (l2cap_ertm_rx_packet_state_t *) (void *) &buffer[pos];
-    pos += ertm_config->num_rx_buffers * sizeof(l2cap_ertm_rx_packet_state_t);
-    channel->tx_packets_state = (l2cap_ertm_tx_packet_state_t *) (void *) &buffer[pos];
-    pos += ertm_config->num_tx_buffers * sizeof(l2cap_ertm_tx_packet_state_t);
+    // calculate space for rx and tx buffers
+    uint32_t state_len = channel->num_rx_buffers * sizeof(l2cap_ertm_rx_packet_state_t) + channel->num_tx_buffers * sizeof(l2cap_ertm_tx_packet_state_t);
+    uint32_t buffer_space = size - state_len - channel->local_mtu;
 
-    // setup reassembly buffer
-    channel->reassembly_buffer = &buffer[pos];
-    pos += ertm_config->local_mtu;
+    // divide rest of data equally for initial config
+    uint16_t mps = buffer_space / (ertm_config->num_rx_buffers + ertm_config->num_tx_buffers);
+    channel->local_mps  = mps;
+    channel->remote_mps = mps;
+    l2cap_ertm_setup_buffers(channel, buffer, size);
 
-    // divide rest of data equally
-    channel->local_mps = (size - pos) / (ertm_config->num_rx_buffers + ertm_config->num_tx_buffers);
     log_info("Local MPS: %u", channel->local_mps);
-    channel->rx_packets_data = &buffer[pos];
-    pos += ertm_config->num_rx_buffers * channel->local_mps;
-    channel->tx_packets_data = &buffer[pos];
-
-    channel->fcs_option = ertm_config->fcs_option;
 }
 
 uint8_t l2cap_ertm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm,
