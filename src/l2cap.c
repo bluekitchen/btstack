@@ -3169,6 +3169,13 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
                     channel->remote_retransmission_timeout_ms = little_endian_read_16(command, pos + 3);
                     channel->remote_monitor_timeout_ms = little_endian_read_16(command, pos + 5);
                     channel->remote_mps = little_endian_read_16(command, pos + 7);
+                    {
+                        // limit remote mtu by our tx buffers. Include 2 bytes SDU Length
+                        uint16_t effective_mps         = btstack_min(channel->local_mps, channel->remote_mps);
+                        uint16_t effective_num_buffers = btstack_min(channel->remote_tx_window_size, channel->num_tx_buffers);
+                        uint16_t effective_mtu         = effective_mps * effective_num_buffers - 2;
+                        channel->remote_mtu            = btstack_min( effective_mtu,  channel->remote_mtu);
+                    }
                     log_info("FC&C config: tx window: %u, max transmit %u, retrans timeout %u, monitor timeout %u, mps %u",
                         channel->remote_tx_window_size,
                         channel->remote_max_transmit,

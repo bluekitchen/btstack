@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - pbap_client: support disconnect while operation is ongoing
+- L2CAP: limit remote MTU by local tx configuration in ERTM
 
 ### Changed
 - Example: init SM if LE supported to avoid issue with Android Cross-Transport Key-Derivation
