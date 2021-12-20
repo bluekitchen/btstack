@@ -722,7 +722,7 @@ static int prepare_device(libusb_device_handle * aHandle){
     int kernel_driver_detached = 0;
 
     // Detach OS driver (not possible for OS X, FreeBSD, and WIN32)
-#if !defined(__APPLE__) && !defined(_WIN32) && !defined(__FreeBSD__)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(__FreeBSD__)
     r = libusb_kernel_driver_active(aHandle, 0);
     if (r < 0) {
         log_error("libusb_kernel_driver_active error %d", r);
