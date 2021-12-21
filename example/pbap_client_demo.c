@@ -82,6 +82,11 @@ static const char * spd_name  = "spd";
 static const char * phonebook_name;
 static char phonebook_folder[30];
 static char phonebook_path[30];
+static enum {
+    PBAP_PATH_ROOT,
+    PBAP_PATH_FOLDER,
+    PBAP_PATH_PHONEBOOK
+} pbap_client_demo_path_type;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t pbap_cid;
@@ -110,7 +115,6 @@ static void show_usage(void){
 
     printf("\n--- Bluetooth PBAP Client (HF) Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("Phonebook:       '%s'\n", phonebook_folder);
-    // printf("Phonebook folder '%s'\n", phonebook_folder);
     printf("Phonebook path   '%s'\n", phonebook_path);
     printf("\n");
     printf("a - establish PBAP connection to %s\n", bd_addr_to_str(remote_addr));
@@ -131,11 +135,10 @@ static void show_usage(void){
 
     printf("d - get size of    '%s'\n",             phonebook_path);
     printf("g - pull phonebook '%s'\n",             phonebook_path);
-    printf("h - pull vCard listing '%s'\n",         phonebook_folder);
-    printf("l - get vCard 0.vcf\n");
-    printf("L - get vCard X-BT-UID::1234567890ABCDEF1234567890000001\n");
+    printf("h - pull vCard listing '%s'\n",         phonebook_name);
+    printf("l - get owner vCard 0.vcf\n");
     printf("j - Lookup contact with number '%s'\n", phone_number);
-    printf("t - disconnnect\n");
+    printf("t - disconnect\n");
     printf("p - authenticate using password '0000'\n");
     printf("r - set path to 'telecom'\n");
     printf("x - abort operation\n");
@@ -144,6 +147,9 @@ static void show_usage(void){
 
 static void stdin_process(char c){
     switch (c){
+        case '\n':
+        case '\r':
+            break;
         case 'a':
             printf("[+] Connecting to %s...\n", bd_addr_to_str(remote_addr));
             pbap_connect(&packet_handler, remote_addr, &pbap_cid);
@@ -163,22 +169,29 @@ static void stdin_process(char c){
             pbap_pull_phonebook(pbap_cid, phonebook_path);
             break;
         case 'h':
-            printf("[+] Pull vCard list for '%s'\n", phonebook_folder);
-            pbap_pull_vcard_listing(pbap_cid, "");
+            if (pbap_client_demo_path_type != PBAP_PATH_FOLDER){
+                printf("[!] Pull vCard list requires to set phonebook folder, e.g. using 'r' command\n");
+                break;
+            }
+            printf("[+] Pull vCard list for '%s'\n", phonebook_name);
+            pbap_pull_vcard_listing(pbap_cid, phonebook_name);
             break;
         case 'j':
+            if (pbap_client_demo_path_type != PBAP_PATH_PHONEBOOK){
+                printf("[!] Pull vCard list requires to set phonenbook folder, e.g. using 'u' command\n");
+                break;
+            }
             printf("[+] Lookup name for number '%s'\n", phone_number);
             pbap_lookup_by_number(pbap_cid, phone_number);
             break;
         case 'l':
-            printf("[+] Pull vCard '1.vcf'\n");
-            pbap_pull_vcard_entry(pbap_cid, "1.vcf");
+            if (pbap_client_demo_path_type != PBAP_PATH_PHONEBOOK){
+                printf("[!] Pull vCard entry requires to set phonenbook folder, e.g. using 'u' command\n");
+                break;
+            }
+            printf("[+] Pull vCard '0.vcf'\n");
+            pbap_pull_vcard_entry(pbap_cid, "0.vcf");
             break;
-        case 'L':
-            printf("[+] Pull vCard 'X-BT-UID:1234567890ABCDEF1234567890000001'\n");
-            pbap_pull_vcard_entry(pbap_cid, "X-BT-UID:1234567890ABCDEF1234567890000001");
-            break;
-
         case 'c':
             printf("[+] Select phonebook '%s'\n", cch_name);
             select_phonebook(cch_name);
@@ -221,14 +234,17 @@ static void stdin_process(char c){
             break;
         case 'r':
             printf("[+] Set path to '/telecom'\n");
+            pbap_client_demo_path_type = PBAP_PATH_FOLDER;
             pbap_set_phonebook(pbap_cid, "telecom");
             break;
         case 'R':
             printf("[+] Set path to '/SIM1/telecom'\n");
+            pbap_client_demo_path_type = PBAP_PATH_FOLDER;
             pbap_set_phonebook(pbap_cid, "SIM1/telecom");
             break;
         case 'u':
             printf("[+] Set path to '%s'\n", phonebook_folder);
+            pbap_client_demo_path_type = PBAP_PATH_PHONEBOOK;
             pbap_set_phonebook(pbap_cid, phonebook_folder);
             break;
         case 'x':
@@ -269,6 +285,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             } else {
                                 printf("[+] Connected\n");
                             }
+                            pbap_client_demo_path_type = PBAP_PATH_ROOT;
                             break;
                         case PBAP_SUBEVENT_CONNECTION_CLOSED:
                             printf("[+] Connection closed\n");
