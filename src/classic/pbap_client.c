@@ -650,7 +650,7 @@ static void pbap_client_add_application_parameters(const pbap_client_t * client,
 }
 
 static void pbap_client_prepare_srm_header(const pbap_client_t * client){
-    if (!client->flow_control_enabled){
+    if (!client->flow_control_enabled && goep_client_version_20_or_higher(client->goep_cid)){
         goep_client_header_add_srm_enable(client->goep_cid);
         pbap_client->srm_state = SRM_W4_CONFIRM;
     }

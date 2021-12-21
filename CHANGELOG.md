@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GOEP Client: add goep_client_version_20_or_higher
 
 ### Fixed
-- pbap_client: support disconnect while operation is ongoing
+- PBAP CLient: support disconnect while operation is ongoing
+- PBAP Client: use SRM only if GOEP v2.0 or higher connection
 - L2CAP: limit remote MTU by local tx configuration in ERTM
 
 ### Changed
