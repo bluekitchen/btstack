@@ -538,6 +538,7 @@ static void pbap_client_parser_callback_get_operation(void * user_data, uint8_t 
         case OBEX_HEADER_END_OF_BODY:
             switch(pbap_client->state){
                 case PBAP_W4_PHONEBOOK:
+                case PBAP_W4_GET_CARD_ENTRY_COMPLETE:
                     client->client_handler(PBAP_DATA_PACKET, client->cid, (uint8_t *) data_buffer, data_len);
                     if (data_offset + data_len == total_len){
                         client->flow_wait_for_user = true;
@@ -545,9 +546,6 @@ static void pbap_client_parser_callback_get_operation(void * user_data, uint8_t 
                     break;
                 case PBAP_W4_GET_CARD_LIST_COMPLETE:
                     pbap_client_process_vcard_list_body(data_buffer, data_len);
-                    break;
-                case PBAP_W4_GET_CARD_ENTRY_COMPLETE:
-                    // TODO: not implemented yet
                     break;
                 default:
                     btstack_unreachable();

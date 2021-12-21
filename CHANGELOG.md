@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - PBAP CLient: support disconnect while operation is ongoing
 - PBAP Client: use SRM only if GOEP v2.0 or higher connection
+- PBAP Client: emit vCard entry data as PBAP_DATA_PACKET
 - L2CAP: limit remote MTU by local tx configuration in ERTM
 
 ### Changed
