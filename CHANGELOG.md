@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Release v1.5.1
 
+### Added
+- GOEP Client: add goep_client_version_20_or_higher
+
 ### Fixed
 - pbap_client: support disconnect while operation is ongoing
 - L2CAP: limit remote MTU by local tx configuration in ERTM

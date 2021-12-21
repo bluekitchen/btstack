@@ -406,6 +406,12 @@ uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid){
     return context->pbap_supported_features;
 }
 
+bool goep_client_version_20_or_higher(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    return context->l2cap_psm != 0;
+}
+
 uint8_t goep_client_disconnect(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
