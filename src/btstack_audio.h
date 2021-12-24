@@ -35,7 +35,7 @@
  *
  */
 
-/** 
+/**
  * @title Audio Interface
  *
  * Abstraction layer for 16-bit audio playback and recording within BTstack.
@@ -62,7 +62,7 @@ typedef struct {
      * @return 1 on success
      */
     int (*init)(uint8_t channels,
-                uint32_t samplerate, 
+                uint32_t samplerate,
                 void (*playback) (int16_t * buffer, uint16_t num_samples));
 
     /**
@@ -76,7 +76,7 @@ typedef struct {
      */
     void (*start_stream)(void);
 
-    /** 
+    /**
      * @brief Stop stream
      */
     void (*stop_stream)(void);
@@ -99,7 +99,7 @@ typedef struct {
      * @return 1 on success
      */
     int (*init)(uint8_t channels,
-                uint32_t samplerate, 
+                uint32_t samplerate,
                 void (*recording)(const int16_t * buffer, uint16_t num_samples));
 
     /**
@@ -113,7 +113,7 @@ typedef struct {
      */
     void (*start_stream)(void);
 
-    /** 
+    /**
      * @brief Stop stream
      */
     void (*stop_stream)(void);
@@ -160,6 +160,7 @@ const btstack_audio_sink_t *   btstack_audio_embedded_sink_get_instance(void);
 const btstack_audio_source_t * btstack_audio_embedded_source_get_instance(void);
 
 const btstack_audio_sink_t *   btstack_audio_esp32_sink_get_instance(void);
+const btstack_audio_source_t * btstack_audio_esp32_source_get_instance(void);
 /* API_END */
 
 // const btstack_audio_source_t *   btstack_audio_esp32_source_get_instance(void);
