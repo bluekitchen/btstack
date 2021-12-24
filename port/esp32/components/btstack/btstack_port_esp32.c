@@ -244,8 +244,18 @@ static int transport_open(void){
         esp_vhci_host_register_callback(&vhci_host_cb);
     }
 
+    // Enable classic mode by default
+    esp_bt_mode_t bt_mode = ESP_BT_MODE_CLASSIC_BT;
+
+#if CONFIG_BTDM_CTRL_MODE_BTDM
     // enable dual mode
-    ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
+    bt_mode = ESP_BT_MODE_BTDM;
+#elif BTDM_CTRL_MODE_BLE_ONLY
+    // enable bluetooth low energy mode
+    bt_mode = ESP_BT_MODE_BLE;
+#endif
+
+    ret = esp_bt_controller_enable(bt_mode);
     if (ret) {
         log_error("transport: esp_bt_controller_enable failed");
         return -1;
