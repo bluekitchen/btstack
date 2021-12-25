@@ -524,6 +524,7 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
 
     hfp_connection->establish_audio_connection = 0; 
     hfp_connection->call_waiting_notification_enabled = 0;
+    hfp_connection->command = HFP_CMD_NONE;
     hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
 }
 
@@ -536,7 +537,6 @@ static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection->codecs_state = HFP_CODECS_IDLE;
 
     hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
-    hfp_connection->command = HFP_CMD_NONE;
     
     hfp_connection->acl_handle = HCI_CON_HANDLE_INVALID;
     hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
