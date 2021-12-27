@@ -53,6 +53,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "driver/i2s.h"
+#include <string.h>
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
 #include "driver/i2c.h"
@@ -122,21 +123,21 @@ void btstack_audio_esp32_es8388_init(void){
 static void btstack_audio_esp32_sink_fill_buffer(void){
     size_t bytes_written;
     uint8_t buffer[DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
-    (*btstack_audio_esp32_sink_playback_callback)((int16_t*)buffer, DMA_BUFFER_SAMPLES);
+    if ((btstack_audio_esp32_sink_playback_callback != NULL) && (btstack_audio_esp32_sink_state == BTSTACK_AUDIO_ESP32_STREAMING)){
+        (*btstack_audio_esp32_sink_playback_callback)((int16_t *) buffer, DMA_BUFFER_SAMPLES);
+    } else {
+        memset(buffer, 0, sizeof(buffer));
+    }
     i2s_write(i2s_num, buffer, DMA_BUFFER_SAMPLES * btstack_audio_esp32_sink_bytes_per_sample, &bytes_written, portMAX_DELAY);
 }
 
 static void btstack_audio_esp32_driver_timer_handler(btstack_timer_source_t * ts){
-
-    // playback buffer ready to fill
-    if (btstack_audio_esp32_sink_playback_callback){
-        // read from i2s event queue
-        i2s_event_t i2s_event;
-        if( xQueueReceive( btstack_audio_esp32_i2s_event_queue, &i2s_event, 0) ){
-            // fill buffer when DMA buffer was sent            
-            if (i2s_event.type == I2S_EVENT_TX_DONE){
-                btstack_audio_esp32_sink_fill_buffer();
-            }
+    // read from i2s event queue
+    i2s_event_t i2s_event;
+    if( xQueueReceive( btstack_audio_esp32_i2s_event_queue, &i2s_event, 0) ){
+        // fill buffer when DMA buffer was sent
+        if (i2s_event.type == I2S_EVENT_TX_DONE){
+            btstack_audio_esp32_sink_fill_buffer();
         }
     }
 
