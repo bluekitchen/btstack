@@ -67,22 +67,28 @@
 #define DMA_BUFFER_SAMPLES               300
 #define BYTES_PER_SAMPLE_STEREO          4
 
-static int num_channels;
-static int bytes_per_sample;
+typedef enum {
+    BTSTACK_AUDIO_ESP32_OFF = 0,
+    BTSTACK_AUDIO_ESP32_INITIALIZED,
+    BTSTACK_AUDIO_ESP32_STREAMING
+} btstack_audio_esp32_state_t;
+
+static int btstack_audio_esp32_sink_num_channels;
+static int btstack_audio_esp32_sink_bytes_per_sample;
 
 // client
-static void (*playback_callback)(int16_t * buffer, uint16_t num_samples);
-// static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples);
+static void (*btstack_audio_esp32_sink_playback_callback)(int16_t * buffer, uint16_t num_samples);
+// static void (*btstack_audio_esp32_source_recording_callback)(const int16_t * buffer, uint16_t num_samples);
 
 // timer to fill output ring buffer
-static btstack_timer_source_t  driver_timer;
+static btstack_timer_source_t  btstack_audio_esp32_driver_timer;
 
 // queue for TX done events
-static QueueHandle_t i2s_event_queue;
+static QueueHandle_t btstack_audio_esp32_i2s_event_queue;
 
 static int i2s_num = I2S_NUM_0;
 
-static int sink_streaming;
+static btstack_audio_esp32_state_t btstack_audio_esp32_sink_state;
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
 
@@ -108,23 +114,23 @@ void btstack_audio_esp32_es8388_init(void){
 }
 #endif
 
-static void fill_buffer(void){
+static void btstack_audio_esp32_sink_fill_buffer(void){
     size_t bytes_written;
     uint8_t buffer[DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
-    (*playback_callback)((int16_t*)buffer, DMA_BUFFER_SAMPLES);
-    i2s_write(i2s_num, buffer, DMA_BUFFER_SAMPLES * bytes_per_sample, &bytes_written, portMAX_DELAY);
+    (*btstack_audio_esp32_sink_playback_callback)((int16_t*)buffer, DMA_BUFFER_SAMPLES);
+    i2s_write(i2s_num, buffer, DMA_BUFFER_SAMPLES * btstack_audio_esp32_sink_bytes_per_sample, &bytes_written, portMAX_DELAY);
 }
 
-static void driver_timer_handler(btstack_timer_source_t * ts){
+static void btstack_audio_esp32_driver_timer_handler(btstack_timer_source_t * ts){
 
     // playback buffer ready to fill
-    if (playback_callback){
+    if (btstack_audio_esp32_sink_playback_callback){
         // read from i2s event queue
         i2s_event_t i2s_event;
-        if( xQueueReceive( i2s_event_queue, &i2s_event, 0) ){
+        if( xQueueReceive( btstack_audio_esp32_i2s_event_queue, &i2s_event, 0) ){
             // fill buffer when DMA buffer was sent            
             if (i2s_event.type == I2S_EVENT_TX_DONE){
-                fill_buffer();
+                btstack_audio_esp32_sink_fill_buffer();
             }
         }
     }
@@ -139,9 +145,9 @@ static int btstack_audio_esp32_sink_init(
     uint32_t samplerate, 
     void (*playback)(int16_t * buffer, uint16_t num_samples)){
 
-    playback_callback  = playback;
-    num_channels       = channels;
-    bytes_per_sample   = channels * 2;  // 16-bit
+    btstack_audio_esp32_sink_playback_callback  = playback;
+    btstack_audio_esp32_sink_num_channels       = channels;
+    btstack_audio_esp32_sink_bytes_per_sample   = channels * 2;  // 16-bit
 
     i2s_config_t config =
     {
@@ -176,13 +182,16 @@ static int btstack_audio_esp32_sink_init(
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     btstack_audio_esp32_set_i2s0_mclk();
 #endif
-    i2s_driver_install(i2s_num, &config, DMA_BUFFER_COUNT, &i2s_event_queue);
+
+    i2s_driver_install(i2s_num, &config, DMA_BUFFER_COUNT, &btstack_audio_esp32_i2s_event_queue);
     i2s_set_pin(i2s_num, &pins);
     i2s_zero_dma_buffer(i2s_num);
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     btstack_audio_esp32_es8388_init();
 #endif
+
+    btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_INITIALIZED;
 
     return 0;
 }
@@ -198,12 +207,12 @@ static void btstack_audio_esp32_sink_set_volume(uint8_t gain) {
 
 static void btstack_audio_esp32_sink_start_stream(void){
 
-    if (playback_callback){
+    if (btstack_audio_esp32_sink_playback_callback){
         // pre-fill HAL buffers
         log_info("start stream");
         uint16_t i;
         for (i=0;i<DMA_BUFFER_COUNT;i++){
-            fill_buffer();
+            btstack_audio_esp32_sink_fill_buffer();
         }
     }
 
@@ -211,33 +220,35 @@ static void btstack_audio_esp32_sink_start_stream(void){
     i2s_start(i2s_num);
 
     // start timer
-    btstack_run_loop_set_timer_handler(&driver_timer, &driver_timer_handler);
-    btstack_run_loop_set_timer(&driver_timer, DRIVER_POLL_INTERVAL_MS);
-    btstack_run_loop_add_timer(&driver_timer);
+    btstack_run_loop_set_timer_handler(&btstack_audio_esp32_driver_timer, &btstack_audio_esp32_driver_timer_handler);
+    btstack_run_loop_set_timer(&btstack_audio_esp32_driver_timer, DRIVER_POLL_INTERVAL_MS);
+    btstack_run_loop_add_timer(&btstack_audio_esp32_driver_timer);
 
     // state
-    sink_streaming = 1;
+    btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_STREAMING;
 }
 
 static void btstack_audio_esp32_sink_stop_stream(void){
 
-    if (!sink_streaming) return;
+    if (btstack_audio_esp32_sink_state != BTSTACK_AUDIO_ESP32_STREAMING) return;
 
     // stop timer
-    btstack_run_loop_remove_timer(&driver_timer);
+    btstack_run_loop_remove_timer(&btstack_audio_esp32_driver_timer);
 
     // stop i2s
     i2s_stop(i2s_num);
 
     // state
-    sink_streaming = 0;
+    btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_INITIALIZED;
 }
 
 static void btstack_audio_esp32_sink_close(void){
 
-    if (sink_streaming) {
+    if (btstack_audio_esp32_sink_state == BTSTACK_AUDIO_ESP32_STREAMING) {
         btstack_audio_esp32_sink_stop_stream();
     }
+
+    btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_OFF;
 
     // uninstall driver
     i2s_driver_uninstall(i2s_num);
