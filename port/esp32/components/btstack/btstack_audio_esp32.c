@@ -63,12 +63,13 @@
 #define IIC_CLK                     (GPIO_NUM_23)
 #endif
 
+#define BTSTACK_AUDIO_I2S_NUM  (I2S_NUM_0)
+
 #define DRIVER_POLL_INTERVAL_MS          5
 #define DMA_BUFFER_COUNT                 3
 #define DMA_BUFFER_SAMPLES               300
 #define BYTES_PER_SAMPLE_STEREO          4
 
-static int i2s_num = I2S_NUM_0;
 
 typedef enum {
     BTSTACK_AUDIO_ESP32_OFF = 0,
@@ -128,7 +129,7 @@ static void btstack_audio_esp32_sink_fill_buffer(void){
     } else {
         memset(buffer, 0, sizeof(buffer));
     }
-    i2s_write(i2s_num, buffer, DMA_BUFFER_SAMPLES * btstack_audio_esp32_sink_bytes_per_sample, &bytes_written, portMAX_DELAY);
+    i2s_write(BTSTACK_AUDIO_I2S_NUM, buffer, DMA_BUFFER_SAMPLES * btstack_audio_esp32_sink_bytes_per_sample, &bytes_written, portMAX_DELAY);
 }
 
 static void btstack_audio_esp32_driver_timer_handler(btstack_timer_source_t * ts){
@@ -150,12 +151,30 @@ static void btstack_audio_esp32_init(void){
 
     // de-register driver if already installed
     if (btstack_audio_esp32_i2s_installed){
-        i2s_driver_uninstall(i2s_num);
+        i2s_driver_uninstall(BTSTACK_AUDIO_I2S_NUM);
+    }
+
+    // set i2s mode and pins based on sink / source state
+    i2s_mode_t i2s_mode  = I2S_MODE_MASTER;
+    int i2s_data_out_pin = I2S_PIN_NO_CHANGE;
+    int i2s_data_in_pin  = I2S_PIN_NO_CHANGE;
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+    int i2s_bck_io_pin   = GPIO_NUM_5;
+#else
+    int i2s_bck_io_pin   = 26;
+#endif
+    if (btstack_audio_esp32_sink_state != BTSTACK_AUDIO_ESP32_OFF){
+        i2s_mode |= I2S_MODE_TX; // playback
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+        i2s_data_out_pin = GPIO_NUM_26;
+#else
+        i2s_data_out_pin = 22;
+#endif
     }
 
     i2s_config_t config =
     {
-        .mode                 = I2S_MODE_MASTER | I2S_MODE_TX, // Playback only
+        .mode                 = i2s_mode,
         .sample_rate          = btstack_audio_esp32_sink_samplerate,
         .bits_per_sample      = I2S_BITS_PER_SAMPLE_16BIT,
         .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT,
@@ -165,31 +184,21 @@ static void btstack_audio_esp32_init(void){
         .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
     };
 
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     i2s_pin_config_t pins =
     {
-        .bck_io_num           = GPIO_NUM_5,
+        .bck_io_num           = i2s_bck_io_pin,
         .ws_io_num            = GPIO_NUM_25,
-        .data_out_num         = GPIO_NUM_26,
-        .data_in_num          = GPIO_NUM_35
+        .data_out_num         = i2s_data_out_pin,
+        .data_in_num          = i2s_data_in_pin
     };
-#else
-    i2s_pin_config_t pins =
-    {
-        .bck_io_num           = 26,
-        .ws_io_num            = 25,
-        .data_out_num         = 22,
-        .data_in_num          = I2S_PIN_NO_CHANGE
-    };
-#endif
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     btstack_audio_esp32_set_i2s0_mclk();
 #endif
 
-    i2s_driver_install(i2s_num, &config, DMA_BUFFER_COUNT, &btstack_audio_esp32_i2s_event_queue);
-    i2s_set_pin(i2s_num, &pins);
-    i2s_zero_dma_buffer(i2s_num);
+    i2s_driver_install(BTSTACK_AUDIO_I2S_NUM, &config, DMA_BUFFER_COUNT, &btstack_audio_esp32_i2s_event_queue);
+    i2s_set_pin(BTSTACK_AUDIO_I2S_NUM, &pins);
+    i2s_zero_dma_buffer(BTSTACK_AUDIO_I2S_NUM);
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     btstack_audio_esp32_es8388_init();
@@ -237,7 +246,7 @@ static void btstack_audio_esp32_sink_start_stream(void){
     }
 
     // start i2s
-    i2s_start(i2s_num);
+    i2s_start(BTSTACK_AUDIO_I2S_NUM);
 
     // start timer
     btstack_run_loop_set_timer_handler(&btstack_audio_esp32_driver_timer, &btstack_audio_esp32_driver_timer_handler);
@@ -256,7 +265,7 @@ static void btstack_audio_esp32_sink_stop_stream(void){
     btstack_run_loop_remove_timer(&btstack_audio_esp32_driver_timer);
 
     // stop i2s
-    i2s_stop(i2s_num);
+    i2s_stop(BTSTACK_AUDIO_I2S_NUM);
 
     // state
     btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_INITIALIZED;
@@ -271,7 +280,7 @@ static void btstack_audio_esp32_sink_close(void){
     btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_OFF;
 
     // uninstall driver
-    i2s_driver_uninstall(i2s_num);
+    i2s_driver_uninstall(BTSTACK_AUDIO_I2S_NUM);
 
     btstack_audio_esp32_i2s_installed = false;
 }
