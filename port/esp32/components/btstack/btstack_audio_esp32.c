@@ -132,16 +132,16 @@ static int btstack_audio_esp32_sink_init(
     bytes_per_sample   = channels * 2;  // 16-bit
 
     i2s_config_t config =
-            {
-                    .mode                 = I2S_MODE_MASTER | I2S_MODE_TX, // Playback only
-                    .sample_rate          = samplerate,
-                    .bits_per_sample      = I2S_BITS_PER_SAMPLE_16BIT,
-                    .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT,
-                    .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-                    .dma_buf_count        = DMA_BUFFER_COUNT,              // Number of DMA buffers. Max 128.
-                    .dma_buf_len          = DMA_BUFFER_SAMPLES,            // Size of each DMA buffer in samples. Max 1024.
-                    .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
-            };
+    {
+        .mode                 = I2S_MODE_MASTER | I2S_MODE_TX, // Playback only
+        .sample_rate          = samplerate,
+        .bits_per_sample      = I2S_BITS_PER_SAMPLE_16BIT,
+        .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT,
+        .communication_format = I2S_COMM_FORMAT_STAND_I2S,
+        .dma_buf_count        = DMA_BUFFER_COUNT,              // Number of DMA buffers. Max 128.
+        .dma_buf_len          = DMA_BUFFER_SAMPLES,            // Size of each DMA buffer in samples. Max 1024.
+        .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
+    };
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     i2s_pin_config_t pins =
@@ -153,12 +153,12 @@ static int btstack_audio_esp32_sink_init(
     };
 #else
     i2s_pin_config_t pins =
-            {
-                    .bck_io_num           = 26,
-                    .ws_io_num            = 25,
-                    .data_out_num         = 22,
-                    .data_in_num          = I2S_PIN_NO_CHANGE
-            };
+    {
+        .bck_io_num           = 26,
+        .ws_io_num            = 25,
+        .data_out_num         = 22,
+        .data_in_num          = I2S_PIN_NO_CHANGE
+    };
 #endif
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
@@ -181,7 +181,7 @@ static int btstack_audio_esp32_sink_init(
     return 0;
 }
 
-static void btstack_audio_esp32_sink_gain(uint8_t gain) {
+static void btstack_audio_esp32_sink_set_volume(uint8_t gain) {
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     uint8_t volume_0_100 = (uint8_t) ((((uint16_t) gain) * 100) / 128);
     es8388_set_volume( volume_0_100 );
@@ -239,7 +239,7 @@ static void btstack_audio_esp32_sink_close(void){
 
 static const btstack_audio_sink_t btstack_audio_sink_esp32 = {
     /* int (*init)(..);*/                                       &btstack_audio_esp32_sink_init,
-    /* void (*set_gain)(uint8_t gain); */                       &btstack_audio_esp32_sink_gain,
+    /* void (*set_volume)(uint8_t gain); */                     &btstack_audio_esp32_sink_set_volume,
     /* void (*start_stream(void));*/                            &btstack_audio_esp32_sink_start_stream,
     /* void (*stop_stream)(void)  */                            &btstack_audio_esp32_sink_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_esp32_sink_close
@@ -259,6 +259,7 @@ static int btstack_audio_esp32_source_init(
 }
 static const btstack_audio_source_t btstack_audio_source_esp32 = {
     /* int (*init)(..);*/                                       &btstack_audio_esp32_source_init,
+    /* void (*set_gain)(uint8_t gain); */                       &btstack_audio_esp32_source_set_gain,
     /* void (*start_stream(void));*/                            &btstack_audio_esp32_source_start_stream,
     /* void (*stop_stream)(void)  */                            &btstack_audio_esp32_source_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_esp32_source_close
