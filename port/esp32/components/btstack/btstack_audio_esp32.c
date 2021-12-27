@@ -182,7 +182,12 @@ static int btstack_audio_esp32_sink_init(
 }
 
 static void btstack_audio_esp32_sink_gain(uint8_t gain) {
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+    uint8_t volume_0_100 = (uint8_t) ((((uint16_t) gain) * 100) / 128);
+    es8388_set_volume( volume_0_100 );
+#else
     UNUSED(gain);
+#endif
 }
 
 static void btstack_audio_esp32_sink_start_stream(void){
