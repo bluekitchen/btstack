@@ -58,26 +58,14 @@
 #include "driver/i2c.h"
 #include "driver/gpio.h"
 #include "es8388.h"
-
-
 #define IIC_DATA                    (GPIO_NUM_18)
 #define IIC_CLK                     (GPIO_NUM_23)
-
-static es8388_config_t es8388_i2c_cfg = AUDIO_CODEC_ES8388_DEFAULT();
-
-static void set_i2s0_mclk(void)
-{
-    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
-    WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
-}
-
 #endif
 
 #define DRIVER_POLL_INTERVAL_MS          5
 #define DMA_BUFFER_COUNT                 3
 #define DMA_BUFFER_SAMPLES               300
 #define BYTES_PER_SAMPLE_STEREO          4
-
 
 static int num_channels;
 static int bytes_per_sample;
@@ -95,6 +83,30 @@ static QueueHandle_t i2s_event_queue;
 static int i2s_num = I2S_NUM_0;
 
 static int sink_streaming;
+
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+
+static es8388_config_t es8388_i2c_cfg = AUDIO_CODEC_ES8388_DEFAULT();
+static bool btstack_audio_esp32_es8388_initialized;
+
+static void btstack_audio_esp32_set_i2s0_mclk(void)
+{
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
+    WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
+}
+
+void btstack_audio_esp32_es8388_init(void){
+    if (btstack_audio_esp32_es8388_initialized) return;
+    btstack_audio_esp32_es8388_initialized = true;
+
+    es8388_init(&es8388_i2c_cfg);
+    es8388_config_fmt(ES_MODULE_ADC_DAC, ES_I2S_NORMAL);
+    es8388_set_bits_per_sample(ES_MODULE_ADC_DAC, BIT_LENGTH_16BITS);
+    es8388_start(ES_MODULE_ADC_DAC);
+    es8388_set_volume(70);
+    es8388_set_mute(false);
+}
+#endif
 
 static void fill_buffer(void){
     size_t bytes_written;
@@ -162,20 +174,14 @@ static int btstack_audio_esp32_sink_init(
 #endif
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-    set_i2s0_mclk();
+    btstack_audio_esp32_set_i2s0_mclk();
 #endif
     i2s_driver_install(i2s_num, &config, DMA_BUFFER_COUNT, &i2s_event_queue);
     i2s_set_pin(i2s_num, &pins);
     i2s_zero_dma_buffer(i2s_num);
 
-
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-    es8388_init(&es8388_i2c_cfg); 
-    es8388_config_fmt(ES_MODULE_ADC_DAC, ES_I2S_NORMAL);
-    es8388_set_bits_per_sample(ES_MODULE_ADC_DAC, BIT_LENGTH_16BITS);
-    es8388_set_volume(70);
-    es8388_start(ES_MODULE_ADC_DAC);
-    es8388_set_mute(false);
+    btstack_audio_esp32_es8388_init();
 #endif
 
     return 0;
