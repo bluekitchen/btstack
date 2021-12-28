@@ -130,15 +130,20 @@ void btstack_audio_esp32_es8388_init(void){
 #endif
 
 static void btstack_audio_esp32_driver_timer_handler(btstack_timer_source_t * ts){
-    // read from i2s event queue
+    // read max 2 events from i2s event queue
     i2s_event_t i2s_event;
-    while( xQueueReceive( btstack_audio_esp32_i2s_event_queue, &i2s_event, 0) ){
-        // fill buffer when DMA buffer was sent
-        if (i2s_event.type == I2S_EVENT_TX_DONE){
-            btstack_audio_esp32_sink_fill_buffer();
-        }
-        if (i2s_event.type == I2S_EVENT_RX_DONE){
-            btstack_audio_esp32_source_process_buffer();
+    int i;
+    for (i=0;i<2;i++){
+        if( xQueueReceive( btstack_audio_esp32_i2s_event_queue, &i2s_event, 0) == false) break;
+        switch (i2s_event.type){
+            case I2S_EVENT_TX_DONE:
+                btstack_audio_esp32_sink_fill_buffer();
+                break;
+            case I2S_EVENT_RX_DONE:
+                btstack_audio_esp32_source_process_buffer();
+                break;
+            default:
+                break;
         }
     }
 
@@ -240,7 +245,6 @@ static void btstack_audio_esp32_init(void){
 
     i2s_driver_install(BTSTACK_AUDIO_I2S_NUM, &config, DMA_BUFFER_COUNT, &btstack_audio_esp32_i2s_event_queue);
     i2s_set_pin(BTSTACK_AUDIO_I2S_NUM, &pins);
-    i2s_zero_dma_buffer(BTSTACK_AUDIO_I2S_NUM);
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     btstack_audio_esp32_es8388_init();
