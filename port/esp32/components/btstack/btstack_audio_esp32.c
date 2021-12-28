@@ -132,7 +132,7 @@ void btstack_audio_esp32_es8388_init(void){
 static void btstack_audio_esp32_driver_timer_handler(btstack_timer_source_t * ts){
     // read from i2s event queue
     i2s_event_t i2s_event;
-    if( xQueueReceive( btstack_audio_esp32_i2s_event_queue, &i2s_event, 0) ){
+    while( xQueueReceive( btstack_audio_esp32_i2s_event_queue, &i2s_event, 0) ){
         // fill buffer when DMA buffer was sent
         if (i2s_event.type == I2S_EVENT_TX_DONE){
             btstack_audio_esp32_sink_fill_buffer();
@@ -407,7 +407,13 @@ static int btstack_audio_esp32_source_init(
 }
 
 static void btstack_audio_esp32_source_set_gain(uint8_t gain) {
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+    // ES8388 supports 0..24 dB gain in 3 dB steps
+    uint8_t gain_db = (uint8_t) ( ((uint16_t) gain) * 24 / 127);
+    es8388_set_mic_gain( (es_codec_mic_gain_t) gain_db );
+#else
     UNUSED(gain);
+#endif
 }
 
 static void btstack_audio_esp32_source_start_stream(void){
