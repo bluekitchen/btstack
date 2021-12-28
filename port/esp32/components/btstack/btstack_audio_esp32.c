@@ -187,30 +187,28 @@ static void btstack_audio_esp32_init(void){
         i2s_driver_uninstall(BTSTACK_AUDIO_I2S_NUM);
     }
 
-    // set i2s mode and pins based on sink / source state
+    // set i2s mode, sample rate and pins based on sink / source config
     i2s_mode_t i2s_mode  = I2S_MODE_MASTER;
     int i2s_data_out_pin = I2S_PIN_NO_CHANGE;
     int i2s_data_in_pin  = I2S_PIN_NO_CHANGE;
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-    int i2s_bck_io_pin   = GPIO_NUM_5;
-#else
-    int i2s_bck_io_pin   = 26;
-#endif
+    btstack_audio_esp32_i2s_samplerate = 0;
+
     if (btstack_audio_esp32_sink_state != BTSTACK_AUDIO_ESP32_OFF){
         i2s_mode |= I2S_MODE_TX; // playback
-        btstack_audio_esp32_i2s_samplerate = btstack_audio_esp32_sink_samplerate;
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
         i2s_data_out_pin = GPIO_NUM_26;
-#else
-        i2s_data_out_pin = 22;
-#endif
+        if (btstack_audio_esp32_i2s_samplerate != 0){
+            btstack_assert(btstack_audio_esp32_i2s_samplerate == btstack_audio_esp32_sink_samplerate);
+        }
+        btstack_audio_esp32_i2s_samplerate = btstack_audio_esp32_sink_samplerate;
     }
+
     if (btstack_audio_esp32_source_state != BTSTACK_AUDIO_ESP32_OFF){
         i2s_mode |= I2S_MODE_RX; // recording
-        btstack_audio_esp32_i2s_samplerate = btstack_audio_esp32_source_samplerate;
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
         i2s_data_in_pin = GPIO_NUM_35;
-#endif
+        if (btstack_audio_esp32_i2s_samplerate != 0){
+            btstack_assert(btstack_audio_esp32_i2s_samplerate == btstack_audio_esp32_source_samplerate);
+        }
+        btstack_audio_esp32_i2s_samplerate = btstack_audio_esp32_source_samplerate;
     }
 
     i2s_config_t config =
@@ -227,7 +225,7 @@ static void btstack_audio_esp32_init(void){
 
     i2s_pin_config_t pins =
     {
-        .bck_io_num           = i2s_bck_io_pin,
+        .bck_io_num           = GPIO_NUM_5,
         .ws_io_num            = GPIO_NUM_25,
         .data_out_num         = i2s_data_out_pin,
         .data_in_num          = i2s_data_in_pin
@@ -323,14 +321,14 @@ static void btstack_audio_esp32_sink_start_stream(void){
     // validate samplerate
     btstack_assert(btstack_audio_esp32_sink_samplerate == btstack_audio_esp32_i2s_samplerate);
 
+    // state
+    btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_STREAMING;
+
     // pre-fill HAL buffers
     uint16_t i;
     for (i=0;i<DMA_BUFFER_COUNT;i++){
         btstack_audio_esp32_sink_fill_buffer();
     }
-
-    // state
-    btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_STREAMING;
 
     btstack_audio_esp32_stream_start();
 }
