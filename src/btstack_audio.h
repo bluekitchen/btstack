@@ -39,6 +39,9 @@
  * @title Audio Interface
  *
  * Abstraction layer for 16-bit audio playback and recording within BTstack.
+ *
+ * Most embedded implementations, e.g. the one for ESP32, use a single I2S interface which
+ * requires that the sample rate is the same for sink and source roles
  */
 
 #ifndef BTSTACK_AUDIO_H
@@ -159,10 +162,10 @@ const btstack_audio_source_t * btstack_audio_portaudio_source_get_instance(void)
 const btstack_audio_sink_t *   btstack_audio_embedded_sink_get_instance(void);
 const btstack_audio_source_t * btstack_audio_embedded_source_get_instance(void);
 
-const btstack_audio_sink_t *   btstack_audio_esp32_sink_get_instance(void);
-/* API_END */
+const btstack_audio_sink_t *    btstack_audio_esp32_sink_get_instance(void);
+const btstack_audio_source_t *  btstack_audio_esp32_source_get_instance(void);
 
-// const btstack_audio_source_t *   btstack_audio_esp32_source_get_instance(void);
+/* API_END */
 
 #if defined __cplusplus
 }
