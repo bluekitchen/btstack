@@ -70,8 +70,8 @@ static void btstack_audio_esp32_source_process_buffer(void);
 #define BTSTACK_AUDIO_I2S_NUM  (I2S_NUM_0)
 
 #define DRIVER_POLL_INTERVAL_MS          5
-#define DMA_BUFFER_COUNT                 3
-#define DMA_BUFFER_SAMPLES               300
+#define DMA_BUFFER_COUNT                 2
+#define DMA_BUFFER_SAMPLES               512
 #define BYTES_PER_SAMPLE_STEREO          4
 
 
