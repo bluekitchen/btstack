@@ -83,6 +83,7 @@ typedef enum {
 
 static bool btstack_audio_esp32_i2s_installed;
 static bool btstack_audio_esp32_i2s_streaming;
+static uint32_t btstack_audio_esp32_i2s_samplerate;
 
 // timer to fill output ring buffer
 static btstack_timer_source_t  btstack_audio_esp32_driver_timer;
@@ -197,6 +198,7 @@ static void btstack_audio_esp32_init(void){
 #endif
     if (btstack_audio_esp32_sink_state != BTSTACK_AUDIO_ESP32_OFF){
         i2s_mode |= I2S_MODE_TX; // playback
+        btstack_audio_esp32_i2s_samplerate = btstack_audio_esp32_sink_samplerate;
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
         i2s_data_out_pin = GPIO_NUM_26;
 #else
@@ -205,6 +207,7 @@ static void btstack_audio_esp32_init(void){
     }
     if (btstack_audio_esp32_source_state != BTSTACK_AUDIO_ESP32_OFF){
         i2s_mode |= I2S_MODE_RX; // recording
+        btstack_audio_esp32_i2s_samplerate = btstack_audio_esp32_source_samplerate;
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
         i2s_data_in_pin = GPIO_NUM_35;
 #endif
@@ -213,7 +216,7 @@ static void btstack_audio_esp32_init(void){
     i2s_config_t config =
     {
         .mode                 = i2s_mode,
-        .sample_rate          = btstack_audio_esp32_sink_samplerate,
+        .sample_rate          = btstack_audio_esp32_i2s_samplerate,
         .bits_per_sample      = I2S_BITS_PER_SAMPLE_16BIT,
         .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT,
         .communication_format = I2S_COMM_FORMAT_STAND_I2S,
@@ -317,6 +320,9 @@ static void btstack_audio_esp32_sink_start_stream(void){
 
     if (btstack_audio_esp32_sink_state != BTSTACK_AUDIO_ESP32_INITIALIZED) return;
 
+    // validate samplerate
+    btstack_assert(btstack_audio_esp32_sink_samplerate == btstack_audio_esp32_i2s_samplerate);
+
     // pre-fill HAL buffers
     uint16_t i;
     for (i=0;i<DMA_BUFFER_COUNT;i++){
@@ -408,6 +414,9 @@ static void btstack_audio_esp32_source_set_gain(uint8_t gain) {
 static void btstack_audio_esp32_source_start_stream(void){
 
     if (btstack_audio_esp32_source_state != BTSTACK_AUDIO_ESP32_INITIALIZED) return;
+
+    // validate samplerate
+    btstack_assert(btstack_audio_esp32_source_samplerate == btstack_audio_esp32_i2s_samplerate);
 
     // state
     btstack_audio_esp32_source_state = BTSTACK_AUDIO_ESP32_STREAMING;
