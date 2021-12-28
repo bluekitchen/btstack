@@ -88,11 +88,9 @@ static bool btstack_audio_esp32_i2s_streaming;
 static btstack_timer_source_t  btstack_audio_esp32_driver_timer;
 
 static uint8_t  btstack_audio_esp32_sink_num_channels;
-static uint8_t  btstack_audio_esp32_sink_bytes_per_sample;
 static uint32_t btstack_audio_esp32_sink_samplerate;
 
 static uint8_t  btstack_audio_esp32_source_num_channels;
-static uint8_t  btstack_audio_esp32_source_bytes_per_sample;
 static uint32_t btstack_audio_esp32_source_samplerate;
 
 static btstack_audio_esp32_state_t btstack_audio_esp32_sink_state;
@@ -236,7 +234,7 @@ static void btstack_audio_esp32_init(void){
     btstack_audio_esp32_set_i2s0_mclk();
 #endif
 
-    log_info("i2s init mode 0x%2x", i2s_mode);
+    log_info("i2s init mode 0x%02x, samplerate %u", i2s_mode, btstack_audio_esp32_sink_samplerate);
 
     i2s_driver_install(BTSTACK_AUDIO_I2S_NUM, &config, DMA_BUFFER_COUNT, &btstack_audio_esp32_i2s_event_queue);
     i2s_set_pin(BTSTACK_AUDIO_I2S_NUM, &pins);
@@ -271,10 +269,19 @@ static void btstack_audio_esp32_sink_fill_buffer(void){
     uint8_t buffer[DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
     if (btstack_audio_esp32_sink_state == BTSTACK_AUDIO_ESP32_STREAMING){
         (*btstack_audio_esp32_sink_playback_callback)((int16_t *) buffer, DMA_BUFFER_SAMPLES);
+        // duplicate samples for mono
+        if (btstack_audio_esp32_sink_num_channels == 1){
+            int16_t i;
+            int16_t * buffer16 = (int16_t *) buffer;
+            for (i=DMA_BUFFER_SAMPLES-1;i >= 0; i--){
+                buffer16[2*i  ] = buffer16[i];
+                buffer16[2*i+1] = buffer16[i];
+            }
+        }
     } else {
         memset(buffer, 0, sizeof(buffer));
     }
-    i2s_write(BTSTACK_AUDIO_I2S_NUM, buffer, DMA_BUFFER_SAMPLES * btstack_audio_esp32_sink_bytes_per_sample, &bytes_written, portMAX_DELAY);
+    i2s_write(BTSTACK_AUDIO_I2S_NUM, buffer, DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO, &bytes_written, portMAX_DELAY);
 }
 
 static int btstack_audio_esp32_sink_init(
@@ -288,7 +295,6 @@ static int btstack_audio_esp32_sink_init(
     // store config
     btstack_audio_esp32_sink_playback_callback  = playback;
     btstack_audio_esp32_sink_num_channels       = channels;
-    btstack_audio_esp32_sink_bytes_per_sample   = channels * 2;  // 16-bit
     btstack_audio_esp32_sink_samplerate         = samplerate;
 
     btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_INITIALIZED;
@@ -386,7 +392,6 @@ static int btstack_audio_esp32_source_init(
     // store config
     btstack_audio_esp32_source_recording_callback = recording;
     btstack_audio_esp32_source_num_channels       = channels;
-    btstack_audio_esp32_source_bytes_per_sample   = channels * 2;  // 16-bit
     btstack_audio_esp32_source_samplerate         = samplerate;
 
     btstack_audio_esp32_source_state = BTSTACK_AUDIO_ESP32_INITIALIZED;
