@@ -363,8 +363,16 @@ static void btstack_audio_esp32_source_process_buffer(void){
     size_t bytes_read;
     uint8_t buffer[DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
     i2s_read(BTSTACK_AUDIO_I2S_NUM, buffer, DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO, &bytes_read, portMAX_DELAY);
+    int16_t * buffer16 = (int16_t *) buffer;
     if (btstack_audio_esp32_source_state == BTSTACK_AUDIO_ESP32_STREAMING) {
-        (*btstack_audio_esp32_source_recording_callback)((int16_t *) buffer, DMA_BUFFER_SAMPLES);
+        // drop second channel if configured for mono
+        if (btstack_audio_esp32_source_num_channels == 1){
+            uint16_t i;
+            for (i=0;i<DMA_BUFFER_SAMPLES;i++){
+                buffer16[i] = buffer16[2*i];
+            }
+        }
+        (*btstack_audio_esp32_source_recording_callback)(buffer16, DMA_BUFFER_SAMPLES);
     }
 }
 
@@ -374,7 +382,6 @@ static int btstack_audio_esp32_source_init(
     void (*recording)(const int16_t * buffer, uint16_t num_samples)
 ){
     btstack_assert(recording != NULL);
-    btstack_assert(channels == 2);
 
     // store config
     btstack_audio_esp32_source_recording_callback = recording;
