@@ -63,12 +63,12 @@ const uint32_t samplerate = 16000;
 
 // ring buffer for audio
 #define BUFFER_SAMPLES 1024
-static uint16_t              audio_buffer_storage[BUFFER_SAMPLES];
+static uint16_t              audio_buffer_storage[BUFFER_SAMPLES * NUM_INPUT_CHANNELS];
 static btstack_ring_buffer_t audio_buffer;
 
 // transfer buffer
-#define TRANSFER_BUFFER_LEN 128
-static int16_t transfer_buffer[TRANSFER_BUFFER_LEN];
+#define TRANSFER_SAMPLES 128
+static int16_t transfer_buffer[TRANSFER_SAMPLES * NUM_INPUT_CHANNELS];
 
 // playback starts after audio_buffer is half full
 static int playback_started;
@@ -96,7 +96,7 @@ static void audio_playback(int16_t * pcm_buffer, uint16_t num_samples_to_write){
         num_samples_in_buffer = btstack_ring_buffer_bytes_available(&audio_buffer) / BYTES_PER_SAMPLE;
         int num_samples_ready = btstack_min(num_samples_in_buffer, num_samples_to_write);
         // limit by transfer_buffer
-        int num_samples_from_buffer = btstack_min(num_samples_ready, TRANSFER_BUFFER_LEN);
+        int num_samples_from_buffer = btstack_min(num_samples_ready, TRANSFER_SAMPLES);
         if (!num_samples_from_buffer) break;
         uint32_t bytes_read;
         btstack_ring_buffer_read(&audio_buffer, (uint8_t *) transfer_buffer, num_samples_from_buffer * BYTES_PER_SAMPLE, &bytes_read);
