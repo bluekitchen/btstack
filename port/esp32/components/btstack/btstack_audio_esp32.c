@@ -220,6 +220,7 @@ static void btstack_audio_esp32_init(void){
         .communication_format = I2S_COMM_FORMAT_STAND_I2S,
         .dma_buf_count        = DMA_BUFFER_COUNT,              // Number of DMA buffers. Max 128.
         .dma_buf_len          = DMA_BUFFER_SAMPLES,            // Size of each DMA buffer in samples. Max 1024.
+        .use_apll             = true,
         .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
     };
 
