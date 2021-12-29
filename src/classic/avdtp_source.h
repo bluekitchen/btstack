@@ -255,7 +255,7 @@ uint8_t avdtp_source_stream_send_media_packet(uint16_t avdtp_cid, uint8_t local_
  * @param size
  * @return status
  */
-uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, uint8_t * payload, uint16_t size);
+uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, const uint8_t * payload, uint16_t size);
 
 /**
  * @brief Send media payload including RTP header and the SBC media header
@@ -268,7 +268,7 @@ uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t l
  * @param marker
  * @return max_media_payload_size_without_media_header
  */
-int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
+int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, const uint8_t * payload, uint16_t payload_size, uint8_t num_frames, uint8_t marker);
 
 /**
  * @brief Request to send a media packet. Packet can be then sent on reception of AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW event.

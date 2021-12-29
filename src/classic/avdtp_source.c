@@ -190,7 +190,7 @@ static void avdtp_source_setup_media_header(uint8_t * media_packet, uint8_t mark
 }
 
 // @deprecated, use avdtp_source_stream_send_media_payload_rtp instead
-int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, uint8_t * payload, int payload_size, uint8_t num_frames, uint8_t marker){
+int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, const uint8_t * payload, uint16_t payload_size, uint8_t num_frames, uint8_t marker){
     UNUSED(avdtp_cid);
 
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
@@ -218,7 +218,7 @@ int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_sei
     return packet_size;
 }
 
-uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, uint8_t * payload, uint16_t payload_size){
+uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, const uint8_t * payload, uint16_t payload_size){
     UNUSED(avdtp_cid);
 
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
