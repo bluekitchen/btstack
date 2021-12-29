@@ -1136,7 +1136,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 }
                 
-                case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
+                case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:
                     switch (vendor_dependent_avrcp_packet_type){
                         case AVRCP_START_PACKET:
                         case AVRCP_SINGLE_PACKET:
@@ -1173,7 +1173,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             btstack_assert(false);
                             break;
                     }
-                }
+                    break;
+
                 default:
                     // custom command response comes here
                     switch (pdu_id){
