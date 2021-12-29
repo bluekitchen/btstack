@@ -58,6 +58,9 @@
 
 #define HEARTBEAT_PERIOD_MS 1000
 
+#define ATT_SERVICE_GATT_SERVICE_START_HANDLE 0x000c
+#define ATT_SERVICE_GATT_SERVICE_END_HANDLE 0x000e
+
 /* @section Main Application Setup
  *
  * @text Listing MainConfiguration shows main application code.
@@ -81,6 +84,12 @@ static bool accept_next_pairing = true;
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+#include "classic/gatt_sdp.h"
+#include "classic/sdp_util.h"
+static uint8_t gatt_service_buffer[70];
+#endif
 
 const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
@@ -241,6 +250,16 @@ int btstack_main(void)
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
     att_server_register_packet_handler(packet_handler);
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    // init SDP, create record for GATT and register with SDP
+    sdp_init();
+    memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
+    // TODO: ATT_SERVICE_GATT_SERVICE_START_HANDLE and ATT_SERVICE_GATT_SERVICE_END_HANDLE used from gatt_server_test and propably not correct
+    gatt_create_sdp_record(gatt_service_buffer, 0x10001, ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    sdp_register_service(gatt_service_buffer);
+    printf("SDP service record size: %u\n", de_get_len(gatt_service_buffer));
+#endif
 
     // setup battery service
     battery_service_server_init(battery);
