@@ -264,7 +264,7 @@ iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o hfp_gs
 gatt_profiles.h: gatt_profiles.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.c gatt_profiles.o
+gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o gatt_sdp.o gatt_profiles.o
 	${CC} $(filter-out gatt_profiles.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 microphone_control_service_client_test.h: microphone_control_service_client_test.gatt
