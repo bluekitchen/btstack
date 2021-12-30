@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -78,7 +78,7 @@ static uint8_t avrcp_browsing_target_response_general_reject(avrcp_browsing_conn
     // AVRCP_CTYPE_RESPONSE_REJECTED
     int pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_GENERAL_REJECT;
-    // connection->cmd_operands[pos++] = 0;
+    // connection->message_body[pos++] = 0;
     // param length
     big_endian_store_16(connection->cmd_operands, pos, 1);
     pos += 2;
@@ -147,25 +147,19 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
             uint8_t transport_header = packet[pos++];
             // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
             browsing_connection->transaction_label = transport_header >> 4;
-            avrcp_packet_type_t avctp_packet_type = (transport_header & 0x0F) >> 2;
+            avctp_packet_type_t avctp_packet_type = (avctp_packet_type_t)((transport_header & 0x0F) >> 2);
             switch (avctp_packet_type){
-                case AVRCP_SINGLE_PACKET:
-                case AVRCP_START_PACKET:
+                case AVCTP_SINGLE_PACKET:
+                case AVCTP_START_PACKET:
                     browsing_connection->subunit_type = packet[pos++] >> 2;
                     browsing_connection->subunit_id = 0;
                     browsing_connection->command_opcode = packet[pos++];
                     browsing_connection->num_packets = 1;
-                    if (avctp_packet_type == AVRCP_START_PACKET){
+                    if (avctp_packet_type == AVCTP_START_PACKET){
                         browsing_connection->num_packets = packet[pos++];
                     } 
                     browsing_connection->pdu_id = packet[pos++];
-                    break;
-                default:
-                    break;
-            }
-            switch (avctp_packet_type){
-                case AVRCP_SINGLE_PACKET:
-                case AVRCP_END_PACKET:
+                   
                     switch(browsing_connection->pdu_id){
                         case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
                             browsing_connection->scope = packet[pos++];

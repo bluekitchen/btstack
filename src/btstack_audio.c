@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -50,7 +50,7 @@ static const btstack_audio_source_t * btstack_audio_source_instance;
 
 /**
  * @brief Get BTstack Audio Sink Instance
- * @returns btstack_audio_sink implementation
+ * @return btstack_audio_sink implementation
  */
 const btstack_audio_sink_t * btstack_audio_sink_get_instance(void){
 	return btstack_audio_sink_instance;
@@ -58,7 +58,7 @@ const btstack_audio_sink_t * btstack_audio_sink_get_instance(void){
 
 /**
  * @brief Get BTstack Audio Source Instance
- * @returns btstack_audio_source implementation
+ * @return btstack_audio_source implementation
  */
 const btstack_audio_source_t * btstack_audio_source_get_instance(void){
 	return btstack_audio_source_instance;

@@ -20,7 +20,7 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/DISC/NONM/BV-02-C: d, C, A
 
 - GAP/DISC/LIMM/BV-01-C: T, A, a (wait 30 sec)
-- GAP/DISC/LIMM/BV-01-C: T, C, A, a (wait 30 sec)
+- GAP/DISC/LIMM/BV-02-C: T, C, A, a (wait 30 sec)
 
 - GAP/DISC/GENM/BV-01-C: D, a, d
 - GAP/DISC/GENM/BV-02-C: D, A, C
@@ -43,8 +43,14 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/IDLE/NAMP/BV-02-C: C, A
 
 - GAP/IDLE/GIN/BV-01-C -> GAP Central
+ 
+- GAP/IDLE/DNDIS/BV-01-C: D
+ 
+- GAP/IDLE/LIN/BV-01-C: -> GAP Central
 
 - GAP/IDLE/DED/BV-02-C -> GAP Central
+- 
+- GAP/IDLE/BON/* -> GAP Central
 
 - GAP/CONN/NCON/BV-01-C: c, A
 - GAP/CONN/NCON/BV-02-C: c, D, A
@@ -80,36 +86,39 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/CONN/PRDA/BV-01-C -> GAP Central
 - GAP/CONN/PRDA/BV-02-C -> GAP Central
 
+- GAP/EST/LIE/BV-02-C -> GAP Central
+ 
 - BOND -> GAP Central
-
-- GAP/SEC/AUT/BV-02-C: delete link keys, u, C
-- GAP/SEC/AUT/BV-11-C: C, M, e, A, 18
-- GAP/SEC/AUT/BV-12-C -> GAP Central
-- GAP/SEC/AUT/BV-13-C -> GAP Central
-- GAP/SEC/AUT/BV-14-C: C, M, e, A, 18
-- GAP/SEC/AUT/BV-17-C -> GAP Central
-- GAP/SEC/AUT/BV-18-C -> GAP Central
-- GAP/SEC/AUT/BV-19-C -> GAP Central
-- GAP/SEC/AUT/BV-20-C -> GAP Central
-- GAP/SEC/AUT/BV-21-C -> GAP Central
-- GAP/SEC/AUT/BV-22-C -> GAP Central
-- GAP/SEC/AUT/BV-23-C: C, M, e, B, A, 18, 
-- GAP/SEC/AUT/BV-24-C -> GAP Central
-
-- GAP/SEC/CSIGN/BV-01-C -> GAP Central
-- GAP/SEC/CSIGN/BV-02-C -> GAP Central
-- GAP/SEC/CSIGN/BI-01-C -> GAP Central
-- GAP/SEC/CSIGN/BI-02-C -> GAP Central
-- GAP/SEC/CSIGN/BI-03-C -> GAP Central
-- GAP/SEC/CSIGN/BI-04-C -> GAP Central
 
 - GAP/SEC/SEM/BV-02-C: u, (wait)
 - GAP/SEC/SEM/BV-04-C: (wait)
+- GAP/SEC/SEM/BV-05-C -> GAP Central
+- GAP/SEC/SEM/BV-50-C -> GAP Central
+- GAP/SEC/SEM/BV-06-C -> GAP Central
+- GAP/SEC/SEM/BV-51-C -> GAP Central
+- GAP/SEC/SEM/BV-07-C -> GAP Central
+- GAP/SEC/SEM/BV-52-C -> GAP Central
+- GAP/SEC/SEM/BV-08-C -> GAP Central
+- GAP/SEC/SEM/BV-09-C -> GAP Central
+- GAP/SEC/SEM/BV-53-C -> GAP Central
+- GAP/SEC/SEM/BV-10-C: F, C, D
+- GAP/SEC/SEM/BI-24-C: F, C, D, ???
+- GAP/SEC/SEM/BV-46-C: NEW LE CBM
 - GAP/SEC/SEM/BV-11-C: REQUIRE - PTS v4.0 Dongle without BR/EDR SC. C, D, J
 - GAP/SEC/SEM/BV-12-C: F, C, D, J
 - GAP/SEC/SEM/BV-13-C: F, C, D, M, B
+- GAP/SEC/SEM/BV-47-C: C, D
 - GAP/SEC/SEM/BV-14-C: F, C, D
-- GAP/SEC/SEM/BV-15-C: Set L2CAP Service Level to 4, F, C, D
+- GAP/SEC/SEM/BV-48-C: C, D
+- GAP/SEC/SEM/BV-15-C: Set L2CAP Service Level to 4 in gap_peripheral_test.c, F, C, D
+- GAP/SEC/SEM/BV-49-C: Set L2CAP Service Level to 4 in gap_peripheral_test.c, F, C, D
+- GAP/SEC/SEM/BV-16-C -> GAP Central
+- GAP/SEC/SEM/BV-17-C -> GAP Central
+- GAP/SEC/SEM/BV-18-C -> GAP Central
+- GAP/SEC/SEM/BV-54-C -> GAP Central
+- GAP/SEC/SEM/BV-19-C -> GAP Central
+- GAP/SEC/SEM/BV-55-C -> GAP Central
+- GAP/SEC/SEM/BV-20-C -> GAP Central
 - GAP/SEC/SEM/BV-21-C -> GAP Central
 - GAP/SEC/SEM/BV-37-C -> GAP Central
 - GAP/SEC/SEM/BV-38-C -> GAP Central
@@ -119,7 +128,20 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/SEC/SEM/BV-23-C -> GAP Central
 - GAP/SEC/SEM/BV-24-C -> GAP Central
 - GAP/SEC/SEM/BV-25-C -> GAP Central
-- GAP/SEC/SEM/BI-01-C: u, C, D (PTS says "send Connection Response" although we did, just wait), ca 3 minnutes
+- GAP/SEC/SEM/BV-26-C -> GAP Central
+- GAP/SEC/SEM/BV-41-C -> GAP Central
+- GAP/SEC/SEM/BV-42-C -> GAP Central
+- GAP/SEC/SEM/BV-27-C -> GAP Central
+- GAP/SEC/SEM/BV-43-C -> GAP Central
+- GAP/SEC/SEM/BV-44-C -> GAP Central
+- GAP/SEC/SEM/BV-28-C -> GAP Central
+- GAP/SEC/SEM/BV-29-C -> GAP Central
+- GAP/SEC/SEM/BV-30-C -> GAP Central
+- GAP/SEC/SEM/BV-31-C: not supported yet - LE Security Mode 3`
+- GAP/SEC/SEM/BV-32-C: not supported yet - LE Security Mode 3
+- GAP/SEC/SEM/BV-34-C: not supported yet - LE Security Mode 3
+- GAP/SEC/SEM/BV-35-C: not supported yet - LE Security Mode 3
+- GAP/SEC/SEM/BI-01-C: u, C, D (PTS says "send Connection Response" although we did), wait ca. 3 minutes
 - GAP/SEC/SEM/BI-11-C: Set L2CAP Service Level to 1 - C, D
 - GAP/SEC/SEM/BI-02-C: Set L2CAP Service Level to 2 - C, D
 - GAP/SEC/SEM/BI-03-C: Set L2CAP Service Level to 2 - C, D
@@ -146,7 +168,6 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/SEC/SEM/BV-07-C -> GAP Central
 - GAP/SEC/SEM/BV-08-C -> GAP Central
 - GAP/SEC/SEM/BV-09-C -> GAP Central
-- GAP/SEC/SEM/BV-10-C: F, C, D
 - GAP/SEC/SEM/BV-16-C -> GAP Central
 - GAP/SEC/SEM/BV-17-C -> GAP Central
 - GAP/SEC/SEM/BV-18-C -> GAP Central
@@ -161,6 +182,27 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/SEC/SEM/BV-28-C -> GAP Central
 - GAP/SEC/SEM/BV-29-C -> GAP Central
 - GAP/SEC/SEM/BV-30-C -> GAP Central
+- 
+- GAP/SEC/AUT/BV-02-C: delete link keys, u, C
+- GAP/SEC/AUT/BV-11-C: C, M, e, A, 18
+- GAP/SEC/AUT/BV-12-C -> GAP Central
+- GAP/SEC/AUT/BV-13-C -> GAP Central
+- GAP/SEC/AUT/BV-14-C: C, M, e, A, 18
+- GAP/SEC/AUT/BV-17-C -> GAP Central
+- GAP/SEC/AUT/BV-18-C -> GAP Central
+- GAP/SEC/AUT/BV-19-C -> GAP Central
+- GAP/SEC/AUT/BV-20-C -> GAP Central
+- GAP/SEC/AUT/BV-21-C -> GAP Central
+- GAP/SEC/AUT/BV-22-C -> GAP Central
+- GAP/SEC/AUT/BV-23-C: C, M, e, B, A, 18, 
+- GAP/SEC/AUT/BV-24-C -> GAP Central
+
+- GAP/SEC/CSIGN/BV-01-C -> GAP Central
+- GAP/SEC/CSIGN/BV-02-C -> GAP Central
+- GAP/SEC/CSIGN/BI-01-C -> GAP Central
+- GAP/SEC/CSIGN/BI-02-C -> GAP Central
+- GAP/SEC/CSIGN/BI-03-C -> GAP Central
+- GAP/SEC/CSIGN/BI-04-C -> GAP Central
 
 - GAP/PRIV/CONN/BV-10-C: C, A, Z, R, C, A, Z
 - GAP/PRIV/CONN/BV-11-C -> GAP Central
@@ -191,9 +233,13 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/MOD/LDIS/BV-02-C: T, D
 - GAP/MOD/LDIS/BV-03-C: T, D, t, d
 
-- GAP/MOD/LDIS/BV-01-C: D, A
-- GAP/MOD/LDIS/BV-02-C: D, A
+- GAP/MOD/GDIS/BV-01-C: D, A
+- GAP/MOD/GDIS/BV-02-C: t, D, A
 
 - GAP/MOD/NCON/BV-01-C: c
 
 - GAP/MOD/CON/BV-01-C: C
+ 
+- GAP/MOD/NBON/BV-02-C: E, C
+- GAP/MOD/NBON/BV-03-C: Set L2CAP Service Level to 2, b, C
+

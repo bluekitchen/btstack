@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -109,15 +109,6 @@
 #include "ble/le_device_db.h"
 #include "ble/le_device_db_tlv.h"
 #include "ble/sm.h"
-#endif
-
-#ifdef HAVE_PLATFORM_IPHONE_OS
-#include <CoreFoundation/CoreFoundation.h>
-#include <notify.h>
-#include "../port/ios/src/btstack_control_iphone.h"
-#include "../port/ios/src/platform_iphone.h"
-// support for "enforece wake device" in h4 - used by iOS power management
-extern void hci_transport_h4_iphone_set_enforce_wake_device(char *path);
 #endif
 
 // copy of prototypes
@@ -235,6 +226,7 @@ static btstack_linked_list_t gatt_client_helpers = NULL;   // list of used gatt 
 static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t l2cap_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 static int global_enable = 0;
@@ -254,6 +246,11 @@ static char string_buffer[1000];
 static int loggingEnabled;
 
 static const char * btstack_server_storage_path;
+
+// GAP command buffer
+#ifdef ENABLE_CLASSIC
+static uint8_t daemon_gap_pin_code[16];
+#endif
 
 // TLV
 static int                   tlv_setup_done;
@@ -552,7 +549,7 @@ static void daemon_l2cap_close_connection(client_state_t * daemon_client){
     btstack_linked_list_iterator_init(&it, l2cap_cids);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
-        l2cap_disconnect(item->value, 0); // note: reason isn't used
+        l2cap_disconnect(item->value);
         btstack_linked_list_remove(l2cap_cids, (btstack_linked_item_t *) item);
         free(item);
     }
@@ -881,14 +878,17 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     bd_addr_type_t addr_type;
     hci_con_handle_t handle;
 #endif
-    uint16_t cid;
-    uint16_t psm;
-    uint16_t service_channel;
-    uint16_t mtu;
-    uint8_t  reason;
+#ifdef ENABLE_CLASSIC
     uint8_t  rfcomm_channel;
     uint8_t  rfcomm_credits;
+    uint16_t mtu;
     uint32_t service_record_handle;
+    uint16_t cid;
+    uint16_t service_channel;
+    uint16_t serviceSearchPatternLen;
+    uint16_t attributeIDListLen;
+    uint16_t psm;
+#endif
     client_state_t *client;
     uint8_t status;
     uint8_t  * data;
@@ -901,8 +901,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     btstack_linked_list_gatt_client_helper_t * gatt_helper;
 #endif
 
-    uint16_t serviceSearchPatternLen;
-    uint16_t attributeIDListLen;
 
     // verbose log info before other info to allow for better tracking
     hci_dump_packet( HCI_COMMAND_DATA_PACKET, 1, packet, size);
@@ -938,23 +936,10 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             log_info("BTSTACK_GET_VERSION");
             hci_emit_btstack_version();
             break;   
-#ifdef HAVE_PLATFORM_IPHONE_OS
-        case BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED:
-            log_info("BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED %u", packet[3]);
-            btstack_control_iphone_bt_set_enabled(packet[3]);
-            hci_emit_system_bluetooth_enabled(btstack_control_iphone_bt_enabled());
-            break;
-            
-        case BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED:
-            log_info("BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED");
-            hci_emit_system_bluetooth_enabled(btstack_control_iphone_bt_enabled());
-            break;
-#else
         case BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED:
         case BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED:
             hci_emit_system_bluetooth_enabled(0);
             break;
-#endif
         case BTSTACK_SET_DISCOVERABLE:
             log_info("BTSTACK_SET_DISCOVERABLE discoverable %u)", packet[3]);
             // track client discoverable requests
@@ -976,6 +961,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
                 hci_power_control(HCI_POWER_OFF);
             }
             break;
+#ifdef ENABLE_CLASSIC
         case L2CAP_CREATE_CHANNEL_MTU:
             reverse_bd_addr(&packet[3], addr);
             psm = little_endian_read_16(packet, 9);
@@ -1000,8 +986,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case L2CAP_DISCONNECT:
             cid = little_endian_read_16(packet, 3);
-            reason = packet[5];
-            l2cap_disconnect(cid, reason);
+            l2cap_disconnect(cid);
             break;
         case L2CAP_REGISTER_SERVICE:
             psm = little_endian_read_16(packet, 3);
@@ -1021,7 +1006,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case L2CAP_DECLINE_CONNECTION:
             cid    = little_endian_read_16(packet, 3);
-            reason = packet[7];
             l2cap_decline_connection(cid);
             break;
         case RFCOMM_CREATE_CHANNEL:
@@ -1047,7 +1031,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case RFCOMM_DISCONNECT:
             cid = little_endian_read_16(packet, 3);
-            reason = packet[5];
             rfcomm_disconnect(cid);
             break;
         case RFCOMM_REGISTER_SERVICE:
@@ -1074,7 +1057,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case RFCOMM_DECLINE_CONNECTION:
             cid    = little_endian_read_16(packet, 3);
-            reason = packet[7];
             rfcomm_decline_connection(cid);
             break;            
         case RFCOMM_GRANT_CREDITS:
@@ -1138,6 +1120,39 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             
             sdp_client_query(&handle_sdp_client_query_result, addr, (uint8_t*)&serviceSearchPattern[0], (uint8_t*)&attributeIDList[0]);
             break;
+#endif
+        case GAP_DISCONNECT:
+            handle = little_endian_read_16(packet, 3);
+            gap_disconnect(handle);
+            break;
+#ifdef ENABLE_CLASSIC
+        case GAP_INQUIRY_START:
+            gap_inquiry_start(packet[3]);
+            break;
+        case GAP_INQUIRY_STOP:
+            gap_inquiry_stop();
+            break;
+        case GAP_REMOTE_NAME_REQUEST:
+            reverse_bd_addr(&packet[3], addr);
+            gap_remote_name_request(addr, packet[9], little_endian_read_16(packet, 10));
+            break;
+        case GAP_DROP_LINK_KEY_FOR_BD_ADDR:
+            reverse_bd_addr(&packet[3], addr);
+            gap_drop_link_key_for_bd_addr(addr);
+            break;
+        case GAP_DELETE_ALL_LINK_KEYS:
+            gap_delete_all_link_keys();
+            break;
+        case GAP_PIN_CODE_RESPONSE:
+            reverse_bd_addr(&packet[3], addr);
+            memcpy(daemon_gap_pin_code, &packet[10], 16);
+            gap_pin_code_response_binary(addr, daemon_gap_pin_code, packet[9]);
+            break;
+        case GAP_PIN_CODE_NEGATIVE:
+            reverse_bd_addr(&packet[3], addr);
+            gap_pin_code_negative(addr);
+            break;
+#endif
 #ifdef ENABLE_BLE
         case GAP_LE_SCAN_START:
             gap_start_scan();
@@ -1155,10 +1170,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case GAP_LE_CONNECT_CANCEL:
             gap_connect_cancel();
-            break;
-        case GAP_DISCONNECT:
-            handle = little_endian_read_16(packet, 3);
-            gap_disconnect(handle);
             break;
 #endif
 #if defined(HAVE_MALLOC) && defined(ENABLE_BLE)
@@ -1351,7 +1362,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             err = l2cap_send(channel, data, length);
             break;
         case RFCOMM_DATA_PACKET:
-            // process l2cap packet...
+            // process rfcomm packet...
             err = rfcomm_send(channel, data, length);
             break;
         case DAEMON_EVENT_PACKET:
@@ -1648,7 +1659,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
             if (!connection) return;
             break;
         case RFCOMM_DATA_PACKET:        
-            connection = connection_for_l2cap_cid(channel);
+            connection = connection_for_rfcomm_cid(channel);
             if (!connection) return;
             break;
         default:
@@ -1732,12 +1743,7 @@ static void power_notification_callback(POWER_NOTIFICATION_t notification){
 
 static void daemon_sigint_handler(int param){
     
-#ifdef HAVE_PLATFORM_IPHONE_OS
-    // notify daemons
-    notify_post("ch.ringwald.btstack.stopped");
-#endif
-    
-    log_info(" <= SIGINT received, shutting down..\n");    
+    log_info(" <= SIGINT received, shutting down..\n");
 
     int send_power_off = 1;
 #ifdef HAVE_INTEL_USB
@@ -1833,13 +1839,6 @@ static void usage(const char * name) {
     printf("    --tcp    use TCP server on port %u\n", BTSTACK_PORT);
     printf("Without the --tcp option, BTstack Server is listening on unix domain socket %s\n\n", BTSTACK_UNIX);
 }
-
-#ifdef HAVE_PLATFORM_IPHONE_OS 
-static void * btstack_run_loop_thread(void *context){
-    btstack_run_loop_execute();
-    return NULL;
-}
-#endif
 
 #ifdef ENABLE_BLE
 
@@ -1961,10 +1960,8 @@ static void btstack_server_configure_stack(void){
     hostname[29] = '\0';
     gap_set_local_name(hostname);
 
-#ifdef HAVE_PLATFORM_IPHONE_OS
-    // iPhone doesn't use SSP yet as there's no UI for it yet and auto accept is not an option
-    gap_ssp_set_enable(0);
-#endif
+    // enabled EIR
+    hci_set_inquiry_mode(INQUIRY_MODE_RSSI_AND_EIR);
 
     // register for HCI events
     hci_event_callback_registration.callback = &stack_packet_handler;
@@ -1972,7 +1969,8 @@ static void btstack_server_configure_stack(void){
 
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(&stack_packet_handler);
+    l2cap_event_callback_registration.callback = &stack_packet_handler;
+    l2cap_add_event_handler(&l2cap_event_callback_registration);
     timeout.process = daemon_no_connections_timeout;
 
 #ifdef ENABLE_RFCOMM
@@ -2039,17 +2037,10 @@ int btstack_server_run(int tcp_flag){
     hci_transport_config_uart.flowcontrol = 1;
     hci_transport_config_uart.device_name   = UART_DEVICE;
 
-#ifndef HAVE_PLATFORM_IPHONE_OS
 #ifdef _WIN32
     uart_implementation = (const btstack_uart_t *) btstack_uart_block_windows_instance();
 #else
     uart_implementation = btstack_uart_posix_instance();
-#endif
-#endif
-    
-#ifdef HAVE_PLATFORM_IPHONE_OS
-    // use default (max) UART baudrate over netgraph interface
-    hci_transport_config_uart.baudrate_init = 0;
 #endif
 
     config = &hci_transport_config_uart;
@@ -2058,16 +2049,6 @@ int btstack_server_run(int tcp_flag){
 
 #ifdef HAVE_TRANSPORT_USB
     transport = hci_transport_usb_instance();
-#endif
-
-#ifdef HAVE_PLATFORM_IPHONE_OS
-    control = &btstack_control_iphone;
-    if (btstack_control_iphone_power_management_supported()){
-        hci_transport_h4_iphone_set_enforce_wake_device("/dev/btwake");
-    }
-    bluetooth_status_handler = platform_iphone_status_handler;
-    platform_iphone_register_window_manager_restart(update_ui_status);
-    platform_iphone_register_preferences_changed(preferences_changed_callback);
 #endif
 
 #ifdef BTSTACK_DEVICE_NAME_DB_INSTANCE
@@ -2088,10 +2069,6 @@ int btstack_server_run(int tcp_flag){
     // logging
     loggingEnabled = 0;
     int newLoggingEnabled = 1;
-#ifdef HAVE_PLATFORM_IPHONE_OS
-    // iPhone has toggle in Preferences.app
-    newLoggingEnabled = platform_iphone_logging_enabled();
-#endif
     daemon_set_logging_enabled(newLoggingEnabled);
     
     // dump version
@@ -2115,19 +2092,8 @@ int btstack_server_run(int tcp_flag){
     }
 #endif
     socket_connection_register_packet_callback(&daemon_client_handler);
-        
-#ifdef HAVE_PLATFORM_IPHONE_OS 
-    // notify daemons
-    notify_post("ch.ringwald.btstack.started");
 
-    // spawn thread to have BTstack run loop on new thread, while main thread is used to keep CFRunLoop
-    pthread_t run_loop;
-    pthread_create(&run_loop, NULL, &btstack_run_loop_thread, NULL);
-
-    // needed to receive notifications
-    CFRunLoopRun();
-#endif
-        // go!
+    // go!
     btstack_run_loop_execute();
     return 0;
 }

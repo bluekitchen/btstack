@@ -18,8 +18,8 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
     btstack_util.c \
-    hci_dump.c \
     obex_message_builder.c \
+    obex_parser.c
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
 CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT
@@ -31,7 +31,8 @@ LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/obex_message_builder_test build-asan/obex_message_builder_test
+all: build-coverage/obex_message_builder_test build-asan/obex_message_builder_test \
+	 build-coverage/obex_parser_test build-asan/obex_parser_test
 
 build-%:
 	mkdir -p $@
@@ -42,6 +43,12 @@ build-coverage/%.o: %.c | build-coverage
 build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
+build-coverage/%.cpp.o: %.cpp | build-coverage
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
+
+build-asan/%.cpp.o: %.cpp | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
 
 build-coverage/obex_message_builder_test: ${COMMON_OBJ_COVERAGE} build-coverage/obex_message_builder_test.o | build-coverage
 	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
@@ -49,12 +56,20 @@ build-coverage/obex_message_builder_test: ${COMMON_OBJ_COVERAGE} build-coverage/
 build-asan/obex_message_builder_test: ${COMMON_OBJ_ASAN} build-asan/obex_message_builder_test.o | build-asan
 	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
+build-coverage/obex_parser_test: ${COMMON_OBJ_COVERAGE} build-coverage/obex_parser_test.cpp.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/obex_parser_test: ${COMMON_OBJ_ASAN} build-asan/obex_parser_test.cpp.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
 test: all
 	build-asan/obex_message_builder_test
-	
+	build-asan/obex_parser_test
+
 coverage: all
 	rm -f build-coverage/*.gcda
 	build-coverage/obex_message_builder_test
+	build-coverage/obex_parser_test
 
 clean:
 	rm -rf build-coverage build-asan

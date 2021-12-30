@@ -46,7 +46,7 @@ def read_defines(infile):
     defines = dict()
     with open (infile, 'rt') as fin:
         for line in fin:
-            parts = re.match('#define\s+(\w+)\s+(\w*)',line)
+            parts = re.match('#define\s+(\w+)\s+(\w*)[u]',line)
             if parts and len(parts.groups()) == 2:
                 (key, value) = parts.groups()
                 defines[key] = value
@@ -76,7 +76,7 @@ def my_parse_events(path):
             if parts and len(parts.groups()) == 1:
                 param = parts.groups()[0]
                 params.append(param)
-            parts = re.match('\s*#define\s+(\w+)\s+(\w*)',line)
+            parts = re.match('\s*#define\s+(\w+)\s+(\w*)[u]',line)
             if parts and len(parts.groups()) == 2:
                 (key, value) = parts.groups()
                 if format != None:

@@ -1,9 +1,0 @@
-
-Wikimedia Commons:
-computer.png:  http://commons.wikimedia.org/wiki/File:Icon_of_a_pc.png
-keyboard.png:  http://commons.wikimedia.org/wiki/File:High-contrast-input-keyboard.svg
-bluetooth.png: http://commons.wikimedia.org/wiki/File:Bluetooth.png
-
-Photos:
-smartphone.png: scaled iPhone
-

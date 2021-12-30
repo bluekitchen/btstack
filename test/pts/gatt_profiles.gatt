@@ -7,5 +7,18 @@ PRIMARY_SERVICE, ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE
 CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, DYNAMIC | READ | NOTIFY,
 CHARACTERISTIC_FORMAT, READ, 04, 00, 27AD, 01, 01
 
-// add Device ID Service
+// add device information service
 #import <device_information_service.gatt>
+
+// add tx power service
+#import <tx_power_service.gatt>
+
+// add bond management service
+#import <bond_management_service.gatt>
+
+// add microphone control service
+#import <microphone_control_service.gatt>
+
+// add volume control service
+#import <volume_control_service.gatt>
+

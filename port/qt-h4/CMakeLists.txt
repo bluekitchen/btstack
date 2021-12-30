@@ -66,7 +66,7 @@ set(SOURCES_POSIX
 set(SOURCES_CHIPSET
     ${BTSTACK_ROOT}/chipset/bcm/btstack_chipset_bcm.c
     ${BTSTACK_ROOT}/chipset/cc256x/btstack_chipset_cc256x.c
-    bluetooth_init_cc2564C_1.4.c
+    bluetooth_init_cc2564C_1.5.c
     ${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c
 )
 
@@ -126,7 +126,7 @@ ELSE()
     message("Building for POSIX using libusb")
 
     set(SOURCES_HCI_USB ${BTSTACK_ROOT}/platform/libusb/hci_transport_h2_libusb.c)
-    set(SOURCES_STDIN   ${BTSTACK_ROOT}/platform/posix/btstack_stdin_posix.c)
+    set(SOURCES_STDIN   ${BTSTACK_ROOT}/platform/posix/btstack_stdin_posix.c ${BTSTACK_ROOT}/platform/posix/btstack_signal.c)
 
     list(APPEND SOURCES_POSIX ${BTSTACK_ROOT}/platform/posix/btstack_network_posix.c)
     list(APPEND SOURCES_POSIX ${BTSTACK_ROOT}/platform/posix/btstack_block_posix.c)

@@ -67,13 +67,14 @@ Cypress PSoC 4       | LE        | H4             | Don't know   | n.a.         
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | n.a.           |    Don't know      | da14581        | Official HCI firmware included in BTstack
 Dialog DA14585       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | n.a.           |       Yes          | da14581        | Official HCI firmware included in BTstack
 Dialog DA1469x       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | n.a.           |       Yes          | da14581        | HCI Firmware part of DA1469x SDK
-Espressif ESP32      | Dual mode + Wifi | VHCI    | Yes          | Not yet          | Yes    |        Yes           | Yes            |    Don't know      |                | SoC with Bluetooth and Wifi
+Espressif ESP32      | Dual mode + Wifi | VHCI    | Yes          | Yes              | Yes    |        Yes           | Yes            |    Don't know      |                | SoC with Bluetooth and Wifi
 EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | n.a.           |    Don't know      | em9301         | Custom HCI SPI implementation
 EM 9304              | LE        | SPI, H4        | Yes          | n.a.             | Yes    |        Yes           | n.a.           |    Don't know      | em9301         | Custom HCI SPI implementation
 Intel Dual Wireless 3165, 8260, 8265 | Dual mode | USB  | Yes          | Probably         | Don't know | Don't know       | Don't know     |    Don't know      | intel          | Firmware size: 400 kB 
 Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |        Yes           | n.a.           |       Yes          |                | Requires HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | Don't know       | n.a    |         n.a.         | No             |       n.a.         | stlc2500d      | Custom deep sleep management not supported
 Renesas RX23W        | LE        | H4             | No           | n.a.             | Yes    |        Yes           | n.a .          |    Don't know      |                | HCI Firmware part of BTTS
+Realtek RTL8822CS    | Dual mode + Wifi | H5      | Yes          | Yes              | Don't know | Don't know       | Don't know     |    Don't know      |                | Requires initial firmware + config       
 Toshiba TC35661      | Dual mode | H4             | No           | No               | No     |         No           | No             |       No           | tc3566         | Only -007/009 models provide full HCI. See below
 TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |    Yes for CC256XC   | No             |       No           | cc256x         | Also WL185x, WL187x, and WL189x
 
@@ -129,7 +130,8 @@ BTstack supports uploading of the init script in two variants: using .hcd files 
 
 **BTstack integration**: The common code for all Broadcom chipsets is provided by *btstack_chipset_bcm.c*. During the setup, *btstack_chipset_bcm_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function.
 
-SCO Data can be routed over HCI for both USB dongles and UART connections, however BTstack does not support flow control for UART connections. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins.
+SCO Data can be routed over HCI for both USB dongles and UART connections, however BTstack does not support flow control for UART connections. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins. Newer Controllers provide an
+mSBC codec that allows to use HSP/HFP incl. WBS over PCM/I2S with ENABLE_BCM_PCM_WBS.
 
 ## CSR / Qualcomm Incorporated
 
@@ -171,7 +173,8 @@ The newer DA1469x uses an external flash. The DA 1469x SDK contains a HCI firmwa
 
 ## Espressif ESP32
 
-The ESP32 is a SoC with a built-in Dual mode Bluetooth and Wifi radio. The HCI Controller is implemented in software and accessed via a so called Virtual HCI (VHCI) interface. It supports both LE Data Length Extensions (DLE) as well as multiple LE roles. SCO isn't supported currently, but [Espressif is working on it](https://github.com/espressif/esp-idf/issues/1118).
+The ESP32 is a SoC with a built-in Dual mode Bluetooth and Wifi radio. The HCI Controller is implemented in software and accessed via a so called Virtual HCI (VHCI) interface.
+It supports both LE Data Length Extensions (DLE) as well as multiple LE roles. Since ESP-IDF v4.3, SCO-over-HCI is usable for HSP/HFP.
 
 
 ## EM Microelectronic Marin

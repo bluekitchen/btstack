@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -89,7 +89,7 @@ uint32_t btstack_max(uint32_t a, uint32_t b);
 
 /**
  * @brief Calculate delta between two points in time
- * @returns time_a - time_b - result > 0 if time_a is newer than time_b
+ * @return time_a - time_b - result > 0 if time_a is newer than time_b
  */
 int32_t btstack_time_delta(uint32_t time_a, uint32_t time_b);
 
@@ -143,7 +143,7 @@ static inline uint16_t btstack_flip_16(uint16_t value){
 
 /** 
  * @brief Check for big endian system
- * @returns 1 if on big endian
+ * @return 1 if on big endian
  */
 static inline int btstack_is_big_endian(void){
 	uint16_t sample = 0x0100;
@@ -152,7 +152,7 @@ static inline int btstack_is_big_endian(void){
 
 /** 
  * @brief Check for little endian system
- * @returns 1 if on little endian
+ * @return 1 if on little endian
  */
 static inline int btstack_is_little_endian(void){
 	uint16_t sample = 0x0001;

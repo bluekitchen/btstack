@@ -89,17 +89,17 @@ void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
 extern "C" {
     void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
     }
-    int hci_can_send_command_packet_now(void){
-        return 1;
+    bool hci_can_send_command_packet_now(void){
+        return true;
     }
     HCI_STATE hci_get_state(void){
         return HCI_STATE_WORKING;
     }
     void hci_halting_defer(void){
     }
-    int hci_send_cmd(const hci_cmd_t *cmd, ...){
+    uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
         printf("hci_send_cmd opcode %04x\n", cmd->opcode);
-        return 0;
+        return ERROR_CODE_SUCCESS;
     }
 }
 

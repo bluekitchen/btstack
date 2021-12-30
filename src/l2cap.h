@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -94,33 +94,38 @@ typedef enum {
     L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_ACCEPT,
     L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE,
     L2CAP_STATE_EMIT_OPEN_FAILED_AND_DISCARD,
+    L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_REQUEST,
+    L2CAP_STATE_WAIT_ENHANCED_CONNECTION_RESPONSE,
+    L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_RESPONSE,
+    L2CAP_STATE_WILL_SEND_EHNANCED_RENEGOTIATION_REQUEST,
+    L2CAP_STATE_WAIT_ENHANCED_RENEGOTIATION_RESPONSE,
     L2CAP_STATE_INVALID,
 } L2CAP_STATE;
 
-typedef enum {
-    L2CAP_CHANNEL_STATE_VAR_NONE                   = 0,
-    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_REQ          = 1 << 0,
-    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP          = 1 << 1,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ          = 1 << 2,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP          = 1 << 3,
-    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ          = 1 << 4,
-    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP          = 1 << 5,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU      = 1 << 6,   // in CONF RSP, add MTU option
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM     = 1 << 7,   // in CONF RSP, add Retransmission and Flowcontrol option
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT     = 1 << 8,   // in CONF RSP, set CONTINUE flag
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID  = 1 << 9,   // in CONF RSP, send UNKNOWN OPTIONS
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED = 1 << 10,  // in CONF RSP, send Unacceptable Parameters (ERTM)
-    L2CAP_CHANNEL_STATE_VAR_BASIC_FALLBACK_TRIED   = 1 << 11,  // set when ERTM was requested but we want only Basic mode (ERM)
-    L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN   = 1 << 12,  // send CMD_REJ with reason unknown
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND    = 1 << 13,  // send Connection Respond with pending
-    L2CAP_CHANNEL_STATE_VAR_INCOMING               = 1 << 15,  // channel is incoming
-} L2CAP_CHANNEL_STATE_VAR;
+#define L2CAP_CHANNEL_STATE_VAR_NONE                   0
+#define L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_REQ          1 << 0
+#define L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP          1 << 1
+#define L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ          1 << 2
+#define L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP          1 << 3
+#define L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ          1 << 4
+#define L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP          1 << 5
+#define L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU      1 << 6   // in CONF RSP, add MTU option
+#define L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM     1 << 7   // in CONF RSP, add Retransmission and Flowcontrol option
+#define L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT     1 << 8   // in CONF RSP, set CONTINUE flag
+#define L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID  1 << 9   // in CONF RSP, send UNKNOWN OPTIONS
+#define L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED 1 << 10  // in CONF RSP, send Unacceptable Parameters (ERTM)
+#define L2CAP_CHANNEL_STATE_VAR_BASIC_FALLBACK_TRIED   1 << 11  // set when ERTM was requested but we want only Basic mode (ERM)
+#define L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND    1 << 12  // send Connection Respond with pending
+#define L2CAP_CHANNEL_STATE_VAR_SENT_CONN_RESP_PEND    1 << 13  // send CMD_REJ with reason unknown
+#define L2CAP_CHANNEL_STATE_VAR_INCOMING               1 << 15  // channel is incoming
+
 
 typedef enum {
     L2CAP_CHANNEL_TYPE_CLASSIC,         // Classic Basic or ERTM
     L2CAP_CHANNEL_TYPE_CONNECTIONLESS,  // Classic Connectionless
-    L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL, // LE
-    L2CAP_CHANNEL_TYPE_LE_FIXED,        // LE ATT + SM
+    L2CAP_CHANNEL_TYPE_CHANNEL_CBM,     // LE
+    L2CAP_CHANNEL_TYPE_FIXED,           // LE ATT + SM, Classic SM
+    L2CAP_CHANNEL_TYPE_CHANNEL_ECBM     // Classic + LE
 } l2cap_channel_type_t;
 
 
@@ -220,7 +225,7 @@ typedef struct {
     btstack_timer_source_t rtx; // also used for ertx
 
     L2CAP_STATE state;
-    L2CAP_CHANNEL_STATE_VAR state_var;
+    uint16_t    state_var;
 
     // info
     hci_con_handle_t con_handle;
@@ -246,15 +251,20 @@ typedef struct {
 
     uint8_t   unknown_option; // used for ConfigResponse
 
-    // LE Data Channels
+    // Credit-Based Flow-Control mode
 
     // incoming SDU
     uint8_t * receive_sdu_buffer;
     uint16_t  receive_sdu_len;
     uint16_t  receive_sdu_pos;
 
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
+    uint8_t * renegotiate_sdu_buffer;
+    uint16_t  renegotiate_mtu;
+#endif
+
     // outgoing SDU
-    uint8_t  * send_sdu_buffer;
+    const uint8_t * send_sdu_buffer;
     uint16_t   send_sdu_len;
     uint16_t   send_sdu_pos;
 
@@ -271,7 +281,12 @@ typedef struct {
     uint16_t credits_incoming;
 
     // automatic credits incoming
-    uint16_t automatic_credits;
+    bool automatic_credits;
+
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
+    uint8_t cid_index;
+    uint8_t num_cids;
+#endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 
@@ -395,7 +410,7 @@ typedef struct {
     // service id
     uint16_t  psm;
     
-    // incoming MTU
+    // max local mtu for basic mode, min remote mtu for enhanced credit-based flow-control mode
     uint16_t mtu;
     
     // internal connection
@@ -417,17 +432,17 @@ typedef struct l2cap_signaling_response {
 
 
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
-int  l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id);
+bool l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id);
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id);
-int  l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len);
-int  l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len);
+uint8_t l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len);
+uint8_t l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len);
 
 // PTS Testing
 int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t len);
 void l2cap_require_security_level_2_for_outgoing_sdp(void);
 
 // Used by RFCOMM - similar to l2cap_can-send_packet_now but does not check if outgoing buffer is reserved
-int  l2cap_can_send_prepared_packet_now(uint16_t local_cid);
+bool l2cap_can_send_prepared_packet_now(uint16_t local_cid);
 
 /* API_START */
 
@@ -448,10 +463,15 @@ int  l2cap_can_send_prepared_packet_now(uint16_t local_cid);
  */
 void l2cap_init(void);
 
-/** 
- * @brief Registers packet handler for LE Connection Parameter Update events
+/**
+ * @brief Add event packet handler for LE Connection Parameter Update events
  */
-void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
+void l2cap_add_event_handler(btstack_packet_callback_registration_t * callback_handler);
+
+/**
+ * @brief Remove event packet handler.
+ */
+void l2cap_remove_event_handler(btstack_packet_callback_registration_t * callback_handler);
 
 /** 
  * @brief Get max MTU for Classic connections based on btstack configuration
@@ -480,24 +500,11 @@ void l2cap_set_max_le_mtu(uint16_t max_mtu);
 uint8_t l2cap_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid);
 
 /** 
- * @brief Creates L2CAP channel to the PSM of a remote device with baseband address using Enhanced Retransmission Mode. 
- *        A new baseband connection will be initiated if necessary.
- * @param packet_handler
- * @param address
- * @param psm
- * @param ertm_config
- * @param buffer to store reassembled rx packet, out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
- * @param size of buffer
- * @param local_cid
- * @return status
- */
-uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, 
-    l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid);
-
-/** 
  * @brief Disconnects L2CAP channel with given identifier. 
+ * @param local_cid
+ * @return status ERROR_CODE_SUCCESS if successful or L2CAP_LOCAL_CID_DOES_NOT_EXIST
  */
-void l2cap_disconnect(uint16_t local_cid, uint8_t reason);
+uint8_t l2cap_disconnect(uint16_t local_cid);
 
 /** 
  * @brief Queries the maximal transfer unit (MTU) for L2CAP channel with given identifier. 
@@ -506,11 +513,21 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 
 /** 
  * @brief Sends L2CAP data packet to the channel with given identifier.
+ * @note For channel in credit-based flow control mode, data needs to stay valid until .. event
+ * @param local_cid
+ * @param data to send
+ * @param len of data
+ * @return status
  */
-int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len);
+uint8_t l2cap_send(uint16_t local_cid, const uint8_t *data, uint16_t len);
 
 /** 
- * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler.
+ * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler. 
+ * @param packet_handler
+ * @param psm
+ * @param mtu
+ * @param security_level
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise L2CAP_SERVICE_ALREADY_REGISTERED or BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t l2cap_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
 
@@ -525,38 +542,31 @@ uint8_t l2cap_unregister_service(uint16_t psm);
 void l2cap_accept_connection(uint16_t local_cid);
 
 /** 
- * @brief Accepts incoming L2CAP connection for Enhanced Retransmission Mode
- * @param local_cid
- * @param ertm_config
- * @param buffer to store reassembled rx packet, out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
- * @param size of buffer
- * @return status
- */
-uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size);
-
-/** 
  * @brief Deny incoming L2CAP connection.
  */
 void l2cap_decline_connection(uint16_t local_cid);
 
 /** 
  * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module
+ * @return true if packet can be sent
  */
-int  l2cap_can_send_packet_now(uint16_t local_cid);    
+bool l2cap_can_send_packet_now(uint16_t local_cid);
 
 /** 
  * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible
  * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
  * @param local_cid
+ * @return status
  */
-void l2cap_request_can_send_now_event(uint16_t local_cid);
+uint8_t l2cap_request_can_send_now_event(uint16_t local_cid);
 
 /** 
  * @brief Reserve outgoing buffer
  * @note Only for L2CAP Basic Mode Channels
+ * @return true on success
  */
-int  l2cap_reserve_packet_buffer(void);
+bool l2cap_reserve_packet_buffer(void);
 
 /** 
  * @brief Get outgoing buffer and prepare data.
@@ -568,7 +578,7 @@ uint8_t *l2cap_get_outgoing_buffer(void);
  * @brief Send L2CAP packet prepared in outgoing buffer to channel
  * @note Only for L2CAP Basic Mode Channels
  */
-int l2cap_send_prepared(uint16_t local_cid, uint16_t len);
+uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len);
 
 /** 
  * @brief Release outgoing buffer (only needed if l2cap_send_prepared is not called)
@@ -576,49 +586,101 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len);
  */
 void l2cap_release_packet_buffer(void);
 
-
 //
-// LE Connection Oriented Channels feature with the LE Credit Based Flow Control Mode == LE Data Channel
+// Connection-Oriented Channels in Enhanced Retransmission Mode - ERTM
 //
-
 
 /**
- * @brief Register L2CAP LE Data Channel service
- * @note MTU and initial credits are specified in l2cap_le_accept_connection(..) call
+ * @brief Creates L2CAP channel to the PSM of a remote device with baseband address using Enhanced Retransmission Mode.
+ *        A new baseband connection will be initiated if necessary.
+ * @param packet_handler
+ * @param address
+ * @param psm
+ * @param ertm_config
+ * @param buffer to store reassembled rx packet, out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
+ * @param size of buffer
+ * @param local_cid
+ * @return status
+ */
+uint8_t l2cap_ertm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm,
+                                  l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid);
+
+/**
+ * @brief Accepts incoming L2CAP connection for Enhanced Retransmission Mode
+ * @param local_cid
+ * @param ertm_config
+ * @param buffer to store reassembled rx packet, out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
+ * @param size of buffer
+ * @return status
+ */
+uint8_t l2cap_ertm_accept_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size);
+
+/**
+ * @brief Deny incoming incoming L2CAP connection for Enhanced Retransmission Mode
+ * @param local_cid
+ * @return status
+ */
+uint8_t l2cap_ertm_decline_connection(uint16_t local_cid);
+
+/**
+ * @brief ERTM Set channel as busy.
+ * @note Can be cleared by l2cap_ertm_set_ready
+ * @param local_cid
+ * @return status
+ */
+uint8_t l2cap_ertm_set_busy(uint16_t local_cid);
+
+/**
+ * @brief ERTM Set channel as ready
+ * @note Used after l2cap_ertm_set_busy
+ * @param local_cid
+ * @return status
+ */
+uint8_t l2cap_ertm_set_ready(uint16_t local_cid);
+
+
+//
+// L2CAP Connection-Oriented Channels in LE Credit-Based Flow-Control Mode - CBM
+//
+
+/**
+ * @brief Register L2CAP service in LE Credit-Based Flow-Control Mode
+ * @note MTU and initial credits are specified in l2cap_cbm_accept_connection(..) call
  * @param packet_handler
  * @param psm
  * @param security_level
  */
-uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level);
+uint8_t l2cap_cbm_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level);
 
 /**
- * @brief Unregister L2CAP LE Data Channel service
+ * @brief Unregister L2CAP service in LE Credit-Based Flow-Control Mode
  * @param psm
  */
 
-uint8_t l2cap_le_unregister_service(uint16_t psm);
+uint8_t l2cap_cbm_unregister_service(uint16_t psm);
 
 /*
- * @brief Accept incoming LE Data Channel connection
- * @param local_cid             L2CAP LE Data Channel Identifier
+ * @brief Accept incoming connection LE Credit-Based Flow-Control Mode
+ * @param local_cid             L2CAP Channel Identifier
  * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
  * @param receive_buffer_size   buffer size equals MTU
  * @param initial_credits       Number of initial credits provided to peer or L2CAP_LE_AUTOMATIC_CREDITS to enable automatic credits
  */
 
-uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits);
+uint8_t l2cap_cbm_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits);
 
 /** 
- * @brief Deny incoming LE Data Channel connection due to resource constraints
- * @param local_cid             L2CAP LE Data Channel Identifier
+ * @brief Deecline connection in LE Credit-Based Flow-Control Mode
+ * @param local_cid             L2CAP Channel Identifier
+ * @param result                result, see L2CAP_CBM_CONNECTION_RESULT_SUCCESS in bluetooth.h
  */
 
-uint8_t l2cap_le_decline_connection(uint16_t local_cid);
+uint8_t l2cap_cbm_decline_connection(uint16_t local_cid, uint16_t result);
 
 /**
- * @brief Create LE Data Channel
+ * @brief Create outgoing channel in LE Credit-Based Flow-Control Mode
  * @param packet_handler        Packet handler for this connection
- * @param con_handle            ACL-LE HCI Connction Handle
+ * @param con_handle            HCI Connection Handle, LE transport
  * @param psm                   Service PSM to connect to
  * @param receive_buffer        buffer used for reassembly of L2CAP LE Information Frames into service data unit (SDU) with given MTU
  * @param receive_buffer_size   buffer size equals MTU
@@ -626,59 +688,118 @@ uint8_t l2cap_le_decline_connection(uint16_t local_cid);
  * @param security_level        Minimum required security level
  * @param out_local_cid         L2CAP LE Channel Identifier is stored here
  */
-uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, 
+uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle,
     uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
     uint16_t * out_local_cid);
 
 /**
- * @brief Provide credtis for LE Data Channel
- * @param local_cid             L2CAP LE Data Channel Identifier
+ * @brief Provide credits for channel in LE Credit-Based Flow-Control Mode
+ * @param local_cid             L2CAP Channel Identifier
  * @param credits               Number additional credits for peer
  */
-uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits);
+uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits);
+
+//
+// L2CAP Connection-Oriented Channels in Enhanced Credit-Based Flow-Control Mode - ECBM
+//
 
 /**
- * @brief Check if packet can be scheduled for transmission
- * @param local_cid             L2CAP LE Data Channel Identifier
+ * @brief Register L2CAP service in Enhanced Credit-Based Flow-Control Mode
+ * @note MTU and initial credits are specified in l2cap_enhanced_accept_connection(..) call
+ * @param packet_handler
+ * @param psm
+ * @param min_remote_mtu
+ * @param security_level
+ * @return status
  */
-int l2cap_le_can_send_now(uint16_t local_cid);
+uint8_t l2cap_ecbm_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t min_remote_mtu, gap_security_level_t security_level);
 
 /**
- * @brief Request emission of L2CAP_EVENT_LE_CAN_SEND_NOW as soon as possible
- * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
+ * @brief Unregister L2CAP service in Enhanced Credit-Based Flow-Control Mode
+ * @param psm
+ * @return status
+ */
+
+uint8_t l2cap_ecbm_unregister_service(uint16_t psm);
+
+/**
+ * @brief Set Minimal MPS for channel in Enhanced Credit-Based Flow-Control Mode
+ * @param mps_min
+ */
+void l2cap_ecbm_mps_set_min(uint16_t mps_min);
+
+/**
+ * @brief Set Minimal MPS for channel in Enhanced Credit-Based Flow-Control Mode
+ * @param mps_max
+ */
+void l2cap_ecbm_mps_set_max(uint16_t mps_max);
+
+/**
+ * @brief Create outgoing channel in Enhanced Credit-Based Flow-Control Mode
+ * @note receive_buffer points to an array of receive buffers with num_channels elements
+ * @note out_local_cid points to an array where CID is stored with num_channel elements
+ * @param packet_handler        Packet handler for this connection
+ * @param con_handle            HCI Connection Handle
+ * @param security_level        Minimum required security level
+ * @param psm                   Service PSM to connect to
+ * @param num_channels          number of channels to create
+ * @param initial_credits       Number of initial credits provided to peer per channel or L2CAP_LE_AUTOMATIC_CREDITS to enable automatic credits
+ * @param receive_buffer_size   buffer size equals MTU
+ * @param receive_buffers       Array of buffers used for reassembly of L2CAP Information Frames into service data unit (SDU) with given MTU
+ * @param out_local_cids        Array of L2CAP Channel Identifiers is stored here on success
+ * @return status
+ */
+uint8_t l2cap_ecbm_create_channels(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle,
+                                       gap_security_level_t security_level,
+                                       uint16_t psm, uint8_t num_channels, uint16_t initial_credits, uint16_t receive_buffer_size,
+                                       uint8_t ** receive_buffers, uint16_t * out_local_cids);
+
+/**
+ * @brief  Accept incoming connection Enhanced Credit-Based Flow-Control Mode
+ * @param local_cid            from L2CAP_EVENT_INCOMING_DATA_CONNECTION
+ * @param num_channels
+ * @param initial_credits      Number of initial credits provided to peer per channel or L2CAP_LE_AUTOMATIC_CREDITS to enable automatic credits
+ * @param receive_buffer_size
+ * @param receive_buffers      Array of buffers used for reassembly of L2CAP Information Frames into service data unit (SDU) with given MTU
+ * @param out_local_cids       Array of L2CAP Channel Identifiers is stored here on success
+ * @return status
+ */
+uint8_t l2cap_ecbm_accept_channels(uint16_t local_cid, uint8_t num_channels, uint16_t initial_credits,
+                                            uint16_t receive_buffer_size, uint8_t ** receive_buffers, uint16_t * out_local_cids);
+/**
+ * @brief Decline connection in Enhanced Credit-Based Flow-Control Mode
+ * @param local_cid           from L2CAP_EVENT_INCOMING_DATA_CONNECTION
+ * @param result              See L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS in bluetooth.h
+ * @return status
+ */
+uint8_t l2cap_ecbm_decline_channels(uint16_t local_cid, uint16_t result);
+
+/**
+ * @brief Provide credits for channel in Enhanced Credit-Based Flow-Control Mode
+ * @param local_cid             L2CAP Channel Identifier
+ * @param credits               Number additional credits for peer
+ * @return status
+ */
+uint8_t l2cap_ecbm_provide_credits(uint16_t local_cid, uint16_t credits);
+
+/**
+ * @brief Request emission of L2CAP_EVENT_ECBM_CAN_SEND_NOW as soon as possible
+ * @note L2CAP_EVENT_ECBM_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
- * @param local_cid             L2CAP LE Data Channel Identifier
+ * @param local_cid             L2CAP Channel Identifier
+ * @return status
  */
-uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid);
+uint8_t l2cap_ecbm_request_can_send_now_event(uint16_t local_cid);
 
 /**
- * @brief Send data via LE Data Channel
- * @note Since data larger then the maximum PDU needs to be segmented into multiple PDUs, data needs to stay valid until ... event
- * @param local_cid             L2CAP LE Data Channel Identifier
- * @param data                  data to send
- * @param size                  data size
+ * @brief Reconfigure MPS/MTU of local channels
+ * @param num_cids
+ * @param local_cids            array of local_cids to reconfigure
+ * @param receive_buffer_size   buffer size equals MTU
+ * @param receive_buffers       Array of buffers used for reassembly of L2CAP Information Frames into service data unit (SDU) with given MTU
+ * @return status
  */
-uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size);
-
-/**
- * @brief Disconnect from LE Data Channel
- * @param local_cid             L2CAP LE Data Channel Identifier
- */
-uint8_t l2cap_le_disconnect(uint16_t local_cid);
-
-/**
- * @brief ERTM Set channel as busy.
- * @note Can be cleared by l2cap_ertm_set_ready
- * @param local_cid 
- */
-uint8_t l2cap_ertm_set_busy(uint16_t local_cid);
-
-/**
- * @brief ERTM Set channel as ready
- * @note Used after l2cap_ertm_set_busy
- * @param local_cid 
- */
-uint8_t l2cap_ertm_set_ready(uint16_t local_cid);
+uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers);
 
 /**
  * @brief De-Init L2CAP
@@ -686,6 +807,52 @@ uint8_t l2cap_ertm_set_ready(uint16_t local_cid);
 void l2cap_deinit(void);
 
 /* API_END */
+
+
+// @deprecated - please use l2cap_ertm_create_channel
+uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm,  l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid);
+
+// @deprecated - please use l2cap_ertm_accept_connection
+uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size);
+
+// @deprecated - please use l2cap_cbm_register_service
+uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level);
+
+// @deprecated - please use l2cap_cbm_unregister_service
+uint8_t l2cap_le_unregister_service(uint16_t psm);
+
+// @deprecated - please use l2cap_cbm_accept_connection
+uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits);
+
+// @deprecated - please use l2cap_cbm_decline_connection
+uint8_t l2cap_le_decline_connection(uint16_t local_cid);
+
+// @deprecated - please use l2cap_cbm_create_channel
+uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle,
+                                uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
+                                uint16_t * out_local_cid);
+
+// @deprecated - please use l2cap_cbm_decline_connection
+uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits);
+
+// @deprecated - please use l2cap_cbm_can_send_now
+bool l2cap_le_can_send_now(uint16_t local_cid);
+
+// @deprecated - please use l2cap_cbm_request_can_send_now_event
+uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid);
+
+// @deprecated - please use l2cap_send_data
+uint8_t l2cap_le_send_data(uint16_t local_cid, const uint8_t * data, uint16_t size);
+
+// @deprecated - please use l2cap_disconnect
+uint8_t l2cap_le_disconnect(uint16_t local_cid);
+
+// @deprecated - please use l2cap_can_send_now
+bool l2cap_cbm_can_send_now(uint16_t local_cid);
+
+// @deprecated - please use l2cap_request_can_send_now_event
+uint8_t l2cap_cbm_request_can_send_now_event(uint16_t local_cid);
+
 
 #if defined __cplusplus
 }

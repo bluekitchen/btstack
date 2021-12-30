@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -40,26 +40,20 @@
 /*
  *  btstack_uart_block_freertos.c
  *
- *  Adapter to IRQ-driven hal_uart_dma.h with FreeRTOS BTstack Run Loop and 
- *  Callbacks are executed on main thread via data source and btstack_run_loop_freertos_trigger_from_isr
+ *  Adapter to IRQ-driven hal_uart_dma.h with FreeRTOS BTstack Run Loop
+ *  Callbacks are executed on main thread via data source and btstack_run_loop_poll_data_sources_from_irq
  *
  */
 
 #include "btstack_debug.h"
 #include "btstack_uart_block.h"
-#include "btstack_run_loop_freertos.h"
+#include "btstack_run_loop.h"
 #include "hal_uart_dma.h"
 
 #ifdef HAVE_FREERTOS_INCLUDE_PREFIX
 #include "freertos/FreeRTOS.h"
 #else
 #include "FreeRTOS.h"
-#endif
-
-#if (INCLUDE_xEventGroupSetBitFromISR != 1) && !defined(HAVE_FREERTOS_TASK_NOTIFICATIONS)
-#error "The BTstack HAL UART Run Loop integration (btstack_uart_block_freertos) needs to trigger Run Loop iterations from ISR context," \
-"but neither 'INCLUDE_xEventGroupSetBitFromISR' is enabled in your FreeRTOS configuration nor HAVE_FREERTOS_TASK_NOTIFICATIONS is enabled in " \
-"btstack_config.h. Please enable INCLUDE_xEventGroupSetBitFromISR or HAVE_FREERTOS_TASK_NOTIFICATIONS."
 #endif
 
 // uart config
@@ -77,12 +71,12 @@ static int receive_complete;
 
 static void btstack_uart_block_freertos_received_isr(void){
     receive_complete = 1;
-    btstack_run_loop_freertos_trigger_from_isr();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static void btstack_uart_block_freertos_sent_isr(void){
     send_complete = 1;
-    btstack_run_loop_freertos_trigger_from_isr();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static void btstack_uart_block_freertos_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {

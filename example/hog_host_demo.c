@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -155,10 +155,10 @@ static void hid_handle_input_report(uint8_t service_index, const uint8_t * repor
     
     switch (protocol_mode){
         case HID_PROTOCOL_MODE_BOOT:
-            btstack_hid_parser_init(&parser, 
-                hid_get_boot_descriptor_data(), 
-                hid_get_boot_descriptor_len(), 
-                HID_REPORT_TYPE_INPUT, report, report_len);
+            btstack_hid_parser_init(&parser,
+                                    btstack_hid_get_boot_descriptor_data(),
+                                    btstack_hid_get_boot_descriptor_len(),
+                                    HID_REPORT_TYPE_INPUT, report, report_len);
             break;
 
         default:
@@ -519,9 +519,6 @@ int btstack_main(int argc, const char * argv[]){
     // register for events from Security Manager
     sm_event_callback_registration.callback = &sm_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
-
-    // setup le device db
-    le_device_db_init();
 
     //
     l2cap_init();

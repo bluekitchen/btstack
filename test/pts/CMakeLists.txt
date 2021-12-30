@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.12)
-project(PTS)
+project(BTstack-PTS)
 
 # fink pkgconfig
 find_package(PkgConfig REQUIRED)

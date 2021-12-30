@@ -117,11 +117,11 @@ void mock_simulate_hci_state_working(void){
 	mock_simulate_hci_event((uint8_t *)&packet, sizeof(packet));
 }
 
-int hci_can_send_command_packet_now(void){
-	return 1;
+bool hci_can_send_command_packet_now(void){
+	return true;
 }
 
-int hci_send_cmd(const hci_cmd_t *cmd, ...){
+uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
     uint16_t len = hci_cmd_create_from_template(packet_buffer, cmd, argptr);

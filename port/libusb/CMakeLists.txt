@@ -3,17 +3,19 @@ cmake_minimum_required (VERSION 3.5)
 SET(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
 SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-project(BTstack)
+project(BTstack-libusb)
 
 
-# fink pkgconfig
+# pkgconfig
 find_package(PkgConfig REQUIRED)
+
 
 # libusb
 pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
 include_directories(${LIBUSB_INCLUDE_DIRS})
 link_directories(${LIBUSB_LIBRARY_DIRS})
 link_libraries(${LIBUSB_LIBRARIES})
+
 
 # portaudio
 pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
@@ -25,6 +27,11 @@ if(PORTAUDIO_FOUND)
 	# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
 	SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
 endif()
+
+# pthread
+find_package(Threads)
+link_libraries(${CMAKE_THREAD_LIBS_INIT})
+
 
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")

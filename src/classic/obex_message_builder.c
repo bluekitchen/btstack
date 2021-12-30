@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -162,26 +162,33 @@ uint8_t obex_message_builder_body_add_static(uint8_t * buffer, uint16_t buffer_l
     return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_END_OF_BODY, data, length);
 }
 
-uint8_t obex_message_builder_header_add_name(uint8_t * buffer, uint16_t buffer_len, const char * name){
-    int len = strlen(name); 
-    if (len) {
-        // empty string does not have trailing \0
-        len++;
-    }
-    if (buffer_len <  (1 + 2 + len*2) ) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t buffer_len, const char * name, uint16_t name_len){
+    // non-empty string have trailing \0
+    bool add_trailing_zero = name_len > 0;
+
+    uint16_t header_len = 1 + 2 + (name_len * 2) + (add_trailing_zero ? 2 : 0);
+    if (buffer_len < header_len) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
 
     uint16_t pos = big_endian_read_16(buffer, 1);
     buffer[pos++] = OBEX_HEADER_NAME;
-    big_endian_store_16(buffer, pos, 1 + 2 + len*2);
+    big_endian_store_16(buffer, pos, header_len);
     pos += 2;
     int i;
     // @note name[len] == 0 
-    for (i = 0 ; i < len ; i++){
+    for (i = 0 ; i < name_len ; i++){
         buffer[pos++] = 0;
         buffer[pos++] = *name++;
     }
+    if (add_trailing_zero){
+        buffer[pos++] = 0;
+        buffer[pos++] = 0;
+    }
     big_endian_store_16(buffer, 1, pos);
     return ERROR_CODE_SUCCESS;
+}
+uint8_t obex_message_builder_header_add_name(uint8_t * buffer, uint16_t buffer_len, const char * name){
+    uint16_t name_len = strlen(name);
+    return obex_message_builder_header_add_name_prefix(buffer, buffer_len, name, name_len);
 }
 
 uint8_t obex_message_builder_header_add_type(uint8_t * buffer, uint16_t buffer_len, const char * type){

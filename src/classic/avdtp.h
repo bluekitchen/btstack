@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -115,7 +115,10 @@ typedef enum {
     AVDTP_SI_ABORT, //10
     AVDTP_SI_SECURITY_CONTROL,
     AVDTP_SI_GET_ALL_CAPABILITIES, //12
-    AVDTP_SI_DELAYREPORT
+    AVDTP_SI_DELAYREPORT,
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+    AVDTP_SI_ACCEPT_START
+#endif
 } avdtp_signal_identifier_t;
 
 typedef enum {
@@ -374,22 +377,24 @@ typedef enum {
 
 typedef enum {
     AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE = 0,
-    AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES,
-    AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES,
-    AVDTP_ACCEPTOR_W2_ANSWER_DELAY_REPORT,
-    AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION,
-    AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE,
-    AVDTP_ACCEPTOR_W2_ANSWER_GET_CONFIGURATION,
-    AVDTP_ACCEPTOR_W2_ANSWER_OPEN_STREAM,
-    AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM,
-    AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM,
-    AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM,
-    AVDTP_ACCEPTOR_W2_SUSPEND_STREAM_WITH_SEID,
-    AVDTP_ACCEPTOR_W2_ANSWER_SUSPEND_STREAM,
+    AVDTP_ACCEPTOR_W2_ACCEPT_GET_CAPABILITIES,
+    AVDTP_ACCEPTOR_W2_ACCEPT_GET_ALL_CAPABILITIES,
+    AVDTP_ACCEPTOR_W2_ACCEPT_DELAY_REPORT,
+    AVDTP_ACCEPTOR_W2_ACCEPT_SET_CONFIGURATION,
+    AVDTP_ACCEPTOR_W2_ACCEPT_RECONFIGURE,
+    AVDTP_ACCEPTOR_W2_ACCEPT_GET_CONFIGURATION,
+    AVDTP_ACCEPTOR_W2_ACCEPT_OPEN_STREAM,
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+    AVDTP_ACCEPTOR_W4_USER_CONFIRM_START_STREAM,
+    AVDTP_ACCEPTOR_W2_REJECT_START_STREAM,
+#endif
+    AVDTP_ACCEPTOR_W2_ACCEPT_START_STREAM,
+    AVDTP_ACCEPTOR_W2_ACCEPT_CLOSE_STREAM,
+    AVDTP_ACCEPTOR_W2_ACCEPT_ABORT_STREAM,
+    AVDTP_ACCEPTOR_W2_ACCEPT_SUSPEND_STREAM,
     AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE,
     AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE,
-    AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD,
-    AVDTP_ACCEPTOR_STREAMING
+    AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD
 } avdtp_acceptor_stream_endpoint_state_t;
 
 typedef struct {
@@ -625,13 +630,6 @@ void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpo
 // sink only
 void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size));
 
-/**
- * @brief Register media configuration validator. Can reject insuitable configuration or report stream endpoint as currently busy
- * @note validator has to return AVDTP error codes like: AVDTP_ERROR_CODE_SEP_IN_USE or AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION
- * @param callback
- */
-void avdtp_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len));
-
 void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 void avdtp_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
@@ -653,7 +651,8 @@ uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid);
 uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid);
 uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
-uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len);
+uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
+                                           uint8_t reconfigure, const adtvp_media_codec_capabilities_t *media_codec);
 
 // frequency will be used by avdtp_choose_sbc_sampling_frequency (if supported by both endpoints)
 void    avdtp_set_preferred_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
@@ -676,6 +675,11 @@ uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint);
 uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoint);
 
 uint16_t avdtp_get_next_transaction_label(void);
+
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+uint8_t avdtp_start_stream_accept(uint16_t avdtp_cid, uint8_t local_seid);
+uint8_t avdtp_start_stream_reject(uint16_t avdtp_cid, uint8_t local_seid);
+#endif
 
 #if defined __cplusplus
 }

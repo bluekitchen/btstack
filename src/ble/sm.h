@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -90,6 +90,12 @@ void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t address
  * @param callback_handler
  */
 void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler);
+
+/**
+ * @brief Remove event packet handler.
+ * @param callback_handler
+ */
+void sm_remove_event_handler(btstack_packet_callback_registration_t * callback_handler);
 
 /**
  * @brief Limit the STK generation methods. Bonding is stopped if the resulting one isn't in the list
@@ -186,7 +192,7 @@ void sm_authorization_grant(hci_con_handle_t con_handle);
 
 /**
  * @brief Support for signed writes, used by att_server.
- * @returns ready
+ * @return ready
  */
 int sm_cmac_ready(void);
 
@@ -217,7 +223,7 @@ int sm_address_resolution_lookup(uint8_t address_type, bd_addr_t address);
  * @brief Get Identity Resolving state
  * @param con_handle
  * @return irk_lookup_state_t
- * @note returns IRK_LOOKUP_IDLE if connection does not exist
+ * @note return IRK_LOOKUP_IDLE if connection does not exist
  */
 irk_lookup_state_t sm_identity_resolving_state(hci_con_handle_t con_handle);
 
@@ -251,7 +257,7 @@ void sm_allow_ltk_reconstruction_without_le_device_db_entry(int allow);
  * @note This generates a 128 bit random number ra and then calculates Ca = f4(PKa, PKa, ra, 0)
  *       New OOB data should be generated for each pairing. Ra is used for subsequent OOB pairings
  * @param callback
- * @returns status
+ * @return status
  */
 uint8_t sm_generate_sc_oob_data(void (*callback)(const uint8_t * confirm_value, const uint8_t * random_value));
 

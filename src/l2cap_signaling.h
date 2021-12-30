@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -69,11 +69,17 @@ typedef enum {
     CONNECTION_PARAMETER_UPDATE_RESPONSE, 
     LE_CREDIT_BASED_CONNECTION_REQUEST,
     LE_CREDIT_BASED_CONNECTION_RESPONSE,
-    LE_FLOW_CONTROL_CREDIT,
+    L2CAP_FLOW_CONTROL_CREDIT_INDICATION,
+    L2CAP_CREDIT_BASED_CONNECTION_REQUEST,
+    L2CAP_CREDIT_BASED_CONNECTION_RESPONSE,
+    L2CAP_CREDIT_BASED_RECONFIGURE_REQUEST,
+    L2CAP_CREDIT_BASED_RECONFIGURE_RESPONSE,
 #ifdef UNIT_TEST
     COMMAND_WITH_INVALID_FORMAT,
 #endif     
-    COMMAND_REJECT_LE = 0x1F  // internal to BTstack
+    // internal to BTstack
+    SM_PAIRING_FAILED = 0x1E,
+    COMMAND_REJECT_LE = 0x1F
 } L2CAP_SIGNALING_COMMANDS;
 
 typedef enum {
@@ -84,8 +90,18 @@ typedef enum {
     L2CAP_CHANNEL_MODE_STREAMING_MODE          = 4,
 } l2cap_channel_mode_t;
 
-uint16_t l2cap_create_signaling_classic(uint8_t * acl_buffer,hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
-uint16_t l2cap_create_signaling_le(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
+/**
+ * @brief Create L2CAP signaling packet based on template and va_args
+ * @param acl_buffer to create packet
+ * @param handle
+ * @param pb_flags
+ * @param cid
+ * @param cmd
+ * @param identifier
+ * @param argptr
+ * @return
+ */
+uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t handle, uint8_t pb_flags, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
 
 #if defined __cplusplus
 }

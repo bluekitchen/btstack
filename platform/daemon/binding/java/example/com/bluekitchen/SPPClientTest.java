@@ -25,16 +25,21 @@ public class SPPClientTest implements PacketHandler {
 	private STATE state;
 	private int testHandle;
 	
-	private BD_ADDR remote = new BD_ADDR("84:38:35:65:D1:15");
-	private int rfcommServiceUUID = 0x1002;
-	private int btIncomingChannelNr = 3;
-	
+	private BD_ADDR remote = new BD_ADDR("00:1A:7D:DA:71:01");
+	private int sppUUID = 0x1101;
+
+	private int outgoing_channel_nr = -1;
 	private int rfcommChannelID = 0;
 	private int mtu = 0;
 	 
-	List<Integer> services = new ArrayList<Integer>(10);
 	private int counter;
-	
+
+	private void startSDPQuery(){
+        state = STATE.w4_query_result;
+        byte[] serviceSearchPattern = Util.serviceSearchPatternForUUID16(sppUUID);
+        btstack.SDPClientQueryRFCOMMServices(remote, serviceSearchPattern);
+	}
+
 	public void handlePacket(Packet packet){
 		if (packet instanceof HCIEventDisconnectionComplete){
 			HCIEventDisconnectionComplete event = (HCIEventDisconnectionComplete) packet;
@@ -49,29 +54,29 @@ public class SPPClientTest implements PacketHandler {
 				BTstackEventState event = (BTstackEventState) packet;
 				if (event.getState() == 2)	{
 					System.out.println("BTstack working. Start SDP inquiry.");
-					state = STATE.w4_query_result;
-					byte[] serviceSearchPattern = Util.serviceSearchPatternForUUID16(rfcommServiceUUID);
-					btstack.SDPClientQueryRFCOMMServices(remote, serviceSearchPattern);	
+					startSDPQuery();
 				}
 			}
-			
 			break;
 
 		case w4_query_result:
 			if (packet instanceof SDPEventQueryRFCOMMService){
 				SDPEventQueryRFCOMMService service = (SDPEventQueryRFCOMMService) packet;
-				services.add(service.getRFCOMMChannel());
+                System.out.println("Found RFCOMM channel " + service.getName() + ", channel nr: " + service.getRFCOMMChannel());
+                outgoing_channel_nr = service.getRFCOMMChannel();
 			}
 			if (packet instanceof SDPEventQueryComplete){
-				for  (Integer channel_nr : services){
-					System.out.println("Found rfcomm channel nr: " + channel_nr);
-					if (channel_nr == btIncomingChannelNr){
-						state = STATE.w4_connected;
-						System.out.println("Connect to channel nr " + channel_nr);
-						btstack.RFCOMMCreateChannel(remote, 3);
-					}
-				}
-				
+			    SDPEventQueryComplete complete = (SDPEventQueryComplete) packet;
+			    if (complete.getStatus() != 0){
+			        System.out.println(String.format("SDP Query failed with status 0x%02x, retry SDP query.", complete.getStatus()));
+                    startSDPQuery();
+                    break;
+			    }
+				if (outgoing_channel_nr >= 0){
+                    state = STATE.w4_connected;
+                    System.out.println("Connect to channel nr " + outgoing_channel_nr);
+                    btstack.RFCOMMCreateChannel(remote, outgoing_channel_nr);
+                }
 			}
 			break;
 			
@@ -94,7 +99,7 @@ public class SPPClientTest implements PacketHandler {
 							try {
 								while(state == STATE.active){
 									Thread.sleep(1000);
-									byte [] data = String.format("BTstack SPP Counter %d\n", counter).getBytes();
+									byte [] data = String.format("BTstack SPP Client Test Counter %d\n", counter++).getBytes();
 									btstack.RFCOMMSendData(rfcommChannelID, data);
 								}
 							} catch (InterruptedException e) {}

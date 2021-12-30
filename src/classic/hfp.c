@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -76,9 +76,6 @@ typedef struct {
 
 // globals
 
-static hfp_sdp_query_context_t sdp_query_context;
-static btstack_context_callback_registration_t hfp_handle_sdp_client_query_request;
-
 static btstack_linked_list_t hfp_connections ;
 
 static btstack_packet_handler_t hfp_hf_callback;
@@ -87,14 +84,20 @@ static btstack_packet_handler_t hfp_ag_callback;
 static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
 static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 
-static hfp_connection_t * sco_establishment_active;
-
 static uint16_t hfp_allowed_sco_packet_types;
+static hfp_connection_t * hfp_sco_establishment_active;
+
+static hfp_sdp_query_context_t                 hfp_sdp_query_context;
+static btstack_context_callback_registration_t hfp_sdp_query_request;
+
+
+
+
+
 
 // prototypes
 static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
 static void parse_sequence(hfp_connection_t * context);
-
 
 static const char * hfp_hf_features[] = {
         "EC and/or NR function",
@@ -350,6 +353,71 @@ void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, ui
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
+void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status){
+    btstack_assert(hfp_connection != NULL);
+
+    uint8_t event[7];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED;
+    
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    event[5] = status; // 0:success
+    event[6] = hfp_connection->enhanced_voice_recognition_enabled ? 1 : 0;
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
+}
+
+void hfp_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status){
+    btstack_assert(hfp_connection != NULL);
+
+    uint8_t event[6];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED;
+    
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    event[5] = status; // 0:success
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
+}
+
+void hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection_t * hfp_connection, uint8_t status){
+    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
+    
+    uint8_t event[6];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO;
+    little_endian_store_16(event, 3, acl_handle);
+    event[5] = status;
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
+}
+
+void hfp_emit_enhanced_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status){
+    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
+    
+    uint8_t event[6];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    switch (hfp_connection->ag_vra_state){
+        case HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT:
+            event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT;
+            break;
+        case HFP_VOICE_RECOGNITION_STATE_AG_IS_STARTING_SOUND:
+            event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND;
+            break;
+        case HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT:
+            event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT;
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+
+    little_endian_store_16(event, 3, acl_handle);
+    event[5] = status;
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
+}
+
 void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
     btstack_assert(hfp_connection != NULL);
     uint8_t event[12];
@@ -357,9 +425,9 @@ void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t st
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-    event[pos++] = status; // status 0 == OK
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
+    event[pos++] = status; // status 0 == OK
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
@@ -414,44 +482,6 @@ void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subt
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-static void hfp_emit_enhanced_voice_recognition_state(hfp_connection_t * hfp_connection){
-    btstack_assert(hfp_connection != NULL);
-    uint8_t event[7];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_HFP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS;
-    little_endian_store_16(event, pos, hfp_connection->acl_handle);
-    pos += 2;
-    event[pos++] = hfp_connection->ag_vra_status;
-    event[pos++] = hfp_connection->ag_vra_state;
-    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
-}
-
-static void hfp_emit_enhanced_voice_recognition_text(hfp_connection_t * hfp_connection, uint16_t value_length, uint8_t * value){
-    btstack_assert(hfp_connection != NULL);
-    uint8_t event[HFP_MAX_VR_TEXT_SIZE];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_HFP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT;
-    little_endian_store_16(event, pos, hfp_connection->acl_handle);
-    pos += 2;
-    little_endian_store_16(event, pos, hfp_connection->ag_msg.text_id);
-    pos += 2;
-    event[pos++] = hfp_connection->ag_msg.text_operation;
-    event[pos++] = hfp_connection->ag_msg.text_type;
-    
-    // length, zero ending
-    uint16_t size = btstack_min(value_length, sizeof(event) - pos - 2 - 1);
-    little_endian_store_16(event, pos, size+1);
-    pos += 2; 
-    memcpy(&event[pos], value, size);
-    event[pos + size] = 0;
-    pos += size + 1; 
-    hfp_emit_event_for_context(hfp_connection, event, pos);
-}
-
 btstack_linked_list_t * hfp_get_connections(void){
     return (btstack_linked_list_t *) &hfp_connections;
 } 
@@ -504,6 +534,26 @@ hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hf
     return NULL;
 }
 
+
+static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
+    btstack_assert(hfp_connection != NULL);
+    hfp_voice_recognition_activation_status_t current_vra_state = hfp_connection->vra_state;
+    hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
+
+    if (current_vra_state != HFP_VRA_VOICE_RECOGNITION_OFF){
+        hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
+    } else if (hfp_connection->vra_state_requested != HFP_VRA_VOICE_RECOGNITION_OFF){
+        hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
+    }
+    
+    hfp_connection->vra_state_requested = HFP_VRA_VOICE_RECOGNITION_OFF;
+    hfp_connection->activate_voice_recognition = false;
+    hfp_connection->deactivate_voice_recognition = false;
+    hfp_connection->enhanced_voice_recognition_enabled = false;
+    hfp_connection->ag_vra_status = 0;
+    hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
+}
+
 void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     if (!hfp_connection) return;
     hfp_connection->ok_pending = 0;
@@ -526,6 +576,7 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     hfp_connection->call_waiting_notification_enabled = 0;
     hfp_connection->command = HFP_CMD_NONE;
     hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
+    hfp_reset_voice_recognition(hfp_connection);
 }
 
 static hfp_connection_t * create_hfp_connection_context(void){
@@ -537,8 +588,7 @@ static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection->codecs_state = HFP_CODECS_IDLE;
 
     hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
-    hfp_connection->command = HFP_CMD_NONE;
-    
+
     hfp_connection->acl_handle = HCI_CON_HANDLE_INVALID;
     hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
 
@@ -549,12 +599,11 @@ static hfp_connection_t * create_hfp_connection_context(void){
 }
 
 void hfp_finalize_connection_context(hfp_connection_t * hfp_connection){
-    btstack_run_loop_remove_timer(&hfp_connection->hfp_timeout);
     btstack_linked_list_remove(&hfp_connections, (btstack_linked_item_t*) hfp_connection);
     btstack_memory_hfp_connection_free(hfp_connection);
 }
 
-static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t local_role){
+static hfp_connection_t * hfp_create_connection(bd_addr_t bd_addr, hfp_role_t local_role){
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr, local_role);
     if (hfp_connection) return  hfp_connection;
     hfp_connection = create_hfp_connection_context();
@@ -656,9 +705,9 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     UNUSED(channel);        // ok: no channel
     UNUSED(size);           // ok: handling own sdp events
     
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(sdp_query_context.remote_address, sdp_query_context.local_role);
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(hfp_sdp_query_context.remote_address, hfp_sdp_query_context.local_role);
     if (hfp_connection == NULL) {
-        log_info("connection with %s and local role %d not found", sdp_query_context.remote_address, sdp_query_context.local_role);
+        log_info("connection with %s and local role %d not found", hfp_sdp_query_context.remote_address, hfp_sdp_query_context.local_role);
         return;
     }
     
@@ -697,7 +746,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 
             // register the SDP Query request to check if there is another connection waiting for the query
             // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
-            (void) sdp_client_register_query_callback(&hfp_handle_sdp_client_query_request);
+            (void) sdp_client_register_query_callback(&hfp_sdp_query_request);
             break;
         default:
             break;
@@ -707,7 +756,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 // returns 0 if unexpected error or no other link options remained, otherwise 1
 static int hfp_handle_failed_sco_connection(uint8_t status){
                    
-    if (!sco_establishment_active){
+    if (!hfp_sco_establishment_active){
         log_info("(e)SCO Connection failed but not started by us");
         return 0;
     }
@@ -723,16 +772,16 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
     }
 
     // note: eSCO_S4 supported flag not available, but it's only relevant for highest CVSD link setting (and the current failed)
-    hfp_link_settings_t next_setting = hfp_next_link_setting_for_connection(sco_establishment_active->link_setting, sco_establishment_active, false);
+    hfp_link_settings_t next_setting = hfp_next_link_setting_for_connection(hfp_sco_establishment_active->link_setting, hfp_sco_establishment_active, false);
 
     // handle no valid setting found
     if (next_setting == HFP_LINK_SETTINGS_NONE) {
-        if (sco_establishment_active->negotiated_codec == HFP_CODEC_MSBC){
+        if (hfp_sco_establishment_active->negotiated_codec == HFP_CODEC_MSBC){
             log_info("T2/T1 failed, fallback to CVSD - D1");
-            sco_establishment_active->negotiated_codec = HFP_CODEC_CVSD;
-            sco_establishment_active->sco_for_msbc_failed = 1;
-            sco_establishment_active->command = HFP_CMD_AG_SEND_COMMON_CODEC;
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
+            hfp_sco_establishment_active->negotiated_codec = HFP_CODEC_CVSD;
+            hfp_sco_establishment_active->sco_for_msbc_failed = 1;
+            hfp_sco_establishment_active->ag_send_common_codec = true;
+            hfp_sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
         } else {
             // no other options
             return 0;
@@ -740,12 +789,11 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
     }
 
     log_info("e)SCO Connection: try new link_setting %d", next_setting);
-    sco_establishment_active->establish_audio_connection = 1;
-    sco_establishment_active->link_setting = next_setting;
-    sco_establishment_active = NULL;
+    hfp_sco_establishment_active->establish_audio_connection = 1;
+    hfp_sco_establishment_active->link_setting = next_setting;
+    hfp_sco_establishment_active = NULL;
     return 1;
 }
-
 
 void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role){
     UNUSED(packet_type);
@@ -779,8 +827,11 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 #ifdef ENABLE_BCM_PCM_WBS
                     hfp_bcm_prepare_for_sco(hfp_connection);
 #endif
+#ifdef ENABLE_RTK_PCM_WBS
+                    hfp_connection->rtk_send_sco_config = true;
+#endif
                     log_info("accept sco %u\n", hfp_connection->accept_sco);
-                    sco_establishment_active = hfp_connection;
+                    hfp_sco_establishment_active = hfp_connection;
                     break;
                 default:
                     break;                    
@@ -789,11 +840,11 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
         
         case HCI_EVENT_COMMAND_STATUS:
             if (hci_event_command_status_get_command_opcode(packet) == hci_setup_synchronous_connection.opcode) {
-                if (sco_establishment_active == NULL) break;
+                if (hfp_sco_establishment_active == NULL) break;
                 status = hci_event_command_status_get_status(packet);
                 if (status == ERROR_CODE_SUCCESS) break;
                 
-                hfp_connection = sco_establishment_active;
+                hfp_connection = hfp_sco_establishment_active;
                 if (hfp_handle_failed_sco_connection(status)) break;
                 hfp_connection->establish_audio_connection = 0;
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
@@ -802,7 +853,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
-            if (sco_establishment_active == NULL) break;
+            if (hfp_sco_establishment_active == NULL) break;
             hci_event_synchronous_connection_complete_get_bd_addr(packet, event_addr);
             hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
             if (!hfp_connection) {
@@ -856,7 +907,17 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
             hfp_connection->sco_handle = sco_handle;
             hfp_connection->establish_audio_connection = 0;
+            
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
+            
+            switch (hfp_connection->vra_state){
+                case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
+                    hfp_connection->ag_audio_connection_opened_before_vra = false;
+                    break;
+                default:
+                    hfp_connection->ag_audio_connection_opened_before_vra = true;
+                    break;
+            }
             hfp_emit_sco_event(hfp_connection, status, sco_handle, event_addr, hfp_connection->negotiated_codec);
             break;                
         }
@@ -873,8 +934,25 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 #ifdef ENABLE_BCM_PCM_WBS
             hfp_connection->bcm_send_disable_wbs = true;
 #endif
-            hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
-            hfp_connection->release_audio_connection = 0;
+            if (hfp_connection->sco_handle == handle){
+                hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
+                hfp_connection->release_audio_connection = 0;
+                hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                hfp_emit_audio_connection_released(hfp_connection, handle);
+
+                hfp_connection->ag_audio_connection_opened_before_vra = false;
+
+                if (hfp_connection->acl_handle == HCI_CON_HANDLE_INVALID){
+                    hfp_reset_voice_recognition(hfp_connection);
+                    hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+                    hfp_finalize_connection_context(hfp_connection);
+                    break;
+                } else if (hfp_connection->release_slc_connection == 1){
+                    hfp_connection->release_slc_connection = 0;
+                    hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
+                    rfcomm_disconnect(hfp_connection->acl_handle);
+                }
+            } 
 
             if (hfp_connection->state == HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN){
                 // RFCOMM already closed -> remote power off
@@ -885,15 +963,6 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 #endif
                 break;
             }
-
-            hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-            hfp_emit_audio_connection_released(hfp_connection, handle);
-
-            if (hfp_connection->release_slc_connection){
-                hfp_connection->release_slc_connection = 0;
-                log_info("SCO disconnected, w2 disconnect RFCOMM\n");
-                hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
-            }   
             break;
 
         default:
@@ -919,7 +988,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
         case RFCOMM_EVENT_INCOMING_CONNECTION:
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
-            hfp_connection = provide_hfp_connection_context_for_bd_addr(event_addr, local_role);
+            hfp_connection = hfp_create_connection(event_addr, local_role);
             if (!hfp_connection){
                 log_info("hfp: no memory to accept incoming connection - decline");
                 rfcomm_decline_connection(rfcomm_event_incoming_connection_get_rfcomm_cid(packet));
@@ -937,57 +1006,56 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             break;
 
         case RFCOMM_EVENT_CHANNEL_OPENED:
-            // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-
             rfcomm_event_channel_opened_get_bd_addr(packet, event_addr); 
-            status = rfcomm_event_channel_opened_get_status(packet);          
             
             hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
-            if (!hfp_connection || (hfp_connection->state != HFP_W4_RFCOMM_CONNECTED)) return;
+            btstack_assert(hfp_connection != NULL);
 
-            if (status) {
+            if (hfp_connection->state != HFP_W4_RFCOMM_CONNECTED){
+                break;
+            }
+
+            status = rfcomm_event_channel_opened_get_status(packet);          
+            if (status != ERROR_CODE_SUCCESS) {
                 hfp_emit_slc_connection_event(hfp_connection, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
                 hfp_finalize_connection_context(hfp_connection);
-            } else {
-                hfp_connection->acl_handle = rfcomm_event_channel_opened_get_con_handle(packet);
-                hfp_connection->rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
-                bd_addr_copy(hfp_connection->remote_addr, event_addr);
+                break;
+            } 
 
-                switch (hfp_connection->state){
-                    case HFP_W4_RFCOMM_CONNECTED:
-                        hfp_connection->state = HFP_EXCHANGE_SUPPORTED_FEATURES;
-                        break;
-                    case HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN:
-                        hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
-                        break;
-                    default:
-                        break;
-                }
-                rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
-            }
+            hfp_connection->acl_handle = rfcomm_event_channel_opened_get_con_handle(packet);
+            hfp_connection->rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+            hfp_connection->rfcomm_mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
+            bd_addr_copy(hfp_connection->remote_addr, event_addr);
+            hfp_connection->state = HFP_EXCHANGE_SUPPORTED_FEATURES;
+            
+            rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
             break;
 
         case RFCOMM_EVENT_CHANNEL_CLOSED:
             rfcomm_cid = little_endian_read_16(packet,2);
             hfp_connection = get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid);
             if (!hfp_connection) break;
-            if (hfp_connection->state == HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART){
-                hfp_connection->state = HFP_IDLE;
-                hfp_establish_service_level_connection(hfp_connection->remote_addr, hfp_connection->service_uuid, local_role);
-                break;
-            }
-            if ( hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
-                // service connection was released, this implicitly releases audio connection as well
-                hfp_connection->release_audio_connection = 0;
-                hci_con_handle_t sco_handle = hfp_connection->sco_handle;
-                gap_disconnect(hfp_connection->sco_handle);
-                hfp_connection->state = HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN;
-                hfp_emit_audio_connection_released(hfp_connection, sco_handle);
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
-            } else {
-                // regular case
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
-                hfp_finalize_connection_context(hfp_connection);
+            switch (hfp_connection->state){
+                case HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART:
+                    hfp_connection->acl_handle = HCI_CON_HANDLE_INVALID;
+                    hfp_connection->state = HFP_IDLE;
+                    hfp_establish_service_level_connection(hfp_connection->remote_addr, hfp_connection->service_uuid, local_role);
+                    break;
+                
+                case HFP_AUDIO_CONNECTION_ESTABLISHED:
+                    // service connection was released, this implicitly releases audio connection as well
+                    hfp_connection->release_audio_connection = 0;
+                    hfp_connection->acl_handle = HCI_CON_HANDLE_INVALID;
+                    hfp_connection->state = HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN;
+                    gap_disconnect(hfp_connection->sco_handle);
+                    break;
+                
+                default:
+                    // regular case
+                    hfp_reset_voice_recognition(hfp_connection);
+                    hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+                    hfp_finalize_connection_context(hfp_connection);
+                    break;
             }
             break;
 
@@ -1115,7 +1183,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
 }
 
 static void hfp_parser_store_byte(hfp_connection_t * hfp_connection, uint8_t byte){
-    if ((hfp_connection->line_size + 1 ) >= HFP_MAX_INDICATOR_DESC_SIZE) return;
+    if ((hfp_connection->line_size + 1) >= HFP_MAX_VR_TEXT_SIZE) return;
     hfp_connection->line_buffer[hfp_connection->line_size++] = byte;
     hfp_connection->line_buffer[hfp_connection->line_size] = 0;
 }
@@ -1129,6 +1197,7 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 
 static void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
     hfp_connection->line_size = 0;
+    // hfp_connection->line_buffer[0] = 0; 
 }
 
 static void hfp_parser_store_if_token(hfp_connection_t * hfp_connection, uint8_t byte){
@@ -1249,8 +1318,17 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             if (!hfp_parser_is_separator(byte)) return true;
 
             // ignore empty tokens
-            if (hfp_parser_is_buffer_empty(hfp_connection) && (hfp_connection->ignore_value == 0)) return true;
-
+            switch (hfp_connection->command){
+                case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
+                    // don't ignore empty string 
+                    break;
+                default:
+                    if (hfp_parser_is_buffer_empty(hfp_connection) && (hfp_connection->ignore_value == 0)) {
+                        return true;
+                    }
+                    break;
+            }
+            
             parse_sequence(hfp_connection);
 
             hfp_parser_reset_line_buffer(hfp_connection);
@@ -1470,11 +1548,6 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             hfp_connection->speaker_gain = value;
             log_info("hfp parse HFP_CMD_SET_SPEAKER_GAIN %d\n", value);
             break;
-        case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
-            value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
-            hfp_connection->ag_activate_voice_recognition = value;
-            log_info("hfp parse HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION %d\n", value);
-            break;
         case HFP_CMD_TURN_OFF_EC_AND_NR:
             value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
             hfp_connection->ag_echo_and_noise_reduction = value;
@@ -1614,14 +1687,17 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION:
             hfp_connection->call_waiting_notification_enabled = hfp_connection->line_buffer[0] != '0';
             break;
+        case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
+            value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+            hfp_connection->ag_activate_voice_recognition_value = value;
+            break;
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
             switch(hfp_connection->parser_item_index){
                 case 0:
-                    hfp_connection->ag_vra_status = (hfp_voice_recognition_activation_status_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_connection->ag_vra_status = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 1:
                     hfp_connection->ag_vra_state = (hfp_voice_recognition_state_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
-                    hfp_emit_enhanced_voice_recognition_state(hfp_connection);
                     break;
                 case 2:
                     hfp_connection->ag_msg.text_id = 0;
@@ -1630,17 +1706,19 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     }
                     break;
                 case 3:
-                    hfp_connection->ag_msg.text_operation = (hfp_text_operation_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
-                    break;
-                case 4:
                     hfp_connection->ag_msg.text_type = (hfp_text_type_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
+                case 4:
+                    hfp_connection->ag_msg.text_operation = (hfp_text_operation_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    break;
                 case 5:
-                    hfp_emit_enhanced_voice_recognition_text(hfp_connection, hfp_connection->line_size, &hfp_connection->line_buffer[0]);
+                    hfp_connection->line_buffer[hfp_connection->line_size] = 0;
+                    hfp_connection->ag_vra_msg_length = hfp_connection->line_size + 1;
                     break;
                 default:
                     break;
             }
+            hfp_connection->parser_item_index++;
             break;
         default:
             break;
@@ -1658,46 +1736,40 @@ static void hfp_handle_start_sdp_client_query(void * context){
         if (connection->state != HFP_W2_SEND_SDP_QUERY) continue;
         
         connection->state = HFP_W4_SDP_QUERY_COMPLETE;
-        sdp_query_context.local_role = connection->local_role;
-        (void)memcpy(sdp_query_context.remote_address, connection->remote_addr, 6);
+        hfp_sdp_query_context.local_role = connection->local_role;
+        (void)memcpy(hfp_sdp_query_context.remote_address, connection->remote_addr, 6);
         sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid(&handle_query_rfcomm_event, connection->remote_addr, connection->service_uuid);
         return;
     }
 }
 
-void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role){
-    hfp_connection_t * hfp_connection = provide_hfp_connection_context_for_bd_addr(bd_addr, local_role);
-    log_info("hfp_connect %s, hfp_connection %p", bd_addr_to_str(bd_addr), hfp_connection);
-    
-    if (!hfp_connection) {
-        log_error("hfp_establish_service_level_connection for addr %s failed", bd_addr_to_str(bd_addr));
-        return;
+uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr, local_role);
+    if (connection){
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    switch (hfp_connection->state){
-        case HFP_W2_DISCONNECT_RFCOMM:
-            hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-            return;
-        case HFP_W4_RFCOMM_DISCONNECTED:
-            hfp_connection->state = HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART;
-            return;
-        case HFP_IDLE:
-            (void)memcpy(hfp_connection->remote_addr, bd_addr, 6);
-            hfp_connection->state = HFP_W2_SEND_SDP_QUERY;
-            hfp_connection->service_uuid = service_uuid;
 
-            hfp_handle_sdp_client_query_request.callback = &hfp_handle_start_sdp_client_query;
-            // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
-            (void) sdp_client_register_query_callback(&hfp_handle_sdp_client_query_request);
-            break;
-        default:
-            break;
+    connection = hfp_create_connection(bd_addr, local_role);
+    if (!connection){
+        return BTSTACK_MEMORY_ALLOC_FAILED;
     }
+
+    connection->state = HFP_W2_SEND_SDP_QUERY;
+    
+    bd_addr_copy(connection->remote_addr, bd_addr);
+    connection->service_uuid = service_uuid;
+
+    hfp_sdp_query_request.callback = &hfp_handle_start_sdp_client_query;
+    // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
+    (void) sdp_client_register_query_callback(&hfp_sdp_query_request);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_release_service_level_connection(hfp_connection_t * hfp_connection){
-    if (!hfp_connection) return;
-    hfp_release_audio_connection(hfp_connection);
+void hfp_trigger_release_service_level_connection(hfp_connection_t * hfp_connection){
+    // called internally, NULL check already performed
+    btstack_assert(hfp_connection != NULL);
 
+    hfp_trigger_release_audio_connection(hfp_connection);
     if (hfp_connection->state < HFP_W4_RFCOMM_CONNECTED){
         hfp_connection->state = HFP_IDLE;
         return;
@@ -1707,25 +1779,37 @@ void hfp_release_service_level_connection(hfp_connection_t * hfp_connection){
         hfp_connection->state = HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN;
         return;
     }
-
+    hfp_connection->release_slc_connection = 1;
     if (hfp_connection->state < HFP_W4_SCO_CONNECTED){
         hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
         return;
     }
-
+    
     if (hfp_connection->state < HFP_W4_SCO_DISCONNECTED){
         hfp_connection->state = HFP_W2_DISCONNECT_SCO;
+        hfp_connection->release_audio_connection = 1;
         return;
     }
-
-    // HFP_W4_SCO_DISCONNECTED or later 
-    hfp_connection->release_slc_connection = 1;
 }
 
-void hfp_release_audio_connection(hfp_connection_t * hfp_connection){
-    if (!hfp_connection) return;
-    if (hfp_connection->state >= HFP_W2_DISCONNECT_SCO) return;
-    hfp_connection->release_audio_connection = 1; 
+uint8_t hfp_trigger_release_audio_connection(hfp_connection_t * hfp_connection){
+    // called internally, NULL check already performed
+    btstack_assert(hfp_connection != NULL);
+    if (hfp_connection->state <= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    switch (hfp_connection->state) {
+        case HFP_W2_CONNECT_SCO:
+            hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+            break;
+        case HFP_W4_SCO_CONNECTED:
+        case HFP_AUDIO_CONNECTION_ESTABLISHED:
+            hfp_connection->release_audio_connection = 1;
+            break;
+        default:
+            return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    return ERROR_CODE_SUCCESS;
 }
 
 static const struct link_settings {
@@ -1749,7 +1833,7 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     // all packet types, fixed bandwidth
     int setting = hfp_connection->link_setting;
     log_info("hfp_setup_synchronous_connection using setting nr %u", setting);
-    sco_establishment_active = hfp_connection;
+    hfp_sco_establishment_active = hfp_connection;
     uint16_t sco_voice_setting = hci_get_sco_voice_setting();
     if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
 #ifdef ENABLE_BCM_PCM_WBS
@@ -1875,14 +1959,15 @@ void hfp_init(void){
 }
 
 void hfp_deinit(void){
+    hfp_allowed_sco_packet_types = 0;
     hfp_connections = NULL;
     hfp_hf_callback = NULL;
     hfp_ag_callback = NULL;
     hfp_hf_rfcomm_packet_handler = NULL;
     hfp_ag_rfcomm_packet_handler = NULL;
-    sco_establishment_active = NULL;
-    (void) memset(&sdp_query_context, 0, sizeof(hfp_sdp_query_context_t));
-    (void) memset(&hfp_handle_sdp_client_query_request, 0, sizeof(btstack_context_callback_registration_t));
+    hfp_sco_establishment_active = NULL;
+    (void) memset(&hfp_sdp_query_context, 0, sizeof(hfp_sdp_query_context_t));
+    (void) memset(&hfp_sdp_query_request, 0, sizeof(btstack_context_callback_registration_t));
 }
 
 void hfp_set_sco_packet_types(uint16_t packet_types){

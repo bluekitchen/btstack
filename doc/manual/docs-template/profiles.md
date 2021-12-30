@@ -3,6 +3,18 @@
 In the following, we explain how the various Bluetooth profiles are used
 in BTstack.
 
+## A2DP - Advanced Audio Distribution
+
+The A2DP profile defines how to stream audio over a Bluetooth connection from one device, such as a mobile phone, to another device such as a headset.  A device that acts as source of audio stream implements the A2DP Source role. Similarly, a device that receives an audio stream implements the A2DP Sink role. As such, the A2DP service allows uni-directional transfer of an audio stream, from single channel mono, up to two channel stereo. Our implementation includes mandatory support for the low-complexity SBC codec. Signaling for optional codes (FDK AAC, LDAC, APTX) is supported as well, by you need to provide your own codec library.
+
+
+## AVRCP - Audio/Video Remote Control Profile
+
+The AVRCP profile defines how audio playback on a remote device (e.g. a music app on a smartphone) can be controlled as well as how to state changes such as volume, information on currently played media, battery, etc. can be received from a remote device (e.g. a speaker). Usually, each device implements two roles: 
+- The Controller role allows to query information on currently played media, such are title, artist and album, as well as to control the playback, i.e. to play, stop, repeat, etc. 
+- The Target role responds to commands, e.g. playback control, and queries, e.g. playback status, media info, from the Controller currently played media.
+
+
 ## GAP - Generic Access Profile: Classic
 
 
@@ -271,7 +283,7 @@ There are following restrictions:
 %TODO: audio paths
 
 
-## HFP - Hands-Free Profile
+## HFP - Hands-Free Profile  {#sec:hfp}
 
 The HFP profile defines how a Bluetooth-enabled device, e.g. a car kit or a headset, can be used to place and receive calls via a audio gateway device, typically a mobile phone.
 It relies on SCO for audio encoded in 64 kbit/s CVSD and a bigger subset of AT commands from GSM 07.07 then HSP for
@@ -283,7 +295,106 @@ The HFP defines two roles:
 
 - Hands-Free Unit (HF) – a device that acts as the AG's remote audio input and output control.
 
-%TODO: audio paths
+### Supported Features {#sec:hfpSupportedFeatures}
+
+The supported features define the HFP capabilities of the device. The enumeration unfortunately differs between HF and AG sides.
+
+The AG supported features are set by combining the flags that start with HFP_AGSF_xx and calling hfp_ag_init_supported_features, followed by creating SDP record for the service using the same feature set.
+
+Similarly, the HF supported features are a combination of HFP_HFSF_xx flags and are configured by calling hfp_hf_init_supported_features, as well as creating an SDP record.
+
+| Define for AG Supported Feature         |  Description  |
+| --------------------------------------- |  ----------------------------  |
+| HFP_AGSF_THREE_WAY_CALLING              |  Three-way calling             |
+| HFP_AGSF_EC_NR_FUNCTION                 |  Echo Canceling and/or Noise Reduction function |
+| HFP_AGSF_VOICE_RECOGNITION_FUNCTION     |  Voice recognition function |
+| HFP_AGSF_IN_BAND_RING_TONE              |  In-band ring tone capability |
+| HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG |  Attach a number to a voice tag |
+| HFP_AGSF_ABILITY_TO_REJECT_A_CALL       |  Ability to reject a call |
+| HFP_AGSF_ENHANCED_CALL_STATUS           |  Enhanced call status |
+| HFP_AGSF_ENHANCED_CALL_CONTROL          |  Enhanced call control |
+| HFP_AGSF_EXTENDED_ERROR_RESULT_CODES    |  Extended Error Result Codes |
+| HFP_AGSF_CODEC_NEGOTIATION              |  Codec negotiation |
+| HFP_AGSF_HF_INDICATORS                  |  HF Indicators |
+| HFP_AGSF_ESCO_S4                        |  eSCO S4 (and T2) Settings Supported |
+| HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS |  Enhanced voice recognition status |
+| HFP_AGSF_VOICE_RECOGNITION_TEXT         |  Voice recognition text |
+
+
+| Define for HF Supported Feature         |  Description  |
+| --------------------------------------- |  ----------------------------  |
+| HFP_HFSF_THREE_WAY_CALLING              |  Three-way calling  |
+| HFP_HFSF_EC_NR_FUNCTION                 |  Echo Canceling and/or Noise Reduction function |
+| HFP_HFSF_CLI_PRESENTATION_CAPABILITY    |  CLI presentation capability |
+| HFP_HFSF_VOICE_RECOGNITION_FUNCTION     |  Voice recognition function |
+| HFP_HFSF_REMOTE_VOLUME_CONTROL          |  Remote volume control |
+| HFP_HFSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG |  Attach a number to a voice tag |
+| HFP_HFSF_ENHANCED_CALL_STATUS           |  Enhanced call status |
+| HFP_HFSF_ENHANCED_CALL_CONTROL          |  Enhanced call control |
+| HFP_HFSF_CODEC_NEGOTIATION              |  Codec negotiation |
+| HFP_HFSF_HF_INDICATORS                  |  HF Indicators |
+| HFP_HFSF_ESCO_S4                        |  eSCO S4 (and T2) Settings Supported |
+| HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS |  Enhanced voice recognition status |
+| HFP_HFSF_VOICE_RECOGNITION_TEXT         |  Voice recognition text |
+
+
+### Audio Voice Recognition Activation {#sec:hfpAVRActivation}
+
+Audio voice recognition (AVR) requires that HF and AG have the following  features enabled: 
+
+- HF: HFP_HFSF_VOICE_RECOGNITION_FUNCTION and
+
+- AG: HFP_AGSF_VOICE_RECOGNITION_FUNCTION. 
+ 
+It can be activated or deactivated on both sides by calling:
+
+    // AG
+    uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle);
+    uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle);
+
+    // HF
+    uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle);
+    uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle);
+
+On activation change, the HFP_SUBEVENT_VOICE_RECOGNITION_(DE)ACTIVATED event will be emitted with status field set to ERROR_CODE_SUCCESS on success. 
+
+Voice recognition will stay active until either the deactivation command is called, or until the current Service Level Connection between the AG and the HF is dropped for any reason.
+
+| Use cases                                              |  Expected behavior  |
+|--------------------------------------------------------|---------------------|
+| No previous audio connection, AVR activated then deactivated | Audio connection will be opened by AG upon AVR activation, and upon AVR deactivation closed|
+| AVR activated and deactivated during existing audio connection | Audio remains active upon AVR deactivation |
+| Call to close audio connection during active AVR session       | The audio connection shut down will be refused |
+| AVR activated, but audio connection failed to be established   | AVR will stay activated |
+
+Beyond the audio routing and voice recognition activation capabilities, the rest of the voice recognition functionality is implementation dependent - the stack only provides the signaling for this.
+
+### Enhanced Audio Voice Recognition {#sec:hfpeAVRActivation}
+
+Similarly to AVR, Enhanced Audio voice recognition (eAVR) requires that HF and AG have the following features enabled: 
+
+- HF: HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS and
+
+- AG: HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS.
+
+In addition, to allow textual representation of audio that is parsed by eAVR (note that parsing is not part of Bluetooth specification), both devices must enable:
+
+- HF: HFP_HFSF_VOICE_RECOGNITION_TEXT and
+
+- AG: HFP_AGSF_VOICE_RECOGNITION_TEXT. 
+
+eAVR implements the same use cases as AVR (see previous section) and it can be activated or deactivated using the same API as for AVR, see above.
+
+When eAVR and audio channel are established there are several additional commands that can be sent:
+
+| HFP Role | eVRA API | Description |
+-----------|----------|-------------|
+|HF | hfp_hf_enhanced_voice_recognition_report_ready_for_audio| Ready to accept audio input. |
+|AG | hfp_ag_enhanced_voice_recognition_report_ready_for_audio | Voice recognition engine is ready to accept audio input. |
+|AG | hfp_ag_enhanced_voice_recognition_report_sending_audio | The voice recognition engine will play a sound, e.g. starting sound. |
+|AG | hfp_ag_enhanced_voice_recognition_report_processing_input | Voice recognition engine is processing the audio input. |
+|AG | hfp_ag_enhanced_voice_recognition_send_message | Report textual representation from the voice recognition engine. |
+
 
 ## HID - Human-Interface Device Profile
 
@@ -475,7 +586,7 @@ are forwarded to the application via callback. Otherwise, the
 Characteristics cannot be written and it will return the specified
 constant value.
 
-Adding NOTIFY and/or INDICATE automatically creates an addition Client
+Adding NOTIFY and/or INDICATE automatically creates an additional Client
 Configuration Characteristic.
 
 Property                | Meaning
@@ -498,6 +609,16 @@ READ_AUTHENTICATED      | Read operations require Authentication
 WRITE_ENCRYPTED         | Write operations require Encryption
 WRITE_AUTHENTICATED     | Write operations require Authentication
 ENCRYPTION_KEY_SIZE_X   | Require encryption size >= X, with W in [7..16]
+
+For example, Volume State Characteristic (Voice Control Service) requires:
+- Mandatory Properties: Read, Notify
+- Security Permittions: Encryption Required
+
+In addition, its read is handled by application. We can model this Characteristic as follows:
+
+~~~~
+    CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_STATE, DYNAMIC | READ | NOTIFY | ENCRYPTION_KEY_SIZE_16
+~~~~
 
 To use already implemented GATT Services, you can import it
 using the *#import <service_name.gatt>* command. See [list of provided services](gatt_services.md).

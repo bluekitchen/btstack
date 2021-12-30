@@ -1,13 +1,13 @@
 # BTstack Port for the Maxim MAX32630FTHR ARM Cortex-M4F
 
-This port uses the [MAX32630FTHR ARM Cortex M4F Board](https://www.maximintegrated.com/en/products/digital/microcontrollers/MAX32630FTHR.html) with the onboard TI CC2564B Bluetooth controller. It usually comes with the [DAPLINK Programming Adapter](https://developer.mbed.org/teams/MaximIntegrated/wiki/MAXREFDES100HDK). 
+This port uses the [MAX32630FTHR ARM Cortex M4F Board](https://www.maximintegrated.com/en/products/microcontrollers/MAX32630FTHR.html) with the onboard TI CC2564B Bluetooth controller. It usually comes with the [DAPLINK Programming Adapter](https://developer.mbed.org/teams/MaximIntegrated/wiki/MAXREFDES100HDK). 
 The DAPLINK allows to upload firmware via a virtual mass storage device (like mbed), provides a virtual COM port for a console, and enables debugging via the SWD interface via OpenOCD.
 
 The port uses non-blocking polling UART communication with hardware flow control for Bluetooth controller. It was tested and achieved up to 1.8 Mbps bandwidth between two Max32630FTHR boards.
 
 ## Software 
 
-The [Maxim ARM Toolchain](https://www.maximintegrated.com/en/products/digital/microcontrollers/MAX32630.html/tb_tab2) is free software that provides peripheral libraries, linker files, initial code and some board files. It also provides Eclipse Neon and Maxim modified OpenOCD to program the microcontroller together with various examples for Maxim Cortex M4F ARM processors.
+The [Maxim ARM Toolchain](https://www.maximintegrated.com/en/products/microcontrollers/MAX32630.html/tb_tab2) is free software that provides peripheral libraries, linker files, initial code and some board files. It also provides Eclipse Neon and Maxim modified OpenOCD to program the microcontroller together with various examples for Maxim Cortex M4F ARM processors.
 
 For debugging, OpenOCD can be used. The regular OpenOCD does not support Maxim ARM microcontrollers yet, but a modified OpenOCD for use with Maxim devices can be found in the Maxim ARM Toolchain.
 

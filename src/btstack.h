@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -65,6 +65,7 @@
 #include "btstack_memory.h"
 #include "btstack_memory_pool.h"
 #include "btstack_network.h"
+#include "btstack_ring_buffer.h"
 #include "btstack_run_loop.h"
 #include "btstack_stdin.h"
 #include "btstack_util.h"
@@ -84,6 +85,7 @@
 #include "ble/gatt-service/ancs_client.h"
 #include "ble/gatt-service/battery_service_client.h"
 #include "ble/gatt-service/battery_service_server.h"
+#include "ble/gatt-service/bond_management_service_server.h"
 #include "ble/gatt-service/cycling_power_service_server.h"
 #include "ble/gatt-service/cycling_speed_and_cadence_service_server.h"
 #include "ble/gatt-service/device_information_service_client.h"
@@ -91,8 +93,12 @@
 #include "ble/gatt-service/heart_rate_service_server.h"
 #include "ble/gatt-service/hids_client.h"
 #include "ble/gatt-service/hids_device.h"
+#include "ble/gatt-service/microphone_control_service_client.h"
+#include "ble/gatt-service/microphone_control_service_server.h"
 #include "ble/gatt-service/scan_parameters_service_client.h"
 #include "ble/gatt-service/scan_parameters_service_server.h"
+#include "ble/gatt-service/tx_power_service_server.h"
+#include "ble/gatt-service/volume_control_service_server.h"
 #ifdef ENABLE_MESH
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "ble/gatt-service/mesh_proxy_service_server.h"
@@ -123,6 +129,7 @@
 #include "classic/btstack_sbc.h"
 #include "classic/device_id_server.h"
 #include "classic/gatt_sdp.h"
+#include "classic/goep_client.h"
 #include "classic/hfp.h"
 #include "classic/hfp_ag.h"
 #include "classic/hfp_hf.h"
@@ -131,6 +138,7 @@
 #include "classic/hsp_ag.h"
 #include "classic/hsp_hs.h"
 #include "classic/pan.h"
+#include "classic/pbap_client.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_client.h"
 #include "classic/sdp_client_rfcomm.h"

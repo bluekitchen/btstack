@@ -1,4 +1,0 @@
-#!/bin/sh
-chown root:wheel /Library/LaunchDaemons/ch.ringwald.BTstack.plist
-/bin/launchctl load   /Library/LaunchDaemons/ch.ringwald.BTstack.plist 2&> /dev/null
-exit 0

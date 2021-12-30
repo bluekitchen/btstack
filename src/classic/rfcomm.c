@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -127,6 +127,7 @@ typedef enum {
     CH_EVT_RCVD_RLS_RSP,
     CH_EVT_RCVD_RPN_CMD,
     CH_EVT_RCVD_RPN_REQ,
+    CH_EVT_RCVD_RPN_RSP,
     CH_EVT_RCVD_CREDITS,
     CH_EVT_MULTIPLEXER_READY,
     CH_EVT_READY_TO_SEND,
@@ -180,7 +181,7 @@ void (*rfcomm_ertm_released_callback)(uint16_t ertm_id);
 static uint8_t outgoing_buffer[1030];
 #endif
 
-static int  rfcomm_channel_can_send(rfcomm_channel_t * channel);
+static bool rfcomm_channel_can_send(rfcomm_channel_t * channel);
 static int  rfcomm_channel_ready_for_open(rfcomm_channel_t *channel);
 static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel);
 static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel, const rfcomm_channel_event_t *event, int * out_channel_valid);
@@ -244,12 +245,13 @@ static uint16_t rfcomm_next_ertm_id(void){
 static void rfcomm_emit_connection_request(rfcomm_channel_t *channel) {
     log_info("RFCOMM_EVENT_INCOMING_CONNECTION addr %s channel #%u cid 0x%02x",
              bd_addr_to_str(channel->multiplexer->remote_addr), channel->dlci>>1, channel->rfcomm_cid);
-    uint8_t event[11];
+    uint8_t event[13];
     event[0] = RFCOMM_EVENT_INCOMING_CONNECTION;
     event[1] = sizeof(event) - 2;
     reverse_bd_addr(channel->multiplexer->remote_addr, &event[2]);
     event[8] = channel->dlci >> 1;
     little_endian_store_16(event, 9, channel->rfcomm_cid);
+    little_endian_store_16(event, 11, channel->multiplexer->con_handle);
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -305,13 +307,19 @@ static void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t li
     (channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void rfcomm_emit_port_configuration(rfcomm_channel_t *channel){
+static void rfcomm_emit_port_configuration(rfcomm_channel_t *channel, bool remote) {
     // notify client about new settings
-    uint8_t event[2+sizeof(rfcomm_rpn_data_t)];
+    uint8_t event[2+2+1+sizeof(rfcomm_rpn_data_t)];
     event[0] = RFCOMM_EVENT_PORT_CONFIGURATION;
-    event[1] = sizeof(rfcomm_rpn_data_t);
-    (void)memcpy(&event[2], (uint8_t *)&channel->rpn_data,
-                 sizeof(rfcomm_rpn_data_t));
+    event[1] = sizeof(event) - 2;
+    little_endian_store_16(event, 2, channel->rfcomm_cid);
+    if (remote){
+        event[4] = 1;
+        (void)memcpy(&event[5], (uint8_t *) &channel->remote_rpn_data, sizeof(rfcomm_rpn_data_t));
+    } else {
+        event[4] = 0;
+        (void)memcpy(&event[5], (uint8_t *) &channel->local_rpn_data, sizeof(rfcomm_rpn_data_t));
+    }
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     (channel->packet_handler)(HCI_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
 }
@@ -351,7 +359,7 @@ static void rfcomm_rpn_data_update(rfcomm_rpn_data_t * dest, rfcomm_rpn_data_t *
         dest->flags = (dest->flags & 0xf7) | (src->flags & 0x08);
     }
     if (src->parameter_mask_0 & RPN_PARAM_MASK_0_PARITY_TYPE){
-        dest->flags = (dest->flags & 0xfc) | (src->flags & 0x30);
+        dest->flags = (dest->flags & 0xcf) | (src->flags & 0x30);
     }
     if (src->parameter_mask_0 & RPN_PARAM_MASK_0_XON_CHAR){
         dest->xon = src->xon;
@@ -359,14 +367,9 @@ static void rfcomm_rpn_data_update(rfcomm_rpn_data_t * dest, rfcomm_rpn_data_t *
     if (src->parameter_mask_0 & RPN_PARAM_MASK_0_XOFF_CHAR){
         dest->xoff = src->xoff;
     }
-    int i;
-    for (i=0; i < 6 ; i++){
-        uint8_t mask = 1 << i;
-        if (src->parameter_mask_1 & mask){
-            dest->flags = (dest->flags & ~mask) | (src->flags & mask); 
-        }
-    }
-    // always copy parameter mask, too. informative for client, needed for response
+    uint8_t mask = src->parameter_mask_1 & 0x3f;
+    dest->flow_control = (dest->flow_control & ~mask) | (src->flow_control & mask);
+   // always copy parameter mask, too. informative for client, needed for response
     dest->parameter_mask_0 = src->parameter_mask_0;
     dest->parameter_mask_1 = src->parameter_mask_1;
 }
@@ -457,7 +460,8 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
                                rfcomm_service_t *service, uint8_t server_channel){
     
     // set defaults for port configuration (even for services)
-    rfcomm_rpn_data_set_defaults(&channel->rpn_data);
+    rfcomm_rpn_data_set_defaults(&channel->local_rpn_data);
+    rfcomm_rpn_data_set_defaults(&channel->remote_rpn_data);
 
     channel->state            = RFCOMM_CHANNEL_CLOSED;
     channel->state_var        = RFCOMM_CHANNEL_STATE_VAR_NONE;
@@ -473,7 +477,13 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     channel->new_credits_incoming  = RFCOMM_CREDITS;
     channel->incoming_flow_control = 0;
 
-    channel->rls_line_status       = RFCOMM_RLS_STATUS_INVALID;
+    // nothing to send
+    channel->local_line_status  = RFCOMM_RLS_STATUS_INVALID;
+    channel->remote_line_status = RFCOMM_RLS_STATUS_INVALID;
+
+    // modem status - ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+    channel->local_modem_status  = 0x8d;
+    channel->remote_modem_status = 0x8d;
 
     channel->service = service;
 	if (service) {
@@ -604,7 +614,7 @@ static int rfcomm_send_packet_for_multiplexer(rfcomm_multiplexer_t *multiplexer,
 }
 
 // simplified version of rfcomm_send_packet_for_multiplexer for prepared rfcomm packet (UIH, 2 byte len, no credits)
-static int rfcomm_send_uih_prepared(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint16_t len){
+static uint8_t rfcomm_send_uih_prepared(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint16_t len){
 
     uint8_t address = (1 << 0) | (multiplexer->outgoing << 1) | (dlci << 2); 
     uint8_t control = BT_RFCOMM_UIH;
@@ -628,12 +638,12 @@ static int rfcomm_send_uih_prepared(rfcomm_multiplexer_t *multiplexer, uint8_t d
     rfcomm_out_buffer[pos++] =  btstack_crc8_calc(rfcomm_out_buffer, 2); // calc fcs
     
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
-    int err = l2cap_send(multiplexer->l2cap_cid, rfcomm_out_buffer, pos);
+    uint8_t status = l2cap_send(multiplexer->l2cap_cid, rfcomm_out_buffer, pos);
 #else
-    int err = l2cap_send_prepared(multiplexer->l2cap_cid, pos);
+    uint8_t status = l2cap_send_prepared(multiplexer->l2cap_cid, pos);
 #endif
 
-    return err;
+    return status;
 }
 
 // C/R Flag in Address
@@ -798,7 +808,7 @@ static int rfcomm_send_uih_rls_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dl
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
-static int rfcomm_send_uih_rpn_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, rfcomm_rpn_data_t *rpn_data) {
+static int rfcomm_send_uih_rpn_config(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, rfcomm_rpn_data_t *rpn_data) {
     uint8_t payload[10];
     uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
     uint8_t pos = 0;
@@ -815,7 +825,7 @@ static int rfcomm_send_uih_rpn_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dl
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
-static int rfcomm_send_uih_rpn_req(rfcomm_multiplexer_t *multiplexer, uint8_t dlci) {
+static int rfcomm_send_uih_rpn_query(rfcomm_multiplexer_t *multiplexer, uint8_t dlci) {
     uint8_t payload[3];
     uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
     uint8_t pos = 0;
@@ -825,7 +835,7 @@ static int rfcomm_send_uih_rpn_req(rfcomm_multiplexer_t *multiplexer, uint8_t dl
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
-static int rfcomm_send_uih_rpn_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, rfcomm_rpn_data_t *rpn_data) {
+static int rfcomm_send_uih_rpn_response(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, rfcomm_rpn_data_t *rpn_data) {
 	uint8_t payload[10];
 	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
 	uint8_t pos = 0;
@@ -905,10 +915,10 @@ static void rfcomm_multiplexer_timer_handler(btstack_timer_source_t *timer){
     rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t*) btstack_run_loop_get_timer_context(timer);
     if (rfcomm_multiplexer_has_channels(multiplexer)) return;
 
-    log_info("rfcomm_multiplexer_timer_handler timeout: shutting down multiplexer! (no channels)");
+    log_info("handler timeout: shutting down multiplexer! (no channels)");
     uint16_t l2cap_cid = multiplexer->l2cap_cid;
     rfcomm_multiplexer_finalize(multiplexer);
-    l2cap_disconnect(l2cap_cid, 0x13);
+    l2cap_disconnect(l2cap_cid);
 }
 
 static void rfcomm_multiplexer_prepare_idle_timer(rfcomm_multiplexer_t * multiplexer){
@@ -953,7 +963,7 @@ static void rfcomm_multiplexer_opened(rfcomm_multiplexer_t *multiplexer){
 
 static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
 
-    log_debug("rfcomm_handle_can_send_now enter: %u", l2cap_cid);
+    log_debug("can_send_now enter: %u", l2cap_cid);
 
     btstack_linked_list_iterator_t it;
     int token_consumed = 0;
@@ -964,7 +974,7 @@ static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
         rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t *) btstack_linked_list_iterator_next(&it);
         if (multiplexer->l2cap_cid != l2cap_cid) continue;
         if (rfcomm_multiplexer_ready_to_send(multiplexer)){
-            log_debug("rfcomm_handle_can_send_now enter: multiplexer token");
+            log_debug("can_send_now enter: multiplexer token");
             token_consumed = 1;
             rfcomm_multiplexer_state_machine(multiplexer, MULT_EV_READY_TO_SEND);
         }
@@ -977,7 +987,7 @@ static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
         if (channel->multiplexer->l2cap_cid != l2cap_cid) continue;
         // channel state machine
         if (rfcomm_channel_ready_to_send(channel)){
-            log_debug("rfcomm_handle_can_send_now enter: channel token");
+            log_debug("can_send_now enter: channel token");
             token_consumed = 1;
             const rfcomm_channel_event_t event = { CH_EVT_READY_TO_SEND, 0 };
             int rfcomm_channel_valid = 1;
@@ -994,11 +1004,11 @@ static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
         if (!channel->waiting_for_can_send_now)    continue;
         if ((channel->multiplexer->fcon & 1) == 0) continue;
         if (!channel->credits_outgoing){
-            log_debug("rfcomm_handle_can_send_now waiting to send but no credits (ignore)");
+            log_debug("can_send_now waiting to send but no credits (ignore)");
             continue;
         }
 
-        log_debug("rfcomm_handle_can_send_now enter: client token");
+        log_debug("can_send_now enter: client token");
         token_consumed = 1;
         channel->waiting_for_can_send_now = 0;
         rfcomm_emit_can_send_now(channel);
@@ -1009,7 +1019,7 @@ static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
         l2cap_request_can_send_now_event(l2cap_cid);
     }
 
-    log_debug("rfcomm_handle_can_send_now exit");
+    log_debug("can_send_now exit");
 }
 
 static void rfcomm_multiplexer_set_state_and_request_can_send_now_event(rfcomm_multiplexer_t * multiplexer, RFCOMM_MULTIPLEXER_STATE state){
@@ -1025,7 +1035,6 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
     UNUSED(size);   // ok: handling own l2cap events
 
     bd_addr_t event_addr;
-    uint16_t  psm;
     uint16_t l2cap_cid;
     hci_con_handle_t con_handle;
     rfcomm_multiplexer_t *multiplexer = NULL;
@@ -1035,18 +1044,16 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             
         // accept incoming rfcomm connection if no multiplexer exists yet
         case L2CAP_EVENT_INCOMING_CONNECTION:
-            // data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
-            reverse_bd_addr(&packet[2], event_addr);
-            con_handle = little_endian_read_16(packet,  8);
-            psm        = little_endian_read_16(packet, 10); 
-            l2cap_cid  = little_endian_read_16(packet, 12); 
+            l2cap_event_incoming_connection_get_address(packet, event_addr);
+            con_handle = l2cap_event_incoming_connection_get_handle(packet);
+            l2cap_cid  = l2cap_event_incoming_connection_get_local_cid(packet);
 
-            if (psm != BLUETOOTH_PROTOCOL_RFCOMM) break;
+            btstack_assert(l2cap_event_incoming_connection_get_psm(packet) == BLUETOOTH_PROTOCOL_RFCOMM);
 
             multiplexer = rfcomm_multiplexer_for_addr(event_addr);
             
             if (multiplexer) {
-                log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_RFCOMM => decline - multiplexer already exists", l2cap_cid);
+                log_info("RFCOMM incoming (l2cap_cid 0x%02x) => decline - multiplexer already exists", l2cap_cid);
                 l2cap_decline_connection(l2cap_cid);
                 return 1;
             }
@@ -1054,7 +1061,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             // create and inititialize new multiplexer instance (incoming)
             multiplexer = rfcomm_multiplexer_create_for_addr(event_addr);
             if (!multiplexer){
-                log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_RFCOMM => decline - no memory left", l2cap_cid);
+                log_info("RFCOMM incoming (l2cap_cid 0x%02x) => decline - no memory left", l2cap_cid);
                 l2cap_decline_connection(l2cap_cid); 
                 return 1;
             }
@@ -1063,7 +1070,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             multiplexer->l2cap_cid = l2cap_cid;
             // 
             multiplexer->state = RFCOMM_MULTIPLEXER_W4_SABM_0;
-            log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_RFCOMM => accept", l2cap_cid);
+            log_info("RFCOMM incoming (l2cap_cid 0x%02x) => accept", l2cap_cid);
 
 #ifdef RFCOMM_USE_ERTM
             // request
@@ -1076,7 +1083,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             }
             if (request.ertm_config && request.ertm_buffer && request.ertm_buffer_size){
                 multiplexer->ertm_id = request.ertm_id;
-                l2cap_accept_ertm_connection(l2cap_cid, request.ertm_config, request.ertm_buffer, request.ertm_buffer_size);
+                l2cap_ertm_accept_connection(l2cap_cid, request.ertm_config, request.ertm_buffer, request.ertm_buffer_size);
                 return 1;
             }
 #endif
@@ -1087,21 +1094,24 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
         // l2cap connection opened -> store l2cap_cid, remote_addr
         case L2CAP_EVENT_CHANNEL_OPENED: 
 
-            if (little_endian_read_16(packet, 11) != BLUETOOTH_PROTOCOL_RFCOMM) break;
-            
-            status = packet[2];
-            log_info("L2CAP_EVENT_CHANNEL_OPENED for BLUETOOTH_PROTOCOL_RFCOMM, status %u", status);
+            btstack_assert(l2cap_event_channel_opened_get_psm(packet) == BLUETOOTH_PROTOCOL_RFCOMM);
+
+            status = l2cap_event_channel_opened_get_status(packet);
+            log_info("channel opened, status %u", status);
             
             // get multiplexer for remote addr
-            con_handle = little_endian_read_16(packet, 9);
-            l2cap_cid = little_endian_read_16(packet, 13);
-            reverse_bd_addr(&packet[3], event_addr);
+            con_handle = l2cap_event_channel_opened_get_handle(packet);
+            l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);
+            l2cap_event_channel_opened_get_address(packet, event_addr);
             multiplexer = rfcomm_multiplexer_for_addr(event_addr);
             if (!multiplexer) {
-                log_error("L2CAP_EVENT_CHANNEL_OPENED but no multiplexer prepared");
+                log_error("channel opened but no multiplexer prepared");
                 return 1;
             }
-            
+
+            // set con handle for outgoing (already set for incoming)
+            multiplexer->con_handle = con_handle;
+
             // on l2cap open error discard everything
             if (status){
 
@@ -1136,20 +1146,16 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
                 return 1;
             }
             
-            // following could be: rfcom_multiplexer_state_machein(..., EVENT_L2CAP_OPENED)
+            // following could be: rfcomm_multiplexer_state_machine(..., EVENT_L2CAP_OPENED)
 
             // set max frame size based on l2cap MTU
             multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
 
             if (multiplexer->state == RFCOMM_MULTIPLEXER_W4_CONNECT) {
-                log_info("L2CAP_EVENT_CHANNEL_OPENED: outgoing connection");
-                // wrong remote addr
-                if (bd_addr_cmp(event_addr, multiplexer->remote_addr)) break;
+                log_info("channel opened: outgoing connection");
                 multiplexer->l2cap_cid = l2cap_cid;
-                multiplexer->con_handle = con_handle;
                 // send SABM #0
                 rfcomm_multiplexer_set_state_and_request_can_send_now_event(multiplexer, RFCOMM_MULTIPLEXER_SEND_SABM_0);
-
             }
             return 1;
             
@@ -1162,12 +1168,11 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             return 1;
             
         case L2CAP_EVENT_CHANNEL_CLOSED:
-            // data: event (8), len(8), channel (16)
-            l2cap_cid = little_endian_read_16(packet, 2);
+            l2cap_cid = l2cap_event_channel_closed_get_local_cid(packet);
             multiplexer = rfcomm_multiplexer_for_l2cap_cid(l2cap_cid);
-            log_info("L2CAP_EVENT_CHANNEL_CLOSED cid 0x%0x, mult %p", l2cap_cid, multiplexer);
+            log_info("channel closed cid 0x%0x, mult %p", l2cap_cid, multiplexer);
             if (!multiplexer) break;
-            log_info("L2CAP_EVENT_CHANNEL_CLOSED state %u", multiplexer->state);
+            log_info("channel closed state %u", multiplexer->state);
             // no need to call l2cap_disconnect here, as it's already closed
             rfcomm_multiplexer_finalize(multiplexer);
             return 1;
@@ -1237,7 +1242,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
             log_info("Received DM #0");
             log_info("-> Closing down multiplexer");
             rfcomm_multiplexer_finalize(multiplexer);
-            l2cap_disconnect(l2cap_cid, 0x13);
+            l2cap_disconnect(l2cap_cid);
             return 1;
             
         case BT_RFCOMM_UIH:
@@ -1248,7 +1253,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                 log_info("Received Multiplexer close down command");
                 log_info("-> Closing down multiplexer");
                 rfcomm_multiplexer_finalize(multiplexer);
-                l2cap_disconnect(l2cap_cid, 0x13);
+                l2cap_disconnect(l2cap_cid);
                 return 1;
             }
             switch (packet[payload_offset]){
@@ -1257,7 +1262,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                     log_info("Received Multiplexer close down command");
                     log_info("-> Closing down multiplexer");
                     rfcomm_multiplexer_finalize(multiplexer);
-                    l2cap_disconnect(l2cap_cid, 0x13);
+                    l2cap_disconnect(l2cap_cid);
                     return 1;
 
                 case BT_RFCOMM_FCON_CMD:
@@ -1368,7 +1373,7 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
             rfcomm_send_ua(multiplexer, 0);
 
             rfcomm_multiplexer_finalize(multiplexer);
-            l2cap_disconnect(l2cap_cid, 0x13);
+            l2cap_disconnect(l2cap_cid);
             break;
         case RFCOMM_MULTIPLEXER_OPEN:
             // respond to test command
@@ -1392,19 +1397,19 @@ static void rfcomm_channel_send_credits(rfcomm_channel_t *channel, uint8_t credi
     rfcomm_send_uih_credits(channel->multiplexer, channel->dlci, credits);
 }
 
-static int rfcomm_channel_can_send(rfcomm_channel_t * channel){
-    if (!channel->credits_outgoing) return 0;
-    if ((channel->multiplexer->fcon & 1) == 0) return 0;
-    return l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid);
+static bool rfcomm_channel_can_send(rfcomm_channel_t * channel){
+    if (!channel->credits_outgoing) return false;
+    if ((channel->multiplexer->fcon & 1) == 0) return false;
+    return l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid) != 0;
 }
 
 static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
     
-    log_info("rfcomm_channel_opened!");
+    log_info("opened");
     
     rfChannel->state = RFCOMM_CHANNEL_OPEN;
     rfcomm_emit_channel_opened(rfChannel, 0);
-    rfcomm_emit_port_configuration(rfChannel);
+    rfcomm_emit_port_configuration(rfChannel, false);
 
     // remove (potential) timer
     rfcomm_multiplexer_t *multiplexer = rfChannel->multiplexer;
@@ -1441,7 +1446,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
 
         // notify channel statemachine 
         rfcomm_channel_event_t channel_event = { CH_EVT_RCVD_CREDITS, 0 };
-        log_debug("rfcomm_channel_state_machine_with_channel, waiting_for_can_send_now %u", channel->waiting_for_can_send_now);
+        log_debug("state machine, waiting_for_can_send_now %u", channel->waiting_for_can_send_now);
         int rfcomm_channel_valid = 1;
         rfcomm_channel_state_machine_with_channel(channel, &channel_event, &rfcomm_channel_valid);
         if (rfcomm_channel_valid){
@@ -1681,7 +1686,11 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
                     break;
 
                 case BT_RFCOMM_RPN_RSP:
-                    log_info("Received RPN response");
+                    message_dlci = packet[payload_offset+2] >> 2;
+                    if (message_len != 8) break;
+                    event_rpn.super.type = CH_EVT_RCVD_RPN_RSP;
+                    event_rpn.data = *(rfcomm_rpn_data_t*) &packet[payload_offset+3];
+                    rfcomm_channel_state_machine_with_dlci(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_rpn);
                     break;
 
                 case BT_RFCOMM_RLS_CMD: {
@@ -1775,13 +1784,13 @@ static int rfcomm_channel_ready_for_incoming_dlc_setup(rfcomm_channel_t * channe
     if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_UA        ) != 0) return 0;
     if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP    ) != 0) return 0;
     return 1;
-}            
-
-inline static void rfcomm_channel_state_add(rfcomm_channel_t *channel, RFCOMM_CHANNEL_STATE_VAR event){
-    channel->state_var = (RFCOMM_CHANNEL_STATE_VAR) (channel->state_var | event);    
 }
-inline static void rfcomm_channel_state_remove(rfcomm_channel_t *channel, RFCOMM_CHANNEL_STATE_VAR event){
-    channel->state_var = (RFCOMM_CHANNEL_STATE_VAR) (channel->state_var & ~event);    
+
+inline static void rfcomm_channel_state_add(rfcomm_channel_t *channel, uint32_t flag){
+    channel->state_var |= flag;
+}
+inline static void rfcomm_channel_state_remove(rfcomm_channel_t *channel, uint32_t flag){
+    channel->state_var &= ~flag;
 }
 
 static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel){
@@ -1822,17 +1831,24 @@ static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel){
     }
     
     if (channel->state_var & (
-        RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP   |
-        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_INFO |
-        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP  |
-        RFCOMM_CHANNEL_STATE_VAR_SEND_UA       |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP       |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_QUERY    |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_CONFIG   |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RESPONSE |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_UA           |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD      |
         RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP
                              )){
         log_debug("ch-ready: state %x, state var %x", channel->state, channel->state_var);
         return 1;
     }
     
-    if (channel->rls_line_status != RFCOMM_RLS_STATUS_INVALID) {
+    if (channel->local_line_status != RFCOMM_RLS_STATUS_INVALID) {
+        log_debug("ch-ready: rls_line_status");
+        return 1;
+    }
+
+    if (channel->remote_line_status != RFCOMM_RLS_STATUS_INVALID) {
         log_debug("ch-ready: rls_line_status");
         return 1;
     }
@@ -1842,8 +1858,6 @@ static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel){
 
 
 static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel, const rfcomm_channel_event_t *event, int * out_channel_valid){
-    
-    // log_info("rfcomm_channel_state_machine_with_channel: state %u, state_var %04x, event %u", channel->state, channel->state_var ,event->type);
 
     // channel != NULL -> channel valid
     *out_channel_valid = 1;
@@ -1878,49 +1892,75 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
     if (event->type == CH_EVT_RCVD_RPN_CMD){
         // control port parameters
         rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
-        rfcomm_rpn_data_update(&channel->rpn_data, &event_rpn->data);
-        rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
+        rfcomm_rpn_data_update(&channel->local_rpn_data, &event_rpn->data);
+        rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RESPONSE);
         // notify client about new settings
-        rfcomm_emit_port_configuration(channel);
+        rfcomm_emit_port_configuration(channel, false);
         return;
     }
 
     // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_RPN_REQ){
         // no values got accepted (no values have beens sent)
-        channel->rpn_data.parameter_mask_0 = 0x00;
-        channel->rpn_data.parameter_mask_1 = 0x00;
-        rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
+        channel->local_rpn_data.parameter_mask_0 = 0x00;
+        channel->local_rpn_data.parameter_mask_1 = 0x00;
+        rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RESPONSE);
         return;
     }
     
     if (event->type == CH_EVT_RCVD_RLS_CMD){ 
         rfcomm_channel_event_rls_t * event_rls = (rfcomm_channel_event_rls_t*) event;
-        channel->rls_line_status = event_rls->line_status & 0x0f;
-        log_info("CH_EVT_RCVD_RLS_CMD setting line status to 0x%0x", channel->rls_line_status);
-        rfcomm_emit_remote_line_status(channel, event_rls->line_status);
+        channel->remote_line_status = event_rls->line_status & 0x0f;
+        log_info("CH_EVT_RCVD_RLS_CMD remote line status 0x%0x", channel->remote_line_status);
+        rfcomm_emit_remote_line_status(channel, channel->remote_line_status);
         return;
     }
 
     // TODO: integrate in common switch
     if (event->type == CH_EVT_READY_TO_SEND){
-        if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP){
+        if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_QUERY){
+            log_info("Sending Remote Port Configuration Query for #%u", channel->dlci);
+            rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_QUERY);
+            rfcomm_send_uih_rpn_query(channel->multiplexer, channel->dlci);
+            return;
+        }
+        if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_CONFIG){
+            log_info("Sending Remote Port Configuration for #%u", channel->dlci);
+            rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_CONFIG);
+            rfcomm_send_uih_rpn_config(channel->multiplexer, channel->dlci, &channel->remote_rpn_data);
+            return;
+        }
+        if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RESPONSE){
             log_info("Sending Remote Port Negotiation RSP for #%u", channel->dlci);
-            rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
-            rfcomm_send_uih_rpn_rsp(multiplexer, channel->dlci, &channel->rpn_data);
+            rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RESPONSE);
+            rfcomm_send_uih_rpn_response(multiplexer, channel->dlci, &channel->local_rpn_data);
+            return;
+        }
+        if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD){
+            log_info("Sending MSC CMD for #%u", channel->dlci);
+            rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD);
+            rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_CMD);
+            rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci , channel->local_modem_status);
             return;
         }
         if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP){
             log_info("Sending MSC RSP for #%u", channel->dlci);
             rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
             rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_RSP);
-            rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+            rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, channel->remote_modem_status);
             return;
         }
-        if (channel->rls_line_status != RFCOMM_RLS_STATUS_INVALID){
-            log_info("Sending RLS RSP 0x%0x", channel->rls_line_status);
-            uint8_t line_status = channel->rls_line_status;
-            channel->rls_line_status = RFCOMM_RLS_STATUS_INVALID;
+        if (channel->local_line_status != RFCOMM_RLS_STATUS_INVALID){
+            log_info("Sending RLS CMD 0x%0x", channel->local_line_status);
+            uint8_t line_status = channel->local_line_status;
+            channel->local_line_status = RFCOMM_RLS_STATUS_INVALID;
+            rfcomm_send_uih_rls_cmd(multiplexer, channel->dlci, line_status);
+            return;
+        }
+        if (channel->remote_line_status != RFCOMM_RLS_STATUS_INVALID){
+            log_info("Sending RLS RSP 0x%0x", channel->remote_line_status);
+            uint8_t line_status = channel->remote_line_status;
+            channel->remote_line_status = RFCOMM_RLS_STATUS_INVALID;
             rfcomm_send_uih_rls_rsp(multiplexer, channel->dlci, line_status);
             return;
         }
@@ -1930,10 +1970,11 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
     if (event->type == CH_EVT_RCVD_MSC_CMD){
         // notify client about new settings
         rfcomm_channel_event_msc_t *event_msc = (rfcomm_channel_event_msc_t*) event;
-        uint8_t modem_status_event[2+1];
+        uint8_t modem_status_event[5];
         modem_status_event[0] = RFCOMM_EVENT_REMOTE_MODEM_STATUS;
-        modem_status_event[1] = 1;
-        modem_status_event[2] = event_msc->modem_status;
+        modem_status_event[1] = sizeof(event) - 2;
+        little_endian_store_16(modem_status_event, 2, channel->rfcomm_cid);
+        modem_status_event[4] = event_msc->modem_status;
         (channel->packet_handler)(HCI_EVENT_PACKET, channel->rfcomm_cid, (uint8_t*)&modem_status_event, sizeof(modem_status_event));
         // no return, MSC_CMD will be handled by state machine below
     }
@@ -2067,6 +2108,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
         case RFCOMM_CHANNEL_DLC_SETUP:
             switch (event->type){
                 case CH_EVT_RCVD_MSC_CMD:
+                    channel->remote_modem_status = ((rfcomm_channel_event_msc_t*) event)->modem_status;
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_CMD);
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
                     break;
@@ -2075,25 +2117,16 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
                     break;
                     
                 case CH_EVT_READY_TO_SEND:
-                    if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD){
-                        log_info("Sending MSC CMD for #%u", channel->dlci);
-                        rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD);
-                        rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_CMD);
-                        rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
-                        break;
-                    }
                     if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS){
                         log_info("Providing credits for #%u", channel->dlci);
                         rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS);
                         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS);
-                        
                         if (channel->new_credits_incoming) {
                             uint8_t new_credits = channel->new_credits_incoming;
                             channel->new_credits_incoming = 0;
                             rfcomm_channel_send_credits(channel, new_credits);
                         }
                         break;
-
                     }
                     break;
                 default:
@@ -2109,7 +2142,14 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
         case RFCOMM_CHANNEL_OPEN:
             switch (event->type){
                 case CH_EVT_RCVD_MSC_CMD:
+                    channel->remote_modem_status = ((rfcomm_channel_event_msc_t*) event)->modem_status;
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
+                    break;
+                case CH_EVT_RCVD_RPN_RSP:
+                    if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_EMIT_RPN_RESPONSE) == 0) break;
+                    rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_EMIT_RPN_RESPONSE);
+                    memcpy(&channel->remote_rpn_data, &((rfcomm_channel_event_rpn_t*) event)->data, sizeof(rfcomm_rpn_data_t));
+                    rfcomm_emit_port_configuration(channel, true);
                     break;
                 case CH_EVT_READY_TO_SEND:
                     if (channel->new_credits_incoming) {
@@ -2188,10 +2228,6 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
 // MARK: RFCOMM BTstack API
 
 void rfcomm_init(void){
-    rfcomm_client_cid_generator = 0;
-    rfcomm_multiplexers = NULL;
-    rfcomm_services     = NULL;
-    rfcomm_channels     = NULL;
     rfcomm_security_level = gap_get_security_level();
 #ifdef RFCOMM_USE_ERTM
     rfcomm_ertm_id = 0;
@@ -2199,6 +2235,10 @@ void rfcomm_init(void){
 }
 
 void rfcomm_deinit(void){
+    rfcomm_client_cid_generator = 0;
+    rfcomm_multiplexers = NULL;
+    rfcomm_services     = NULL;
+    rfcomm_channels     = NULL;
 #ifdef RFCOMM_USE_ERTM
     rfcomm_ertm_request_callback  = NULL;
     rfcomm_ertm_released_callback = NULL;
@@ -2209,64 +2249,61 @@ void rfcomm_set_required_security_level(gap_security_level_t security_level){
     rfcomm_security_level = security_level;
 }
 
-int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
+bool rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        log_error("rfcomm_send cid 0x%02x doesn't exist!", rfcomm_cid);
-        return 0;
+        log_error("send cid 0x%02x doesn't exist!", rfcomm_cid);
+        return false;
     }
     return rfcomm_channel_can_send(channel);
 }
 
-void rfcomm_request_can_send_now_event(uint16_t rfcomm_cid){
+uint8_t rfcomm_request_can_send_now_event(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (!channel){
-        log_error("rfcomm_send cid 0x%02x doesn't exist!", rfcomm_cid);
-        return;
-    }
+    if (!channel) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     channel->waiting_for_can_send_now = 1;
     l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
-static int rfcomm_assert_send_valid(rfcomm_channel_t * channel , uint16_t len){
+static uint8_t rfcomm_assert_send_valid(rfcomm_channel_t * channel , uint16_t len){
     if (len > channel->max_frame_size){
-        log_error("rfcomm_send cid 0x%02x, rfcomm data lenght exceeds MTU!", channel->rfcomm_cid);
+        log_error("send cid 0x%02x, rfcomm data lenght exceeds MTU!", channel->rfcomm_cid);
         return RFCOMM_DATA_LEN_EXCEEDS_MTU;
     }
 
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
     if (len > rfcomm_max_frame_size_for_l2cap_mtu(sizeof(outgoing_buffer))){
-        log_error("rfcomm_send cid 0x%02x, length exceeds outgoing rfcomm_out_buffer", channel->rfcomm_cid);
+        log_error("send cid 0x%02x, length exceeds outgoing rfcomm_out_buffer", channel->rfcomm_cid);
         return RFCOMM_DATA_LEN_EXCEEDS_MTU;
     }
 #endif
 
     if (!channel->credits_outgoing){
-        log_info("rfcomm_send cid 0x%02x, no rfcomm outgoing credits!", channel->rfcomm_cid);
+        log_info("send cid 0x%02x, no rfcomm outgoing credits!", channel->rfcomm_cid);
         return RFCOMM_NO_OUTGOING_CREDITS;
     }
     
     if ((channel->multiplexer->fcon & 1) == 0){
-        log_info("rfcomm_send cid 0x%02x, aggregate flow off!", channel->rfcomm_cid);
+        log_info("send cid 0x%02x, aggregate flow off!", channel->rfcomm_cid);
         return RFCOMM_AGGREGATE_FLOW_OFF;
     }
-    return 0;    
+    return ERROR_CODE_SUCCESS;
 }
 
 uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        log_error("rfcomm_get_max_frame_size cid 0x%02x doesn't exist!", rfcomm_cid);
         return 0;
     }
     return channel->max_frame_size;
 }
 
 // pre: rfcomm_can_send_packet_now(rfcomm_cid) == true
-int rfcomm_reserve_packet_buffer(void){
+bool rfcomm_reserve_packet_buffer(void){
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
     log_error("rfcomm_reserve_packet_buffer should not get called with ERTM");
-    return 0;
+    return false;
 #else
     return l2cap_reserve_packet_buffer();
 #endif
@@ -2290,24 +2327,24 @@ uint8_t * rfcomm_get_outgoing_buffer(void){
     return &rfcomm_out_buffer[4];
 }
 
-int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
+uint8_t rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        log_error("rfcomm_send_prepared cid 0x%02x doesn't exist!", rfcomm_cid);
-        return 0;
+        log_error("cid 0x%02x doesn't exist!", rfcomm_cid);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    int err = rfcomm_assert_send_valid(channel, len);
-    if (err) return err;
+    uint8_t status = rfcomm_assert_send_valid(channel, len);
+    if (status != ERROR_CODE_SUCCESS) return status;
 
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
     if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)){
-        log_error("rfcomm_send_prepared: l2cap cannot send now");
+        log_error("l2cap cannot send now");
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 #else
     if (!l2cap_can_send_prepared_packet_now(channel->multiplexer->l2cap_cid)){
-        log_error("rfcomm_send_prepared: l2cap cannot send now");
+        log_error("l2cap cannot send now");
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 #endif
@@ -2319,28 +2356,27 @@ int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
         log_info("sending empty RFCOMM packet for cid %02x", rfcomm_cid);
     }
         
-    int result = rfcomm_send_uih_prepared(channel->multiplexer, channel->dlci, len);
-    
-    if (result != 0) {
+    status = rfcomm_send_uih_prepared(channel->multiplexer, channel->dlci, len);
+
+    if (status != 0) {
+        log_error("error %d", status);
         if (len) {
             channel->credits_outgoing++;
         }
-        log_error("rfcomm_send_prepared: error %d", result);
-        return result;
     }
     
-    return result;
+    return status;
 }
 
-int rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
         log_error("cid 0x%02x doesn't exist!", rfcomm_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    int err = rfcomm_assert_send_valid(channel, len);
-    if (err) return err;
+    uint8_t status = rfcomm_assert_send_valid(channel, len);
+    if (status != ERROR_CODE_SUCCESS) return status;
     if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)){
         log_error("rfcomm_send_internal: l2cap cannot send now");
         return BTSTACK_ACL_BUFFERS_FULL;
@@ -2353,69 +2389,76 @@ int rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
     uint8_t * rfcomm_payload = rfcomm_get_outgoing_buffer();
 
     (void)memcpy(rfcomm_payload, data, len);
-    err = rfcomm_send_prepared(rfcomm_cid, len);    
+    status = rfcomm_send_prepared(rfcomm_cid, len);
 
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
 #else
-    if (err){
+    if (status != ERROR_CODE_SUCCESS){
         rfcomm_release_packet_buffer();
     }
 #endif
 
-    return err;
+    return ERROR_CODE_SUCCESS;
 }
 
-// Sends Local Lnie Status, see LINE_STATUS_..
-int rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status){
+// Sends Local Line Status, see LINE_STATUS_..
+uint8_t rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (!channel){
-        log_error("rfcomm_send_local_line_status cid 0x%02x doesn't exist!", rfcomm_cid);
-        return 0;
-    }
-    return rfcomm_send_uih_rls_cmd(channel->multiplexer, channel->dlci, line_status);
+    if (!channel) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    if (channel->local_line_status != RFCOMM_RLS_STATUS_INVALID) return ERROR_CODE_COMMAND_DISALLOWED;
+    channel->local_line_status = line_status;
+    l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 // Sned local modem status. see MODEM_STAUS_..
-int rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status){
+uint8_t rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (!channel){
-        log_error("rfcomm_send_modem_status cid 0x%02x doesn't exist!", rfcomm_cid);
-        return 0;
-    }
-    return rfcomm_send_uih_msc_cmd(channel->multiplexer, channel->dlci, modem_status);
+    if (!channel) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    channel->local_modem_status = modem_status;
+    // trigger send
+    rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD);
+    l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 // Configure remote port 
-int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rpn_data_bits_t data_bits, rpn_stop_bits_t stop_bits, rpn_parity_t parity, rpn_flow_control_t flow_control){
+uint8_t rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rpn_data_bits_t data_bits, rpn_stop_bits_t stop_bits, rpn_parity_t parity, uint8_t flow_control){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        log_error("rfcomm_send_port_configuration cid 0x%02x doesn't exist!", rfcomm_cid);
-        return 0;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    rfcomm_rpn_data_t rpn_data; 
-    rpn_data.baud_rate = baud_rate;
-    rpn_data.flags = data_bits | (stop_bits << 2) | (parity << 3);
-    rpn_data.flow_control = flow_control;
-    rpn_data.xon = 0;
-    rpn_data.xoff = 0;
-    rpn_data.parameter_mask_0 = 0x1f;   // all but xon/xoff
-    rpn_data.parameter_mask_1 = 0x3f;   // all flow control options
-    return rfcomm_send_uih_rpn_cmd(channel->multiplexer, channel->dlci, &rpn_data);
+
+    // store remote config
+    channel->remote_rpn_data.baud_rate = baud_rate;
+    channel->remote_rpn_data.flags = data_bits | (stop_bits << 2) | (parity << 3);
+    channel->remote_rpn_data.flow_control = flow_control;
+    channel->remote_rpn_data.xon = 0;
+    channel->remote_rpn_data.xoff = 0;
+    channel->remote_rpn_data.parameter_mask_0 = 0x1f;   // all but xon/xoff
+    channel->remote_rpn_data.parameter_mask_1 = 0x3f;   // all flow control options
+
+    // trigger send
+    rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_CONFIG);
+    l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 // Query remote port 
-int rfcomm_query_port_configuration(uint16_t rfcomm_cid){
+uint8_t rfcomm_query_port_configuration(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        log_error("rfcomm_query_port_configuration cid 0x%02x doesn't exist!", rfcomm_cid);
-        return 0;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    return rfcomm_send_uih_rpn_req(channel->multiplexer, channel->dlci);
+    // trigger send
+    rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_QUERY | RFCOMM_CHANNEL_STATE_VAR_EMIT_RPN_RESPONSE);
+    l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 
 static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits, uint16_t * out_rfcomm_cid){
-    log_info("RFCOMM_CREATE_CHANNEL addr %s channel #%u init credits %u",  bd_addr_to_str(addr), server_channel, initial_credits);
+    log_info("create addr %s channel #%u init credits %u",  bd_addr_to_str(addr), server_channel, initial_credits);
     
     // create new multiplexer if necessary
     uint8_t status = 0;
@@ -2472,7 +2515,7 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
         }
         if (request.ertm_config && request.ertm_buffer && request.ertm_buffer_size){
             multiplexer->ertm_id = request.ertm_id;
-            status = l2cap_create_ertm_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM, 
+            status = l2cap_ertm_create_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM,
                         request.ertm_config, request.ertm_buffer, request.ertm_buffer_size, &l2cap_cid);
         }
         else
@@ -2504,19 +2547,20 @@ uint8_t rfcomm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t
     return rfcomm_channel_create_internal(packet_handler, addr, server_channel, 0, RFCOMM_CREDITS, out_rfcomm_cid);
 }
 
-void rfcomm_disconnect(uint16_t rfcomm_cid){
-    log_info("RFCOMM_DISCONNECT cid 0x%02x", rfcomm_cid);
+uint8_t rfcomm_disconnect(uint16_t rfcomm_cid){
+    log_info("disconnect cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (!channel) return;
+    if (!channel) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 
     channel->state = RFCOMM_CHANNEL_SEND_DISC;
     l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 static uint8_t rfcomm_register_service_internal(btstack_packet_handler_t packet_handler, 
     uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){
 
-    log_info("RFCOMM_REGISTER_SERVICE channel #%u mtu %u flow_control %u credits %u",
+    log_info("register channel #%u mtu %u flow_control %u credits %u",
              channel, max_frame_size, incoming_flow_control, initial_credits);
 
     // check if already registered
@@ -2533,7 +2577,11 @@ static uint8_t rfcomm_register_service_internal(btstack_packet_handler_t packet_
     
     // register with l2cap if not registered before, max MTU
     if (btstack_linked_list_empty(&rfcomm_services)){
-        l2cap_register_service(rfcomm_packet_handler, BLUETOOTH_PROTOCOL_RFCOMM, 0xffff, rfcomm_security_level);
+        uint8_t status = l2cap_register_service(rfcomm_packet_handler, BLUETOOTH_PROTOCOL_RFCOMM, 0xffff, rfcomm_security_level);
+        if (status != ERROR_CODE_SUCCESS){
+            btstack_memory_rfcomm_service_free(service);
+            return status;
+        }
     }
     
     // fill in 
@@ -2546,7 +2594,7 @@ static uint8_t rfcomm_register_service_internal(btstack_packet_handler_t packet_
     // add to services list
     btstack_linked_list_add(&rfcomm_services, (btstack_linked_item_t *) service);
     
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t rfcomm_register_service_with_initial_credits(btstack_packet_handler_t packet_handler, 
@@ -2562,7 +2610,6 @@ uint8_t rfcomm_register_service(btstack_packet_handler_t packet_handler, uint8_t
 }
 
 void rfcomm_unregister_service(uint8_t service_channel){
-    log_info("RFCOMM_UNREGISTER_SERVICE #%u", service_channel);
     rfcomm_service_t *service = rfcomm_service_for_channel(service_channel);
     if (!service) return;
     btstack_linked_list_remove(&rfcomm_services, (btstack_linked_item_t *) service);
@@ -2575,10 +2622,11 @@ void rfcomm_unregister_service(uint8_t service_channel){
     }
 }
 
-void rfcomm_accept_connection(uint16_t rfcomm_cid){
-    log_info("RFCOMM_ACCEPT_CONNECTION cid 0x%02x", rfcomm_cid);
+uint8_t rfcomm_accept_connection(uint16_t rfcomm_cid){
+    log_info("accept cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (!channel) return;
+    if (!channel) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+
     switch (channel->state) {
         case RFCOMM_CHANNEL_INCOMING_SETUP:
             rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_CLIENT_ACCEPTED);
@@ -2592,36 +2640,37 @@ void rfcomm_accept_connection(uint16_t rfcomm_cid){
             }
             // at least one of { PN RSP, UA } needs to be sent
             // state transistion incoming setup -> dlc setup happens in rfcomm_run after these have been sent
-            break;
+            return ERROR_CODE_SUCCESS;
         default:
-            break;
+           return ERROR_CODE_COMMAND_DISALLOWED;
     }
-
 }
 
-void rfcomm_decline_connection(uint16_t rfcomm_cid){
-    log_info("RFCOMM_DECLINE_CONNECTION cid 0x%02x", rfcomm_cid);
+uint8_t rfcomm_decline_connection(uint16_t rfcomm_cid){
+    log_info("decline cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (!channel) return;
+    if (!channel) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+
     switch (channel->state) {
         case RFCOMM_CHANNEL_INCOMING_SETUP:
             channel->state = RFCOMM_CHANNEL_SEND_DM;
             l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
-            break;
+            return ERROR_CODE_SUCCESS;
         default:
-            break;
+            return ERROR_CODE_COMMAND_DISALLOWED;
     }
 }
 
-void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits){
-    log_info("RFCOMM_GRANT_CREDITS cid 0x%02x credits %u", rfcomm_cid, credits);
+uint8_t rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits){
+    log_info("grant cid 0x%02x credits %u", rfcomm_cid, credits);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (!channel) return;
-    if (!channel->incoming_flow_control) return;
+    if (!channel) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    if (!channel->incoming_flow_control) return ERROR_CODE_COMMAND_DISALLOWED;
     channel->new_credits_incoming += credits;
 
     // process
     l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 #ifdef RFCOMM_USE_ERTM

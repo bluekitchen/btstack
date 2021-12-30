@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -67,25 +67,25 @@ static uint16_t  att_db_hash_len;
 
 static void att_db_util_set_end_tag(void){
 	// end tag
-	att_db[att_db_size] = 0;
+	att_db[att_db_size] = 0u;
 	att_db[att_db_size+1u] = 0u;
 }
 
 void att_db_util_init(void){
 #ifdef HAVE_MALLOC
     if (att_db == NULL){
-        att_db = (uint8_t*) malloc(ATT_DB_BUFFER_INCREMENT);
-        att_db_max_size = ATT_DB_BUFFER_INCREMENT;
+        att_db = (uint8_t*) malloc((size_t)ATT_DB_BUFFER_INCREMENT);
+        att_db_max_size = (uint16_t)ATT_DB_BUFFER_INCREMENT;
     }
 #else
 	att_db = att_db_storage;
 	att_db_max_size = sizeof(att_db_storage);
 #endif
 	// store att version
-	att_db[0] = ATT_DB_VERSION;
-	att_db_size = 1;
-	att_db_next_handle = 1;
-	att_db_hash_len = 0;
+	att_db[0] = (uint8_t)ATT_DB_VERSION;
+	att_db_size = 1u;
+	att_db_next_handle = 1u;
+	att_db_hash_len = 0u;
 	att_db_util_set_end_tag();
 }
 
@@ -120,15 +120,15 @@ static bool att_db_util_hash_include_without_value(uint16_t uuid16){
 
 /**
  * asserts that the requested amount of bytes can be stored in the att_db
- * @returns TRUE if space is available
+ * @return TRUE if space is available
  */
 static int att_db_util_assert_space(uint16_t size){
-	uint16_t required_size = att_db_size + size + 2;
+	uint16_t required_size = att_db_size + size + 2u;
 	if (required_size <= att_db_max_size) return 1;
 #ifdef HAVE_MALLOC
     uint16_t new_size = att_db_max_size;
 	while (new_size < required_size){
-        new_size += ATT_DB_BUFFER_INCREMENT;
+        new_size += (uint16_t)ATT_DB_BUFFER_INCREMENT;
 	}
 	uint8_t * new_db = (uint8_t*) realloc(att_db, new_size);
 	if (!new_db) {
@@ -175,7 +175,7 @@ static void att_db_util_add_attribute_uuid16(uint16_t uuid16, uint16_t flags, ui
 static void att_db_util_add_attribute_uuid128(const uint8_t * uuid128, uint16_t flags, uint8_t * data, uint16_t data_len){
 	int size = 2u + 2u + 2u + 16u + data_len;
 	if (!att_db_util_assert_space(size)) return;
-	uint16_t flags_to_store = flags | ATT_PROPERTY_UUID128;
+	uint16_t flags_to_store = flags | (uint16_t)ATT_PROPERTY_UUID128;
 	little_endian_store_16(att_db, att_db_size, size);
 	att_db_size += 2u;
 	little_endian_store_16(att_db, att_db_size, flags_to_store);
@@ -235,7 +235,7 @@ uint16_t att_db_util_add_included_service_uuid16(uint16_t start_group_handle, ui
 static void att_db_util_add_client_characteristic_configuration(uint16_t flags){
 	uint8_t buffer[2];
 	// drop permission for read (0xc00), keep write permissions (0x0091)
-	uint16_t flags_to_store = (flags & 0x1f391u) | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC;
+	uint16_t flags_to_store = (flags & 0x1f391u) | (uint16_t)ATT_PROPERTY_READ | (uint16_t)ATT_PROPERTY_WRITE | (uint16_t)ATT_PROPERTY_DYNAMIC;
 	little_endian_store_16(buffer, 0, 0); 
 	att_db_util_add_attribute_uuid16(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, flags_to_store, buffer, 2);
 }
@@ -244,36 +244,36 @@ static uint16_t att_db_util_encode_permissions(uint16_t properties, uint8_t read
     // drop Broadcast (0x01), Notify (0x10), Indicate (0x20), Extended Attributes (0x80) - not used for flags 
     uint16_t flags = properties & 0xfff4eu;
     // if encryption requested, set encryption key size to 16
-    if ((read_permission > ATT_SECURITY_NONE) || (write_permission > ATT_SECURITY_NONE)){
+    if ((read_permission > (uint8_t)ATT_SECURITY_NONE) || (write_permission > (uint8_t)ATT_SECURITY_NONE)){
     	flags |= 0xf000u;
     }
     // map SC requirement
     uint8_t final_read_permission;
-    if (read_permission == ATT_SECURITY_AUTHENTICATED_SC){
-        final_read_permission =  ATT_SECURITY_AUTHENTICATED;
-        flags |= ATT_PROPERTY_READ_PERMISSION_SC;
+    if (read_permission == (uint8_t)ATT_SECURITY_AUTHENTICATED_SC){
+        final_read_permission =  (uint8_t)ATT_SECURITY_AUTHENTICATED;
+        flags |= (uint16_t)ATT_PROPERTY_READ_PERMISSION_SC;
     } else {
         final_read_permission = read_permission;
     }
     uint8_t final_write_permission;
-    if (write_permission == ATT_SECURITY_AUTHENTICATED_SC){
-        final_write_permission =  ATT_SECURITY_AUTHENTICATED;
-        flags |= ATT_PROPERTY_WRITE_PERMISSION_SC;
+    if (write_permission == (uint8_t)ATT_SECURITY_AUTHENTICATED_SC){
+        final_write_permission = (uint8_t)ATT_SECURITY_AUTHENTICATED;
+        flags |= (uint16_t)ATT_PROPERTY_WRITE_PERMISSION_SC;
     } else {
         final_write_permission = write_permission;
     }
     // encode read/write security levels
     if (final_read_permission & 1u){
-    	flags |= ATT_PROPERTY_READ_PERMISSION_BIT_0;
+    	flags |= (uint16_t)ATT_PROPERTY_READ_PERMISSION_BIT_0;
     }
     if (final_read_permission & 2u){
-    	flags |= ATT_PROPERTY_READ_PERMISSION_BIT_1;
+    	flags |= (uint16_t)ATT_PROPERTY_READ_PERMISSION_BIT_1;
     }
     if (final_write_permission & 1u){
-    	flags |= ATT_PROPERTY_WRITE_PERMISSION_BIT_0;
+    	flags |= (uint16_t)ATT_PROPERTY_WRITE_PERMISSION_BIT_0;
     }
     if (final_write_permission & 2u){
-    	flags |= ATT_PROPERTY_WRITE_PERMISSION_BIT_1;
+    	flags |= (uint16_t)ATT_PROPERTY_WRITE_PERMISSION_BIT_1;
     }
 	return flags;
 }
@@ -287,7 +287,7 @@ uint16_t att_db_util_add_characteristic_uuid16(uint16_t uuid16, uint16_t propert
 	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
 	uint16_t value_handle = att_db_next_handle;
 	att_db_util_add_attribute_uuid16(uuid16, flags, data, data_len);
-	if (properties & (ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)){
+	if (properties & (uint8_t)(ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)){
 		att_db_util_add_client_characteristic_configuration(flags);
 	}
 	return value_handle;
@@ -302,7 +302,7 @@ uint16_t att_db_util_add_characteristic_uuid128(const uint8_t * uuid128, uint16_
 	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
 	uint16_t value_handle = att_db_next_handle;
 	att_db_util_add_attribute_uuid128(uuid128, flags, data, data_len);
-	if (properties & (ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)){
+	if (properties & (uint8_t)(ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)){
 		att_db_util_add_client_characteristic_configuration(flags);
 	}
 	return value_handle;
@@ -340,7 +340,7 @@ static void att_db_util_hash_fetch_next_attribute(void){
         btstack_assert(size != 0);
         UNUSED(size);
         uint16_t flags = little_endian_read_16(att_db_util_hash_att_ptr, 2);
-        if ((flags & ATT_PROPERTY_UUID128) == 0u) {
+        if ((flags & (uint16_t)ATT_PROPERTY_UUID128) == 0u) {
             uint16_t uuid16 = little_endian_read_16(att_db_util_hash_att_ptr, 6);
             if (att_db_util_hash_include_with_value(uuid16)){
                 att_db_util_hash_offset = 4;
@@ -363,7 +363,7 @@ uint16_t att_db_util_hash_len(void){
 void att_db_util_hash_init(void){
     // skip version info
     att_db_util_hash_att_ptr = &att_db[1];
-    att_db_util_hash_bytes_available = 0;
+    att_db_util_hash_bytes_available = 0u;
 }
 
 uint8_t att_db_util_hash_get_next(void){

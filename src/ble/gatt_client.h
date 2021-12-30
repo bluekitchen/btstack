@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -289,6 +289,16 @@ int gatt_client_is_ready(hci_con_handle_t con_handle);
 uint8_t gatt_client_discover_primary_services(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
 
 /** 
+ * @brief Discovers all secondary services. For each found service, an le_service_event_t with type set to GATT_EVENT_SERVICE_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t, with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of discovery. 
+ * @param  callback   
+ * @param  con_handle
+ * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found 
+ *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
+ *                ERROR_CODE_SUCCESS         , if query is successfully registered
+ */
+uint8_t gatt_client_discover_secondary_services(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
+
+/** 
  * @brief Discovers a specific primary service given its UUID. This service may exist multiple times. For each found service, an le_service_event_t with type set to GATT_EVENT_SERVICE_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t, with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of discovery. 
  * @param callback   
  * @param con_handle
@@ -489,7 +499,7 @@ uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t
  * @param  con_handle   
  * @param  value_handle
  * @param  value_length
- * @param  value is not copied, make sure memory is accessible until write is done
+ * @param  value is copied on success and does not need to be retained
  * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                BTSTACK_ACL_BUFFERS_FULL   , if L2CAP cannot send, there are no free ACL slots
@@ -723,7 +733,7 @@ void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_not
  * @brief Requests GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE that guarantees a single successful gatt_client_write_value_of_characteristic_without_response
  * @param  callback
  * @param  con_handle
- * @returns status
+ * @return status
  */
 uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
 

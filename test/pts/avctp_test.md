@@ -21,6 +21,9 @@ AVCTP/TG/CCM/BV-02-C : C
 AVCTP/TG/CCM/BV-03-C : (wait)
 AVCTP/TG/CCM/BV-04-C : (wait)
 
+AVCTP/TG/FRA/BV-02-C : tl, OK
+AVCTP/TG/FRA/BV-03-C : tl, OK
+
 AVCTP/TG/NFR/BI-01-C : (wait)
 AVCTP/TG/NFR/BV-02-C : (wait)
 AVCTP/TG/NFR/BV-03-C : (wait)

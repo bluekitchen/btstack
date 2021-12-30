@@ -10,6 +10,7 @@ SUBDIRS =  \
 	ble_client \
 	btstack_link_key_db \
 	btstack_memory \
+	classic-oob-pairing \
 	crypto \
 	des_iterator \
 	embedded \
@@ -21,6 +22,8 @@ SUBDIRS =  \
 	gatt_service \
 	hfp \
 	hid_parser \
+	l2cap-cbm \
+	l2cap-ecbm \
 	le_device_db_tlv \
 	linked_list \
 	map_test \
@@ -57,6 +60,7 @@ SUBDIRS_BLE = \
 	gatt_server \
 	gatt_service \
 	hid_parser \
+	l2cap-cbm \
 	le_device_db_tlv \
 	linked_list \
 	ring_buffer \

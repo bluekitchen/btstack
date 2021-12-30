@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -87,6 +87,8 @@ static volatile uint32_t system_ticks;
 
 static int trigger_event_received = 0;
 
+static bool run_loop_exit_requested;
+
 // set timer
 static void btstack_run_loop_embedded_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
 #ifdef HAVE_EMBEDDED_TICK
@@ -107,6 +109,9 @@ void btstack_run_loop_embedded_execute_once(void) {
 
     // poll data sources
     btstack_run_loop_base_poll_data_sources();
+
+    // execute callbacks
+    btstack_run_loop_base_execute_callbacks();
 
 #ifdef TIMER_SUPPORT
 
@@ -135,9 +140,13 @@ void btstack_run_loop_embedded_execute_once(void) {
  * Execute run_loop
  */
 static void btstack_run_loop_embedded_execute(void) {
-    while (true) {
+    while (run_loop_exit_requested == false) {
         btstack_run_loop_embedded_execute_once();
     }
+}
+
+static void btstack_run_loop_embedded_trigger_exit(void){
+    run_loop_exit_requested = true;
 }
 
 #ifdef HAVE_EMBEDDED_TICK
@@ -165,12 +174,18 @@ static uint32_t btstack_run_loop_embedded_get_time_ms(void){
 #endif
 }
 
-
-/**
- * trigger run loop iteration
- */
-void btstack_run_loop_embedded_trigger(void){
+static void btstack_run_loop_embedded_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration){
+    btstack_run_loop_base_add_callback(callback_registration);
     trigger_event_received = 1;
+}
+
+static void btstack_run_loop_embedded_poll_data_sources_from_irq(void){
+    trigger_event_received = 1;
+}
+
+// @deprecated Use btstack_run_loop_poll_data_sources_from_irq() instead
+void btstack_run_loop_embedded_trigger(void){
+    btstack_run_loop_embedded_poll_data_sources_from_irq();
 }
 
 static void btstack_run_loop_embedded_init(void){
@@ -199,6 +214,9 @@ static const btstack_run_loop_t btstack_run_loop_embedded = {
     &btstack_run_loop_embedded_execute,
     &btstack_run_loop_base_dump_timer,
     &btstack_run_loop_embedded_get_time_ms,
+    &btstack_run_loop_embedded_poll_data_sources_from_irq,
+    &btstack_run_loop_embedded_execute_on_main_thread,
+    &btstack_run_loop_embedded_trigger_exit,
 };
 
 const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void){

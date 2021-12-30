@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -93,13 +93,13 @@ typedef struct {
     btstack_packet_handler_t client_handler;
 } goep_client_t;
 
-static goep_client_t _goep_client;
-static goep_client_t * goep_client = &_goep_client;
+static goep_client_t   goep_client_singleton;
+static goep_client_t * goep_client = &goep_client_singleton;
 
-static uint8_t            attribute_value[30];
-static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
+static uint8_t            goep_client_sdp_query_attribute_value[30];
+static const unsigned int goep_client_sdp_query_attribute_value_buffer_size = sizeof(goep_client_sdp_query_attribute_value);
 
-static uint8_t goep_packet_buffer[100];
+static uint8_t goep_packet_buffer[150];
 
 #ifdef ENABLE_GOEP_L2CAP
 static uint8_t ertm_buffer[1000];
@@ -111,7 +111,7 @@ static l2cap_ertm_config_t ertm_config = {
     512,    // l2cap ertm mtu
     2,
     2,
-    0,      // No FCS
+    1,      // 16-bit FCS
 };
 #endif
 
@@ -246,13 +246,13 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             }
 
             // warn if attribute too large to fit in our buffer
-            if (sdp_event_query_attribute_byte_get_attribute_length(packet) > attribute_value_buffer_size) {
-                log_error("SDP attribute value size exceeded for attribute %x: available %d, required %d", sdp_event_query_attribute_byte_get_attribute_id(packet), attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
+            if (sdp_event_query_attribute_byte_get_attribute_length(packet) > goep_client_sdp_query_attribute_value_buffer_size) {
+                log_error("SDP attribute value size exceeded for attribute %x: available %d, required %d", sdp_event_query_attribute_byte_get_attribute_id(packet), goep_client_sdp_query_attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
                 break;
             }
 
             // store single byte
-            attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+            goep_client_sdp_query_attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
 
             // wait until value fully received
             if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) != sdp_event_query_attribute_byte_get_attribute_length(packet)) break;
@@ -260,7 +260,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             // process attributes
             switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
-                    for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                    for (des_iterator_init(&des_list_it, goep_client_sdp_query_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t       *des_element;
                         uint8_t       *element;
                         uint32_t       uuid;
@@ -301,13 +301,13 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                     break;
 #ifdef ENABLE_GOEP_L2CAP
                 case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
-                    de_element_get_uint16(attribute_value, &context->l2cap_psm);
+                    de_element_get_uint16(goep_client_sdp_query_attribute_value, &context->l2cap_psm);
                     break;
 #endif
                 case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
-                    if (de_get_element_type(attribute_value) != DE_UINT) break;
-                    if (de_get_size_type(attribute_value)    != DE_SIZE_32) break;
-                    context->pbap_supported_features  = big_endian_read_32(attribute_value, de_get_header_size(attribute_value));
+                    if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
+                    if (de_get_size_type(goep_client_sdp_query_attribute_value) != DE_SIZE_32) break;
+                    context->pbap_supported_features  = big_endian_read_32(goep_client_sdp_query_attribute_value, de_get_header_size(goep_client_sdp_query_attribute_value));
                     log_info("pbap_supported_features 0x%x", (unsigned int) context->pbap_supported_features);
                     break;
                 default:
@@ -332,7 +332,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
 #ifdef ENABLE_GOEP_L2CAP
             if (context->l2cap_psm){
                 log_info("Remote GOEP L2CAP PSM: %u", context->l2cap_psm);
-                l2cap_create_ertm_channel(&goep_client_packet_handler, context->bd_addr, context->l2cap_psm,
+                l2cap_ertm_create_channel(&goep_client_packet_handler, context->bd_addr, context->l2cap_psm,
                                           &ertm_config, ertm_buffer, sizeof(ertm_buffer), &context->bearer_cid);
                 return;
             }
@@ -381,6 +381,9 @@ void goep_client_init(void){
 }
 
 void goep_client_deinit(void){
+    memset(goep_client, 0, sizeof(goep_client_t));
+    memset(goep_client_sdp_query_attribute_value, 0, sizeof(goep_client_sdp_query_attribute_value));
+    memset(goep_packet_buffer, 0, sizeof(goep_packet_buffer));
 }
 
 uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid){
@@ -394,7 +397,7 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
     (void)memcpy(context->bd_addr, addr, 6);
     sdp_client_query_uuid16(&goep_client_handle_sdp_query_event, context->bd_addr, uuid);
     *out_cid = context->cid;
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid){
@@ -403,11 +406,17 @@ uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid){
     return context->pbap_supported_features;
 }
 
+bool goep_client_version_20_or_higher(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    return context->l2cap_psm != 0;
+}
+
 uint8_t goep_client_disconnect(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
     rfcomm_disconnect(context->bearer_cid);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 void goep_client_set_connection_id(uint16_t goep_cid, uint32_t connection_id){
@@ -574,6 +583,15 @@ void goep_client_header_add_name(uint16_t goep_cid, const char * name){
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_header_add_name(buffer, buffer_len, name);
+}
+
+void goep_client_header_add_name_prefix(uint16_t goep_cid, const char * name, uint16_t name_len){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_header_add_name_prefix(buffer, buffer_len, name, name_len);
 }
 
 void goep_client_header_add_type(uint16_t goep_cid, const char * type){

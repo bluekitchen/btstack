@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -56,11 +56,14 @@ static wiced_result_t stdin_reader_notify(void * p){
     return WICED_SUCCESS;
 }
 
+static btstack_context_callback_registration_t callback_registration;
 static void stdin_reader_thread_process(wiced_thread_arg_t p){
     UNUSED(p);
+    callback_registration.callback = &callback_registration;
     while (true){
         uint8_t c = getchar();
-        btstack_run_loop_wiced_execute_code_on_main_thread(&stdin_reader_notify, (void *)(uintptr_t) c);
+        callback_registration.context =  (void *)(uintptr_t) c;
+        btstack_run_loop_execute_code_on_main_thread(&callback_registration);
     }
 }
 

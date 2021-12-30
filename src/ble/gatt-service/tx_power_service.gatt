@@ -1,0 +1,6 @@
+// Specification Type org.bluetooth.service.tx_power
+// https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Services/org.bluetooth.service.tx_power.xml
+
+// Tx Power 1804
+PRIMARY_SERVICE, ORG_BLUETOOTH_SERVICE_TX_POWER
+CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_TX_POWER_LEVEL, DYNAMIC | READ | NOTIFY,

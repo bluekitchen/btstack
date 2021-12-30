@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -54,14 +54,14 @@
 #include "classic/sdp_util.h"
 #include "l2cap.h"
 
-static const char default_panu_service_name[] = "Personal Ad-hoc User Service";
-static const char default_panu_service_desc[] = "Personal Ad-hoc User Service";
+static const char pan_default_panu_service_name[] = "Personal Ad-hoc User Service";
+static const char pan_default_panu_service_desc[] = "Personal Ad-hoc User Service";
 
-static const char default_nap_service_name[] = "Network Access Point Service";
-static const char default_nap_service_desc[] = "Personal Ad-hoc Network Service which provides access to a network";
+static const char pan_default_nap_service_name[] = "Network Access Point Service";
+static const char pan_default_nap_service_desc[] = "Personal Ad-hoc Network Service which provides access to a network";
 
-static const char default_gn_service_name[] = "Group Ad-hoc Network Service";
-static const char default_gn_service_desc[] = "Personal Group Ad-hoc Network Service";
+static const char pan_default_gn_service_name[] = "Group Ad-hoc Network Service";
+static const char pan_default_gn_service_desc[] = "Personal Group Ad-hoc Network Service";
 
 static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 	 uint32_t service_uuid, uint16_t * network_packet_types, const char *name, const char *descriptor,
@@ -156,13 +156,13 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 	} else {
 		switch (service_uuid){
 			case BLUETOOTH_SERVICE_CLASS_PANU:
-				de_add_data(service,  DE_STRING, strlen(default_panu_service_name), (uint8_t *) default_panu_service_name);
+				de_add_data(service, DE_STRING, strlen(pan_default_panu_service_name), (uint8_t *) pan_default_panu_service_name);
 				break;
 			case BLUETOOTH_SERVICE_CLASS_NAP:
-				de_add_data(service,  DE_STRING, strlen(default_nap_service_name), (uint8_t *) default_nap_service_name);
+				de_add_data(service, DE_STRING, strlen(pan_default_nap_service_name), (uint8_t *) pan_default_nap_service_name);
 				break;
 			case BLUETOOTH_SERVICE_CLASS_GN:
-				de_add_data(service,  DE_STRING, strlen(default_gn_service_name), (uint8_t *) default_gn_service_name);
+				de_add_data(service, DE_STRING, strlen(pan_default_gn_service_name), (uint8_t *) pan_default_gn_service_name);
 				break;
 			default:
 				break;
@@ -176,13 +176,13 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 	} else {
 		switch (service_uuid){
 			case BLUETOOTH_SERVICE_CLASS_PANU:
-				de_add_data(service,  DE_STRING, strlen(default_panu_service_desc), (uint8_t *) default_panu_service_desc);
+				de_add_data(service, DE_STRING, strlen(pan_default_panu_service_desc), (uint8_t *) pan_default_panu_service_desc);
 				break;
 			case BLUETOOTH_SERVICE_CLASS_NAP:
-				de_add_data(service,  DE_STRING, strlen(default_nap_service_desc), (uint8_t *) default_nap_service_desc);
+				de_add_data(service, DE_STRING, strlen(pan_default_nap_service_desc), (uint8_t *) pan_default_nap_service_desc);
 				break;
 			case BLUETOOTH_SERVICE_CLASS_GN:
-				de_add_data(service,  DE_STRING, strlen(default_gn_service_desc), (uint8_t *) default_gn_service_desc);
+				de_add_data(service, DE_STRING, strlen(pan_default_gn_service_desc), (uint8_t *) pan_default_gn_service_desc);
 				break;
 			default:
 				break;

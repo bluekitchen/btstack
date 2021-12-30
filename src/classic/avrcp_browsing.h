@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -76,7 +76,7 @@ void avrcp_browsing_register_packet_handler(btstack_packet_handler_t callback);
  * @param   ertm_buffer_size
  * @param   ertm_config
  * @param   avrcp_browsing_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
- * @returns status     
+ * @return status     
  */
 uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid);
 
@@ -86,21 +86,21 @@ uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uin
  * @param ertm_buffer
  * @param ertm_buffer_size
  * @param ertm_config
- * @returns status
+ * @return status
  */
 uint8_t avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config);
 
 /**
  * @brief Decline incoming connection Browsing Service.
  * @param avrcp_browsing_cid
- * @returns status
+ * @return status
  */
 uint8_t avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid);
 
 /**
  * @brief   Disconnect from AVRCP Browsing service
  * @param   avrcp_browsing_cid
- * @returns status
+ * @return status
  */
 uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid);
 

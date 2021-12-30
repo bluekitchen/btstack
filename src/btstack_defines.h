@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -78,179 +78,186 @@ typedef uint8_t sm_key_t[16];
 // DEFINES
 
 // hci con handles (12 bit): 0x0000..0x0fff
-#define HCI_CON_HANDLE_INVALID 0xffff
+#define HCI_CON_HANDLE_INVALID  0xffffu
 
 
-#define DAEMON_EVENT_PACKET     0x05
+#define DAEMON_EVENT_PACKET     0x05u
     
 // L2CAP data
-#define L2CAP_DATA_PACKET       0x06
+#define L2CAP_DATA_PACKET       0x06u
 
 // RFCOMM data
-#define RFCOMM_DATA_PACKET      0x07
+#define RFCOMM_DATA_PACKET      0x07u
 
 // Attribute protocol data
-#define ATT_DATA_PACKET         0x08
+#define ATT_DATA_PACKET         0x08u
 
 // Security Manager protocol data
-#define SM_DATA_PACKET          0x09
+#define SM_DATA_PACKET          0x09u
 
 // SDP query result - only used by daemon
 // format: type (8), record_id (16), attribute_id (16), attribute_length (16), attribute_value (max 1k)
-#define SDP_CLIENT_PACKET       0x0a
+#define SDP_CLIENT_PACKET       0x0au
 
 // BNEP data
-#define BNEP_DATA_PACKET        0x0b
+#define BNEP_DATA_PACKET        0x0bu
 
 // Unicast Connectionless Data
-#define UCD_DATA_PACKET         0x0c
+#define UCD_DATA_PACKET         0x0cu
 
 // GOEP data
-#define GOEP_DATA_PACKET        0x0d
+#define GOEP_DATA_PACKET        0x0du
 
 // PBAP data
-#define PBAP_DATA_PACKET        0x0e
+#define PBAP_DATA_PACKET        0x0eu
 
 // AVRCP browsing data
-#define AVRCP_BROWSING_DATA_PACKET     0x0f
+#define AVRCP_BROWSING_DATA_PACKET     0x0fu
 
 // MAP data
-#define MAP_DATA_PACKET        0x10
+#define MAP_DATA_PACKET        0x10u
 
 // Mesh Provisioning PDU
-#define PROVISIONING_DATA_PACKET 0x11
+#define PROVISIONING_DATA_PACKET 0x11u
 
 // Mesh Proxy PDU
-#define MESH_PROXY_DATA_PACKET   0x11
+#define MESH_PROXY_DATA_PACKET   0x11u
 
 // Mesh Network PDU
-#define MESH_NETWORK_PACKET      0x12
+#define MESH_NETWORK_PACKET      0x12u
 
 // Mesh Network PDU
-#define MESH_BEACON_PACKET       0x13
+#define MESH_BEACON_PACKET       0x13u
 
 // debug log messages
-#define LOG_MESSAGE_PACKET      0xfc
+#define LOG_MESSAGE_PACKET      0xfcu
 
 
 // DAEMON COMMANDS
 
-#define OGF_BTSTACK 0x3d
+#define OGF_BTSTACK 0x3du
 
 // cmds for BTstack 
-// get state: @returns HCI_STATE
-#define BTSTACK_GET_STATE                                  0x01
+// get state: @return HCI_STATE
+#define BTSTACK_GET_STATE                                  0x01u
 
 // set power mode: param HCI_POWER_MODE
-#define BTSTACK_SET_POWER_MODE                             0x02
+#define BTSTACK_SET_POWER_MODE                             0x02u
 
 // set capture mode: param on
-#define BTSTACK_SET_ACL_CAPTURE_MODE                       0x03
+#define BTSTACK_SET_ACL_CAPTURE_MODE                       0x03u
 
 // get BTstack version
-#define BTSTACK_GET_VERSION                                0x04
+#define BTSTACK_GET_VERSION                                0x04u
 
 // get system Bluetooth state
-#define BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED               0x05
+#define BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED               0x05u
 
 // set system Bluetooth state
-#define BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED               0x06
+#define BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED               0x06u
 
 // enable inquiry scan for this client
-#define BTSTACK_SET_DISCOVERABLE                           0x07
+#define BTSTACK_SET_DISCOVERABLE                           0x07u
 
 // set global Bluetooth state
-#define BTSTACK_SET_BLUETOOTH_ENABLED                      0x08
+#define BTSTACK_SET_BLUETOOTH_ENABLED                      0x08u
 
 // create l2cap channel: param bd_addr(48), psm (16)
-#define L2CAP_CREATE_CHANNEL                               0x20
+#define L2CAP_CREATE_CHANNEL                               0x20u
 
 // disconnect l2cap disconnect, param channel(16), reason(8)
-#define L2CAP_DISCONNECT                                   0x21
+#define L2CAP_DISCONNECT                                   0x21u
 
 // register l2cap service: param psm(16), mtu (16)
-#define L2CAP_REGISTER_SERVICE                             0x22
+#define L2CAP_REGISTER_SERVICE                             0x22u
 
 // unregister l2cap disconnect, param psm(16)
-#define L2CAP_UNREGISTER_SERVICE                           0x23
+#define L2CAP_UNREGISTER_SERVICE                           0x23u
 
 // accept connection param bd_addr(48), dest cid (16)
-#define L2CAP_ACCEPT_CONNECTION                            0x24
+#define L2CAP_ACCEPT_CONNECTION                            0x24u
 
 // decline l2cap disconnect,param bd_addr(48), dest cid (16), reason(8)
-#define L2CAP_DECLINE_CONNECTION                           0x25
+#define L2CAP_DECLINE_CONNECTION                           0x25u
 
 // create l2cap channel: param bd_addr(48), psm (16), mtu (16)
-#define L2CAP_CREATE_CHANNEL_MTU                           0x26
+#define L2CAP_CREATE_CHANNEL_MTU                           0x26u
 
 // register SDP Service Record: service record (size)
-#define SDP_REGISTER_SERVICE_RECORD                        0x30
+#define SDP_REGISTER_SERVICE_RECORD                        0x30u
 
 // unregister SDP Service Record
-#define SDP_UNREGISTER_SERVICE_RECORD                      0x31
+#define SDP_UNREGISTER_SERVICE_RECORD                      0x31u
 
 // Get remote RFCOMM services
-#define SDP_CLIENT_QUERY_RFCOMM_SERVICES                   0x32
+#define SDP_CLIENT_QUERY_RFCOMM_SERVICES                   0x32u
 
 // Get remote SDP services
-#define SDP_CLIENT_QUERY_SERVICES                          0x33
+#define SDP_CLIENT_QUERY_SERVICES                          0x33u
 
 // RFCOMM "HCI" Commands
-#define RFCOMM_CREATE_CHANNEL       0x40
-#define RFCOMM_DISCONNECT     0x41
-#define RFCOMM_REGISTER_SERVICE     0x42
-#define RFCOMM_UNREGISTER_SERVICE   0x43
-#define RFCOMM_ACCEPT_CONNECTION    0x44
-#define RFCOMM_DECLINE_CONNECTION   0x45
-#define RFCOMM_PERSISTENT_CHANNEL   0x46
-#define RFCOMM_CREATE_CHANNEL_WITH_CREDITS   0x47
-#define RFCOMM_REGISTER_SERVICE_WITH_CREDITS 0x48
-#define RFCOMM_GRANT_CREDITS                 0x49
+#define RFCOMM_CREATE_CHANNEL       0x40u
+#define RFCOMM_DISCONNECT     0x41u
+#define RFCOMM_REGISTER_SERVICE     0x42u
+#define RFCOMM_UNREGISTER_SERVICE   0x43u
+#define RFCOMM_ACCEPT_CONNECTION    0x44u
+#define RFCOMM_DECLINE_CONNECTION   0x45u
+#define RFCOMM_PERSISTENT_CHANNEL   0x46u
+#define RFCOMM_CREATE_CHANNEL_WITH_CREDITS   0x47u
+#define RFCOMM_REGISTER_SERVICE_WITH_CREDITS 0x48u
+#define RFCOMM_GRANT_CREDITS                 0x49u
     
-// GAP Classic 0x50
-#define GAP_DISCONNECT              0x50
+// GAP Classic 0x50u
+#define GAP_DISCONNECT                0x50u
+#define GAP_INQUIRY_START             0x51u
+#define GAP_INQUIRY_STOP              0x52u
+#define GAP_REMOTE_NAME_REQUEST       0x53u
+#define GAP_DROP_LINK_KEY_FOR_BD_ADDR 0x54u
+#define GAP_DELETE_ALL_LINK_KEYS      0x55u
+#define GAP_PIN_CODE_RESPONSE         0x56u
+#define GAP_PIN_CODE_NEGATIVE         0x57u
 
-// GAP LE      0x60  
-#define GAP_LE_SCAN_START           0x60
-#define GAP_LE_SCAN_STOP            0x61
-#define GAP_LE_CONNECT              0x62
-#define GAP_LE_CONNECT_CANCEL       0x63
-#define GAP_LE_SET_SCAN_PARAMETERS  0x64
+// GAP LE      0x60u
+#define GAP_LE_SCAN_START           0x60u
+#define GAP_LE_SCAN_STOP            0x61u
+#define GAP_LE_CONNECT              0x62u
+#define GAP_LE_CONNECT_CANCEL       0x63u
+#define GAP_LE_SET_SCAN_PARAMETERS  0x64u
 
-// GATT (Client) 0x70
-#define GATT_DISCOVER_ALL_PRIMARY_SERVICES                       0x70
-#define GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID16                 0x71
-#define GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128                0x72
-#define GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE                  0x73
-#define GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE                0x74
-#define GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128     0x75
-#define GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS                 0x76
-#define GATT_READ_VALUE_OF_CHARACTERISTIC                        0x77
-#define GATT_READ_LONG_VALUE_OF_CHARACTERISTIC                   0x78
-#define GATT_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE      0x79
-#define GATT_WRITE_VALUE_OF_CHARACTERISTIC                       0x7A
-#define GATT_WRITE_LONG_VALUE_OF_CHARACTERISTIC                  0x7B
-#define GATT_RELIABLE_WRITE_LONG_VALUE_OF_CHARACTERISTIC         0x7C
-#define GATT_READ_CHARACTERISTIC_DESCRIPTOR                      0X7D
-#define GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR                 0X7E
-#define GATT_WRITE_CHARACTERISTIC_DESCRIPTOR                     0X7F
-#define GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR                0X80
-#define GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION           0X81
-#define GATT_GET_MTU                                             0x82
+// GATT (Client) 0x70u
+#define GATT_DISCOVER_ALL_PRIMARY_SERVICES                       0x70u
+#define GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID16                 0x71u
+#define GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128                0x72u
+#define GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE                  0x73u
+#define GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE                0x74u
+#define GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128     0x75u
+#define GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS                 0x76u
+#define GATT_READ_VALUE_OF_CHARACTERISTIC                        0x77u
+#define GATT_READ_LONG_VALUE_OF_CHARACTERISTIC                   0x78u
+#define GATT_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE      0x79u
+#define GATT_WRITE_VALUE_OF_CHARACTERISTIC                       0x7Au
+#define GATT_WRITE_LONG_VALUE_OF_CHARACTERISTIC                  0x7Bu
+#define GATT_RELIABLE_WRITE_LONG_VALUE_OF_CHARACTERISTIC         0x7Cu
+#define GATT_READ_CHARACTERISTIC_DESCRIPTOR                      0X7Du
+#define GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR                 0X7Eu
+#define GATT_WRITE_CHARACTERISTIC_DESCRIPTOR                     0X7Fu
+#define GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR                0X80u
+#define GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION           0X81u
+#define GATT_GET_MTU                                             0x82u
 
-// SM 0x90
-#define SM_SET_AUTHENTICATION_REQUIREMENTS 0x90
-#define SM_SET_IO_CAPABILITIES             0x92
-#define SM_BONDING_DECLINE                 0x93
-#define SM_JUST_WORKS_CONFIRM              0x94
-#define SM_NUMERIC_COMPARISON_CONFIRM      0x95
-#define SM_PASSKEY_INPUT                   0x96
+// SM 0x90u
+#define SM_SET_AUTHENTICATION_REQUIREMENTS 0x90u
+#define SM_SET_IO_CAPABILITIES             0x92u
+#define SM_BONDING_DECLINE                 0x93u
+#define SM_JUST_WORKS_CONFIRM              0x94u
+#define SM_NUMERIC_COMPARISON_CONFIRM      0x95u
+#define SM_PASSKEY_INPUT                   0x96u
 
 // ATT
 
 // ..
 // Internal properties reuse some GATT Characteristic Properties fields
-#define ATT_DB_VERSION                                     0x01
+#define ATT_DB_VERSION                                     0x01u
 
 // EVENTS
 
@@ -260,7 +267,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1
  * @param status
  */
-#define HCI_EVENT_INQUIRY_COMPLETE                         0x01
+#define HCI_EVENT_INQUIRY_COMPLETE                         0x01u
 
 /** 
  * @format 1B11132
@@ -272,7 +279,7 @@ typedef uint8_t sm_key_t[16];
  * @param class_of_device
  * @param clock_offset
  */
-#define HCI_EVENT_INQUIRY_RESULT                           0x02
+#define HCI_EVENT_INQUIRY_RESULT                           0x02u
 
 /**
  * @format 12B11
@@ -282,27 +289,27 @@ typedef uint8_t sm_key_t[16];
  * @param link_type
  * @param encryption_enabled
  */
-#define HCI_EVENT_CONNECTION_COMPLETE                      0x03
+#define HCI_EVENT_CONNECTION_COMPLETE                      0x03u
 /**
  * @format B31
  * @param bd_addr
  * @param class_of_device
  * @param link_type
  */
-#define HCI_EVENT_CONNECTION_REQUEST                       0x04
+#define HCI_EVENT_CONNECTION_REQUEST                       0x04u
 /**
  * @format 121
  * @param status
  * @param connection_handle
  * @param reason 
  */
-#define HCI_EVENT_DISCONNECTION_COMPLETE                   0x05
+#define HCI_EVENT_DISCONNECTION_COMPLETE                   0x05u
 /**
  * @format 12
  * @param status
  * @param connection_handle
  */
-#define HCI_EVENT_AUTHENTICATION_COMPLETE                 0x06
+#define HCI_EVENT_AUTHENTICATION_COMPLETE                 0x06u
 
 // HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT is deprecated, use HCI_EVENT_AUTHENTICATION_COMPLETE instead
 #define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT HCI_EVENT_AUTHENTICATION_COMPLETE
@@ -313,29 +320,29 @@ typedef uint8_t sm_key_t[16];
  * @param bd_addr
  * @param remote_name
  */
-#define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE             0x07
+#define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE             0x07u
 /**
  * @format 121
  * @param status
  * @param connection_handle
  * @param encryption_enabled 
  */
-#define HCI_EVENT_ENCRYPTION_CHANGE                        0x08
+#define HCI_EVENT_ENCRYPTION_CHANGE                        0x08u
 /**
  * @format 12
  * @param status
  * @param connection_handle
  */
-#define HCI_EVENT_CHANGE_CONNECTION_LINK_KEY_COMPLETE      0x09
+#define HCI_EVENT_CHANGE_CONNECTION_LINK_KEY_COMPLETE      0x09u
 /**
  * @format 121
  * @param status
  * @param connection_handle
  * @param key_flag 
  */
-#define HCI_EVENT_MASTER_LINK_KEY_COMPLETE                 0x0A
+#define HCI_EVENT_MASTER_LINK_KEY_COMPLETE                 0x0Au
 
-#define HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE  0x0B
+#define HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE  0x0Bu
 
 /**
  * @format 12122
@@ -345,9 +352,9 @@ typedef uint8_t sm_key_t[16];
  * @param manufacturer_name
  * @param subversion
  */
-#define HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE 0x0C
+#define HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE 0x0Cu
 
-#define HCI_EVENT_QOS_SETUP_COMPLETE                       0x0D
+#define HCI_EVENT_QOS_SETUP_COMPLETE                       0x0Du
 
 /**
  * @format 12R
@@ -355,22 +362,22 @@ typedef uint8_t sm_key_t[16];
  * @param command_opcode
  * @param return_parameters
  */
-#define HCI_EVENT_COMMAND_COMPLETE                         0x0E
+#define HCI_EVENT_COMMAND_COMPLETE                         0x0Eu
 /**
  * @format 112
  * @param status
  * @param num_hci_command_packets
  * @param command_opcode
  */
-#define HCI_EVENT_COMMAND_STATUS                           0x0F
+#define HCI_EVENT_COMMAND_STATUS                           0x0Fu
 
 /**
  * @format 1
  * @param hardware_code
  */
-#define HCI_EVENT_HARDWARE_ERROR                           0x10
+#define HCI_EVENT_HARDWARE_ERROR                           0x10u
 
-#define HCI_EVENT_FLUSH_OCCURRED                           0x11
+#define HCI_EVENT_FLUSH_OCCURRED                           0x11u
 
 /**
  * @format 1B1
@@ -378,10 +385,10 @@ typedef uint8_t sm_key_t[16];
  * @param bd_addr
  * @param role
  */
-#define HCI_EVENT_ROLE_CHANGE                              0x12
+#define HCI_EVENT_ROLE_CHANGE                              0x12u
 
 // TODO: number_of_handles 1, connection_handle[H*i], hc_num_of_completed_packets[2*i]
-#define HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS              0x13
+#define HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS              0x13u
 
 /**
  * @format 1H12
@@ -390,38 +397,38 @@ typedef uint8_t sm_key_t[16];
  * @param mode
  * @param interval
  */
-#define HCI_EVENT_MODE_CHANGE                              0x14
+#define HCI_EVENT_MODE_CHANGE                              0x14u
 
 // TODO: num_keys, bd_addr[B*i], link_key[16 octets * i]
-#define HCI_EVENT_RETURN_LINK_KEYS                         0x15
+#define HCI_EVENT_RETURN_LINK_KEYS                         0x15u
 
 /**
  * @format B
  * @param bd_addr
  */
-#define HCI_EVENT_PIN_CODE_REQUEST                         0x16
+#define HCI_EVENT_PIN_CODE_REQUEST                         0x16u
 
 /**
  * @format B
  * @param bd_addr
  */
-#define HCI_EVENT_LINK_KEY_REQUEST                         0x17
+#define HCI_EVENT_LINK_KEY_REQUEST                         0x17u
 
 // TODO: bd_addr B, link_key 16octets, key_type 1
-#define HCI_EVENT_LINK_KEY_NOTIFICATION                    0x18
+#define HCI_EVENT_LINK_KEY_NOTIFICATION                    0x18u
 
 /**
  * @format 1
  * @param link_type
  */
-#define HCI_EVENT_DATA_BUFFER_OVERFLOW                     0x1A
+#define HCI_EVENT_DATA_BUFFER_OVERFLOW                     0x1Au
 
 /**
  * @format H1
  * @param handle
  * @param lmp_max_slots
  */
-#define HCI_EVENT_MAX_SLOTS_CHANGED                        0x1B
+#define HCI_EVENT_MAX_SLOTS_CHANGED                        0x1Bu
 
 /**
  * @format 1H2
@@ -429,7 +436,7 @@ typedef uint8_t sm_key_t[16];
  * @param handle
  * @param clock_offset
  */
-#define HCI_EVENT_READ_CLOCK_OFFSET_COMPLETE               0x1C
+#define HCI_EVENT_READ_CLOCK_OFFSET_COMPLETE               0x1Cu
 
 /**
  * @format 1H2
@@ -438,7 +445,7 @@ typedef uint8_t sm_key_t[16];
  * @param packet_types
  * @pnote packet_type is in plural to avoid clash with Java binding Packet.getPacketType()
  */
-#define HCI_EVENT_CONNECTION_PACKET_TYPE_CHANGED           0x1D
+#define HCI_EVENT_CONNECTION_PACKET_TYPE_CHANGED           0x1Du
 
 /** 
  * @format 1B11321
@@ -450,9 +457,9 @@ typedef uint8_t sm_key_t[16];
  * @param clock_offset
  * @param rssi
  */
-#define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI                 0x22
+#define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI                 0x22u
 
-#define HCI_EVENT_READ_REMOTE_EXTENDED_FEATURES_COMPLETE   0x23
+#define HCI_EVENT_READ_REMOTE_EXTENDED_FEATURES_COMPLETE   0x23u
 
 /**
  * @format 1HB111221
@@ -466,7 +473,7 @@ typedef uint8_t sm_key_t[16];
  * @param tx_packet_length
  * @param air_mode
  */
-#define HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE          0x2C
+#define HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE          0x2Cu
 
 // TODO: serialize extended_inquiry_response and provide parser
 /** 
@@ -479,20 +486,20 @@ typedef uint8_t sm_key_t[16];
  * @param clock_offset
  * @param rssi
  */
-#define HCI_EVENT_EXTENDED_INQUIRY_RESPONSE                0x2F
+#define HCI_EVENT_EXTENDED_INQUIRY_RESPONSE                0x2Fu
 
  /** 
   * @format 1H
   * @param status
   * @param handle
   */
-#define HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE          0x30
+#define HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE          0x30u
 
  /**
   * @format B
   * @param bd_addr
   */
-#define HCI_EVENT_IO_CAPABILITY_REQUEST                    0x31
+#define HCI_EVENT_IO_CAPABILITY_REQUEST                    0x31u
 
 /**
  * @format B111
@@ -501,55 +508,55 @@ typedef uint8_t sm_key_t[16];
  * @param oob_data_present
  * @param authentication_requirements
  */
-#define HCI_EVENT_IO_CAPABILITY_RESPONSE                   0x32
+#define HCI_EVENT_IO_CAPABILITY_RESPONSE                   0x32u
 
 /**
  * @format B4
  * @param bd_addr
  * @param numeric_value
  */
-#define HCI_EVENT_USER_CONFIRMATION_REQUEST                0x33
+#define HCI_EVENT_USER_CONFIRMATION_REQUEST                0x33u
 
 /**
  * @format B
  * @param bd_addr
  */
-#define HCI_EVENT_USER_PASSKEY_REQUEST                     0x34
+#define HCI_EVENT_USER_PASSKEY_REQUEST                     0x34u
 
 /**
  * @format B
  * @param bd_addr
  */
-#define HCI_EVENT_REMOTE_OOB_DATA_REQUEST                  0x35
+#define HCI_EVENT_REMOTE_OOB_DATA_REQUEST                  0x35u
 
 /**
  * @format 1B
  * @param status
  * @param bd_addr
  */
-#define HCI_EVENT_SIMPLE_PAIRING_COMPLETE                  0x36
+#define HCI_EVENT_SIMPLE_PAIRING_COMPLETE                  0x36u
 
 /**
  * @format B4
  * @param bd_addr
  * @param numeric_value
  */
-#define HCI_EVENT_USER_PASSKEY_NOTIFICATION                0x3B
+#define HCI_EVENT_USER_PASSKEY_NOTIFICATION                0x3Bu
 
 /**
  * @format B1
  * @param bd_addr
  * @param notification_type
  */
-#define HCI_EVENT_KEYPRESS_NOTIFICATION                    0x3C
+#define HCI_EVENT_KEYPRESS_NOTIFICATION                    0x3Cu
 
-#define HCI_EVENT_LE_META                                  0x3E
+#define HCI_EVENT_LE_META                                  0x3Eu
 
-// last used HCI_EVENT in 2.1 is 0x3d
-// last used HCI_EVENT in 4.1 is 0x57
-// last used HCI_EVENT in 5.2 is 0x58
+// last used HCI_EVENT in 2.1 is 0x3du
+// last used HCI_EVENT in 4.1 is 0x57u
+// last used HCI_EVENT in 5.2 is 0x58u
 
-#define HCI_EVENT_VENDOR_SPECIFIC                          0xFF
+#define HCI_EVENT_VENDOR_SPECIFIC                          0xFFu
 
 /** 
  * @format 11H11B2221
@@ -564,10 +571,10 @@ typedef uint8_t sm_key_t[16];
  * @param supervision_timeout
  * @param master_clock_accuracy
  */
-#define HCI_SUBEVENT_LE_CONNECTION_COMPLETE                0x01
+#define HCI_SUBEVENT_LE_CONNECTION_COMPLETE                0x01u
 
 // array of advertisements, not handled by event accessor generator
-#define HCI_SUBEVENT_LE_ADVERTISING_REPORT                 0x02
+#define HCI_SUBEVENT_LE_ADVERTISING_REPORT                 0x02u
 
 /**
  * @format 11H222
@@ -578,7 +585,15 @@ typedef uint8_t sm_key_t[16];
  * @param conn_latency
  * @param supervision_timeout
  */
- #define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03
+ #define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03u
+
+/**
+ * @format 1HD
+ * @param subevent_code
+ * @param connection_handle
+ * @param le_features
+ */
+#define HCI_SUBEVENT_LE_READ_REMOTE_FEATURES_COMPLETE 0x04u
 
 /**
  * @format 1HD2
@@ -587,16 +602,7 @@ typedef uint8_t sm_key_t[16];
  * @param random_number
  * @param encryption_diversifier
  */
-#define HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE 0x04
-
-/**
- * @format 1HD2
- * @param subevent_code
- * @param connection_handle
- * @param random_number
- * @param encryption_diversifier
- */
-#define HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST              0x05
+#define HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST              0x05u
 
 /**
  * @format 1H2222
@@ -607,7 +613,7 @@ typedef uint8_t sm_key_t[16];
  * @param latency
  * @param timeout
  */
-#define HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST 0x06
+#define HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST 0x06u
 
 /**
  * @format 1H2222
@@ -618,7 +624,7 @@ typedef uint8_t sm_key_t[16];
  * @param max_rx_octets
  * @param max_rx_time
  */
-#define HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE 0x07
+#define HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE 0x07u
 
 /**
  * @format 11QQ
@@ -627,14 +633,14 @@ typedef uint8_t sm_key_t[16];
  * @param dhkey_x x coordinate of P256 public key
  * @param dhkey_y y coordinate of P256 public key
  */
-#define HCI_SUBEVENT_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE 0x08
+#define HCI_SUBEVENT_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE 0x08u
  /**
  * @format 11Q
  * @param subevent_code
  * @param status
  * @param dhkey Diffie-Hellman key
  */
-#define HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE            0x09
+#define HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE            0x09u
 
 /**
  * @format 11H11BBB2221
@@ -651,34 +657,34 @@ typedef uint8_t sm_key_t[16];
  * @param supervision_timeout
  * @param master_clock_accuracy
  */
-#define HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE       0x0A
+#define HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE       0x0Au
 
 // array of advertisements, not handled by event accessor generator
-#define HCI_SUBEVENT_LE_DIRECT_ADVERTISING_REPORT          0x0B
+#define HCI_SUBEVENT_LE_DIRECT_ADVERTISING_REPORT          0x0Bu
 
 
 /**
  * @format 1
  * @param state
  */
-#define BTSTACK_EVENT_STATE                                0x60
+#define BTSTACK_EVENT_STATE                                0x60u
 
 /**
  * @format 1
  * @param number_connections
  */
-#define BTSTACK_EVENT_NR_CONNECTIONS_CHANGED               0x61
+#define BTSTACK_EVENT_NR_CONNECTIONS_CHANGED               0x61u
 
 /**
  * @format 
  */
-#define BTSTACK_EVENT_POWERON_FAILED                       0x62
+#define BTSTACK_EVENT_POWERON_FAILED                       0x62u
 
 /**
  * @format 1
  * @param discoverable
  */
-#define BTSTACK_EVENT_DISCOVERABLE_ENABLED                 0x66
+#define BTSTACK_EVENT_DISCOVERABLE_ENABLED                 0x66u
 
 // Daemon Events
 
@@ -688,14 +694,14 @@ typedef uint8_t sm_key_t[16];
  * @param minor
  @ @param revision
  */
-#define DAEMON_EVENT_VERSION                               0x63
+#define DAEMON_EVENT_VERSION                               0x63u
 
 // data: system bluetooth on/off (bool)
 /**
  * @format 1
  * param system_bluetooth_enabled
  */
-#define DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED              0x64
+#define DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED              0x64u
 
 // data: event (8), len(8), status (8) == 0, address (48), name (1984 bits = 248 bytes)
 
@@ -705,51 +711,51 @@ typedef uint8_t sm_key_t[16];
  * @param address
  * @param name
  */
-#define DAEMON_EVENT_REMOTE_NAME_CACHED                    0x65
+#define DAEMON_EVENT_REMOTE_NAME_CACHED                    0x65u
 
 // internal - data: event(8)
-#define DAEMON_EVENT_CONNECTION_OPENED                     0x67
+#define DAEMON_EVENT_CONNECTION_OPENED                     0x67u
 
 // internal - data: event(8)
-#define DAEMON_EVENT_CONNECTION_CLOSED                     0x68
+#define DAEMON_EVENT_CONNECTION_CLOSED                     0x68u
 
 // data: event(8), len(8), local_cid(16), credits(8)
-#define DAEMON_EVENT_L2CAP_CREDITS                         0x74
+#define DAEMON_EVENT_L2CAP_CREDITS                         0x74u
 
 /**
  * @format 12
  * @param status
  * @param psm
  */
-#define DAEMON_EVENT_L2CAP_SERVICE_REGISTERED              0x75
+#define DAEMON_EVENT_L2CAP_SERVICE_REGISTERED              0x75u
 
 /**
  * @format 21
  * @param rfcomm_cid
  * @param credits
  */
-#define DAEMON_EVENT_RFCOMM_CREDITS                        0x84
+#define DAEMON_EVENT_RFCOMM_CREDITS                        0x84u
 
 /**
  * @format 11
  * @param status
  * @param channel_id
  */
-#define DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED             0x85
+#define DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED             0x85u
 
 /**
  * @format 11
  * @param status
  * @param server_channel_id
  */
-#define DAEMON_EVENT_RFCOMM_PERSISTENT_CHANNEL             0x86
+#define DAEMON_EVENT_RFCOMM_PERSISTENT_CHANNEL             0x86u
 
 /**
   * @format 14
   * @param status
   * @param service_record_handle
   */
-#define DAEMON_EVENT_SDP_SERVICE_REGISTERED                0x90
+#define DAEMON_EVENT_SDP_SERVICE_REGISTERED                0x90u
 
 
 
@@ -760,23 +766,23 @@ typedef uint8_t sm_key_t[16];
  * @format 1
  * @param active
  */
-#define HCI_EVENT_TRANSPORT_SLEEP_MODE                     0x69
+#define HCI_EVENT_TRANSPORT_SLEEP_MODE                     0x69u
 
 /**
  * @brief Transport ready 
  */
-#define HCI_EVENT_TRANSPORT_READY                          0x6D
+#define HCI_EVENT_TRANSPORT_READY                          0x6Du
 
 /**
  * @brief Outgoing packet 
  */
-#define HCI_EVENT_TRANSPORT_PACKET_SENT                    0x6E
+#define HCI_EVENT_TRANSPORT_PACKET_SENT                    0x6Eu
 
 /**
  * @format B
  * @param handle
  */
-#define HCI_EVENT_SCO_CAN_SEND_NOW                         0x6F
+#define HCI_EVENT_SCO_CAN_SEND_NOW                         0x6Fu
 
 
 // L2CAP EVENTS
@@ -796,13 +802,13 @@ typedef uint8_t sm_key_t[16];
  * @param mode
  * @param fcs
  */
-#define L2CAP_EVENT_CHANNEL_OPENED                         0x70
+#define L2CAP_EVENT_CHANNEL_OPENED                         0x70u
 
 /*
  * @format 2
  * @param local_cid
  */
-#define L2CAP_EVENT_CHANNEL_CLOSED                         0x71
+#define L2CAP_EVENT_CHANNEL_CLOSED                         0x71u
 
 /**
  * @format BH222
@@ -812,11 +818,11 @@ typedef uint8_t sm_key_t[16];
  * @param local_cid
  * @param remote_cid
  */
-#define L2CAP_EVENT_INCOMING_CONNECTION                    0x72
+#define L2CAP_EVENT_INCOMING_CONNECTION                    0x72u
 
 // ??
 // data: event(8), len(8), handle(16)
-#define L2CAP_EVENT_TIMEOUT_CHECK                          0x73
+#define L2CAP_EVENT_TIMEOUT_CHECK                          0x73u
 
 /**
  * @format H2222
@@ -826,7 +832,7 @@ typedef uint8_t sm_key_t[16];
  * @param latencey
  * @param timeout_multiplier
  */
-#define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST    0x76
+#define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST    0x76u
 
 // data: event(8), len(8), handle(16), result (16) (0 == ok, 1 == fail)
  /** 
@@ -834,15 +840,35 @@ typedef uint8_t sm_key_t[16];
   * @param handle
   * @param result
   */
-#define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE   0x77
+#define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE   0x77u
+
+ /*
+ * @format H22
+ * @param con_handle
+ * @param extended_feature_mask
+ * @param fixed_channels_supported
+ */
+#define L2CAP_EVENT_INFORMATION_RESPONSE                   0x78u
 
 /**
  * @format 2
  * @param local_cid
  */
-#define L2CAP_EVENT_CAN_SEND_NOW                           0x78
+#define L2CAP_EVENT_CAN_SEND_NOW                           0x79u
 
-// LE Data Channels
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_PACKET_SENT                            0x7au
+
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_ERTM_BUFFER_RELEASED                   0x7bu
+
+// L2CAP Channel in LE Credit-based Flow-Control Mode (CBM)
 
 /**
  * @format 1BH2222
@@ -854,7 +880,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_cid
  * @param remote_mtu
  */
-#define L2CAP_EVENT_LE_INCOMING_CONNECTION                 0x79
+#define L2CAP_EVENT_CBM_INCOMING_CONNECTION                 0x7cu
 
 /**
  * @format 11BH122222
@@ -869,36 +895,53 @@ typedef uint8_t sm_key_t[16];
  * @param local_mtu
  * @param remote_mtu
  */
-#define L2CAP_EVENT_LE_CHANNEL_OPENED                      0x7a
-
-/*
- * @format 2
- * @param local_cid
- */
-#define L2CAP_EVENT_LE_CHANNEL_CLOSED                      0x7b
-
-/*
- * @format 2
- * @param local_cid
- */
-#define L2CAP_EVENT_LE_CAN_SEND_NOW                        0x7c
-
-/*
- * @format 2
- * @param local_cid
- */
-#define L2CAP_EVENT_LE_PACKET_SENT                         0x7d
-
-/*
- * @format 2
- * @param local_cid
- */
-#define L2CAP_EVENT_ERTM_BUFFER_RELEASED                   0x7e
+#define L2CAP_EVENT_CBM_CHANNEL_OPENED                      0x7du
 
 /*
  * @format
  */
-#define L2CAP_EVENT_TRIGGER_RUN                            0x7f
+#define L2CAP_EVENT_TRIGGER_RUN                             0x7eu
+
+/**
+ * @format 1BH212
+ * @param address_type
+ * @param address
+ * @param handle
+ * @param psm
+ * @param num_channels
+ * @param local_cid first new cid
+ */
+#define L2CAP_EVENT_ECBM_INCOMING_CONNECTION               0x7fu
+
+/**
+ * @format 11BH122222
+ * @param status
+ * @param address_type
+ * @param address
+ * @param handle
+ * @param incoming
+ * @param psm
+ * @param local_cid
+ * @param remote_cid
+ * @param local_mtu
+ * @param remote_mtu
+ */
+#define L2CAP_EVENT_ECBM_CHANNEL_OPENED              0x8au
+
+/*
+ * @format 222
+ * @param remote_cid
+ * @param mtu
+ * @param mps
+ */
+#define L2CAP_EVENT_ECBM_RECONFIGURED                0x8bu
+
+/*
+ * @format 22
+ * @param local_cid
+ * @param reconfigure_result
+ */
+#define L2CAP_EVENT_ECBM_RECONFIGURATION_COMPLETE    0x8cu
 
 
 // RFCOMM EVENTS
@@ -913,62 +956,71 @@ typedef uint8_t sm_key_t[16];
  * @param max_frame_size
  * @param incoming
  */
-#define RFCOMM_EVENT_CHANNEL_OPENED                        0x80
+#define RFCOMM_EVENT_CHANNEL_OPENED                        0x80u
 
 /**
  * @format 2
  * @param rfcomm_cid
  */
-#define RFCOMM_EVENT_CHANNEL_CLOSED                        0x81
+#define RFCOMM_EVENT_CHANNEL_CLOSED                        0x81u
 
 /**
- * @format B12
+ * @format B12H
  * @param bd_addr
  * @param server_channel
  * @param rfcomm_cid
+ * @param con_handle
+
  */
-#define RFCOMM_EVENT_INCOMING_CONNECTION                   0x82
+#define RFCOMM_EVENT_INCOMING_CONNECTION                   0x82u
 
 /**
  * @format 21
  * @param rfcomm_cid
  * @param line_status
  */
-#define RFCOMM_EVENT_REMOTE_LINE_STATUS                    0x83
+#define RFCOMM_EVENT_REMOTE_LINE_STATUS                    0x83u
         
 /**
  * @format 21
  * @param rfcomm_cid
  * @param modem_status
  */
-#define RFCOMM_EVENT_REMOTE_MODEM_STATUS                   0x87
+#define RFCOMM_EVENT_REMOTE_MODEM_STATUS                   0x87u
 
- /**
-  * TODO: format for variable data 2?
-  * param rfcomm_cid
-  * param rpn_data
-  */
-#define RFCOMM_EVENT_PORT_CONFIGURATION                    0x88
+/**
+ * note: port configuration not parsed by stack, getters provided by rfcomm.h
+ * param rfcomm_cid
+ * param remote - 0 for local port, 1 for remote port
+ * param baud_rate
+ * param data_bits
+ * param stop_bits
+ * param parity
+ * param flow_control
+ * param xon
+ * param xoff
+ */
+#define RFCOMM_EVENT_PORT_CONFIGURATION                    0x88u
 
 /**
  * @format 2
  * @param rfcomm_cid
  */
-#define RFCOMM_EVENT_CAN_SEND_NOW                          0x89
+#define RFCOMM_EVENT_CAN_SEND_NOW                          0x89u
 
 
 /**
  * @format 1
  * @param status
  */
-#define SDP_EVENT_QUERY_COMPLETE                                 0x91 
+#define SDP_EVENT_QUERY_COMPLETE                                 0x91u 
 
 /**
  * @format 1T
  * @param rfcomm_channel
  * @param name
  */
-#define SDP_EVENT_QUERY_RFCOMM_SERVICE                           0x92
+#define SDP_EVENT_QUERY_RFCOMM_SERVICE                           0x92u
 
 /**
  * @format 22221
@@ -978,7 +1030,7 @@ typedef uint8_t sm_key_t[16];
  * @param data_offset
  * @param data
  */
-#define SDP_EVENT_QUERY_ATTRIBUTE_BYTE                           0x93
+#define SDP_EVENT_QUERY_ATTRIBUTE_BYTE                           0x93u
 
 /**
  * @format 22LV
@@ -987,7 +1039,7 @@ typedef uint8_t sm_key_t[16];
  * @param attribute_length
  * @param attribute_value
  */
-#define SDP_EVENT_QUERY_ATTRIBUTE_VALUE                          0x94
+#define SDP_EVENT_QUERY_ATTRIBUTE_VALUE                          0x94u
 
 /**
  * @format 224
@@ -996,28 +1048,28 @@ typedef uint8_t sm_key_t[16];
  * @param record_handle
  * @note Not provided by daemon, only used for internal testing
  */
-#define SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE                    0x95
+#define SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE                    0x95u
 
 /**
  * @format H1
  * @param handle
  * @param att_status  see ATT errors in bluetooth.h  
  */
-#define GATT_EVENT_QUERY_COMPLETE                                0xA0
+#define GATT_EVENT_QUERY_COMPLETE                                0xA0u
 
 /**
  * @format HX
  * @param handle
  * @param service
  */
-#define GATT_EVENT_SERVICE_QUERY_RESULT                          0xA1
+#define GATT_EVENT_SERVICE_QUERY_RESULT                          0xA1u
 
 /**
  * @format HY
  * @param handle
  * @param characteristic
  */
-#define GATT_EVENT_CHARACTERISTIC_QUERY_RESULT                   0xA2
+#define GATT_EVENT_CHARACTERISTIC_QUERY_RESULT                   0xA2u
 
 /**
  * @format H2X
@@ -1025,14 +1077,14 @@ typedef uint8_t sm_key_t[16];
  * @param include_handle
  * @param service
  */
-#define GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT                 0xA3
+#define GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT                 0xA3u
 
 /**
  * @format HZ
  * @param handle
  * @param characteristic_descriptor
  */
-#define GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT   0xA4
+#define GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT   0xA4u
 
 /**
  * @format H2LV
@@ -1041,7 +1093,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_length
  * @param value
  */
-#define GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT             0xA5
+#define GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT             0xA5u
 
 /**
  * @format H22LV
@@ -1051,7 +1103,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_length
  * @param value
  */
-#define GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT        0xA6
+#define GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT        0xA6u
 
 /**
  * @format H2LV
@@ -1060,7 +1112,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_length
  * @param value
  */
-#define GATT_EVENT_NOTIFICATION                                  0xA7
+#define GATT_EVENT_NOTIFICATION                                  0xA7u
 
 /**
  * @format H2LV
@@ -1069,7 +1121,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_length
  * @param value
  */
-#define GATT_EVENT_INDICATION                                    0xA8
+#define GATT_EVENT_INDICATION                                    0xA8u
 
 /**
  * @format H2LV
@@ -1078,7 +1130,7 @@ typedef uint8_t sm_key_t[16];
  * @param descriptor_length
  * @param descriptor
  */
-#define GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT        0xA9
+#define GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT        0xA9u
 
 /**
  * @format H2LV
@@ -1087,20 +1139,20 @@ typedef uint8_t sm_key_t[16];
  * @param descriptor_length
  * @param descriptor
  */
-#define GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT   0xAA
+#define GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT   0xAAu
 
 /** 
  * @format H2
  * @param handle
  * @param MTU
  */    
-#define GATT_EVENT_MTU                                           0xAB
+#define GATT_EVENT_MTU                                           0xABu
 
 /**
  * @format H
  * @param handle
  */
-#define GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE                    0xAC
+#define GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE                    0xACu
 
 
 /** 
@@ -1109,20 +1161,20 @@ typedef uint8_t sm_key_t[16];
  * @param address
  * @param handle
  */    
-#define ATT_EVENT_CONNECTED                                      0xB3
+#define ATT_EVENT_CONNECTED                                      0xB3u
 
 /** 
  * @format H
  * @param handle
  */    
-#define ATT_EVENT_DISCONNECTED                                   0xB4
+#define ATT_EVENT_DISCONNECTED                                   0xB4u
 
 /** 
  * @format H2
  * @param handle
  * @param MTU
  */    
-#define ATT_EVENT_MTU_EXCHANGE_COMPLETE                          0xB5
+#define ATT_EVENT_MTU_EXCHANGE_COMPLETE                          0xB5u
 
  /**
   * @format 1H2
@@ -1130,12 +1182,12 @@ typedef uint8_t sm_key_t[16];
   * @param conn_handle
   * @param attribute_handle
   */
-#define ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE               0xB6
+#define ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE               0xB6u
 
 /**
  * @format
  */
-#define ATT_EVENT_CAN_SEND_NOW                                   0xB7
+#define ATT_EVENT_CAN_SEND_NOW                                   0xB7u
 
 // TODO: daemon only event
 
@@ -1144,7 +1196,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param service_uuid
  */
- #define BNEP_EVENT_SERVICE_REGISTERED                           0xC0
+ #define BNEP_EVENT_SERVICE_REGISTERED                           0xC0u
 
 /**
  * @format 12222BH
@@ -1156,7 +1208,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_address
  * @param con_handle
  */
- #define BNEP_EVENT_CHANNEL_OPENED                               0xC1
+ #define BNEP_EVENT_CHANNEL_OPENED                               0xC1u
 
 /**
  * @format 222B
@@ -1165,7 +1217,7 @@ typedef uint8_t sm_key_t[16];
  * @param destination_uuid
  * @param remote_address
  */
- #define BNEP_EVENT_CHANNEL_CLOSED                               0xC2
+ #define BNEP_EVENT_CHANNEL_CLOSED                               0xC2u
 
 /**
  * @format 222B1
@@ -1175,7 +1227,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_address
  * @param channel_state
  */
-#define BNEP_EVENT_CHANNEL_TIMEOUT                               0xC3    
+#define BNEP_EVENT_CHANNEL_TIMEOUT                               0xC3u    
     
 /**
  * @format 222B
@@ -1184,7 +1236,7 @@ typedef uint8_t sm_key_t[16];
  * @param destination_uuid
  * @param remote_address
  */
- #define BNEP_EVENT_CAN_SEND_NOW                                 0xC4
+ #define BNEP_EVENT_CAN_SEND_NOW                                 0xC4u
 
  /**
   * @format H1B
@@ -1192,7 +1244,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_JUST_WORKS_REQUEST                              0xC8
+#define SM_EVENT_JUST_WORKS_REQUEST                              0xC8u
 
  /**
   * @format H1B4
@@ -1201,7 +1253,7 @@ typedef uint8_t sm_key_t[16];
   * @param address
   * @param passkey
   */
-#define SM_EVENT_PASSKEY_DISPLAY_NUMBER                          0xC9
+#define SM_EVENT_PASSKEY_DISPLAY_NUMBER                          0xC9u
 
  /**
   * @format H1B
@@ -1209,7 +1261,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_PASSKEY_DISPLAY_CANCEL                          0xCA
+#define SM_EVENT_PASSKEY_DISPLAY_CANCEL                          0xCAu
 
  /**
   * @format H1B
@@ -1217,7 +1269,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_PASSKEY_INPUT_NUMBER                            0xCB
+#define SM_EVENT_PASSKEY_INPUT_NUMBER                            0xCBu
 
  /**
   * @format H1B4
@@ -1226,7 +1278,7 @@ typedef uint8_t sm_key_t[16];
   * @param address
   * @param passkey
   */
-#define SM_EVENT_NUMERIC_COMPARISON_REQUEST                      0xCC
+#define SM_EVENT_NUMERIC_COMPARISON_REQUEST                      0xCCu
 
  /**
   * @format H1B
@@ -1234,7 +1286,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_IDENTITY_RESOLVING_STARTED                      0xCD
+#define SM_EVENT_IDENTITY_RESOLVING_STARTED                      0xCDu
 
  /**
   * @format H1B
@@ -1242,7 +1294,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_IDENTITY_RESOLVING_FAILED                       0xCE
+#define SM_EVENT_IDENTITY_RESOLVING_FAILED                       0xCEu
 
  /**
   * @brief Identify resolving succeeded
@@ -1256,7 +1308,7 @@ typedef uint8_t sm_key_t[16];
   * @param index
   *
   */
-#define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED                    0xCF
+#define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED                    0xCFu
 
  /**
   * @format H1B
@@ -1264,7 +1316,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_AUTHORIZATION_REQUEST                           0xD0
+#define SM_EVENT_AUTHORIZATION_REQUEST                           0xD0u
 
  /**
   * @format H1B1
@@ -1273,14 +1325,14 @@ typedef uint8_t sm_key_t[16];
   * @param address
   * @param authorization_result
   */
-#define SM_EVENT_AUTHORIZATION_RESULT                            0xD1
+#define SM_EVENT_AUTHORIZATION_RESULT                            0xD1u
 
  /**
   * @format H1
   * @param handle
   * @param action see SM_KEYPRESS_*
   */
-#define SM_EVENT_KEYPRESS_NOTIFICATION                           0xD2
+#define SM_EVENT_KEYPRESS_NOTIFICATION                           0xD2u
 
  /**
   * @brief Emitted during pairing to inform app about address used as identity
@@ -1293,7 +1345,7 @@ typedef uint8_t sm_key_t[16];
   * @param identity_address
   * @param index
   */
-#define SM_EVENT_IDENTITY_CREATED                                0xD3
+#define SM_EVENT_IDENTITY_CREATED                                0xD3u
 
 /**
  * @brief Emitted to inform app that pairing has started.
@@ -1302,7 +1354,7 @@ typedef uint8_t sm_key_t[16];
  * @param addr_type
  * @param address
  */
-#define SM_EVENT_PAIRING_STARTED                                 0xD4
+#define SM_EVENT_PAIRING_STARTED                                 0xD4u
 
 /**
   * @brief Emitted to inform app that pairing is complete. Possible status values:
@@ -1318,7 +1370,7 @@ typedef uint8_t sm_key_t[16];
   * @param status
   * @param reason if status == ERROR_CODE_AUTHENTICATION_FAILURE
   */
-#define SM_EVENT_PAIRING_COMPLETE                                0xD5
+#define SM_EVENT_PAIRING_COMPLETE                                0xD5u
 
 
 /**
@@ -1328,7 +1380,7 @@ typedef uint8_t sm_key_t[16];
  * @param addr_type
  * @param address
  */
-#define SM_EVENT_REENCRYPTION_STARTED                            0xD6
+#define SM_EVENT_REENCRYPTION_STARTED                            0xD6u
 
 /**
  * @brief Proactive Authentication for bonded devices complete. Possible status values:
@@ -1341,7 +1393,7 @@ typedef uint8_t sm_key_t[16];
  * @param address
  * @param status
  */
-#define SM_EVENT_REENCRYPTION_COMPLETE                           0xD7
+#define SM_EVENT_REENCRYPTION_COMPLETE                           0xD7u
 
 // GAP
 
@@ -1350,14 +1402,14 @@ typedef uint8_t sm_key_t[16];
  * @param handle
  * @param security_level
  */
-#define GAP_EVENT_SECURITY_LEVEL                                 0xD8
+#define GAP_EVENT_SECURITY_LEVEL                                 0xD8u
 
 /**
  * @format 1B
  * @param status
  * @param address
  */
-#define GAP_EVENT_DEDICATED_BONDING_COMPLETED                    0xD9
+#define GAP_EVENT_DEDICATED_BONDING_COMPLETED                    0xD9u
 
 /**
  * @format 11B1JV
@@ -1368,7 +1420,7 @@ typedef uint8_t sm_key_t[16];
  * @param data_length
  * @param data
  */
-#define GAP_EVENT_ADVERTISING_REPORT                             0xDA
+#define GAP_EVENT_ADVERTISING_REPORT                             0xDAu
 
  /**
  * @format B13211122221JV
@@ -1387,13 +1439,13 @@ typedef uint8_t sm_key_t[16];
  * @param name_len
  * @param name
  */
-#define GAP_EVENT_INQUIRY_RESULT                                 0xDB
+#define GAP_EVENT_INQUIRY_RESULT                                 0xDBu
 
 /**
  * @format 1
  * @param status
  */
-#define GAP_EVENT_INQUIRY_COMPLETE                               0xDC
+#define GAP_EVENT_INQUIRY_COMPLETE                               0xDCu
 
 /**
  * @format H1
@@ -1402,7 +1454,7 @@ typedef uint8_t sm_key_t[16];
  * @note Classic: rssi is in dB relative to Golden Receive Power Range
  * @note LE: rssi is absolute dBm
  */
-#define GAP_EVENT_RSSI_MEASUREMENT                               0xDD
+#define GAP_EVENT_RSSI_MEASUREMENT                               0xDDu
 
 /**
  * @format 1KKKK
@@ -1412,7 +1464,7 @@ typedef uint8_t sm_key_t[16];
  * @param c_256 Simple Pairing Hash C derived from P-256 public key
  * @param r_256 Simple Pairing Randomizer derived from P-256 public key
  */
-#define GAP_EVENT_LOCAL_OOB_DATA                                 0xDE
+#define GAP_EVENT_LOCAL_OOB_DATA                                 0xDEu
 
 
 /**
@@ -1422,7 +1474,7 @@ typedef uint8_t sm_key_t[16];
  * @param ssp
  * @param initiator
  */
-#define GAP_EVENT_PAIRING_STARTED                                0xDF
+#define GAP_EVENT_PAIRING_STARTED                                0xDFu
 
 /**
  * @format HB1
@@ -1430,23 +1482,23 @@ typedef uint8_t sm_key_t[16];
  * @param bd_addr
  * @param status
  */
-#define GAP_EVENT_PAIRING_COMPLETE                               0xE0
+#define GAP_EVENT_PAIRING_COMPLETE                               0xE0u
 
 // Meta Events, see below for sub events
-#define HCI_EVENT_HSP_META                                       0xE8
-#define HCI_EVENT_HFP_META                                       0xE9
-#define HCI_EVENT_ANCS_META                                      0xEA
-#define HCI_EVENT_AVDTP_META                                     0xEB
-#define HCI_EVENT_AVRCP_META                                     0xEC
-#define HCI_EVENT_GOEP_META                                      0xED
-#define HCI_EVENT_PBAP_META                                      0xEE
-#define HCI_EVENT_HID_META                                       0xEF
-#define HCI_EVENT_A2DP_META                                      0xF0
-#define HCI_EVENT_HIDS_META                                      0xF1
-#define HCI_EVENT_GATTSERVICE_META                               0xF2
-#define HCI_EVENT_BIP_META                                       0xF3
-#define HCI_EVENT_MAP_META                                       0xF4
-#define HCI_EVENT_MESH_META                                      0xF5
+#define HCI_EVENT_HSP_META                                       0xE8u
+#define HCI_EVENT_HFP_META                                       0xE9u
+#define HCI_EVENT_ANCS_META                                      0xEAu
+#define HCI_EVENT_AVDTP_META                                     0xEBu
+#define HCI_EVENT_AVRCP_META                                     0xECu
+#define HCI_EVENT_GOEP_META                                      0xEDu
+#define HCI_EVENT_PBAP_META                                      0xEEu
+#define HCI_EVENT_HID_META                                       0xEFu
+#define HCI_EVENT_A2DP_META                                      0xF0u
+#define HCI_EVENT_HIDS_META                                      0xF1u
+#define HCI_EVENT_GATTSERVICE_META                               0xF2u
+#define HCI_EVENT_BIP_META                                       0xF3u
+#define HCI_EVENT_MAP_META                                       0xF4u
+#define HCI_EVENT_MESH_META                                      0xF5u
 
 // Potential other meta groups
 // #define HCI_EVENT_BNEP_META                                0xxx
@@ -1460,94 +1512,103 @@ typedef uint8_t sm_key_t[16];
 /** HSP Subevent */
 
 /**
- * @format 11
+ * @format 1H1B
  * @param subevent_code
- * @param status 0 == OK
- */
-#define HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE             0x01
-
-/**
- * @format 11
- * @param subevent_code
- * @param status 0 == OK
- */
-#define HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE           0x02
-
-
-/**
- * @format 11H
- * @param subevent_code
- * @param status 0 == OK
- * @param handle
- */
-#define HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x03
-
-/**
- * @format 11
- * @param subevent_code
- * @param status 0 == OK
- */
-#define HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE          0x04
-
-/**
- * @format 1
- * @param subevent_code
- */
-#define HSP_SUBEVENT_RING                                  0x05
-
-/**
- * @format 11
- * @param subevent_code
- * @param gain Valid range: [0,15]
- */
-#define HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED               0x06
-
-/**
- * @format 11
- * @param subevent_code
- * @param gain Valid range: [0,15]
- */
-#define HSP_SUBEVENT_SPEAKER_GAIN_CHANGED                  0x07
-
-/**
- * @format 1JV
- * @param subevent_code
- * @param value_length
- * @param value
- */
-#define HSP_SUBEVENT_HS_COMMAND                            0x08
-
-/**
- * @format 1JV
- * @param subevent_code
- * @param value_length
- * @param value
- */
-#define HSP_SUBEVENT_AG_INDICATION                         0x09
-
-/**
- * @format 1
- * @param subevent_code
- */
-#define HSP_SUBEVENT_BUTTON_PRESSED                        0x0a
-
-/** HFP Subevent */
-
-/**
- * @format 11HB
- * @param subevent_code
- * @param status 0 == OK
  * @param acl_handle
+ * @param status 0 == OK
  * @param bd_addr
  */
-#define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED  0x01
+#define HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE             0x01u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param acl_handle
  */
-#define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
+#define HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE           0x02u
+
+/**
+ * @format 1H1H
+ * @param subevent_code
+ * @param acl_handle
+ * @param status 0 == OK
+ * @param sco_handle
+ */
+#define HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x03u
+
+/**
+ * @format 1HH
+ * @param subevent_code
+ * @param acl_handle
+ * @param sco_handle
+ */
+#define HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE          0x04u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param acl_handle
+ */
+#define HSP_SUBEVENT_RING                                  0x05u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param gain Valid range: [0,15]
+ */
+#define HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED               0x06u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param gain Valid range: [0,15]
+ */
+#define HSP_SUBEVENT_SPEAKER_GAIN_CHANGED                  0x07u
+
+/**
+ * @format 1HJV
+ * @param subevent_code
+ * @param acl_handle
+ * @param value_length
+ * @param value
+ */
+#define HSP_SUBEVENT_HS_COMMAND                            0x08u
+
+/**
+ * @format 1HJV
+ * @param subevent_code
+ * @param acl_handle
+ * @param value_length
+ * @param value
+ */
+#define HSP_SUBEVENT_AG_INDICATION                         0x09u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param acl_handle
+ */
+#define HSP_SUBEVENT_BUTTON_PRESSED                        0x0au
+
+/** HFP Subevent */
+
+/**
+ * @format 1H1B
+ * @param subevent_code
+ * @param acl_handle
+ * @param status 0 == OK
+ * @param bd_addr
+ */
+#define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED    0x01u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param acl_handle
+ */
+#define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED       0x02u
 
 /**
  * @format 1H1HB1
@@ -1558,7 +1619,7 @@ typedef uint8_t sm_key_t[16];
  * @param bd_addr
  * @param negotiated_codec
  */
-#define HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED          0x03
+#define HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED            0x03u
 
 /**
  * @format 1HH
@@ -1566,7 +1627,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param sco_handle
  */
-#define HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED             0x04
+#define HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED               0x04u
 
 /**
  * @format 1H1
@@ -1574,7 +1635,18 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param status 0 == OK
  */
-#define HFP_SUBEVENT_COMPLETE                              0x05
+#define HFP_SUBEVENT_COMPLETE                                0x05u
+
+/**
+ * @format 1H111T
+ * @param subevent_code
+ * @param acl_handle
+ * @param indicator_index
+ * @param indicator_min_range
+ * @param indicator_max_range
+ * @param indicator_name
+ */
+#define HFP_SUBEVENT_AG_INDICATOR_MAPPING                    0x06u
 
 /**
  * @format 1H1111111T
@@ -1589,7 +1661,7 @@ typedef uint8_t sm_key_t[16];
  * @param indicator_status_changed
  * @param indicator_name
  */
-#define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED           0x06
+#define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED              0x07u
 
 /**
  * @format 1H11T
@@ -1599,7 +1671,7 @@ typedef uint8_t sm_key_t[16];
  * @param network_operator_format
  * @param network_operator_name
  */
-#define HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED              0x07
+#define HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED                 0x08u
 
 /**
  * @format 1H1
@@ -1607,28 +1679,28 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param error
  */
-#define HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR             0x08
+#define HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR             0x09u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param acl_handle
  */
-#define HFP_SUBEVENT_START_RINGINIG                           0x0A
+#define HFP_SUBEVENT_START_RINGING                            0x0Au
 
 /**
  * @format 1H
  * @param subevent_code
  * @param acl_handle
  */
-#define HFP_SUBEVENT_STOP_RINGINIG                            0x0B
+#define HFP_SUBEVENT_RING                                     0x0Bu
 
 /**
  * @format 1H
  * @param subevent_code
  * @param acl_handle
  */
-#define HFP_SUBEVENT_CALL_TERMINATED                          0x0C
+#define HFP_SUBEVENT_STOP_RINGING                             0x0Cu
 
 /**
  * @format 1HT
@@ -1636,14 +1708,14 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param number
  */
-#define HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER                   0x0D
+#define HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER                   0x0Du
 
 /**
  * @format 1H
  * @param subevent_code
  * @param acl_handle
  */
-#define HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG               0x0E
+#define HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG               0x0Eu
 
 /**
  * @format 1HT
@@ -1651,7 +1723,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param number
  */
-#define HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG                     0x0F
+#define HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG                     0x0Fu
 
 /**
  * @format 1HT
@@ -1659,28 +1731,29 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param dtmf code
  */
-#define HFP_SUBEVENT_TRANSMIT_DTMF_CODES                      0x10
+#define HFP_SUBEVENT_TRANSMIT_DTMF_CODES                      0x10u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param acl_handle
  */
-#define HFP_SUBEVENT_CALL_ANSWERED                            0x11
+#define HFP_SUBEVENT_CALL_ANSWERED                            0x11u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param acl_handle
  */
-#define HFP_SUBEVENT_CONFERENCE_CALL                          0x12
+#define HFP_SUBEVENT_CALL_TERMINATED                          0x12u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param acl_handle
  */
-#define HFP_SUBEVENT_RING                                     0x13
+#define HFP_SUBEVENT_CONFERENCE_CALL                          0x13u
+
 
 /**
  * @format 1H1
@@ -1688,7 +1761,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param gain
  */
-#define HFP_SUBEVENT_SPEAKER_VOLUME                           0x14
+#define HFP_SUBEVENT_SPEAKER_VOLUME                           0x14u
 
 /**
  * @format 1H1
@@ -1696,7 +1769,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param gain
  */
-#define HFP_SUBEVENT_MICROPHONE_VOLUME                        0x15
+#define HFP_SUBEVENT_MICROPHONE_VOLUME                        0x15u
 
 /**
  * @format 1H1T
@@ -1705,7 +1778,7 @@ typedef uint8_t sm_key_t[16];
  * @param type
  * @param number
  */
-#define HFP_SUBEVENT_CALL_WAITING_NOTIFICATION                0x16
+#define HFP_SUBEVENT_CALL_WAITING_NOTIFICATION                0x16u
 
 /**
  * @format 1H1T
@@ -1714,7 +1787,7 @@ typedef uint8_t sm_key_t[16];
  * @param type
  * @param number
  */
-#define HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION 0x17
+#define HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION 0x17u
 
 /**
  * @format 1H111111T
@@ -1728,7 +1801,7 @@ typedef uint8_t sm_key_t[16];
  * @param bnip_type
  * @param bnip_number
  */
-#define HFP_SUBEVENT_ENHANCED_CALL_STATUS                     0x18
+#define HFP_SUBEVENT_ENHANCED_CALL_STATUS                     0x18u
 
 /**
  * @format 1H11T
@@ -1738,7 +1811,7 @@ typedef uint8_t sm_key_t[16];
  * @param bnip_type
  * @param bnip_number
  */
-#define HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION            0x19
+#define HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION            0x19u
 
 /**
  * @format 1HT
@@ -1746,7 +1819,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param value
  */
-#define HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS                 0x1A
+#define HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS                 0x1Au
 
 /**
  * @format 1HT
@@ -1754,7 +1827,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param command
  */
-#define HFP_SUBEVENT_AT_MESSAGE_SENT                          0x1B
+#define HFP_SUBEVENT_AT_MESSAGE_SENT                          0x1Bu
 
 /**
  * @format 1HT
@@ -1762,7 +1835,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param command
  */
-#define HFP_SUBEVENT_AT_MESSAGE_RECEIVED                      0x1C
+#define HFP_SUBEVENT_AT_MESSAGE_RECEIVED                      0x1Cu
 
 /**
  * @format 1H1
@@ -1770,37 +1843,95 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param status
  */
-#define HFP_SUBEVENT_IN_BAND_RING_TONE                        0x1D
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param acl_handle
- * @param activated
- */
-#define HFP_SUBEVENT_VOICE_RECOGNITION_STATUS                 0x1E
+#define HFP_SUBEVENT_IN_BAND_RING_TONE                        0x1Du
 
 /**
  * @format 1H11
  * @param subevent_code
  * @param acl_handle
- * @param status
- * @param state
+ * @param status      // 0-success
+ * @param enhanced    // 0-legacy, 1-enhanced
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS         0x1F
+#define HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED                0x1Eu
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status      // 0-success
+ */
+#define HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED               0x1Fu
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status
+ */
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO  0x20u
+
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status
+ */
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT 0x21u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status
+ */
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND 0x22u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status
+ */
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT 0x23u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status
+ */
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT     0x24u
+
 
 /**
  * @format 1H211LV
  * @param subevent_code
  * @param acl_handle
  * @param text_id
- * @param text_operation
  * @param text_type
+ * @param text_operation
  * @param text_length
  * @param text
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT           0x20
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE           0x25u
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status
+ */
+#define HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE   0x26u
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param acl_handle
+ * @param uuid
+ * @param value
+ */
+#define HFP_SUBEVENT_HF_INDICATOR                                    0x27u
 
 
 // ANCS Client
@@ -1810,7 +1941,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param handle
  */ 
-#define ANCS_SUBEVENT_CLIENT_CONNECTED                              0xF0
+#define ANCS_SUBEVENT_CLIENT_CONNECTED                              0xF0u
 
 /**
  * @format 1H2T
@@ -1819,14 +1950,14 @@ typedef uint8_t sm_key_t[16];
  * @param attribute_id
  * @param text
  */ 
-#define ANCS_SUBEVENT_CLIENT_NOTIFICATION                           0xF1
+#define ANCS_SUBEVENT_CLIENT_NOTIFICATION                           0xF1u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param handle
  */ 
-#define ANCS_SUBEVENT_CLIENT_DISCONNECTED                           0xF2
+#define ANCS_SUBEVENT_CLIENT_DISCONNECTED                           0xF2u
 
 
 /** AVDTP Subevent */
@@ -1839,7 +1970,7 @@ typedef uint8_t sm_key_t[16];
  * @param is_initiator
  * @param signal_identifier
  */
-#define AVDTP_SUBEVENT_SIGNALING_ACCEPT                     0x01
+#define AVDTP_SUBEVENT_SIGNALING_ACCEPT                     0x01u
 
 /**
  * @format 12111
@@ -1849,7 +1980,7 @@ typedef uint8_t sm_key_t[16];
  * @param is_initiator
  * @param signal_identifier 
  */
-#define AVDTP_SUBEVENT_SIGNALING_REJECT                     0x02
+#define AVDTP_SUBEVENT_SIGNALING_REJECT                     0x02u
 
 /**
  * @format 12111
@@ -1859,7 +1990,7 @@ typedef uint8_t sm_key_t[16];
  * @param is_initiator
  * @param signal_identifier
  */
-#define AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT             0x03
+#define AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT             0x03u
 
 /**
  * @format 12B21
@@ -1869,25 +2000,25 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param status 0 == OK
  */
-#define AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED     0x04
+#define AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED     0x04u
 
 /**
  * @format 12
  * @param subevent_code
  * @param avdtp_cid
  */
-#define AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED        0x05
+#define AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED        0x05u
 
 /**
  * @format 121111
  * @param subevent_code
  * @param avdtp_cid
- * @param remote_seid        0x01 – 0x3E
+ * @param remote_seid        0x01u – 0x3Eu
  * @param in_use      0-not in use, 1-in use
  * @param media_type  0-audio, 1-video, 2-multimedia
  * @param sep_type    0-source, 1-sink
  */
-#define AVDTP_SUBEVENT_SIGNALING_SEP_FOUND                  0x06
+#define AVDTP_SUBEVENT_SIGNALING_SEP_FOUND                  0x06u
 
 /**
  * @format 12111111111
@@ -1903,7 +2034,7 @@ typedef uint8_t sm_key_t[16];
  * @param min_bitpool_value
  * @param max_bitpool_value
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x07
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x07u
 
 /**
  * @format 12111111112
@@ -1919,7 +2050,7 @@ typedef uint8_t sm_key_t[16];
  * @param vbr
  * @param bit_rate_index_bitmap
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY   0x08
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY   0x08u
 
 /**
  * @format 121112131
@@ -1933,7 +2064,7 @@ typedef uint8_t sm_key_t[16];
  * @param bit_rate
  * @param vbr
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY     0x09
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY     0x09u
 
 /**
  * @format 1211111132
@@ -1948,7 +2079,7 @@ typedef uint8_t sm_key_t[16];
  * @param bit_rate_index_bitmap
  * @param maximum_sul
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY        0x0A
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY        0x0Au
 
 /**
  * @format 12112LV
@@ -1960,7 +2091,7 @@ typedef uint8_t sm_key_t[16];
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x0B
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x0Bu
 
 
 /**
@@ -1969,7 +2100,7 @@ typedef uint8_t sm_key_t[16];
  * @param avdtp_cid
  * @param remote_seid
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY         0x0C
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY         0x0Cu
 
 
 /**
@@ -1978,7 +2109,7 @@ typedef uint8_t sm_key_t[16];
  * @param avdtp_cid
  * @param remote_seid
  */
-#define AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY        0x0D
+#define AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY        0x0Du
 
 
 /**
@@ -1990,7 +2121,7 @@ typedef uint8_t sm_key_t[16];
  * @param maximum_recovery_window_size
  * @param maximum_number_media_packets
  */
-#define AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY        0x0E
+#define AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY        0x0Eu
 
 
 /**
@@ -2002,7 +2133,7 @@ typedef uint8_t sm_key_t[16];
  * @param cp_type_value_len
  * @param cp_type_value
  */
-#define AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY        0x0F
+#define AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY        0x0Fu
 
 
 /**
@@ -2019,7 +2150,7 @@ typedef uint8_t sm_key_t[16];
  * @param tcid_2
  * @param tcid_3
  */
-#define AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY        0x10
+#define AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY        0x10u
 
 
 /**
@@ -2028,7 +2159,7 @@ typedef uint8_t sm_key_t[16];
  * @param avdtp_cid
  * @param remote_seid
  */
-#define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY        0x11
+#define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY        0x11u
 
 
 /**
@@ -2040,7 +2171,7 @@ typedef uint8_t sm_key_t[16];
  * @param media
  * @param recovery
  */
-#define AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY        0x12
+#define AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY        0x12u
 
 /**
  * @format 121
@@ -2048,7 +2179,7 @@ typedef uint8_t sm_key_t[16];
  * @param avdtp_cid
  * @param remote_seid
  */
-#define AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE                    0x13
+#define AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE                    0x13u
 
 
 /**
@@ -2068,7 +2199,7 @@ typedef uint8_t sm_key_t[16];
  * @param min_bitpool_value
  * @param max_bitpool_value
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION        0x14
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION        0x14u
 
 /**
  * @format 12111111111211
@@ -2087,7 +2218,7 @@ typedef uint8_t sm_key_t[16];
  * @param vbr
  * @param bit_rate_index
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION   0x15
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION   0x15u
 
 /**
  * @format 12111113131
@@ -2103,7 +2234,7 @@ typedef uint8_t sm_key_t[16];
  * @param bit_rate
  * @param vbr
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION     0x16
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION     0x16u
 
 /**
  * @format 1211111112112
@@ -2121,7 +2252,7 @@ typedef uint8_t sm_key_t[16];
  * @param bit_rate_index
  * @param maximum_sul
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION        0x17
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION        0x17u
 
 /**
  * @format 1211112LV
@@ -2135,7 +2266,7 @@ typedef uint8_t sm_key_t[16];
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION        0x18
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION        0x18u
 
 /**
  * @format 12B111
@@ -2146,7 +2277,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_seid
  * @param status 0 == OK
  */
-#define AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED     0x19
+#define AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED     0x19u
 
 /**
  * @format 121
@@ -2154,7 +2285,7 @@ typedef uint8_t sm_key_t[16];
  * @param avdtp_cid
  * @param local_seid
  */
-#define AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED        0x1A
+#define AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED        0x1Au
 
 /**
  * @format 1212
@@ -2163,7 +2294,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param sequence_number
  */
-#define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x1B
+#define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x1Bu
 
 
 /**
@@ -2171,7 +2302,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param avdtp_cid
  */
-#define AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE           0x1C
+#define AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE           0x1Cu
 
 /**
  * @format 1212
@@ -2180,7 +2311,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param delay_100us
  */
-#define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT               0x1D
+#define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT               0x1Du
 
 
 /** A2DP Subevent */
@@ -2201,7 +2332,7 @@ typedef uint8_t sm_key_t[16];
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW         0x01
+#define A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW         0x01u
 
 /**
  * @format 12111121111111
@@ -2220,7 +2351,7 @@ typedef uint8_t sm_key_t[16];
  * @param min_bitpool_value
  * @param max_bitpool_value
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION      0x02
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION      0x02u
 
 /**
  * @format 12111111111211
@@ -2239,7 +2370,7 @@ typedef uint8_t sm_key_t[16];
  * @param vbr
  * @param bit_rate_index
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION   0x03
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION   0x03u
 
 /**
  * @format 12111113131
@@ -2255,7 +2386,7 @@ typedef uint8_t sm_key_t[16];
  * @param bit_rate
  * @param vbr
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION     0x04
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION     0x04u
 
 /**
  * @format 1211111112112
@@ -2273,7 +2404,7 @@ typedef uint8_t sm_key_t[16];
  * @param bit_rate_index
  * @param maximum_sul
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION        0x05
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION        0x05u
 
 /**
  * @format 1211112LV
@@ -2287,7 +2418,7 @@ typedef uint8_t sm_key_t[16];
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION    0x06
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION    0x06u
 
 /**
  * @format 12B111          Stream is opened but not started.
@@ -2298,7 +2429,15 @@ typedef uint8_t sm_key_t[16];
  * @param remote_seid
  * @param status
  */
-#define A2DP_SUBEVENT_STREAM_ESTABLISHED                           0x07
+#define A2DP_SUBEVENT_STREAM_ESTABLISHED                           0x07u
+
+/**
+ * @format 121            If ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION, user must explicitly accept stream start.
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ */
+#define A2DP_SUBEVENT_START_STREAM_REQUESTED                       0x08u
 
 /**
  * @format 121            Indicates that media transfer is started.
@@ -2306,7 +2445,7 @@ typedef uint8_t sm_key_t[16];
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_STARTED                               0x08
+#define A2DP_SUBEVENT_STREAM_STARTED                               0x09u
 
 /**
  * @format 121           Stream is paused.
@@ -2314,7 +2453,7 @@ typedef uint8_t sm_key_t[16];
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_SUSPENDED                              0x09
+#define A2DP_SUBEVENT_STREAM_SUSPENDED                              0x0Au
 
 /**
  * @format 121           Stream is stopped or aborted.
@@ -2322,7 +2461,7 @@ typedef uint8_t sm_key_t[16];
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_STOPPED                                0x0A
+#define A2DP_SUBEVENT_STREAM_STOPPED                                0x0Bu
 
 /**
  * @format 121            Stream is released.
@@ -2330,7 +2469,7 @@ typedef uint8_t sm_key_t[16];
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_RELEASED                               0x0B
+#define A2DP_SUBEVENT_STREAM_RELEASED                               0x0Cu
 
 /**
  * @format 1211
@@ -2339,16 +2478,17 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param signal_identifier
  */
-#define A2DP_SUBEVENT_COMMAND_ACCEPTED                              0x0C
+#define A2DP_SUBEVENT_COMMAND_ACCEPTED                              0x0Du
 
 /**
- * @format 1211
+ * @format 12111
  * @param subevent_code
  * @param a2dp_cid
  * @param local_seid
- * @param signal_identifier 
+ * @param is_initiator
+ * @param signal_identifier
  */
-#define A2DP_SUBEVENT_COMMAND_REJECTED                              0x0D
+#define A2DP_SUBEVENT_COMMAND_REJECTED                              0x0Eu
 
 /**
  * @format 12B21
@@ -2358,14 +2498,14 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param status 0 == OK
  */
-#define A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED              0x0E
+#define A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED              0x0Fu
 
 /**
  * @format 12            Signaling channel is released.
  * @param subevent_code
  * @param a2dp_cid
  */
-#define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x0F
+#define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x10u
 
 /**
  * @format 1211          Stream was reconfigured
@@ -2374,7 +2514,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param status
  */
-#define A2DP_SUBEVENT_STREAM_RECONFIGURED                            0x10
+#define A2DP_SUBEVENT_STREAM_RECONFIGURED                            0x12u
 
 /**
  * @format 12111111111
@@ -2390,7 +2530,7 @@ typedef uint8_t sm_key_t[16];
  * @param min_bitpool_value
  * @param max_bitpool_value
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x11
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x13u
 
 /**
  * @format 12111111112
@@ -2406,7 +2546,7 @@ typedef uint8_t sm_key_t[16];
  * @param vbr
  * @param bit_rate_index_bitmap
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY   0x12
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY   0x14u
 
 /**
  * @format 121112131
@@ -2420,7 +2560,7 @@ typedef uint8_t sm_key_t[16];
  * @param bit_rate
  * @param vbr
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY     0x13
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY     0x15u
 
 /**
  * @format 1211111132
@@ -2435,7 +2575,7 @@ typedef uint8_t sm_key_t[16];
  * @param bit_rate_index_bitmap
  * @param maximum_sul
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY        0x14
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY        0x16u
 
 /**
  * @format 12112LV
@@ -2447,7 +2587,7 @@ typedef uint8_t sm_key_t[16];
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x15
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x17u
 
 /**
  * @format 121
@@ -2455,7 +2595,7 @@ typedef uint8_t sm_key_t[16];
  * @param a2dp_cid
  * @param remote_seid
  */
-#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY           0x16
+#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY           0x18u
 
 
 /**
@@ -2465,7 +2605,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param delay_100us
  */
-#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORT                         0x17
+#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORT                         0x19u
 
 /**
  * @format 121
@@ -2473,14 +2613,14 @@ typedef uint8_t sm_key_t[16];
  * @param a2dp_cid
  * @param remote_seid
  */
-#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE                    0x18
+#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE                    0x1Au
 
 /**
  * @format 12
  * @param subevent_code
  * @param a2dp_cid
  */
-#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_COMPLETE                0x19
+#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_COMPLETE                0x1Bu
 
 
 /** AVRCP Subevent */
@@ -2492,7 +2632,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param play_status
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED                         0x01
+#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED                         0x01u
 
 /**
  * @format 121
@@ -2500,7 +2640,7 @@ typedef uint8_t sm_key_t[16];
  * @param avrcp_cid
  * @param command_type
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED                                   0x02
+#define AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED                                   0x02u
 
 /**
  * @format 121
@@ -2508,7 +2648,7 @@ typedef uint8_t sm_key_t[16];
  * @param avrcp_cid
  * @param command_type
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_END                         0x03
+#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_END                         0x03u
 
 /**
  * @format 121
@@ -2516,16 +2656,16 @@ typedef uint8_t sm_key_t[16];
  * @param avrcp_cid
  * @param command_type
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_START                       0x04              
+#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_START                       0x04u              
 
 /**
  * @format 1214
  * @param subevent_code
  * @param avrcp_cid
  * @param command_type
- * @param playback_position  If no track currently selected, then return 0xFFFFFFFF in the INTERIM response.
+ * @param playback_position  If no track currently selected, then return 0xFFuFFFFFF in the INTERIM response.
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED                      0x05
+#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED                      0x05u
 
 /**
  * @format 1211
@@ -2534,7 +2674,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param battery_status  see avrcp_battery_status_t
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED                       0x06
+#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED                       0x06u
 
 /**
  * @format 1211
@@ -2543,11 +2683,11 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param system_status  see avrcp_system_status_t
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED                     0x07
+#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED                     0x07u
 
 
 // Recquires 1 byte for num_attributes, followed by num_attributes tuples [attribute_id(1), value_id(1)], see avrcp_player_application_setting_attribute_id_t
-#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED        0x08
+#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED        0x08u
 
 /**
  * @format 121
@@ -2555,7 +2695,7 @@ typedef uint8_t sm_key_t[16];
  * @param avrcp_cid
  * @param command_type
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED                     0x09
+#define AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED                     0x09u
 
 /**
  * @format 121
@@ -2563,9 +2703,9 @@ typedef uint8_t sm_key_t[16];
  * @param avrcp_cid
  * @param command_type
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED                       0x0A
+#define AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED                       0x0Au
 
-// AVRCP_SUBEVENT_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED = 0x0b,           -- The Addressed Player has been changed, see 6.9.2.
+// AVRCP_SUBEVENT_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED = 0x0bu,           -- The Addressed Player has been changed, see 6.9.2.
 
 /**
  * @format 1212
@@ -2574,7 +2714,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param uid_counter of the currently browsed player
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_UIDS_CHANGED                              0x0C
+#define AVRCP_SUBEVENT_NOTIFICATION_EVENT_UIDS_CHANGED                              0x0Cu
 
 /**
  * @format 1211
@@ -2583,7 +2723,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param absolute_volume
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED                                  0x0D
+#define AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED                                  0x0Du
          
 
 /**
@@ -2593,16 +2733,17 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param absolute_volume
  */
-#define AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE                      0x10
+#define AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE                      0x10u
 
 /**
- * @format 1211
+ * @format 12111
  * @param subevent_code
  * @param avrcp_cid
- * @param command_type
- * @param notification_id
+ * @param status
+ * @param enabled   // 1 enabled, 0 disabled
+ * @param event_id
  */
-#define AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE                       0x11
+#define AVRCP_SUBEVENT_NOTIFICATION_STATE                               0x11u
 
 /**
  * @format 112B2
@@ -2612,14 +2753,14 @@ typedef uint8_t sm_key_t[16];
  * @param bd_addr
  * @param con_handle
  */
-#define AVRCP_SUBEVENT_CONNECTION_ESTABLISHED                           0x12
+#define AVRCP_SUBEVENT_CONNECTION_ESTABLISHED                           0x12u
 
 /**
  * @format 12
  * @param subevent_code
  * @param avrcp_cid
  */
-#define AVRCP_SUBEVENT_CONNECTION_RELEASED                              0x13
+#define AVRCP_SUBEVENT_CONNECTION_RELEASED                              0x13u
 
 /**
  * @format 12111
@@ -2629,7 +2770,7 @@ typedef uint8_t sm_key_t[16];
  * @param repeat_mode
  * @param shuffle_mode
  */
-#define AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE                          0x14
+#define AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE                          0x14u
 
 /**
  * @format 121441
@@ -2640,7 +2781,7 @@ typedef uint8_t sm_key_t[16];
  * @param song_position
  * @param play_status
  */
- #define AVRCP_SUBEVENT_PLAY_STATUS                                     0x15
+ #define AVRCP_SUBEVENT_PLAY_STATUS                                     0x15u
 
 /**
  * @format 1211
@@ -2649,7 +2790,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param operation_id
  */
-#define AVRCP_SUBEVENT_OPERATION_START                                    0x16
+#define AVRCP_SUBEVENT_OPERATION_START                                    0x16u
 
 /**
  * @format 1211
@@ -2658,7 +2799,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param operation_id
  */
-#define AVRCP_SUBEVENT_OPERATION_COMPLETE                                 0x17
+#define AVRCP_SUBEVENT_OPERATION_COMPLETE                                 0x17u
 
 /**
  * @format 121
@@ -2666,28 +2807,14 @@ typedef uint8_t sm_key_t[16];
  * @param avrcp_cid
  * @param command_type
  */
-#define AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE                   0x18
+#define AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE                   0x18u
 
 /**
  * @format 12
  * @param subevent_code
  * @param avrcp_cid
  */
-#define AVRCP_SUBEVENT_COMPANY_IDS_QUERY                                    0x19
-
-/**
- * @format 12
- * @param subevent_code
- * @param avrcp_cid
- */
-#define AVRCP_SUBEVENT_EVENT_IDS_QUERY                                      0x1A
-
-/**
- * @format 12
- * @param subevent_code
- * @param avrcp_cid
- */
-#define AVRCP_SUBEVENT_PLAY_STATUS_QUERY                                    0x1B
+#define AVRCP_SUBEVENT_PLAY_STATUS_QUERY                                    0x19u
 
 /**
  * @format 121111
@@ -2698,7 +2825,7 @@ typedef uint8_t sm_key_t[16];
  * @param operands_length
  * @param operand
  */
-#define AVRCP_SUBEVENT_OPERATION                                            0x1C 
+#define AVRCP_SUBEVENT_OPERATION                                            0x1Au 
 
 /**
  * @format 1211
@@ -2707,7 +2834,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param track
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO                               0x1D
+#define AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO                               0x1Bu
 
 /**
  * @format 1211
@@ -2716,7 +2843,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param total_tracks
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO                        0x1E
+#define AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO                        0x1Cu
 
 /**
  * @format 1214
@@ -2725,7 +2852,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param song_length in ms
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO                      0x1F
+#define AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO                      0x1Du
 
 /**
  * @format 121JV
@@ -2735,7 +2862,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len
  * @param value
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO                                 0x20
+#define AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO                                 0x1Eu
 
  /*
  * @format 121JV
@@ -2745,7 +2872,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len
  * @param value
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO                                0x21
+#define AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO                                0x1Fu
 
  /*
  * @format 121JV
@@ -2755,7 +2882,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len
  * @param value
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO                                 0x22
+#define AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO                                 0x20u
 
  /*
  * @format 121JV
@@ -2765,7 +2892,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len
  * @param value
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO                                 0x23
+#define AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO                                 0x21u
 
 /*
  * @format 1211
@@ -2774,7 +2901,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param status
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE                                  0x24
+#define AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE                                  0x22u
 
 /**
  * @format 1214
@@ -2783,7 +2910,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param playback_position_ms
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED                      0x25
+#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED                      0x23u
 
 /*
  * @format 12111
@@ -2793,7 +2920,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param event_id
  */
-#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID                                0x26
+#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID                                0x24u
 /*
  * @format 1211
  * @param subevent_code
@@ -2801,7 +2928,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param status
  */
-#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE                           0x27
+#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE                           0x25u
 
 /*
  * @format 12113
@@ -2811,7 +2938,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param company_id
  */
-#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID                              0x28
+#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID                              0x26u
 /*
  * @format 1211
  * @param subevent_code
@@ -2819,8 +2946,18 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param status
  */
-#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE                         0x29
+#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE                         0x27u
 
+/**
+ * @format 1211LV
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param command_type
+ * @param pdu_id
+ * @param params_len
+ * @param params
+*/
+#define AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE                               0x28u
 
 
 /**
@@ -2829,7 +2966,7 @@ typedef uint8_t sm_key_t[16];
  * @param bd_addr
  * @param browsing_cid
  */
-#define AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION                          0x30
+#define AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION                          0x30u
 
 /**
  * @format 11B2
@@ -2838,14 +2975,14 @@ typedef uint8_t sm_key_t[16];
  * @param bd_addr
  * @param browsing_cid
  */
-#define AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED                        0x31
+#define AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED                        0x31u
 
 /**
  * @format 12
  * @param subevent_code
  * @param browsing_cid
  */
-#define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                           0x32
+#define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                           0x32u
 
 /**
  * @format 12211
@@ -2855,7 +2992,7 @@ typedef uint8_t sm_key_t[16];
  * @param browsing_status
  * @param bluetooth_status
  */
-#define AVRCP_SUBEVENT_BROWSING_DONE                                          0x33
+#define AVRCP_SUBEVENT_BROWSING_DONE                                          0x33u
 
 /**
  * @format 1214
@@ -2864,7 +3001,7 @@ typedef uint8_t sm_key_t[16];
  * @param scope
  * @param attr_bitmap
  */
-#define AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS                              0x34
+#define AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS                              0x34u
 
 /**
  * @format 121
@@ -2872,7 +3009,7 @@ typedef uint8_t sm_key_t[16];
  * @param browsing_cid
  * @param scope
  */
-#define AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS                           0x35
+#define AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS                           0x35u
 
 /**
  * @format 122
@@ -2880,7 +3017,7 @@ typedef uint8_t sm_key_t[16];
  * @param browsing_cid
  * @param player_id
  */
-#define AVRCP_SUBEVENT_BROWSING_SET_BROWSED_PLAYER                            0x36
+#define AVRCP_SUBEVENT_BROWSING_SET_BROWSED_PLAYER                            0x36u
 
 
 
@@ -2893,21 +3030,21 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param incoming
  */
-#define GOEP_SUBEVENT_CONNECTION_OPENED                                    0x01
+#define GOEP_SUBEVENT_CONNECTION_OPENED                                    0x01u
 
 /**
  * @format 12
  * @param subevent_code
  * @param goep_cid
 */
-#define GOEP_SUBEVENT_CONNECTION_CLOSED                                    0x02
+#define GOEP_SUBEVENT_CONNECTION_CLOSED                                    0x02u
 
 /**
  * @format 12
  * @param subevent_code
  * @param goep_cid
 */
-#define GOEP_SUBEVENT_CAN_SEND_NOW                                         0x03
+#define GOEP_SUBEVENT_CAN_SEND_NOW                                         0x03u
 
 /**
  * @format 121BH1
@@ -2918,14 +3055,14 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param incoming
  */
-#define PBAP_SUBEVENT_CONNECTION_OPENED                                    0x01
+#define PBAP_SUBEVENT_CONNECTION_OPENED                                    0x01u
 
 /**
  * @format 12
  * @param subevent_code
  * @param goep_cid
 */
-#define PBAP_SUBEVENT_CONNECTION_CLOSED                                    0x02
+#define PBAP_SUBEVENT_CONNECTION_CLOSED                                    0x02u
 
 /**
  * @format 121
@@ -2933,16 +3070,16 @@ typedef uint8_t sm_key_t[16];
  * @param goep_cid
  * @param status
  */
-#define PBAP_SUBEVENT_OPERATION_COMPLETED                                  0x03
+#define PBAP_SUBEVENT_OPERATION_COMPLETED                                  0x03u
 
 /**
  * @format 1212
  * @param subevent_code
  * @param goep_cid
  * @param status
- * @param phoneboook_size
+ * @param phonebook_size
  */
-#define PBAP_SUBEVENT_PHONEBOOK_SIZE                                       0x04
+#define PBAP_SUBEVENT_PHONEBOOK_SIZE                                       0x04u
 
 /**
  * @format 1211
@@ -2951,7 +3088,7 @@ typedef uint8_t sm_key_t[16];
  * @param user_id_required
  * @param full_access 
  */
-#define PBAP_SUBEVENT_AUTHENTICATION_REQUEST                               0x05
+#define PBAP_SUBEVENT_AUTHENTICATION_REQUEST                               0x05u
 
 /**
  * @format 12JVJV
@@ -2962,7 +3099,7 @@ typedef uint8_t sm_key_t[16];
  * @param handle_len
  * @param handle 
  */
-#define PBAP_SUBEVENT_CARD_RESULT                                          0x06
+#define PBAP_SUBEVENT_CARD_RESULT                                          0x06u
 
 
 // HID Meta Event Group
@@ -2974,7 +3111,7 @@ typedef uint8_t sm_key_t[16];
  * @param address
  * @param handle
  */
-#define HID_SUBEVENT_INCOMING_CONNECTION                                   0x01
+#define HID_SUBEVENT_INCOMING_CONNECTION                                   0x01u
 
 /**
  * @format 121BH1
@@ -2985,42 +3122,42 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param incoming
  */
-#define HID_SUBEVENT_CONNECTION_OPENED                                     0x02
+#define HID_SUBEVENT_CONNECTION_OPENED                                     0x02u
 
 /**
  * @format 12
  * @param subevent_code
  * @param hid_cid
 */
-#define HID_SUBEVENT_CONNECTION_CLOSED                                     0x03
+#define HID_SUBEVENT_CONNECTION_CLOSED                                     0x03u
 
 /**
  * @format 12
  * @param subevent_code
  * @param hid_cid
 */
-#define HID_SUBEVENT_CAN_SEND_NOW                                          0x04
+#define HID_SUBEVENT_CAN_SEND_NOW                                          0x04u
 
 /**
  * @format 12
  * @param subevent_code
  * @param hid_cid
 */
-#define HID_SUBEVENT_SUSPEND                                               0x05
+#define HID_SUBEVENT_SUSPEND                                               0x05u
 
 /**
  * @format 12
  * @param subevent_code
  * @param hid_cid
 */
-#define HID_SUBEVENT_EXIT_SUSPEND                                          0x06
+#define HID_SUBEVENT_EXIT_SUSPEND                                          0x06u
 
 /**
  * @format 12
  * @param subevent_code
  * @param hid_cid
 */
-#define HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG                                  0x07
+#define HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG                                  0x07u
 
 /** 
  * @format 121LV
@@ -3030,7 +3167,7 @@ typedef uint8_t sm_key_t[16];
  * @param report_len
  * @param report
 */
-#define HID_SUBEVENT_GET_REPORT_RESPONSE                                   0x08
+#define HID_SUBEVENT_GET_REPORT_RESPONSE                                   0x08u
 
 /** 
  * @format 121
@@ -3038,7 +3175,7 @@ typedef uint8_t sm_key_t[16];
  * @param hid_cid
  * @param handshake_status
 */
-#define HID_SUBEVENT_SET_REPORT_RESPONSE                                   0x09
+#define HID_SUBEVENT_SET_REPORT_RESPONSE                                   0x09u
 
 /** 
  * @format 1211
@@ -3047,7 +3184,7 @@ typedef uint8_t sm_key_t[16];
  * @param handshake_status
  * @param protocol_mode
 */
-#define HID_SUBEVENT_GET_PROTOCOL_RESPONSE                                 0x0A
+#define HID_SUBEVENT_GET_PROTOCOL_RESPONSE                                 0x0Au
 
 /** 
  * @format 1211
@@ -3056,7 +3193,7 @@ typedef uint8_t sm_key_t[16];
  * @param handshake_status
  * @param protocol_mode
 */
-#define HID_SUBEVENT_SET_PROTOCOL_RESPONSE                                 0x0B
+#define HID_SUBEVENT_SET_PROTOCOL_RESPONSE                                 0x0Bu
 
 /** 
  * @format 12LV
@@ -3065,7 +3202,7 @@ typedef uint8_t sm_key_t[16];
  * @param report_len
  * @param report
 */
-#define HID_SUBEVENT_REPORT                                                0x0C
+#define HID_SUBEVENT_REPORT                                                0x0Cu
 
 /**
  * @format 121
@@ -3073,7 +3210,7 @@ typedef uint8_t sm_key_t[16];
  * @param hid_cid
  * @param status
  */
-#define HID_SUBEVENT_DESCRIPTOR_AVAILABLE                                  0x0D
+#define HID_SUBEVENT_DESCRIPTOR_AVAILABLE                                  0x0Du
 
 /**
  * @format 1222
@@ -3082,7 +3219,7 @@ typedef uint8_t sm_key_t[16];
  * @param host_max_latency
  * @param host_min_timeout
  */
-#define HID_SUBEVENT_SNIFF_SUBRATING_PARAMS                                0x0E
+#define HID_SUBEVENT_SNIFF_SUBRATING_PARAMS                                0x0Eu
 
 // HIDS Meta Event Group
 
@@ -3091,7 +3228,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param con_handle
 */
-#define HIDS_SUBEVENT_CAN_SEND_NOW                                          0x01
+#define HIDS_SUBEVENT_CAN_SEND_NOW                                          0x01u
 
 /**
  * @format 121
@@ -3099,7 +3236,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param protocol_mode
 */
-#define HIDS_SUBEVENT_PROTOCOL_MODE                                         0x02
+#define HIDS_SUBEVENT_PROTOCOL_MODE                                         0x02u
 
 /**
  * @format 121
@@ -3107,7 +3244,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param enable
 */
-#define HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE                        0x03
+#define HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE                        0x03u
 
 /**
  * @format 121
@@ -3115,7 +3252,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param enable
 */
-#define HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE                     0x04
+#define HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE                     0x04u
 
 /**
  * @format 121
@@ -3123,7 +3260,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param enable
 */
-#define HIDS_SUBEVENT_INPUT_REPORT_ENABLE                                   0x05
+#define HIDS_SUBEVENT_INPUT_REPORT_ENABLE                                   0x05u
 
 /**
  * @format 121
@@ -3131,7 +3268,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param enable
 */
-#define HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE                                  0x06
+#define HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE                                  0x06u
 
 /**
  * @format 121
@@ -3139,21 +3276,21 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param enable
 */
-#define HIDS_SUBEVENT_FEATURE_REPORT_ENABLE                                 0x07
+#define HIDS_SUBEVENT_FEATURE_REPORT_ENABLE                                 0x07u
 
 /**
  * @format 12
  * @param subevent_code
  * @param con_handle
 */
-#define HIDS_SUBEVENT_SUSPEND                                               0x08
+#define HIDS_SUBEVENT_SUSPEND                                               0x08u
 
 /**
  * @format 12
  * @param subevent_code
  * @param con_handle
 */
-#define HIDS_SUBEVENT_EXIT_SUSPEND                                          0x09
+#define HIDS_SUBEVENT_EXIT_SUSPEND                                          0x09u
 
 /**
  * @format 1211
@@ -3162,21 +3299,21 @@ typedef uint8_t sm_key_t[16];
  * @param measurement_type 0 - force magnitude, 1 - torque magnitude, see cycling_power_sensor_measurement_context_t
  * @param is_enhanced
 */
-#define GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION               0x01
+#define GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION               0x01u
 
 /**
  * @format 12
  * @param subevent_code
  * @param con_handle
 */
-#define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_START                 0x02
+#define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_START                 0x02u
 
 /**
  * @format 12
  * @param subevent_code
  * @param con_handle
 */
-#define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP                  0x03
+#define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP                  0x03u
 
 /**
  * @format 12111
@@ -3186,7 +3323,7 @@ typedef uint8_t sm_key_t[16];
  * @param num_instances
  * @param poll_bitmap
 */
-#define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED                     0x04
+#define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED                     0x04u
 
 /**
  * @format 12111
@@ -3196,7 +3333,7 @@ typedef uint8_t sm_key_t[16];
  * @param att_status  see ATT errors in bluetooth.h  
  * @param level
 */
-#define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL                         0x05
+#define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL                         0x05u
 
 /**
  * @format 1H1
@@ -3204,7 +3341,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param att_status
  */
-#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_DONE                       0x06
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_DONE                       0x06u
 
 /**
  * @format 1H1T
@@ -3213,7 +3350,7 @@ typedef uint8_t sm_key_t[16];
  * @param att_status
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MANUFACTURER_NAME          0x07
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MANUFACTURER_NAME          0x07u
 
 /**
  * @format 1H1T
@@ -3222,7 +3359,7 @@ typedef uint8_t sm_key_t[16];
  * @param att_status
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MODEL_NUMBER               0x08
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MODEL_NUMBER               0x08u
 
 /**
  * @format 1H1T
@@ -3231,7 +3368,7 @@ typedef uint8_t sm_key_t[16];
  * @param att_status
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SERIAL_NUMBER              0x09
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SERIAL_NUMBER              0x09u
 
 /**
  * @format 1H1T
@@ -3240,7 +3377,7 @@ typedef uint8_t sm_key_t[16];
  * @param att_status
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_HARDWARE_REVISION          0x0A
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_HARDWARE_REVISION          0x0Au
 
 /**
  * @format 1H1T
@@ -3249,7 +3386,7 @@ typedef uint8_t sm_key_t[16];
  * @param att_status
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_FIRMWARE_REVISION          0x0B
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_FIRMWARE_REVISION          0x0Bu
 
 /**
  * @format 1H1T
@@ -3258,7 +3395,7 @@ typedef uint8_t sm_key_t[16];
  * @param att_status
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SOFTWARE_REVISION          0x0C
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SOFTWARE_REVISION          0x0Cu
 
 /**
  * @format 1H1413
@@ -3269,7 +3406,7 @@ typedef uint8_t sm_key_t[16];
  * @param manufacturer_id_high
  * @param organizationally_unique_id
  */
-#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID                  0x0D
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID                  0x0Du
 
 /**
  * @format 1H122
@@ -3279,7 +3416,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_a
  * @param value_b
  */
-#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION     0x0E
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION     0x0Eu
 
 /**
  * @format 1H11222
@@ -3291,7 +3428,7 @@ typedef uint8_t sm_key_t[16];
  * @param product_id
  * @param product_version
  */
-#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID                    0x0F
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID                    0x0Fu
 
 /**
  * @format 1H1
@@ -3299,21 +3436,21 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param att_status
  */
-#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED            0x10
+#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED            0x10u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param con_handle
  */
-#define GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED                        0x11
+#define GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED                        0x11u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param con_handle
  */
-#define GATTSERVICE_SUBEVENT_SPP_SERVICE_DISCONNECTED                     0x12
+#define GATTSERVICE_SUBEVENT_SPP_SERVICE_DISCONNECTED                     0x12u
 
 /**
  * @format 12111
@@ -3323,7 +3460,7 @@ typedef uint8_t sm_key_t[16];
  * @param protocol_mode
  * @param num_instances
 */
-#define GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED                        0x13
+#define GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED                        0x13u
 
 /** 
  * @format 1211LV
@@ -3334,7 +3471,7 @@ typedef uint8_t sm_key_t[16];
  * @param report_len
  * @param report
 */
-#define GATTSERVICE_SUBEVENT_HID_REPORT                                   0x14
+#define GATTSERVICE_SUBEVENT_HID_REPORT                                   0x14u
 
 /**
  * @format 1212111
@@ -3346,7 +3483,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_wake               Indicates whether HID Device is capable of sending a wake-signal to a HID Host
  * @param normally_connectable      Indicates whether HID Device will be advertising when bonded but not connected.
 */
-#define GATTSERVICE_SUBEVENT_HID_INFORMATION                              0x15
+#define GATTSERVICE_SUBEVENT_HID_INFORMATION                              0x15u
 
 /**
  * @format 1211
@@ -3355,7 +3492,7 @@ typedef uint8_t sm_key_t[16];
  * @param service_index
  * @param protocol_mode    see hid_protocol_mode_t in btstack_hid.h
 */
-#define GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE                            0x16
+#define GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE                            0x16u
 
 /**
  * @format 121
@@ -3363,7 +3500,7 @@ typedef uint8_t sm_key_t[16];
  * @param hids_cid
  * @param configuration    
 */
-#define GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION             0x17
+#define GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION             0x17u
 
 /**
  * @format 1H22
@@ -3372,8 +3509,26 @@ typedef uint8_t sm_key_t[16];
  * @param max_scan_interval
  * @param min_scan_window
  */
-#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE 0x18
+#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE 0x18u
 
+// LE Audio
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param hids_cid
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_CONNECTED         0x19u
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param mics_cid
+ * @param status
+ * @param mute_value
+*/
+#define GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE              0x1Au
 
 // MAP Meta Event Group
 
@@ -3386,14 +3541,14 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param incoming
  */
-#define MAP_SUBEVENT_CONNECTION_OPENED                                    0x01
+#define MAP_SUBEVENT_CONNECTION_OPENED                                    0x01u
 
 /**
  * @format 12
  * @param subevent_code
  * @param map_cid
 */
-#define MAP_SUBEVENT_CONNECTION_CLOSED                                    0x02
+#define MAP_SUBEVENT_CONNECTION_CLOSED                                    0x02u
 
 /**
  * @format 121
@@ -3401,7 +3556,7 @@ typedef uint8_t sm_key_t[16];
  * @param map_cid
  * @param status
  */
-#define MAP_SUBEVENT_OPERATION_COMPLETED                                  0x03
+#define MAP_SUBEVENT_OPERATION_COMPLETED                                  0x03u
 
 
 /**
@@ -3411,7 +3566,7 @@ typedef uint8_t sm_key_t[16];
  * @param name_len
  * @param name
  */
-#define MAP_SUBEVENT_FOLDER_LISTING_ITEM                                  0x04
+#define MAP_SUBEVENT_FOLDER_LISTING_ITEM                                  0x04u
 
 /**
  * @format 12D
@@ -3420,14 +3575,14 @@ typedef uint8_t sm_key_t[16];
  * @param handle
 
  */
-#define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                                 0x05
+#define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                                 0x05u
 
 /**
  * @format 12
  * @param subevent_code
  * @param map_cid
  */
-#define MAP_SUBEVENT_PARSING_DONE                                         0x06
+#define MAP_SUBEVENT_PARSING_DONE                                         0x06u
 
 
 // MESH Meta Event Group
@@ -3436,14 +3591,14 @@ typedef uint8_t sm_key_t[16];
  * @format 1
  * @param subevent_code
  */
-#define MESH_SUBEVENT_CAN_SEND_NOW                                          0x01
+#define MESH_SUBEVENT_CAN_SEND_NOW                                          0x01u
 
 /**
  * @format 11
  * @param subevent_code
  * @param status
  */
-#define MESH_SUBEVENT_PB_TRANSPORT_PDU_SENT                                          0x02
+#define MESH_SUBEVENT_PB_TRANSPORT_PDU_SENT                                          0x02u
 
 /**
  * @format 1121
@@ -3452,7 +3607,7 @@ typedef uint8_t sm_key_t[16];
  * @param pb_transport_cid
  * @param pb_type
  */
-#define MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN                                         0x03
+#define MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN                                         0x03u
 
 /**
  * @format 112
@@ -3460,7 +3615,7 @@ typedef uint8_t sm_key_t[16];
  * @param pb_transport_cid
  * @param reason
  */
-#define MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED                                       0x04
+#define MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED                                       0x04u
 
 /**
  * @format 121
@@ -3468,7 +3623,7 @@ typedef uint8_t sm_key_t[16];
  * @param pb_transport_cid
  * @param attention_time in seconds
  */
-#define MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER                                        0x10
+#define MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER                                        0x10u
 
 /**
  * Device Role
@@ -3476,7 +3631,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param pb_transport_cid
  */
-#define MESH_SUBEVENT_PB_PROV_START_EMIT_PUBLIC_KEY_OOB                              0x11
+#define MESH_SUBEVENT_PB_PROV_START_EMIT_PUBLIC_KEY_OOB                              0x11u
 
 /**
  * Device Role
@@ -3484,7 +3639,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param pb_transport_cid
  */
-#define MESH_SUBEVENT_PB_PROV_STOP_EMIT_PUBLIC_KEY_OOB                               0x12
+#define MESH_SUBEVENT_PB_PROV_STOP_EMIT_PUBLIC_KEY_OOB                               0x12u
 
 /**
  * Device Role
@@ -3492,7 +3647,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param pb_transport_cid
  */
-#define MESH_SUBEVENT_PB_PROV_INPUT_OOB_REQUEST                                      0x13
+#define MESH_SUBEVENT_PB_PROV_INPUT_OOB_REQUEST                                      0x13u
 
 /**
  * Device Role
@@ -3501,7 +3656,7 @@ typedef uint8_t sm_key_t[16];
  * @param pb_transport_cid
  * @param output_oob number
  */
-#define MESH_SUBEVENT_PB_PROV_START_EMIT_OUTPUT_OOB                                  0x15
+#define MESH_SUBEVENT_PB_PROV_START_EMIT_OUTPUT_OOB                                  0x15u
 
 /**
  * Device Role
@@ -3509,7 +3664,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param pb_transport_cid
  */
-#define MESH_SUBEVENT_PB_PROV_STOP_EMIT_OUTPUT_OOB                                   0x16
+#define MESH_SUBEVENT_PB_PROV_STOP_EMIT_OUTPUT_OOB                                   0x16u
 
 /**
  * Provisioner Role
@@ -3517,7 +3672,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param pb_transport_cid
  */
-#define MESH_SUBEVENT_PB_PROV_START_RECEIVE_PUBLIC_KEY_OOB                           0x17
+#define MESH_SUBEVENT_PB_PROV_START_RECEIVE_PUBLIC_KEY_OOB                           0x17u
 
 /**
  * Provisioner Role
@@ -3525,7 +3680,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param pb_transport_cid
  */
-#define MESH_SUBEVENT_PB_PROV_STOP_RECEIVE_PUBLIC_KEY_OOB                            0x18
+#define MESH_SUBEVENT_PB_PROV_STOP_RECEIVE_PUBLIC_KEY_OOB                            0x18u
 
 /**
  * Provisioner Role
@@ -3533,7 +3688,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param pb_transport_cid
  */
-#define MESH_SUBEVENT_PB_PROV_OUTPUT_OOB_REQUEST                                     0x19
+#define MESH_SUBEVENT_PB_PROV_OUTPUT_OOB_REQUEST                                     0x19u
 
 /**
  * Provisioner Role
@@ -3542,7 +3697,7 @@ typedef uint8_t sm_key_t[16];
  * @param pb_transport_cid
  * @param output_oob number
  */
-#define MESH_SUBEVENT_PB_PROV_START_EMIT_INPUT_OOB                                   0x1a
+#define MESH_SUBEVENT_PB_PROV_START_EMIT_INPUT_OOB                                   0x1au
 
 /**
  * Provisioner Role
@@ -3550,7 +3705,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param pb_transport_cid
  */
-#define MESH_SUBEVENT_PB_PROV_STOP_EMIT_INPUT_OOB                                    0x1b
+#define MESH_SUBEVENT_PB_PROV_STOP_EMIT_INPUT_OOB                                    0x1bu
 
 /**
  * Provisioner Role
@@ -3566,49 +3721,49 @@ typedef uint8_t sm_key_t[16];
  * @param input_oob_size
  * @param input_oob_action
  */
-#define MESH_SUBEVENT_PB_PROV_CAPABILITIES                                           0x1c
+#define MESH_SUBEVENT_PB_PROV_CAPABILITIES                                           0x1cu
 
 /**
  * @format 12
  * @param subevent_code
  * @param pb_transport_cid
  */
-#define MESH_SUBEVENT_PB_PROV_COMPLETE                                               0x1d
+#define MESH_SUBEVENT_PB_PROV_COMPLETE                                               0x1du
 
 /**
  * @format 11
  * @param subevent_code
  * @param attention_time in seconds
  */
-#define MESH_SUBEVENT_ATTENTION_TIMER                                                0x1e
+#define MESH_SUBEVENT_ATTENTION_TIMER                                                0x1eu
 
 /**
  * @format 1H
  * @param subevent_code
  * @param con_handle
  */
-#define MESH_SUBEVENT_PROXY_CONNECTED                                                0x20
+#define MESH_SUBEVENT_PROXY_CONNECTED                                                0x20u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param con_handle
  */
-#define MESH_SUBEVENT_PROXY_PDU_SENT                                                 0x21
+#define MESH_SUBEVENT_PROXY_PDU_SENT                                                 0x21u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param con_handle
  */
-#define MESH_SUBEVENT_PROXY_DISCONNECTED                                             0x22
+#define MESH_SUBEVENT_PROXY_DISCONNECTED                                             0x22u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param con_handle
  */
-#define MESH_SUBEVENT_MESSAGE_SENT                                                   0x23
+#define MESH_SUBEVENT_MESSAGE_SENT                                                   0x23u
 
 /**
  * @format 114411
@@ -3619,7 +3774,7 @@ typedef uint8_t sm_key_t[16];
  * @param reason
  * @param value
  */
-#define MESH_SUBEVENT_STATE_UPDATE_BOOL                                              0x24
+#define MESH_SUBEVENT_STATE_UPDATE_BOOL                                              0x24u
 
 /**
  * @format 114412
@@ -3630,7 +3785,7 @@ typedef uint8_t sm_key_t[16];
  * @param reason
  * @param value
  */
-#define MESH_SUBEVENT_STATE_UPDATE_INT16                                              0x25
+#define MESH_SUBEVENT_STATE_UPDATE_INT16                                              0x25u
 
 // Mesh Client Events
 /**
@@ -3641,7 +3796,7 @@ typedef uint8_t sm_key_t[16];
  * @param opcode
  * @param dest
  */
-#define MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED                                        0x30
+#define MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED                                        0x30u
 
 /**
  * @format 121114
@@ -3652,7 +3807,7 @@ typedef uint8_t sm_key_t[16];
  * @param target_value       optional, if value > 0, than remaining_time_ms must be read
  * @param remaining_time_ms  
  */
-#define MESH_SUBEVENT_GENERIC_ON_OFF                                                  0x31
+#define MESH_SUBEVENT_GENERIC_ON_OFF                                                  0x31u
 
 /**
  * @format 121224
@@ -3663,7 +3818,7 @@ typedef uint8_t sm_key_t[16];
  * @param target_value       optional, if value > 0, than remaining_time_ms must be read
  * @param remaining_time_ms  
  */
-#define MESH_SUBEVENT_GENERIC_LEVEL                                                   0x32
+#define MESH_SUBEVENT_GENERIC_LEVEL                                                   0x32u
 
 /**
  * @format 1222211
@@ -3675,14 +3830,14 @@ typedef uint8_t sm_key_t[16];
  * @param test_id
  * @param acknowledged
  */
-#define MESH_SUBEVENT_HEALTH_PERFORM_TEST                                            0x33
+#define MESH_SUBEVENT_HEALTH_PERFORM_TEST                                            0x33u
 
 /**
  * @format 11
  * @param subevent_code
  * @param element_index
  */
-#define MESH_SUBEVENT_HEALTH_ATTENTION_TIMER_CHANGED                                 0x34
+#define MESH_SUBEVENT_HEALTH_ATTENTION_TIMER_CHANGED                                 0x34u
 
 /**
  * @format 1211
@@ -3691,7 +3846,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param transition_time_gdtt  
  */
-#define MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME                                0x35
+#define MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME                                0x35u
 
 /**
  * @format 1211
@@ -3700,11 +3855,11 @@ typedef uint8_t sm_key_t[16];
  * @param foundation_status
  * @param secure_network_beacon_state  
  */
-#define MESH_SUBEVENT_CONFIGURATION_BEACON                                           0x36
+#define MESH_SUBEVENT_CONFIGURATION_BEACON                                           0x36u
 
 // Composition Data has variable of element descriptions, with two lists of model lists
 // Use .. getters to access data
-#define MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA                                 0x37
+#define MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA                                 0x37u
 
 /**
  * @format 1211
@@ -3713,7 +3868,7 @@ typedef uint8_t sm_key_t[16];
  * @param foundation_status
  * @param default_ttl  
  */
-#define MESH_SUBEVENT_CONFIGURATION_DEFAULT_TTL                                      0x38
+#define MESH_SUBEVENT_CONFIGURATION_DEFAULT_TTL                                      0x38u
 
 /**
  * @format 1211
@@ -3722,7 +3877,7 @@ typedef uint8_t sm_key_t[16];
  * @param foundation_status
  * @param gatt_proxy_state  
  */
-#define MESH_SUBEVENT_CONFIGURATION_GATT_PROXY                                       0x39
+#define MESH_SUBEVENT_CONFIGURATION_GATT_PROXY                                       0x39u
 
 /**
  * @format 121111
@@ -3733,7 +3888,7 @@ typedef uint8_t sm_key_t[16];
  * @param retransmit_count                          the number of times that packet is transmitted for each packet that is relayed.
  * @param retransmit_interval_ms                    retransmission interval in ms
  */
-#define MESH_SUBEVENT_CONFIGURATION_RELAY                                            0x40
+#define MESH_SUBEVENT_CONFIGURATION_RELAY                                            0x40u
 
 
 /**
@@ -3750,7 +3905,7 @@ typedef uint8_t sm_key_t[16];
  * @param publish_retransmit_interval_steps
  * @param model_identifier
  */
-#define MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION                                0x41
+#define MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION                                0x41u
 
 /**
  * @format 12124
@@ -3760,7 +3915,7 @@ typedef uint8_t sm_key_t[16];
  * @param address  
  * @param model_identifier
  */
-#define MESH_SUBEVENT_CONFIGURATION_MODEL_SUBSCRIPTION                               0x42
+#define MESH_SUBEVENT_CONFIGURATION_MODEL_SUBSCRIPTION                               0x42u
 
 /**
  * @format 1214112
@@ -3772,7 +3927,7 @@ typedef uint8_t sm_key_t[16];
  * @param subscription_address_pos
  * @param subscription_address_item
  */
-#define MESH_SUBEVENT_CONFIGURATION_MODEL_SUBSCRIPTION_LIST_ITEM                     0x43   
+#define MESH_SUBEVENT_CONFIGURATION_MODEL_SUBSCRIPTION_LIST_ITEM                     0x43u   
 
 
 /**
@@ -3781,7 +3936,7 @@ typedef uint8_t sm_key_t[16];
  * @param dest
  * @param foundation_status
  */
-#define MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX                                      0x44
+#define MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX                                      0x44u
 
 /**
  * @format 121112
@@ -3792,7 +3947,7 @@ typedef uint8_t sm_key_t[16];
  * @param netkey_index_pos
  * @param netkey_index_item
  */
-#define MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX_LIST_ITEM                             0x45
+#define MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX_LIST_ITEM                             0x45u
 
 /**
  * @format 12122
@@ -3802,7 +3957,7 @@ typedef uint8_t sm_key_t[16];
  * @param netkey_index_item
  * @param appkey_index_item
  */
-#define MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX                                       0x46
+#define MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX                                       0x46u
 
 /**
  * @format 12121122
@@ -3815,7 +3970,7 @@ typedef uint8_t sm_key_t[16];
  * @param netkey_index_item
  * @param appkey_index_item
  */
- #define MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM                            0x47
+ #define MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM                            0x47u
 
 /**
  * @format 12121
@@ -3825,7 +3980,7 @@ typedef uint8_t sm_key_t[16];
  * @param netkey_index_item
  * @param identity_status
  */
-#define MESH_SUBEVENT_CONFIGURATION_NODE_IDENTITY                                      0x48
+#define MESH_SUBEVENT_CONFIGURATION_NODE_IDENTITY                                      0x48u
 
 /**
  * @format 12124
@@ -3835,7 +3990,7 @@ typedef uint8_t sm_key_t[16];
  * @param appkey_index
  * @param model_identifier
  */
-#define MESH_SUBEVENT_CONFIGURATION_MODEL_APP                                           0x49
+#define MESH_SUBEVENT_CONFIGURATION_MODEL_APP                                           0x49u
 
 /**
  * @format 1214112
@@ -3847,7 +4002,7 @@ typedef uint8_t sm_key_t[16];
  * @param appkey_index_pos
  * @param appkey_index_item
  */
-#define MESH_SUBEVENT_CONFIGURATION_MODEL_APP_LIST_ITEM                                 0x50
+#define MESH_SUBEVENT_CONFIGURATION_MODEL_APP_LIST_ITEM                                 0x50u
 
 /**
  * @format 121
@@ -3855,7 +4010,7 @@ typedef uint8_t sm_key_t[16];
  * @param dest
  * @param foundation_status
  */
-#define MESH_SUBEVENT_CONFIGURATION_NODE_RESET                                          0x51
+#define MESH_SUBEVENT_CONFIGURATION_NODE_RESET                                          0x51u
 
 /**
  * @format 1211
@@ -3864,7 +4019,7 @@ typedef uint8_t sm_key_t[16];
  * @param foundation_status
  * @param friend_state
  */
-#define MESH_SUBEVENT_CONFIGURATION_FRIEND                                              0x52
+#define MESH_SUBEVENT_CONFIGURATION_FRIEND                                              0x52u
 
 /**
  * @format 12121
@@ -3874,7 +4029,7 @@ typedef uint8_t sm_key_t[16];
  * @param netkey_index
  * @param phase
  */
-#define MESH_SUBEVENT_CONFIGURATION_KEY_REFRESH_PHASE                                   0x53
+#define MESH_SUBEVENT_CONFIGURATION_KEY_REFRESH_PHASE                                   0x53u
 
 /**
  * @format 121222122
@@ -3888,7 +4043,7 @@ typedef uint8_t sm_key_t[16];
  * @param features
  * @param netkey_index
  */
-#define MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION                               0x54
+#define MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION                               0x54u
 
 /**
  * @format 121222211
@@ -3902,7 +4057,7 @@ typedef uint8_t sm_key_t[16];
  * @param min_hops
  * @param max_hops
  */
-#define MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_SUBSCRIPTION                              0x55
+#define MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_SUBSCRIPTION                              0x55u
 
 /**
  * @format 12123
@@ -3912,7 +4067,7 @@ typedef uint8_t sm_key_t[16];
  * @param lpn_address
  * @param poll_timeout
  */
-#define MESH_SUBEVENT_CONFIGURATION_LOW_POWER_NODE_POLL_TIMEOUT                         0x56
+#define MESH_SUBEVENT_CONFIGURATION_LOW_POWER_NODE_POLL_TIMEOUT                         0x56u
 
 /**
  * @format 12112
@@ -3922,7 +4077,7 @@ typedef uint8_t sm_key_t[16];
  * @param transmit_count
  * @param transmit_interval_steps_ms
  */
-#define MESH_SUBEVENT_CONFIGURATION_NETWORK_TRANSMIT                                    0x57
+#define MESH_SUBEVENT_CONFIGURATION_NETWORK_TRANSMIT                                    0x57u
 
 
 #endif

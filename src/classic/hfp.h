@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -50,6 +50,8 @@
 extern "C" {
 #endif
 
+// period AG will send RING messages
+#define HFP_RING_PERIOD_MS 2000
 
 /* HF Supported Features: 
 0: EC and/or NR function
@@ -115,10 +117,15 @@ extern "C" {
 #define HFP_CALL_SERVICE_SIZE                    3
 #define HFP_MAX_NUM_CODECS                      10
 
-#define HFP_MAX_INDICATOR_DESC_SIZE  20
-#define HFP_MAX_VR_TEXT_SIZE        100
+#define HFP_MAX_INDICATOR_DESC_SIZE             20
+#define HFP_MAX_VR_TEXT_SIZE                   100
+#define HFP_VR_TEXT_HEADER_SIZE                 27      // bytes needed for sending +BVRA message including quotes but excluding string length: 
+                                                        // \r\n+BVRA: <vrect>,<vrecstate>,<textID>,<textType>,<textOperation>,"<string>"\r\n
+
 #define HFP_MAX_NETWORK_OPERATOR_NAME_SIZE 17   
 
+#define HFP_HF_INDICATOR_UUID_ENHANCED_SAFETY   0x0001  // 0 - disabled, 1 - enabled
+#define HFP_HF_INDICATOR_UUID_BATTERY_LEVEL     0X0002  // 0-100 remaining level of battery
     
 #define HFP_SUPPORTED_FEATURES "+BRSF"
 #define HFP_AVAILABLE_CODECS "+BAC"
@@ -195,17 +202,16 @@ typedef enum {
     HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP,
     HFP_CMD_AG_SEND_COMMON_CODEC,
     HFP_CMD_AG_SUGGESTED_CODEC,
-    HFP_CMD_HF_CONFIRMED_CODEC,
-    HFP_CMD_CALL_ANSWERED,
+    HFP_CMD_HF_CONFIRMED_CODEC,                             
+    HFP_CMD_CALL_ANSWERED,                                  // 30
     HFP_CMD_CALL_HOLD,
     HFP_CMD_HANG_UP_CALL,
     HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING,
     HFP_CMD_CALL_PHONE_NUMBER,
-    HFP_CMD_REDIAL_LAST_NUMBER,
-    HFP_CMD_TURN_OFF_EC_AND_NR,
-    HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION,
+    HFP_CMD_REDIAL_LAST_NUMBER,                             // 35            
+    HFP_CMD_TURN_OFF_EC_AND_NR,     
+    HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION,                  // 37
     HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION,
-    HFP_CMD_AG_ACTIVATE_ENHANCED_VOICE_RECOGNITION,
     HFP_CMD_HF_REQUEST_PHONE_NUMBER,
     HFP_CMD_AG_SENT_PHONE_NUMBER,
     HFP_CMD_TRANSMIT_DTMF_CODES,
@@ -316,7 +322,7 @@ typedef enum {
 typedef enum {
     HFP_VOICE_RECOGNITION_STATE_AG_READY = 0,
     HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT = 1,
-    HFP_VOICE_RECOGNITION_STATE_AG_IS_SENDING_AUDIO_TO_HF = 2,
+    HFP_VOICE_RECOGNITION_STATE_AG_IS_STARTING_SOUND = 2,
     HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT = 4
 } hfp_voice_recognition_state_t;
 
@@ -367,7 +373,7 @@ typedef enum {
     HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS, 
     HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
     
-    HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 
+    HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED,  //23
     
     HFP_W2_CONNECT_SCO,
     HFP_W4_SCO_CONNECTED,
@@ -388,25 +394,29 @@ typedef enum {
 
 
 typedef enum {
+    // shared between normal voice recognition and enhanced one
     HFP_VRA_VOICE_RECOGNITION_OFF,
 
+    HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF,
     HFP_VRA_W4_VOICE_RECOGNITION_OFF,
+    
+    HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED,
     HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED,
     HFP_VRA_VOICE_RECOGNITION_ACTIVATED,
     
-    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_OFF,
-    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_ACTIVATED,
-    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_STATUS,
-    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_MSG,
-    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_NEW_SESSION,
-    HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED
+    HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO,
+    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO,
+    HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO,
+
+    HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_STATUS,
+    HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_MSG
 } hfp_voice_recognition_activation_status_t;
 
 typedef struct {
     uint16_t text_id;
     hfp_text_type_t text_type;
     hfp_text_operation_t text_operation;
-    uint8_t * text;
+    const char * text;
 } hfp_voice_recognition_message_t;
 
 typedef enum {
@@ -425,7 +435,7 @@ typedef enum {
     HFP_CALL_IDLE,
     HFP_CALL_TRIGGER_AUDIO_CONNECTION,
     HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING,
-    HFP_CALL_RINGING,
+    HFP_CALL_INCOMING_RINGING,
     HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE,
     HFP_CALL_ACTIVE,
     HFP_CALL_W2_SEND_CALL_WAITING,
@@ -536,6 +546,7 @@ typedef struct hfp_connection {
     hci_con_handle_t sco_handle;
     uint16_t rfcomm_channel_nr;
     uint16_t rfcomm_cid;
+    uint16_t rfcomm_mtu;
     
     hfp_state_machine_t state_machine;
     hfp_call_state_t call_state;
@@ -584,7 +595,6 @@ typedef struct hfp_connection {
 
     // TODO: put these bit flags in a bitmap
     uint8_t ok_pending;
-    // uint8_t send_ok;
     uint8_t send_error;
 
     bool found_equal_sign;
@@ -611,8 +621,6 @@ typedef struct hfp_connection {
     uint8_t release_audio_connection; 
     uint8_t release_slc_connection; 
 
-    btstack_timer_source_t hfp_timeout;
-
     uint8_t microphone_gain;
     uint8_t send_microphone_gain;
 
@@ -624,12 +632,16 @@ typedef struct hfp_connection {
     uint8_t send_ag_indicators_segment;
     uint8_t send_response_and_hold_status;  // 0 - don't send. BRTH:0 == 1, ..
     
+    bool emit_vra_enabled_after_audio_established;
     // AG only
     uint8_t change_in_band_ring_tone_setting;
     uint8_t ag_ring;
     uint8_t ag_send_clip;
     uint8_t ag_echo_and_noise_reduction;
-    uint8_t ag_activate_voice_recognition;
+    // used by AG: HFP parser stores here the activation value issued by HF
+    uint8_t ag_activate_voice_recognition_value;
+    bool    ag_audio_connection_opened_before_vra;
+
     uint8_t ag_notify_incoming_call_waiting;
     uint8_t send_subscriber_number;
     uint8_t next_subscriber_number_to_send;
@@ -637,11 +649,18 @@ typedef struct hfp_connection {
     uint8_t ag_response_and_hold_action;
     uint8_t ag_dtmf_code;
     bool    ag_send_no_carrier;
-    
+    bool    ag_vra_send_command;
+    bool    ag_send_in_band_ring_tone_setting;
+    bool    ag_send_common_codec;
+    bool    ag_vra_requested_by_hf;
+
     int send_status_of_current_calls;
     int next_call_index;
 
     // HF only
+    // HF: track command for which ok/error response need to be received
+    hfp_command_t response_pending_for_command;
+
     hfp_hf_query_operator_state_t hf_query_operator_state;
     uint8_t hf_answer_incoming_call;
     uint8_t hf_initiate_outgoing_call;
@@ -673,15 +692,19 @@ typedef struct hfp_connection {
     
     uint8_t hf_activate_calling_line_notification;
     uint8_t hf_deactivate_calling_line_notification;
-    uint8_t hf_activate_echo_canceling_and_noise_reduction;
     uint8_t hf_deactivate_echo_canceling_and_noise_reduction;
 
-    hfp_voice_recognition_activation_status_t vra_status;
+    hfp_voice_recognition_activation_status_t vra_state;
+    hfp_voice_recognition_activation_status_t vra_state_requested;
+    bool deactivate_voice_recognition;
+    bool activate_voice_recognition;
+    bool enhanced_voice_recognition_enabled;
 
-    hfp_voice_recognition_activation_status_t ag_vra_status;
+    // ih HF, used by parser, in AG used for commands
+    uint8_t ag_vra_status;
     hfp_voice_recognition_state_t ag_vra_state;
-    
     hfp_voice_recognition_message_t ag_msg;
+    uint16_t ag_vra_msg_length;
 
     uint8_t clcc_idx;
     uint8_t clcc_dir;
@@ -703,6 +726,9 @@ typedef struct hfp_connection {
     bool bcm_send_enable_wbs;
     bool bcm_send_disable_wbs;
     bool bcm_send_write_i2spcm_interface_param;
+#endif
+#ifdef ENABLE_RTK_PCM_WBS
+    bool rtk_send_sco_config;
 #endif
 } hfp_connection_t;
 
@@ -734,6 +760,23 @@ void hfp_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subt
 void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value);
 void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
 
+/**
+ * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED event
+ * @param hfp_connection
+ * @param status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED
+ */
+void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status);
+
+/**
+ * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED event
+ * @param hfp_connection
+ * @param status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED
+ */
+void hfp_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status);
+
+void hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection_t * hfp_connection, uint8_t status);
+void hfp_emit_enhanced_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status);
+
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t hfp_role);
 hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle, hfp_role_t hfp_role);
@@ -742,13 +785,32 @@ hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hf
 btstack_linked_list_t * hfp_get_connections(void);
 void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);
 
-void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role);
-void hfp_release_service_level_connection(hfp_connection_t * connection);
-void hfp_reset_context_flags(hfp_connection_t * connection);
+/**
+ * @brief Establish RFCOMM connection, and perform service level connection agreement:
+ * @param bd_addr
+ * @param service_uuid
+ * @param local_role
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *                  - ERROR_CODE_COMMAND_DISALLOWED if connection already exists, or
+ *                  - BTSTACK_MEMORY_ALLOC_FAILED 
+ */
+uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role);
 
-void hfp_release_audio_connection(hfp_connection_t * connection);
+/**
+ * @brief Prepare connection for audio and SLC connections release
+ * @param hfp_connection
+ */
+void hfp_trigger_release_service_level_connection(hfp_connection_t * hfp_connection);
 
-void hfp_setup_synchronous_connection(hfp_connection_t * connection);
+/**
+ * @brief Prepare connection for audio connection release
+ * @param hfp_connection
+ */
+uint8_t hfp_trigger_release_audio_connection(hfp_connection_t * hfp_connection);
+
+void hfp_reset_context_flags(hfp_connection_t * hfp_connection);
+
+void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection);
 void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool incoming_eSCO);
 int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs);
 void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_nr);
@@ -782,7 +844,7 @@ void hfp_set_sco_packet_types(uint16_t packet_types);
 
 /**
  * @brief Get packet types for SCO connections
- * @returns packet_types
+ * @return packet_types
  */
 uint16_t hfp_get_sco_packet_types(void);
 

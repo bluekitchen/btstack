@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -36,17 +36,23 @@
  */
 
 /**
- * @title Run Loop
+ *  BTstack Run Loop Abstraction
  *
+ *  Provides generic functionality required by the Bluetooth stack and example applications:
+ *  - asynchronous IO for various devices Serial, USB, network sockets, console
+ *  - system time in milliseconds
+ *  - single shot timers
+ *  - integration for threaded environments
  */
 
-#ifndef btstack_run_loop_H
-#define btstack_run_loop_H
+#ifndef BTSTACK_RUN_LOOP_H
+#define BTSTACK_RUN_LOOP_H
 
 #include "btstack_config.h"
 
 #include "btstack_bool.h"
 #include "btstack_linked_list.h"
+#include "btstack_defines.h"
 
 #include <stdint.h>
 
@@ -104,6 +110,9 @@ typedef struct btstack_run_loop {
 	void (*execute)(void);
 	void (*dump_timer)(void);
 	uint32_t (*get_time_ms)(void);
+	void (*poll_data_sources_from_irq)(void);
+	void (*execute_on_main_thread)(btstack_context_callback_registration_t * callback_registration);
+	void (*trigger_exit)(void);
 } btstack_run_loop_t;
 
 
@@ -115,6 +124,7 @@ typedef struct btstack_run_loop {
 // private data (access only by run loop implementations)
 extern btstack_linked_list_t btstack_run_loop_base_timers;
 extern btstack_linked_list_t btstack_run_loop_base_data_sources;
+extern btstack_linked_list_t btstack_run_loop_base_callbacks;
 
 /**
  * @brief Init
@@ -130,7 +140,7 @@ void btstack_run_loop_base_add_timer(btstack_timer_source_t * timer);
 /**
  * @brief Remove timer source.
  * @param timer to remove
- * @returns true if timer was removed
+ * @return true if timer was removed
  */
 bool  btstack_run_loop_base_remove_timer(btstack_timer_source_t * timer);
 
@@ -147,7 +157,7 @@ void btstack_run_loop_base_dump_timer(void);
 
 /**
  * @brief Get time until first timer fires
- * @returns -1 if no timers, time until next timeout otherwise
+ * @return -1 if no timers, time until next timeout otherwise
  */
 int32_t btstack_run_loop_base_get_time_until_timeout(uint32_t now);
 
@@ -160,7 +170,7 @@ void btstack_run_loop_base_add_data_source(btstack_data_source_t * data_source);
 /**
  * @brief Remove data source from run loop
  * @param data_source to remove
- * @returns true if data srouce was removed
+ * @return true if data srouce was removed
  */
 bool btstack_run_loop_base_remove_data_source(btstack_data_source_t * data_source);
 
@@ -182,6 +192,16 @@ void btstack_run_loop_base_disable_data_source_callbacks(btstack_data_source_t *
  * @brief Poll data sources. It calls the procss function for all data sources where DATA_SOURCE_CALLBACK_POLL is set
  */
 void btstack_run_loop_base_poll_data_sources(void);
+
+/**
+ * @bried Add Callbacks to list of callbacks to execute with btstack_run_loop_base_execute_callbacks
+ */
+void btstack_run_loop_base_add_callback(btstack_context_callback_registration_t * callback_registration);
+
+/**
+ * @bried Procss Callbacks: remove all callback-registrations and call the registered function with its context
+ */
+void btstack_run_loop_base_execute_callbacks(void);
 
 
 /* API_START */
@@ -295,9 +315,34 @@ void btstack_run_loop_add_data_source(btstack_data_source_t * data_source);
 int btstack_run_loop_remove_data_source(btstack_data_source_t * data_source);
 
 /**
+ * @brief Poll data sources - called only from IRQ context
+ * @note Can be used to trigger processing of received peripheral data on the main thread
+ *       by registering a data source with DATA_SOURCE_CALLBACK_POLL and calling this
+ *       function from the IRQ handler.
+ */
+void btstack_run_loop_poll_data_sources_from_irq(void);
+
+
+/**
  * @brief Execute configured run loop. This function does not return.
  */
 void btstack_run_loop_execute(void);
+
+/**
+ * @brief Registers callback with run loop and mark main thread as ready
+ * @note Callback can only be registered once
+ * @param callback_registration
+ */
+void btstack_run_loop_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration);
+
+/**
+ * @brief Trigger exit of active run loop (started via btstack_run_loop_execute) if possible
+ * @note This is only supported if there's a loop in the btstack_run_loop_execute function.
+ * It is not supported if timers and data sources are only mapped to RTOS equivalents, e.g.
+ * in the Qt or Core Foundation implementations.
+ */
+void btstack_run_loop_trigger_exit(void);
+
 
 /**
  * @brief De-Init Run Loop
@@ -307,9 +352,8 @@ void btstack_run_loop_deinit(void);
 /* API_END */
 
 
-
 #if defined __cplusplus
 }
 #endif
 
-#endif // btstack_run_loop_H
+#endif // BTSTACK_RUN_LOOP_H

@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -121,7 +121,7 @@ static int       request_frames;
 // WAV File
 #ifdef STORE_TO_WAV_FILE
 static uint32_t audio_frame_count = 0;
-static char * wav_filename = "av2dp_sink_demo.wav";
+static char * wav_filename = "a2dp_sink_demo.wav";
 #endif
 
 #ifdef STORE_TO_SBC_FILE    
@@ -144,24 +144,11 @@ typedef struct {
 
 static media_codec_configuration_sbc_t sbc_configuration;
 static int volume_percentage = 0; 
-
-#ifdef SUPPORT_VOLUME_CHANGE_NOTIFICATION
-static uint8_t events_num = 3;
-static uint8_t events[] = {
-    AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
-};
-#endif
-
-static uint8_t companies_num = 1;
-static uint8_t companies[] = {
-    0x00, 0x19, 0x58 //BT SIG registered CompanyID
-};
+static avrcp_battery_status_t battery_status = AVRCP_BATTERY_STATUS_WARNING; 
 
 #ifdef HAVE_BTSTACK_STDIN
 // pts:         
-static const char * device_addr_string = "6C:72:E7:10:22:EE";
+static const char * device_addr_string = "5C:F3:70:60:7B:87";
 // mac 2013:  static const char * device_addr_string = "84:38:35:65:d1:15";
 // iPhone 5S: static const char * device_addr_string = "54:E4:3A:26:A2:39";
 static bd_addr_t device_addr;
@@ -179,7 +166,7 @@ static uint8_t  a2dp_local_seid = 0;
 
 static uint16_t avrcp_cid = 0;
 static uint8_t  avrcp_connected = 0;
-static uint8_t  avrcp_subevent_value[100];
+static uint8_t  avrcp_subevent_value[255];
 
 static uint8_t media_sbc_codec_capabilities[] = {
     0xFF,//(AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
@@ -226,7 +213,14 @@ static void stdin_process(char cmd);
 #endif
 
 static int a2dp_and_avrcp_setup(void){
+
     l2cap_init();
+
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
+
     // Initialize AVDTP Sink
     a2dp_sink_init();
     a2dp_sink_register_packet_handler(&a2dp_sink_packet_handler);
@@ -247,7 +241,7 @@ static int a2dp_and_avrcp_setup(void){
     // Initialize AVRCP service
     avrcp_init();
     avrcp_register_packet_handler(&avrcp_packet_handler);
-    
+
     // Initialize AVRCP Controller
     avrcp_controller_init();
     avrcp_controller_register_packet_handler(&avrcp_controller_packet_handler);
@@ -580,8 +574,8 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     UNUSED(channel);
     UNUSED(size);
     uint16_t local_cid;
-    uint8_t  status = 0xFF;
-    bd_addr_t adress;
+    uint8_t  status;
+    bd_addr_t address;
     
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
@@ -597,9 +591,13 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             
             avrcp_cid = local_cid;
             avrcp_connected = 1;
-            avrcp_subevent_connection_established_get_bd_addr(packet, adress);
-            printf("AVRCP: Connected to %s, cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
+            avrcp_subevent_connection_established_get_bd_addr(packet, address);
+            printf("AVRCP: Connected to %s, cid 0x%02x\n", bd_addr_to_str(address), avrcp_cid);
 
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+            avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
+            avrcp_target_battery_status_changed(avrcp_cid, battery_status);
+    
             // automatically enable notifications
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
@@ -620,30 +618,11 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    uint8_t  status = 0xFF;
     
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
-    
-    status = packet[5];
     if (!avrcp_cid) return;
 
-    // ignore INTERIM status
-    if (status == AVRCP_CTYPE_RESPONSE_INTERIM){
-        switch (packet[2]){
-            case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED:{
-                uint32_t playback_position_ms = avrcp_subevent_notification_playback_pos_changed_get_playback_position_ms(packet);
-                if (playback_position_ms == AVRCP_NO_TRACK_SELECTED_PLAYBACK_POSITION_CHANGED){
-                    printf("AVRCP Controller: playback position changed, no track is selected\n");
-                }  
-                break;
-            }
-            default:
-                break;
-        }
-        return;
-    } 
-            
     memset(avrcp_subevent_value, 0, sizeof(avrcp_subevent_value));
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED:
@@ -657,9 +636,6 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             return;
         case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
             printf("AVRCP Controller: Track changed\n");
-            return;
-        case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
-            printf("AVRCP Controller: Absolute volume changed %d\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet));
             return;
         case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
             printf("AVRCP Controller: Changed\n");
@@ -726,12 +702,10 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             break;
 
         case AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE:
-            printf("A2DP  Sink      : Set Player App Value %s\n", avrcp_ctype2str(avrcp_subevent_player_application_value_response_get_command_type(packet)));
+            printf("AVRCP Controller: Set Player App Value %s\n", avrcp_ctype2str(avrcp_subevent_player_application_value_response_get_command_type(packet)));
             break;
             
-       
         default:
-            printf("AVRCP Controller: Event 0x%02x is not parsed\n", packet[2]);
             break;
     }  
 }
@@ -762,16 +736,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             avrcp_volume_changed(volume);
             break;
         
-        case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
-#ifdef SUPPORT_VOLUME_CHANGE_NOTIFICATION
-            avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
-#else
-            avrcp_target_supported_events(avrcp_cid, 0, NULL, 0);
-#endif
-            break;
-        case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
-            avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
-            break;
         case AVRCP_SUBEVENT_OPERATION:
             operation_id = avrcp_subevent_operation_get_operation_id(packet);
             button_state = avrcp_subevent_operation_get_button_pressed(packet) > 0 ? "PRESS" : "RELEASE";
@@ -876,6 +840,12 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
 #endif
             break;
         
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+        case A2DP_SUBEVENT_START_STREAM_REQUESTED:
+            printf("A2DP  Sink      : Explicit Accept to start stream, local_seid 0x%02x\n", a2dp_subevent_start_stream_requested_get_local_seid(packet));
+            a2dp_sink_start_stream_accept(a2dp_cid, a2dp_local_seid);
+            break;
+#endif
         case A2DP_SUBEVENT_STREAM_STARTED:
             printf("A2DP  Sink      : Stream started\n");
             // audio stream is started when buffer reaches minimal level
@@ -940,10 +910,10 @@ static void show_usage(void){
 
     printf("s/S - send/release long button press REWIND\n");
 
-    printf("\n--- Volume Control ---\n");
+    printf("\n--- Volume and Battery Control ---\n");
     printf("t - volume up   for 10 percent\n");
     printf("T - volume down for 10 percent\n");
-
+    printf("V - toggle Battery status from AVRCP_BATTERY_STATUS_NORMAL to AVRCP_BATTERY_STATUS_FULL_CHARGE\n");
     printf("---\n");
 }
 #endif
@@ -952,6 +922,7 @@ static void show_usage(void){
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     uint8_t volume;
+    avrcp_battery_status_t old_battery_status;
 
     switch (cmd){
         case 'b':
@@ -993,7 +964,17 @@ static void stdin_process(char cmd){
             status = avrcp_target_volume_changed(avrcp_cid, volume);
             avrcp_volume_changed(volume);
             break;
+        case 'V':
+            old_battery_status = battery_status;
 
+            if (battery_status < AVRCP_BATTERY_STATUS_FULL_CHARGE){
+                battery_status = (avrcp_battery_status_t)((uint8_t) battery_status + 1);
+            } else {
+                battery_status = AVRCP_BATTERY_STATUS_NORMAL;
+            }
+            printf(" - toggle battery value, old %d, new %d\n", old_battery_status, battery_status);
+            status = avrcp_target_battery_status_changed(avrcp_cid, battery_status);
+            break;
         case 'O':
             printf(" - get play status\n");
             status = avrcp_controller_get_play_status(avrcp_cid);

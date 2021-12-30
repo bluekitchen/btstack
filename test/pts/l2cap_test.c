@@ -124,7 +124,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     uint16_t l2cap_cid  = little_endian_read_16(packet, 12);
                     if (l2cap_ertm){
                         printf("L2CAP Accepting incoming connection request in ERTM\n"); 
-                        l2cap_accept_ertm_connection(l2cap_cid, &ertm_config, ertm_buffer, sizeof(ertm_buffer));
+                        l2cap_ertm_accept_connection(l2cap_cid, &ertm_config, ertm_buffer, sizeof(ertm_buffer));
                     } else {
                         printf("L2CAP Accepting incoming connection request in Basic Mode\n"); 
                         l2cap_accept_connection(l2cap_cid);
@@ -169,7 +169,7 @@ static void stdin_process(char buffer){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
             if (l2cap_ertm){
-                l2cap_create_ertm_channel(packet_handler, remote, BLUETOOTH_PSM_SDP, &ertm_config, ertm_buffer, sizeof(ertm_buffer), &local_cid);
+                l2cap_ertm_create_channel(packet_handler, remote, BLUETOOTH_PSM_SDP, &ertm_config, ertm_buffer, sizeof(ertm_buffer), &local_cid);
             } else {
                 l2cap_create_channel(packet_handler, remote, BLUETOOTH_PSM_SDP, 100, &local_cid);
             }
@@ -196,7 +196,7 @@ static void stdin_process(char buffer){
             break;
         case 'd':
             printf("L2CAP Channel Closed\n");
-            l2cap_disconnect(local_cid, 0);
+            l2cap_disconnect(local_cid);
             break;
         case 'e':
             printf("L2CAP Enhanced Retransmission Mode (ERTM) optional\n");

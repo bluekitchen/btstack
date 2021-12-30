@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -244,8 +244,18 @@ static int transport_open(void){
         esp_vhci_host_register_callback(&vhci_host_cb);
     }
 
+    // Enable classic mode by default
+    esp_bt_mode_t bt_mode = ESP_BT_MODE_CLASSIC_BT;
+
+#if CONFIG_BTDM_CTRL_MODE_BTDM
     // enable dual mode
-    ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
+    bt_mode = ESP_BT_MODE_BTDM;
+#elif BTDM_CTRL_MODE_BLE_ONLY
+    // enable bluetooth low energy mode
+    bt_mode = ESP_BT_MODE_BLE;
+#endif
+
+    ret = esp_bt_controller_enable(bt_mode);
     if (ret) {
         log_error("transport: esp_bt_controller_enable failed");
         return -1;
@@ -383,8 +393,9 @@ uint8_t btstack_init(void){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    // setup i2s audio sink
+    // setup i2s audio for sink and source
     btstack_audio_sink_set_instance(btstack_audio_esp32_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_esp32_source_get_instance());
 
     return ERROR_CODE_SUCCESS;
 }

@@ -11,6 +11,7 @@ CORE += \
 	btstack_audio_portaudio.c   \
 	main.c 						\
 	btstack_stdin_posix.c       \
+	btstack_signal.c            \
 	btstack_tlv.c 		\
 	btstack_tlv_posix.c 		\
 	rijndael.c \
@@ -81,6 +82,10 @@ AVRCP += \
 	avrcp_browsing_target.c \
 	avrcp_browsing_controller.c \
 
+SRC_BLE_GATT_SERVICE_FILES += \
+	microphone_control_service_server.c \
+	volume_control_service_server.c \
+	
 # include ${BTSTACK_ROOT}/example/Makefile.inc
 
 HXCMOD_PLAYER = \
@@ -147,12 +152,13 @@ AVRCP_OBJ  = $(AVRCP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 
-EXAMPLES  = iopt gatt_server_test gatt_client_test l2cap_test classic_test bnep_test le_data_channel
+EXAMPLES  = iopt gatt_server_test gatt_client_test l2cap_test classic_test bnep_test l2cap_cbm_ecbm
 EXAMPLES += hsp_ag_test hsp_hs_test sco_loopback hfp_ag_test hfp_hf_test
 EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test gatt_profiles hrp_col_test hrp_server_test
 EXAMPLES += hog_device_test hog_host_test hid_device_test hid_host_test 
 EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
 EXAMPLES += gap_peripheral_test gap_central_test
+EXAMPLES += microphone_control_service_client_test
 
 all: ${EXAMPLES}
 
@@ -225,7 +231,7 @@ gap_peripheral_test: gap_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} 
 gap_central_test: gap_central_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} att_db_util.o ad_parser.o gap_central_test.c
 	${CC} $(filter-out gap_central_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-le_data_channel: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ad_parser.o le_data_channel.c
+l2cap_cbm_ecbm: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ad_parser.o l2cap_cbm_ecbm.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c 
@@ -258,8 +264,14 @@ iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o hfp_gs
 gatt_profiles.h: gatt_profiles.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.c gatt_profiles.o
+gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o gatt_sdp.o gatt_profiles.o
 	${CC} $(filter-out gatt_profiles.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+microphone_control_service_client_test.h: microphone_control_service_client_test.gatt
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+
+microphone_control_service_client_test: microphone_control_service_client_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} microphone_control_service_client_test.c
+	${CC} $(filter-out microphone_control_service_client_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 myclean:
 	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o 
@@ -272,10 +284,11 @@ myclean:
 	rm -rf hrp_server_test.h
 	rm -f sco_input.msbc
 	rm -f sco_output.msbc
+	rm -f microphone_control_service_client_test.h
 
 clean: myclean
 
 test:
 	echo "No unit tests in PTS"
-coverage: all
+coverage:
 	echo "No coverage tests in PTS"

@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -57,14 +57,21 @@
 #endif
 class BTstackRunLoopQt : public QObject {
     Q_OBJECT
+public:
+    BTstackRunLoopQt(void);
 public slots:
     void processTimers(void);
+    void processCallbacks(void);
+    void pollDataSources(void);
 #ifdef Q_OS_WIN
     void processDataSource(HANDLE handle);
 #else
     void processDataSourceRead(int fd);
     void processDataSourceWrite(int fd);
 #endif
+signals:
+    void callbackAdded(void);
+    void dataSourcesPollRequested(void);
 };
 #endif
 

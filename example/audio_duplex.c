@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -63,15 +63,15 @@ const uint32_t samplerate = 16000;
 
 // ring buffer for audio
 #define BUFFER_SAMPLES 1024
-static uint16_t              audio_buffer_storage[BUFFER_SAMPLES];
+static uint16_t              audio_buffer_storage[BUFFER_SAMPLES * NUM_INPUT_CHANNELS];
 static btstack_ring_buffer_t audio_buffer;
 
 // transfer buffer
-#define TRANSFER_BUFFER_LEN 128
-static int16_t transfer_buffer[TRANSFER_BUFFER_LEN];
+#define TRANSFER_SAMPLES 128
+static int16_t transfer_buffer[TRANSFER_SAMPLES * NUM_INPUT_CHANNELS];
 
 // playback starts after audio_buffer is half full
-static int playback_started;
+static bool playback_started;
 
 // sample couners
 static int count_recording;
@@ -87,51 +87,57 @@ static void audio_recording(const int16_t * pcm_buffer, uint16_t num_samples_to_
 
 static void audio_playback(int16_t * pcm_buffer, uint16_t num_samples_to_write){
     int num_samples_in_buffer = btstack_ring_buffer_bytes_available(&audio_buffer) / BYTES_PER_SAMPLE;
-    if (playback_started == 0){
-        if ( num_samples_in_buffer < (BUFFER_SAMPLES / 2)) return;
-        playback_started = 1;
+    if (playback_started == false){
+        if ( num_samples_in_buffer >= (BUFFER_SAMPLES / 2)){
+            playback_started = true;
+        }
     }
     count_playback += num_samples_to_write;
-    while (num_samples_to_write){
-        num_samples_in_buffer = btstack_ring_buffer_bytes_available(&audio_buffer) / BYTES_PER_SAMPLE;
-        int num_samples_ready = btstack_min(num_samples_in_buffer, num_samples_to_write);
-        // limit by transfer_buffer
-        int num_samples_from_buffer = btstack_min(num_samples_ready, TRANSFER_BUFFER_LEN);
-        if (!num_samples_from_buffer) break;
-        uint32_t bytes_read;
-        btstack_ring_buffer_read(&audio_buffer, (uint8_t *) transfer_buffer, num_samples_from_buffer * BYTES_PER_SAMPLE, &bytes_read);
-#if (NUM_INPUT_CHANNELS == 1)
-        // duplicate samples for stereo output
-        int i;
-        for (i=0; i < num_samples_from_buffer;i++) {
-            *pcm_buffer++ = transfer_buffer[i];
-            *pcm_buffer++ = transfer_buffer[i];
-            num_samples_to_write--;
-        }
-#endif
-#if (NUM_INPUT_CHANNELS == 2)
-        // copy samples
-        int i;
-        int j = 0;
-        for (i=0; i < num_samples_from_buffer;i++) {
-            *pcm_buffer++ = transfer_buffer[j++];
-            *pcm_buffer++ = transfer_buffer[j++];
-            num_samples_to_write--;
-        }
-#endif
-    }
 
-    // warn about underrun
-    if (num_samples_to_write){
-        printf("Buffer underrun - recording %u, playback %u - delta %d!\n", count_recording, count_playback, count_recording - count_playback);
+    if (playback_started){
+
+        while (num_samples_to_write){
+
+            num_samples_in_buffer = btstack_ring_buffer_bytes_available(&audio_buffer) / BYTES_PER_SAMPLE;
+            int num_samples_ready = btstack_min(num_samples_in_buffer, num_samples_to_write);
+            // limit by transfer_buffer
+            int num_samples_from_buffer = btstack_min(num_samples_ready, TRANSFER_SAMPLES);
+            if (!num_samples_from_buffer) break;
+            uint32_t bytes_read;
+            btstack_ring_buffer_read(&audio_buffer, (uint8_t *) transfer_buffer, num_samples_from_buffer * BYTES_PER_SAMPLE, &bytes_read);
+
+#if (NUM_INPUT_CHANNELS == 1)
+            // duplicate samples for stereo output
+            int i;
+            for (i=0; i < num_samples_from_buffer;i++) {
+                *pcm_buffer++ = transfer_buffer[i];
+                *pcm_buffer++ = transfer_buffer[i];
+                num_samples_to_write--;
+            }
+#endif
+
+#if (NUM_INPUT_CHANNELS == 2)
+            // copy samples
+            int i;
+            int j = 0;
+            for (i=0; i < num_samples_from_buffer;i++) {
+                *pcm_buffer++ = transfer_buffer[j++];
+                *pcm_buffer++ = transfer_buffer[j++];
+                num_samples_to_write--;
+            }
+#endif
+
+        }
+
+        // warn about underrun
+        if (num_samples_to_write){
+            printf("Buffer underrun - recording %u, playback %u - delta %d!\n", count_recording, count_playback, count_recording - count_playback);
+        }
+
     }
 
     // fill rest with silence
-    while (num_samples_to_write){
-        *pcm_buffer++ = 0;
-        *pcm_buffer++ = 0;
-        num_samples_to_write--;
-    }
+    memset(pcm_buffer, 0, num_samples_to_write * 4);
 }
 
 static void start_loopback(btstack_timer_source_t * ts){
@@ -174,7 +180,7 @@ static void stop_loopback(btstack_timer_source_t * ts){
     audio_sink->close();
     audio_source->close();
 
-    playback_started = 0;
+    playback_started = false;
 
     printf("Stop Audio Loopback\n");
 

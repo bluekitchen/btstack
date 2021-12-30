@@ -1,5 +1,7 @@
 //
-// btstack_config.h for EM9304 DVK
+// btstack_config.h for STM32 L073RZ Nucleo + EM9304 Development Kit port
+//
+// Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
 //
 
 #ifndef BTSTACK_CONFIG_H

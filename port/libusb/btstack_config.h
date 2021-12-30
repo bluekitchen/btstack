@@ -1,6 +1,8 @@
 //
 // btstack_config.h for libusb port
 //
+// Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
+//
 
 #ifndef BTSTACK_CONFIG_H
 #define BTSTACK_CONFIG_H
@@ -20,7 +22,7 @@
 #define ENABLE_HFP_WIDE_BAND_SPEECH
 #define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 #define ENABLE_LE_CENTRAL
-#define ENABLE_LE_DATA_CHANNELS
+#define ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
@@ -31,7 +33,7 @@
 #define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SCO_OVER_HCI
 #define ENABLE_SDP_DES_DUMP
-#define ENABLE_SOFTWARE_AES128
+#define ENABLE_SOFTWARE_AES1280
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)

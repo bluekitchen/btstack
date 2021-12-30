@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -56,7 +56,7 @@ typedef struct {
 
 /*
  * @brief reserve 1 x mesh_upper_transport_pdu_t and 14 x mesh_network_pdu_t to allow composition of max access/control message
- * @returns true if enough buffer allocated
+ * @return true if enough buffer allocated
  */
 bool mesh_upper_transport_message_reserve(void);
 
@@ -101,7 +101,7 @@ void mesh_upper_transport_message_add_uint32(mesh_upper_transport_builder_t * bu
 /**
  * @brief finalize message
  * @param builder
- * @returns upper_transport_pdu if message was successfully constructed
+ * @return upper_transport_pdu if message was successfully constructed
  */
 mesh_upper_transport_pdu_t * mesh_upper_transport_message_finalize(mesh_upper_transport_builder_t * builder);
 

@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -62,7 +62,7 @@
 #endif
 
 // max reserved ServiceRecordHandle
-#define maxReservedServiceRecordHandle 0xffff
+#define MAX_RESERVED_SERVICE_RECORD_HANDLE 0xffff
 
 // max SDP response matches L2CAP PDU -- allow to use smaller buffer
 #ifndef SDP_RESPONSE_BUFFER_SIZE
@@ -72,29 +72,29 @@
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // registered service records
-static btstack_linked_list_t sdp_service_records;
+static btstack_linked_list_t sdp_server_service_records;
 
 // our handles start after the reserved range
-static uint32_t sdp_next_service_record_handle;
+static uint32_t sdp_server_next_service_record_handle;
 
 static uint8_t sdp_response_buffer[SDP_RESPONSE_BUFFER_SIZE];
 
-static uint16_t l2cap_cid;
-static uint16_t sdp_response_size;
-static uint16_t l2cap_waiting_list_cids[SDP_WAITING_LIST_MAX_COUNT];
-static int      l2cap_waiting_list_count;
+static uint16_t sdp_server_l2cap_cid;
+static uint16_t sdp_server_response_size;
+static uint16_t sdp_server_l2cap_waiting_list_cids[SDP_WAITING_LIST_MAX_COUNT];
+static int      sdp_server_l2cap_waiting_list_count;
 
 void sdp_init(void){
-    l2cap_cid = 0;
-    l2cap_waiting_list_count = 0;
-    sdp_service_records = NULL;
-    sdp_next_service_record_handle = ((uint32_t) maxReservedServiceRecordHandle) + 2;
-    sdp_response_size = 0;
+    sdp_server_next_service_record_handle = ((uint32_t) MAX_RESERVED_SERVICE_RECORD_HANDLE) + 2;
     // register with l2cap psm sevices - max MTU
     l2cap_register_service(sdp_packet_handler, BLUETOOTH_PSM_SDP, 0xffff, LEVEL_0);
 }
 
 void sdp_deinit(void){
+    sdp_server_service_records = NULL;
+    sdp_server_l2cap_cid = 0;
+    sdp_server_response_size = 0;
+    sdp_server_l2cap_waiting_list_count = 0;
 }
 
 uint32_t sdp_get_service_record_handle(const uint8_t * record){
@@ -108,7 +108,7 @@ uint32_t sdp_get_service_record_handle(const uint8_t * record){
 
 static service_record_item_t * sdp_get_record_item_for_handle(uint32_t handle){
     btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) sdp_service_records; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) sdp_server_service_records; it ; it = it->next){
         service_record_item_t * item = (service_record_item_t *) it;
         if (item->service_record_handle == handle){
             return item;
@@ -127,7 +127,7 @@ uint8_t * sdp_get_record_for_handle(uint32_t handle){
 uint32_t sdp_create_service_record_handle(void){
     uint32_t handle = 0;
     do {
-        handle = sdp_next_service_record_handle++;
+        handle = sdp_server_next_service_record_handle++;
         if (sdp_get_record_item_for_handle(handle)) handle = 0;
     } while (handle == 0);
     return handle;
@@ -145,7 +145,7 @@ uint8_t sdp_register_service(const uint8_t * record){
     // validate service record handle. it must: exist, be in valid range, not have been already used
     uint32_t record_handle = sdp_get_service_record_handle(record);
     if (!record_handle) return SDP_HANDLE_INVALID;
-    if (record_handle <= maxReservedServiceRecordHandle) return SDP_HANDLE_INVALID;
+    if (record_handle <= MAX_RESERVED_SERVICE_RECORD_HANDLE) return SDP_HANDLE_INVALID;
     if (sdp_get_record_item_for_handle(record_handle)) return SDP_HANDLE_ALREADY_REGISTERED;
 
     // alloc memory for new service_record_item
@@ -157,7 +157,7 @@ uint8_t sdp_register_service(const uint8_t * record){
     newRecordItem->service_record = (uint8_t*) record;
     
     // add to linked list
-    btstack_linked_list_add(&sdp_service_records, (btstack_linked_item_t *) newRecordItem);
+    btstack_linked_list_add(&sdp_server_service_records, (btstack_linked_item_t *) newRecordItem);
     
     return 0;
 }
@@ -168,7 +168,7 @@ uint8_t sdp_register_service(const uint8_t * record){
 void sdp_unregister_service(uint32_t service_record_handle){
     service_record_item_t * record_item = sdp_get_record_item_for_handle(service_record_handle);
     if (!record_item) return;
-    btstack_linked_list_remove(&sdp_service_records, (btstack_linked_item_t *) record_item);
+    btstack_linked_list_remove(&sdp_server_service_records, (btstack_linked_item_t *) record_item);
     btstack_memory_service_record_item_free(record_item);
 }
 
@@ -216,7 +216,7 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
     // get and limit total count
     btstack_linked_item_t *it;
     uint16_t total_service_count   = 0;
-    for (it = (btstack_linked_item_t *) sdp_service_records; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) sdp_server_service_records; it ; it = it->next){
         service_record_item_t * item = (service_record_item_t *) it;
         if (!sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)) continue;
         total_service_count++;
@@ -230,7 +230,7 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
     uint16_t current_service_count  = 0;
     uint16_t current_service_index  = 0;
     uint16_t matching_service_count = 0;
-    for (it = (btstack_linked_item_t *) sdp_service_records; it ; it = it->next, ++current_service_index){
+    for (it = (btstack_linked_item_t *) sdp_server_service_records; it ; it = it->next, ++current_service_index){
         service_record_item_t * item = (service_record_item_t *) it;
 
         if (!sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)) continue;
@@ -353,7 +353,7 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
 static uint16_t sdp_get_size_for_service_search_attribute_response(uint8_t * serviceSearchPattern, uint8_t * attributeIDList){
     uint16_t total_response_size = 0;
     btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) sdp_service_records; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) sdp_server_service_records; it ; it = it->next){
         service_record_item_t * item = (service_record_item_t *) it;
         
         if (!sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)) continue;
@@ -424,7 +424,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     int      first_answer = 1;
     int      continuation = 0;
     uint16_t current_service_index = 0;
-    btstack_linked_item_t *it = (btstack_linked_item_t *) sdp_service_records;
+    btstack_linked_item_t *it = (btstack_linked_item_t *) sdp_server_service_records;
     for ( ; it ; it = it->next, ++current_service_index){
         service_record_item_t * item = (service_record_item_t *) it;
         
@@ -490,26 +490,26 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
 }
 
 static void sdp_respond(void){
-    if (!sdp_response_size ) return;
-    if (!l2cap_cid) return;
+    if (!sdp_server_response_size ) return;
+    if (!sdp_server_l2cap_cid) return;
     
     // update state before sending packet (avoid getting called when new l2cap credit gets emitted)
-    uint16_t size = sdp_response_size;
-    sdp_response_size = 0;
-    l2cap_send(l2cap_cid, sdp_response_buffer, size);
+    uint16_t size = sdp_server_response_size;
+    sdp_server_response_size = 0;
+    l2cap_send(sdp_server_l2cap_cid, sdp_response_buffer, size);
 }
 
 // @pre space in list
 static void sdp_waiting_list_add(uint16_t cid){
-    l2cap_waiting_list_cids[l2cap_waiting_list_count++] = cid;
+    sdp_server_l2cap_waiting_list_cids[sdp_server_l2cap_waiting_list_count++] = cid;
 }
 
 // @pre at least one item in list
 static uint16_t sdp_waiting_list_get(void){
-    uint16_t cid = l2cap_waiting_list_cids[0];
-    l2cap_waiting_list_count--;
-    if (l2cap_waiting_list_count){
-        memmove(&l2cap_waiting_list_cids[0], &l2cap_waiting_list_cids[1], l2cap_waiting_list_count * sizeof(uint16_t));
+    uint16_t cid = sdp_server_l2cap_waiting_list_cids[0];
+    sdp_server_l2cap_waiting_list_count--;
+    if (sdp_server_l2cap_waiting_list_count){
+        memmove(&sdp_server_l2cap_waiting_list_cids[0], &sdp_server_l2cap_waiting_list_cids[1], sdp_server_l2cap_waiting_list_count * sizeof(uint16_t));
     }
     return cid;
 }
@@ -517,14 +517,14 @@ static uint16_t sdp_waiting_list_get(void){
 // we assume that we don't get two requests in a row
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	uint16_t transaction_id;
-    SDP_PDU_ID_t pdu_id;
+    sdp_pdu_id_t pdu_id;
     uint16_t remote_mtu;
     uint16_t param_len;
     
 	switch (packet_type) {
 			
 		case L2CAP_DATA_PACKET:
-            pdu_id = (SDP_PDU_ID_t) packet[0];
+            pdu_id = (sdp_pdu_id_t) packet[0];
             transaction_id = big_endian_read_16(packet, 1);
             param_len = big_endian_read_16(packet, 3);
             remote_mtu = l2cap_get_remote_mtu_for_local_cid(channel);
@@ -542,23 +542,23 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             switch (pdu_id){
                     
                 case SDP_ServiceSearchRequest:
-                    sdp_response_size = sdp_handle_service_search_request(packet, remote_mtu);
+                    sdp_server_response_size = sdp_handle_service_search_request(packet, remote_mtu);
                     break;
                                         
                 case SDP_ServiceAttributeRequest:
-                    sdp_response_size = sdp_handle_service_attribute_request(packet, remote_mtu);
+                    sdp_server_response_size = sdp_handle_service_attribute_request(packet, remote_mtu);
                     break;
                     
                 case SDP_ServiceSearchAttributeRequest:
-                    sdp_response_size = sdp_handle_service_search_attribute_request(packet, remote_mtu);
+                    sdp_server_response_size = sdp_handle_service_search_attribute_request(packet, remote_mtu);
                     break;
                     
                 default:
-                    sdp_response_size = sdp_create_error_response(transaction_id, 0x0003); // invalid syntax
+                    sdp_server_response_size = sdp_create_error_response(transaction_id, 0x0003); // invalid syntax
                     break;
             }
-            if (!sdp_response_size) break;
-            l2cap_request_can_send_now_event(l2cap_cid);
+            if (!sdp_server_response_size) break;
+            l2cap_request_can_send_now_event(sdp_server_l2cap_cid);
 			break;
 			
 		case HCI_EVENT_PACKET:
@@ -566,11 +566,11 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 			switch (hci_event_packet_get_type(packet)) {
 
 				case L2CAP_EVENT_INCOMING_CONNECTION:
-                    if (l2cap_cid) {
+                    if (sdp_server_l2cap_cid) {
                         // try to queue up
-                        if (l2cap_waiting_list_count < SDP_WAITING_LIST_MAX_COUNT){
+                        if (sdp_server_l2cap_waiting_list_count < SDP_WAITING_LIST_MAX_COUNT){
                             sdp_waiting_list_add(channel);
-                            log_info("busy, queing incoming cid 0x%04x, now %u waiting", channel, l2cap_waiting_list_count);
+                            log_info("busy, queing incoming cid 0x%04x, now %u waiting", channel, sdp_server_l2cap_waiting_list_count);
                             break;
                         }
 
@@ -579,15 +579,15 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         break;
                     }
                     // accept
-                    l2cap_cid = channel;
-                    sdp_response_size = 0;
-                    l2cap_accept_connection(l2cap_cid);
+                    sdp_server_l2cap_cid = channel;
+                    sdp_server_response_size = 0;
+                    l2cap_accept_connection(sdp_server_l2cap_cid);
 					break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     if (packet[2]) {
                         // open failed -> reset
-                        l2cap_cid = 0;
+                        sdp_server_l2cap_cid = 0;
                     }
                     break;
 
@@ -596,21 +596,21 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     break;
                 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
-                    if (channel == l2cap_cid){
+                    if (channel == sdp_server_l2cap_cid){
                         // reset
-                        l2cap_cid = 0;
+                        sdp_server_l2cap_cid = 0;
 
                         // other request queued?
-                        if (!l2cap_waiting_list_count) break;
+                        if (!sdp_server_l2cap_waiting_list_count) break;
 
                         // get first item 
-                        l2cap_cid = sdp_waiting_list_get();
+                        sdp_server_l2cap_cid = sdp_waiting_list_get();
 
-                        log_info("disconnect, accept queued cid 0x%04x, now %u waiting", l2cap_cid, l2cap_waiting_list_count);
+                        log_info("disconnect, accept queued cid 0x%04x, now %u waiting", sdp_server_l2cap_cid, sdp_server_l2cap_waiting_list_count);
 
                         // accept connection
-                        sdp_response_size = 0;
-                        l2cap_accept_connection(l2cap_cid);
+                        sdp_server_response_size = 0;
+                        l2cap_accept_connection(sdp_server_l2cap_cid);
                     }
                     break;
 					                    

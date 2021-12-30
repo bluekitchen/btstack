@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -250,6 +250,7 @@ static int btstack_audio_portaudio_sink_init(
 
     const PaStreamInfo * stream_info = Pa_GetStreamInfo(stream_sink);
     log_info("PortAudio: sink latency: %f", stream_info->outputLatency);
+    UNUSED(stream_info);
 
     playback_callback  = playback;
 
@@ -315,6 +316,7 @@ static int btstack_audio_portaudio_source_init(
 
     const PaStreamInfo * stream_info = Pa_GetStreamInfo(stream_source);
     log_info("PortAudio: source latency: %f", stream_info->inputLatency);
+    UNUSED(stream_info);
 
     recording_callback = recording;
 

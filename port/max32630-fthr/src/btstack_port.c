@@ -363,7 +363,7 @@ static void stdin_process(struct btstack_data_source *ds, btstack_data_source_ca
 
 static void btstack_stdin_handler(char c){
     stdin_character_received = 1;
-    btstack_run_loop_embedded_trigger();
+    btstack_run_loop_poll_data_sources_from_irq();
     printf("Received: %c\n", c);
 }
 

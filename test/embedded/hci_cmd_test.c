@@ -2,6 +2,7 @@
 #include "CppUTest/CommandLineTestRunner.h"
 
 #include "hci_cmd.h"
+#include "btstack_util.h"
 
 static uint8_t hci_cmd_buffer[350];
 static uint8_t input_buffer[350];
@@ -12,12 +13,6 @@ static uint16_t create_hci_cmd(const hci_cmd_t *cmd, ...){
     uint16_t len = hci_cmd_create_from_template(hci_cmd_buffer, cmd, argptr);
     va_end(argptr);
     return len - 3;
-}
-
-void reverse_bytes(const uint8_t * src, uint8_t * dest, int len){
-    int i;
-    for (i = 0; i < len; i++)
-        dest[len - 1 - i] = src[i];
 }
 
 const hci_cmd_t cmd_1 = {0x1234, "1"};
@@ -33,7 +28,9 @@ const hci_cmd_t cmd_K = {0x1234, "K"};
 const hci_cmd_t cmd_N = {0x1234, "N"};
 const hci_cmd_t cmd_P = {0x1234, "P"};
 const hci_cmd_t cmd_Q = {0x1234, "Q"};
-
+const hci_cmd_t cmd_JV = {0x1234, "JV"};
+const hci_cmd_t cmd_number_12 = {0x1234, "a[12]"};
+const hci_cmd_t cmd_bits_12 = {0x1234, "b[12]"};
 const hci_cmd_t cmd_INVALID = {0x1234, "!"};
 
 TEST_GROUP(HCI_Command){
@@ -180,6 +177,51 @@ TEST(HCI_Command, format_Q){
     reverse_bytes(input_buffer, expected_buffer, expected_size);
 
     uint16_t size = create_hci_cmd(&cmd_Q, input_buffer);
+    CHECK_EQUAL(expected_size, size);
+    MEMCMP_EQUAL(expected_buffer, &hci_cmd_buffer[3], expected_size);
+}
+
+TEST(HCI_Command, format_JV){
+    uint8_t expected_buffer[4];
+    uint16_t expected_size = 4;
+    uint8_t var_len_arg = expected_size - 1;
+    setup_input_buffer(var_len_arg);
+    expected_buffer[0] = var_len_arg;
+    memcpy(&expected_buffer[1], input_buffer, var_len_arg);
+
+    uint16_t size = create_hci_cmd(&cmd_JV, var_len_arg, input_buffer);
+    CHECK_EQUAL(expected_size, size);
+    MEMCMP_EQUAL(expected_buffer, &hci_cmd_buffer[3], expected_size);
+}
+
+TEST(HCI_Command, format_number_12){
+    uint8_t num_elements = 2;
+    uint8_t expected_buffer[7];
+    uint16_t expected_size = 7;
+    uint8_t  input_a[2] = { 1, 2};
+    uint16_t input_b[2] = { 3, 4};
+    expected_buffer[0] = num_elements;
+    expected_buffer[1] = 1;
+    little_endian_store_16(expected_buffer, 2, 3);
+    expected_buffer[4] = 2;
+    little_endian_store_16(expected_buffer, 5, 4);
+    uint16_t size = create_hci_cmd(&cmd_number_12, num_elements, input_a, input_b);
+    CHECK_EQUAL(expected_size, size);
+    MEMCMP_EQUAL(expected_buffer, &hci_cmd_buffer[3], expected_size);
+}
+
+TEST(HCI_Command, format_bits_12){
+    uint8_t bits_elements = 3;
+    uint8_t expected_buffer[7];
+    uint16_t expected_size = 7;
+    uint8_t  input_a[2] = { 1, 2};
+    uint16_t input_b[2] = { 3, 4};
+    expected_buffer[0] = bits_elements;
+    expected_buffer[1] = 1;
+    little_endian_store_16(expected_buffer, 2, 3);
+    expected_buffer[4] = 2;
+    little_endian_store_16(expected_buffer, 5, 4);
+    uint16_t size = create_hci_cmd(&cmd_bits_12, bits_elements, input_a, input_b);
     CHECK_EQUAL(expected_size, size);
     MEMCMP_EQUAL(expected_buffer, &hci_cmd_buffer[3], expected_size);
 }

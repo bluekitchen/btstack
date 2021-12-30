@@ -31,7 +31,7 @@ hsp_ag_test
 hsp_hs_test
 iopt
 l2cap_test
-le_data_channel
+l2cap_cbm_ecbm
 profile.h
 sco_loopback
 sco_loopbackiopt

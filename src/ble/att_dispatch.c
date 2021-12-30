@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -47,20 +47,20 @@
 #include "btstack_debug.h"
 #include "l2cap.h"
 
-#define ATT_SERVER 0
-#define ATT_CLIENT 1
-#define ATT_MAX    2
+#define ATT_SERVER 0u
+#define ATT_CLIENT 1u
+#define ATT_MAX    2u
 
 struct {
     btstack_packet_handler_t packet_handler;
-    uint8_t                  waiting_for_can_send;
+    bool                  waiting_for_can_send;
 } subscriptions[ATT_MAX];
 
 // index of subscription that will get can send now first if waiting for it
 static uint8_t att_round_robin;
 
 // track can send now requests
-static uint8_t can_send_now_pending;
+static bool can_send_now_pending;
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     uint8_t index;
@@ -73,21 +73,21 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
         case ATT_DATA_PACKET:
             // parse opcode
             opcode  = packet[0u];
-            method  = opcode & 0x03f;
+            method  = opcode & 0x03fu;
             invalid = method > ATT_MULTIPLE_HANDLE_VALUE_NTF;
             // odd PDUs are sent from server to client - even PDUs are sent from client to server, also let server handle invalid ones
-            for_server = ((method & 1u) == 0) || invalid;
+            for_server = ((method & 1u) == 0u) || invalid;
             index = for_server ? ATT_SERVER : ATT_CLIENT;
             if (!subscriptions[index].packet_handler) return;
             subscriptions[index].packet_handler(packet_type, handle, packet, size);
             break;
         case HCI_EVENT_PACKET:
             if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
-            can_send_now_pending = 0;
-            for (i = 0; i < ATT_MAX; i++){
+            can_send_now_pending = false;
+            for (i = 0u; i < ATT_MAX; i++){
                 index = (att_round_robin + i) & 1u;
-                if (subscriptions[index].packet_handler && subscriptions[index].waiting_for_can_send){
-                    subscriptions[index].waiting_for_can_send = 0;
+                if ( (subscriptions[index].packet_handler != NULL) && subscriptions[index].waiting_for_can_send){
+                    subscriptions[index].waiting_for_can_send = false;
                     subscriptions[index].packet_handler(packet_type, handle, packet, size);
                     // fairness: prioritize next service
                     att_round_robin = (index + 1u) % ATT_MAX;
@@ -97,9 +97,9 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             }
             // check if more can send now events are needed
             if (!can_send_now_pending){
-                for (i = 0; i < ATT_MAX; i++){
-                    if (subscriptions[i].packet_handler && subscriptions[i].waiting_for_can_send){
-                        can_send_now_pending = 1;        
+                for (i = 0u; i < ATT_MAX; i++){
+                    if ((subscriptions[i].packet_handler != NULL) && subscriptions[i].waiting_for_can_send){
+                        can_send_now_pending = true;        
                         // note: con_handle is not used, so we can pass in anything
                         l2cap_request_can_send_fix_channel_now_event(0, L2CAP_CID_ATTRIBUTE_PROTOCOL);
                         break;
@@ -153,9 +153,9 @@ int att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
  * @param con_handle
  */
 void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle){
-    subscriptions[ATT_CLIENT].waiting_for_can_send = 1;
+    subscriptions[ATT_CLIENT].waiting_for_can_send = true;
     if (!can_send_now_pending){
-        can_send_now_pending = 1;        
+        can_send_now_pending = true;        
         l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     }
 }
@@ -167,9 +167,9 @@ void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle)
  * @param con_handle
  */
 void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle){
-    subscriptions[ATT_SERVER].waiting_for_can_send = 1;
+    subscriptions[ATT_SERVER].waiting_for_can_send = true;
     if (!can_send_now_pending){
-        can_send_now_pending = 1;        
+        can_send_now_pending = true;        
         l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     }
 }

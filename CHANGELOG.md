@@ -7,9 +7,97 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ---
 
 ## Unreleased
+
 ### Added
 ### Fixed
 ### Changed
+
+
+## Release v1.5.1
+
+### Added
+- GOEP Client: add goep_client_version_20_or_higher
+- ESP32: implement audio source
+ 
+### Fixed
+- PBAP Client: support disconnect while operation is ongoing
+- PBAP Client: use SRM only if GOEP v2.0 or higher connection
+- PBAP Client: emit vCard entry data as PBAP_DATA_PACKET
+- L2CAP: limit remote MTU by local tx configuration in ERTM
+
+### Changed
+- Example: init SM if LE supported to avoid issue with Android Cross-Transport Key-Derivation
+- ESP32: update sdkconfig for esp-idf v4.3, disable Bluedroid host stack
+- ESP32: use I2S configuration from ESP32 LyraT V4.3
+
+## Release v1.5.0
+
+### Added
+- HCI Dump: Support BTSnoop format in hci_dump_posix_fs.c for format = HCI_DUMP_BTSNOOP
+- HCI Dump RTT STDOUT: drop messages if RTT buffer is full and RTT is configured for non-blocking
+- HCI: hci_remove_event_handler to remove packet handler
+- hci_cmd: support variable length fields and arrayed parameters
+- GAP: ENABLE_EXPLICIT_LINK_KEY_REPLY allows for asynchronous link key lookup by application
+- GAP: gap_set_page_timeout to set Page Timeout
+- GAP: gap_inquiry_set_scan_activity to set Inquiry Scan Activity
+- L2CAP: emit L2CAP_EVENT_INFORMATION_RESPONSE event with extended features and fixed channels supported
+- L2CAP: support Enhanced Credit-based Flow-Control Mode for connection-oriented channels over BR/EDR/LE
+- A2DP: allow to register media codec validator for sink and source with:
+  - `a2dp_sink_register_media_config_validator`
+  - `a2dp_source_register_media_config_validator`
+- A2DP Sink: allow accept or reject of stream start on A2DP_SUBEVENT_START_STREAM_REQUESTED when ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION is defined
+- OBEX: new obex_parser for chunked OBEX data
+- SM: Support Cross-Transport Key-Derivation (CTKD) of LE LTK from BR/EDR SC Link Key in Responder role
+- SM: sm_remove_event_handler to remove packet handler
+- GATT Service: Bond Management Service (BMS 1.0) Server
+- GATT Service: Microphone Control Service (MICS 1.0) Server
+- GATT Service: TX Power Service (TPS 1.0) Server 
+- POSIX: btstack_signal allows to register for callback on signal, e.g. ctrl-c
+- Windows: btstack_stdin_window_register_ctrl_c_callback allows to register for ctrl-c
+
+### Fixed
+- A2DP Source: fix reconfigure
+- AVRCP Controller: prevent registering of notifications for unsupported events
+- RFCOMM: fixed handling of remote port configuration command
+- HFP AG: fix accept incoming connection while audio connection is established
+- PBAP Client: handle chunked vCard Listing
+- PBAP Client: use new streaming obex_parser to handle chunked OBEX data
+- SM: Work around for unexpected Windows 10 disconnect for BR Secure Connections (SMP over BR timeout)
+- SM: support storing bonding information for devices with identical IRK but different public addresses
+- GAP: restart advertising when private address changes
+- le_device_db_tlv: keep number of devices reported by le_device_db_count if old entry is replaced
+ 
+### Changed
+- Drop iOS support
+- HCI: provide status instead of undocumented int error code and bool for API functions
+- HCI: use 1000 ms watchdog to force power off for hci_power_control(HCI_POWER_OFF)
+- GAP: local name, EIR data, class of device and default link policy can be updated at any time
+- L2CAP: provide status instead of undocumented int error code and bool for API functions
+- L2CAP: remote features not required for SDP connections
+- L2CAP: replaced l2cap_register_packet_handler with l2cap_add_event_handler to register multiple handlers
+- L2CAP: drop reason parameter in l2cap_disconnect
+- L2CAP: use official terminology for L2CAP channel modes - ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE replaces ENABLE_LE_DATA_CHANNELS
+- L2CAP: unify API for can send now, request to send, and send packet and disconnect channel
+- L2CAP: unify events for can send now, packet sent, channel closed (CbM/ECBM using existing events)
+- RFCOMM: `RFCOMM_EVENT_PORT_CONFIGURATION` contains rfcomm_cid and remote flag, emitted for query config
+- RFCOMM: provide status instead of undocumented int error code and bool for API functions
+- RFCOMM: remote port configuration, line status, and modem status are sent by channel state machine
+- HSP: add ACL Connection to all events and BD ADDR to HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE
+- HFP: API functions return status code if appropriate 
+- HFP: removed one parameter from hfp_ag/hf_activate_voice_recognition function, introduce hfp_ag/hf_deactivate_voice_recognition instead
+- HFP: merged legacy and enhanced Voice Recognition Activation (VRA) API. If available enhanced mode will be preferred.
+- HFP: separate events for activation (HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED) and deactivation (HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED) instead of combined HFP_SUBEVENT_VOICE_RECOGNITION_STATUS with status field. HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED contains field "enhanced" to indicate if enhanced mode is used. 
+- HFP: enhanced VRA: HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED is emitted after VRA is ready and the the audio connection is established. This simplifies HFP HF client logic, i.e. client can call `hfp_hf_enhanced_voice_recognition_report_ready_for_audio directly` upon reception of HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED event.
+- AVDTP: media config validator is called with preview of media codec configuration event and configured separately for sink/source
+- AVRCP: use PANEL as default unit + subunit info
+- AVRCP Controller: automatically query supported events when registering for notifications 
+- AVRCP Target: cache companies and events in library and remove need to answer query in application callback. Use Bluetooth SIG as default company.
+- Run Loop: new functionality for HCI transport drivers and inter-process communication:
+  - *btstack_run_loop_poll_data_sources_from_irq*: used to transfer control from IRQ handler to main thread/run loop
+  - *btstack_run_loop_execute_on_main_thread*: schedule code execution on main thread from other thread
+  - *btstack_run_loop_trigger_exit*: trigger run loop exit
+- POSIX / Windows / Raspi / Qt: use updated ctrl-c handling
+- POSIX TLV: use max value size of 2048, assert in store function if value size is larger
 
 
 ## Release v1.4.1
@@ -215,7 +303,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - SM: Cross-Transport Key Derivation requires `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION` now
 - SM: block connection if encryption fails for bonded devices as Central
-- SM: support pairing as Central after failed re-ecnryption
+- SM: support pairing as Central after failed re-encryption
 
 
 ## Release v1.1
@@ -266,7 +354,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - GAP: treat AES-CCM encrypted connection as mutually authenticated (BIAS)
-- GAP: 'gap_auto_connect_x' API deprecated. Please direclty manage LE Whitelist with `gap_le_whitelist_*` functions and call `gap_connect_with_whitelist` instead
+- GAP: 'gap_auto_connect_x' API deprecated. Please directly manage LE Whitelist with `gap_le_whitelist_*` functions and call `gap_connect_with_whitelist` instead
 - example/hid_host_demo: try to become master for incoming connections
 - btstack_run_loop: use btstack_assert instead of local while(true)
 - att_db_util: allow to reset att_db via `att_db_util_init`

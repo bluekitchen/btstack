@@ -1,5 +1,7 @@
 //
-// btstack_config.h for generic POSIX H4 port
+// btstack_config.h for POSIX H4 + Zephyr HCI Controller port
+//
+// Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
 //
 
 #ifndef BTSTACK_CONFIG_H
@@ -16,7 +18,7 @@
 #define ENABLE_BLE
 #define ENABLE_HFP_WIDE_BAND_SPEECH
 #define ENABLE_LE_CENTRAL
-#define ENABLE_LE_DATA_CHANNELS
+#define ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION

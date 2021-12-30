@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -329,49 +329,49 @@ void mesh_network_setup_pdu_header(mesh_network_pdu_t * network_pdu, uint16_t ne
  * @param ctl
  * @param src
  * @param dst
- * @returns 1 if valid, 
+ * @return 1 if valid, 
  */
 int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst);
 
 /**
  * @brief Check if Unicast address
  * @param addr
- * @returns 1 if unicast
+ * @return 1 if unicast
  */
 int mesh_network_address_unicast(uint16_t addr);
 
 /**
  * @brief Check if Unicast address
  * @param addr
- * @returns 1 if unicast
+ * @return 1 if unicast
  */
 int mesh_network_address_group(uint16_t addr);
 
 /**
  * @brief Check if All Proxies address
  * @param addr
- * @returns 1 if all proxies
+ * @return 1 if all proxies
  */
 int mesh_network_address_all_proxies(uint16_t addr);
 
 /**
  * @brief Check if All Nodes address
  * @param addr
- * @returns 1 if all nodes
+ * @return 1 if all nodes
  */
 int mesh_network_address_all_nodes(uint16_t addr);
 
 /**
  * @brief Check if All Friends address
  * @param addr
- * @returns 1 if all friends
+ * @return 1 if all friends
  */
 int mesh_network_address_all_friends(uint16_t addr);
 
 /**
  * @brief Check if All Relays address
  * @param addr
- * @returns 1 if all relays
+ * @return 1 if all relays
  */
 int mesh_network_address_all_relays(uint16_t addr);
 
@@ -379,7 +379,7 @@ int mesh_network_address_all_relays(uint16_t addr);
 /**
  * @brief Check if Virtual address
  * @param addr
- * @returns 1 if virtual
+ * @return 1 if virtual
  */
 int mesh_network_address_virtual(uint16_t addr);
 
@@ -399,13 +399,13 @@ void mesh_subnet_remove(mesh_subnet_t * subnet);
 /**
  * @brief Get subnet for netkey_index
  * @param netkey_index
- * @returns mesh_subnet_t or NULL
+ * @return mesh_subnet_t or NULL
  */
 mesh_subnet_t * mesh_subnet_get_by_netkey_index(uint16_t netkey_index);
 
 /**
  * @brief Get number of stored subnets
- * @returns count
+ * @return count
  */
 int mesh_subnet_list_count(void);
 

@@ -13,6 +13,7 @@ CORE += \
 	main.c \
 	wav_util.c 					\
 	btstack_stdin_posix.c \
+	btstack_signal.c \
 
 # examples
 CLASSIC =
@@ -23,6 +24,9 @@ CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/chipset/da14581 \
 	-I$(BTSTACK_ROOT)/platform/embedded \
 	-I${BTSTACK_ROOT}/3rd-party/tinydir
+
+# add pthread for ctrl-c signal handler
+LDFLAGS += -lpthread
 
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/chipset/da14581

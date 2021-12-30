@@ -29,16 +29,18 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 **Profiles:** A2DP, AVRCP incl. Browsing, GAP, GATT, HFP, HID, HSP, IOP, SPP, PAN, PBAP Client.
 
-**GATT Service Servers:** Battery (BAS), Cycling Power (CPS), Cycling Speed and Cadence (CSCS), Device Information (DID), Heart Rate (HRS), HID over GATT (HIDS) Device , Mesh Provisioning, Mesh Proxy, Nordic SPP, Scan Parameters (SCPS), u-Blox SPP. 
+**GATT Service Servers:** Battery (BAS), Bond Management (BMS), Cycling Power (CPS), Cycling Speed and Cadence (CSCS), Device Information (DID), Heart Rate (HRS), HID over GATT (HIDS) Device , Mesh Provisioning, Mesh Proxy, Nordic SPP, Scan Parameters (SCPS), TX Power (TPS), u-Blox SPP. 
 
 **GATT Service Clients:**: ANCS, Battery (BAS), Device Information (DID), HID-over-GATT (HOGP) Host, Scan Parameters (SCPP).
 
 GATT Services are in general easy to implement and require short development time. For more GATT Services please contact us, or follow the [implementation guidelines](https://bluekitchen-gmbh.com/btstack/profiles/#gatt-generic-attribute-profile).  
 
-**In Development:** BLE Mesh and more.
+**In Development:** LE Audio and more.
 
-It has been qualified with the Bluetooth SIG (QDID 166433) for A2DP 1.3.2, AVRCP 1.6.2, DID 1.3, HFP 1.8, HSP 1.2, PAN 1.0, PBAP Client 1.2, SPP 1.2 BR/EDR profiles, 
-BAS 1.0, CPP 1.1, CPS 1.1, CSCP 1.0, CSCS 1.0, DIS 1.1, HIDS 1.0, HOGP 1.0, HRP 1.0, HRS 1.0, SCPP 1.0, SCPS 1.0 GATT profiles as well as and GAP, GATT, IOP, SM of the Bluetooth Core 5.2 specification. For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
+It has been qualified with the Bluetooth SIG (QDID 166433) for A2DP 1.3.2, AVCTP 1.4, AVDTP 1.3, AVRCP 1.6.2, DID 1.3, GAVDP 1.3, HFP 1.8, HSP 1.2, PAN 1.0, PBAP Client 1.2, RFCOMM 1.2, SPP 1.2 BR/EDR protocol/profiles, 
+BAS 1.0, CPP 1.1, CPS 1.1, CSCP 1.0, CSCS 1.0, DIS 1.1, HIDS 1.0, HOGP 1.0, HRP 1.0, HRS 1.0, SCPP 1.0, SCPS 1.0 GATT profiles as well as and GAP, GATT, IOP, SM of the Bluetooth Core 5.2 specification. 
+
+For information on Apple's MFi/iAP2 and Find My profiles, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us directly</a>.
 
 ## Evaluation Platforms
 
@@ -92,10 +94,11 @@ Cypress CYW43xxx             | Dual mode + Wifi | H4, H5   | Don't know       | 
 Cypress PSoC 4               | LE        | H4              | n.a.             |                | HCI Firmware part of PSoC Creator kit examples
 Dialog Semiconductor DA14581, DA14585 | LE      | H4, SPI  | n.a.             | da14581        | Official HCI firmware used
 Dialog Semiconductor DA1469x | LE        | H4, SPI         | n.a              |                | HCI Firmware part of DA1469x SDK
-Espressif ESP32              | Dual mode | VHCI            | Not yet          |                | SoC with Bluetooth and Wifi
+Espressif ESP32              | Dual mode + Wifi | VHCI            | Yes              |                | SoC with Bluetooth and Wifi
 EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
 Intel Dual Wireless 3165, 8260, 8265 | Dual mode | USB           | Probably         | intel          | Firmware size: 400 kB 
 Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
+Realtek RTL8822CS            | Dual Mode + WIfi | H5       | Yes              |                | Requires initial firmware and config
 Renesas RX23W                | LE        | H4              | n.a.             |                | HCI Firmware part of BTTS
 STM STLC2500D                | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported
 STM32-WB5x                   | LE        | VHCI            | n.a.             |                | SoC with multi-protocol Radio co-processor

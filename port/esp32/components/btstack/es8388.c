@@ -335,9 +335,15 @@ int es8388_set_adc_input(es_codec_adc_input_t input)
 
 int es8388_set_mic_gain(es_codec_mic_gain_t gain)
 {
+    if (gain == MIC_GAIN_MIN){
+        gain = MIC_GAIN_0DB;
+    }
+    if (gain == MIC_GAIN_MAX){
+        gain = MIC_GAIN_24DB;
+    }
     int res, gain_n;
     gain_n = (int)gain / 3;
-    res = es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL1, gain_n); //MIC PGA
+    res = es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL1, (gain_n << 4) | gain_n); //MIC PGA
     return res;
 }
 

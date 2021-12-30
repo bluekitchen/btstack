@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -201,28 +201,29 @@ typedef enum {
     AUTH_FLAG_NONE                                = 0x0000,
     AUTH_FLAG_HANDLE_LINK_KEY_REQUEST             = 0x0001,
     AUTH_FLAG_DENY_PIN_CODE_REQUEST               = 0x0002,
-    AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE       = 0x0004,
-    AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY          = 0x0008,
-    AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY = 0x0010,
-    AUTH_FLAG_SEND_USER_CONFIRM_REPLY             = 0x0020,
-    AUTH_FLAG_SEND_USER_CONFIRM_NEGATIVE_REPLY    = 0x0040,
-    AUTH_FLAG_SEND_USER_PASSKEY_REPLY             = 0x0080,
+    AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST        = 0x0004,
+    AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE       = 0x0008,
+    AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY          = 0x0010,
+    AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY = 0x0020,
+    AUTH_FLAG_SEND_USER_CONFIRM_REPLY             = 0x0040,
+    AUTH_FLAG_SEND_USER_CONFIRM_NEGATIVE_REPLY    = 0x0080,
+    AUTH_FLAG_SEND_USER_PASSKEY_REPLY             = 0x0100,
 
     // Classic OOB
-    AUTH_FLAG_SEND_REMOTE_OOB_DATA_REPLY          = 0x0100,
+    AUTH_FLAG_SEND_REMOTE_OOB_DATA_REPLY          = 0x0200,
 
     // pairing status
-    AUTH_FLAG_LEGACY_PAIRING_ACTIVE               = 0x0200,
-    AUTH_FLAG_SSP_PAIRING_ACTIVE                  = 0x0400,
+    AUTH_FLAG_LEGACY_PAIRING_ACTIVE               = 0x0400,
+    AUTH_FLAG_SSP_PAIRING_ACTIVE                  = 0x0800,
     AUTH_FLAG_PAIRING_ACTIVE_MASK                 = (AUTH_FLAG_LEGACY_PAIRING_ACTIVE | AUTH_FLAG_SSP_PAIRING_ACTIVE),
 
     // connection status
-    AUTH_FLAG_CONNECTION_AUTHENTICATED            = 0x0800,
-    AUTH_FLAG_CONNECTION_ENCRYPTED                = 0x1000,
+    AUTH_FLAG_CONNECTION_AUTHENTICATED            = 0x1000,
+    AUTH_FLAG_CONNECTION_ENCRYPTED                = 0x2000,
 
     // errands
-    AUTH_FLAG_READ_RSSI                           = 0x2000,
-    AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT           = 0x4000,
+    AUTH_FLAG_READ_RSSI                           = 0x4000,
+    AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT           = 0x8000,
 
 } hci_authentication_flags_t;
 
@@ -245,22 +246,25 @@ typedef enum {
 
 // bonding flags
 enum {
-    BONDING_REQUEST_REMOTE_FEATURES_PAGE_0    = 0x0001,
-    BONDING_REQUEST_REMOTE_FEATURES_PAGE_1    = 0x0002,
-    BONDING_REQUEST_REMOTE_FEATURES_PAGE_2    = 0x0004,
-    BONDING_RECEIVED_REMOTE_FEATURES          = 0x0008,
-    BONDING_REMOTE_SUPPORTS_SSP_CONTROLLER    = 0x0010,
-    BONDING_REMOTE_SUPPORTS_SSP_HOST          = 0x0020,
-    BONDING_REMOTE_SUPPORTS_SC_CONTROLLER     = 0x0040,
-    BONDING_REMOTE_SUPPORTS_SC_HOST           = 0x0080,
-    BONDING_DISCONNECT_SECURITY_BLOCK         = 0x0100,
-    BONDING_DISCONNECT_DEDICATED_DONE         = 0x0200,
-    BONDING_SEND_AUTHENTICATE_REQUEST         = 0x0400,
-    BONDING_SEND_ENCRYPTION_REQUEST           = 0x0800,
-    BONDING_SEND_READ_ENCRYPTION_KEY_SIZE     = 0x1000,
-    BONDING_DEDICATED                         = 0x2000,
-    BONDING_EMIT_COMPLETE_ON_DISCONNECT       = 0x4000,
-    BONDING_SENT_AUTHENTICATE_REQUEST         = 0x8000
+    // remote features
+    BONDING_REMOTE_FEATURES_QUERY_ACTIVE      =  0x0001,
+    BONDING_REQUEST_REMOTE_FEATURES_PAGE_0    =  0x0002,
+    BONDING_REQUEST_REMOTE_FEATURES_PAGE_1    =  0x0004,
+    BONDING_REQUEST_REMOTE_FEATURES_PAGE_2    =  0x0008,
+    BONDING_RECEIVED_REMOTE_FEATURES          =  0x0010,
+    BONDING_REMOTE_SUPPORTS_SSP_CONTROLLER    =  0x0020,
+    BONDING_REMOTE_SUPPORTS_SSP_HOST          =  0x0040,
+    BONDING_REMOTE_SUPPORTS_SC_CONTROLLER     =  0x0080,
+    BONDING_REMOTE_SUPPORTS_SC_HOST           =  0x0100,
+    // other
+    BONDING_DISCONNECT_SECURITY_BLOCK         =  0x0200,
+    BONDING_DISCONNECT_DEDICATED_DONE         =  0x0400,
+    BONDING_SEND_AUTHENTICATE_REQUEST         =  0x0800,
+    BONDING_SENT_AUTHENTICATE_REQUEST         =  0x1000,
+    BONDING_SEND_ENCRYPTION_REQUEST           =  0x2000,
+    BONDING_SEND_READ_ENCRYPTION_KEY_SIZE     =  0x4000,
+    BONDING_DEDICATED                         =  0x8000,
+    BONDING_EMIT_COMPLETE_ON_DISCONNECT       = 0x10000,
 };
 
 typedef enum {
@@ -396,6 +400,20 @@ typedef enum {
     SM_SC_W4_CALCULATE_ILK,
     SM_SC_W2_CALCULATE_BR_EDR_LINK_KEY,
     SM_SC_W4_CALCULATE_BR_EDR_LINK_KEY,
+
+    // Classic
+    SM_BR_EDR_W4_ENCRYPTION_COMPLETE,
+    SM_BR_EDR_INITIATOR_SEND_PAIRING_REQUEST,
+    SM_BR_EDR_INITIATOR_W4_PAIRING_RESPONSE,
+    SM_BR_EDR_RESPONDER_W4_PAIRING_REQUEST,
+    SM_BR_EDR_RESPONDER_PAIRING_REQUEST_RECEIVED,
+    SM_BR_EDR_DISTRIBUTE_KEYS,
+    SM_BR_EDR_RECEIVE_KEYS,
+    SM_BR_EDR_W2_CALCULATE_ILK_USING_H6,
+    SM_BR_EDR_W2_CALCULATE_ILK_USING_H7,
+    SM_BR_EDR_W4_CALCULATE_ILK,
+    SM_BR_EDR_W2_CALCULATE_LE_LTK,
+    SM_BR_EDR_W4_CALCULATE_LE_LTK,
 } security_manager_state_t;
 
 typedef enum {
@@ -411,6 +429,7 @@ typedef uint8_t sm_pairing_packet_t[7];
 // connection info available as long as connection exists
 typedef struct sm_connection {
     hci_con_handle_t         sm_handle;
+    uint16_t                 sm_cid;
     uint8_t                  sm_role;   // 0 - IamMaster, 1 = IamSlave
     uint8_t                  sm_security_request_received;
     uint8_t                  sm_pairing_requested;
@@ -461,7 +480,7 @@ typedef struct {
     uint8_t                 ir_lookup_active;
     uint8_t                 pairing_active;
 
-    int                     value_indication_handle;    
+    uint16_t                value_indication_handle;    
     btstack_timer_source_t  value_indication_timer;
 
     btstack_linked_list_t   notification_requests;
@@ -478,19 +497,20 @@ typedef struct {
 
 #endif
 
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 typedef enum {
     L2CAP_INFORMATION_STATE_IDLE = 0,
     L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST,
     L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE,
+    L2CAP_INFORMATION_STATE_W2_SEND_FIXED_CHANNELS_REQUEST,
+    L2CAP_INFORMATION_STATE_W4_FIXED_CHANNELS_RESPONSE,
     L2CAP_INFORMATION_STATE_DONE
 } l2cap_information_state_t;
 
 typedef struct {
     l2cap_information_state_t information_state;
     uint16_t                  extended_feature_mask;
+    uint16_t                  fixed_channels_supported;    // Core V5.3 - only first octet used
 } l2cap_state_t;
-#endif
 
 //
 typedef struct {
@@ -513,7 +533,7 @@ typedef struct {
     CONNECTION_STATE state;
     
     // bonding
-    uint16_t bonding_flags;
+    uint32_t bonding_flags;
     uint8_t  bonding_status;
 
     // encryption key size (in octets)
@@ -535,6 +555,9 @@ typedef struct {
     // IO Capabilities Response
     uint8_t io_cap_response_auth_req;
     uint8_t io_cap_response_io;
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+    uint8_t io_cap_response_oob_data;
+#endif
 
     // connection mode, default ACL_CONNECTION_MODE_ACTIVE
     uint8_t connection_mode;
@@ -625,9 +648,7 @@ typedef struct {
 
 #endif
 
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     l2cap_state_t l2cap_state;
-#endif
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
     const uint8_t * classic_oob_c_192;
@@ -647,9 +668,10 @@ typedef enum hci_init_state{
     HCI_INIT_W4_SEND_RESET,
     HCI_INIT_SEND_READ_LOCAL_VERSION_INFORMATION,
     HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION,
+
+#ifndef HAVE_HOST_CONTROLLER_API
     HCI_INIT_SEND_READ_LOCAL_NAME,
     HCI_INIT_W4_SEND_READ_LOCAL_NAME,
-
     HCI_INIT_SEND_BAUD_CHANGE,
     HCI_INIT_W4_SEND_BAUD_CHANGE,
     HCI_INIT_CUSTOM_INIT,
@@ -658,6 +680,7 @@ typedef enum hci_init_state{
     HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT,
     HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT_LINK_RESET,
     HCI_INIT_W4_CUSTOM_INIT_BCM_DELAY,
+#endif
 
     HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS,
     HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS,
@@ -689,28 +712,32 @@ typedef enum hci_init_state{
     HCI_INIT_SET_EVENT_MASK,
     HCI_INIT_W4_SET_EVENT_MASK,
 
+#ifdef ENABLE_CLASSIC
     HCI_INIT_WRITE_SIMPLE_PAIRING_MODE,
     HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE,
-    HCI_INIT_WRITE_PAGE_TIMEOUT,
-    HCI_INIT_W4_WRITE_PAGE_TIMEOUT,
     HCI_INIT_WRITE_INQUIRY_MODE,
     HCI_INIT_W4_WRITE_INQUIRY_MODE,
     HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE,
     HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE,
-    HCI_INIT_WRITE_SCAN_ENABLE,
-    HCI_INIT_W4_WRITE_SCAN_ENABLE,
 
+#ifdef ENABLE_SCO_OVER_HCI
     // SCO over HCI
     HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
     HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
     HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING,
     HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING,
+#endif
 
+#if defined(ENABLE_SCO_OVER_HCI) || defined(ENABLE_SCO_OVER_PCM)
     // Broadcom SCO Routing and Configuration
     HCI_INIT_BCM_WRITE_SCO_PCM_INT,
     HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT,
+#endif
+#ifdef ENABLE_SCO_OVER_PCM
     HCI_INIT_BCM_WRITE_I2SPCM_INTERFACE_PARAM,
     HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM,
+#endif
+#endif
 
 #ifdef ENABLE_BLE
     HCI_INIT_LE_READ_BUFFER_SIZE,
@@ -751,16 +778,22 @@ typedef enum hci_init_state{
 
 } hci_substate_t;
 
-#define GAP_TASK_SET_LOCAL_NAME          1
-#define GAP_TASK_SET_EIR_DATA            2
-#define GAP_TASK_SET_CLASS_OF_DEVICE     4
-#define GAP_TASK_SET_DEFAULT_LINK_POLICY 8
+#define GAP_TASK_SET_LOCAL_NAME               0x01
+#define GAP_TASK_SET_EIR_DATA                 0x02
+#define GAP_TASK_SET_CLASS_OF_DEVICE          0x04
+#define GAP_TASK_SET_DEFAULT_LINK_POLICY      0x08
+#define GAP_TASK_WRITE_SCAN_ENABLE            0x10
+#define GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY     0x20
+#define GAP_TASK_WRITE_PAGE_SCAN_TYPE         0x40
+#define GAP_TASK_WRITE_PAGE_TIMEOUT           0x80
+#define GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY 0x100
 
 enum {
     // Tasks
     LE_ADVERTISEMENT_TASKS_SET_ADV_DATA  = 1 << 0,
     LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA = 1 << 1,
     LE_ADVERTISEMENT_TASKS_SET_PARAMS    = 1 << 2,
+    LE_ADVERTISEMENT_TASKS_SET_ADDRESS   = 1 << 3,
     // State
     LE_ADVERTISEMENT_TASKS_PARAMS_SET    = 1 << 7,
 };
@@ -846,12 +879,15 @@ typedef struct {
     /* GAP tasks, see GAP_TASK_* */
     uint16_t           gap_tasks;
 
-    /* write page scan activity, 0xffff is no change */
+    /* write page scan activity */
     uint16_t           new_page_scan_interval;
     uint16_t           new_page_scan_window;
 
-    /* write page scan type, 0xff is no change */
+    /* write page scan type */
     uint8_t            new_page_scan_type;
+
+    /* write page timeout */
+    uint16_t           page_timeout;
 
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
     uint8_t            gap_required_encyrption_key_size;
@@ -861,14 +897,16 @@ typedef struct {
     gap_security_mode_t  gap_security_mode;
 
     uint32_t            inquiry_lap;      // GAP_IAC_GENERAL_INQUIRY or GAP_IAC_LIMITED_INQUIRY
-
+    uint16_t            inquiry_scan_interval;
+    uint16_t            inquiry_scan_window;
+    
     bool                gap_secure_connections_only_mode;
 #endif
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
     uint8_t   * hci_packet_buffer;
     uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_OUTGOING_PACKET_BUFFER_SIZE];
-    uint8_t   hci_packet_buffer_reserved;
+    bool      hci_packet_buffer_reserved;
     uint16_t  acl_fragmentation_pos;
     uint16_t  acl_fragmentation_total_size;
     uint8_t   acl_fragmentation_tx_active;
@@ -883,7 +921,7 @@ typedef struct {
     uint8_t  le_acl_packets_total_num;
     uint16_t le_data_packets_length;
     uint8_t  sco_waiting_for_can_send_now;
-    uint8_t  sco_can_send_now;
+    bool     sco_can_send_now;
 
     /* local supported features */
     uint8_t local_supported_features[8];
@@ -1051,6 +1089,7 @@ typedef struct {
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
 	bool                      classic_read_local_oob_data;
+	hci_con_handle_t          classic_oob_con_handle;
 #endif
 
 #ifdef HAVE_SCO_TRANSPORT
@@ -1145,6 +1184,11 @@ void hci_close(void);
 void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler);
 
 /**
+ * @brief Remove event packet handler.
+ */
+void hci_remove_event_handler(btstack_packet_callback_registration_t * callback_handler);
+
+/**
  * @brief Registers a packet handler for ACL data. Used by L2CAP
  */
 void hci_register_acl_packet_handler(btstack_packet_handler_t handler);
@@ -1159,13 +1203,15 @@ void hci_register_sco_packet_handler(btstack_packet_handler_t handler);
 
 /** 
  * @brief Check if CMD packet can be sent to controller
+ * @return true if command can be sent
  */
-int hci_can_send_command_packet_now(void);
+bool hci_can_send_command_packet_now(void);
 
 /**
- * @brief Creates and sends HCI command packets based on a template and a list of parameters. Will return error if outgoing data buffer is occupied. 
+ * @brief Creates and sends HCI command packets based on a template and a list of parameters. Will return error if outgoing data buffer is occupied.
+ * @return status
  */
-int hci_send_cmd(const hci_cmd_t * cmd, ...);
+uint8_t hci_send_cmd(const hci_cmd_t * cmd, ...);
 
 
 // Sending SCO Packets
@@ -1174,7 +1220,7 @@ int hci_send_cmd(const hci_cmd_t * cmd, ...);
  *  @note  Using SCO packets of the exact length is required for USB transfer
  *  @return Length of SCO packets in bytes (not audio frames) incl. 3 byte header
  */
-int hci_get_sco_packet_length(void);
+uint16_t hci_get_sco_packet_length(void);
 
 /**
  * @brief Request emission of HCI_EVENT_SCO_CAN_SEND_NOW as soon as possible
@@ -1185,28 +1231,26 @@ void hci_request_sco_can_send_now_event(void);
 
 /**
  * @brief Check HCI packet buffer and if SCO packet can be sent to controller
+ * @return true if sco packet can be sent
  */
-int hci_can_send_sco_packet_now(void);
+bool hci_can_send_sco_packet_now(void);
 
 /**
  * @brief Check if SCO packet can be sent to controller
+ * @return true if sco packet can be sent
  */
-int hci_can_send_prepared_sco_packet_now(void);
+bool hci_can_send_prepared_sco_packet_now(void);
 
 /**
  * @brief Send SCO packet prepared in HCI packet buffer
  */
-int hci_send_sco_packet_buffer(int size);
-
-
-// Outgoing packet buffer, also used for SCO packets
-// see hci_can_send_prepared_sco_packet_now amn hci_send_sco_packet_buffer
+uint8_t hci_send_sco_packet_buffer(int size);
 
 /**
  * Reserves outgoing packet buffer.
- * @return 1 on success
+ * @return true on success
  */
-int hci_reserve_packet_buffer(void);
+bool hci_reserve_packet_buffer(void);
 
 /**
  * Get pointer for outgoing packet buffer
@@ -1230,8 +1274,9 @@ void hci_set_master_slave_policy(uint8_t policy);
 
 /**
  * va_list version of hci_send_cmd, call hci_send_cmd_packet
+ * @return status
  */
-int hci_send_cmd_va_arg(const hci_cmd_t * cmd, va_list argptr);
+uint8_t hci_send_cmd_va_arg(const hci_cmd_t * cmd, va_list argptr);
 
 /**
  * Get connection iterator. Only used by l2cap.c and sm.c
@@ -1250,39 +1295,45 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_
 
 /**
  * Check if outgoing packet buffer is reserved. Used for internal checks in l2cap.c
+ * @return true if packet buffer is reserved
  */
-int hci_is_packet_buffer_reserved(void);
+bool hci_is_packet_buffer_reserved(void);
 
 /**
  * Check hci packet buffer is free and a classic acl packet can be sent to controller
+ * @return true if ACL Classic packet can be sent now
  */
-int hci_can_send_acl_classic_packet_now(void);
+bool hci_can_send_acl_classic_packet_now(void);
 
 /**
  * Check hci packet buffer is free and an LE acl packet can be sent to controller
+ * @return true if ACL LE packet can be sent now
  */
-int hci_can_send_acl_le_packet_now(void);
+bool hci_can_send_acl_le_packet_now(void);
 
 /**
  * Check hci packet buffer is free and an acl packet for the given handle can be sent to controller
+ * @return true if ACL packet for con_handle can be sent now
  */
-int hci_can_send_acl_packet_now(hci_con_handle_t con_handle);
+bool hci_can_send_acl_packet_now(hci_con_handle_t con_handle);
 
 /**
  * Check if acl packet for the given handle can be sent to controller
+ * @return true if ACL packet for con_handle can be sent now
  */
-int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle);
+bool hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle);
 
 /**
  * Send acl packet prepared in hci packet buffer
+ * @return status
  */
-int hci_send_acl_packet_buffer(int size);
+uint8_t hci_send_acl_packet_buffer(int size);
 
 /**
  * Check if authentication is active. It delays automatic disconnect while no L2CAP connection
  * Called by l2cap.
  */
-int hci_authentication_active_for_handle(hci_con_handle_t handle);
+bool hci_authentication_active_for_handle(hci_con_handle_t handle);
 
 /**
  * Get maximal ACL Classic data packet length based on used buffer size. Called by L2CAP
@@ -1297,17 +1348,27 @@ uint16_t hci_usable_acl_packet_types(void);
 /**
  * Check if ACL packets marked as non flushable can be sent. Called by L2CAP
  */
-int hci_non_flushable_packet_boundary_flag_supported(void);
+bool hci_non_flushable_packet_boundary_flag_supported(void);
+
+/**
+ * Check if remote supported features query has completed
+ */
+bool hci_remote_features_available(hci_con_handle_t con_handle);
+
+/**
+ * Trigger remote supported features query
+ */
+void hci_remote_features_query(hci_con_handle_t con_handle);
 
 /**
  * Check if extended SCO Link is supported
  */
-int hci_extended_sco_link_supported(void);
+bool hci_extended_sco_link_supported(void);
 
 /**
  * Check if SSP is supported on both sides. Called by L2CAP
  */
-int gap_ssp_supported_on_both_sides(hci_con_handle_t handle);
+bool gap_ssp_supported_on_both_sides(hci_con_handle_t handle);
 
 /**
  * Disconn because of security block. Called by L2CAP
@@ -1317,7 +1378,7 @@ void hci_disconnect_security_block(hci_con_handle_t con_handle);
 /**
  * Query if remote side supports eSCO
  */
-int hci_remote_esco_supported(hci_con_handle_t con_handle);
+bool hci_remote_esco_supported(hci_con_handle_t con_handle);
 
 /**
  * Emit current HCI state. Called by daemon
@@ -1326,9 +1387,9 @@ void hci_emit_state(void);
 
 /** 
  * Send complete CMD packet. Called by daemon and hci_send_cmd_va_arg
- * @returns 0 if command was successfully sent to HCI Transport layer
+ * @return status
  */
-int hci_send_cmd_packet(uint8_t *packet, int size);
+uint8_t hci_send_cmd_packet(uint8_t *packet, int size);
 
 /**
  * Disconnect all HCI connections. Called by daemon
@@ -1362,6 +1423,11 @@ void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max
 void hci_le_set_own_address_type(uint8_t own_address_type);
 
 /**
+ * @naote internal use. use gap_random_address_set from gap.h instead
+ */
+void hci_le_random_address_set(const bd_addr_t random_address);
+
+/**
  * @note internal use by sm
  */
 void hci_load_le_device_db_entry_into_resolving_list(uint16_t le_device_db_index);
@@ -1370,6 +1436,11 @@ void hci_load_le_device_db_entry_into_resolving_list(uint16_t le_device_db_index
  * @note internal use by sm
  */
 void hci_remove_le_device_db_entry_from_resolving_list(uint16_t le_device_db_index);
+
+/**
+ * @note internal use
+ */
+uint16_t hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_type);
 
 /**
  * @brief Get Manufactured

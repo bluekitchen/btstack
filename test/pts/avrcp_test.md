@@ -128,14 +128,14 @@ AVRCP/TG/MPS/BV-03-I : (Confirmation expected)
 
 AVRCP/TG/NFY/BI-01-C : (wait)
 AVRCP/TG/NFY/BV-02-C : tt
-AVRCP/TG/NFY/BV-04-C : (OK)
+AVRCP/TG/NFY/BV-04-C : tT, (OK)
 AVRCP/TG/NFY/BV-05-C : ts, (OK)
 AVRCP/TG/NFY/BV-08-C : ts, (OK)
 
 AVRCP/TG/PTT/BV-01-I : (Confirmation expected)
 AVRCP/TG/PTT/BV-02-I : (Confirmation expected)
 AVRCP/TG/PTT/BV-03-I : (Confirmation expected)
-AVRCP/TG/PTT/BV-04-I : (Confirmation expected)
+AVRCP/TG/PTT/BV-04-I : tT
 AVRCP/TG/PTT/BV-05-I : (Confirmation expected)
 
 AVRCP/TG/RCR/BV-02-C : tl

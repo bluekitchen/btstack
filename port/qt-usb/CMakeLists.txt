@@ -126,7 +126,7 @@ ELSE()
     link_libraries(${LIBUSB_LIBRARIES})
 
     set(SOURCES_HCI_USB ${BTSTACK_ROOT}/platform/libusb/hci_transport_h2_libusb.c)
-    set(SOURCES_STDIN   ${BTSTACK_ROOT}/platform/posix/btstack_stdin_posix.c)
+    set(SOURCES_STDIN   ${BTSTACK_ROOT}/platform/posix/btstack_stdin_posix.c ${BTSTACK_ROOT}/platform/posix/btstack_signal.c)
 
     list(APPEND SOURCES_POSIX ${BTSTACK_ROOT}/platform/posix/btstack_network_posix.c)
 ENDIF()

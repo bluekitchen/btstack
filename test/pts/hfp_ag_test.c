@@ -70,6 +70,7 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "HFP AG Demo";
 
 static bd_addr_t device_addr;
+// static const char * device_addr_string = "00:80:98:09:0B:32";
 static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 
 // configuration
@@ -166,7 +167,20 @@ static void show_usage(void){
     printf("M - simulate outgoing call to 1234567\n");
     printf("n - Disable Voice Recognition           | N - Enable Voice Recognition\n");
     printf("z - Disable Enhanced Voice Recognition  | Z - Enable Enhanced Voice Recognition\n");
-    
+
+    printf("1 - Activate Enhanced Voice Recognition\n");
+    printf("2 - eAVR Status ready for audio input\n");
+    printf("3 - eAVR Play sound\n");
+    printf("4 - eAVR Processing Input\n");
+    printf("5 - Deactivate Enhanced Voice Recognition\n");
+    printf("6 - aAVR Msg, Status ready_for_input\n");
+    printf("7 - aAVR Msg Processing Input\n");
+    printf("8 - aAVR Msg Processing Input\n");
+    printf("9 - eAVR Msg Processing Input\n");
+    printf("* - eAVR Msg, Status ready_for_input\n");
+    printf("@ - eAVR Msg, Status ready_for_input\n");
+        
+
     printf("o - Set speaker volume to 0  (minimum)  | O - Set speaker volume to 9  (default)\n");
     printf("p - Set speaker volume to 12 (higher)   | P - Set speaker volume to 15 (maximum)\n");
     printf("q - Set microphone gain to 0  (minimum) | Q - Set microphone gain to 9  (default)\n");
@@ -322,90 +336,90 @@ static void stdin_process(char cmd){
         case 'n':
             log_info("USER:\'%c\'", cmd);
             printf("Disable Voice Recognition\n");
-            hfp_ag_activate_voice_recognition(acl_handle, 0);
+            hfp_ag_deactivate_voice_recognition(acl_handle);
             break;
         case 'N':
             log_info("USER:\'%c\'", cmd);
             printf("Enable Voice Recognition\n");
-            hfp_ag_activate_voice_recognition(acl_handle, 1);
+            hfp_ag_activate_voice_recognition(acl_handle);
             break;
         
         case '1':
-            printf("Enable Enhanced Voice Recognition\n");
-            hfp_ag_enhanced_voice_recognition_activate(acl_handle);
+            printf("Activate Enhanced Voice Recognition\n");
+            hfp_ag_activate_voice_recognition(acl_handle);
             break;
         case '2':
-            printf("EVR Status ready_for_input\n");
-            hfp_ag_enhanced_voice_recognition_ready_for_input(acl_handle);
+            printf("aAVR Status ready for audio input\n");
+            hfp_ag_enhanced_voice_recognition_report_ready_for_audio(acl_handle);
             break;
         case '3':
-            printf("EVR Send audio outputt\n");
-            hfp_ag_enhanced_voice_recognition_starting_sound(acl_handle);
+            printf("aAVR Play sound\n");
+            hfp_ag_enhanced_voice_recognition_report_sending_audio(acl_handle);
             break;
         case '4':
-            printf("EVR Processing Input\n");
-            hfp_ag_enhanced_voice_recognition_processing_input(acl_handle);
+            printf("aAVR Processing Input\n");
+            hfp_ag_enhanced_voice_recognition_report_processing_input(acl_handle);
             break;
         
         case '5':
-            printf("Disable Enhanced Voice Recognition\n");
-            hfp_ag_enhanced_voice_recognition_deactivate(acl_handle);
+            printf("Deactivate Enhanced Voice Recognition\n");
+            hfp_ag_deactivate_voice_recognition(acl_handle);
             break;
         
         case '6':{
             hfp_voice_recognition_message_t msg = {
-                    0xAB13, 0, 1, (uint8_t *) "test"
+                    0xAB13, 0, 1, "test"
             };
-            printf("EVR Msg, Status ready_for_input\n");
-            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
+            printf("aAVR Msg, Status ready_for_input\n");
+            hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
             break;
         }
 
         case '7':{
             // changed type, change iD
             hfp_voice_recognition_message_t msg = {
-                    0xAB14, 1, 1, (uint8_t *) "test"
+                    0xAB14, 1, 1, "test"
             };
-            printf("EVR Msg Processing Input\n");
-            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
+            printf("aAVR Msg Processing Input\n");
+            hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
             break;
         }
 
         case '8':{
             // replace op, leave id and type
             hfp_voice_recognition_message_t msg = {
-                    0xAB13, 0, 2, (uint8_t *) "test"
+                    0xAB13, 0, 2, "test"
             };
-            printf("EVR Msg Processing Input\n");
-            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
+            printf("aAVR Msg Processing Input\n");
+            hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
             break;
         }
         
         case '9':{
             // replace op, leave id and type
             hfp_voice_recognition_message_t msg = {
-                    0xAB13, 0, 3, (uint8_t *) "test"
+                    0xAB13, 0, 3, "test"
             };
-            printf("EVR Msg Processing Input\n");
-            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
+            printf("aAVR Msg Processing Input\n");
+            hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
             break;
         }
 
         case '*':{
             hfp_voice_recognition_message_t msg = {
-                    0xAB13, 2, 1, (uint8_t *) "test"
+                    0xAB13, 2, 1, "test"
             };
-            printf("EVR Msg, Status ready_for_input\n");
-            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
+            printf("aAVR Msg, Status ready_for_input\n");
+            hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
             break;
         }
 
         case '@':{
             hfp_voice_recognition_message_t msg = {
-                    0xAB13, 3, 1, (uint8_t *) "test"
+                    0xAB13, 3, 1, "test"
             };
-            printf("EVR Msg, Status ready_for_input\n");
-            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
+            printf("aAVR Msg, Status ready_for_input\n");
+            hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
             break;
         }
 
@@ -482,6 +496,9 @@ static void stdin_process(char cmd){
             log_info("USER:\'%c\'", cmd);
             printf("AG: Reject held incoming call (Response and Hold)\n");
             hfp_ag_reject_held_incoming_call();
+            break;
+        case '\n':
+        case '\r':
             break;
         default:
             show_usage();
@@ -586,10 +603,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     sco_handle = HCI_CON_HANDLE_INVALID;
                     sco_demo_close();
                     break;
-                case HFP_SUBEVENT_START_RINGINIG:
+                case HFP_SUBEVENT_START_RINGING:
                     printf("Start Ringing\n");
                     break;        
-                case HFP_SUBEVENT_STOP_RINGINIG:
+                case HFP_SUBEVENT_STOP_RINGING:
                     printf("Stop Ringing\n");
                     break;
                 case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
@@ -623,6 +640,30 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 case HFP_SUBEVENT_MICROPHONE_VOLUME:
                     printf("Set microphone volume to %d\n", hfp_subevent_microphone_volume_get_gain(event));
                     break;
+                case HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED:
+                    status = hfp_subevent_voice_recognition_activated_get_status(event);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("Voice Recognition Activate command failed\n");
+                        break;
+                    }
+
+                    switch (hfp_subevent_voice_recognition_activated_get_enhanced(event)){
+                        case 0:
+                            printf("\nVoice recognition ACTVATED\n\n");
+                            break;
+                        default:
+                            printf("\nEnhanced voice recognition ACTVATED\n\n");
+                            break;
+                    }
+                    break;
+                case HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED:
+                    status = hfp_subevent_voice_recognition_deactivated_get_status(event);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("Voice Recognition Deactivate command failed\n");
+                        break;
+                    }
+                    printf("\nVoice Recognition DEACTIVATED\n\n");
+                    break;  
                 default:
                     break;
             }

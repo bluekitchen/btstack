@@ -183,9 +183,9 @@ static uint8_t ui_presentation_format[7];
 static uint16_t ui_aggregate_handle;
 static uint16_t handle = 0;
 
-static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
+//static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
 //static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x72};
-//static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x5C};
+static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x5C};
 
 static int       public_pts_address_type = 0;
 static bd_addr_t current_pts_address;
@@ -973,6 +973,7 @@ static void show_usage(void){
     printf_row("4   - Set Security Level 4");
     printf_row("9   - create HCI Classic connection to addr %s", bd_addr_to_str(public_pts_address));
     printf_row("N   - Create L2CAP Connection to PSM 0x1001");
+    printf_row("l   - dedicated bonding, MITM %u", sm_mitm_protection);
     printf_row("s/S - passive/active scanning");
     printf_row("a   - enable Advertisements");
     printf_row("b   - start bonding");
@@ -1454,7 +1455,6 @@ static void ui_process_command(char buffer){
             gap_random_address_set_mode(GAP_RANDOM_ADDRESS_NON_RESOLVABLE);
             gap_privacy = 1;
             update_advertisement_params();
-            show_usage();
             break;
         case '0':
             update_security_level(LEVEL_0);
@@ -1471,22 +1471,22 @@ static void ui_process_command(char buffer){
         case '5':
             sm_io_capabilities = "IO_CAPABILITY_DISPLAY_YES_NO";
             sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
-            show_usage();
+            printf("IO Capabilities: %s\n", sm_io_capabilities);
             break;
         case '6':
             sm_io_capabilities = "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
             sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-            show_usage();
+            printf("IO Capabilities: %s\n", sm_io_capabilities);
             break;
         case '7':
             sm_io_capabilities = "IO_CAPABILITY_KEYBOARD_ONLY";
             sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_ONLY);
-            show_usage();
+            printf("IO Capabilities: %s\n", sm_io_capabilities);
             break;
         case '8':
             sm_io_capabilities = "IO_CAPABILITY_KEYBOARD_DISPLAY";
             sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_DISPLAY);
-            show_usage();
+            printf("IO Capabilities: %s\n", sm_io_capabilities);
             break;
         case '9':
             printf("Creating HCI Classic Connection to %s\n", bd_addr_to_str(public_pts_address));
@@ -1498,34 +1498,35 @@ static void ui_process_command(char buffer){
             break;
         case 'a':
             gap_advertisements_enable(1);
-            show_usage();
+            printf("Advertisement enabled\n");
             break;
         case 'b':
+            printf("Request pairing\n");
             sm_request_pairing(handle);
             break;
         case 'c':
+            printf("Non-Connectable\n");
             gap_connectable = 0;
             update_advertisement_params();
             gap_connectable_control(gap_connectable);
-            show_usage();
             break;
         case 'C':
+            printf("Connectable\n");
             gap_connectable = 1;
             update_advertisement_params();
             gap_connectable_control(gap_connectable);
-            show_usage();
             break;
         case 'd':
+            printf("Non-Bondable\n");
             gap_bondable = 0;
             gap_set_bondable_mode(gap_bondable);
             update_auth_req();
-            show_usage();
             break;
         case 'D':
+            printf("Bondable\n");
             gap_bondable = 1;
             gap_set_bondable_mode(gap_bondable);
             update_auth_req();
-            show_usage();
             break;
         case 'f':
             printf("PTS Address: ");
@@ -1552,33 +1553,34 @@ static void ui_process_command(char buffer){
             printf("MITM protection off\n");
             sm_mitm_protection = 0;
             update_auth_req();
-            show_usage();
             break;
         case 'M':
             printf("MITM protection on\n");
             sm_mitm_protection = 1;
             update_auth_req();
-            show_usage();
             break;
         case 'j':
+            printf("Secure connections OFF\n");
             sm_sc = 0;
             update_auth_req();
-            show_usage();
             break;
         case 'J':
+            printf("Secure connections ON\n");
             sm_sc = 1;
             update_auth_req();
-            show_usage();
             break;
         case 'k':
+            printf("Secure connections Only Mode: OFF\n");
             sm_sc_only_mode = 0;
             update_auth_req();
-            show_usage();
             break;
         case 'K':
+            printf("Secure connections Only Mode: ON\n");
             sm_sc_only_mode = 1;
             update_auth_req();
-            show_usage();
+            break;
+        case 'l':
+            gap_dedicated_bonding(current_pts_address, sm_mitm_protection);
             break;
         case 'g':
             central_state = CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_HANDLE;
@@ -1662,16 +1664,16 @@ static void ui_process_command(char buffer){
             show_usage();
             break; 
        case 'y':
+            printf("Drop OOB data\n");
             sm_have_oob_data = 0;
-            show_usage();
             break;
         case 'Y':
+            printf("Simulate OOB data\n");
             if (sm_have_oob_data){
                 sm_have_oob_data = 3 - sm_have_oob_data;
             } else {
                 sm_have_oob_data = 1;
             }
-            show_usage();
             break;
         case 'z':
             printf("Updating connection parameters via L2CAP\n");

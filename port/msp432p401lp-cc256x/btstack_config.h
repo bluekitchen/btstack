@@ -1,6 +1,8 @@
 //
 // btstack_config.h for MSP432P401R + TI CC256B port
 //
+// Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
+//
 
 #ifndef __BTSTACK_CONFIG
 #define __BTSTACK_CONFIG
@@ -15,7 +17,7 @@
 #define ENABLE_CLASSIC
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_CENTRAL
-#define ENABLE_LE_DATA_CHANNELS
+#define ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 #define ENABLE_PRINTF_HEXDUMP

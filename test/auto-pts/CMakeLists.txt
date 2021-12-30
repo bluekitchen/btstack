@@ -69,6 +69,23 @@ add_compile_options(--coverage)
 add_link_options(   --coverage)
 add_definitions(    -DCOVERAGE)
 
+# figure out how to flush gcov data, clang 10 provides __gcov_flush, while clang 13 provides __gcov_dump
+message("Compiler: ${CMAKE_CXX_COMPILER_VERSION}")
+if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
+	if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 13)
+		message("Using __gcov_dump")
+		add_definitions( -DHAVE_GCOV_DUMP)
+	else()
+		message("Using __gcov_flush")
+		add_definitions( -DHAVE_GCOV_FLUSH)
+	endif()
+else()
+	# assume GCC
+	message("Using __gcov_flush")
+	add_definitions( -DHAVE_GCOV_FLUSH)
+endif()
+
+
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 

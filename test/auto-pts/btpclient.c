@@ -55,8 +55,7 @@
 #include "btp_socket.h"
 
 #ifdef COVERAGE
-// guesswork:
-void __gcov_flush(void);
+#include <dlfcn.h>
 #endif
 
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
@@ -126,6 +125,28 @@ static btstack_timer_source_t heartbeat;
 // static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef};
 static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x08, 0xe2, 0x5c};
 
+// flush gcov data
+#ifdef HAVE_GCOV_FLUSH
+void __gcov_flush(void);
+#endif
+#ifdef HAVE_GCOV_DUMP
+void __gcov_dump(void);
+void __gcov_reset(void);
+#endif
+
+static void my_gcov_flush(void){
+#ifdef COVERAGE
+#ifdef HAVE_GCOV_DUMP
+    __gcov_dump();
+    __gcov_reset();
+#elif defined(HAVE_GCOV_FLUSH)
+    __gcov_flush();
+#else
+#error "COVERAGE defined, but neither HAVE_GCOV_DUMP nor HAVE_GCOV_FLUSH"
+#endif
+#endif
+}
+
 // log/debug output
 #define MESSAGE(format, ...) log_info(format, ## __VA_ARGS__); printf(format "\n", ## __VA_ARGS__)
 static void MESSAGE_HEXDUMP(const uint8_t * data, uint16_t len){
@@ -139,9 +160,7 @@ static void heartbeat_handler(btstack_timer_source_t *ts){
     btstack_run_loop_set_timer_handler(&heartbeat, &heartbeat_handler);
     btstack_run_loop_set_timer(&heartbeat, 5000);
     btstack_run_loop_add_timer(&heartbeat);
-#ifdef COVERAGE
-    __gcov_flush();
-#endif
+    my_gcov_flush();
 }
 
 static void btp_send(uint8_t service_id, uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
@@ -669,9 +688,7 @@ static void btp_core_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             status = data[0];
             if (status == BTP_ERROR_NOT_READY){
                 // connection stopped, abort
-#ifdef COVERAGE
-                __gcov_flush();
-#endif
+                my_gcov_flush();
                 exit(10);
             }
             break;
@@ -1907,19 +1924,16 @@ int btstack_main(int argc, const char * argv[])
     sm_add_event_handler(&sm_event_callback_registration);
 
     // configure GAP
+    strcpy(gap_name,       "iut 00:00:00:00:00:00");
+    strcpy(gap_short_name, "iut");
+    gap_cod = 0x007a020c;   // smartphone
+
 #ifdef ENABLE_CLASSIC
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-#endif
-
-    strcpy(gap_name, "iut 00:00:00:00:00:00");
     gap_set_local_name(gap_name);
-
-    strcpy(gap_short_name, "iut");
-
-    gap_cod = 0x007a020c;   // smartphone
-#ifdef ENABLE_CLASSIC
     gap_set_class_of_device(gap_cod);
 #endif
+
     // delete all bonding information on start
     gap_delete_bonding_on_start = true;
 
