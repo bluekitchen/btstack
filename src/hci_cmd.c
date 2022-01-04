@@ -1706,14 +1706,8 @@ const hci_cmd_t hci_le_set_periodic_advertising_enable = {
  * @param scan_window * 0.625, range = 0x0004..0xffff
  */
 
-// Variants for 1 (1M or Coded) PHY
-const hci_cmd_t hci_le_set_extended_scan_parameters_1 = {
-    HCI_OPCODE_HCI_LE_SET_EXTENDED_SCAN_PARAMETERS, "111122"
-};
-
-// Variants for 2 (1M and Coded) PHY
-const hci_cmd_t hci_le_set_extended_scan_parameters_2 = {
-        HCI_OPCODE_HCI_LE_SET_EXTENDED_SCAN_PARAMETERS, "111122122"
+const hci_cmd_t hci_le_set_extended_scan_parameters = {
+    HCI_OPCODE_HCI_LE_SET_EXTENDED_SCAN_PARAMETERS, "11b[122]"
 };
 
 /**
