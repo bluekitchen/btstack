@@ -109,8 +109,9 @@ static int microphone_control_service_write_callback(hci_con_handle_t con_handle
 				if (mc_mute_state == GATT_MICROPHONE_CONTROL_MUTE_DISABLED){
 					return ATT_ERROR_RESPONSE_MICROPHONE_CONTROL_MUTE_DISABLED;
 				}
-				mc_mute_state = mute_state;
-				microphone_control_service_server_emit_mute(mc_mute_state);
+				mc_mute_state_client_configuration_connection = con_handle;
+				microphone_control_service_server_emit_mute(mute_state);
+				microphone_control_service_server_set_mute(mute_state);
 				break;
 			default:
 				return ATT_ERROR_VALUE_NOT_ALLOWED;
@@ -123,6 +124,7 @@ static int microphone_control_service_write_callback(hci_con_handle_t con_handle
 		} 
 		mc_mute_state_client_configuration = little_endian_read_16(buffer, 0);
 		mc_mute_state_client_configuration_connection = con_handle;
+		// TODO store client in a list 
 	}
 	return 0;
 }
@@ -164,6 +166,8 @@ void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t m
 		return;
 	}
 	mc_mute_state = mute_state;
+	// TODO send to all clients that registered for notify
+	
 	if (mc_mute_state_client_configuration != 0){
 		mc_mute_callback.callback = &microphone_control_service_can_send_now;
 		mc_mute_callback.context  = (void*) (uintptr_t) mc_mute_state_client_configuration_connection;

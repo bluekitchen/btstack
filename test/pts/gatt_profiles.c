@@ -135,6 +135,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 
                 case GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE: 
                     printf("MICS: mute value changed by remote to %d\n", gattservice_subevent_local_mics_mute_get_state(packet));
+                    mics_mute = (gatt_microphone_control_mute_t)gattservice_subevent_local_mics_mute_get_state(packet);
                     break;
 
                 default:
@@ -202,6 +203,7 @@ static void show_usage(void){
     printf("L - enable LE flag, with auth\n");
     printf("## MICS\n");
     printf("m - toggle mute\n");
+    printf("M - disable mute\n");
 }
 
 static void stdin_process(char c){
@@ -247,6 +249,11 @@ static void stdin_process(char c){
                     break;
             }
             printf("MICS: set mute to %d\n", (mics_mute == GATT_MICROPHONE_CONTROL_MUTE_OFF ? 0 : 1));
+            microphone_control_service_server_set_mute(mics_mute);
+            break;
+        case 'M':
+            printf("MICS: disable mute\n");
+            mics_mute = GATT_MICROPHONE_CONTROL_MUTE_DISABLED;
             microphone_control_service_server_set_mute(mics_mute);
             break;
 
@@ -302,7 +309,8 @@ int btstack_main(void)
 
     mics_mute = GATT_MICROPHONE_CONTROL_MUTE_OFF;
     microphone_control_service_server_init(mics_mute);
-    
+    microphone_control_service_server_register_packet_hanlder(&packet_handler);
+
     volume_control_service_server_init(128, VCS_MUTE_OFF, 16);
     
     // setup advertisements

@@ -55,3 +55,13 @@ Tool: gatt_profiles
 - BMS/SEN/CPE/BI-02-C: l
 - BMS/SEN/CPE/BI-03-C: C
 - BMS/SEN/CPE/BI-04-C: L
+
+## MICS
+- MICS/SR/SGGIT/SER/BV-01-C: (wait)
+- MICS/SR/SGGIT/SDP/BV-01-C: ignore when ATT_transport in IXIT is set to BR/EDR
+- MICS/SR/SGGIT/CHA/BV-01-C: (wait)
+
+- MICS/SR/SPN/BV-01-C: m
+
+- MICS/SR/SPE/BI-01-C: (wait)
+- MICS/SR/SPE/BI-02-C: M
