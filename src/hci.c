@@ -1320,53 +1320,53 @@ static void gap_run_set_eir_data(void){
 }
 
 static void hci_run_gap_tasks_classic(void){
-    if ((hci_stack->gap_tasks & GAP_TASK_SET_CLASS_OF_DEVICE) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_SET_CLASS_OF_DEVICE;
+    if ((hci_stack->gap_tasks_classic & GAP_TASK_SET_CLASS_OF_DEVICE) != 0) {
+        hci_stack->gap_tasks_classic &= ~GAP_TASK_SET_CLASS_OF_DEVICE;
         hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
         return;
     }
-    if ((hci_stack->gap_tasks & GAP_TASK_SET_LOCAL_NAME) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_SET_LOCAL_NAME;
+    if ((hci_stack->gap_tasks_classic & GAP_TASK_SET_LOCAL_NAME) != 0) {
+        hci_stack->gap_tasks_classic &= ~GAP_TASK_SET_LOCAL_NAME;
         gap_run_set_local_name();
         return;
     }
-    if ((hci_stack->gap_tasks & GAP_TASK_SET_EIR_DATA) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_SET_EIR_DATA;
+    if ((hci_stack->gap_tasks_classic & GAP_TASK_SET_EIR_DATA) != 0) {
+        hci_stack->gap_tasks_classic &= ~GAP_TASK_SET_EIR_DATA;
         gap_run_set_eir_data();
         return;
     }
-    if ((hci_stack->gap_tasks & GAP_TASK_SET_DEFAULT_LINK_POLICY) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_SET_DEFAULT_LINK_POLICY;
+    if ((hci_stack->gap_tasks_classic & GAP_TASK_SET_DEFAULT_LINK_POLICY) != 0) {
+        hci_stack->gap_tasks_classic &= ~GAP_TASK_SET_DEFAULT_LINK_POLICY;
         hci_send_cmd(&hci_write_default_link_policy_setting, hci_stack->default_link_policy_settings);
         return;
     }
     // write page scan activity
-    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY;
+    if ((hci_stack->gap_tasks_classic & GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY) != 0) {
+        hci_stack->gap_tasks_classic &= ~GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY;
         hci_send_cmd(&hci_write_page_scan_activity, hci_stack->new_page_scan_interval, hci_stack->new_page_scan_window);
         return;
     }
     // write page scan type
-    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_PAGE_SCAN_TYPE) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_PAGE_SCAN_TYPE;
+    if ((hci_stack->gap_tasks_classic & GAP_TASK_WRITE_PAGE_SCAN_TYPE) != 0) {
+        hci_stack->gap_tasks_classic &= ~GAP_TASK_WRITE_PAGE_SCAN_TYPE;
         hci_send_cmd(&hci_write_page_scan_type, hci_stack->new_page_scan_type);
         return;
     }
     // write page timeout
-    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_PAGE_TIMEOUT) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_PAGE_TIMEOUT;
+    if ((hci_stack->gap_tasks_classic & GAP_TASK_WRITE_PAGE_TIMEOUT) != 0) {
+        hci_stack->gap_tasks_classic &= ~GAP_TASK_WRITE_PAGE_TIMEOUT;
         hci_send_cmd(&hci_write_page_timeout, hci_stack->page_timeout);
         return;
     }
     // send scan enable
-    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_SCAN_ENABLE) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_SCAN_ENABLE;
+    if ((hci_stack->gap_tasks_classic & GAP_TASK_WRITE_SCAN_ENABLE) != 0) {
+        hci_stack->gap_tasks_classic &= ~GAP_TASK_WRITE_SCAN_ENABLE;
         hci_send_cmd(&hci_write_scan_enable, hci_stack->new_scan_enable_value);
         return;
     }
     // send write scan activity
-    if ((hci_stack->gap_tasks & GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY) != 0) {
-        hci_stack->gap_tasks &= ~GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY;
+    if ((hci_stack->gap_tasks_classic & GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY) != 0) {
+        hci_stack->gap_tasks_classic &= ~GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY;
         hci_send_cmd(&hci_write_inquiry_scan_activity, hci_stack->inquiry_scan_interval, hci_stack->inquiry_scan_window);
         return;
     }
@@ -1816,8 +1816,8 @@ static void hci_initializing_run(void){
         case HCI_INIT_DONE:
             hci_stack->substate = HCI_INIT_DONE;
 #ifdef ENABLE_CLASSIC
-            // init sequence complete, check if GAP Tasks are completed
-            if (hci_classic_supported() && (hci_stack->gap_tasks != 0)) {
+            // init sequence complete, check if Classic GAP Tasks are completed
+            if (hci_classic_supported() && (hci_stack->gap_tasks_classic != 0)) {
                 hci_run_gap_tasks_classic();
                 break;
             }
@@ -3486,7 +3486,7 @@ static void hci_state_reset(void){
     hci_stack->inquiry_lap = GAP_IAC_GENERAL_INQUIRY;
     hci_stack->page_timeout = 0x6000;  // ca. 15 sec
 
-    hci_stack->gap_tasks =
+    hci_stack->gap_tasks_classic =
             GAP_TASK_SET_DEFAULT_LINK_POLICY |
             GAP_TASK_SET_CLASS_OF_DEVICE |
             GAP_TASK_SET_LOCAL_NAME |
@@ -3757,13 +3757,13 @@ bool gap_get_secure_connections_only_mode(void){
 #ifdef ENABLE_CLASSIC
 void gap_set_class_of_device(uint32_t class_of_device){
     hci_stack->class_of_device = class_of_device;
-    hci_stack->gap_tasks |= GAP_TASK_SET_CLASS_OF_DEVICE;
+    hci_stack->gap_tasks_classic |= GAP_TASK_SET_CLASS_OF_DEVICE;
     hci_run();
 }
 
 void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings){
     hci_stack->default_link_policy_settings = default_link_policy_settings;
-    hci_stack->gap_tasks |= GAP_TASK_SET_DEFAULT_LINK_POLICY;
+    hci_stack->gap_tasks_classic |= GAP_TASK_SET_DEFAULT_LINK_POLICY;
     hci_run();
 }
 
@@ -4207,7 +4207,7 @@ static void hci_falling_asleep_run(void){
 static void hci_update_scan_enable(void){
     // 2 = page scan, 1 = inq scan
     hci_stack->new_scan_enable_value  = (hci_stack->connectable << 1) | hci_stack->discoverable;
-    hci_stack->gap_tasks |= GAP_TASK_WRITE_SCAN_ENABLE;
+    hci_stack->gap_tasks_classic |= GAP_TASK_WRITE_SCAN_ENABLE;
     hci_run();
 }
 
@@ -4325,7 +4325,7 @@ static bool hci_run_general_gap_classic(void){
         return true;
     }
 
-    if (hci_stack->gap_tasks != 0){
+    if (hci_stack->gap_tasks_classic != 0){
         hci_run_gap_tasks_classic();
         return true;
     }
@@ -5846,10 +5846,10 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
 
 void gap_set_local_name(const char * local_name){
     hci_stack->local_name = local_name;
-    hci_stack->gap_tasks |= GAP_TASK_SET_LOCAL_NAME;
+    hci_stack->gap_tasks_classic |= GAP_TASK_SET_LOCAL_NAME;
     // also update EIR if not set by user
     if (hci_stack->eir_data == NULL){
-        hci_stack->gap_tasks |= GAP_TASK_SET_EIR_DATA;
+        hci_stack->gap_tasks_classic |= GAP_TASK_SET_EIR_DATA;
     }
     hci_run();
 }
@@ -6423,7 +6423,7 @@ uint16_t gap_le_connection_interval(hci_con_handle_t con_handle){
  */
 void gap_set_extended_inquiry_response(const uint8_t * data){
     hci_stack->eir_data = data;
-    hci_stack->gap_tasks |= GAP_TASK_SET_EIR_DATA;
+    hci_stack->gap_tasks_classic |= GAP_TASK_SET_EIR_DATA;
     hci_run();
 }
 
@@ -6468,7 +6468,7 @@ void gap_inquiry_set_lap(uint32_t lap){
 void gap_inquiry_set_scan_activity(uint16_t inquiry_scan_interval, uint16_t inquiry_scan_window){
     hci_stack->inquiry_scan_interval = inquiry_scan_interval;
     hci_stack->inquiry_scan_window   = inquiry_scan_window;
-    hci_stack->gap_tasks |= GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY;
+    hci_stack->gap_tasks_classic |= GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY;
     hci_run();
 }
 
@@ -6910,19 +6910,19 @@ uint8_t gap_qos_set(hci_con_handle_t con_handle, hci_service_type_t service_type
 void gap_set_page_scan_activity(uint16_t page_scan_interval, uint16_t page_scan_window){
     hci_stack->new_page_scan_interval = page_scan_interval;
     hci_stack->new_page_scan_window = page_scan_window;
-    hci_stack->gap_tasks |= GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY;
+    hci_stack->gap_tasks_classic |= GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY;
     hci_run();
 }
 
 void gap_set_page_scan_type(page_scan_type_t page_scan_type){
     hci_stack->new_page_scan_type = (uint8_t) page_scan_type;
-    hci_stack->gap_tasks |= GAP_TASK_WRITE_PAGE_SCAN_TYPE;
+    hci_stack->gap_tasks_classic |= GAP_TASK_WRITE_PAGE_SCAN_TYPE;
     hci_run();
 }
 
 void gap_set_page_timeout(uint16_t page_timeout){
     hci_stack->page_timeout = page_timeout;
-    hci_stack->gap_tasks |= GAP_TASK_WRITE_PAGE_TIMEOUT;
+    hci_stack->gap_tasks_classic |= GAP_TASK_WRITE_PAGE_TIMEOUT;
     hci_run();
 }
 

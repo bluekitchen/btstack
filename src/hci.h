@@ -877,7 +877,7 @@ typedef struct {
 
 #ifdef ENABLE_CLASSIC
     /* GAP tasks, see GAP_TASK_* */
-    uint16_t           gap_tasks;
+    uint16_t           gap_tasks_classic;
 
     /* write page scan activity */
     uint16_t           new_page_scan_interval;
