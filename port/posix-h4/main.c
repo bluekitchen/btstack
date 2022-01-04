@@ -165,16 +165,8 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 static void use_fast_uart(void){
-#if defined(HAVE_POSIX_B240000_MAPPED_TO_3000000) || defined(HAVE_POSIX_B600_MAPPED_TO_3000000)
-    printf("Using 3000000 baud.\n");
-    config.baudrate_main = 3000000;
-#elif defined(HAVE_POSIX_B1200_MAPPED_TO_2000000) || defined(HAVE_POSIX_B300_MAPPED_TO_2000000)
-    printf("Using 2000000 baud.\n");
-    config.baudrate_main = 2000000;
-#else
     printf("Using 921600 baud.\n");
     config.baudrate_main = 921600;
-#endif
 }
 
 static void local_version_information_handler(uint8_t * packet){
