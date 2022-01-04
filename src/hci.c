@@ -1817,7 +1817,7 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_DONE;
 #ifdef ENABLE_CLASSIC
             // init sequence complete, check if GAP Tasks are completed
-            if (hci_stack->gap_tasks != 0) {
+            if (hci_classic_supported() && (hci_stack->gap_tasks != 0)) {
                 hci_run_gap_tasks_classic();
                 break;
             }
