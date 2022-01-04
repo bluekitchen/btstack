@@ -222,8 +222,8 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     }
     
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_CONNECTED:
-            status = gattservice_subevent_microphone_control_service_connected_get_status(packet);
+        case GATTSERVICE_SUBEVENT_MICS_CONNECTED:
+            status = gattservice_subevent_mics_connected_get_status(packet);
             switch (status){
                 case ERROR_CODE_SUCCESS:
                     printf("Microphone Control service client connected\n");
@@ -236,12 +236,12 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE:
-            att_status = gattservice_subevent_microphone_control_service_mute_get_status(packet);
+        case GATTSERVICE_SUBEVENT_REMOTE_MICS_MUTE:
+            att_status = gattservice_subevent_remote_mics_mute_get_status(packet);
             if (att_status != ATT_ERROR_SUCCESS){
                 printf("Mute status read failed, ATT Error 0x%02x\n", att_status);
             } else {
-                printf("Mute status: %d\n", gattservice_subevent_microphone_control_service_mute_get_mute_value(packet));
+                printf("Mute status: %d\n", gattservice_subevent_remote_mics_mute_get_state(packet));
             }
             break;
 

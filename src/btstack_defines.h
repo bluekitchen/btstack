@@ -3755,16 +3755,25 @@ typedef uint8_t sm_key_t[16];
  * @param hids_cid
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_CONNECTED         0x19u
+#define GATTSERVICE_SUBEVENT_MICS_CONNECTED                               0x19u
 
 /**
  * @format 1211
  * @param subevent_code
- * @param mics_cid
+ * @param cid
  * @param status
- * @param mute_value
+ * @param state
 */
-#define GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE              0x1Au
+#define GATTSERVICE_SUBEVENT_REMOTE_MICS_MUTE                              0x1Au
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param state
+*/
+#define GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE                                0x1Bu
+
 
 // MAP Meta Event Group
 

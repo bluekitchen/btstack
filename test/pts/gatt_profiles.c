@@ -81,6 +81,8 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 static uint8_t battery = 100;
 static bool accept_next_pairing = true;
 
+static gatt_microphone_control_mute_t mics_mute = GATT_MICROPHONE_CONTROL_MUTE_OFF;
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
@@ -104,33 +106,42 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     UNUSED(channel);
     UNUSED(size);
 
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    le_notification_enabled = 0;
+    if (packet_type != HCI_EVENT_PACKET) return;
+    
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            le_notification_enabled = 0;
+            break;
+        case ATT_EVENT_CAN_SEND_NOW:
+            // att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
+            break;
+           case SM_EVENT_JUST_WORKS_REQUEST:
+                if (accept_next_pairing){
+                    accept_next_pairing = false;
+                    printf("Accept Just Works\n");
+                    sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+                } else {
+                    printf("Reject Just Works\n");
+                    sm_bonding_decline(sm_event_just_works_request_get_handle(packet));
+                }
+                break;
+            case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+                printf("Confirming numeric comparison: %"PRIu32"\n", sm_event_numeric_comparison_request_get_passkey(packet));
+                sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
+                break;
+
+        case HCI_EVENT_GATTSERVICE_META:
+            switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+                
+                case GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE: 
+                    printf("MICS: mute value changed by remote to %d\n", gattservice_subevent_local_mics_mute_get_state(packet));
                     break;
-                case ATT_EVENT_CAN_SEND_NOW:
-                    // att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
-                    break;
-                   case SM_EVENT_JUST_WORKS_REQUEST:
-                        if (accept_next_pairing){
-                            accept_next_pairing = false;
-                            printf("Accept Just Works\n");
-                            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
-                        } else {
-                            printf("Reject Just Works\n");
-                            sm_bonding_decline(sm_event_just_works_request_get_handle(packet));
-                        }
-                        break;
-                    case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
-                        printf("Confirming numeric comparison: %"PRIu32"\n", sm_event_numeric_comparison_request_get_passkey(packet));
-                        sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
-                        break;
+
                 default:
                     break;
             }
             break;
+
         default:
             break;
     }
@@ -189,6 +200,8 @@ static void show_usage(void){
     printf("C - enable classic flag, with auth\n");
     printf("l - enable LE flag, no auth\n");
     printf("L - enable LE flag, with auth\n");
+    printf("## MICS\n");
+    printf("m - toggle mute\n");
 }
 
 static void stdin_process(char c){
@@ -223,6 +236,20 @@ static void stdin_process(char c){
             printf("BMS: enable classic and LE flags\n");
             bond_management_service_server_init(0xFFFF);
             break;
+
+        case 'm':
+            switch (mics_mute){
+                case GATT_MICROPHONE_CONTROL_MUTE_OFF:
+                    mics_mute = GATT_MICROPHONE_CONTROL_MUTE_ON;
+                    break;
+                default:
+                    mics_mute = GATT_MICROPHONE_CONTROL_MUTE_OFF;
+                    break;
+            }
+            printf("MICS: set mute to %d\n", (mics_mute == GATT_MICROPHONE_CONTROL_MUTE_OFF ? 0 : 1));
+            microphone_control_service_server_set_mute(mics_mute);
+            break;
+
         default:
             show_usage();
             break;
@@ -273,7 +300,9 @@ int btstack_main(void)
     bond_management_service_server_init(0xFFFF);
     bond_management_service_server_set_authorisation_string("000000000000");
 
-    microphone_control_service_server_init(GATT_MICROPHONE_CONTROL_MUTE_OFF);
+    mics_mute = GATT_MICROPHONE_CONTROL_MUTE_OFF;
+    microphone_control_service_server_init(mics_mute);
+    
     volume_control_service_server_init(128, VCS_MUTE_OFF, 16);
     
     // setup advertisements

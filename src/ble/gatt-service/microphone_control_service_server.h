@@ -62,15 +62,21 @@ extern "C" {
 
 /**
  * @brief Init Microphone Control Service Server with ATT DB
- * @param mute_value
+ * @param mute_state
  */
-void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_value);
+void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_state);
+
+/**
+ * @brief Register callback to receive updates of mute value from remote side via MICS_MUTE event
+ * @param callback
+ */
+void microphone_control_service_server_register_packet_hanlder(btstack_packet_handler_t callback);
 
 /**
  * @brief Set mute value.
- * @param mute_value
+ * @param mute_state
  */
-void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t mute_value);
+void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t mute_state);
 
 
 /* API_END */

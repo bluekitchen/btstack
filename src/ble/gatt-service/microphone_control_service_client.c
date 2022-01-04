@@ -111,7 +111,7 @@ static void microphone_control_service_emit_mute_state(microphone_control_servic
     int pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE;
+    event[pos++] = GATTSERVICE_SUBEVENT_MICS_MUTE;
     little_endian_store_16(event, pos, client->cid);
     pos += 2;
     event[pos++] = att_status;

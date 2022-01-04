@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -11772,50 +11772,69 @@ static inline uint16_t gattservice_subevent_scan_parameters_service_scan_interva
 }
 
 /**
- * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_CONNECTED
+ * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_MICS_CONNECTED
  * @param event packet
  * @return hids_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_microphone_control_service_connected_get_hids_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_mics_connected_get_hids_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_CONNECTED
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_MICS_CONNECTED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_microphone_control_service_connected_get_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_mics_connected_get_status(const uint8_t * event){
     return event[5];
 }
 
 /**
- * @brief Get field mics_cid from event GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE
+ * @brief Get field cid from event GATTSERVICE_SUBEVENT_REMOTE_MICS_MUTE
  * @param event packet
- * @return mics_cid
+ * @return cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_microphone_control_service_mute_get_mics_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_remote_mics_mute_get_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_REMOTE_MICS_MUTE
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_microphone_control_service_mute_get_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_remote_mics_mute_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field mute_value from event GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_REMOTE_MICS_MUTE
  * @param event packet
- * @return mute_value
+ * @return state
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_microphone_control_service_mute_get_mute_value(const uint8_t * event){
+static inline uint8_t gattservice_subevent_remote_mics_mute_get_state(const uint8_t * event){
     return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_local_mics_mute_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_local_mics_mute_get_state(const uint8_t * event){
+    return event[5];
 }
 
 /**
