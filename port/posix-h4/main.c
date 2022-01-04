@@ -228,6 +228,9 @@ static void local_version_information_handler(uint8_t * packet){
             hci_set_chipset(btstack_chipset_tc3566x_instance());
             use_fast_uart();
             break;
+        case BLUETOOTH_COMPANY_ID_PACKETCRAFT_INC:
+            printf("PacketCraft HCI Controller\n");
+            break;
         default:
             printf("Unknown manufacturer / manufacturer not supported yet.\n");
             break;
