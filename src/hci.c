@@ -7099,6 +7099,7 @@ void hci_free_connections_fuzz(void){
     }
 }
 void hci_simulate_working_fuzz(void){
+    hci_stack->le_scanning_param_update = false;
     hci_init_done();
     hci_stack->num_cmd_packets = 255;
 }
