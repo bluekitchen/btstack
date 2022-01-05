@@ -132,6 +132,41 @@
 #define GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE 6
 #define GAP_PAIRING_STATE_WAIT_FOR_COMMAND_COMPLETE  7
 
+//
+// compact storage of releveant supported HCI Commands.
+// X-Macro below provides enumeration and mapping table into supported
+// commands bitmap (64 bytes) from HCI Read Local Supported Commands
+//
+
+// format: command name, byte offset, bit nr in 64-byte supported commands
+#define SUPPORTED_HCI_COMMANDS \
+    X( SUPPORTED_HCI_COMMAND_READ_BUFFER_SIZE                      , 14, 7) \
+    X( SUPPORTED_HCI_COMMAND_WRITE_LE_HOST_SUPPORTED               , 24, 6) \
+    X( SUPPORTED_HCI_COMMAND_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE , 10, 4) \
+    X( SUPPORTED_HCI_COMMAND_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING, 18, 3) \
+    X( SUPPORTED_HCI_COMMAND_LE_WRITE_SUGGESTED_DEFAULT_DATA_LENGTH, 34, 0) \
+    X( SUPPORTED_HCI_COMMAND_LE_READ_MAXIMUM_DATA_LENGTH           , 35, 3) \
+    X( SUPPORTED_HCI_COMMAND_LE_SET_DEFAULT_PHY                    , 35, 5) \
+    X( SUPPORTED_HCI_COMMAND_READ_ENCRYPTION_KEY_SIZE              , 20, 4) \
+    X( SUPPORTED_HCI_COMMAND_READ_REMOTE_EXTENDED_FEATURES         ,  2, 5) \
+    X( SUPPORTED_HCI_COMMAND_WRITE_SECURE_CONNECTIONS_HOST         , 32, 3) \
+    X( SUPPORTED_HCI_COMMAND_LE_SET_ADDRESS_RESOLUTION_ENABLE      , 35, 1) \
+    X( SUPPORTED_HCI_COMMAND_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY, 32, 1) \
+    X( SUPPORTED_HCI_COMMAND_READ_LOCAL_OOB_EXTENDED_DATA_COMMAND  , 32, 6) \
+
+// enumerate supported commands
+#define X(name, offset, bit) name,
+enum {
+    SUPPORTED_HCI_COMMANDS
+    SUPPORTED_HCI_COMMANDS_COUNT
+};
+#undef X
+
+// assert supported hci commands bitmap fits into provided storage
+#if SUPPORTED_HCI_COMMANDS_COUNT > 16
+#error "Storage for supported HCI commands too small"
+#endif
+
 // prototypes
 #ifdef ENABLE_CLASSIC
 static void hci_update_scan_enable(void);
@@ -2169,21 +2204,38 @@ static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn
 #endif
 
 static void hci_store_local_supported_commands(const uint8_t * packet){
-    hci_stack->local_supported_commands[0] =
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+14u] & 0x80u) >> 7u) |  // bit  0 = Octet 14, bit 7 / Read Buffer Size
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+24u] & 0x40u) >> 5u) |  // bit  1 = Octet 24, bit 6 / Write Le Host Supported
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+10u] & 0x10u) >> 2u) |  // bit  2 = Octet 10, bit 4 / Write Synchronous Flow Control Enable
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+18u] & 0x08u)     )  |  // bit  3 = Octet 18, bit 3 / Write Default Erroneous Data Reporting
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+34u] & 0x01u) << 4u) |  // bit  4 = Octet 34, bit 0 / LE Write Suggested Default Data Length
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+35u] & 0x08u) << 2u) |  // bit  5 = Octet 35, bit 3 / LE Read Maximum Data Length
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+35u] & 0x20u) << 1u) |  // bit  6 = Octet 35, bit 5 / LE Set Default PHY
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+20u] & 0x10u) << 3u);   // bit  7 = Octet 20, bit 4 / Read Encryption Key Size
-    hci_stack->local_supported_commands[1] =
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+ 2u] & 0x40u) >> 6u) |  // bit  8 = Octet  2, bit 6 / Read Remote Extended Features
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+32u] & 0x08u) >> 2u) |  // bit  9 = Octet 32, bit 3 / Write Secure Connections Host
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+35u] & 0x02u) << 1u) |  // bit 10 = Octet 35, bit 1 / LE Set Address Resolution Enable
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+32u] & 0x02u) << 2u) |  // bit 11 = Octet 32, bit 1 / Remote OOB Extended Data Request Reply
-            ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+32u] & 0x40u) >> 2u);   // bit 12 = Octet 32, bit 6 / Read Local OOB Extended Data command
+    // create mapping table
+#define X(name, offset, bit) { offset, bit },
+    static struct {
+        uint8_t byte_offset;
+        uint8_t bit_position;
+    } supported_hci_commands_map [] = {
+        SUPPORTED_HCI_COMMANDS
+    };
+#undef X
+
+    // create names for debug purposes
+#ifdef ENABLE_LOG_DEBUG
+#define X(name, offset, bit) #name,
+    static const char * command_names[] = {
+        SUPPORTED_HCI_COMMANDS
+    };
+#undef X
+#endif
+
+    memset(hci_stack->local_supported_commands, 0, sizeof(hci_stack->local_supported_commands));
+    const uint8_t * commands_map = &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1];
+    uint16_t i;
+    for (i = 0 ; i < SUPPORTED_HCI_COMMANDS_COUNT ; i++){
+        if ((commands_map[supported_hci_commands_map[i].byte_offset] & (1 << supported_hci_commands_map[i].bit_position)) != 0){
+#ifdef ENABLE_LOG_DEBUG
+            log_info("Command %s (%u) supported %u/%u", command_names[i], i, supported_hci_commands_map[i].byte_offset, supported_hci_commands_map[i].bit_position);
+#else
+            log_info("Enum 0x%02x supported %u/%u", i, supported_hci_commands_map[i].byte_offset, supported_hci_commands_map[i].bit_position);
+#endif
+            hci_stack->local_supported_commands[i >> 3] |= (1 << (i & 7 ));
+        }
+    }
     log_info("Local supported commands summary %02x - %02x", hci_stack->local_supported_commands[0],  hci_stack->local_supported_commands[1]);
 }
 

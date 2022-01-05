@@ -924,19 +924,6 @@ typedef struct {
     uint8_t local_supported_features[8];
 
     /* local supported commands summary - complete info is 64 bytes */
-    /*  0 - Read Buffer Size                        (Octet 14/bit 7) */
-    /*  1 - Write Le Host Supported                 (Octet 24/bit 6) */
-    /*  2 - Write Synchronous Flow Control Enable   (Octet 10/bit 4) */
-    /*  3 - Write Default Erroneous Data Reporting  (Octet 18/bit 3) */
-    /*  4 - LE Write Suggested Default Data Length  (Octet 34/bit 0) */
-    /*  5 - LE Read Maximum Data Length             (Octet 35/bit 3) */
-    /*  6 - LE Set Default PHY                      (Octet 35/bit 5) */
-    /*  7 - Read Encryption Key Size                (Octet 20/bit 4) */
-    /*  8 - Read Remote Extended Features           (Octet  2/bit 5) */
-    /*  9 - Write Secure Connections Host           (Octet 32/bit 3) */
-    /* 10 - LE Set Address Resolution Enable        (Octet 35/bit 1) */
-    /* 11 - Remote OOB Extended Data Request Reply  (Octet 32/bit 1) */
-    /* 12 - Read Local OOB Extended Data command    (Octet 32/bit 6) */
     uint8_t local_supported_commands[2];
 
     /* bluetooth device information from hci read local version information */
