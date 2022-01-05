@@ -4423,7 +4423,7 @@ static bool hci_run_general_gap_classic(void){
     // Local OOB data
     if (hci_stack->classic_read_local_oob_data){
         hci_stack->classic_read_local_oob_data = false;
-        if (hci_stack->local_supported_commands[1] & 0x10u){
+        if (hci_command_supported(SUPPORTED_HCI_COMMAND_READ_LOCAL_OOB_EXTENDED_DATA_COMMAND)){
             hci_send_cmd(&hci_read_local_extended_oob_data);
         } else {
             hci_send_cmd(&hci_read_local_oob_data);
@@ -4997,7 +4997,7 @@ static bool hci_run_general_pending_commands(void){
             const uint8_t * r_256 = zero;
             const uint8_t * c_256 = zero;
             // verify P-256 OOB
-            if ((connection->classic_oob_c_256 != NULL) && ((hci_stack->local_supported_commands[1] & 0x08u) != 0)) {
+            if ((connection->classic_oob_c_256 != NULL) && hci_command_supported(SUPPORTED_HCI_COMMAND_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY)) {
                 c_256 = connection->classic_oob_c_256;
                 if (connection->classic_oob_r_256 != NULL) {
                     r_256 = connection->classic_oob_r_256;
