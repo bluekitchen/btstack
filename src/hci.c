@@ -1203,6 +1203,10 @@ static int hci_le_supported(void){
 #endif    
 }
 
+static bool hci_command_supported(uint8_t command_index){
+    return (hci_stack->local_supported_commands & (1LU << command_index)) != 0;
+}
+
 #ifdef ENABLE_BLE
 
 static void hci_get_own_address_for_addr_type(uint8_t own_addr_type, bd_addr_t own_addr){
@@ -1646,7 +1650,7 @@ static void hci_initializing_run(void){
             break;
         case HCI_INIT_READ_BUFFER_SIZE:
             // only read buffer size if supported
-            if (hci_stack->local_supported_commands[0u] & 0x01u) {
+            if (hci_command_supported(SUPPORTED_HCI_COMMAND_READ_BUFFER_SIZE)){
                 hci_stack->substate = HCI_INIT_W4_READ_BUFFER_SIZE;
                 hci_send_cmd(&hci_read_buffer_size);
                 break;
@@ -1702,10 +1706,11 @@ static void hci_initializing_run(void){
 
         case HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE:
             // skip write secure connections host support if not supported or disabled
-            if (hci_classic_supported() && hci_stack->secure_connections_enable && (hci_stack->local_supported_commands[1u] & 0x02u) != 0u) {
-                hci_send_cmd(&hci_write_secure_connections_host_support, 1);
+            if (hci_classic_supported() && hci_stack->secure_connections_enable
+            && hci_command_supported(SUPPORTED_HCI_COMMAND_WRITE_SECURE_CONNECTIONS_HOST)) {
                 hci_stack->secure_connections_active = true;
                 hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
+                hci_send_cmd(&hci_write_secure_connections_host_support, 1);
                 break;
             }
 
@@ -1715,7 +1720,8 @@ static void hci_initializing_run(void){
         // only sent if ENABLE_SCO_OVER_HCI is defined
         case HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
             // skip write synchronous flow control if not supported
-            if (hci_classic_supported() && ((hci_stack->local_supported_commands[0] & 0x04) != 0)){
+            if (hci_classic_supported()
+            && hci_command_supported(SUPPORTED_HCI_COMMAND_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE)) {
                 hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
                 hci_send_cmd(&hci_write_synchronous_flow_control_enable, 1); // SCO tracking enabled
                 break;
@@ -1724,7 +1730,8 @@ static void hci_initializing_run(void){
 
         case HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
             // skip write default erroneous data reporting if not supported
-            if (hci_classic_supported() && ((hci_stack->local_supported_commands[0] & 0x08) != 0)){
+            if (hci_classic_supported()
+            && hci_command_supported(SUPPORTED_HCI_COMMAND_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING)) {
                 hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
                 hci_send_cmd(&hci_write_default_erroneous_data_reporting, 1);
                 break;
@@ -1790,7 +1797,8 @@ static void hci_initializing_run(void){
 
         case HCI_INIT_WRITE_LE_HOST_SUPPORTED:
             // skip write le host if not supported (e.g. on LE only EM9301)
-            if (hci_le_supported() && ((hci_stack->local_supported_commands[0u] & 0x02u) != 0)){
+            if (hci_le_supported()
+            && hci_command_supported(SUPPORTED_HCI_COMMAND_WRITE_LE_HOST_SUPPORTED)) {
                 // LE Supported Host = 1, Simultaneous Host = 0
                 hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
                 hci_send_cmd(&hci_write_le_host_supported, 1, 0);
@@ -1811,7 +1819,8 @@ static void hci_initializing_run(void){
             /* fall through */
 
         case HCI_INIT_LE_READ_MAX_DATA_LENGTH:
-            if (hci_le_supported() && ((hci_stack->local_supported_commands[0u] & 0x30u) == 0x30u)){
+            if (hci_le_supported()
+            && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_READ_MAXIMUM_DATA_LENGTH)) {
                 hci_stack->substate = HCI_INIT_W4_LE_READ_MAX_DATA_LENGTH;
                 hci_send_cmd(&hci_le_read_maximum_data_length);
                 break;
@@ -1820,7 +1829,8 @@ static void hci_initializing_run(void){
             /* fall through */
 
         case HCI_INIT_LE_WRITE_SUGGESTED_DATA_LENGTH:
-            if (hci_le_supported() && ((hci_stack->local_supported_commands[0u] & 0x30u) == 0x30u)){
+            if (hci_le_supported()
+            && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_WRITE_SUGGESTED_DEFAULT_DATA_LENGTH)) {
                 hci_stack->substate = HCI_INIT_W4_LE_WRITE_SUGGESTED_DATA_LENGTH;
                 hci_send_cmd(&hci_le_write_suggested_default_data_length, hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
                 break;
@@ -2223,7 +2233,7 @@ static void hci_store_local_supported_commands(const uint8_t * packet){
 #undef X
 #endif
 
-    memset(hci_stack->local_supported_commands, 0, sizeof(hci_stack->local_supported_commands));
+    hci_stack->local_supported_commands = 0;
     const uint8_t * commands_map = &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1];
     uint16_t i;
     for (i = 0 ; i < SUPPORTED_HCI_COMMANDS_COUNT ; i++){
@@ -2231,12 +2241,12 @@ static void hci_store_local_supported_commands(const uint8_t * packet){
 #ifdef ENABLE_LOG_DEBUG
             log_info("Command %s (%u) supported %u/%u", command_names[i], i, supported_hci_commands_map[i].byte_offset, supported_hci_commands_map[i].bit_position);
 #else
-            log_info("Enum 0x%02x supported %u/%u", i, supported_hci_commands_map[i].byte_offset, supported_hci_commands_map[i].bit_position);
+            log_info("Command 0x%02x supported %u/%u", i, supported_hci_commands_map[i].byte_offset, supported_hci_commands_map[i].bit_position);
 #endif
-            hci_stack->local_supported_commands[i >> 3] |= (1 << (i & 7 ));
+            hci_stack->local_supported_commands |= (1LU << i);
         }
     }
-    log_info("Local supported commands summary %02x - %02x", hci_stack->local_supported_commands[0],  hci_stack->local_supported_commands[1]);
+    log_info("Local supported commands summary %04x", hci_stack->local_supported_commands);
 }
 
 static void handle_command_complete_event(uint8_t * packet, uint16_t size){
@@ -2883,7 +2893,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 hci_handle_remote_features_page_0(conn, features);
 
                 // read extended features if possible
-                if (((hci_stack->local_supported_commands[1] & 1) != 0) && ((conn->remote_supported_features[0] & 2) != 0)) {
+                if (hci_command_supported(SUPPORTED_HCI_COMMAND_READ_REMOTE_EXTENDED_FEATURES)
+                && ((conn->remote_supported_features[0] & 2) != 0)) {
                     conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES_PAGE_1;
                     break;
                 }
@@ -3113,8 +3124,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         // work around for issue with PTS dongle
                         conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
 #endif
-
-                        if ((hci_stack->local_supported_commands[0] & 0x80) != 0){
+                        if (hci_command_supported(SUPPORTED_HCI_COMMAND_READ_ENCRYPTION_KEY_SIZE)){
                             // For Classic, we need to validate encryption key size first, if possible (== supported by Controller)
                             conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
                         } else {
@@ -4494,7 +4504,8 @@ static bool hci_run_general_gap_le(void){
     // check if resolving list needs modification
     bool resolving_list_modification_pending = false;
 #ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
-    bool resolving_list_supported = (hci_stack->local_supported_commands[1] & (1 << 2)) != 0;
+
+    bool resolving_list_supported = hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_ADDRESS_RESOLUTION_ENABLE);
 	if (resolving_list_supported && hci_stack->le_resolving_list_state != LE_RESOLVING_LIST_DONE){
         resolving_list_modification_pending = true;
     }
@@ -7025,7 +7036,7 @@ void hci_remove_le_device_db_entry_from_resolving_list(uint16_t le_device_db_ind
 }
 
 uint8_t gap_load_resolving_list_from_le_device_db(void){
-	if ((hci_stack->local_supported_commands[1] & (1 << 2)) == 0) {
+    if (hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_ADDRESS_RESOLUTION_ENABLE) == false){
 		return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
 	}
 	if (hci_stack->le_resolving_list_state != LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION){

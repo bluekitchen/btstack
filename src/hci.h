@@ -924,7 +924,7 @@ typedef struct {
     uint8_t local_supported_features[8];
 
     /* local supported commands summary - complete info is 64 bytes */
-    uint8_t local_supported_commands[2];
+    uint16_t local_supported_commands;
 
     /* bluetooth device information from hci read local version information */
     // uint16_t hci_version;
