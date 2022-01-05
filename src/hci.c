@@ -133,26 +133,26 @@
 #define GAP_PAIRING_STATE_WAIT_FOR_COMMAND_COMPLETE  7
 
 //
-// compact storage of releveant supported HCI Commands.
-// X-Macro below provides enumeration and mapping table into supported
+// compact storage of relevant supported HCI Commands.
+// X-Macro below provides enumeration and mapping table into the supported
 // commands bitmap (64 bytes) from HCI Read Local Supported Commands
 //
 
 // format: command name, byte offset, bit nr in 64-byte supported commands
 #define SUPPORTED_HCI_COMMANDS \
-    X( SUPPORTED_HCI_COMMAND_READ_BUFFER_SIZE                      , 14, 7) \
-    X( SUPPORTED_HCI_COMMAND_WRITE_LE_HOST_SUPPORTED               , 24, 6) \
+    X( SUPPORTED_HCI_COMMAND_READ_REMOTE_EXTENDED_FEATURES         ,  2, 5) \
     X( SUPPORTED_HCI_COMMAND_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE , 10, 4) \
+    X( SUPPORTED_HCI_COMMAND_READ_BUFFER_SIZE                      , 14, 7) \
     X( SUPPORTED_HCI_COMMAND_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING, 18, 3) \
+    X( SUPPORTED_HCI_COMMAND_READ_ENCRYPTION_KEY_SIZE              , 20, 4) \
+    X( SUPPORTED_HCI_COMMAND_WRITE_LE_HOST_SUPPORTED               , 24, 6) \
+    X( SUPPORTED_HCI_COMMAND_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY, 32, 1) \
+    X( SUPPORTED_HCI_COMMAND_WRITE_SECURE_CONNECTIONS_HOST         , 32, 3) \
+    X( SUPPORTED_HCI_COMMAND_READ_LOCAL_OOB_EXTENDED_DATA_COMMAND  , 32, 6) \
     X( SUPPORTED_HCI_COMMAND_LE_WRITE_SUGGESTED_DEFAULT_DATA_LENGTH, 34, 0) \
     X( SUPPORTED_HCI_COMMAND_LE_READ_MAXIMUM_DATA_LENGTH           , 35, 3) \
-    X( SUPPORTED_HCI_COMMAND_LE_SET_DEFAULT_PHY                    , 35, 5) \
-    X( SUPPORTED_HCI_COMMAND_READ_ENCRYPTION_KEY_SIZE              , 20, 4) \
-    X( SUPPORTED_HCI_COMMAND_READ_REMOTE_EXTENDED_FEATURES         ,  2, 5) \
-    X( SUPPORTED_HCI_COMMAND_WRITE_SECURE_CONNECTIONS_HOST         , 32, 3) \
     X( SUPPORTED_HCI_COMMAND_LE_SET_ADDRESS_RESOLUTION_ENABLE      , 35, 1) \
-    X( SUPPORTED_HCI_COMMAND_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY, 32, 1) \
-    X( SUPPORTED_HCI_COMMAND_READ_LOCAL_OOB_EXTENDED_DATA_COMMAND  , 32, 6) \
+    X( SUPPORTED_HCI_COMMAND_LE_SET_DEFAULT_PHY                    , 35, 5) \
 
 // enumerate supported commands
 #define X(name, offset, bit) name,
