@@ -175,6 +175,7 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
 static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address);
 static void hci_whitelist_free(void);
 static hci_connection_t * gap_get_outgoing_connection(void);
+static bool hci_run_general_gap_le(void);
 #endif
 #endif
 
@@ -1801,26 +1802,28 @@ static void hci_initializing_run(void){
                 break;
             }
             
-            /* fall through */
-
-        case HCI_INIT_LE_SET_SCAN_PARAMETERS:
-            if (hci_le_supported()){
-                hci_stack->substate = HCI_INIT_W4_LE_SET_SCAN_PARAMETERS;
-                hci_send_cmd(&hci_le_set_scan_parameters, hci_stack->le_scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
-                break;
-            }
 #endif
 
             /* fall through */
 
         case HCI_INIT_DONE:
             hci_stack->substate = HCI_INIT_DONE;
+            // main init sequence complete
 #ifdef ENABLE_CLASSIC
-            // init sequence complete, check if Classic GAP Tasks are completed
+            // check if initial Classic GAP Tasks are completed
             if (hci_classic_supported() && (hci_stack->gap_tasks_classic != 0)) {
                 hci_run_gap_tasks_classic();
                 break;
             }
+#endif
+#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_CENTRAL
+            // check if initial LE GAP Tasks are completed
+            if (hci_le_supported() && hci_stack->le_scanning_param_update) {
+                hci_run_general_gap_le();
+                break;
+            }
+#endif
 #endif
             hci_init_done();
             break;
@@ -3507,6 +3510,7 @@ static void hci_state_reset(void){
 #endif
 #ifdef ENABLE_LE_CENTRAL
     hci_stack->le_scanning_active  = false;
+    hci_stack->le_scanning_param_update = true;
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
     hci_stack->le_whitelist_capacity = 0;
@@ -4403,12 +4407,6 @@ static bool hci_run_general_gap_classic(void){
 #ifdef ENABLE_BLE
 static bool hci_run_general_gap_le(void){
 
-    // advertisements, active scanning, and creating connections requires random address to be set if using private address
-
-    if (hci_stack->state != HCI_STATE_WORKING) return false;
-    if ( (hci_stack->le_own_addr_type != BD_ADDR_TYPE_LE_PUBLIC) && (hci_stack->le_random_address_set == 0u) ) return false;
-
-
     // Phase 1: collect what to stop
 
     bool scanning_stop = false;
@@ -4705,6 +4703,12 @@ static bool hci_run_general_gap_le(void){
 	}
     hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
 #endif
+
+    // post-pone all actions until stack is fully working
+    if (hci_stack->state != HCI_STATE_WORKING) return false;
+
+    // advertisements, active scanning, and creating connections requires random address to be set if using private address
+    if ( (hci_stack->le_own_addr_type != BD_ADDR_TYPE_LE_PUBLIC) && (hci_stack->le_random_address_set == 0u) ) return false;
 
     // Phase 4: restore state
 
