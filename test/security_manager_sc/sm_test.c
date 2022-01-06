@@ -64,8 +64,8 @@
 #include "btstack_stdin.h"
 
 #ifdef COVERAGE
-// guesswork:
-void __gcov_flush(void);
+void __gcov_dump(void);
+void __gcov_reset(void);
 #endif
 
 #define HEARTBEAT_PERIOD_MS 1000
@@ -458,7 +458,8 @@ static void stdin_process(char c){
         case 'x':
 #ifdef COVERAGE
 			log_info("Flush gcov");
-			__gcov_flush();
+            __gcov_dump();
+            __gcov_reset();
 #endif
 			printf("EXIT\n");
             exit(0);
