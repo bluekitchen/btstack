@@ -153,6 +153,7 @@
     X( SUPPORTED_HCI_COMMAND_LE_READ_MAXIMUM_DATA_LENGTH           , 35, 3) \
     X( SUPPORTED_HCI_COMMAND_LE_SET_ADDRESS_RESOLUTION_ENABLE      , 35, 1) \
     X( SUPPORTED_HCI_COMMAND_LE_SET_DEFAULT_PHY                    , 35, 5) \
+    X( SUPPORTED_HCI_COMMAND_LE_SET_EXTENDED_ADVERTISING_ENABLE    , 36, 6) \
 
 // enumerate supported commands
 #define X(name, offset, bit) name,
@@ -1208,6 +1209,12 @@ static bool hci_command_supported(uint8_t command_index){
 }
 
 #ifdef ENABLE_BLE
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+static bool hci_extended_advertising_supported(void){
+    return hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_EXTENDED_ADVERTISING_ENABLE);
+}
+#endif
 
 static void hci_get_own_address_for_addr_type(uint8_t own_addr_type, bd_addr_t own_addr){
     if (own_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
@@ -4588,7 +4595,14 @@ static bool hci_run_general_gap_le(void){
 #ifdef ENABLE_LE_CENTRAL
     if (scanning_stop){
         hci_stack->le_scanning_active = false;
-        hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        if (hci_extended_advertising_supported()) {
+            hci_send_cmd(&hci_le_set_extended_scan_enable, 0, 0, 0, 0);
+        } else
+#endif
+        {
+            hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
+        }
         return true;
     }
 #endif
@@ -4619,8 +4633,21 @@ static bool hci_run_general_gap_le(void){
 #ifdef ENABLE_LE_CENTRAL
     if (hci_stack->le_scanning_param_update){
         hci_stack->le_scanning_param_update = false;
-        hci_send_cmd(&hci_le_set_scan_parameters, hci_stack->le_scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window,
-                     hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        if (hci_extended_advertising_supported()){
+            // prepare arrays for all PHYs
+            uint8_t  scan_types[1]     = { hci_stack->le_scan_type     };
+            uint16_t scan_intervals[1] = { hci_stack->le_scan_interval };
+            uint16_t scan_windows[1]   =    { hci_stack->le_scan_window   };
+            uint8_t  scanning_phys     = 1;  // LE 1M PHY
+            hci_send_cmd(&hci_le_set_extended_scan_parameters, hci_stack->le_own_addr_type,
+                         hci_stack->le_scan_filter_policy, scanning_phys, scan_types, scan_intervals, scan_windows);
+        } else
+#endif
+        {
+            hci_send_cmd(&hci_le_set_scan_parameters, hci_stack->le_scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window,
+                         hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
+        }
         return true;
     }
 #endif
@@ -4789,7 +4816,14 @@ static bool hci_run_general_gap_le(void){
     // re-start scanning
     if ((hci_stack->le_scanning_enabled && !hci_stack->le_scanning_active)){
         hci_stack->le_scanning_active = true;
-        hci_send_cmd(&hci_le_set_scan_enable, 1, 0);
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        if (hci_extended_advertising_supported()){
+            hci_send_cmd(&hci_le_set_extended_scan_enable, 1, 0, 0, 0);
+        } else
+#endif
+        {
+            hci_send_cmd(&hci_le_set_scan_enable, 1, 0);
+        }
         return true;
     }
 #endif
