@@ -803,7 +803,7 @@ typedef uint8_t sm_key_t[16];
  * @param cig_id
  * @param cis_id
  */
-#define HCI_SUBEVEWNT_LE_CIS_REQUEST                            0x1au
+#define HCI_SUBEVENT_LE_CIS_REQUEST                            0x1au
 
 // array of advertisements, not handled by event accessor generator
 #define HCI_SUBEVENT_LE_CREATE_BIG_COMPLETE                     0x1Bu

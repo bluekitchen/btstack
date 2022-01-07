@@ -1133,43 +1133,6 @@ static inline uint8_t hci_event_keypress_notification_get_notification_type(cons
 }
 
 /**
- * @brief Get field acl_connection_handle from event HCI_SUBEVEWNT_LE_CIS_REQUEST_EVENT
- * @param event packet
- * @return acl_connection_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t hci_subevewnt_le_cis_request_event_get_acl_connection_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field cis_connection_handle from event HCI_SUBEVEWNT_LE_CIS_REQUEST_EVENT
- * @param event packet
- * @return cis_connection_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t hci_subevewnt_le_cis_request_event_get_cis_connection_handle(const uint8_t * event){
-    return little_endian_read_16(event, 5);
-}
-/**
- * @brief Get field cig_id from event HCI_SUBEVEWNT_LE_CIS_REQUEST_EVENT
- * @param event packet
- * @return cig_id
- * @note: btstack_type 1
- */
-static inline uint8_t hci_subevewnt_le_cis_request_event_get_cig_id(const uint8_t * event){
-    return event[7];
-}
-/**
- * @brief Get field cis_id from event HCI_SUBEVEWNT_LE_CIS_REQUEST_EVENT
- * @param event packet
- * @return cis_id
- * @note: btstack_type 1
- */
-static inline uint8_t hci_subevewnt_le_cis_request_event_get_cis_id(const uint8_t * event){
-    return event[8];
-}
-
-/**
  * @brief Get field state from event BTSTACK_EVENT_STATE
  * @param event packet
  * @return state
@@ -4828,6 +4791,43 @@ static inline uint16_t hci_subevent_le_cis_established_get_max_pdu_p_to_c(const 
  */
 static inline uint16_t hci_subevent_le_cis_established_get_iso_interval(const uint8_t * event){
     return little_endian_read_16(event, 29);
+}
+
+/**
+ * @brief Get field acl_connection_handle from event HCI_SUBEVENT_LE_CIS_REQUEST
+ * @param event packet
+ * @return acl_connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_cis_request_get_acl_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field cis_connection_handle from event HCI_SUBEVENT_LE_CIS_REQUEST
+ * @param event packet
+ * @return cis_connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_cis_request_get_cis_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field cig_id from event HCI_SUBEVENT_LE_CIS_REQUEST
+ * @param event packet
+ * @return cig_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_cis_request_get_cig_id(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field cis_id from event HCI_SUBEVENT_LE_CIS_REQUEST
+ * @param event packet
+ * @return cis_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_cis_request_get_cis_id(const uint8_t * event){
+    return event[8];
 }
 
 /**
