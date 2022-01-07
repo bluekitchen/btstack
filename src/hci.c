@@ -1281,9 +1281,8 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
 void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t size) {
     uint16_t offset = 3;
     uint8_t num_reports = packet[offset++];
-
+    uint8_t event[2 + 255]; // use upper bound to avoid var size automatic var
     uint8_t i;
-    uint8_t event[12 + LE_ADVERTISING_DATA_SIZE]; // use upper bound to avoid var size automatic var
     for (i=0; (i<num_reports) && (offset < size);i++){
         // sanity checks on data_length:
         uint16_t data_length = packet[offset + 23];
@@ -1340,7 +1339,12 @@ void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t size) {
             offset += 1+ data_length;
             hci_emit_event(event, pos, 1);
         } else {
-            // TODO: process new events
+            event[0] = GAP_EVENT_EXTENDED_ADVERTISING_REPORT;
+            uint8_t report_len = 24 + data_length;
+            event[1] = report_len;
+            memcpy(&event[2], &packet[offset], report_len);
+            offset += report_len;
+            hci_emit_event(event, 2 + report_len, 1);
         }
     }
 }
