@@ -1248,12 +1248,11 @@ void gap_le_get_own_connection_address(uint8_t * addr_type, bd_addr_t addr){
 
 void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
 
-    int offset = 3;
-    int num_reports = packet[offset];
+    uint16_t offset = 3;
+    uint8_t num_reports = packet[offset];
     offset += 1;
 
-    int i;
-    // log_info("HCI: handle adv report with num reports: %d", num_reports);
+    uint16_t i;
     uint8_t event[12 + LE_ADVERTISING_DATA_SIZE]; // use upper bound to avoid var size automatic var
     for (i=0; (i<num_reports) && (offset < size);i++){
         // sanity checks on data_length:
@@ -1262,7 +1261,7 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
         if ((offset + 9u + data_length + 1u) > size)    return;
         // setup event
         uint8_t event_size = 10u + data_length;
-        int pos = 0;
+        uint16_t pos = 0;
         event[pos++] = GAP_EVENT_ADVERTISING_REPORT;
         event[pos++] = event_size;
         (void)memcpy(&event[pos], &packet[offset], 1 + 1 + 6); // event type + address type + address
@@ -1277,6 +1276,76 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
         hci_emit_event(event, pos, 1);
     }
 }
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t size) {
+    uint16_t offset = 3;
+    uint8_t num_reports = packet[offset++];
+
+    uint8_t i;
+    uint8_t event[12 + LE_ADVERTISING_DATA_SIZE]; // use upper bound to avoid var size automatic var
+    for (i=0; (i<num_reports) && (offset < size);i++){
+        // sanity checks on data_length:
+        uint16_t data_length = packet[offset + 23];
+        if (data_length > LE_ADVERTISING_DATA_SIZE) return;
+        if ((offset + 24u + data_length) > size)    return;
+        uint16_t event_type = little_endian_read_16(packet, offset);
+        offset += 2;
+        if ((event_type & 0x10) != 0) {
+           // setup legacy event
+            uint8_t legacy_event_type;
+            switch (event_type){
+                case 0b0010011:
+                    // ADV_IND
+                    legacy_event_type = 0;
+                    break;
+                case 0b0010101:
+                    // ADV_DIRECT_IND
+                    legacy_event_type = 1;
+                    break;
+                case 0b0010010:
+                    // ADV_SCAN_IND
+                    legacy_event_type = 2;
+                    break;
+                case 0b0010000:
+                    // ADV_NONCONN_IND
+                    legacy_event_type = 3;
+                    break;
+                case 0b0011011:
+                case 0b0011010:
+                    // SCAN_RSP
+                    legacy_event_type = 4;
+                    break;
+                default:
+                    legacy_event_type = 0;
+                    break;
+            }
+            uint16_t pos = 0;
+            event[pos++] = GAP_EVENT_ADVERTISING_REPORT;
+            event[pos++] = 10u + data_length;
+            event[pos++] = legacy_event_type;
+            // copy address type + address
+            (void) memcpy(&event[pos], &packet[offset], 1 + 6);
+            offset += 7;
+            pos += 7;
+            // skip primary_phy, secondary_phy, advertising_sid, tx_power
+            offset += 4;
+            // copy rssi
+            event[pos++] = packet[offset++];
+            // skip periodic advertising interval and direct address
+            offset += 9;
+            // copy data len + data;
+            (void) memcpy(&event[pos], &packet[offset], 1 + data_length);
+            pos    += 1 +data_length;
+            offset += 1+ data_length;
+            hci_emit_event(event, pos, 1);
+        } else {
+            // TODO: process new events
+        }
+    }
+}
+#endif
+
 #endif
 #endif
 
@@ -3293,10 +3362,15 @@ static void event_handler(uint8_t *packet, uint16_t size){
             switch (packet[2]){
 #ifdef ENABLE_LE_CENTRAL
                 case HCI_SUBEVENT_LE_ADVERTISING_REPORT:
-                    // log_info("advertising report received");
                     if (!hci_stack->le_scanning_enabled) break;
                     le_handle_advertisement_report(packet, size);
                     break;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+                case HCI_SUBEVENT_LE_EXTENDED_ADVERTISING_REPORT:
+                    if (!hci_stack->le_scanning_enabled) break;
+                    le_handle_extended_advertisement_report(packet, size);
+                    break;
+#endif
 #endif
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
 					event_handle_le_connection_complete(packet);
