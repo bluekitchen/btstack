@@ -754,10 +754,17 @@ typedef enum hci_init_state{
     HCI_INIT_LE_WRITE_SUGGESTED_DATA_LENGTH,
     HCI_INIT_W4_LE_WRITE_SUGGESTED_DATA_LENGTH,
 #endif
-    
+
 #ifdef ENABLE_LE_CENTRAL
     HCI_INIT_READ_WHITE_LIST_SIZE,
     HCI_INIT_W4_READ_WHITE_LIST_SIZE,
+#endif
+
+#ifdef ENABLE_LE_PERIPHERAL
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    HCI_INIT_LE_READ_MAX_ADV_DATA_LEN,
+    HCI_INIT_W4_LE_READ_MAX_ADV_DATA_LEN,
+#endif
 #endif
 
     HCI_INIT_DONE,
@@ -1043,6 +1050,9 @@ typedef struct {
     bd_addr_t le_advertisements_own_address;
 
     uint8_t le_max_number_peripheral_connections;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    uint16_t le_maximum_advertising_data_length;
+#endif
 #endif
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION

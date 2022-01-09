@@ -1929,6 +1929,18 @@ static void hci_initializing_run(void){
             
 #endif
 
+#ifdef ENABLE_LE_PERIPHERAL
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+            /* fall through */
+
+        case HCI_INIT_LE_READ_MAX_ADV_DATA_LEN:
+            if (hci_extended_advertising_supported()){
+                hci_stack->substate = HCI_INIT_W4_LE_READ_MAX_ADV_DATA_LEN;
+                hci_send_cmd(&hci_le_read_maximum_advertising_data_length);
+                break;
+            }
+#endif
+#endif
             /* fall through */
 
         case HCI_INIT_DONE:
@@ -2399,6 +2411,13 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             hci_stack->le_whitelist_capacity = packet[6];
             log_info("hci_le_read_white_list_size: size %u", hci_stack->le_whitelist_capacity);
             break;
+#endif
+#ifdef ENABLE_LE_PERIPHERAL
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        case HCI_OPCODE_HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH:
+            hci_stack->le_maximum_advertising_data_length = little_endian_read_16(packet, 6);
+            break;
+#endif
 #endif
         case HCI_OPCODE_HCI_READ_BD_ADDR:
             reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], hci_stack->local_bd_addr);
