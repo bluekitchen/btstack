@@ -1640,7 +1640,7 @@ const hci_cmd_t hci_le_set_extended_scan_response_data = {
  */
 
 const hci_cmd_t hci_le_set_extended_advertising_enable = {
-        HCI_OPCODE_HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE, "11[121]"
+        HCI_OPCODE_HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE, "1a[121]"
 };
 
 /**
@@ -1701,9 +1701,9 @@ const hci_cmd_t hci_le_set_periodic_advertising_enable = {
  * @param own_address_type
  * @param scanning_filter_policy
  * @param scanning_phys 0 = LE 1M PHY | 2 = LE Coded PHY
- * @param scan_type
- * @param scan_interval * 0.625, range = 0x0004..0xffff
- * @param scan_window * 0.625, range = 0x0004..0xffff
+ * @param scan_type[i]
+ * @param scan_interval[i] * 0.625, range = 0x0004..0xffff
+ * @param scan_window[i] * 0.625, range = 0x0004..0xffff
  */
 
 const hci_cmd_t hci_le_set_extended_scan_parameters = {
