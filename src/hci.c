@@ -4695,7 +4695,17 @@ static bool hci_run_general_gap_le(void){
 #ifdef ENABLE_LE_PERIPHERAL
     if (advertising_stop){
         hci_stack->le_advertisements_active = false;
-        hci_send_cmd(&hci_le_set_advertise_enable, 0);
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        if (hci_extended_advertising_supported()) {
+            const uint8_t advertising_handles[] = { 0 };
+            const uint16_t durations[] = { 0 };
+            const uint16_t max_events[] = { 0 };
+            hci_send_cmd(&hci_le_set_extended_advertising_enable, 0, 1, advertising_handles, durations, max_events);
+        } else
+#endif
+        {
+            hci_send_cmd(&hci_le_set_advertise_enable, 0);
+        }
         return true;
     }
 #endif
@@ -4704,7 +4714,14 @@ static bool hci_run_general_gap_le(void){
 
     if (random_address_change){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
-        hci_send_cmd(&hci_le_set_random_address, hci_stack->le_random_address);
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        if (hci_extended_advertising_supported()) {
+            hci_send_cmd(&hci_le_set_advertising_set_random_address, 0, hci_stack->le_random_address);
+        }
+#endif
+        {
+            hci_send_cmd(&hci_le_set_random_address, hci_stack->le_random_address);
+        }
         return true;
     }
 
@@ -4734,15 +4751,44 @@ static bool hci_run_general_gap_le(void){
     if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_PARAMS){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_PARAMS;
         hci_stack->le_advertisements_own_addr_type = hci_stack->le_own_addr_type;
-        hci_send_cmd(&hci_le_set_advertising_parameters,
-                     hci_stack->le_advertisements_interval_min,
-                     hci_stack->le_advertisements_interval_max,
-                     hci_stack->le_advertisements_type,
-                     hci_stack->le_advertisements_own_addr_type,
-                     hci_stack->le_advertisements_direct_address_type,
-                     hci_stack->le_advertisements_direct_address,
-                     hci_stack->le_advertisements_channel_map,
-                     hci_stack->le_advertisements_filter_policy);
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        if (hci_extended_advertising_supported()){
+            // map advertisment type to advertising event properties
+            uint16_t adv_event_properties = 0;
+            const uint16_t mapping[] = { 0b00010011, 0b00010101, 0b00011101, 0b00010010, 0b00010000};
+            if (hci_stack->le_advertisements_type < (sizeof(mapping)/sizeof(uint16_t))){
+                adv_event_properties = mapping[hci_stack->le_advertisements_type];
+            }
+            hci_send_cmd(&hci_le_set_extended_advertising_parameters,
+                         0,
+                         adv_event_properties,
+                         hci_stack->le_advertisements_interval_min,
+                         hci_stack->le_advertisements_interval_max,
+                         hci_stack->le_advertisements_channel_map,
+                         hci_stack->le_advertisements_own_addr_type,
+                         hci_stack->le_advertisements_direct_address_type,
+                         hci_stack->le_advertisements_direct_address,
+                         hci_stack->le_advertisements_filter_policy,
+                         0x7f,  // tx power: no preference
+                         0x01,  // primary adv phy: LE 1M
+                         0,     // secondary adv max skip
+                         0,     // secondary adv phy
+                         0,     // adv sid
+                         0      // scan request notification
+                         );
+        }
+#endif
+        {
+            hci_send_cmd(&hci_le_set_advertising_parameters,
+                         hci_stack->le_advertisements_interval_min,
+                         hci_stack->le_advertisements_interval_max,
+                         hci_stack->le_advertisements_type,
+                         hci_stack->le_advertisements_own_addr_type,
+                         hci_stack->le_advertisements_direct_address_type,
+                         hci_stack->le_advertisements_direct_address,
+                         hci_stack->le_advertisements_channel_map,
+                         hci_stack->le_advertisements_filter_policy);
+        }
         return true;
     }
     if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_ADV_DATA){
@@ -4752,7 +4798,14 @@ static bool hci_run_general_gap_le(void){
         (void)memcpy(adv_data_clean, hci_stack->le_advertisements_data,
                      hci_stack->le_advertisements_data_len);
         btstack_replace_bd_addr_placeholder(adv_data_clean, hci_stack->le_advertisements_data_len, hci_stack->local_bd_addr);
-        hci_send_cmd(&hci_le_set_advertising_data, hci_stack->le_advertisements_data_len, adv_data_clean);
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        if (hci_extended_advertising_supported()){
+            hci_send_cmd(&hci_le_set_extended_advertising_data, 0, 0x03, 0x01, hci_stack->le_advertisements_data_len, adv_data_clean);
+        } else
+#endif
+        {
+            hci_send_cmd(&hci_le_set_advertising_data, hci_stack->le_advertisements_data_len, adv_data_clean);
+        }
         return true;
     }
     if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA){
@@ -4762,7 +4815,14 @@ static bool hci_run_general_gap_le(void){
         (void)memcpy(scan_data_clean, hci_stack->le_scan_response_data,
                      hci_stack->le_scan_response_data_len);
         btstack_replace_bd_addr_placeholder(scan_data_clean, hci_stack->le_scan_response_data_len, hci_stack->local_bd_addr);
-        hci_send_cmd(&hci_le_set_scan_response_data, hci_stack->le_scan_response_data_len, scan_data_clean);
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        if (hci_extended_advertising_supported()){
+            hci_send_cmd(&hci_le_set_extended_scan_response_data, 0, 0x03, 0x01, hci_stack->le_scan_response_data_len, scan_data_clean);
+        } else
+#endif
+        {
+            hci_send_cmd(&hci_le_set_scan_response_data, hci_stack->le_scan_response_data_len, scan_data_clean);
+        }
         return true;
     }
 #endif
@@ -4937,7 +4997,18 @@ static bool hci_run_general_gap_le(void){
         // check if advertisements should be enabled given
         hci_stack->le_advertisements_active = true;
         hci_get_own_address_for_addr_type(hci_stack->le_advertisements_own_addr_type, hci_stack->le_advertisements_own_address);
-        hci_send_cmd(&hci_le_set_advertise_enable, 1);
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        if (hci_extended_advertising_supported()){
+            const uint8_t advertising_handles[] = { 0 };
+            const uint16_t durations[] = { 0 };
+            const uint16_t max_events[] = { 0 };
+            hci_send_cmd(&hci_le_set_extended_advertising_enable, 1, 1, advertising_handles, durations, max_events);
+        } else
+#endif
+        {
+            hci_send_cmd(&hci_le_set_advertise_enable, 1);
+        }
         return true;
     }
 #endif
