@@ -162,6 +162,8 @@ typedef struct {
     uint8_t * scan_data;
     uint16_t  adv_data_len;
     uint16_t  scan_data_len;
+    uint16_t  adv_data_pos;
+    uint16_t  scan_data_pos;
     uint16_t  enable_timeout;
     uint8_t   advertising_handle;
     uint8_t   enable_max_scan_events;

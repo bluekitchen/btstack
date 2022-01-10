@@ -4575,6 +4575,24 @@ static bool hci_run_general_gap_classic(void){
 #endif
 
 #ifdef ENABLE_BLE
+
+#ifdef ENABLE_LE_PERIPHERAL
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+uint8_t hci_le_extended_advertising_operation_for_chunk(uint16_t pos, uint16_t len){
+    uint8_t  operation = 0;
+    if (pos == 0){
+        // first fragment or complete data
+        operation |= 1;
+    }
+    if (pos + LE_EXTENDED_ADVERTISING_MAX_CHUNK_LEN >= len){
+        // last fragment or complete data
+        operation |= 2;
+    }
+    return operation;
+}
+#endif
+#endif
+
 static bool hci_run_general_gap_le(void){
 
     // Phase 1: collect what to stop
@@ -4582,6 +4600,10 @@ static bool hci_run_general_gap_le(void){
     bool scanning_stop = false;
     bool connecting_stop = false;
     bool advertising_stop = false;
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    le_advertising_set_t * advertising_stop_set = NULL;
+#endif
 
 #ifndef ENABLE_LE_CENTRAL
     UNUSED(scanning_stop);
@@ -4684,6 +4706,44 @@ static bool hci_run_general_gap_le(void){
             advertising_stop = true;
         }
     }
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    if (hci_extended_advertising_supported() && (advertising_stop == false)){
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            le_advertising_set_t * advertising_set = (le_advertising_set_t*) btstack_linked_list_iterator_next(&it);
+            if ((advertising_set->state & LE_ADVERTISEMENT_STATE_ACTIVE) == 0) continue;
+            // stop if:
+            // - parameter change required
+            // - random address used in connectable advertising and changes
+            // - it's disabled
+            // - whitelist change required but used for advertisement filter policy
+            // - resolving list modified
+            // - own address changes
+            // - advertisement set will be removed
+            bool advertising_uses_whitelist = advertising_set->params.advertising_filter_policy != 0;
+            bool advertising_connectable = (advertising_set->params.advertising_event_properties & 1) != 0;
+            bool advertising_uses_random_address = (advertising_set->params.own_address_type != BD_ADDR_TYPE_LE_PUBLIC) && advertising_connectable;
+            bool advertising_parameter_change = (advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_PARAMS) != 0;
+            bool advertising_enabled = (advertising_set->state & LE_ADVERTISEMENT_STATE_ENABLED) != 0;
+            bool advertising_set_random_address_change = (advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_ADDRESS) != 0;
+            bool advertising_set_will_be_removed = (advertising_set->state & LE_ADVERTISEMENT_TASKS_REMOVE_SET) != 0;
+            if (advertising_parameter_change ||
+                (advertising_uses_random_address && advertising_set_random_address_change) ||
+                (advertising_enabled == false) ||
+                (advertising_uses_whitelist && whitelist_modification_pending) ||
+                resolving_list_modification_pending ||
+                advertising_set_will_be_removed) {
+
+                advertising_stop = true;
+                advertising_stop_set = advertising_set;
+                break;
+            }
+        }
+    }
+#endif
+
 #endif
 
 
@@ -4713,16 +4773,24 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_PERIPHERAL
     if (advertising_stop){
-        hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
         if (hci_extended_advertising_supported()) {
-            const uint8_t advertising_handles[] = { 0 };
+            uint8_t advertising_stop_handle;
+            if (advertising_stop_set != NULL){
+                advertising_stop_handle = advertising_stop_set->advertising_handle;
+                advertising_stop_set->state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
+            } else {
+                advertising_stop_handle = 0;
+                hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
+            }
+            const uint8_t advertising_handles[] = { advertising_stop_handle };
             const uint16_t durations[] = { 0 };
             const uint16_t max_events[] = { 0 };
             hci_send_cmd(&hci_le_set_extended_advertising_enable, 0, 1, advertising_handles, durations, max_events);
         } else
 #endif
         {
+            hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
             hci_send_cmd(&hci_le_set_advertise_enable, 0);
         }
         return true;
@@ -4743,6 +4811,23 @@ static bool hci_run_general_gap_le(void){
         }
         return true;
     }
+
+#ifdef ENABLE_LE_PERIPHERAL
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    if (hci_extended_advertising_supported()) {
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            le_advertising_set_t * advertising_set = (le_advertising_set_t*) btstack_linked_list_iterator_next(&it);
+            if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_ADDRESS) != 0){
+                advertising_set->tasks &= ~LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
+                hci_send_cmd(&hci_le_set_advertising_set_random_address, advertising_set->advertising_handle, advertising_set->random_address);
+                return true;
+            }
+        }
+    }
+#endif
+#endif
 
 #ifdef ENABLE_LE_CENTRAL
     if (hci_stack->le_scanning_param_update){
@@ -4810,6 +4895,7 @@ static bool hci_run_general_gap_le(void){
         }
         return true;
     }
+
     if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_ADV_DATA){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
         uint8_t adv_data_clean[31];
@@ -4827,6 +4913,7 @@ static bool hci_run_general_gap_le(void){
         }
         return true;
     }
+
     if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
         uint8_t scan_data_clean[31];
@@ -4844,6 +4931,72 @@ static bool hci_run_general_gap_le(void){
         }
         return true;
     }
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    if (hci_extended_advertising_supported()) {
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            le_advertising_set_t * advertising_set = (le_advertising_set_t*) btstack_linked_list_iterator_next(&it);
+            if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_REMOVE_SET) != 0) {
+                advertising_set->tasks &= ~LE_ADVERTISEMENT_TASKS_REMOVE_SET;
+                hci_send_cmd(&hci_le_remove_advertising_set, advertising_set->advertising_handle);
+                return true;
+            }
+            if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_PARAMS) != 0){
+                advertising_set->tasks &= ~LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+                hci_send_cmd(&hci_le_set_extended_advertising_parameters,
+                             advertising_set->advertising_handle,
+                             advertising_set->params.advertising_event_properties,
+                             advertising_set->params.primary_advertising_interval_min,
+                             advertising_set->params.primary_advertising_interval_max,
+                             advertising_set->params.primary_advertising_channel_map,
+                             advertising_set->params.own_address_type,
+                             advertising_set->params.peer_address_type,
+                             advertising_set->params.peer_address,
+                             advertising_set->params.advertising_filter_policy,
+                             advertising_set->params.advertising_tx_power,
+                             advertising_set->params.primary_advertising_phy,
+                             advertising_set->params.secondary_advertising_max_skip,
+                             advertising_set->params.secondary_advertising_phy,
+                             advertising_set->params.advertising_sid,
+                             advertising_set->params.scan_request_notification_enable
+                );
+                return true;
+            }
+            if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_ADV_DATA) != 0) {
+                uint16_t pos = advertising_set->adv_data_pos;
+                uint8_t  operation = hci_le_extended_advertising_operation_for_chunk(pos, advertising_set->adv_data_len);
+                uint16_t data_to_upload = btstack_min(advertising_set->adv_data_len - pos, LE_EXTENDED_ADVERTISING_MAX_CHUNK_LEN);
+                if ((operation & 0x02) != 0){
+                    // last fragment or complete data
+                    operation |= 2;
+                    advertising_set->adv_data_pos = 0;
+                    advertising_set->tasks &= ~LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
+                } else {
+                    advertising_set->adv_data_pos += data_to_upload;
+                }
+                hci_send_cmd(&hci_le_set_extended_advertising_data, operation, 0x03, 0x01, data_to_upload, &advertising_set->adv_data[pos]);
+                return true;
+            }
+            if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA) != 0) {
+                uint16_t pos = advertising_set->scan_data_pos;
+                uint8_t  operation = hci_le_extended_advertising_operation_for_chunk(pos, advertising_set->scan_data_len);
+                uint16_t data_to_upload = btstack_min(advertising_set->scan_data_len - pos, LE_EXTENDED_ADVERTISING_MAX_CHUNK_LEN);
+                if ((operation & 0x02) != 0){
+                    advertising_set->scan_data_pos = 0;
+                    advertising_set->tasks &= ~LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
+                } else {
+                    advertising_set->scan_data_pos += data_to_upload;
+                }
+                hci_send_cmd(&hci_le_set_extended_scan_response_data, operation, 0x03, 0x01, data_to_upload, &advertising_set->scan_data[pos]);
+                return true;
+            }
+        }
+    }
+#endif
+
+
 #endif
 
 
@@ -5030,6 +5183,23 @@ static bool hci_run_general_gap_le(void){
         }
         return true;
     }
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    if (hci_extended_advertising_supported()) {
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
+        while (btstack_linked_list_iterator_has_next(&it)) {
+            le_advertising_set_t *advertising_set = (le_advertising_set_t *) btstack_linked_list_iterator_next(&it);
+            if (((advertising_set->state & LE_ADVERTISEMENT_STATE_ENABLED) != 0) && ((advertising_set->state & LE_ADVERTISEMENT_STATE_ACTIVE) == 0)){
+                const uint8_t advertising_handles[] = { advertising_set->advertising_handle };
+                const uint16_t durations[] = { advertising_set->enable_timeout };
+                const uint16_t max_events[] = { advertising_set->enable_max_scan_events };
+                hci_send_cmd(&hci_le_set_extended_advertising_enable, 1, 1, advertising_handles, durations, max_events);
+                return true;
+            }
+        }
+    }
+#endif
 #endif
 
     return false;
