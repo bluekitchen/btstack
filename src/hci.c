@@ -2583,7 +2583,7 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 	} else {
 #ifdef ENABLE_LE_PERIPHERAL
 		// if we're slave, it was an incoming connection, advertisements have stopped
-		hci_stack->le_advertisements_active = false;
+        hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
 #endif
 	}
 
@@ -3686,7 +3686,7 @@ static void hci_state_reset(void){
     hci_stack->le_whitelist_capacity = 0;
 #endif
 #ifdef ENABLE_LE_PERIPHERAL
-    hci_stack->le_advertisements_active = false;
+    hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
     if ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_PARAMS_SET) != 0){
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
     }
@@ -4663,7 +4663,7 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_PERIPHERAL
     // le advertisement control
-    if (hci_stack->le_advertisements_active){
+    if ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_ACTIVE) != 0){
         // stop if:
         // - parameter change required
         // - random address used in advertising and changes
@@ -4713,7 +4713,7 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_PERIPHERAL
     if (advertising_stop){
-        hci_stack->le_advertisements_active = false;
+        hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
         if (hci_extended_advertising_supported()) {
             const uint8_t advertising_handles[] = { 0 };
@@ -5012,9 +5012,9 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_PERIPHERAL
     // re-start advertising
-    if (hci_stack->le_advertisements_enabled_for_current_roles && !hci_stack->le_advertisements_active){
+    if (hci_stack->le_advertisements_enabled_for_current_roles && ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_ACTIVE) == 0)){
         // check if advertisements should be enabled given
-        hci_stack->le_advertisements_active = true;
+        hci_stack->le_advertisements_state |= LE_ADVERTISEMENT_STATE_ACTIVE;
         hci_get_own_address_for_addr_type(hci_stack->le_advertisements_own_addr_type, hci_stack->le_advertisements_own_address);
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
