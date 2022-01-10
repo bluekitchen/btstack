@@ -1056,6 +1056,7 @@ typedef struct {
     uint8_t le_max_number_peripheral_connections;
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    btstack_linked_list_t le_advertising_sets;
     uint16_t le_maximum_advertising_data_length;
 #endif
 #endif
