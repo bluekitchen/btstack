@@ -1039,11 +1039,6 @@ typedef struct {
     uint8_t  * le_scan_response_data;
     uint8_t    le_scan_response_data_len;
 
-    bool     le_advertisements_enabled;
-    bool     le_advertisements_enabled_for_current_roles;
-    uint8_t  le_advertisements_todo;
-    uint8_t  le_advertisements_state;
-
     uint16_t le_advertisements_interval_min;
     uint16_t le_advertisements_interval_max;
     uint8_t  le_advertisements_type;
@@ -1054,7 +1049,12 @@ typedef struct {
     uint8_t   le_advertisements_own_addr_type;
     bd_addr_t le_advertisements_own_address;
 
+    uint8_t  le_advertisements_todo;
+    uint8_t  le_advertisements_state;
+
+    bool     le_advertisements_enabled_for_current_roles;
     uint8_t le_max_number_peripheral_connections;
+
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     uint16_t le_maximum_advertising_data_length;
 #endif

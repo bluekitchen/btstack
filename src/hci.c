@@ -1356,7 +1356,7 @@ void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t size) {
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_PERIPHERAL
 static void hci_update_advertisements_enabled_for_current_roles(void){
-    if (hci_stack->le_advertisements_enabled){
+    if ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_ENABLED) != 0){
         // get number of active le slave connections
         int num_slave_connections = 0;
         btstack_linked_list_iterator_t it;
@@ -6388,7 +6388,11 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
  * @param enabled
  */
 void gap_advertisements_enable(int enabled){
-    hci_stack->le_advertisements_enabled = enabled != 0;
+    if (enabled == 0){
+        hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ENABLED;
+    } else {
+        hci_stack->le_advertisements_state |= LE_ADVERTISEMENT_STATE_ENABLED;
+    }
     hci_update_advertisements_enabled_for_current_roles();
     hci_run();
 }
