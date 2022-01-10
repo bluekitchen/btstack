@@ -1038,7 +1038,8 @@ typedef struct {
     bool     le_advertisements_enabled;
     bool     le_advertisements_enabled_for_current_roles;
     uint8_t  le_advertisements_todo;
-
+    uint8_t  le_advertisements_state;
+    
     uint16_t le_advertisements_interval_min;
     uint16_t le_advertisements_interval_max;
     uint8_t  le_advertisements_type;
