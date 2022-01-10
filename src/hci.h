@@ -798,8 +798,11 @@ enum {
     LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA = 1 << 1,
     LE_ADVERTISEMENT_TASKS_SET_PARAMS    = 1 << 2,
     LE_ADVERTISEMENT_TASKS_SET_ADDRESS   = 1 << 3,
+};
+
+enum {
     // State
-    LE_ADVERTISEMENT_TASKS_PARAMS_SET    = 1 << 7,
+    LE_ADVERTISEMENT_STATE_PARAMS_SET    = 1 << 0,
 };
 
 enum {
@@ -1039,7 +1042,7 @@ typedef struct {
     bool     le_advertisements_enabled_for_current_roles;
     uint8_t  le_advertisements_todo;
     uint8_t  le_advertisements_state;
-    
+
     uint16_t le_advertisements_interval_min;
     uint16_t le_advertisements_interval_max;
     uint8_t  le_advertisements_type;

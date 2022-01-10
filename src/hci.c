@@ -3687,7 +3687,7 @@ static void hci_state_reset(void){
 #endif
 #ifdef ENABLE_LE_PERIPHERAL
     hci_stack->le_advertisements_active = false;
-    if ((hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_PARAMS_SET) != 0){
+    if ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_PARAMS_SET) != 0){
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
     }
     if (hci_stack->le_advertisements_data != NULL){
@@ -6378,7 +6378,8 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
     (void)memcpy(hci_stack->le_advertisements_direct_address, direct_address,
                  6);
 
-    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS | LE_ADVERTISEMENT_TASKS_PARAMS_SET;
+    hci_stack->le_advertisements_todo  |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+    hci_stack->le_advertisements_state |= LE_ADVERTISEMENT_STATE_PARAMS_SET;
     hci_run();
  }
 
