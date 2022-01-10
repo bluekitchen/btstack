@@ -798,6 +798,7 @@ enum {
     LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA = 1 << 1,
     LE_ADVERTISEMENT_TASKS_SET_PARAMS    = 1 << 2,
     LE_ADVERTISEMENT_TASKS_SET_ADDRESS   = 1 << 3,
+    LE_ADVERTISEMENT_TASKS_REMOVE_SET    = 1 << 4,  // advertising sets only
 };
 
 enum {

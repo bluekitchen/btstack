@@ -6251,9 +6251,7 @@ uint8_t gap_connect_cancel(void){
     }
     return 0;
 }
-#endif
 
-#ifdef ENABLE_LE_CENTRAL
 /**
  * @brief Set connection parameters for outgoing connections
  * @param conn_scan_interval (unit: 0.625 msec), default: 60 ms
@@ -6396,6 +6394,118 @@ void gap_advertisements_enable(int enabled){
     hci_update_advertisements_enabled_for_current_roles();
     hci_run();
 }
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+static le_advertising_set_t * hci_advertising_set_for_handle(uint8_t advertising_handle){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        le_advertising_set_t * item = (le_advertising_set_t *) btstack_linked_list_iterator_next(&it);
+        if ( item->advertising_handle == advertising_handle ) {
+            return item;
+        }
+    }
+    return NULL;
+}
+
+uint8_t gap_extended_advertising_setup(le_advertising_set_t * storage, const le_extended_advertising_parameters_t * advertising_parameters, uint8_t * out_advertising_handle){
+    // find free advertisement handle
+    uint8_t advertisement_handle;
+    for (advertisement_handle = 1; advertisement_handle <= LE_EXTENDED_ADVERTISING_MAX_HANDLE; advertisement_handle++){
+        if (hci_advertising_set_for_handle(advertisement_handle) == NULL) break;
+    }
+    if (advertisement_handle > LE_EXTENDED_ADVERTISING_MAX_HANDLE) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    // clear
+    memset(storage, 0, sizeof(le_advertising_set_t));
+    // copy params
+    memcpy(&storage->params, advertising_parameters, sizeof(le_extended_advertising_parameters_t));
+    // add to list
+    bool add_ok = btstack_linked_list_add(&hci_stack->le_advertising_sets, (btstack_linked_item_t *) storage);
+    if (!add_ok) return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
+    // set tasks and start
+    storage->tasks = LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_extended_advertising_set_params(uint8_t advertising_handle, const le_extended_advertising_parameters_t * advertising_parameters){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    memcpy(&advertising_set->params, advertising_parameters, sizeof(le_extended_advertising_parameters_t));
+    // set tasks and start
+    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_extended_advertising_get_params(uint8_t advertising_handle, le_extended_advertising_parameters_t * advertising_parameters){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    memcpy(advertising_parameters, &advertising_set->params, sizeof(le_extended_advertising_parameters_t));
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_extended_advertising_set_random_address(uint8_t advertising_handle, bd_addr_t random_address){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    memcpy(advertising_set->random_address, random_address, 6);
+    // set tasks and start
+    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_extended_advertising_set_adv_data(uint8_t advertising_handle, uint16_t advertising_data_length, uint8_t * advertising_data){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    advertising_set->adv_data = advertising_data;
+    advertising_set->adv_data_len = advertising_data_length;
+    // set tasks and start
+    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_handle, uint16_t scan_response_data_length, uint8_t * scan_response_data){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    advertising_set->scan_data = scan_response_data;
+    advertising_set->scan_data_len = scan_response_data_length;
+    // set tasks and start
+    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_extended_advertising_start(uint8_t advertising_handle, uint16_t timeout, uint8_t num_extended_advertising_events){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    advertising_set->enable_timeout = timeout;
+    advertising_set->enable_max_scan_events = num_extended_advertising_events;
+    // set tasks and start
+    advertising_set->state |= LE_ADVERTISEMENT_STATE_ENABLED;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_extended_advertising_stop(uint8_t advertising_handle){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    // set tasks and start
+    advertising_set->state &= ~LE_ADVERTISEMENT_STATE_ENABLED;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_extended_advertising_remove(uint8_t advertising_handle){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    // set tasks and start
+    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_REMOVE_SET;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+#endif
 
 #endif
 
