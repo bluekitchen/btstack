@@ -4519,11 +4519,13 @@ static bool hci_run_general_gap_le(void){
         // - it's disabled
         // - whitelist change required but used for scanning
         // - resolving list modified
+        // - own address changes
         bool scanning_uses_whitelist = (hci_stack->le_scan_filter_policy & 1) == 1;
         if ((hci_stack->le_scanning_param_update) ||
             !hci_stack->le_scanning_enabled ||
             scanning_uses_whitelist ||
-            resolving_list_modification_pending){
+            resolving_list_modification_pending ||
+            random_address_change){
 
             scanning_stop = true;
         }
@@ -4540,10 +4542,12 @@ static bool hci_run_general_gap_le(void){
             // - connecting uses white and whitelist modification pending
             // - if it got disabled
             // - resolving list modified
+            // - own address changes
             connecting_with_whitelist = hci_stack->le_connecting_state == LE_CONNECTING_WHITELIST;
             if ((connecting_with_whitelist && whitelist_modification_pending) ||
                 (hci_stack->le_connecting_request == LE_CONNECTING_IDLE) ||
-                resolving_list_modification_pending) {
+                resolving_list_modification_pending ||
+                random_address_change) {
 
                 connecting_stop = true;
             }
@@ -4562,6 +4566,7 @@ static bool hci_run_general_gap_le(void){
         // - it's disabled
         // - whitelist change required but used for advertisement filter policy
         // - resolving list modified
+        // - own address changes
         bool advertising_uses_whitelist = hci_stack->le_advertisements_filter_policy != 0;
         bool advertising_uses_random_address = hci_stack->le_own_addr_type != BD_ADDR_TYPE_LE_PUBLIC;
         bool advertising_change    = (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_PARAMS)  != 0;
@@ -4569,7 +4574,8 @@ static bool hci_run_general_gap_le(void){
             (advertising_uses_random_address && random_address_change) ||
             (hci_stack->le_advertisements_enabled_for_current_roles == 0) ||
             (advertising_uses_whitelist && whitelist_modification_pending) ||
-            resolving_list_modification_pending) {
+            resolving_list_modification_pending ||
+            random_address_change) {
 
             advertising_stop = true;
         }

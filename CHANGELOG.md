@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+
 ### Fixed
+- GAP: disable scanning, advertising, connection before updating random address
+
 ### Changed
 
 
