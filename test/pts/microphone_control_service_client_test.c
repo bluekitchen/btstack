@@ -64,8 +64,6 @@ static enum {
     APP_STATE_CONNECTED
 } app_state;
 
-static int blacklist_index = 0;
-static bd_addr_t blacklist[20];
 static advertising_report_t report;
 
 static hci_con_handle_t connection_handle;
@@ -74,9 +72,14 @@ static uint16_t mips_cid;
 static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
+static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x08, 0xE2, 0x5C};
+static int       public_pts_address_type = 0;
+static bd_addr_t current_pts_address;
+static int       current_pts_address_type;
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-
+static void show_usage(void);
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -98,24 +101,6 @@ static void microphone_control_service_client_setup(void){
     hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 } 
-
-static int blacklist_size(void){
-    return sizeof(blacklist) / sizeof(bd_addr_t);
-}
-
-static int blacklist_contains(bd_addr_t addr){
-    int i;
-    for (i=0; i<blacklist_size(); i++){
-        if (bd_addr_cmp(addr, blacklist[i]) == 0) return 1;
-    }
-    return 0;
-}
-
-static void add_to_blacklist(bd_addr_t addr){
-    printf("%s added to blacklist (no battery service found).\n", bd_addr_to_str(addr));
-    bd_addr_copy(blacklist[blacklist_index], addr);
-    blacklist_index = (blacklist_index + 1) % blacklist_size();
-}
 
 static void dump_advertising_report(uint8_t *packet){
     bd_addr_t address;
@@ -146,25 +131,12 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            if (cmdline_addr_found){
-                printf("Connect to %s\n", bd_addr_to_str(cmdline_addr));
-                app_state = APP_STATE_W4_CONNECT;
-                gap_connect(cmdline_addr, 0);
-                break;
-            }
-            printf("Start scanning!\n");
-            app_state = APP_STATE_W4_SCAN_RESULT;
-            gap_set_scan_parameters(0,0x0030, 0x0030);
-            gap_start_scan();
             break;
 
         case GAP_EVENT_ADVERTISING_REPORT:
             if (app_state != APP_STATE_W4_SCAN_RESULT) return;
 
             gap_event_advertising_report_get_address(packet, address);
-            if (blacklist_contains(address)) {
-                break;
-            }
             dump_advertising_report(packet);
 
             // stop scanning, and connect to the device
@@ -177,8 +149,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         case HCI_EVENT_LE_META:
             // Wait for connection complete
             if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-            
-            if (app_state != APP_STATE_W4_CONNECT) return;
             
             // Get connection handle from event
             connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
@@ -230,7 +200,6 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                     break;
                 default:
                     printf("Microphone Control service client connection failed, err 0x%02x.\n", status);
-                    add_to_blacklist(report.address);
                     gap_disconnect(connection_handle);
                     break;
             }
@@ -244,34 +213,46 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                 printf("Mute status: %d\n", gattservice_subevent_remote_mics_mute_get_state(packet));
             }
             break;
-
+        
         default:
             break;
     }
 }
 
+static void show_usage(void){
+    uint8_t iut_address_type;
+    bd_addr_t      iut_address;
+    gap_le_get_own_address(&iut_address_type, iut_address);
+
+    printf("--- MICS Client ---\n");
+    printf("c - Connect to %s\n", bd_addr_to_str(current_pts_address));
+}
+
+static void stdin_process(char c){
+    switch (c){
+        case 'c':
+            printf("Connect to %s\n", bd_addr_to_str(current_pts_address));
+            app_state = APP_STATE_W4_CONNECT;
+            gap_connect(current_pts_address, current_pts_address_type);
+            break;
+        
+        default:
+            show_usage();
+            break;
+    }
+
+}
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-
-    // parse address if command line arguments are provided
-    int arg = 1;
-    cmdline_addr_found = 0;
-    
-    while (arg < argc) {
-        if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
-            arg++;
-            cmdline_addr_found = sscanf_bd_addr(argv[arg], cmdline_addr);
-            arg++;
-            if (!cmdline_addr_found) exit(1);
-            continue;
-        }
-        fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", argv[0]);
-        fprintf(stderr, "If no argument is provided, GATT browser will start scanning and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
-        return 0;
-    }
+    UNUSED(argc);
     (void)argv;
 
+    btstack_stdin_setup(stdin_process);
+
     microphone_control_service_client_setup();
+    memcpy(current_pts_address, public_pts_address, 6);
+    current_pts_address_type = public_pts_address_type;
 
     app_state = APP_STATE_IDLE;
 
