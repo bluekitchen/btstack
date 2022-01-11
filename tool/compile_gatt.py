@@ -482,6 +482,8 @@ def parseIncludeService(fout, parts):
     size = 2 + 2 + 2 + 2 + 4 + uuid_size
 
     keyUUID = c_string_for_uuid(parts[1])
+    keys_to_delete = []
+
     for (serviceUUID, service) in services.items():
         if serviceUUID.startswith(keyUUID):
             write_indent(fout)
@@ -505,8 +507,14 @@ def parseIncludeService(fout, parts):
             if uuid_size > 0:
                 database_hash_append_value(uuid)
 
+            keys_to_delete.append(serviceUUID)
+            
             handle = handle + 1
             total_size = total_size + size
+
+    for key in keys_to_delete:
+        services.pop(key)
+
 
 def parseCharacteristic(fout, parts):
     global handle
