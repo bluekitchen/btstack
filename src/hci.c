@@ -213,6 +213,9 @@ static void hci_whitelist_free(void);
 static hci_connection_t * gap_get_outgoing_connection(void);
 static bool hci_run_general_gap_le(void);
 #endif
+#ifdef ENABLE_LE_PERIPHERAL
+static le_advertising_set_t * hci_advertising_set_for_handle(uint8_t advertising_handle);
+#endif
 #endif
 
 // the STACK is here
@@ -2416,6 +2419,33 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
         case HCI_OPCODE_HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH:
             hci_stack->le_maximum_advertising_data_length = little_endian_read_16(packet, 6);
+            break;
+        case HCI_OPCODE_HCI_LE_SET_EXTENDED_ADVERTISING_PARAMETERS:
+            if (hci_stack->le_advertising_set_in_current_command != 0) {
+                le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(hci_stack->le_advertising_set_in_current_command);
+                hci_stack->le_advertising_set_in_current_command = 0;
+                if (advertising_set == NULL) break;
+                uint8_t adv_status = packet[6];
+                uint8_t tx_power   = packet[7];
+                uint8_t event[] = { HCI_EVENT_META_GAP, 4, GAP_SUBEVENT_ADVERTISING_SET_INSTALLED, hci_stack->le_advertising_set_in_current_command, adv_status, tx_power };
+                if (adv_status == 0){
+                    advertising_set->state |= LE_ADVERTISEMENT_STATE_PARAMS_SET;
+                }
+                hci_emit_event(event, sizeof(event), 1);
+            }
+            break;
+        case HCI_OPCODE_HCI_LE_REMOVE_ADVERTISING_SET:
+            if (hci_stack->le_advertising_set_in_current_command != 0) {
+                le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(hci_stack->le_advertising_set_in_current_command);
+                hci_stack->le_advertising_set_in_current_command = 0;
+                if (advertising_set == NULL) break;
+                uint8_t adv_status = packet[5];
+                uint8_t event[] = { HCI_EVENT_META_GAP, 3, GAP_SUBEVENT_ADVERTISING_SET_REMOVED, hci_stack->le_advertising_set_in_current_command, adv_status };
+                if (adv_status == 0){
+                    btstack_linked_list_remove(&hci_stack->le_advertising_sets, (btstack_linked_item_t *) advertising_set);
+                }
+                hci_emit_event(event, sizeof(event), 1);
+            }
             break;
 #endif
 #endif
