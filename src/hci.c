@@ -4842,23 +4842,6 @@ static bool hci_run_general_gap_le(void){
         return true;
     }
 
-#ifdef ENABLE_LE_PERIPHERAL
-#ifdef ENABLE_LE_EXTENDED_ADVERTISING
-    if (hci_extended_advertising_supported()) {
-        btstack_linked_list_iterator_t it;
-        btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
-        while (btstack_linked_list_iterator_has_next(&it)){
-            le_advertising_set_t * advertising_set = (le_advertising_set_t*) btstack_linked_list_iterator_next(&it);
-            if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_ADDRESS) != 0){
-                advertising_set->tasks &= ~LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
-                hci_send_cmd(&hci_le_set_advertising_set_random_address, advertising_set->advertising_handle, advertising_set->random_address);
-                return true;
-            }
-        }
-    }
-#endif
-#endif
-
 #ifdef ENABLE_LE_CENTRAL
     if (hci_stack->le_scanning_param_update){
         hci_stack->le_scanning_param_update = false;
@@ -4975,6 +4958,11 @@ static bool hci_run_general_gap_le(void){
                 advertising_set->tasks &= ~LE_ADVERTISEMENT_TASKS_REMOVE_SET;
                 hci_stack->le_advertising_set_in_current_command = advertising_set->advertising_handle;
                 hci_send_cmd(&hci_le_remove_advertising_set, advertising_set->advertising_handle);
+                return true;
+            }
+            if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_ADDRESS) != 0){
+                advertising_set->tasks &= ~LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
+                hci_send_cmd(&hci_le_set_advertising_set_random_address, advertising_set->advertising_handle, advertising_set->random_address);
                 return true;
             }
             if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_PARAMS) != 0){
