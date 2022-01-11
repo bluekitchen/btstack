@@ -101,6 +101,14 @@ static inline uint8_t hci_event_avrcp_meta_get_subevent_code(const uint8_t * eve
     return event[2];
 }
 /***
+ * @brief Get subevent code for gap event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_gap_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
  * @brief Get subevent code for gattservice event
  * @param event packet
  * @return subevent_code
@@ -5131,6 +5139,44 @@ static inline uint16_t hci_subevent_le_subrate_change_get_continuation_number(co
  */
 static inline uint16_t hci_subevent_le_subrate_change_get_supervision_timeout(const uint8_t * event){
     return little_endian_read_16(event, 12);
+}
+
+/**
+ * @brief Get field advertisement_handle from event GAP_SUBEVENT_ADVERTISING_SET_INSTALLED
+ * @param event packet
+ * @return advertisement_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_advertising_set_installed_get_advertisement_handle(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field status from event GAP_SUBEVENT_ADVERTISING_SET_INSTALLED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_advertising_set_installed_get_status(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field selected_tx_power from event GAP_SUBEVENT_ADVERTISING_SET_INSTALLED
+ * @param event packet
+ * @return selected_tx_power
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_advertising_set_installed_get_selected_tx_power(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field advertisement_handle from event GAP_SUBEVENT_ADVERTISING_SET_REMOVED
+ * @param event packet
+ * @return advertisement_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_advertising_set_removed_get_advertisement_handle(const uint8_t * event){
+    return event[3];
 }
 
 /**

@@ -1719,8 +1719,8 @@ typedef uint8_t sm_key_t[16];
  */
 #define GAP_EVENT_PAIRING_COMPLETE                               0xE1u
 
-
 // Meta Events, see below for sub events
+#define HCI_EVENT_META_GAP                                       0xE7u
 #define HCI_EVENT_HSP_META                                       0xE8u
 #define HCI_EVENT_HFP_META                                       0xE9u
 #define HCI_EVENT_ANCS_META                                      0xEAu
@@ -1743,6 +1743,25 @@ typedef uint8_t sm_key_t[16];
 // #define HCI_EVENT_PAN_META                                 0xxx
 // #define HCI_EVENT_SDP_META                                 0xxx
 // #define HCI_EVENT_SM_META                                  0xxx
+
+/** GAP Subevent */
+
+
+/**
+ * @format 1111
+ * @param subevent_code
+ * @param advertisement_handle
+ * @param status
+ * @param selected_tx_power
+ */
+#define GAP_SUBEVENT_ADVERTISING_SET_INSTALLED                   0x00u
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param advertisement_handle
+ */
+#define GAP_SUBEVENT_ADVERTISING_SET_REMOVED                     0x01u
 
 
 /** HSP Subevent */

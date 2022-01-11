@@ -12,6 +12,7 @@ meta_events = [
     'ANCS',
     'AVDTP',
     'AVRCP',
+    'GAP',
     'GATTSERVICE',
     'GOEP',
     'HFP',
