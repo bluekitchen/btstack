@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- GAP: support extended advertising with ENABLE_LE_EXTENDED_ADVERTISING
 
 ### Fixed
 - GAP: disable scanning, advertising, connection before updating random address
