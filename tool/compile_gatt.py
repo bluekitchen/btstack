@@ -362,15 +362,15 @@ def serviceDefinitionComplete(fout):
         if current_service_uuid_string in service_counter:
             count = service_counter[current_service_uuid_string] + 1
         service_counter[current_service_uuid_string] = count
-        # add old defines without service counter for first instance
+        # add old defines without service counter for first instance for backward compatibility
         if count == 1:
             defines_for_services.append('#define ATT_SERVICE_%s_START_HANDLE 0x%04x' % (current_service_uuid_string, current_service_start_handle))
             defines_for_services.append('#define ATT_SERVICE_%s_END_HANDLE 0x%04x' % (current_service_uuid_string, handle-1))
-            services[current_service_uuid_string] = [current_service_start_handle, handle-1]
+
         # unified defines indicating instance
         defines_for_services.append('#define ATT_SERVICE_%s_%02x_START_HANDLE 0x%04x' % (current_service_uuid_string, count, current_service_start_handle))
         defines_for_services.append('#define ATT_SERVICE_%s_%02x_END_HANDLE 0x%04x' % (current_service_uuid_string, count, handle-1))
-
+        services[current_service_uuid_string+"_" + str(count)] = [current_service_start_handle, handle - 1, count]
 
 def dump_flags(fout, flags):
     global security_permsission
@@ -458,41 +458,40 @@ def parseIncludeService(fout, parts):
     global total_size
     
     read_only_anybody_flags = property_flags['READ'];
-    
-    write_indent(fout)
-    fout.write('// 0x%04x %s\n' % (handle, '-'.join(parts)))
 
     uuid = parseUUID(parts[1])
     uuid_size = len(uuid)
     if uuid_size > 2:
         uuid_size = 0
-    # print("Include Service ", c_string_for_uuid(uuid))
 
     size = 2 + 2 + 2 + 2 + 4 + uuid_size
 
     keyUUID = c_string_for_uuid(parts[1])
+    for (serviceUUID, service) in services.items():
+        if serviceUUID.startswith(keyUUID):
+            write_indent(fout)
+            fout.write('// 0x%04x %s - range [0x%04x, 0x%04x]\n' % (handle, '-'.join(parts), services[serviceUUID][0], services[serviceUUID][1]))
 
-    write_indent(fout)
-    write_16(fout, size)
-    write_16(fout, read_only_anybody_flags)
-    write_16(fout, handle)
-    write_16(fout, 0x2802)
-    write_16(fout, services[keyUUID][0])
-    write_16(fout, services[keyUUID][1])
-    if uuid_size > 0:
-        write_uuid(fout, uuid)
-    fout.write("\n")
+            write_indent(fout)
+            write_16(fout, size)
+            write_16(fout, read_only_anybody_flags)
+            write_16(fout, handle)
+            write_16(fout, 0x2802)
+            write_16(fout, services[serviceUUID][0])
+            write_16(fout, services[serviceUUID][1])
+            if uuid_size > 0:
+                write_uuid(fout, uuid)
+            fout.write("\n")
 
-    database_hash_append_uint16(handle)
-    database_hash_append_uint16(0x2802)
-    database_hash_append_uint16(services[keyUUID][0])
-    database_hash_append_uint16(services[keyUUID][1])
-    if uuid_size > 0:
-        database_hash_append_value(uuid)
+            database_hash_append_uint16(handle)
+            database_hash_append_uint16(0x2802)
+            database_hash_append_uint16(services[serviceUUID][0])
+            database_hash_append_uint16(services[serviceUUID][1])
+            if uuid_size > 0:
+                database_hash_append_value(uuid)
 
-    handle = handle + 1
-    total_size = total_size + size
-    
+            handle = handle + 1
+            total_size = total_size + size
 
 def parseCharacteristic(fout, parts):
     global handle
