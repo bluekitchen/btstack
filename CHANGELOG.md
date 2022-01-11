@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - GAP: support extended advertising with ENABLE_LE_EXTENDED_ADVERTISING
+- ATT DB: provide gatt_server_get_handle_range_for_service_with_uuid16 to find included service within handle range
 
 ### Fixed
 - GAP: disable scanning, advertising, connection before updating random address
