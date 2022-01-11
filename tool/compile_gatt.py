@@ -212,7 +212,22 @@ def parseProperties(properties):
         else:
             print("WARNING: property %s undefined" % (property))
 
-    return value;
+    return value
+
+def prettyPrintProperties(properties):
+    value = ""
+    parts = properties.split("|")
+    for property in parts:
+        property = property.strip()
+        if property in property_flags:
+            if value != "":
+                value += " | "
+            value += property
+        else:
+            print("WARNING: property %s undefined" % (property))
+
+    return value
+
 
 def gatt_characteristic_properties(properties):
     return properties & 0xff
@@ -356,7 +371,7 @@ def add_client_characteristic_configuration(properties):
 def serviceDefinitionComplete(fout):
     global services
     if current_service_uuid_string:
-        fout.write("\n")
+        # fout.write("\n")
         # update num instances for this service
         count = 1
         if current_service_uuid_string in service_counter:
@@ -522,7 +537,7 @@ def parseCharacteristic(fout, parts):
         properties = properties | property_flags['EXTENDED_PROPERTIES']
 
     write_indent(fout)
-    fout.write('// 0x%04x %s\n' % (handle, '-'.join(parts[0:3])))
+    fout.write('// 0x%04x %s - %s\n' % (handle, '-'.join(parts[0:2]), prettyPrintProperties(parts[2])))
     
 
     characteristic_properties = gatt_characteristic_properties(properties)
@@ -564,7 +579,12 @@ def parseCharacteristic(fout, parts):
         value_flags = value_flags | property_flags['LONG_UUID'];
 
     write_indent(fout)
-    fout.write('// 0x%04x VALUE-%s-'"'%s'"'\n' % (handle, '-'.join(parts[1:3]),value))
+    properties_string = prettyPrintProperties(parts[2])
+    if "DYNAMIC" in properties_string:
+        fout.write('// 0x%04x VALUE %s - %s\n' % (handle, '-'.join(parts[0:2]), prettyPrintProperties(parts[2])))
+    else:
+        fout.write('// 0x%04x VALUE %s - %s -'"'%s'"'\n' % (
+        handle, '-'.join(parts[0:2]), prettyPrintProperties(parts[2]), value))
 
     dump_flags(fout, value_flags)
 
@@ -855,7 +875,7 @@ def parseLines(fname_in, fin, fout):
             print("Importing %s" % imported_file)
             try:
                 imported_fin = codecs.open (imported_file, encoding='utf-8')
-                fout.write('    // ' + line + ' -- BEGIN\n')
+                fout.write('\n\n    // ' + line + ' -- BEGIN\n')
                 parseLines(imported_file, imported_fin, fout)
                 fout.write('    // ' + line + ' -- END\n')
             except IOError as e:
