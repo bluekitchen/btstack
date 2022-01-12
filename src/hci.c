@@ -214,9 +214,11 @@ static hci_connection_t * gap_get_outgoing_connection(void);
 static bool hci_run_general_gap_le(void);
 #endif
 #ifdef ENABLE_LE_PERIPHERAL
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
 static le_advertising_set_t * hci_advertising_set_for_handle(uint8_t advertising_handle);
-#endif
-#endif
+#endif /* ENABLE_LE_EXTENDED_ADVERTISING */
+#endif /* ENABLE_LE_PERIPHERAL */
+#endif /* ENABLE_BLE */
 
 // the STACK is here
 #ifndef HAVE_MALLOC
