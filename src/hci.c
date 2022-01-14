@@ -5218,6 +5218,7 @@ static bool hci_run_general_gap_le(void){
         while (btstack_linked_list_iterator_has_next(&it)) {
             le_advertising_set_t *advertising_set = (le_advertising_set_t *) btstack_linked_list_iterator_next(&it);
             if (((advertising_set->state & LE_ADVERTISEMENT_STATE_ENABLED) != 0) && ((advertising_set->state & LE_ADVERTISEMENT_STATE_ACTIVE) == 0)){
+                advertising_set->state |= LE_ADVERTISEMENT_STATE_ACTIVE;
                 const uint8_t advertising_handles[] = { advertising_set->advertising_handle };
                 const uint16_t durations[] = { advertising_set->enable_timeout };
                 const uint16_t max_events[] = { advertising_set->enable_max_scan_events };
