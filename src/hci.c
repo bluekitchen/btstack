@@ -4635,6 +4635,7 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     le_advertising_set_t * advertising_stop_set = NULL;
+    bool periodic_stop = false;
 #endif
 
 #ifndef ENABLE_LE_CENTRAL
@@ -4745,32 +4746,48 @@ static bool hci_run_general_gap_le(void){
         btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
         while (btstack_linked_list_iterator_has_next(&it)){
             le_advertising_set_t * advertising_set = (le_advertising_set_t*) btstack_linked_list_iterator_next(&it);
-            if ((advertising_set->state & LE_ADVERTISEMENT_STATE_ACTIVE) == 0) continue;
-            // stop if:
-            // - parameter change required
-            // - random address used in connectable advertising and changes
-            // - it's disabled
-            // - whitelist change required but used for advertisement filter policy
-            // - resolving list modified
-            // - own address changes
-            // - advertisement set will be removed
-            bool advertising_uses_whitelist = advertising_set->extended_params.advertising_filter_policy != 0;
-            bool advertising_connectable = (advertising_set->extended_params.advertising_event_properties & 1) != 0;
-            bool advertising_uses_random_address = (advertising_set->extended_params.own_address_type != BD_ADDR_TYPE_LE_PUBLIC) && advertising_connectable;
-            bool advertising_parameter_change = (advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_PARAMS) != 0;
-            bool advertising_enabled = (advertising_set->state & LE_ADVERTISEMENT_STATE_ENABLED) != 0;
-            bool advertising_set_random_address_change = (advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_ADDRESS) != 0;
-            bool advertising_set_will_be_removed = (advertising_set->state & LE_ADVERTISEMENT_TASKS_REMOVE_SET) != 0;
-            if (advertising_parameter_change ||
-                (advertising_uses_random_address && advertising_set_random_address_change) ||
-                (advertising_enabled == false) ||
-                (advertising_uses_whitelist && whitelist_modification_pending) ||
-                resolving_list_modification_pending ||
-                advertising_set_will_be_removed) {
+            if ((advertising_set->state & LE_ADVERTISEMENT_STATE_ACTIVE) != 0) {
+                // stop if:
+                // - parameter change required
+                // - random address used in connectable advertising and changes
+                // - it's disabled
+                // - whitelist change required but used for advertisement filter policy
+                // - resolving list modified
+                // - own address changes
+                // - advertisement set will be removed
+                bool advertising_uses_whitelist = advertising_set->extended_params.advertising_filter_policy != 0;
+                bool advertising_connectable = (advertising_set->extended_params.advertising_event_properties & 1) != 0;
+                bool advertising_uses_random_address =
+                        (advertising_set->extended_params.own_address_type != BD_ADDR_TYPE_LE_PUBLIC) &&
+                        advertising_connectable;
+                bool advertising_parameter_change = (advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_PARAMS) != 0;
+                bool advertising_enabled = (advertising_set->state & LE_ADVERTISEMENT_STATE_ENABLED) != 0;
+                bool advertising_set_random_address_change =
+                        (advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_ADDRESS) != 0;
+                bool advertising_set_will_be_removed =
+                        (advertising_set->state & LE_ADVERTISEMENT_TASKS_REMOVE_SET) != 0;
+                if (advertising_parameter_change ||
+                    (advertising_uses_random_address && advertising_set_random_address_change) ||
+                    (advertising_enabled == false) ||
+                    (advertising_uses_whitelist && whitelist_modification_pending) ||
+                    resolving_list_modification_pending ||
+                    advertising_set_will_be_removed) {
 
-                advertising_stop = true;
-                advertising_stop_set = advertising_set;
-                break;
+                    advertising_stop = true;
+                    advertising_stop_set = advertising_set;
+                    break;
+                }
+            }
+            if ((advertising_set->state & LE_ADVERTISEMENT_STATE_PERIODIC_ACTIVE) != 0) {
+                // stop if:
+                // - it's disabled
+                // - parameter change required
+                bool periodic_enabled = (advertising_set->state & LE_ADVERTISEMENT_STATE_PERIODIC_ENABLED) != 0;
+                bool periodic_parameter_change = (advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_PERIODIC_PARAMS) != 0;
+                if ((periodic_enabled == false) || periodic_parameter_change){
+                    periodic_stop = true;
+                    advertising_stop_set = advertising_set;
+                }
             }
         }
     }
@@ -4827,6 +4844,13 @@ static bool hci_run_general_gap_le(void){
         }
         return true;
     }
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    if (periodic_stop){
+        advertising_stop_set->state &= ~LE_ADVERTISEMENT_STATE_PERIODIC_ACTIVE;
+        hci_send_cmd(&hci_le_set_periodic_advertising_enable, 0, advertising_stop_set->advertising_handle);
+        return true;
+    }
+#endif
 #endif
 
     // Phase 3: modify
@@ -5017,6 +5041,32 @@ static bool hci_run_general_gap_le(void){
                 }
                 hci_stack->le_advertising_set_in_current_command = advertising_set->advertising_handle;
                 hci_send_cmd(&hci_le_set_extended_scan_response_data, operation, 0x03, 0x01, data_to_upload, &advertising_set->scan_data[pos]);
+                return true;
+            }
+            if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_PERIODIC_PARAMS) != 0){
+                advertising_set->tasks &= ~LE_ADVERTISEMENT_TASKS_SET_PERIODIC_PARAMS;
+                hci_stack->le_advertising_set_in_current_command = advertising_set->advertising_handle;
+                hci_send_cmd(&hci_le_set_periodic_advertising_parameters,
+                             advertising_set->advertising_handle,
+                             advertising_set->periodic_params.periodic_advertising_interval_min,
+                             advertising_set->periodic_params.periodic_advertising_interval_max,
+                             advertising_set->periodic_params.periodic_advertising_properties);
+                return true;
+            }
+            if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_PERIODIC_DATA) != 0) {
+                uint16_t pos = advertising_set->periodic_data_len;
+                uint8_t  operation = hci_le_extended_advertising_operation_for_chunk(pos, advertising_set->periodic_data_len);
+                uint16_t data_to_upload = btstack_min(advertising_set->periodic_data_len - pos, LE_EXTENDED_ADVERTISING_MAX_CHUNK_LEN);
+                if ((operation & 0x02) != 0){
+                    // last fragment or complete data
+                    operation |= 2;
+                    advertising_set->periodic_pos = 0;
+                    advertising_set->tasks &= ~LE_ADVERTISEMENT_TASKS_SET_PERIODIC_DATA;
+                } else {
+                    advertising_set->periodic_pos += data_to_upload;
+                }
+                hci_stack->le_advertising_set_in_current_command = advertising_set->advertising_handle;
+                hci_send_cmd(&hci_le_set_periodic_advertising_data, operation, 0x03, 0x01, data_to_upload, &advertising_set->periodic_data[pos]);
                 return true;
             }
         }
@@ -5223,6 +5273,15 @@ static bool hci_run_general_gap_le(void){
                 const uint16_t durations[] = { advertising_set->enable_timeout };
                 const uint16_t max_events[] = { advertising_set->enable_max_scan_events };
                 hci_send_cmd(&hci_le_set_extended_advertising_enable, 1, 1, advertising_handles, durations, max_events);
+                return true;
+            }
+            if (((advertising_set->state & LE_ADVERTISEMENT_STATE_PERIODIC_ENABLED) != 0) && ((advertising_set->state & LE_ADVERTISEMENT_STATE_PERIODIC_ACTIVE) == 0)){
+                advertising_set->state |= LE_ADVERTISEMENT_STATE_PERIODIC_ACTIVE;
+                uint8_t enable = 1;
+                if (advertising_set->periodic_include_adi){
+                    enable |= 2;
+                }
+                hci_send_cmd(&hci_le_set_periodic_advertising_enable, enable, advertising_set->advertising_handle);
                 return true;
             }
         }
@@ -6643,6 +6702,25 @@ uint8_t gap_extended_advertising_get_params(uint8_t advertising_handle, le_exten
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t gap_periodic_advertising_set_params(uint8_t advertising_handle, const le_periodic_advertising_parameters_t * advertising_parameters){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    // periodic advertising requires neither connectable, scannable, legacy or anonymous
+    if ((advertising_set->extended_params.advertising_event_properties & 0x1f) != 0) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    memcpy(&advertising_set->extended_params, advertising_parameters, sizeof(le_periodic_advertising_parameters_t));
+    // set tasks and start
+    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_PERIODIC_PARAMS;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_periodic_advertising_get_params(uint8_t advertising_handle, le_periodic_advertising_parameters_t * advertising_parameters){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    memcpy(advertising_parameters, &advertising_set->extended_params, sizeof(le_periodic_advertising_parameters_t));
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t gap_extended_advertising_set_random_address(uint8_t advertising_handle, bd_addr_t random_address){
     le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -6675,6 +6753,17 @@ uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_hand
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t gap_periodic_advertising_set_data(uint8_t advertising_handle, uint16_t periodic_data_length, uint8_t * periodic_data){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    advertising_set->periodic_data = periodic_data;
+    advertising_set->periodic_data_len = periodic_data_length;
+    // set tasks and start
+    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_PERIODIC_DATA;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t gap_extended_advertising_start(uint8_t advertising_handle, uint16_t timeout, uint8_t num_extended_advertising_events){
     le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -6691,6 +6780,25 @@ uint8_t gap_extended_advertising_stop(uint8_t advertising_handle){
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     // set tasks and start
     advertising_set->state &= ~LE_ADVERTISEMENT_STATE_ENABLED;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_periodic_advertising_start(uint8_t advertising_handle, bool include_adi){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    // set tasks and start
+    advertising_set->periodic_include_adi = include_adi;
+    advertising_set->state |= LE_ADVERTISEMENT_STATE_PERIODIC_ENABLED;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    // set tasks and start
+    advertising_set->state &= ~LE_ADVERTISEMENT_STATE_PERIODIC_ENABLED;
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
