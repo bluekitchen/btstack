@@ -4754,9 +4754,9 @@ static bool hci_run_general_gap_le(void){
             // - resolving list modified
             // - own address changes
             // - advertisement set will be removed
-            bool advertising_uses_whitelist = advertising_set->params.advertising_filter_policy != 0;
-            bool advertising_connectable = (advertising_set->params.advertising_event_properties & 1) != 0;
-            bool advertising_uses_random_address = (advertising_set->params.own_address_type != BD_ADDR_TYPE_LE_PUBLIC) && advertising_connectable;
+            bool advertising_uses_whitelist = advertising_set->extended_params.advertising_filter_policy != 0;
+            bool advertising_connectable = (advertising_set->extended_params.advertising_event_properties & 1) != 0;
+            bool advertising_uses_random_address = (advertising_set->extended_params.own_address_type != BD_ADDR_TYPE_LE_PUBLIC) && advertising_connectable;
             bool advertising_parameter_change = (advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_PARAMS) != 0;
             bool advertising_enabled = (advertising_set->state & LE_ADVERTISEMENT_STATE_ENABLED) != 0;
             bool advertising_set_random_address_change = (advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_ADDRESS) != 0;
@@ -4972,20 +4972,20 @@ static bool hci_run_general_gap_le(void){
                 hci_stack->le_advertising_set_in_current_command = advertising_set->advertising_handle;
                 hci_send_cmd(&hci_le_set_extended_advertising_parameters,
                              advertising_set->advertising_handle,
-                             advertising_set->params.advertising_event_properties,
-                             advertising_set->params.primary_advertising_interval_min,
-                             advertising_set->params.primary_advertising_interval_max,
-                             advertising_set->params.primary_advertising_channel_map,
-                             advertising_set->params.own_address_type,
-                             advertising_set->params.peer_address_type,
-                             advertising_set->params.peer_address,
-                             advertising_set->params.advertising_filter_policy,
-                             advertising_set->params.advertising_tx_power,
-                             advertising_set->params.primary_advertising_phy,
-                             advertising_set->params.secondary_advertising_max_skip,
-                             advertising_set->params.secondary_advertising_phy,
-                             advertising_set->params.advertising_sid,
-                             advertising_set->params.scan_request_notification_enable
+                             advertising_set->extended_params.advertising_event_properties,
+                             advertising_set->extended_params.primary_advertising_interval_min,
+                             advertising_set->extended_params.primary_advertising_interval_max,
+                             advertising_set->extended_params.primary_advertising_channel_map,
+                             advertising_set->extended_params.own_address_type,
+                             advertising_set->extended_params.peer_address_type,
+                             advertising_set->extended_params.peer_address,
+                             advertising_set->extended_params.advertising_filter_policy,
+                             advertising_set->extended_params.advertising_tx_power,
+                             advertising_set->extended_params.primary_advertising_phy,
+                             advertising_set->extended_params.secondary_advertising_max_skip,
+                             advertising_set->extended_params.secondary_advertising_phy,
+                             advertising_set->extended_params.advertising_sid,
+                             advertising_set->extended_params.scan_request_notification_enable
                 );
                 return true;
             }
@@ -6616,7 +6616,7 @@ uint8_t gap_extended_advertising_setup(le_advertising_set_t * storage, const le_
     // clear
     memset(storage, 0, sizeof(le_advertising_set_t));
     // copy params
-    memcpy(&storage->params, advertising_parameters, sizeof(le_extended_advertising_parameters_t));
+    memcpy(&storage->extended_params, advertising_parameters, sizeof(le_extended_advertising_parameters_t));
     // add to list
     bool add_ok = btstack_linked_list_add(&hci_stack->le_advertising_sets, (btstack_linked_item_t *) storage);
     if (!add_ok) return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
@@ -6629,7 +6629,7 @@ uint8_t gap_extended_advertising_setup(le_advertising_set_t * storage, const le_
 uint8_t gap_extended_advertising_set_params(uint8_t advertising_handle, const le_extended_advertising_parameters_t * advertising_parameters){
     le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    memcpy(&advertising_set->params, advertising_parameters, sizeof(le_extended_advertising_parameters_t));
+    memcpy(&advertising_set->extended_params, advertising_parameters, sizeof(le_extended_advertising_parameters_t));
     // set tasks and start
     advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
     hci_run();
@@ -6639,7 +6639,7 @@ uint8_t gap_extended_advertising_set_params(uint8_t advertising_handle, const le
 uint8_t gap_extended_advertising_get_params(uint8_t advertising_handle, le_extended_advertising_parameters_t * advertising_parameters){
     le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    memcpy(advertising_parameters, &advertising_set->params, sizeof(le_extended_advertising_parameters_t));
+    memcpy(advertising_parameters, &advertising_set->extended_params, sizeof(le_extended_advertising_parameters_t));
     return ERROR_CODE_SUCCESS;
 }
 

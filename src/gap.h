@@ -156,7 +156,7 @@ typedef struct {
 // Extended Advertising Set State
 typedef struct {
     btstack_linked_item_t item;
-    le_extended_advertising_parameters_t params;
+    le_extended_advertising_parameters_t extended_params;
     bd_addr_t random_address;
     uint8_t * adv_data;
     uint8_t * scan_data;
