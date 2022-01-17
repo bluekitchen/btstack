@@ -104,8 +104,7 @@ static void store_found_service(const char * name, uint8_t port){
     printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
     if (service_index < NUM_SERVICES){
         services[service_index].channel_nr = port;
-        strncpy(services[service_index].service_name, (char*) name, SDP_SERVICE_NAME_LEN);
-        services[service_index].service_name[SDP_SERVICE_NAME_LEN] = 0;
+        btstack_strcpy(services[service_index].service_name, SDP_SERVICE_NAME_LEN + 1, name);
         service_index++;
     } else {
         printf("APP: list full - ignore\n");
