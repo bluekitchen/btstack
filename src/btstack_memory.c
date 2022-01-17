@@ -1385,6 +1385,63 @@ void btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry){
 #endif
 
 
+// MARK: periodic_advertiser_list_entry_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES)
+    #if defined(MAX_NO_PERIODIC_ADVERTISER_LIST_ENTRIES)
+        #error "Deprecated MAX_NO_PERIODIC_ADVERTISER_LIST_ENTRIES defined instead of MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES. Please update your btstack_config.h to use MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES."
+    #else
+        #define MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES 0
+    #endif
+#endif
+
+#ifdef MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES
+#if MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES > 0
+static periodic_advertiser_list_entry_t periodic_advertiser_list_entry_storage[MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES];
+static btstack_memory_pool_t periodic_advertiser_list_entry_pool;
+periodic_advertiser_list_entry_t * btstack_memory_periodic_advertiser_list_entry_get(void){
+    void * buffer = btstack_memory_pool_get(&periodic_advertiser_list_entry_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(periodic_advertiser_list_entry_t));
+    }
+    return (periodic_advertiser_list_entry_t *) buffer;
+}
+void btstack_memory_periodic_advertiser_list_entry_free(periodic_advertiser_list_entry_t *periodic_advertiser_list_entry){
+    btstack_memory_pool_free(&periodic_advertiser_list_entry_pool, periodic_advertiser_list_entry);
+}
+#else
+periodic_advertiser_list_entry_t * btstack_memory_periodic_advertiser_list_entry_get(void){
+    return NULL;
+}
+void btstack_memory_periodic_advertiser_list_entry_free(periodic_advertiser_list_entry_t *periodic_advertiser_list_entry){
+    UNUSED(periodic_advertiser_list_entry);
+};
+#endif
+#elif defined(HAVE_MALLOC)
+
+typedef struct {
+    btstack_memory_buffer_t tracking;
+    periodic_advertiser_list_entry_t data;
+} btstack_memory_periodic_advertiser_list_entry_t;
+
+periodic_advertiser_list_entry_t * btstack_memory_periodic_advertiser_list_entry_get(void){
+    btstack_memory_periodic_advertiser_list_entry_t * buffer = (btstack_memory_periodic_advertiser_list_entry_t *) malloc(sizeof(btstack_memory_periodic_advertiser_list_entry_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(btstack_memory_periodic_advertiser_list_entry_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
+    } else {
+        return NULL;
+    }
+}
+void btstack_memory_periodic_advertiser_list_entry_free(periodic_advertiser_list_entry_t *periodic_advertiser_list_entry){
+    // reconstruct buffer start
+    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) periodic_advertiser_list_entry)[-1];
+    btstack_memory_tracking_remove(buffer);
+    free(buffer);
+}
+#endif
+
+
 #endif
 #ifdef ENABLE_MESH
 
@@ -1864,6 +1921,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_WHITELIST_ENTRIES > 0
     btstack_memory_pool_create(&whitelist_entry_pool, whitelist_entry_storage, MAX_NR_WHITELIST_ENTRIES, sizeof(whitelist_entry_t));
+#endif
+#if MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES > 0
+    btstack_memory_pool_create(&periodic_advertiser_list_entry_pool, periodic_advertiser_list_entry_storage, MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES, sizeof(periodic_advertiser_list_entry_t));
 #endif
 #endif
 #ifdef ENABLE_MESH

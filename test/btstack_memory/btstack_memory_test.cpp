@@ -1010,6 +1010,48 @@ TEST(btstack_memory, whitelist_entry_NotEnoughBuffers){
     CHECK(context == NULL);
 }
 
+
+
+TEST(btstack_memory, periodic_advertiser_list_entry_GetAndFree){
+    periodic_advertiser_list_entry_t * context;
+#ifdef HAVE_MALLOC
+    context = btstack_memory_periodic_advertiser_list_entry_get();
+    CHECK(context != NULL);
+    btstack_memory_periodic_advertiser_list_entry_free(context);
+#else
+#ifdef MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES
+    // single
+    context = btstack_memory_periodic_advertiser_list_entry_get();
+    CHECK(context != NULL);
+    btstack_memory_periodic_advertiser_list_entry_free(context);
+#else
+    // none
+    context = btstack_memory_periodic_advertiser_list_entry_get();
+    CHECK(context == NULL);
+    btstack_memory_periodic_advertiser_list_entry_free(context);
+#endif
+#endif
+}
+
+TEST(btstack_memory, periodic_advertiser_list_entry_NotEnoughBuffers){
+    periodic_advertiser_list_entry_t * context;
+#ifdef HAVE_MALLOC
+    simulate_no_memory = 1;
+#else
+#ifdef MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES
+    int i;
+    // alloc all static buffers
+    for (i = 0; i < MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES; i++){
+        context = btstack_memory_periodic_advertiser_list_entry_get();
+        CHECK(context != NULL);
+    }
+#endif
+#endif
+    // get one more
+    context = btstack_memory_periodic_advertiser_list_entry_get();
+    CHECK(context == NULL);
+}
+
 #endif
 #ifdef ENABLE_MESH
 

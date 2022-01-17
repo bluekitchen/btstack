@@ -830,12 +830,26 @@ enum {
     LE_WHITELIST_REMOVE_FROM_CONTROLLER = 1 << 2,
 };
 
+enum {
+    LE_PERIODIC_ADVERTISER_LIST_ENTRY_ON_CONTROLLER          = 1 << 0,
+    LE_PERIODIC_ADVERTISER_LIST_ENTRY_ADD_TO_CONTROLLER      = 1 << 1,
+    LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER = 1 << 2,
+};
+
 typedef struct {
     btstack_linked_item_t  item;
     bd_addr_t      address;
     bd_addr_type_t address_type;
     uint8_t        state;   
 } whitelist_entry_t;
+
+typedef struct {
+    btstack_linked_item_t  item;
+    bd_addr_t      address;
+    bd_addr_type_t address_type;
+    uint8_t        sid;
+    uint8_t        state;
+} periodic_advertiser_list_entry_t;
 
 #define MAX_NUM_RESOLVING_LIST_ENTRIES 64
 typedef enum {
