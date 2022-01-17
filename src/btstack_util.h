@@ -302,6 +302,15 @@ uint8_t btstack_crc8_calc(uint8_t * data, uint16_t len);
  */
 uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid);
 
+/**
+ * @brief Copy string (up to dst_size-1 characters) from src into dst buffer with terminating '\0'
+ * @note replaces strncpy + dst[dst_size-1] = '\0'
+ * @param dst
+ * @param dst_size
+ * @param src
+ */
+void btstack_strcpy(char * dst, uint16_t dst_size, const char * src);
+
 /* API_END */
 
 #if defined __cplusplus
