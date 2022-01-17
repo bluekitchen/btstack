@@ -3264,7 +3264,7 @@ HAL_StatusTypeDef UART_Start_Receive_DMA(UART_HandleTypeDef *huart, uint8_t *pDa
   HAL_DMA_Start_IT(huart->hdmarx, (uint32_t)&huart->Instance->DR, *(uint32_t *)tmp, Size);
 
   /* Clear the Overrun flag just before enabling the DMA Rx request: can be mandatory for the second transfer */
-  __HAL_UART_CLEAR_OREFLAG(huart);
+  //__HAL_UART_CLEAR_OREFLAG(huart);
 
   /* Process Unlocked */
   __HAL_UNLOCK(huart);

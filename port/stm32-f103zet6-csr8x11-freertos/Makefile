@@ -109,6 +109,7 @@ C_SOURCES += ${BTSTACK_ROOT}/src/classic/obex_message_builder.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/pan.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/pbap_client.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/rfcomm.c
+C_SOURCES += ${BTSTACK_ROOT}/src/classic/gatt_sdp.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/sdp_client.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/sdp_client_rfcomm.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/sdp_server.c

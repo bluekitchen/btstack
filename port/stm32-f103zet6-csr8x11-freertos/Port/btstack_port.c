@@ -214,7 +214,6 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 }
 
 void hal_uart_dma_send_block_for_hci(const uint8_t *data, uint16_t size){
-    //HAL_UART_Transmit_DMA( &huart3, (uint8_t *) data, size);
 	HAL_UART_Transmit( &huart3, (uint8_t *) data, size, HAL_MAX_DELAY );
 }
 #ifndef ENABLE_SEGGER_RTT
@@ -235,7 +234,7 @@ int _write(int file, char *ptr, int len){
 #if 1
 	uint8_t cr = '\r';
 	int i;
-
+    
 	if (file == STDOUT_FILENO || file == STDERR_FILENO) {
 		//HAL_UART_Transmit_DMA( &huart1, (uint8_t *) ptr, len);
 		//HAL_UART_Transmit( &huart1, &cr, 1, HAL_MAX_DELAY );
@@ -370,10 +369,11 @@ void port_main(void){
     // setup global tlv
     btstack_tlv_set_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 
+#ifdef BR_EDR_ENABLE
     // setup Link Key DB using TLV
     const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
     hci_set_link_key_db(btstack_link_key_db);
-
+#endif
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 #endif

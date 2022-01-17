@@ -141,7 +141,7 @@ static uint16_t  ehcill_tx_len;   // 0 == no outgoing packet
 static void (*hci_transport_h4_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // packet reader state machine
-static  H4_STATE h4_state;
+static H4_STATE h4_state = 0;
 static uint16_t bytes_to_read;
 static uint16_t read_pos;
 
@@ -185,7 +185,7 @@ static void hci_transport_h4_reset_statemachine(void){
 }
 
 static void hci_transport_h4_trigger_next_read(void){
-    // log_info("hci_transport_h4_trigger_next_read: %u bytes", bytes_to_read);
+    //log_info("hci_transport_h4_trigger_next_read: %u bytes", bytes_to_read);
     btstack_uart->receive_block(&hci_packet[read_pos], bytes_to_read);  
 }
 

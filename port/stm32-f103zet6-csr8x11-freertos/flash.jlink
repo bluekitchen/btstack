@@ -1,5 +1,5 @@
 r
 speed 4000
-loadfile ./build/gap_link_keys.hex,0x08000000
+loadfile ./build/gatt_counter.hex,0x08000000
 r
 exit
