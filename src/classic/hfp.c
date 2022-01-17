@@ -472,14 +472,14 @@ void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subt
 #else
     uint8_t event[40];
 #endif
+    uint16_t string_len = btstack_min(strlen(value), sizeof(event) - 6);
     event[0] = HCI_EVENT_HFP_META;
-    event[1] = sizeof(event) - 2;
+    event[1] = 4 + string_len;
     event[2] = event_subtype;
     little_endian_store_16(event, 3, hfp_connection->acl_handle);
-    uint16_t size = btstack_min(strlen(value), sizeof(event) - 6);
-    strncpy((char*)&event[5], value, size);
-    event[5 + size] = 0;
-    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
+    memcpy((char*)&event[5], value, string_len);
+    event[5 + string_len] = 0;
+    hfp_emit_event_for_context(hfp_connection, event, 6 + string_len);
 }
 
 btstack_linked_list_t * hfp_get_connections(void){
@@ -1403,15 +1403,12 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
 
             switch (hfp_connection->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
-                    strncpy(hfp_connection->network_operator.name, (char *)hfp_connection->line_buffer, HFP_MAX_NETWORK_OPERATOR_NAME_SIZE);
-                    hfp_connection->network_operator.name[HFP_MAX_NETWORK_OPERATOR_NAME_SIZE - 1] = 0;
-                    log_info("name %s\n", hfp_connection->line_buffer);
+                    btstack_strcpy(hfp_connection->network_operator.name, HFP_MAX_NETWORK_OPERATOR_NAME_SIZE,  (char *)hfp_connection->line_buffer);
                     break;
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:
                     hfp_connection->ag_indicators[hfp_connection->parser_item_index].max_range = btstack_atoi((char *)hfp_connection->line_buffer);
                     hfp_next_indicators_index(hfp_connection);
                     hfp_connection->ag_indicators_nr = hfp_connection->parser_item_index;
-                    log_info("%s)\n", hfp_connection->line_buffer);
                     break;
                 default:
                     break;
@@ -1478,8 +1475,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     break;
                 case 1:
                     // <number>: Quoted string containing the phone number in the format specified by <type>.
-                    strncpy(hfp_connection->bnip_number, (char *)hfp_connection->line_buffer, sizeof(hfp_connection->bnip_number));
-                    hfp_connection->bnip_number[sizeof(hfp_connection->bnip_number)-1] = 0;
+                    btstack_strcpy(hfp_connection->bnip_number, sizeof(hfp_connection->bnip_number), (char *)hfp_connection->line_buffer);
                     break;
                 case 2:
                     /*
@@ -1525,8 +1521,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     hfp_connection->clcc_mpty = value;
                     break;
                 case 5:
-                    strncpy(hfp_connection->bnip_number, (char *)hfp_connection->line_buffer, sizeof(hfp_connection->bnip_number));
-                    hfp_connection->bnip_number[sizeof(hfp_connection->bnip_number)-1] = 0;
+                    btstack_strcpy(hfp_connection->bnip_number, sizeof(hfp_connection->bnip_number), (char *)hfp_connection->line_buffer);
                     break;
                 case 6:
                     value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
@@ -1577,8 +1572,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             hfp_connection->remote_codecs_nr = hfp_connection->parser_item_index;
             break;
         case HFP_CMD_RETRIEVE_AG_INDICATORS:
-            strncpy((char *)hfp_connection->ag_indicators[hfp_connection->parser_item_index].name,  (char *)hfp_connection->line_buffer, HFP_MAX_INDICATOR_DESC_SIZE);
-            hfp_connection->ag_indicators[hfp_connection->parser_item_index].name[HFP_MAX_INDICATOR_DESC_SIZE-1] = 0;
+            btstack_strcpy((char *)hfp_connection->ag_indicators[hfp_connection->parser_item_index].name, HFP_MAX_INDICATOR_DESC_SIZE, (char *)hfp_connection->line_buffer);
             hfp_connection->ag_indicators[hfp_connection->parser_item_index].index = hfp_connection->parser_item_index+1;
             log_info("Indicator %d: %s (", hfp_connection->ag_indicators_nr+1, hfp_connection->line_buffer);
             break;
@@ -1666,8 +1660,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_AG_SENT_PHONE_NUMBER:
         case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
         case HFP_CMD_AG_SENT_CLIP_INFORMATION:
-            strncpy(hfp_connection->bnip_number, (char *)hfp_connection->line_buffer, sizeof(hfp_connection->bnip_number));
-            hfp_connection->bnip_number[sizeof(hfp_connection->bnip_number)-1] = 0;
+            btstack_strcpy((char *)hfp_connection->bnip_number, sizeof(hfp_connection->bnip_number), (char *)hfp_connection->line_buffer);
             break;
         case HFP_CMD_CALL_HOLD:
             hfp_connection->ag_call_hold_action = hfp_connection->line_buffer[0] - '0';

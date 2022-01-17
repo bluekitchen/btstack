@@ -243,12 +243,8 @@ static void hfp_gsm_set_clip(int index_in_table, uint8_t type, const char * numb
     if (number_str_len == 0) return;
 
     hfp_gsm_model_calls[index_in_table].clip_type = type;
-    int clip_number_size = btstack_min(number_str_len, HFP_GSM_MAX_CALL_NUMBER_SIZE - 1);
-    strncpy(hfp_gsm_model_calls[index_in_table].clip_number, number, clip_number_size);
-    hfp_gsm_model_calls[index_in_table].clip_number[clip_number_size] = '\0';
-    strncpy(hfp_gsm_model_last_dialed_number, number, clip_number_size);
-    hfp_gsm_model_last_dialed_number[clip_number_size] = '\0';
-
+    btstack_strcpy(hfp_gsm_model_calls[index_in_table].clip_number, HFP_GSM_MAX_CALL_NUMBER_SIZE, number);
+    btstack_strcpy(hfp_gsm_model_last_dialed_number, HFP_GSM_MAX_CALL_NUMBER_SIZE, number);
     hfp_gsm_model_clip_type = 0;
     memset(hfp_gsm_model_clip_number, 0, sizeof(hfp_gsm_model_clip_number));
 }
@@ -295,8 +291,7 @@ char * hfp_gsm_last_dialed_number(void){
 }
 
 void hfp_gsm_set_last_dialed_number(const char* number){
-    strncpy(hfp_gsm_model_last_dialed_number, number, sizeof(hfp_gsm_model_last_dialed_number));
-    hfp_gsm_model_last_dialed_number[sizeof(hfp_gsm_model_last_dialed_number) - 1] = 0;
+    btstack_strcpy(hfp_gsm_model_last_dialed_number, sizeof(hfp_gsm_model_last_dialed_number), number);
 }
 
 hfp_gsm_call_t * hfp_gsm_call(int call_index){
@@ -594,9 +589,7 @@ void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, con
             }
 
             hfp_gsm_model_clip_type = type;
-            strncpy(hfp_gsm_model_clip_number, number, sizeof(hfp_gsm_model_clip_number));
-            hfp_gsm_model_clip_number[sizeof(hfp_gsm_model_clip_number) - 1] = '\0';
-
+            btstack_strcpy(hfp_gsm_model_clip_number, sizeof(hfp_gsm_model_clip_number), number);
             break;
         default:
             break;
