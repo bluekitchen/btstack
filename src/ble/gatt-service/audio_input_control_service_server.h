@@ -87,31 +87,34 @@ typedef enum {
 } aics_gain_mode_t;
 
 typedef enum {
-    AICS_AUDIO_INPUT_TYPE_UNSPECIFIED = 0,
-    AICS_AUDIO_INPUT_TYPE_BLUETOOTH_AUDIO_STREAM,
-    AICS_AUDIO_INPUT_TYPE_MICROPHONE,
-    AICS_AUDIO_INPUT_TYPE_ANALOG_INTERFACE,
-    AICS_AUDIO_INPUT_TYPE_DIGITAL_INTERFACE,
-    AICS_AUDIO_INPUT_TYPE_RADIO,
-    AICS_AUDIO_INPUT_TYPE_STREAMING_AUDIO_SOURCE
-} aics_audio_input_type_t;
-
-typedef enum {
     AICS_AUDIO_INPUT_STATUS_INACTIVE = 0,
     AICS_AUDIO_INPUT_STATUS_ACTIVE
 } aics_audio_input_status_t;
 
 typedef struct {
-    int8_t           gain_db;
+    int8_t  gain_setting_db;
     aics_mute_mode_t mute_mode;
     aics_gain_mode_t gain_mode;
 } aics_audio_input_state_t;
 
 typedef struct {
-    uint8_t  gain_unit;
-    int8_t   minimum_gain;
-    int8_t   maximum_gain;
+    uint8_t  gain_settings_units; // 1 unit == 0.1 dB
+    int8_t   gain_settings_minimum;
+    int8_t   gain_settings_maximum;
 } aics_gain_settings_properties_t;
+
+typedef struct {
+    uint8_t index;
+
+    aics_audio_input_state_t audio_input_state;
+    aics_gain_settings_properties_t gain_settings_properties;
+
+    const char * audio_input_type;
+    const char * audio_input_description;
+
+    btstack_packet_handler_t packet_handler;
+} aics_info_t;
+
 
 /* API_START */
 typedef struct {
@@ -123,16 +126,14 @@ typedef struct {
     uint16_t start_handle;
     uint16_t end_handle;
 
-    uint8_t index;
+    aics_info_t info;
+
     att_service_handler_t    service_handler;
-    btstack_packet_handler_t packet_handler;
     btstack_context_callback_registration_t  scheduled_tasks_callback;
     uint8_t scheduled_tasks;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATE
     uint16_t audio_input_state_value_handle;
-    aics_audio_input_state_t audio_input_state;
-
     uint8_t  audio_input_state_change_counter;
 
     uint16_t audio_input_state_client_configuration_handle;
@@ -141,11 +142,9 @@ typedef struct {
 
     // ORG_BLUETOOTH_CHARACTERISTIC_GAIN_SETTINGS_ATTRIBUTE
     uint16_t gain_settings_properties_value_handle;
-    aics_gain_settings_properties_t gain_properties;
-
+    
     // ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_TYPE
     uint16_t audio_input_type_value_handle;
-    aics_audio_input_type_t audio_input_type;
     
     // ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATUS
     uint16_t audio_input_status_value_handle;
@@ -160,14 +159,11 @@ typedef struct {
 
     // ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION
     uint16_t audio_input_description_control_value_handle;
-    uint8_t  *audio_input_description;
-    uint16_t  audio_input_description_size;
-    
+
     uint16_t audio_input_description_client_configuration_handle;
     uint16_t audio_input_description_client_configuration;
     btstack_context_callback_registration_t audio_input_description_callback;
     
-
 } audio_input_control_service_server_t;
 
 
@@ -181,13 +177,10 @@ typedef struct {
  * @param gain_properties
  * @param packet_handler
  */
-void audio_input_control_service_server_init(audio_input_control_service_server_t * aics, uint16_t start_handle, uint16_t end_handle, 
-    uint8_t aics_index, aics_audio_input_type_t audio_input_type, aics_gain_settings_properties_t * gain_properties,
-    btstack_packet_handler_t packet_handler);
+void audio_input_control_service_server_init(audio_input_control_service_server_t * aics);
 
-uint8_t audio_input_control_service_server_update_audio_input_state(audio_input_control_service_server_t * aics,  aics_audio_input_state_t * audio_input_state);
+uint8_t audio_input_control_service_server_update_audio_input_state(audio_input_control_service_server_t * aics, aics_audio_input_state_t * audio_input_state);
 void audio_input_control_service_server_update_audio_input_status(audio_input_control_service_server_t * aics, aics_audio_input_status_t audio_input_status);
-void audio_input_control_service_server_update_audio_input_description(audio_input_control_service_server_t * aics, uint8_t * audio_input_description, uint16_t audio_input_description_size);
 
 /* API_END */
 

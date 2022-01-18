@@ -74,9 +74,9 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
     if (attribute_handle == aics->audio_input_state_value_handle){
         aics->con_handle = con_handle;
         uint8_t value[4];
-        value[0] = (uint8_t)aics->audio_input_state.gain_db;
-        value[1] = aics->audio_input_state.mute_mode;
-        value[2] = aics->audio_input_state.gain_mode;
+        value[0] = (uint8_t)aics->info.audio_input_state.gain_setting_db;
+        value[1] = aics->info.audio_input_state.mute_mode;
+        value[2] = aics->info.audio_input_state.gain_mode;
         value[3] = aics->audio_input_state_change_counter;
         return att_read_callback_handle_blob(value, sizeof(value), offset, buffer, buffer_size);
     }
@@ -85,15 +85,16 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
     if (attribute_handle == aics->gain_settings_properties_value_handle){
         aics->con_handle = con_handle;
         uint8_t value[3];
-        value[0] = aics->gain_properties.gain_unit;
-        value[1] = (uint8_t)aics->gain_properties.minimum_gain;
-        value[2] = (uint8_t)aics->gain_properties.maximum_gain;
+
+        value[0] = aics->info.gain_settings_properties.gain_settings_units;
+        value[1] = (uint8_t)aics->info.gain_settings_properties.gain_settings_minimum;
+        value[2] = (uint8_t)aics->info.gain_settings_properties.gain_settings_maximum;
         return att_read_callback_handle_blob(value, sizeof(value), offset, buffer, buffer_size);
     }
 
     if (attribute_handle == aics->audio_input_type_value_handle){
         aics->con_handle = con_handle;
-        return att_read_callback_handle_byte((uint8_t)aics->audio_input_type, offset, buffer, buffer_size);
+        return att_read_callback_handle_blob((uint8_t *)aics->info.audio_input_type, strlen(aics->info.audio_input_type), offset, buffer, buffer_size);
     }
 
     if (attribute_handle == aics->audio_input_status_value_handle){
@@ -103,8 +104,7 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
 
     if (attribute_handle == aics->audio_input_description_control_value_handle){
         aics->con_handle = con_handle;
-        uint16_t size = btstack_min(aics->audio_input_description_size, buffer_size - offset);
-        return att_read_callback_handle_blob(aics->audio_input_description, size, offset, buffer, buffer_size);
+        return att_read_callback_handle_blob((uint8_t *)aics->info.audio_input_description, strlen(aics->info.audio_input_description), offset, buffer, buffer_size);
     }
     
     
@@ -127,7 +127,7 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
 }
 
 static void aics_emit_mute_mode(audio_input_control_service_server_t * aics){
-    btstack_assert(aics->packet_handler != NULL);
+    btstack_assert(aics->info.packet_handler != NULL);
     
     uint8_t event[7];
     uint8_t pos = 0;
@@ -136,13 +136,13 @@ static void aics_emit_mute_mode(audio_input_control_service_server_t * aics){
     event[pos++] = GATTSERVICE_SUBEVENT_AICS_MUTE_MODE;
     little_endian_store_16(event, pos, aics->con_handle);
     pos += 2;
-    event[pos++] = aics->index;
-    event[pos++] = aics->audio_input_state.mute_mode == AICS_MUTE_MODE_MUTED ? 1 : 0;
-    (*aics->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    event[pos++] = aics->info.index;
+    event[pos++] = aics->info.audio_input_state.mute_mode == AICS_MUTE_MODE_MUTED ? 1 : 0;
+    (*aics->info.packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void aics_emit_gain_mode(audio_input_control_service_server_t * aics){
-    btstack_assert(aics->packet_handler != NULL);
+    btstack_assert(aics->info.packet_handler != NULL);
     
     uint8_t event[7];
     uint8_t pos = 0;
@@ -151,13 +151,13 @@ static void aics_emit_gain_mode(audio_input_control_service_server_t * aics){
     event[pos++] = GATTSERVICE_SUBEVENT_AICS_GAIN_MODE;
     little_endian_store_16(event, pos, aics->con_handle);
     pos += 2;
-    event[pos++] = aics->index;
-    event[pos++] = aics->audio_input_state.gain_mode == AICS_GAIN_MODE_MANUAL ? 1 : 0;
-    (*aics->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    event[pos++] = aics->info.index;
+    event[pos++] = aics->info.audio_input_state.gain_mode == AICS_GAIN_MODE_MANUAL ? 1 : 0;
+    (*aics->info.packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void aics_emit_gain(audio_input_control_service_server_t * aics){
-    btstack_assert(aics->packet_handler != NULL);
+    btstack_assert(aics->info.packet_handler != NULL);
     
     uint8_t event[7];
     uint8_t pos = 0;
@@ -166,16 +166,16 @@ static void aics_emit_gain(audio_input_control_service_server_t * aics){
     event[pos++] = GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED;
     little_endian_store_16(event, pos, aics->con_handle);
     pos += 2;
-    event[pos++] = aics->index;
-    event[pos++] = (uint8_t)aics->audio_input_state.gain_db;
-    (*aics->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    event[pos++] = aics->info.index;
+    event[pos++] = (uint8_t)aics->info.audio_input_state.gain_setting_db;
+    (*aics->info.packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static bool audio_input_control_service_server_set_gain(audio_input_control_service_server_t * aics, int8_t gain_db){
-    if (gain_db < aics->gain_properties.minimum_gain) return false;
-    if (gain_db > aics->gain_properties.maximum_gain) return false;
+    if (gain_db < aics->info.gain_settings_properties.gain_settings_minimum) return false;
+    if (gain_db > aics->info.gain_settings_properties.gain_settings_maximum) return false;
 
-    aics->audio_input_state.gain_db = gain_db;
+    aics->info.audio_input_state.gain_setting_db = gain_db;
     return true;
 }
 
@@ -214,7 +214,7 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 if (audio_input_control_service_server_set_gain(aics, (int8_t)buffer[2])){
                     aics->audio_input_state_change_counter++;
                     
-                    switch (aics->audio_input_state.gain_mode){
+                    switch (aics->info.audio_input_state.gain_mode){
                         case AICS_GAIN_MODE_MANUAL_ONLY:
                         case AICS_GAIN_MODE_MANUAL:
                             aics_emit_gain(aics);
@@ -226,12 +226,12 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 break;
 
             case AICS_OPCODE_UMUTE:
-                switch (aics->audio_input_state.mute_mode){
+                switch (aics->info.audio_input_state.mute_mode){
                     case AICS_MUTE_MODE_DISABLED:
                         return AICS_ERROR_CODE_MUTE_DISABLED;
                     
                     case AICS_MUTE_MODE_MUTED:
-                        aics->audio_input_state.mute_mode = AICS_MUTE_MODE_NOT_MUTED;
+                        aics->info.audio_input_state.mute_mode = AICS_MUTE_MODE_NOT_MUTED;
                         aics->audio_input_state_change_counter++;
                         aics_emit_mute_mode(aics);
                         break;
@@ -241,12 +241,12 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 }
                 break;
             case AICS_OPCODE_MUTE:
-                switch (aics->audio_input_state.mute_mode){
+                switch (aics->info.audio_input_state.mute_mode){
                     case AICS_MUTE_MODE_DISABLED:
                         return AICS_ERROR_CODE_MUTE_DISABLED;
                     
                     case AICS_MUTE_MODE_NOT_MUTED:
-                        aics->audio_input_state.mute_mode = AICS_MUTE_MODE_MUTED;
+                        aics->info.audio_input_state.mute_mode = AICS_MUTE_MODE_MUTED;
                         aics->audio_input_state_change_counter++;
                         aics_emit_mute_mode(aics);
                         break;
@@ -256,13 +256,13 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 }
                 break;
             case AICS_OPCODE_SET_MANUAL_GAIN_MODE:
-                switch (aics->audio_input_state.gain_mode){
+                switch (aics->info.audio_input_state.gain_mode){
                     case AICS_GAIN_MODE_MANUAL_ONLY:
                     case AICS_GAIN_MODE_AUTOMATIC_ONLY:
                         return AICS_ERROR_CODE_GAIN_MODE_CHANGE_NOT_ALLOWED;
                     
                     case AICS_GAIN_MODE_AUTOMATIC:
-                        aics->audio_input_state.gain_mode = AICS_GAIN_MODE_MANUAL;
+                        aics->info.audio_input_state.gain_mode = AICS_GAIN_MODE_MANUAL;
                         aics->audio_input_state_change_counter++;
                         aics_emit_gain_mode(aics);
                         break;
@@ -272,13 +272,13 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 }
                 break;
             case AICS_OPCODE_SET_AUTOMATIC_GAIN_MODE:
-                switch (aics->audio_input_state.gain_mode){
+                switch (aics->info.audio_input_state.gain_mode){
                     case AICS_GAIN_MODE_MANUAL_ONLY:
                     case AICS_GAIN_MODE_AUTOMATIC_ONLY:
                         return AICS_ERROR_CODE_GAIN_MODE_CHANGE_NOT_ALLOWED;
                     
                     case AICS_GAIN_MODE_MANUAL:
-                        aics->audio_input_state.gain_mode = AICS_GAIN_MODE_AUTOMATIC;
+                        aics->info.audio_input_state.gain_mode = AICS_GAIN_MODE_AUTOMATIC;
                         aics->audio_input_state_change_counter++;
                         aics_emit_gain_mode(aics);
                         break;
@@ -308,44 +308,33 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
 }
 
 
-void audio_input_control_service_server_init(audio_input_control_service_server_t * aics, uint16_t start_handle, uint16_t end_handle, 
-    uint8_t aics_index, aics_audio_input_type_t audio_input_type, aics_gain_settings_properties_t * gain_properties, btstack_packet_handler_t packet_handler){
-
+void audio_input_control_service_server_init(audio_input_control_service_server_t * aics){
     btstack_assert(aics != NULL);
-    btstack_assert(gain_properties != NULL);
-    btstack_assert(packet_handler != NULL);
+    btstack_assert(aics->info.packet_handler != NULL);
 
     btstack_linked_list_add(&aics_services, (btstack_linked_item_t *)aics);
-
-    aics->start_handle = start_handle;
-    aics->end_handle = end_handle;
-    
-    aics->index = aics_index;
-    aics->audio_input_type = audio_input_type;
-    memcpy(&aics->gain_properties, gain_properties, sizeof(aics_gain_settings_properties_t));
-    aics->packet_handler = packet_handler;
 
     aics->scheduled_tasks = 0;
 
     // get characteristic value handle and client configuration handle
-    aics->audio_input_state_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATE);
-    aics->audio_input_state_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATE);
+    aics->audio_input_state_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATE);
+    aics->audio_input_state_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATE);
 
-    aics->gain_settings_properties_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_GAIN_SETTINGS_ATTRIBUTE);
+    aics->gain_settings_properties_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_GAIN_SETTINGS_ATTRIBUTE);
     
-    aics->audio_input_type_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_TYPE);
+    aics->audio_input_type_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_TYPE);
     
-    aics->audio_input_status_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATUS);
-    aics->audio_input_status_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATUS);
+    aics->audio_input_status_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATUS);
+    aics->audio_input_status_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATUS);
 
-    aics->audio_input_control_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_CONTROL_POINT);
+    aics->audio_input_control_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_CONTROL_POINT);
     
-    aics->audio_input_status_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION);
-    aics->audio_input_status_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION);
+    aics->audio_input_status_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION);
+    aics->audio_input_status_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION);
 
     // register service with ATT Server
-    aics->service_handler.start_handle   = start_handle;
-    aics->service_handler.end_handle     = end_handle;
+    aics->service_handler.start_handle   = aics->start_handle;
+    aics->service_handler.end_handle     = aics->end_handle;
     aics->service_handler.read_callback  = &aics_read_callback;
     aics->service_handler.write_callback = &aics_write_callback;
     att_server_register_service_handler(&aics->service_handler);
@@ -363,9 +352,9 @@ static void audio_input_control_service_can_send_now(void * context){
         audio_input_control_service_update_change_counter(aics);
         
         uint8_t value[4];
-        value[0] = (uint8_t)aics->audio_input_state.gain_db;
-        value[1] = aics->audio_input_state.mute_mode;
-        value[2] = aics->audio_input_state.gain_mode;
+        value[0] = (uint8_t)aics->info.audio_input_state.gain_setting_db;
+        value[1] = aics->info.audio_input_state.mute_mode;
+        value[2] = aics->info.audio_input_state.gain_mode;
         value[3] = aics->audio_input_state_change_counter;
 
         att_server_notify(aics->con_handle, aics->audio_input_state_value_handle, &value[0], sizeof(value));
@@ -374,9 +363,10 @@ static void audio_input_control_service_can_send_now(void * context){
         aics->scheduled_tasks &= ~AICS_TASK_SEND_AUDIO_INPUT_STATUS;
         uint8_t value = (uint8_t)aics->audio_input_status;
         att_server_notify(aics->con_handle, aics->audio_input_status_value_handle, &value, 1);
+
     } else if ((aics->scheduled_tasks & AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION) != 0){
         aics->scheduled_tasks &= ~AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION;
-        att_server_notify(aics->con_handle, aics->audio_input_description_control_value_handle, &aics->audio_input_description[0], aics->audio_input_description_size);
+        att_server_notify(aics->con_handle, aics->audio_input_description_control_value_handle, (uint8_t *)aics->info.audio_input_description, strlen(aics->info.audio_input_description));
     }
 
     if (aics->scheduled_tasks != 0){
@@ -406,14 +396,14 @@ static void audio_input_control_service_server_set_callback(audio_input_control_
 uint8_t audio_input_control_service_server_update_audio_input_state(audio_input_control_service_server_t * aics, aics_audio_input_state_t * audio_input_state){ 
     btstack_assert(aics != NULL);
     
-    bool valid_range = audio_input_control_service_server_set_gain(aics, audio_input_state->gain_db);
+    bool valid_range = audio_input_control_service_server_set_gain(aics, audio_input_state->gain_setting_db);
 
     if (!valid_range){
         return AICS_ERROR_CODE_VALUE_OUT_OF_RANGE;
     }
 
-    aics->audio_input_state.mute_mode = audio_input_state->mute_mode;
-    aics->audio_input_state.gain_mode = audio_input_state->gain_mode;
+    aics->info.audio_input_state.mute_mode = audio_input_state->mute_mode;
+    aics->info.audio_input_state.gain_mode = audio_input_state->gain_mode;
     aics->audio_input_state_change_counter++;
 
     audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_STATE);
@@ -426,11 +416,5 @@ void audio_input_control_service_server_update_audio_input_status(audio_input_co
     audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_STATUS);
 }
 
-void audio_input_control_service_server_update_audio_input_description(audio_input_control_service_server_t * aics, uint8_t * audio_input_description, uint16_t audio_input_description_size){
-    btstack_assert(aics != NULL);
-    aics->audio_input_description = audio_input_description;
-    aics->audio_input_description_size = audio_input_description_size;
-    audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION);
-}
 
 
