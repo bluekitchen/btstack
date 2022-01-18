@@ -215,6 +215,7 @@ static bool hci_run_general_gap_le(void);
 #endif
 #ifdef ENABLE_LE_PERIPHERAL
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
+static void hci_periodic_advertiser_list_free(void);
 static le_advertising_set_t * hci_advertising_set_for_handle(uint8_t advertising_handle);
 #endif /* ENABLE_LE_EXTENDED_ADVERTISING */
 #endif /* ENABLE_LE_PERIPHERAL */
@@ -4832,6 +4833,8 @@ uint8_t hci_le_extended_advertising_operation_for_chunk(uint16_t pos, uint16_t l
 
 static bool hci_run_general_gap_le(void){
 
+    btstack_linked_list_iterator_t lit;
+
     // Phase 1: collect what to stop
 
     bool scanning_stop = false;
@@ -4858,7 +4861,6 @@ static bool hci_run_general_gap_le(void){
 
     // check if whitelist needs modification
     bool whitelist_modification_pending = false;
-    btstack_linked_list_iterator_t lit;
     btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
     while (btstack_linked_list_iterator_has_next(&lit)){
         whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&lit);
@@ -4867,14 +4869,29 @@ static bool hci_run_general_gap_le(void){
             break;
         }
     }
+
     // check if resolving list needs modification
     bool resolving_list_modification_pending = false;
 #ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
-
     bool resolving_list_supported = hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_ADDRESS_RESOLUTION_ENABLE);
 	if (resolving_list_supported && hci_stack->le_resolving_list_state != LE_RESOLVING_LIST_DONE){
         resolving_list_modification_pending = true;
     }
+#endif
+
+    // check if periodic advertiser list needs modification
+#ifdef ENABLE_LE_CENTRAL
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    bool periodic_list_modification_pending = false;
+    btstack_linked_list_iterator_init(&lit, &hci_stack->le_periodic_advertiser_list);
+    while (btstack_linked_list_iterator_has_next(&lit)){
+        periodic_advertiser_list_entry_t * entry = (periodic_advertiser_list_entry_t*) btstack_linked_list_iterator_next(&lit);
+        if (entry->state & (LE_PERIODIC_ADVERTISER_LIST_ENTRY_ADD_TO_CONTROLLER | LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER)){
+            periodic_list_modification_pending = true;
+            break;
+        }
+    }
+#endif
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
@@ -5395,6 +5412,34 @@ static bool hci_run_general_gap_le(void){
 		}
 	}
     hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
+#endif
+
+#ifdef ENABLE_LE_CENTRAL
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    // LE Whitelist Management
+    if (periodic_list_modification_pending){
+        // add/remove entries
+        btstack_linked_list_iterator_init(&lit, &hci_stack->le_periodic_advertiser_list);
+        while (btstack_linked_list_iterator_has_next(&lit)){
+            periodic_advertiser_list_entry_t * entry = (periodic_advertiser_list_entry_t*) btstack_linked_list_iterator_next(&lit);
+            if (entry->state & LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER){
+                entry->state &= ~LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER;
+                hci_send_cmd(&hci_le_remove_device_from_periodic_advertiser_list, entry->address_type, entry->address);
+                return true;
+            }
+            if (entry->state & LE_PERIODIC_ADVERTISER_LIST_ENTRY_ADD_TO_CONTROLLER){
+                entry->state &= ~LE_PERIODIC_ADVERTISER_LIST_ENTRY_ADD_TO_CONTROLLER;
+                entry->state |= LE_PERIODIC_ADVERTISER_LIST_ENTRY_ON_CONTROLLER;
+                hci_send_cmd(&hci_le_add_device_to_periodic_advertiser_list, entry->address_type, entry->address);
+                return true;
+            }
+            if ((entry->state & LE_PERIODIC_ADVERTISER_LIST_ENTRY_ON_CONTROLLER) == 0){
+                btstack_linked_list_remove(&hci_stack->le_periodic_advertiser_list, (btstack_linked_item_t *) entry);
+                btstack_memory_periodic_advertiser_list_entry_free(entry);
+            }
+        }
+    }
+#endif
 #endif
 
     // post-pone all actions until stack is fully working
@@ -7902,6 +7947,125 @@ uint8_t gap_load_resolving_list_from_le_device_db(void){
 	}
 	return ERROR_CODE_SUCCESS;
 }
+#endif
+
+#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_CENTRAL
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+
+static uint8_t hci_periodic_advertiser_list_add(bd_addr_type_t address_type, const bd_addr_t address, uint8_t advertising_sid){
+    // check if already in list
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_periodic_advertiser_list);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        periodic_advertiser_list_entry_t *entry = (periodic_advertiser_list_entry_t *) btstack_linked_list_iterator_next(&it);
+        if (entry->sid != advertising_sid) {
+            continue;
+        }
+        if (entry->address_type != address_type) {
+            continue;
+        }
+        if (memcmp(entry->address, address, 6) != 0) {
+            continue;
+        }
+        // disallow if already scheduled to add
+        if ((entry->state & LE_PERIODIC_ADVERTISER_LIST_ENTRY_ADD_TO_CONTROLLER) != 0){
+            return ERROR_CODE_COMMAND_DISALLOWED;
+        }
+        // still on controller, but scheduled to remove -> re-add
+        entry->state |= LE_PERIODIC_ADVERTISER_LIST_ENTRY_ADD_TO_CONTROLLER;
+        return ERROR_CODE_SUCCESS;
+    }
+    // alloc and add to list
+    periodic_advertiser_list_entry_t * entry = btstack_memory_periodic_advertiser_list_entry_get();
+    if (!entry) return BTSTACK_MEMORY_ALLOC_FAILED;
+    entry->sid = advertising_sid;
+    entry->address_type = address_type;
+    (void)memcpy(entry->address, address, 6);
+    entry->state = LE_PERIODIC_ADVERTISER_LIST_ENTRY_ADD_TO_CONTROLLER;
+    btstack_linked_list_add(&hci_stack->le_periodic_advertiser_list, (btstack_linked_item_t*) entry);
+    return ERROR_CODE_SUCCESS;
+}
+
+static uint8_t hci_periodic_advertiser_list_remove(bd_addr_type_t address_type, const bd_addr_t address, uint8_t advertising_sid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_periodic_advertiser_list);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        periodic_advertiser_list_entry_t * entry = (periodic_advertiser_list_entry_t*) btstack_linked_list_iterator_next(&it);
+        if (entry->sid != advertising_sid) {
+            continue;
+        }
+        if (entry->address_type != address_type) {
+            continue;
+        }
+        if (memcmp(entry->address, address, 6) != 0) {
+            continue;
+        }
+        if (entry->state & LE_PERIODIC_ADVERTISER_LIST_ENTRY_ON_CONTROLLER){
+            // remove from controller if already present
+            entry->state |= LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER;
+        }  else {
+            // directly remove entry from whitelist
+            btstack_linked_list_iterator_remove(&it);
+            btstack_memory_periodic_advertiser_list_entry_free(entry);
+        }
+        return ERROR_CODE_SUCCESS;
+    }
+    return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+}
+
+static void hci_periodic_advertiser_list_clear(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_periodic_advertiser_list);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        periodic_advertiser_list_entry_t * entry = (periodic_advertiser_list_entry_t*) btstack_linked_list_iterator_next(&it);
+        if (entry->state & LE_PERIODIC_ADVERTISER_LIST_ENTRY_ON_CONTROLLER){
+            // remove from controller if already present
+            entry->state |= LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER;
+            continue;
+        }
+        // directly remove entry from whitelist
+        btstack_linked_list_iterator_remove(&it);
+        btstack_memory_periodic_advertiser_list_entry_free(entry);
+    }
+}
+
+// free all entries unconditionally
+static void hci_periodic_advertiser_list_free(void){
+    btstack_linked_list_iterator_t lit;
+    btstack_linked_list_iterator_init(&lit, &hci_stack->le_periodic_advertiser_list);
+    while (btstack_linked_list_iterator_has_next(&lit)){
+        periodic_advertiser_list_entry_t * entry = (periodic_advertiser_list_entry_t*) btstack_linked_list_iterator_next(&lit);
+        btstack_linked_list_remove(&hci_stack->le_periodic_advertiser_list, (btstack_linked_item_t *) entry);
+        btstack_memory_periodic_advertiser_list_entry_free(entry);
+    }
+}
+
+uint8_t gap_periodic_advertiser_list_clear(void){
+    hci_periodic_advertiser_list_clear();
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_periodic_advertiser_list_add(bd_addr_type_t address_type, const bd_addr_t address, uint8_t advertising_sid){
+    uint8_t status = hci_periodic_advertiser_list_add(address_type, address, advertising_sid);
+    if (status){
+        return status;
+    }
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_periodic_advertiser_list_remove(bd_addr_type_t address_type, const bd_addr_t address, uint8_t advertising_sid){
+    uint8_t status = hci_periodic_advertiser_list_remove(address_type, address, advertising_sid);
+    if (status){
+        return status;
+    }
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+#endif
+#endif
 #endif
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION

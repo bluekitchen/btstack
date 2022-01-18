@@ -1064,6 +1064,10 @@ typedef struct {
     uint16_t le_connection_scan_window;
     uint8_t  le_connection_own_addr_type;
     bd_addr_t le_connection_own_address;
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    btstack_linked_list_t le_periodic_advertiser_list;
+#endif
 #endif
 
     le_connection_parameter_range_t le_connection_parameter_range;
@@ -1483,6 +1487,30 @@ void hci_remove_le_device_db_entry_from_resolving_list(uint16_t le_device_db_ind
  * @note internal use
  */
 uint16_t hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_type);
+
+/**
+ * @brief Clear Periodic Advertiser List
+ * @return status
+ */
+uint8_t gap_periodic_advertiser_list_clear(void);
+
+/**
+ * @brief Add entry to Periodic Advertiser List
+ * @param address_type
+ * @param address
+ * @param advertising_sid
+ * @return
+ */
+uint8_t gap_periodic_advertiser_list_add(bd_addr_type_t address_type, const bd_addr_t address, uint8_t advertising_sid);
+
+/**
+ * Remove entry from Periodic Advertising List
+ * @param address_type
+ * @param address
+ * @param advertising_sid
+ * @return
+ */
+uint8_t gap_periodic_advertiser_list_remove(bd_addr_type_t address_type, const bd_addr_t address, uint8_t advertising_sid);
 
 /**
  * @brief Get Manufactured
