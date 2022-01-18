@@ -1,6 +1,7 @@
 # Makefile to collect all C source files of src/ble/gatt-service
 
 SRC_BLE_GATT_SERVICE_FILES = \
+    audio_input_control_service_server.c \
     ancs_client.c \
     battery_service_client.c \
     battery_service_server.c \

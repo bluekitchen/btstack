@@ -11884,6 +11884,90 @@ static inline uint8_t gattservice_subevent_local_mics_mute_get_state(const uint8
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_MUTE_MODE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_aics_mute_mode_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_MUTE_MODE
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_mute_mode_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field muted from event GATTSERVICE_SUBEVENT_AICS_MUTE_MODE
+ * @param event packet
+ * @return muted
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_mute_mode_get_muted(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_GAIN_MODE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_aics_gain_mode_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_GAIN_MODE
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_gain_mode_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field manual from event GATTSERVICE_SUBEVENT_AICS_GAIN_MODE
+ * @param event packet
+ * @return manual
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_gain_mode_get_manual(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_aics_gain_changed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_gain_changed_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field gain_db from event GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED
+ * @param event packet
+ * @return gain_db
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_gain_changed_get_gain_db(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid

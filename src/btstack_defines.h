@@ -3793,6 +3793,32 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE                                0x1Bu
 
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param muted
+*/
+#define GATTSERVICE_SUBEVENT_AICS_MUTE_MODE                                 0x1Cu
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param manual
+*/
+#define GATTSERVICE_SUBEVENT_AICS_GAIN_MODE                                 0x1Du
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param gain_db
+*/
+#define GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED                              0x1Eu
 
 // MAP Meta Event Group
 
