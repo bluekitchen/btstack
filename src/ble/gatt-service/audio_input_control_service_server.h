@@ -104,8 +104,6 @@ typedef struct {
 } aics_gain_settings_properties_t;
 
 typedef struct {
-    uint8_t index;
-
     aics_audio_input_state_t audio_input_state;
     aics_gain_settings_properties_t gain_settings_properties;
 
@@ -125,6 +123,7 @@ typedef struct {
     // service
     uint16_t start_handle;
     uint16_t end_handle;
+    uint8_t index;
 
     aics_info_t info;
 

@@ -136,7 +136,7 @@ static void aics_emit_mute_mode(audio_input_control_service_server_t * aics){
     event[pos++] = GATTSERVICE_SUBEVENT_AICS_MUTE_MODE;
     little_endian_store_16(event, pos, aics->con_handle);
     pos += 2;
-    event[pos++] = aics->info.index;
+    event[pos++] = aics->index;
     event[pos++] = aics->info.audio_input_state.mute_mode == AICS_MUTE_MODE_MUTED ? 1 : 0;
     (*aics->info.packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -151,7 +151,7 @@ static void aics_emit_gain_mode(audio_input_control_service_server_t * aics){
     event[pos++] = GATTSERVICE_SUBEVENT_AICS_GAIN_MODE;
     little_endian_store_16(event, pos, aics->con_handle);
     pos += 2;
-    event[pos++] = aics->info.index;
+    event[pos++] = aics->index;
     event[pos++] = aics->info.audio_input_state.gain_mode == AICS_GAIN_MODE_MANUAL ? 1 : 0;
     (*aics->info.packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -166,7 +166,7 @@ static void aics_emit_gain(audio_input_control_service_server_t * aics){
     event[pos++] = GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED;
     little_endian_store_16(event, pos, aics->con_handle);
     pos += 2;
-    event[pos++] = aics->info.index;
+    event[pos++] = aics->index;
     event[pos++] = (uint8_t)aics->info.audio_input_state.gain_setting_db;
     (*aics->info.packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
