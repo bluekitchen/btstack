@@ -1,5 +1,5 @@
 r
 speed 4000
-loadfile ./build/gatt_counter.hex,0x08000000
+loadfile ./build/hfp_hf_demo.hex,0x08000000
 r
 exit

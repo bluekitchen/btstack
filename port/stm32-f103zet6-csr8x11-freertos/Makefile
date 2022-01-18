@@ -32,7 +32,7 @@ BR_EDR_ENABLE = y
 
 BLE_ENABLE = y
 
-EXAMPLE_PLUS_ENABLE = n
+EXAMPLE_PLUS_ENABLE = y
 
 FREERTOS_ENABLE = n
 
@@ -53,8 +53,6 @@ VPATH += ${BTSTACK_ROOT}/example
 ######################################
 # C sources
 ifeq (${BLE_ENABLE}, y)
-C_DEFS += -DBLE_ENABLE
-
 C_SOURCES += ${BTSTACK_ROOT}/src/ad_parser.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/att_db.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/att_dispatch.c
@@ -72,8 +70,6 @@ C_SOURCES += ${BTSTACK_ROOT}/src/ble/sm.c
 endif
 
 ifeq (${BR_EDR_ENABLE}, y)
-C_DEFS += -DBR_EDR_ENABLE
-
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/a2dp_sink.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/a2dp_source.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/avdtp.c
@@ -132,20 +128,48 @@ else
 	C_SOURCES += ${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c
 endif
 
-#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c
-#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c
-#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c
-#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c
-#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c
-#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c
-#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/yxml/yxml.c
-#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/md5/md5.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/yxml/yxml.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/md5/md5.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/def.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/inet_chksum.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/init.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ip.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/mem.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/memp.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/netif.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/pbuf.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_in.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_out.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/timeouts.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/udp.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/acd.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/dhcp.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/etharp.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/icmp.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/netif/ethernet.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/fs.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c
+C_SOURCES += ${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c
+C_SOURCES += ${BTSTACK_ROOT}/platform/lwip/bnep_lwip.c
 C_SOURCES += ${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c
+C_SOURCES += ${BTSTACK_ROOT}/example/sco_demo_util.c
 #C_SOURCES += ${BTSTACK_ROOT}/example/gap_le_advertisements.c
 #C_SOURCES += ${BTSTACK_ROOT}/example/gap_link_keys.c
 #C_SOURCES += ${BTSTACK_ROOT}/example/hid_mouse_demo.c
 #C_SOURCES += ${BTSTACK_ROOT}/example/gatt_device_information_query.c
-C_SOURCES += ${BTSTACK_ROOT}/example/gatt_counter.c
+#C_SOURCES += ${BTSTACK_ROOT}/example/gatt_counter.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_audio.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_crypto.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_hid_parser.c
@@ -342,10 +366,7 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
-EXAMPLES = gatt_counter
-
-#ifeq (${EXAMPLE_PLUS_ENABLE}, y)
-#EXAMPLES += 				\
+EXAMPLES += 				\
 	audio_duplex            \
 	a2dp_sink_demo			\
 	a2dp_source_demo        \
@@ -382,7 +403,7 @@ EXAMPLES = gatt_counter
 	spp_counter 			\
 	spp_streamer			\
 	spp_streamer_client     \
-#endif
+
 
 GATT_FILES = \
 	ancs_client_demo.gatt \
@@ -399,13 +420,13 @@ GATT_FILES = \
 	spp_and_gatt_streamer.gatt \
 
 # SBC codec
-#include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
-#include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
-#VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
-#VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
-#C_SOURCES += ${SBC_ENCODER}
-#C_SOURCES += ${SBC_DECODER}
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
+C_SOURCES += ${SBC_ENCODER}
+C_SOURCES += ${SBC_DECODER}
 
 #######################################
 # build the application

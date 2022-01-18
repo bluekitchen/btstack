@@ -369,11 +369,9 @@ void port_main(void){
     // setup global tlv
     btstack_tlv_set_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 
-#ifdef BR_EDR_ENABLE
     // setup Link Key DB using TLV
     const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
     hci_set_link_key_db(btstack_link_key_db);
-#endif
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 #endif

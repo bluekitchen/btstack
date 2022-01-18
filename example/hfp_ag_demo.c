@@ -557,7 +557,7 @@ static hfp_phone_number_t subscriber_number = {
  */
 
 /* LISTING_START(MainConfiguration): Setup HFP Audio Gateway */
-
+void sco_demo_init(void);
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     (void)argc;

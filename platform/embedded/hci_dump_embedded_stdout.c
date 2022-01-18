@@ -68,9 +68,9 @@ static void hci_dump_embedded_stdout_timestamp(void){
 }
 
 static void hci_dump_embedded_stdout_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uint16_t len){
-    if (packet_type != LOG_MESSAGE_PACKET) {
-        return;
-    }
+
+    hci_log(packet_type, in, packet, len);
+
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
             printf("CMD => ");
@@ -168,10 +168,6 @@ typedef enum {
 }
 
 static void hci_dump_embedded_stdout_log_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
-    if (packet_type != LOG_MESSAGE_PACKET) {
-        hci_log(packet_type, in, packet, len);
-        return;
-    }
     hci_dump_embedded_stdout_timestamp();
     hci_dump_embedded_stdout_packet(packet_type, in, packet, len);
 }

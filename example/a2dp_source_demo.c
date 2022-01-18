@@ -891,7 +891,7 @@ static void show_usage(void){
 
     printf("x      - start streaming sine\n");
     if (hxcmod_initialized){
-        printf("z      - start streaming '%s'\n", mod_name);
+        //printf("z      - start streaming '%s'\n", mod_name);
     }
     printf("p      - pause streaming\n");
     printf("w      - reconfigure stream for 44100 Hz\n");
