@@ -74,6 +74,10 @@
  */
  
 /* LISTING_START(MainConfiguration): Init L2CAP SM ATT Server and start heartbeat timer */
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
+
 static int  le_notification_enabled;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
@@ -83,9 +87,24 @@ static bool accept_next_pairing = true;
 
 static gatt_microphone_control_mute_t mics_mute = GATT_MICROPHONE_CONTROL_MUTE_OFF;
 
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
-static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
+const aics_info_t aics_info[] = {
+    {
+        {0, AICS_MUTE_MODE_NOT_MUTED, AICS_GAIN_MODE_MANUAL},
+        {1, -10, 10},
+        "audio_input_type1",
+        "audio_input_description1",
+        packet_handler
+    },
+    {
+        {0, AICS_MUTE_MODE_MUTED, AICS_GAIN_MODE_AUTOMATIC},
+        {1, -11, 11},
+        "audio_input_type2",
+        "audio_input_description2",
+        packet_handler
+    }
+};
+static uint8_t aics_info_num = 2;
+
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
 #include "classic/gatt_sdp.h"
@@ -308,7 +327,9 @@ int btstack_main(void)
     bond_management_service_server_set_authorisation_string("000000000000");
 
     mics_mute = GATT_MICROPHONE_CONTROL_MUTE_OFF;
-    microphone_control_service_server_init(mics_mute);
+    
+    microphone_control_service_server_init(mics_mute, aics_info_num, aics_info);
+
     microphone_control_service_server_register_packet_hanlder(&packet_handler);
 
     volume_control_service_server_init(128, VCS_MUTE_OFF, 16);

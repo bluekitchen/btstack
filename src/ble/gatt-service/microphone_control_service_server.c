@@ -50,8 +50,8 @@
 #include "btstack_debug.h"
 #include "btstack_defines.h"
 
-
 #include "ble/gatt-service/microphone_control_service_server.h"
+#include "ble/gatt-service/audio_input_control_service_server.h"
 
 static btstack_context_callback_registration_t  mc_mute_callback;
 static att_service_handler_t       microphone_control;
@@ -64,6 +64,9 @@ static uint16_t mc_mute_state_handle;
 static uint16_t mc_mute_state_handle_client_configuration;
 
 static btstack_packet_handler_t mics_callback;
+
+static audio_input_control_service_server_t aics_services[AICS_MAX_NUM_SERVICES];
+static uint8_t aics_services_index;
 
 static void microphone_control_service_server_emit_mute(gatt_microphone_control_mute_t mute_state){
     btstack_assert(mics_callback != NULL);
@@ -135,7 +138,10 @@ static void microphone_control_service_can_send_now(void * context){
 	att_server_notify(con_handle, mc_mute_state_handle, &value, 1);
 }
 
-void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_state){
+void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_state, uint8_t aics_info_num, const aics_info_t * aics_info){
+	btstack_assert(aics_info_num <= AICS_MAX_NUM_SERVICES);
+	btstack_assert((aics_info_num == 0)|| (aics_info != NULL));
+
 	mc_mute_state = mute_state;
 	// get service handle range
 	uint16_t start_handle = 0;
@@ -148,6 +154,38 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 	mc_mute_state_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MUTE);
 	mc_mute_state_handle_client_configuration = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MUTE);
 
+	log_info("Found MICS service 0x%02x-0x%02x", start_handle, end_handle);
+
+    uint16_t aics_start_handle = start_handle + 1;
+	uint16_t aics_end_handle   = end_handle - 1;
+	aics_services_index = 0;
+
+	while ((aics_start_handle < aics_end_handle) && (aics_services_index < aics_info_num)) {
+		uint16_t included_service_handle;
+    	uint16_t included_service_start_handle;
+    	uint16_t included_service_end_handle;
+
+		bool aics_service_found = gatt_server_get_included_service_with_uuid16(aics_start_handle, aics_end_handle, 
+			ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL, &included_service_handle, &included_service_start_handle, &included_service_end_handle);
+
+		if (!aics_service_found){
+			break;
+		}
+		log_info("Found inlcuded AICS service 0x%02x-0x%02x", included_service_start_handle, included_service_end_handle);
+
+		audio_input_control_service_server_t service = aics_services[aics_services_index];
+		service.start_handle = included_service_start_handle;
+		service.end_handle = included_service_end_handle;
+		service.index = aics_services_index;
+		
+		memcpy(&service.info, &aics_info[aics_services_index], sizeof(aics_info_t));
+
+		audio_input_control_service_server_init(&aics_services[aics_services_index]);
+    	
+		aics_start_handle = included_service_handle + 1;
+		aics_services_index++;
+	}
+	
 	// register service with ATT Server
 	microphone_control.start_handle   = start_handle;
 	microphone_control.end_handle     = end_handle;
