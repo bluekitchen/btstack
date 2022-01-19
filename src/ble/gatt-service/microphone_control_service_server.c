@@ -176,7 +176,6 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 		audio_input_control_service_server_t * service = &aics_services[aics_services_num];
 		service->start_handle = included_service_start_handle;
 		service->end_handle = included_service_end_handle;
-		service->index = aics_services_index + 1;
 		service->index = aics_services_num;
 		
 		memcpy(&service->info, &aics_info[aics_services_num], sizeof(aics_info_t));
