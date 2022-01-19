@@ -167,7 +167,7 @@ typedef struct {
     uint16_t audio_input_control_value_handle;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION
-    uint16_t audio_input_description_control_value_handle;
+    uint16_t audio_input_description_value_handle;
 
     uint16_t audio_input_description_client_configuration_handle;
     uint16_t audio_input_description_client_configuration;

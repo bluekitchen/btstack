@@ -102,7 +102,7 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
         return att_read_callback_handle_byte((uint8_t)aics->audio_input_status, offset, buffer, buffer_size);
     }
 
-    if (attribute_handle == aics->audio_input_description_control_value_handle){
+    if (attribute_handle == aics->audio_input_description_value_handle){
         aics->con_handle = con_handle;
         return att_read_callback_handle_blob((uint8_t *)aics->info.audio_input_description, strlen(aics->info.audio_input_description), offset, buffer, buffer_size);
     }
@@ -329,8 +329,8 @@ void audio_input_control_service_server_init(audio_input_control_service_server_
 
     aics->audio_input_control_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_CONTROL_POINT);
     
-    aics->audio_input_status_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION);
-    aics->audio_input_status_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION);
+    aics->audio_input_description_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION);
+    aics->audio_input_description_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION);
 
     // register service with ATT Server
     aics->service_handler.start_handle   = aics->start_handle;
@@ -366,7 +366,7 @@ static void audio_input_control_service_can_send_now(void * context){
 
     } else if ((aics->scheduled_tasks & AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION) != 0){
         aics->scheduled_tasks &= ~AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION;
-        att_server_notify(aics->con_handle, aics->audio_input_description_control_value_handle, (uint8_t *)aics->info.audio_input_description, strlen(aics->info.audio_input_description));
+        att_server_notify(aics->con_handle, aics->audio_input_description_value_handle, (uint8_t *)aics->info.audio_input_description, strlen(aics->info.audio_input_description));
     }
 
     if (aics->scheduled_tasks != 0){
