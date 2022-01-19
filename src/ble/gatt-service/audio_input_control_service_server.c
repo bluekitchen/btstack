@@ -233,13 +233,11 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 switch (aics->info.audio_input_state.mute_mode){
                     case AICS_MUTE_MODE_DISABLED:
                         return AICS_ERROR_CODE_MUTE_DISABLED;
-                    
                     case AICS_MUTE_MODE_MUTED:
                         aics->info.audio_input_state.mute_mode = AICS_MUTE_MODE_NOT_MUTED;
                         aics->audio_input_state_change_counter++;
                         aics_emit_mute_mode(aics);
                         break;
-                    
                     default:
                         break;
                 }
@@ -248,47 +246,35 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 switch (aics->info.audio_input_state.mute_mode){
                     case AICS_MUTE_MODE_DISABLED:
                         return AICS_ERROR_CODE_MUTE_DISABLED;
-                    
                     case AICS_MUTE_MODE_NOT_MUTED:
                         aics->info.audio_input_state.mute_mode = AICS_MUTE_MODE_MUTED;
                         aics->audio_input_state_change_counter++;
                         aics_emit_mute_mode(aics);
                         break;
-                    
                     default:
                         break;
                 }
                 break;
             case AICS_OPCODE_SET_MANUAL_GAIN_MODE:
                 switch (aics->info.audio_input_state.gain_mode){
-                    case AICS_GAIN_MODE_MANUAL_ONLY:
-                    case AICS_GAIN_MODE_AUTOMATIC_ONLY:
-                        return AICS_ERROR_CODE_GAIN_MODE_CHANGE_NOT_ALLOWED;
-                    
                     case AICS_GAIN_MODE_AUTOMATIC:
                         aics->info.audio_input_state.gain_mode = AICS_GAIN_MODE_MANUAL;
                         aics->audio_input_state_change_counter++;
                         aics_emit_gain_mode(aics);
                         break;
-                    
                     default:
-                        break;
+                        return AICS_ERROR_CODE_GAIN_MODE_CHANGE_NOT_ALLOWED;
                 }
                 break;
             case AICS_OPCODE_SET_AUTOMATIC_GAIN_MODE:
                 switch (aics->info.audio_input_state.gain_mode){
-                    case AICS_GAIN_MODE_MANUAL_ONLY:
-                    case AICS_GAIN_MODE_AUTOMATIC_ONLY:
-                        return AICS_ERROR_CODE_GAIN_MODE_CHANGE_NOT_ALLOWED;
-                    
                     case AICS_GAIN_MODE_MANUAL:
                         aics->info.audio_input_state.gain_mode = AICS_GAIN_MODE_AUTOMATIC;
                         aics->audio_input_state_change_counter++;
                         aics_emit_gain_mode(aics);
                         break;
-                    
                     default:
-                        break;
+                        return AICS_ERROR_CODE_GAIN_MODE_CHANGE_NOT_ALLOWED;
                 }
                 break;
             default:
