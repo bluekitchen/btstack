@@ -46,6 +46,10 @@
 
 #include "ble/gatt-service/audio_input_control_service_server.h"
 
+#ifdef ENABLE_TESTING_SUPPORT
+#include <stdio.h>
+#endif
+
 #define AICS_TASK_SEND_AUDIO_INPUT_STATE                  0x01
 #define AICS_TASK_SEND_AUDIO_INPUT_STATUS                 0x02
 #define AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION            0x03
@@ -307,7 +311,6 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
     return 0;
 }
 
-
 void audio_input_control_service_server_init(audio_input_control_service_server_t * aics){
     btstack_assert(aics != NULL);
     btstack_assert(aics->info.packet_handler != NULL);
@@ -331,6 +334,22 @@ void audio_input_control_service_server_init(audio_input_control_service_server_
     
     aics->audio_input_description_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION);
     aics->audio_input_description_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION);
+
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("AICS[%d] 0x%02x - 0x%02x \n", aics->index, aics->start_handle, aics->end_handle);
+    printf("    audio_input_state            0x%02x \n", aics->audio_input_state_value_handle);
+    printf("    audio_input_state CCC        0x%02x \n", aics->audio_input_state_client_configuration_handle);
+
+    printf("    gain_settings_properties     0x%02x \n", aics->gain_settings_properties_value_handle);
+    printf("    audio_input_type             0x%02x \n", aics->audio_input_type_value_handle);
+
+    printf("    audio_input_status           0x%02x \n", aics->audio_input_status_value_handle);
+    printf("    audio_input_status CCC       0x%02x \n", aics->audio_input_status_client_configuration_handle);
+
+    printf("    control_value_handle         0x%02x \n", aics->audio_input_control_value_handle);
+    printf("    description_value_handle     0x%02x \n", aics->audio_input_description_value_handle);
+    printf("    description_value_handle CCC 0x%02x \n", aics->audio_input_description_client_configuration_handle);
+#endif
 
     // register service with ATT Server
     aics->service_handler.start_handle   = aics->start_handle;
