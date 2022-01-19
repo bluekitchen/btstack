@@ -94,7 +94,7 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
 
     if (attribute_handle == aics->audio_input_type_value_handle){
         aics->con_handle = con_handle;
-        return att_read_callback_handle_blob((uint8_t *)aics->info.audio_input_type, strlen(aics->info.audio_input_type), offset, buffer, buffer_size);
+        return att_read_callback_handle_byte((uint8_t)aics->info.audio_input_type, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == aics->audio_input_status_value_handle){

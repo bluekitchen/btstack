@@ -91,6 +91,16 @@ typedef enum {
     AICS_AUDIO_INPUT_STATUS_ACTIVE
 } aics_audio_input_status_t;
 
+typedef enum {
+    AICS_AUDIO_INPUT_TYPE_UNSPECIFIED = 0,
+    AICS_AUDIO_INPUT_TYPE_BLUETOOTH_AUDIO_STREAM,
+    AICS_AUDIO_INPUT_TYPE_MICROPHONE,
+    AICS_AUDIO_INPUT_TYPE_ANALOG_INTERFACE,
+    AICS_AUDIO_INPUT_TYPE_DIGITAL_INTERFACE,
+    AICS_AUDIO_INPUT_TYPE_RADIO,
+    AICS_AUDIO_INPUT_TYPE_STREAMING_AUDIO_SOURCE
+} aics_audio_input_type_t;
+
 typedef struct {
     int8_t  gain_setting_db;
     aics_mute_mode_t mute_mode;
@@ -107,7 +117,7 @@ typedef struct {
     aics_audio_input_state_t audio_input_state;
     aics_gain_settings_properties_t gain_settings_properties;
 
-    const char * audio_input_type;
+    aics_audio_input_type_t audio_input_type;
     const char * audio_input_description;
 
     btstack_packet_handler_t packet_handler;
