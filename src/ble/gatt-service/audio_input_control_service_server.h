@@ -58,7 +58,6 @@ extern "C" {
  */
 #define AICS_MAX_NUM_SERVICES 5
 
-#define AICS_ERROR_CODE_SUCCESS                         0x00
 #define AICS_ERROR_CODE_INVALID_CHANGE_COUNTER          0x80
 #define AICS_ERROR_CODE_OPCODE_NOT_SUPPORTED            0x81
 #define AICS_ERROR_CODE_MUTE_DISABLED                   0x82
@@ -178,18 +177,24 @@ typedef struct {
 
 /**
  * @brief Init Audio Input Control Service Server with ATT DB
- * @param aics      storage
- * @param start_handle
- * @param end_handle
- * @param aics_index
- * @param audio_input_type
- * @param gain_properties
- * @param packet_handler
+ * @param aics service storage
  */
 void audio_input_control_service_server_init(audio_input_control_service_server_t * aics);
 
-uint8_t audio_input_control_service_server_update_audio_input_state(audio_input_control_service_server_t * aics, aics_audio_input_state_t * audio_input_state);
-void audio_input_control_service_server_update_audio_input_status(audio_input_control_service_server_t * aics, aics_audio_input_status_t audio_input_status);
+/**
+ * @brief Set audio input state of the AICS service. If successful, all registered clients will be notified of change.
+ * @param aics service
+ * @param audio_input_state see aics_audio_input_state_t
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if gain setting is out of a valid range [gain_settings_minimum, gain_settings_maximum] .
+ */
+uint8_t audio_input_control_service_server_set_audio_input_state(audio_input_control_service_server_t * aics, aics_audio_input_state_t * audio_input_state);
+
+/**
+ * @brief Set audio input status of the AICS service. If successful, all registered clients will be notified of change.
+ * @param aics service
+ * @param audio_input_status see aics_audio_input_status_t
+ */
+void audio_input_control_service_server_set_audio_input_status(audio_input_control_service_server_t * aics, aics_audio_input_status_t audio_input_status);
 
 /* API_END */
 

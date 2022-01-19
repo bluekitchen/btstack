@@ -75,6 +75,12 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
         return 0;
     }
 
+#ifdef ENABLE_TESTING_SUPPORT
+    if (buffer_size > 0){
+        printf("AICS[%d] read 0x%02x\n", aics->index, attribute_handle);
+    }
+#endif
+
     if (attribute_handle == aics->audio_input_state_value_handle){
         aics->con_handle = con_handle;
         uint8_t value[4];
@@ -193,6 +199,11 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
     if (aics == NULL){
         return 0;
     }
+
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("AICS[%d] write 0x%02x\n", aics->index, attribute_handle);
+#endif
+
 
     if (attribute_handle == aics->audio_input_control_value_handle){
         if (buffer_size == 0){
@@ -398,13 +409,12 @@ static void audio_input_control_service_server_set_callback(audio_input_control_
     }   
 }
 
-uint8_t audio_input_control_service_server_update_audio_input_state(audio_input_control_service_server_t * aics, aics_audio_input_state_t * audio_input_state){ 
+uint8_t audio_input_control_service_server_set_audio_input_state(audio_input_control_service_server_t * aics, aics_audio_input_state_t * audio_input_state){
     btstack_assert(aics != NULL);
     
     bool valid_range = audio_input_control_service_server_set_gain(aics, audio_input_state->gain_setting_db);
-
     if (!valid_range){
-        return AICS_ERROR_CODE_VALUE_OUT_OF_RANGE;
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
     aics->info.audio_input_state.mute_mode = audio_input_state->mute_mode;
@@ -412,10 +422,10 @@ uint8_t audio_input_control_service_server_update_audio_input_state(audio_input_
     aics->audio_input_state_change_counter++;
 
     audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_STATE);
-    return AICS_ERROR_CODE_SUCCESS;
+    return ERROR_CODE_SUCCESS;
 }
 
-void audio_input_control_service_server_update_audio_input_status(audio_input_control_service_server_t * aics, aics_audio_input_status_t audio_input_status){
+void audio_input_control_service_server_set_audio_input_status(audio_input_control_service_server_t * aics, aics_audio_input_status_t audio_input_status){
     btstack_assert(aics != NULL);
     aics->audio_input_status = audio_input_status;
     audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_STATUS);
