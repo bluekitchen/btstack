@@ -66,7 +66,7 @@ static uint16_t mc_mute_state_handle_client_configuration;
 static btstack_packet_handler_t mics_callback;
 
 static audio_input_control_service_server_t aics_services[AICS_MAX_NUM_SERVICES];
-static uint8_t aics_services_index;
+static uint8_t aics_services_num;
 
 static void microphone_control_service_server_emit_mute(gatt_microphone_control_mute_t mute_state){
     btstack_assert(mics_callback != NULL);
@@ -158,9 +158,9 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 
     uint16_t aics_start_handle = start_handle + 1;
 	uint16_t aics_end_handle   = end_handle - 1;
-	aics_services_index = 0;
+    aics_services_num = 0;
 
-	while ((aics_start_handle < aics_end_handle) && (aics_services_index < aics_info_num)) {
+	while ((aics_start_handle < aics_end_handle) && (aics_services_num < aics_info_num)) {
 		uint16_t included_service_handle;
     	uint16_t included_service_start_handle;
     	uint16_t included_service_end_handle;
@@ -173,17 +173,18 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 		}
 		log_info("Found inlcuded AICS service 0x%02x-0x%02x", included_service_start_handle, included_service_end_handle);
 
-		audio_input_control_service_server_t * service = &aics_services[aics_services_index];
+		audio_input_control_service_server_t * service = &aics_services[aics_services_num];
 		service->start_handle = included_service_start_handle;
 		service->end_handle = included_service_end_handle;
 		service->index = aics_services_index + 1;
+		service->index = aics_services_num;
 		
-		memcpy(&service->info, &aics_info[aics_services_index], sizeof(aics_info_t));
+		memcpy(&service->info, &aics_info[aics_services_num], sizeof(aics_info_t));
 
 		audio_input_control_service_server_init(service);
     	
 		aics_start_handle = included_service_handle + 1;
-		aics_services_index++;
+		aics_services_num++;
 	}
 	
 	// register service with ATT Server
