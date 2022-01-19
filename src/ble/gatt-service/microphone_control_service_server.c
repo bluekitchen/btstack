@@ -194,7 +194,7 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 	att_server_register_service_handler(&microphone_control);
 }
 
-void microphone_control_service_server_register_packet_hanlder(btstack_packet_handler_t callback){
+void microphone_control_service_server_register_packet_handler(btstack_packet_handler_t callback){
 	btstack_assert(callback != NULL);
 	mics_callback = callback;
 }

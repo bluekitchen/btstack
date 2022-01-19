@@ -330,7 +330,7 @@ int btstack_main(void)
     
     microphone_control_service_server_init(mics_mute, aics_info_num, aics_info);
 
-    microphone_control_service_server_register_packet_hanlder(&packet_handler);
+    microphone_control_service_server_register_packet_handler(&packet_handler);
 
     volume_control_service_server_init(128, VCS_MUTE_OFF, 16);
     

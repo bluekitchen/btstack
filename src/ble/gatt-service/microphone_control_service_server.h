@@ -71,7 +71,7 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
  * @brief Register callback to receive updates of mute value from remote side via MICS_MUTE event
  * @param callback
  */
-void microphone_control_service_server_register_packet_hanlder(btstack_packet_handler_t callback);
+void microphone_control_service_server_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
  * @brief Set mute value.
