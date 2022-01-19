@@ -87,23 +87,31 @@ static bool accept_next_pairing = true;
 
 static gatt_microphone_control_mute_t mics_mute = GATT_MICROPHONE_CONTROL_MUTE_OFF;
 
-const aics_info_t aics_info[] = {
+static aics_info_t aics_info[] = {
     {
-        {0, AICS_MUTE_MODE_NOT_MUTED, AICS_GAIN_MODE_MANUAL},
+        {1, AICS_MUTE_MODE_NOT_MUTED, AICS_GAIN_MODE_AUTOMATIC},
         {1, -10, 10},
-        "audio_input_type1",
+            AICS_AUDIO_INPUT_TYPE_MICROPHONE,
         "audio_input_description1",
         packet_handler
     },
     {
-        {0, AICS_MUTE_MODE_MUTED, AICS_GAIN_MODE_AUTOMATIC},
+        {2, AICS_MUTE_MODE_NOT_MUTED, AICS_GAIN_MODE_AUTOMATIC},
         {1, -11, 11},
-        "audio_input_type2",
+            AICS_AUDIO_INPUT_TYPE_MICROPHONE,
         "audio_input_description2",
         packet_handler
+    },
+    {
+            {3, AICS_MUTE_MODE_NOT_MUTED, AICS_GAIN_MODE_MANUAL},
+            {2, -12, 12},
+            AICS_AUDIO_INPUT_TYPE_MICROPHONE,
+            "audio_input_description3",
+            packet_handler
     }
+
 };
-static uint8_t aics_info_num = 2;
+static uint8_t aics_info_num = 3;
 
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
@@ -155,6 +163,26 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE: 
                     printf("MICS: mute value changed by remote to %d\n", gattservice_subevent_local_mics_mute_get_state(packet));
                     mics_mute = (gatt_microphone_control_mute_t)gattservice_subevent_local_mics_mute_get_state(packet);
+                    break;
+
+                case GATTSERVICE_SUBEVENT_AICS_MUTE_MODE:
+                    if (gattservice_subevent_aics_mute_mode_get_muted(packet) == 1){
+                        printf("AICS: muted\n");
+                        break;
+                    } 
+                    printf("AICS: not muted\n");
+                    break;
+
+                case GATTSERVICE_SUBEVENT_AICS_GAIN_MODE:
+                    if (gattservice_subevent_aics_gain_mode_get_manual(packet) == 1){
+                        printf("AICS: manual\n");
+                        break;
+                    } 
+                    printf("AICS: automatic\n");
+                    break;
+                
+                case GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED:
+                    printf("AICS: gain for AICS %d changed to %ddB\n", gattservice_subevent_aics_gain_changed_get_index(packet), gattservice_subevent_aics_gain_changed_get_gain_db(packet));
                     break;
 
                 default:
@@ -223,9 +251,19 @@ static void show_usage(void){
     printf("## MICS\n");
     printf("m - toggle mute\n");
     printf("M - disable mute\n");
+    printf("## MICS\n");
+    printf("m - toggle mute\n");
+    printf("M - disable mute\n");
+    printf("d - toggle mute of AICS[0]\n");
+    printf("D - disable mute of AICS[0]\n");
+    printf("g - toggle gain mode of AICS[0]\n");
 }
 
 static void stdin_process(char c){
+    aics_audio_input_state_t * aics_input_state;
+    static aics_mute_mode_t mute_mode;
+    static aics_gain_mode_t gain_mode;
+
     switch (c){
         case 'a': // accept just works
             printf("BAS: Sending 50%% battery level\n");
@@ -275,7 +313,43 @@ static void stdin_process(char c){
             mics_mute = GATT_MICROPHONE_CONTROL_MUTE_DISABLED;
             microphone_control_service_server_set_mute(mics_mute);
             break;
+        case 'd':
+            mute_mode = aics_info[0].audio_input_state.mute_mode;
+            switch (mute_mode){
+                case AICS_MUTE_MODE_NOT_MUTED:
+                    mute_mode = AICS_MUTE_MODE_MUTED;
+                    break;
+                default:
+                    mute_mode = AICS_MUTE_MODE_NOT_MUTED;
+                    break;
+            }
+            printf("AICS: set mute mode to %d\n", (mute_mode == AICS_MUTE_MODE_NOT_MUTED ? 0 : 1));
 
+            aics_info[0].audio_input_state.mute_mode = mute_mode;
+            microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
+            break;
+        case 'D':
+            printf("MICS: disable mute\n");
+            mute_mode = AICS_MUTE_MODE_DISABLED;
+            aics_info[0].audio_input_state.mute_mode = AICS_MUTE_MODE_DISABLED;
+            microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
+            break;
+
+        case 'g':
+            gain_mode = aics_info[0].audio_input_state.gain_mode;
+            switch (gain_mode){
+                case AICS_GAIN_MODE_MANUAL:
+                    gain_mode = AICS_GAIN_MODE_AUTOMATIC;
+                    break;
+                default:
+                    gain_mode = AICS_GAIN_MODE_MANUAL;
+                    break;
+            }
+            printf("AICS: set gain mode to %d\n", (gain_mode == AICS_GAIN_MODE_MANUAL ? 0 : 1));
+
+            aics_info[0].audio_input_state.gain_mode = gain_mode;
+            microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
+            break;
         default:
             show_usage();
             break;
@@ -299,6 +373,7 @@ int btstack_main(void)
     // register for SM events
     sm_event_callback_registration.callback = &packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
+    sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    

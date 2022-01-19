@@ -19,11 +19,13 @@ CHARACTERISTIC_FORMAT, READ, 04, 00, 27AD, 01, 01
 // add microphone control service (MICS)
 #import <audio_input_control_service.gatt>
 #import <audio_input_control_service.gatt>
+#import <audio_input_control_service.gatt>
 #import <microphone_control_service.gatt>
 
 // add one or more audio input control services (AICS) for VCS
-#import <audio_input_control_service.gatt>
-
+//#import <audio_input_control_service.gatt>
+//#import <audio_input_control_service.gatt>
+//#import <audio_input_control_service.gatt>
 // add volume control service (VCS)
 #import <volume_control_service.gatt>
 
