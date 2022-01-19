@@ -173,14 +173,14 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 		}
 		log_info("Found inlcuded AICS service 0x%02x-0x%02x", included_service_start_handle, included_service_end_handle);
 
-		audio_input_control_service_server_t service = aics_services[aics_services_index];
-		service.start_handle = included_service_start_handle;
-		service.end_handle = included_service_end_handle;
-		service.index = aics_services_index;
+		audio_input_control_service_server_t * service = &aics_services[aics_services_index];
+		service->start_handle = included_service_start_handle;
+		service->end_handle = included_service_end_handle;
+		service->index = aics_services_index + 1;
 		
-		memcpy(&service.info, &aics_info[aics_services_index], sizeof(aics_info_t));
+		memcpy(&service->info, &aics_info[aics_services_index], sizeof(aics_info_t));
 
-		audio_input_control_service_server_init(&aics_services[aics_services_index]);
+		audio_input_control_service_server_init(service);
     	
 		aics_start_handle = included_service_handle + 1;
 		aics_services_index++;
