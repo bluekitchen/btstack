@@ -212,3 +212,10 @@ void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t m
 		att_server_register_can_send_now_callback(&mc_mute_callback, mc_mute_state_client_configuration_connection);
 	}
 }
+
+uint8_t microphone_control_service_server_set_audio_input_state_for_aics(uint8_t aics_index, aics_audio_input_state_t * audio_input_state){
+    if (aics_index >= aics_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    return audio_input_control_service_server_set_audio_input_state(&aics_services[aics_index], audio_input_state);
+}

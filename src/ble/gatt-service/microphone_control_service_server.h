@@ -79,6 +79,13 @@ void microphone_control_service_server_register_packet_handler(btstack_packet_ha
  */
 void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t mute_state);
 
+/**
+ * @brief Set mute and gain mode, as well as gain setting of the AICS service identified by aics_index.
+ * @param aics_index
+ * @param audio_input_state see aics_audio_input_state_t in audio_input_control_service_server.h
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if aics_index is out of range, or ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if gain setting is out of valid range.
+ */
+uint8_t microphone_control_service_server_set_audio_input_state_for_aics(uint8_t aics_index, aics_audio_input_state_t * audio_input_state);
 
 /* API_END */
 
