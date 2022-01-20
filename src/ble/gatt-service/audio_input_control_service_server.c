@@ -189,6 +189,62 @@ static bool audio_input_control_service_server_set_gain(audio_input_control_serv
     return true;
 }
 
+static void audio_input_control_service_update_change_counter(audio_input_control_service_server_t * aics){
+    aics->audio_input_state_change_counter++;
+}
+
+static void audio_input_control_service_can_send_now(void * context){
+    audio_input_control_service_server_t * aics = (audio_input_control_service_server_t *) context;
+
+    if ((aics->scheduled_tasks & AICS_TASK_SEND_AUDIO_INPUT_STATE) != 0){
+        aics->scheduled_tasks &= ~AICS_TASK_SEND_AUDIO_INPUT_STATE;
+        
+        uint8_t value[4];
+        value[0] = (uint8_t)aics->info.audio_input_state.gain_setting_db;
+        value[1] = aics->info.audio_input_state.mute_mode;
+        value[2] = aics->info.audio_input_state.gain_mode;
+        value[3] = aics->audio_input_state_change_counter;
+
+        att_server_notify(aics->con_handle, aics->audio_input_state_value_handle, &value[0], sizeof(value));
+
+    } else if ((aics->scheduled_tasks & AICS_TASK_SEND_AUDIO_INPUT_STATUS) != 0){
+        aics->scheduled_tasks &= ~AICS_TASK_SEND_AUDIO_INPUT_STATUS;
+        uint8_t value = (uint8_t)aics->audio_input_status;
+        att_server_notify(aics->con_handle, aics->audio_input_status_value_handle, &value, 1);
+
+    } else if ((aics->scheduled_tasks & AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION) != 0){
+        aics->scheduled_tasks &= ~AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION;
+        att_server_notify(aics->con_handle, aics->audio_input_description_value_handle, (uint8_t *)aics->info.audio_input_description, strlen(aics->info.audio_input_description));
+    }
+
+    if (aics->scheduled_tasks != 0){
+        att_server_register_can_send_now_callback(&aics->scheduled_tasks_callback, aics->con_handle);
+    } else {
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &aics_services);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            audio_input_control_service_server_t * item = (audio_input_control_service_server_t*) btstack_linked_list_iterator_next(&it);
+            if (item->scheduled_tasks == 0) continue;
+            att_server_register_can_send_now_callback(&aics->scheduled_tasks_callback, aics->con_handle);
+            return;
+        }
+    }
+}
+
+static void audio_input_control_service_server_set_callback(audio_input_control_service_server_t * aics, uint8_t task){
+    if (aics->con_handle == 0){
+        aics->scheduled_tasks &= ~task;
+        return;
+    }
+
+    uint8_t scheduled_tasks = aics->scheduled_tasks;
+    aics->scheduled_tasks |= task;
+    if (scheduled_tasks == 0){
+        aics->scheduled_tasks_callback.callback = &audio_input_control_service_can_send_now;
+        aics->scheduled_tasks_callback.context  = (void*) aics;
+        att_server_register_can_send_now_callback(&aics->scheduled_tasks_callback, aics->con_handle);
+    }
+}
 
 static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(con_handle);
@@ -356,59 +412,6 @@ void audio_input_control_service_server_init(audio_input_control_service_server_
     att_server_register_service_handler(&aics->service_handler);
 }
 
-static void audio_input_control_service_update_change_counter(audio_input_control_service_server_t * aics){
-    aics->audio_input_state_change_counter++;
-}
-
-static void audio_input_control_service_can_send_now(void * context){
-    audio_input_control_service_server_t * aics = (audio_input_control_service_server_t *) context;
-
-    if ((aics->scheduled_tasks & AICS_TASK_SEND_AUDIO_INPUT_STATE) != 0){
-        aics->scheduled_tasks &= ~AICS_TASK_SEND_AUDIO_INPUT_STATE;
-        audio_input_control_service_update_change_counter(aics);
-        
-        uint8_t value[4];
-        value[0] = (uint8_t)aics->info.audio_input_state.gain_setting_db;
-        value[1] = aics->info.audio_input_state.mute_mode;
-        value[2] = aics->info.audio_input_state.gain_mode;
-        value[3] = aics->audio_input_state_change_counter;
-
-        att_server_notify(aics->con_handle, aics->audio_input_state_value_handle, &value[0], sizeof(value));
-
-    } else if ((aics->scheduled_tasks & AICS_TASK_SEND_AUDIO_INPUT_STATUS) != 0){
-        aics->scheduled_tasks &= ~AICS_TASK_SEND_AUDIO_INPUT_STATUS;
-        uint8_t value = (uint8_t)aics->audio_input_status;
-        att_server_notify(aics->con_handle, aics->audio_input_status_value_handle, &value, 1);
-
-    } else if ((aics->scheduled_tasks & AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION) != 0){
-        aics->scheduled_tasks &= ~AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION;
-        att_server_notify(aics->con_handle, aics->audio_input_description_value_handle, (uint8_t *)aics->info.audio_input_description, strlen(aics->info.audio_input_description));
-    }
-
-    if (aics->scheduled_tasks != 0){
-        att_server_register_can_send_now_callback(&aics->scheduled_tasks_callback, aics->con_handle);
-    } else {
-        btstack_linked_list_iterator_t it;    
-        btstack_linked_list_iterator_init(&it, &aics_services);
-        while (btstack_linked_list_iterator_has_next(&it)){
-            audio_input_control_service_server_t * item = (audio_input_control_service_server_t*) btstack_linked_list_iterator_next(&it);
-            if (item->scheduled_tasks == 0) continue;
-            att_server_register_can_send_now_callback(&aics->scheduled_tasks_callback, aics->con_handle);
-            return;
-        }
-    }
-}
-
-static void audio_input_control_service_server_set_callback(audio_input_control_service_server_t * aics, uint8_t task){
-    uint8_t scheduled_tasks = aics->scheduled_tasks;
-    aics->scheduled_tasks |= task;
-    if (scheduled_tasks == 0){
-        aics->scheduled_tasks_callback.callback = &audio_input_control_service_can_send_now;
-        aics->scheduled_tasks_callback.context  = (void*) aics;
-        att_server_register_can_send_now_callback(&aics->scheduled_tasks_callback, aics->con_handle);
-    }   
-}
-
 uint8_t audio_input_control_service_server_set_audio_input_state(audio_input_control_service_server_t * aics, aics_audio_input_state_t * audio_input_state){
     btstack_assert(aics != NULL);
     
@@ -419,7 +422,7 @@ uint8_t audio_input_control_service_server_set_audio_input_state(audio_input_con
 
     aics->info.audio_input_state.mute_mode = audio_input_state->mute_mode;
     aics->info.audio_input_state.gain_mode = audio_input_state->gain_mode;
-    aics->audio_input_state_change_counter++;
+    audio_input_control_service_update_change_counter(aics);
 
     audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_STATE);
     return ERROR_CODE_SUCCESS;
