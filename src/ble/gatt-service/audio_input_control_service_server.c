@@ -271,17 +271,17 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                     return AICS_ERROR_CODE_VALUE_OUT_OF_RANGE;
                 }
                 
-                if (audio_input_control_service_server_set_gain(aics, (int8_t)buffer[2])){
-                    aics->audio_input_state_change_counter++;
-                    
-                    switch (aics->info.audio_input_state.gain_mode){
-                        case AICS_GAIN_MODE_MANUAL_ONLY:
-                        case AICS_GAIN_MODE_MANUAL:
-                            aics_emit_gain(aics);
-                            break;
-                        default:
-                            break;
-                    }
+                if (!audio_input_control_service_server_set_gain(aics, (int8_t)buffer[2])) {
+                    return AICS_ERROR_CODE_VALUE_OUT_OF_RANGE;
+                }
+
+                switch (aics->info.audio_input_state.gain_mode){
+                    case AICS_GAIN_MODE_MANUAL_ONLY:
+                    case AICS_GAIN_MODE_MANUAL:
+                        aics_emit_gain(aics);
+                        break;
+                    default:
+                        break;
                 }
                 break;
 
@@ -291,51 +291,54 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                         return AICS_ERROR_CODE_MUTE_DISABLED;
                     case AICS_MUTE_MODE_MUTED:
                         aics->info.audio_input_state.mute_mode = AICS_MUTE_MODE_NOT_MUTED;
-                        aics->audio_input_state_change_counter++;
                         aics_emit_mute_mode(aics);
                         break;
                     default:
                         break;
                 }
                 break;
+
             case AICS_OPCODE_MUTE:
                 switch (aics->info.audio_input_state.mute_mode){
                     case AICS_MUTE_MODE_DISABLED:
                         return AICS_ERROR_CODE_MUTE_DISABLED;
                     case AICS_MUTE_MODE_NOT_MUTED:
                         aics->info.audio_input_state.mute_mode = AICS_MUTE_MODE_MUTED;
-                        aics->audio_input_state_change_counter++;
                         aics_emit_mute_mode(aics);
                         break;
                     default:
                         break;
                 }
                 break;
+
             case AICS_OPCODE_SET_MANUAL_GAIN_MODE:
                 switch (aics->info.audio_input_state.gain_mode){
                     case AICS_GAIN_MODE_AUTOMATIC:
                         aics->info.audio_input_state.gain_mode = AICS_GAIN_MODE_MANUAL;
-                        aics->audio_input_state_change_counter++;
                         aics_emit_gain_mode(aics);
                         break;
                     default:
                         return AICS_ERROR_CODE_GAIN_MODE_CHANGE_NOT_ALLOWED;
                 }
                 break;
+
             case AICS_OPCODE_SET_AUTOMATIC_GAIN_MODE:
                 switch (aics->info.audio_input_state.gain_mode){
                     case AICS_GAIN_MODE_MANUAL:
                         aics->info.audio_input_state.gain_mode = AICS_GAIN_MODE_AUTOMATIC;
-                        aics->audio_input_state_change_counter++;
                         aics_emit_gain_mode(aics);
                         break;
                     default:
                         return AICS_ERROR_CODE_GAIN_MODE_CHANGE_NOT_ALLOWED;
                 }
                 break;
+
             default:
                 return AICS_ERROR_CODE_OPCODE_NOT_SUPPORTED;
         }
+
+        audio_input_control_service_update_change_counter(aics);
+        audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_STATE);
     }
 
     if (attribute_handle == aics->audio_input_state_client_configuration_handle){
