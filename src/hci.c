@@ -4840,26 +4840,24 @@ static bool hci_run_general_gap_le(void){
 
     // Phase 1: collect what to stop
 
+#ifdef ENABLE_LE_CENTRAL
     bool scanning_stop = false;
     bool connecting_stop = false;
-    bool advertising_stop = false;
-
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-    le_advertising_set_t * advertising_stop_set = NULL;
 #ifdef ENABLE_LE_PERIODIC_ADVERTISING
-    bool periodic_stop = false;
-#ifdef ENABLE_LE_CENTRAL
     bool periodic_sync_stop = false;
 #endif
 #endif
 #endif
 
-#ifndef ENABLE_LE_CENTRAL
-    UNUSED(scanning_stop);
-    UNUSED(connecting_stop);
+#ifdef ENABLE_LE_PERIPHERAL
+    bool advertising_stop = false;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    le_advertising_set_t * advertising_stop_set = NULL;
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
+    bool periodic_advertising_stop = false;
 #endif
-#ifndef ENABLE_LE_PERIPHERAL
-    UNUSED(advertising_stop);
+#endif
 #endif
 
     // check if own address changes
@@ -4885,9 +4883,10 @@ static bool hci_run_general_gap_le(void){
     }
 #endif
 
-    // check if periodic advertiser list needs modification
 #ifdef ENABLE_LE_CENTRAL
+
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    // check if periodic advertiser list needs modification
     bool periodic_list_modification_pending = false;
     btstack_linked_list_iterator_init(&lit, &hci_stack->le_periodic_advertiser_list);
     while (btstack_linked_list_iterator_has_next(&lit)){
@@ -4898,9 +4897,7 @@ static bool hci_run_general_gap_le(void){
         }
     }
 #endif
-#endif
 
-#ifdef ENABLE_LE_CENTRAL
     // scanning control
     if (hci_stack->le_scanning_active) {
         // stop if:
@@ -4919,9 +4916,7 @@ static bool hci_run_general_gap_le(void){
             scanning_stop = true;
         }
     }
-#endif
 
-#ifdef ENABLE_LE_CENTRAL
     // connecting control
     bool connecting_with_whitelist;
     switch (hci_stack->le_connecting_state){
@@ -4944,14 +4939,17 @@ static bool hci_run_general_gap_le(void){
         default:
             break;
     }
+
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
     // periodic sync control
     bool sync_with_advertiser_list;
     switch(hci_stack->le_periodic_sync_state){
         case LE_CONNECTING_DIRECT:
         case LE_CONNECTING_WHITELIST:
-            // stop sycn if:
+            // stop sync if:
             // - sync with advertiser list and advertiser list modification pending
+            // - if it got disabled
             sync_with_advertiser_list = hci_stack->le_periodic_sync_state == LE_CONNECTING_WHITELIST;
             if ((sync_with_advertiser_list && periodic_list_modification_pending) ||
                     (hci_stack->le_periodic_sync_request == LE_CONNECTING_IDLE)){
@@ -4963,6 +4961,8 @@ static bool hci_run_general_gap_le(void){
     }
 #endif
 #endif
+
+#endif /* ENABLE_LE_CENTRAL */
 
 #ifdef ENABLE_LE_PERIPHERAL
     // le advertisement control
@@ -5034,11 +5034,11 @@ static bool hci_run_general_gap_le(void){
                 bool periodic_enabled = (advertising_set->state & LE_ADVERTISEMENT_STATE_PERIODIC_ENABLED) != 0;
                 bool periodic_parameter_change = (advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_PERIODIC_PARAMS) != 0;
                 if ((periodic_enabled == false) || periodic_parameter_change){
-                    periodic_stop = true;
+                    periodic_advertising_stop = true;
                     advertising_stop_set = advertising_set;
                 }
             }
-#endif
+#endif /* ENABLE_LE_PERIODIC_ADVERTISING */
         }
     }
 #endif
@@ -5054,19 +5054,26 @@ static bool hci_run_general_gap_le(void){
         hci_le_scan_stop();
         return true;
     }
-#endif
 
-#ifdef ENABLE_LE_CENTRAL
     if (connecting_stop){
         hci_send_cmd(&hci_le_create_connection_cancel);
         return true;
     }
+
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    if (hci_stack->le_periodic_terminate_sync_handle != HCI_CON_HANDLE_INVALID){
+        uint16_t sync_handle = hci_stack->le_periodic_terminate_sync_handle;
+        hci_stack->le_periodic_terminate_sync_handle = HCI_CON_HANDLE_INVALID;
+        hci_send_cmd(&hci_le_periodic_advertising_terminate_sync, sync_handle);
+        return true;
+    }
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
     if (periodic_sync_stop){
         hci_stack->le_periodic_sync_state = LE_CONNECTING_CANCEL;
         hci_send_cmd(&hci_le_periodic_advertising_create_sync_cancel);
         return true;
     }
+#endif /* ENABLE_LE_PERIODIC_ADVERTISING */
 #endif
 #endif
 
@@ -5096,7 +5103,7 @@ static bool hci_run_general_gap_le(void){
     }
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
 #ifdef ENABLE_LE_PERIODIC_ADVERTISING
-    if (periodic_stop){
+    if (periodic_advertising_stop){
         advertising_stop_set->state &= ~LE_ADVERTISEMENT_STATE_PERIODIC_ACTIVE;
         hci_send_cmd(&hci_le_set_periodic_advertising_enable, 0, advertising_stop_set->advertising_handle);
         return true;
@@ -5327,9 +5334,7 @@ static bool hci_run_general_gap_le(void){
     }
 #endif
 
-
 #endif
-
 
 #ifdef ENABLE_LE_CENTRAL
     // if connect with whitelist was active and is not cancelled yet, wait until next time
@@ -8151,8 +8156,12 @@ uint8_t gap_periodic_advertising_create_sync_cancel(void){
 }
 
 uint8_t gap_periodic_advertising_terminate_sync(uint16_t sync_handle){
-    // how do we track these syncs?
-    return ERROR_CODE_UNKNOWN_HCI_COMMAND;
+    if (hci_stack->le_periodic_terminate_sync_handle != HCI_CON_HANDLE_INVALID){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    hci_stack->le_periodic_terminate_sync_handle = sync_handle;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
 }
 
 #endif

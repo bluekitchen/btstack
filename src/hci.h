@@ -1067,6 +1067,7 @@ typedef struct {
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     btstack_linked_list_t le_periodic_advertiser_list;
+    uint16_t        le_periodic_terminate_sync_handle;
     // Periodic Advertising Sync parameters
     uint8_t         le_periodic_sync_options;
     uint8_t         le_periodic_sync_advertising_sid;
