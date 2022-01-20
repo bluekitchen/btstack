@@ -117,7 +117,7 @@ typedef struct {
     aics_gain_settings_properties_t gain_settings_properties;
 
     aics_audio_input_type_t audio_input_type;
-    const char * audio_input_description;
+    char * audio_input_description;
 
     btstack_packet_handler_t packet_handler;
 } aics_info_t;
@@ -195,6 +195,13 @@ uint8_t audio_input_control_service_server_set_audio_input_state(audio_input_con
  * @param audio_input_status see aics_audio_input_status_t
  */
 void audio_input_control_service_server_set_audio_input_status(audio_input_control_service_server_t * aics, aics_audio_input_status_t audio_input_status);
+
+/**
+ * @brief Set audio input description of the AICS service. If successful, all registered clients will be notified of change.
+ * @param aics service
+ * @param audio_input_desc
+ */
+void audio_input_control_service_server_set_audio_input_description(audio_input_control_service_server_t * aics, const char * audio_input_desc);
 
 /* API_END */
 

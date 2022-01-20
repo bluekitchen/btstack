@@ -431,5 +431,10 @@ void audio_input_control_service_server_set_audio_input_status(audio_input_contr
     audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_STATUS);
 }
 
+void audio_input_control_service_server_set_audio_input_description(audio_input_control_service_server_t * aics, const char * audio_input_desc){
+    btstack_assert(aics != NULL);
+    aics->info.audio_input_description = (char*) audio_input_desc;
+    audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION);
+}
 
 
