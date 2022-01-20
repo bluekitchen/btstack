@@ -52,7 +52,7 @@
 
 #define AICS_TASK_SEND_AUDIO_INPUT_STATE                  0x01
 #define AICS_TASK_SEND_AUDIO_INPUT_STATUS                 0x02
-#define AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION            0x03
+#define AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION            0x04
 
 static btstack_linked_list_t aics_services;
 
