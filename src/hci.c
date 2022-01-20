@@ -3792,6 +3792,9 @@ static void hci_state_reset(void){
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
     hci_stack->le_whitelist_capacity = 0;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    hci_stack->le_periodic_terminate_sync_handle = HCI_CON_HANDLE_INVALID;
+#endif
 #endif
 #ifdef ENABLE_LE_PERIPHERAL
     hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
@@ -4845,6 +4848,9 @@ static bool hci_run_general_gap_le(void){
     le_advertising_set_t * advertising_stop_set = NULL;
 #ifdef ENABLE_LE_PERIODIC_ADVERTISING
     bool periodic_stop = false;
+#ifdef ENABLE_LE_CENTRAL
+    bool periodic_sync_stop = false;
+#endif
 #endif
 #endif
 
@@ -4938,6 +4944,24 @@ static bool hci_run_general_gap_le(void){
         default:
             break;
     }
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    // periodic sync control
+    bool sync_with_advertiser_list;
+    switch(hci_stack->le_periodic_sync_state){
+        case LE_CONNECTING_DIRECT:
+        case LE_CONNECTING_WHITELIST:
+            // stop sycn if:
+            // - sync with advertiser list and advertiser list modification pending
+            sync_with_advertiser_list = hci_stack->le_periodic_sync_state == LE_CONNECTING_WHITELIST;
+            if ((sync_with_advertiser_list && periodic_list_modification_pending) ||
+                    (hci_stack->le_periodic_sync_request == LE_CONNECTING_IDLE)){
+                periodic_sync_stop = true;
+            }
+            break;
+        default:
+            break;
+    }
+#endif
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
@@ -5037,6 +5061,13 @@ static bool hci_run_general_gap_le(void){
         hci_send_cmd(&hci_le_create_connection_cancel);
         return true;
     }
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    if (periodic_sync_stop){
+        hci_stack->le_periodic_sync_state = LE_CONNECTING_CANCEL;
+        hci_send_cmd(&hci_le_periodic_advertising_create_sync_cancel);
+        return true;
+    }
+#endif
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
@@ -5303,6 +5334,10 @@ static bool hci_run_general_gap_le(void){
 #ifdef ENABLE_LE_CENTRAL
     // if connect with whitelist was active and is not cancelled yet, wait until next time
     if (hci_stack->le_connecting_state == LE_CONNECTING_CANCEL) return false;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    // if periodic sync with advertiser list was active and is not cancelled yet, wait until next time
+    if (hci_stack->le_periodic_sync_state == LE_CONNECTING_CANCEL) return false;
+#endif
 #endif
 
     // LE Whitelist Management
@@ -5489,6 +5524,26 @@ static bool hci_run_general_gap_le(void){
         );
         return true;
     }
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    if (hci_stack->le_periodic_sync_state == LE_CONNECTING_IDLE){
+        switch(hci_stack->le_periodic_sync_request){
+            case LE_CONNECTING_DIRECT:
+            case LE_CONNECTING_WHITELIST:
+                hci_stack->le_periodic_sync_state = ((hci_stack->le_periodic_sync_options & 1) != 0) ? LE_CONNECTING_WHITELIST : LE_CONNECTING_DIRECT;
+                hci_send_cmd(&hci_le_periodic_advertising_create_sync,
+                             hci_stack->le_periodic_sync_options,
+                             hci_stack->le_periodic_sync_advertising_sid,
+                             hci_stack->le_periodic_sync_advertiser_address_type,
+                             hci_stack->le_periodic_sync_advertiser_address,
+                             hci_stack->le_periodic_sync_skip,
+                             hci_stack->le_periodic_sync_timeout,
+                             hci_stack->le_periodic_sync_cte_type);
+                return true;
+            default:
+                break;
+        }
+    }
+#endif
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
@@ -8064,6 +8119,42 @@ uint8_t gap_periodic_advertiser_list_remove(bd_addr_type_t address_type, const b
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t gap_periodic_advertising_create_sync(uint8_t options, uint8_t advertising_sid, bd_addr_type_t advertiser_address_type,
+                                             bd_addr_t advertiser_address, uint16_t skip, uint16_t sync_timeout, uint8_t sync_cte_type){
+    // abort if already active
+    if (hci_stack->le_periodic_sync_request != LE_CONNECTING_IDLE) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    // store request
+    hci_stack->le_periodic_sync_request = ((options & 0) != 0) ? LE_CONNECTING_WHITELIST : LE_CONNECTING_DIRECT;
+    hci_stack->le_periodic_sync_options = options;
+    hci_stack->le_periodic_sync_advertising_sid = advertising_sid;
+    hci_stack->le_periodic_sync_advertiser_address_type = advertiser_address_type;
+    memcpy(hci_stack->le_periodic_sync_advertiser_address, advertiser_address, 6);
+    hci_stack->le_periodic_sync_skip = skip;
+    hci_stack->le_periodic_sync_timeout = sync_timeout;
+    hci_stack->le_periodic_sync_cte_type = sync_cte_type;
+
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_periodic_advertising_create_sync_cancel(void){
+    // abort if not requested
+    if (hci_stack->le_periodic_sync_request == LE_CONNECTING_IDLE) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    hci_stack->le_periodic_sync_request = LE_CONNECTING_IDLE;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_periodic_advertising_terminate_sync(uint16_t sync_handle){
+    // how do we track these syncs?
+    return ERROR_CODE_UNKNOWN_HCI_COMMAND;
+}
+
 #endif
 #endif
 #endif

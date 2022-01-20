@@ -1067,6 +1067,16 @@ typedef struct {
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     btstack_linked_list_t le_periodic_advertiser_list;
+    // Periodic Advertising Sync parameters
+    uint8_t         le_periodic_sync_options;
+    uint8_t         le_periodic_sync_advertising_sid;
+    bd_addr_type_t  le_periodic_sync_advertiser_address_type;
+    bd_addr_t       le_periodic_sync_advertiser_address;
+    uint16_t        le_periodic_sync_skip;
+    uint16_t        le_periodic_sync_timeout;
+    uint8_t         le_periodic_sync_cte_type;
+    le_connecting_state_t le_periodic_sync_state;
+    le_connecting_state_t le_periodic_sync_request;
 #endif
 #endif
 
@@ -1511,6 +1521,33 @@ uint8_t gap_periodic_advertiser_list_add(bd_addr_type_t address_type, const bd_a
  * @return
  */
 uint8_t gap_periodic_advertiser_list_remove(bd_addr_type_t address_type, const bd_addr_t address, uint8_t advertising_sid);
+
+/**
+ * @brief Synchronize with a periodic advertising train from an advertiser and begin receiving periodic advertising packets.
+ * @param options
+ * @param advertising_sid
+ * @param advertiser_address_type
+ * @param advertiser_address
+ * @param skip
+ * @param sync_timeout
+ * @param sync_cte_type
+ * @return
+ */
+uint8_t gap_periodic_advertising_create_sync(uint8_t options, uint8_t advertising_sid, bd_addr_type_t advertiser_address_type,
+                                             bd_addr_t advertiser_address, uint16_t skip, uint16_t sync_timeout, uint8_t sync_cte_type);
+
+/**
+ * @brief Cancel sync periodic advertising train while it is pending.
+ * @return status
+ */
+uint8_t gap_periodic_advertising_create_sync_cancel(void);
+
+/**
+ * @biref Stop reception of the periodic advertising train
+ * @param sync_handle
+ * @return status
+ */
+uint8_t gap_periodic_advertising_terminate_sync(uint16_t sync_handle);
 
 /**
  * @brief Get Manufactured
