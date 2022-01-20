@@ -296,6 +296,6 @@ void btstack_run_loop_freertos_trigger_exit(void){
 
 #if defined(HAVE_FREERTOS_TASK_NOTIFICATIONS) || (INCLUDE_xEventGroupSetBitFromISR == 1)
 void btstack_run_loop_freertos_trigger_from_isr(void){
-    btstack_run_loop_freertos_trigger_from_isr();
+    btstack_run_loop_freertos_poll_data_sources_from_irq();
 }
 #endif
