@@ -87,6 +87,14 @@ void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t m
  */
 uint8_t microphone_control_service_server_set_audio_input_state_for_aics(uint8_t aics_index, aics_audio_input_state_t * audio_input_state);
 
+/**
+ * @brief Set audio input description of the AICS service identified by aics_index.
+ * @param aics_index
+ * @param audio_input_state see aics_audio_input_state_t in audio_input_control_service_server.h
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if aics_index is out of range.
+ */
+uint8_t microphone_control_service_server_set_audio_input_description_for_aics(uint8_t aics_index, const char * audio_input_desc);
+
 /* API_END */
 
 #if defined __cplusplus

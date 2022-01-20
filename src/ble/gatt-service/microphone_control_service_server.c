@@ -219,3 +219,11 @@ uint8_t microphone_control_service_server_set_audio_input_state_for_aics(uint8_t
     }
     return audio_input_control_service_server_set_audio_input_state(&aics_services[aics_index], audio_input_state);
 }
+
+uint8_t microphone_control_service_server_set_audio_input_description_for_aics(uint8_t aics_index, const char * audio_input_desc){
+    if (aics_index >= aics_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    audio_input_control_service_server_set_audio_input_description(&aics_services[aics_index], audio_input_desc);
+    return ERROR_CODE_SUCCESS;
+}
