@@ -207,7 +207,7 @@ void shci_cmd_resp_wait(uint32_t timeout){
 }
 void shci_notify_asynch_evt(void* pdata){
     UNUSED(pdata);
-    btstack_run_loop_freertos_trigger_from_isr();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 void ipcc_reset(void)
@@ -294,7 +294,7 @@ static void sys_evt_received(void *pdata)
         if (little_endian_read_16(shciEvt->evt.payload, 0) == SHCI_SUB_EVT_CODE_READY) {
             if (cpu2_state == CPU2_STATE_WAIT_FOR_STARTED){
                 cpu2_state = CPU2_STATE_W2_INIT_BLE;
-                btstack_run_loop_freertos_trigger_from_isr();
+                btstack_run_loop_poll_data_sources_from_irq();
                 portYIELD_FROM_ISR(pdTRUE);
             }
         }
@@ -305,7 +305,7 @@ static void ble_acl_acknowledged(void)
 {
     hci_acl_can_send_now = 1;
 
-    btstack_run_loop_freertos_trigger_from_isr();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 
@@ -322,7 +322,7 @@ static void ble_evt_received(TL_EvtPacket_t *hcievt)
 
     xQueueSendFromISR(hciEvtQueue, (void*)&hcievt, &yield);
 
-    btstack_run_loop_freertos_trigger_from_isr();
+    btstack_run_loop_poll_data_sources_from_irq();
 
     portYIELD_FROM_ISR(yield);
 }
