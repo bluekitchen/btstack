@@ -75,12 +75,6 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
         return 0;
     }
 
-#ifdef ENABLE_TESTING_SUPPORT
-    if (buffer_size > 0){
-        printf("AICS[%d] read 0x%02x\n", aics->index, attribute_handle);
-    }
-#endif
-
     if (attribute_handle == aics->audio_input_state_value_handle){
         aics->con_handle = con_handle;
         uint8_t value[4];
@@ -255,11 +249,6 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
     if (aics == NULL){
         return 0;
     }
-
-#ifdef ENABLE_TESTING_SUPPORT
-    printf("AICS[%d] write 0x%02x\n", aics->index, attribute_handle);
-#endif
-
 
     if (attribute_handle == aics->audio_input_control_value_handle){
         if (buffer_size == 0){
