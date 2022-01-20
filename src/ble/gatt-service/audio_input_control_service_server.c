@@ -141,7 +141,7 @@ static void aics_emit_mute_mode(audio_input_control_service_server_t * aics){
     little_endian_store_16(event, pos, aics->con_handle);
     pos += 2;
     event[pos++] = aics->index;
-    event[pos++] = aics->info.audio_input_state.mute_mode == AICS_MUTE_MODE_MUTED ? 1 : 0;
+    event[pos++] = (uint8_t)aics->info.audio_input_state.mute_mode;
     (*aics->info.packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -156,7 +156,7 @@ static void aics_emit_gain_mode(audio_input_control_service_server_t * aics){
     little_endian_store_16(event, pos, aics->con_handle);
     pos += 2;
     event[pos++] = aics->index;
-    event[pos++] = aics->info.audio_input_state.gain_mode == AICS_GAIN_MODE_MANUAL ? 1 : 0;
+    event[pos++] = (uint8_t)aics->info.audio_input_state.gain_mode;
     (*aics->info.packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -288,6 +288,7 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
             case AICS_OPCODE_UMUTE:
                 switch (aics->info.audio_input_state.mute_mode){
                     case AICS_MUTE_MODE_DISABLED:
+                        aics_emit_mute_mode(aics);
                         return AICS_ERROR_CODE_MUTE_DISABLED;
                     case AICS_MUTE_MODE_MUTED:
                         aics->info.audio_input_state.mute_mode = AICS_MUTE_MODE_NOT_MUTED;
@@ -301,6 +302,7 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
             case AICS_OPCODE_MUTE:
                 switch (aics->info.audio_input_state.mute_mode){
                     case AICS_MUTE_MODE_DISABLED:
+                        aics_emit_mute_mode(aics);
                         return AICS_ERROR_CODE_MUTE_DISABLED;
                     case AICS_MUTE_MODE_NOT_MUTED:
                         aics->info.audio_input_state.mute_mode = AICS_MUTE_MODE_MUTED;

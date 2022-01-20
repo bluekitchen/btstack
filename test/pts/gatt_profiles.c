@@ -166,19 +166,38 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
 
                 case GATTSERVICE_SUBEVENT_AICS_MUTE_MODE:
-                    if (gattservice_subevent_aics_mute_mode_get_muted(packet) == 1){
-                        printf("AICS: muted\n");
-                        break;
+                    switch ((aics_mute_mode_t)gattservice_subevent_aics_mute_mode_get_state(packet)){
+                        case AICS_MUTE_MODE_NOT_MUTED:
+                            printf("AICS[%d]: mute mode NOT_MUTED\n", gattservice_subevent_aics_mute_mode_get_index(packet));
+                            break;
+                        case AICS_MUTE_MODE_MUTED:
+                            printf("AICS[%d]: mute mode MUTED\n", gattservice_subevent_aics_mute_mode_get_index(packet));
+                            break;
+                        case AICS_MUTE_MODE_DISABLED:
+                            printf("AICS[%d]: mute mode DISABLED\n", gattservice_subevent_aics_mute_mode_get_index(packet));
+                            break;
+                        default:
+                            break;
                     } 
-                    printf("AICS: not muted\n");
                     break;
 
                 case GATTSERVICE_SUBEVENT_AICS_GAIN_MODE:
-                    if (gattservice_subevent_aics_gain_mode_get_manual(packet) == 1){
-                        printf("AICS: manual\n");
-                        break;
-                    } 
-                    printf("AICS: automatic\n");
+                    switch ((aics_gain_mode_t)gattservice_subevent_aics_gain_mode_get_state(packet)) {
+                        case AICS_GAIN_MODE_MANUAL:
+                            printf("AICS[%d]: gain mode MANUAL\n", gattservice_subevent_aics_gain_mode_get_index(packet));
+                            break;
+                        case AICS_GAIN_MODE_AUTOMATIC:
+                            printf("AICS[%d]: gain mode AUTOMATIC\n", gattservice_subevent_aics_gain_mode_get_index(packet));
+                            break;
+                        case AICS_GAIN_MODE_MANUAL_ONLY:
+                            printf("AICS[%d]: gain mode MANUAL_ONLY\n", gattservice_subevent_aics_gain_mode_get_index(packet));
+                            break;
+                        case AICS_GAIN_MODE_AUTOMATIC_ONLY:
+                            printf("AICS[%d]: gain mode AUTOMATIC_ONLY\n", gattservice_subevent_aics_gain_mode_get_index(packet));
+                            break;
+                        default:
+                            break;
+                    }
                     break;
                 
                 case GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED:

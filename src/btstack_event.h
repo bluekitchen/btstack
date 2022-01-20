@@ -11902,12 +11902,12 @@ static inline uint8_t gattservice_subevent_aics_mute_mode_get_index(const uint8_
     return event[5];
 }
 /**
- * @brief Get field muted from event GATTSERVICE_SUBEVENT_AICS_MUTE_MODE
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_AICS_MUTE_MODE
  * @param event packet
- * @return muted
+ * @return state
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_aics_mute_mode_get_muted(const uint8_t * event){
+static inline uint8_t gattservice_subevent_aics_mute_mode_get_state(const uint8_t * event){
     return event[6];
 }
 
@@ -11930,12 +11930,12 @@ static inline uint8_t gattservice_subevent_aics_gain_mode_get_index(const uint8_
     return event[5];
 }
 /**
- * @brief Get field manual from event GATTSERVICE_SUBEVENT_AICS_GAIN_MODE
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_AICS_GAIN_MODE
  * @param event packet
- * @return manual
+ * @return state
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_aics_gain_mode_get_manual(const uint8_t * event){
+static inline uint8_t gattservice_subevent_aics_gain_mode_get_state(const uint8_t * event){
     return event[6];
 }
 

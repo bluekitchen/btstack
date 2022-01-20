@@ -3798,7 +3798,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param con_handle
  * @param index
- * @param muted
+ * @param state
 */
 #define GATTSERVICE_SUBEVENT_AICS_MUTE_MODE                                 0x1Cu
 
@@ -3807,7 +3807,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param con_handle
  * @param index
- * @param manual
+ * @param state
 */
 #define GATTSERVICE_SUBEVENT_AICS_GAIN_MODE                                 0x1Du
 
