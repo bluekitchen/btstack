@@ -583,15 +583,24 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
+
 extern int btstack_main(int argc, const char * argv[]);
 void port_thread(void* args){
 
-    // enable packet logger
+// uncomment to enable packet logger
+// #define ENABLE_HCI_DUMP
+
+    // config packet logger
 #ifdef ENABLE_HCI_DUMP
 #ifdef ENABLE_SEGGER_RTT
-    // hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
+    // Disable sleep modes as shown here:
+    // https://github.com/STMicroelectronics/STM32CubeWB/blob/master/Projects/P-NUCLEO-WB55.Nucleo/Applications/BLE/BLE_HeartRate/Core/Src/app_debug.c#L180
+    HAL_DBGMCU_EnableDBGSleepMode();
+    HAL_DBGMCU_EnableDBGStopMode();
+    // with this, RTT works in Skip mode but in Block mode
+    hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
 #else
-    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
+    hci_dump_init(hci_dump_embedded_stdout_get_instance());
 #endif
 #endif
 
