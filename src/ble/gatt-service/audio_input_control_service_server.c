@@ -76,7 +76,6 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
     }
 
     if (attribute_handle == aics->audio_input_state_value_handle){
-        aics->con_handle = con_handle;
         uint8_t value[4];
         value[0] = (uint8_t)aics->info.audio_input_state.gain_setting_db;
         value[1] = aics->info.audio_input_state.mute_mode;
@@ -87,7 +86,6 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
 
 
     if (attribute_handle == aics->gain_settings_properties_value_handle){
-        aics->con_handle = con_handle;
         uint8_t value[3];
 
         value[0] = aics->info.gain_settings_properties.gain_settings_units;
@@ -97,33 +95,27 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
     }
 
     if (attribute_handle == aics->audio_input_type_value_handle){
-        aics->con_handle = con_handle;
         return att_read_callback_handle_byte((uint8_t)aics->info.audio_input_type, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == aics->audio_input_status_value_handle){
-        aics->con_handle = con_handle;
         return att_read_callback_handle_byte((uint8_t)aics->audio_input_status, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == aics->audio_input_description_value_handle){
-        aics->con_handle = con_handle;
         return att_read_callback_handle_blob((uint8_t *)aics->info.audio_input_description, strlen(aics->info.audio_input_description), offset, buffer, buffer_size);
     }
     
     
     if (attribute_handle == aics->audio_input_state_client_configuration_handle){
-        aics->con_handle = con_handle;
         return att_read_callback_handle_little_endian_16(aics->audio_input_state_client_configuration, offset, buffer, buffer_size);
     }
     
     if (attribute_handle == aics->audio_input_status_client_configuration_handle){
-        aics->con_handle = con_handle;
         return att_read_callback_handle_little_endian_16(aics->audio_input_status_client_configuration, offset, buffer, buffer_size);
     }
     
     if (attribute_handle == aics->audio_input_description_client_configuration_handle){
-        aics->con_handle = con_handle;
         return att_read_callback_handle_little_endian_16(aics->audio_input_description_client_configuration, offset, buffer, buffer_size);
     }
 
@@ -226,7 +218,7 @@ static void audio_input_control_service_can_send_now(void * context){
 }
 
 static void audio_input_control_service_server_set_callback(audio_input_control_service_server_t * aics, uint8_t task){
-    if (aics->con_handle == 0){
+    if (aics->con_handle == HCI_CON_HANDLE_INVALID){
         aics->scheduled_tasks &= ~task;
         return;
     }
@@ -238,6 +230,10 @@ static void audio_input_control_service_server_set_callback(audio_input_control_
         aics->scheduled_tasks_callback.context  = (void*) aics;
         att_server_register_can_send_now_callback(&aics->scheduled_tasks_callback, aics->con_handle);
     }
+}
+
+static void aics_set_con_handle(audio_input_control_service_server_t * aics, hci_con_handle_t con_handle, uint16_t configuration){
+    aics->con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
 }
 
 static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
@@ -345,14 +341,17 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
 
     if (attribute_handle == aics->audio_input_state_client_configuration_handle){
         aics->audio_input_state_client_configuration = little_endian_read_16(buffer, 0);
+        aics_set_con_handle(aics, con_handle, aics->audio_input_state_client_configuration);
     }
     
     if (attribute_handle == aics->audio_input_status_client_configuration_handle){
         aics->audio_input_status_client_configuration = little_endian_read_16(buffer, 0);
+        aics_set_con_handle(aics, con_handle, aics->audio_input_status_client_configuration);
     }
     
     if (attribute_handle == aics->audio_input_description_client_configuration_handle){
         aics->audio_input_description_client_configuration = little_endian_read_16(buffer, 0);
+        aics_set_con_handle(aics, con_handle, aics->audio_input_description_client_configuration);
     }
 
     return 0;
@@ -365,6 +364,7 @@ void audio_input_control_service_server_init(audio_input_control_service_server_
     btstack_linked_list_add(&aics_services, (btstack_linked_item_t *)aics);
 
     aics->scheduled_tasks = 0;
+    aics->con_handle = HCI_CON_HANDLE_INVALID;
 
     // get characteristic value handle and client configuration handle
     aics->audio_input_state_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATE);
