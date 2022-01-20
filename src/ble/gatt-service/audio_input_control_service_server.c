@@ -38,6 +38,7 @@
 #define BTSTACK_FILE__ "audio_control_input_service_server.c"
 
 #include "btstack_defines.h"
+#include "btstack_event.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "btstack_util.h"
@@ -357,6 +358,33 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
     return 0;
 }
 
+static void aics_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(packet);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET){
+        return;
+    }
+    hci_con_handle_t con_handle;
+    btstack_linked_list_iterator_t it;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            btstack_linked_list_iterator_init(&it, &aics_services);
+
+            while (btstack_linked_list_iterator_has_next(&it)){
+                audio_input_control_service_server_t * item = (audio_input_control_service_server_t*) btstack_linked_list_iterator_next(&it);
+                if (item->con_handle != con_handle) continue;
+                item->con_handle = HCI_CON_HANDLE_INVALID;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 void audio_input_control_service_server_init(audio_input_control_service_server_t * aics){
     btstack_assert(aics != NULL);
     btstack_assert(aics->info.packet_handler != NULL);
@@ -403,6 +431,7 @@ void audio_input_control_service_server_init(audio_input_control_service_server_
     aics->service_handler.end_handle     = aics->end_handle;
     aics->service_handler.read_callback  = &aics_read_callback;
     aics->service_handler.write_callback = &aics_write_callback;
+    aics->service_handler.packet_handler = aics_packet_handler;
     att_server_register_service_handler(&aics->service_handler);
 }
 
