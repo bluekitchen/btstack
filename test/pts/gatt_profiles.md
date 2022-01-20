@@ -61,7 +61,33 @@ Tool: gatt_profiles
 - MICS/SR/SGGIT/SDP/BV-01-C: ignore when ATT_transport in IXIT is set to BR/EDR
 - MICS/SR/SGGIT/CHA/BV-01-C: (wait)
 
-- MICS/SR/SPN/BV-01-C: m
+- MICS/SR/SPN/BV-01-C: m, M
 
 - MICS/SR/SPE/BI-01-C: (wait)
-- MICS/SR/SPE/BI-02-C: M
+- MICS/SR/SPE/BI-02-C: P
+
+## AICS
+- AICS/SR/SGGIT/SER/BV-01-C: (wait)
+
+- AICS/SR/SGGIT/CHA/BV-01-C: (wait)
+- AICS/SR/SGGIT/CHA/BV-02-C: (wait)
+- AICS/SR/SGGIT/CHA/BV-03-C: (wait)
+- AICS/SR/SGGIT/CHA/BV-04-C: (wait)
+- AICS/SR/SGGIT/CHA/BV-05-C: (wait)
+- AICS/SR/SGGIT/CHA/BV-06-C: (wait)
+
+- AICS/SR/SGGIT/CP/BI-01-C: (wait)
+- AICS/SR/SGGIT/CP/BI-02-C: (wait)
+- AICS/SR/SGGIT/CP/BI-03-C: q
+- AICS/SR/SGGIT/CP/BI-04-C: f, F
+
+- AICS/SR/SPN/BV-01-C: p
+- AICS/SR/SPN/BV-01-C: p
+
+- AICS/SR/CP/BV-01-C: (wait)
+- AICS/SR/CP/BV-02-C: d
+- AICS/SR/CP/BV-03-C: D
+- AICS/SR/CP/BV-04-C: g
+- AICS/SR/CP/BV-05-C: G
+
+- AICS/SR/SPE/BI-01-C: (wait)

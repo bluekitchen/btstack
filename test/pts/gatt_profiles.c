@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -270,7 +270,7 @@ static void show_usage(void){
     
     printf("## MICS\n");
     printf("m - set MUTE_OFF\n");
-    printf("M - disable MUTE_ON\n");
+    printf("M - set MUTE_ON\n");
     printf("P - disable mute\n");
     printf("## AICS\n");
     printf("q - disable mute of AICS[0]\n");
@@ -278,6 +278,8 @@ static void show_usage(void){
     printf("D - set UNMUTE of AICS[0]\n");
     printf("g - set AUTOMATIC gain mode of AICS[0]\n");
     printf("G - set MANUAL gain mode of AICS[0]\n");
+    printf("f - set AUTOMATIC_ONLY gain mode of AICS[0]\n");
+    printf("F - set MANUAL_ONLY gain mode of AICS[0]\n");
     printf("p - set audio input desc of AICS[0]\n");
 }
 
@@ -342,7 +344,7 @@ static void stdin_process(char c){
             break;
         case 'D':
             printf("AICS: set NOT_MUTED of AICS[0]\n");
-            aics_info[0].audio_input_state.mute_mode = AICS_MUTE_MODE_NOT_MUTED ;
+            aics_info[0].audio_input_state.mute_mode = AICS_MUTE_MODE_NOT_MUTED;
             microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
             break;
         case 'g':
@@ -352,12 +354,30 @@ static void stdin_process(char c){
             break;
         case 'G':
             printf("AICS: set MANUAL gain mode of AICS[0]\n");
-            aics_info[0].audio_input_state.gain_mode = AICS_GAIN_MODE_MANUAL ;
+            aics_info[0].audio_input_state.gain_mode = AICS_GAIN_MODE_MANUAL;
             microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
             break;
+        case 'f':
+            printf("AICS: set AUTOMATIC gain mode of AICS[0]\n");
+            aics_info[0].audio_input_state.gain_mode = AICS_GAIN_MODE_AUTOMATIC_ONLY;
+            microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
+            break;
+        case 'F':
+            printf("AICS: set MANUAL gain mode of AICS[0]\n");
+            aics_info[0].audio_input_state.gain_mode = AICS_GAIN_MODE_MANUAL_ONLY;
+            microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
+            break;
+        case 'p':{
+            char str[20];
+            static uint8_t str_update = 0;
+            str_update++;
+            sprintf(str, "Microphone %d", str_update);
+            microphone_control_service_server_set_audio_input_description_for_aics(0, (const char*)str);
+        }
 
-        case 'p':
-            microphone_control_service_server_set_audio_input_description_for_aics(0, "Microphone");
+            break;
+        case '\n':
+        case '\r':
             break;
         default:
             show_usage();
