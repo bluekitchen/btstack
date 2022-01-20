@@ -248,21 +248,21 @@ static void show_usage(void){
     printf("C - enable classic flag, with auth\n");
     printf("l - enable LE flag, no auth\n");
     printf("L - enable LE flag, with auth\n");
+    
     printf("## MICS\n");
-    printf("m - toggle mute\n");
-    printf("M - disable mute\n");
-    printf("## MICS\n");
-    printf("m - toggle mute\n");
-    printf("M - disable mute\n");
-    printf("d - toggle mute of AICS[0]\n");
-    printf("D - disable mute of AICS[0]\n");
-    printf("g - toggle gain mode of AICS[0]\n");
+    printf("m - set MUTE_OFF\n");
+    printf("M - disable MUTE_ON\n");
+    printf("P - disable mute\n");
+    printf("## AICS\n");
+    printf("q - disable mute of AICS[0]\n");
+    printf("d - set MUTE of AICS[0]\n");
+    printf("D - set UNMUTE of AICS[0]\n");
+    printf("g - set AUTOMATIC gain mode of AICS[0]\n");
+    printf("G - set MANUAL gain mode of AICS[0]\n");
+    printf("p - set audio input desc of AICS[0]\n");
 }
 
 static void stdin_process(char c){
-    aics_audio_input_state_t * aics_input_state;
-    static aics_mute_mode_t mute_mode;
-    static aics_gain_mode_t gain_mode;
 
     switch (c){
         case 'a': // accept just works
@@ -297,58 +297,48 @@ static void stdin_process(char c){
             break;
 
         case 'm':
-            switch (mics_mute){
-                case GATT_MICROPHONE_CONTROL_MUTE_OFF:
-                    mics_mute = GATT_MICROPHONE_CONTROL_MUTE_ON;
-                    break;
-                default:
-                    mics_mute = GATT_MICROPHONE_CONTROL_MUTE_OFF;
-                    break;
-            }
-            printf("MICS: set mute to %d\n", (mics_mute == GATT_MICROPHONE_CONTROL_MUTE_OFF ? 0 : 1));
-            microphone_control_service_server_set_mute(mics_mute);
+            printf("MICS: set MUTE_OFF\n");
+            microphone_control_service_server_set_mute(GATT_MICROPHONE_CONTROL_MUTE_OFF);
             break;
         case 'M':
+            printf("MICS: set MUTE_ON\n");
+            microphone_control_service_server_set_mute(GATT_MICROPHONE_CONTROL_MUTE_ON);
+            break;
+        case 'P':
             printf("MICS: disable mute\n");
             mics_mute = GATT_MICROPHONE_CONTROL_MUTE_DISABLED;
             microphone_control_service_server_set_mute(mics_mute);
             break;
-        case 'd':
-            mute_mode = aics_info[0].audio_input_state.mute_mode;
-            switch (mute_mode){
-                case AICS_MUTE_MODE_NOT_MUTED:
-                    mute_mode = AICS_MUTE_MODE_MUTED;
-                    break;
-                default:
-                    mute_mode = AICS_MUTE_MODE_NOT_MUTED;
-                    break;
-            }
-            printf("AICS: set mute mode to %d\n", (mute_mode == AICS_MUTE_MODE_NOT_MUTED ? 0 : 1));
 
-            aics_info[0].audio_input_state.mute_mode = mute_mode;
-            microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
-            break;
-        case 'D':
-            printf("MICS: disable mute\n");
-            mute_mode = AICS_MUTE_MODE_DISABLED;
+        case 'q':
+            printf("AICS: disable mute of AICS[0]\n");
             aics_info[0].audio_input_state.mute_mode = AICS_MUTE_MODE_DISABLED;
             microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
             break;
 
-        case 'g':
-            gain_mode = aics_info[0].audio_input_state.gain_mode;
-            switch (gain_mode){
-                case AICS_GAIN_MODE_MANUAL:
-                    gain_mode = AICS_GAIN_MODE_AUTOMATIC;
-                    break;
-                default:
-                    gain_mode = AICS_GAIN_MODE_MANUAL;
-                    break;
-            }
-            printf("AICS: set gain mode to %d\n", (gain_mode == AICS_GAIN_MODE_MANUAL ? 0 : 1));
-
-            aics_info[0].audio_input_state.gain_mode = gain_mode;
+        case 'd':
+            printf("AICS: set MUTED of AICS[0]\n");
+            aics_info[0].audio_input_state.mute_mode = AICS_MUTE_MODE_MUTED;
             microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
+            break;
+        case 'D':
+            printf("AICS: set NOT_MUTED of AICS[0]\n");
+            aics_info[0].audio_input_state.mute_mode = AICS_MUTE_MODE_NOT_MUTED ;
+            microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
+            break;
+        case 'g':
+            printf("AICS: set AUTOMATIC gain mode of AICS[0]\n");
+            aics_info[0].audio_input_state.gain_mode = AICS_GAIN_MODE_AUTOMATIC;
+            microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
+            break;
+        case 'G':
+            printf("AICS: set MANUAL gain mode of AICS[0]\n");
+            aics_info[0].audio_input_state.gain_mode = AICS_GAIN_MODE_MANUAL ;
+            microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
+            break;
+
+        case 'p':
+            microphone_control_service_server_set_audio_input_description_for_aics(0, "Microphone");
             break;
         default:
             show_usage();
