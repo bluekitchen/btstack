@@ -50,6 +50,8 @@
 #include "btstack_debug.h"
 
 #include "ble/gatt-service/volume_control_service_server.h"
+#include "ble/gatt-service/audio_input_control_service_server.h"
+#include "ble/gatt-service/volume_offset_control_service_server.h"
 
 #define VCS_CMD_RELATIVE_VOLUME_DOWN                0x00
 #define VCS_CMD_RELATIVE_VOLUME_UP                  0x01
@@ -91,6 +93,12 @@ static vcs_flag_t vcs_volume_flags;
 
 // characteristic: CONTROL_POINT
 static uint16_t   vcs_control_point_value_handle;
+
+static audio_input_control_service_server_t aics_services[AICS_MAX_NUM_SERVICES];
+static uint8_t aics_services_num;
+
+static volume_offset_control_service_server_t vocs_services[VOCS_MAX_NUM_SERVICES];
+static uint8_t vocs_services_num;
 
 
 static void volume_control_service_update_change_counter(void){
@@ -262,7 +270,77 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
     return 0;
 }
 
-void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute, uint8_t volume_change_step){
+static void volume_control_init_included_aics_services(uint16_t vcs_start_handle, uint16_t vcs_end_handle, uint8_t aics_info_num, const aics_info_t * aics_info){
+    uint16_t start_handle = vcs_start_handle + 1;
+    uint16_t end_handle   = vcs_end_handle - 1;
+    aics_services_num = 0;
+
+    // include and enumerate AICS services
+    while ((start_handle < end_handle) && (aics_services_num < aics_info_num)) {
+        uint16_t included_service_handle;
+        uint16_t included_service_start_handle;
+        uint16_t included_service_end_handle;
+
+        bool service_found = gatt_server_get_included_service_with_uuid16(start_handle, end_handle, 
+            ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL, &included_service_handle, &included_service_start_handle, &included_service_end_handle);
+
+        if (!service_found){
+            break;
+        }
+        log_info("Include AICS service 0x%02x-0x%02x", included_service_start_handle, included_service_end_handle);
+
+        audio_input_control_service_server_t * service = &aics_services[aics_services_num];
+        service->start_handle = included_service_start_handle;
+        service->end_handle = included_service_end_handle;
+        service->index = aics_services_num;
+        
+        memcpy(&service->info, &aics_info[aics_services_num], sizeof(aics_info_t));
+
+        audio_input_control_service_server_init(service);
+        
+        start_handle = included_service_handle + 1;
+        aics_services_num++;
+    }
+}
+
+static void volume_control_init_included_vocs_services(uint16_t vcs_start_handle, uint16_t vcs_end_handle, uint8_t vocs_info_num, const vocs_info_t * vocs_info){
+    uint16_t start_handle = vcs_start_handle + 1;
+    uint16_t end_handle = vcs_end_handle - 1;
+    vocs_services_num = 0;
+
+    // include and enumerate AICS services
+    while ((start_handle < end_handle) && (vocs_services_num < vocs_info_num)) {
+        uint16_t included_service_handle;
+        uint16_t included_service_start_handle;
+        uint16_t included_service_end_handle;
+
+        bool service_found = gatt_server_get_included_service_with_uuid16(start_handle, end_handle, 
+            ORG_BLUETOOTH_SERVICE_VOLUME_OFFSET_CONTROL,
+            &included_service_handle, &included_service_start_handle, &included_service_end_handle);
+
+        if (!service_found){
+            break;
+        }
+        log_info("Include VOCS service 0x%02x-0x%02x", included_service_start_handle, included_service_end_handle);
+
+        volume_offset_control_service_server_t * service = &vocs_services[vocs_services_num];
+        service->start_handle = included_service_start_handle;
+        service->end_handle = included_service_end_handle;
+        service->index = vocs_services_num;
+        
+        memcpy(&service->info, &vocs_info[vocs_services_num], sizeof(vocs_info_t));
+
+        volume_offset_control_service_server_init(service);
+        
+        start_handle = included_service_handle + 1;
+        vocs_services_num++;
+    }
+}
+
+void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute, uint8_t volume_change_step, 
+    uint8_t aics_info_num, const aics_info_t * aics_info, 
+    uint8_t vocs_info_num, const vocs_info_t * vocs_info){
+    
     vcs_volume_state_volume_setting = volume_setting;
     vcs_volume_state_mute = mute;
     vcs_volume_flags = VCS_FLAG_RESET_VOLUME_SETTING;
@@ -285,6 +363,11 @@ void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
 
     vcs_volume_flags_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_FLAGS);
     vcs_volume_flags_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_FLAGS);
+
+    log_info("Found VCS service 0x%02x-0x%02x", start_handle, end_handle);
+
+    volume_control_init_included_aics_services(start_handle, end_handle, aics_info_num, aics_info);
+    volume_control_init_included_vocs_services(start_handle, end_handle, vocs_info_num, vocs_info);
 
     // register service with ATT Server
     volume_control_service.start_handle   = start_handle;
