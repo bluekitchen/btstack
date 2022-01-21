@@ -82,8 +82,8 @@
 #include "ble/att_db_util.h"
 #include "ble/att_dispatch.h"
 #include "ble/att_server.h"
-#include "ble/gatt-service/audio_input_control_service_server.h"
 #include "ble/gatt-service/ancs_client.h"
+#include "ble/gatt-service/audio_input_control_service_server.h"
 #include "ble/gatt-service/battery_service_client.h"
 #include "ble/gatt-service/battery_service_server.h"
 #include "ble/gatt-service/bond_management_service_server.h"
@@ -100,6 +100,7 @@
 #include "ble/gatt-service/scan_parameters_service_server.h"
 #include "ble/gatt-service/tx_power_service_server.h"
 #include "ble/gatt-service/volume_control_service_server.h"
+#include "ble/gatt-service/volume_offset_control_service_server.h"
 #ifdef ENABLE_MESH
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "ble/gatt-service/mesh_proxy_service_server.h"
