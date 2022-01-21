@@ -160,6 +160,7 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 	uint16_t aics_end_handle   = end_handle - 1;
     aics_services_num = 0;
 
+    // include and enumerate AICS services
 	while ((aics_start_handle < aics_end_handle) && (aics_services_num < aics_info_num)) {
 		uint16_t included_service_handle;
     	uint16_t included_service_start_handle;
@@ -171,7 +172,7 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 		if (!aics_service_found){
 			break;
 		}
-		log_info("Found inlcuded AICS service 0x%02x-0x%02x", included_service_start_handle, included_service_end_handle);
+		log_info("Include AICS service 0x%02x-0x%02x", included_service_start_handle, included_service_end_handle);
 
 		audio_input_control_service_server_t * service = &aics_services[aics_services_num];
 		service->start_handle = included_service_start_handle;
@@ -204,7 +205,8 @@ void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t m
 		return;
 	}
 	mc_mute_state = mute_state;
-	// TODO send to all clients that registered for notify
+	// TODO extend send to all clients that registered for notify,
+    // Current: notification is sent to the last one that enabled notification
 	
 	if (mc_mute_state_client_configuration != 0){
 		mc_mute_callback.callback = &microphone_control_service_can_send_now;
@@ -225,5 +227,13 @@ uint8_t microphone_control_service_server_set_audio_input_description_for_aics(u
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     audio_input_control_service_server_set_audio_input_description(&aics_services[aics_index], audio_input_desc);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t  microphone_control_service_server_set_audio_input_status_for_aics(uint8_t aics_index, aics_audio_input_status_t audio_input_status){
+    if (aics_index >= aics_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    audio_input_control_service_server_set_audio_input_status(&aics_services[aics_index], audio_input_status);
     return ERROR_CODE_SUCCESS;
 }
