@@ -88,19 +88,19 @@ static void set_callsetup_status(hfp_callsetup_status_t status){
 static inline void set_enhanced_call_status_active(int index_in_table){
     if ((index_in_table < 0) || (index_in_table > HFP_GSM_MAX_NR_CALLS)) return;
     hfp_gsm_model_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_ACTIVE;
-    hfp_gsm_model_calls[index_in_table].used_slot = 1;
+    hfp_gsm_model_calls[index_in_table].used_slot = true;
 }
 
 static inline void set_enhanced_call_status_held(int index_in_table){
     if ((index_in_table < 0) || (index_in_table > HFP_GSM_MAX_NR_CALLS)) return;
     hfp_gsm_model_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_HELD;
-    hfp_gsm_model_calls[index_in_table].used_slot = 1;
+    hfp_gsm_model_calls[index_in_table].used_slot = true;
 }
 
 static inline void set_enhanced_call_status_response_hold(int index_in_table){
     if ((index_in_table < 0) || (index_in_table > HFP_GSM_MAX_NR_CALLS)) return;
     hfp_gsm_model_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD;
-    hfp_gsm_model_calls[index_in_table].used_slot = 1;
+    hfp_gsm_model_calls[index_in_table].used_slot = true;
 }
 
 static inline void set_enhanced_call_status_initiated(int index_in_table){
@@ -114,7 +114,7 @@ static inline void set_enhanced_call_status_initiated(int index_in_table){
             hfp_gsm_model_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_INCOMING;
         }
     }
-    hfp_gsm_model_calls[index_in_table].used_slot = 1;
+    hfp_gsm_model_calls[index_in_table].used_slot = true;
 }
 
 static int get_enhanced_call_status(int index_in_table){
@@ -143,7 +143,7 @@ static inline int is_enhanced_call_status_initiated(int index_in_table){
 
 static void free_call_slot(int index_in_table){
     if ((index_in_table < 0) || (index_in_table > HFP_GSM_MAX_NR_CALLS)) return;
-    hfp_gsm_model_calls[index_in_table].used_slot = 0;
+    hfp_gsm_model_calls[index_in_table].used_slot = false;
 }
 
 void hfp_gsm_init(void){

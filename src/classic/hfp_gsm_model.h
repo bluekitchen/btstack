@@ -53,7 +53,7 @@ extern "C" {
 
 /* API_START */
 typedef struct {
-    uint8_t used_slot;
+    bool used_slot;
     hfp_enhanced_call_status_t enhanced_status;
     hfp_enhanced_call_dir_t direction;
     hfp_enhanced_call_mode_t mode;
