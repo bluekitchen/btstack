@@ -4517,6 +4517,31 @@ static bool hci_run_acl_fragments(void){
 }
 
 #ifdef ENABLE_CLASSIC
+
+#ifdef ENABLE_HCI_SERIALIZED_CONTROLLER_OPERATIONS
+static bool hci_classic_operation_active(void) {
+    if (hci_stack->inquiry_state >= GAP_INQUIRY_STATE_W4_ACTIVE){
+        return true;
+    }
+    if (hci_stack->remote_name_state == GAP_REMOTE_NAME_STATE_W4_COMPLETE){
+        return true;
+    }
+    btstack_linked_item_t * it;
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it != NULL; it = it->next) {
+        hci_connection_t *connection = (hci_connection_t *) it;
+        switch (connection->state) {
+            case SENT_CREATE_CONNECTION:
+            case SENT_CANCEL_CONNECTION:
+            case SENT_DISCONNECT:
+                return true;
+            default:
+                break;
+        }
+    }
+    return false;
+}
+#endif
+
 static bool hci_run_general_gap_classic(void){
 
     // assert stack is working and classic is active
@@ -4538,10 +4563,15 @@ static bool hci_run_general_gap_classic(void){
 
     // start/stop inquiry
     if ((hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN) && (hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX)){
-        uint8_t duration = hci_stack->inquiry_state;
-        hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_ACTIVE;
-        hci_send_cmd(&hci_inquiry, hci_stack->inquiry_lap, duration, 0);
-        return true;
+#ifdef ENABLE_HCI_SERIALIZED_CONTROLLER_OPERATIONS
+        if (hci_classic_operation_active() == false)
+#endif
+        {
+            uint8_t duration = hci_stack->inquiry_state;
+            hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_ACTIVE;
+            hci_send_cmd(&hci_inquiry, hci_stack->inquiry_lap, duration, 0);
+            return true;
+        }
     }
     if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W2_CANCEL){
         hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_CANCELLED;
@@ -4550,10 +4580,15 @@ static bool hci_run_general_gap_classic(void){
     }
     // remote name request
     if (hci_stack->remote_name_state == GAP_REMOTE_NAME_STATE_W2_SEND){
-        hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_W4_COMPLETE;
-        hci_send_cmd(&hci_remote_name_request, hci_stack->remote_name_addr,
-                     hci_stack->remote_name_page_scan_repetition_mode, 0, hci_stack->remote_name_clock_offset);
-        return true;
+#ifdef ENABLE_HCI_SERIALIZED_CONTROLLER_OPERATIONS
+        if (hci_classic_operation_active() == false)
+#endif
+        {
+            hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_W4_COMPLETE;
+            hci_send_cmd(&hci_remote_name_request, hci_stack->remote_name_addr,
+                         hci_stack->remote_name_page_scan_repetition_mode, 0, hci_stack->remote_name_clock_offset);
+            return true;
+        }
     }
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
     // Local OOB data
@@ -5757,6 +5792,11 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
                     // create connection triggered in disconnect complete event, let's do it now
                     break;
                 case SEND_CREATE_CONNECTION:
+#ifdef ENABLE_HCI_SERIALIZED_CONTROLLER_OPERATIONS
+                    if (hci_classic_operation_active()){
+                        return ERROR_CODE_SUCCESS;
+                    }
+#endif
                     // connection created by hci, e.g. dedicated bonding, but not executed yet, let's do it now
                     break;
                 default:
