@@ -495,24 +495,12 @@ void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, con
             break;
 
         case HFP_AG_TERMINATE_CALL_BY_AG:
-            switch (hfp_gsm_call_status()){
-                case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
-                    if (hfp_gsm_callsetup_status() != HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) break;
-                    set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
-                    break;
-                case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
-                    set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
-                    delete_call(current_call_index);
-                    break;
-                default:
-                    break;
-            }
+            set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+            delete_call(current_call_index);
             break;
 
         case HFP_AG_CALL_DROPPED:
             set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
-            if (hfp_gsm_call_status() != HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT) break;
-            
             for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
                 delete_call(i);
             }
