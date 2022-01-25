@@ -17,15 +17,16 @@ CHARACTERISTIC_FORMAT, READ, 04, 00, 27AD, 01, 01
 #import <bond_management_service.gatt>
 
 // add microphone control service (MICS)
-#import <audio_input_control_service.gatt>
-#import <audio_input_control_service.gatt>
-#import <audio_input_control_service.gatt>
+// #import <audio_input_control_service.gatt>
+// #import <audio_input_control_service.gatt>
+// #import <audio_input_control_service.gatt>
 #import <microphone_control_service.gatt>
 
-// add one or more audio input control services (AICS) for VCS
-//#import <audio_input_control_service.gatt>
-//#import <audio_input_control_service.gatt>
-//#import <audio_input_control_service.gatt>
-// add volume control service (VCS)
+// add three AICS and two VOCS services for VCS
+#import <audio_input_control_service.gatt>
+#import <audio_input_control_service.gatt>
+#import <audio_input_control_service.gatt>
+#import <volume_offset_control_service.gatt>
+#import <volume_offset_control_service.gatt>
 #import <volume_control_service.gatt>
 

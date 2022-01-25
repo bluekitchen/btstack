@@ -111,7 +111,21 @@ static aics_info_t aics_info[] = {
     }
 
 };
-static uint8_t aics_info_num = 3;
+static uint8_t aics_info_num = 2;
+
+static vocs_info_t vocs_info[] = {
+        {
+                10,VOCS_AUDIO_LOCATION_FRONT_RIGHT,
+                "ao_description1",
+                packet_handler
+        },
+        {
+                20, VOCS_AUDIO_LOCATION_FRONT_LEFT,
+                "ao_description2",
+                packet_handler
+        }
+};
+static uint8_t vocs_info_num = 2;
 
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
@@ -261,18 +275,19 @@ static void show_usage(void){
     printf("a - send 50%% Battery level\n");
     printf("## TPS\n");
     printf("t - send 10 TX Power level\n");
-    printf("## BMS\n");
+    printf("\n## BMS\n");
     printf("b - enable classic and LE flags\n");
     printf("c - enable classic flag, no auth\n");
     printf("C - enable classic flag, with auth\n");
     printf("l - enable LE flag, no auth\n");
     printf("L - enable LE flag, with auth\n");
     
-    printf("## MICS\n");
+    printf("\n## MICS\n");
     printf("m - set MUTE_OFF\n");
     printf("M - set MUTE_ON\n");
     printf("P - disable mute\n");
-    printf("## AICS\n");
+
+    printf("\n## AICS\n");
     printf("q - disable mute of AICS[0]\n");
     printf("d - set MUTE of AICS[0]\n");
     printf("D - set UNMUTE of AICS[0]\n");
@@ -281,6 +296,10 @@ static void show_usage(void){
     printf("f - set AUTOMATIC_ONLY gain mode of AICS[0]\n");
     printf("F - set MANUAL_ONLY gain mode of AICS[0]\n");
     printf("p - set audio input desc of AICS[0]\n");
+
+    printf("\n##VOCS\n");
+    printf("o - set audio location of VOCS[0]\n");
+    printf("O - set audio output desc of VOCS[0]\n");
 }
 
 static void stdin_process(char c){
@@ -368,14 +387,23 @@ static void stdin_process(char c){
             microphone_control_service_server_set_audio_input_state_for_aics(0, &aics_info[0].audio_input_state);
             break;
         case 'p':{
+            printf("AICS: set audio input desc of AICS[0]\n");
             char str[20];
             static uint8_t str_update = 0;
             str_update++;
             sprintf(str, "Microphone %d", str_update);
             microphone_control_service_server_set_audio_input_description_for_aics(0, (const char*)str);
-        }
-
             break;
+        }
+        case 'o':
+            printf("VOCS: set audio location of VOCS[0]\n");
+            volume_control_service_server_set_audio_location_for_vocs(0, VOCS_AUDIO_LOCATION_FRONT_CENTER );
+            break;
+        case 'O':
+            printf("VOCS: set audio output desc of VOCS[0]\n");
+            volume_control_service_server_set_audio_output_description_for_vocs(0, "ao_desc3");
+            break;
+
         case '\n':
         case '\r':
             break;
@@ -436,7 +464,7 @@ int btstack_main(void)
 
     microphone_control_service_server_register_packet_handler(&packet_handler);
 
-    volume_control_service_server_init(128, VCS_MUTE_OFF, 16);
+    volume_control_service_server_init(128, VCS_MUTE_OFF, 16, aics_info_num, aics_info, vocs_info_num, vocs_info);
     
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
