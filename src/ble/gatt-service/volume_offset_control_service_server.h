@@ -166,6 +166,14 @@ void volume_offset_control_service_server_init(volume_offset_control_service_ser
  */
 uint8_t volume_offset_control_service_server_set_volume_offset(volume_offset_control_service_server_t * vocs, int16_t volume_offset);
 
+/**
+ * @brief Set audio location of the VOCS service. If successful, all registered clients will be notified of change.
+ * @param vocs service
+ * @param audio_location see VOCS_AUDIO_LOCATION_* defines above
+ * @return status ERROR_CODE_SUCCESS if successful
+ */
+uint8_t volume_offset_control_service_server_set_audio_location(volume_offset_control_service_server_t * vocs, uint32_t audio_location);
+
 
 /* API_END */
 
