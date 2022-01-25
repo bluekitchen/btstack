@@ -3820,6 +3820,44 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED                              0x1Eu
 
+/**
+ * @format 121JV
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param description_len
+ * @param description 
+*/
+#define GATTSERVICE_SUBEVENT_AICS_AUDIO_INPUT_DESC_CHANGED                   0x20u
+
+/**
+ * @format 1212
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param volume_offset
+*/
+#define GATTSERVICE_SUBEVENT_VOCS_VOLUME_OFFSET                              0x21u
+
+/**
+ * @format 1214
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param audio_location
+*/
+#define GATTSERVICE_SUBEVENT_VOCS_AUDIO_LOCATION                             0x22u
+
+/**
+ * @format 121JV
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param description_len
+ * @param description 
+*/
+#define GATTSERVICE_SUBEVENT_VOCS_AUDIO_OUTPUT_DESC_CHANGED                   0x23u
+
 // MAP Meta Event Group
 
 /**
