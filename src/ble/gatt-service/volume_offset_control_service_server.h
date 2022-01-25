@@ -159,12 +159,13 @@ typedef struct {
 void volume_offset_control_service_server_init(volume_offset_control_service_server_t * vocs);
 
 /**
- * @brief Set volume offset state of the VOCS service. If successful, all registered clients will be notified of change.
+ * @brief Set volume offset of the VOCS service. If successful, all registered clients will be notified of change.
  * @param vocs service
  * @param volume_offset 
  * @return status ERROR_CODE_SUCCESS if successful
  */
-uint8_t volume_offset_control_service_server_set_volume_offset_state(volume_offset_control_service_server_t * vocs, int16_t volume_offset);
+uint8_t volume_offset_control_service_server_set_volume_offset(volume_offset_control_service_server_t * vocs, int16_t volume_offset);
+
 
 /* API_END */
 

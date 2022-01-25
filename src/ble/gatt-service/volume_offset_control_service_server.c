@@ -51,7 +51,7 @@
 #include <stdio.h>
 #endif
 
-#define VOCS_TASK_SEND_VOLUME_OFFSET_STATE                  0x01
+#define VOCS_TASK_SEND_VOLUME_OFFSET                        0x01
 
 static btstack_linked_list_t vocs_services;
 
@@ -112,9 +112,8 @@ static void volume_offset_control_service_update_change_counter(volume_offset_co
 static void volume_offset_control_service_can_send_now(void * context){
     volume_offset_control_service_server_t * vocs = (volume_offset_control_service_server_t *) context;
 
-    if ((vocs->scheduled_tasks & VOCS_TASK_SEND_VOLUME_OFFSET_STATE) != 0){
-        vocs->scheduled_tasks &= ~VOCS_TASK_SEND_VOLUME_OFFSET_STATE;
-        
+    if ((vocs->scheduled_tasks & VOCS_TASK_SEND_VOLUME_OFFSET) != 0){
+        vocs->scheduled_tasks &= ~VOCS_TASK_SEND_VOLUME_OFFSET;
         uint8_t value[3];
         little_endian_store_16(value, 0, vocs->info.volume_offset);
         value[2] = vocs->volume_offset_state_change_counter;
@@ -189,7 +188,7 @@ static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
         }
 
         volume_offset_control_service_update_change_counter(vocs);
-        volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_VOLUME_OFFSET_STATE);
+        volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_VOLUME_OFFSET);
     }
 
     if (attribute_handle == vocs->volume_offset_state_client_configuration_handle){
@@ -282,12 +281,12 @@ void volume_offset_control_service_server_init(volume_offset_control_service_ser
     att_server_register_service_handler(&vocs->service_handler);
 }
 
-uint8_t volume_offset_control_service_server_set_volume_offset_state(volume_offset_control_service_server_t * vocs, int16_t volume_offset){
+uint8_t volume_offset_control_service_server_set_volume_offset(volume_offset_control_service_server_t * vocs, int16_t volume_offset){
     btstack_assert(vocs != NULL);
     
     vocs->info.volume_offset = volume_offset;
     volume_offset_control_service_update_change_counter(vocs);
-    volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_VOLUME_OFFSET_STATE);
+    volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_VOLUME_OFFSET);
     return ERROR_CODE_SUCCESS;
 }
 
