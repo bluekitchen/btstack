@@ -99,11 +99,10 @@ typedef enum {
     VOCS_OPCODE_SET_VOLUME_OFFSET        = 0x01
 } vocs_opcode_t;
 
-
 typedef struct {
     int16_t  volume_offset;
-    char * audio_output_description;
     uint32_t audio_location;
+    char     audio_output_description[VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH];
 
     btstack_packet_handler_t packet_handler;
 } vocs_info_t;
@@ -145,6 +144,7 @@ typedef struct {
 
     // ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_OUTPUT_DESCRIPTION
     uint16_t audio_output_description_value_handle;
+    uint8_t audio_output_description_len;
 
     uint16_t audio_output_description_client_configuration_handle;
     uint16_t audio_output_description_client_configuration;
@@ -174,6 +174,13 @@ uint8_t volume_offset_control_service_server_set_volume_offset(volume_offset_con
  */
 uint8_t volume_offset_control_service_server_set_audio_location(volume_offset_control_service_server_t * vocs, uint32_t audio_location);
 
+/**
+ * @brief Set audio output description of the VOCS service. If successful, all registered clients will be notified of change.
+ * @param vocs service
+ * @param audio_output_desc
+ * @return status ERROR_CODE_SUCCESS if successful
+ */
+void volume_offset_control_service_server_set_audio_output_description(volume_offset_control_service_server_t * vocs, const char * audio_output_desc);
 
 /* API_END */
 

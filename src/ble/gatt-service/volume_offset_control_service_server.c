@@ -53,6 +53,7 @@
 
 #define VOCS_TASK_SEND_VOLUME_OFFSET                        0x01
 #define VOCS_TASK_SEND_AUDIO_LOCATION                       0x02
+#define VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION             0x04
 
 static btstack_linked_list_t vocs_services;
 
@@ -125,6 +126,9 @@ static void volume_offset_control_service_can_send_now(void * context){
         uint8_t value[4];
         little_endian_store_32(value, 0, vocs->info.audio_location);
         att_server_notify(vocs->con_handle, vocs->audio_location_value_handle, &value[0], sizeof(value));
+    } else if ((vocs->scheduled_tasks & VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION) != 0) {
+        vocs->scheduled_tasks &= ~VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION;
+        att_server_notify(vocs->con_handle, vocs->audio_output_description_value_handle, (uint8_t *)vocs->info.audio_output_description, vocs->audio_output_description_len);
     }
 
     if (vocs->scheduled_tasks != 0){
@@ -228,6 +232,12 @@ static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
         if (vocs_set_audio_location(vocs, audio_location)) {
             volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_LOCATION);
         }
+    }
+
+    if (attribute_handle == vocs->audio_output_description_value_handle){
+        vocs->audio_output_description_len = btstack_min(VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH - 1, buffer_size);
+        btstack_strcpy(vocs->info.audio_output_description, vocs->audio_output_description_len, (char *)buffer);
+        volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION);
     }
 
     if (attribute_handle == vocs->volume_offset_state_client_configuration_handle){
@@ -337,3 +347,10 @@ uint8_t volume_offset_control_service_server_set_audio_location(volume_offset_co
     return ERROR_CODE_SUCCESS;
 }
 
+void volume_offset_control_service_server_set_audio_output_description(volume_offset_control_service_server_t * vocs, const char * audio_output_desc){
+    btstack_assert(vocs != NULL);
+    vocs->audio_output_description_len = btstack_min(VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH - 1, sizeof(audio_output_desc));
+    btstack_strcpy(vocs->info.audio_output_description, vocs->audio_output_description_len, (char *)audio_output_desc);
+
+    volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION);
+}
