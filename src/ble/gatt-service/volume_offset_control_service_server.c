@@ -82,7 +82,7 @@ static uint16_t vocs_read_callback(hci_con_handle_t con_handle, uint16_t attribu
     }
 
     if (attribute_handle == vocs->audio_location_value_handle){
-        return att_read_callback_handle_little_endian_16((uint16_t)vocs->info.audio_location, offset, buffer, buffer_size);
+        return att_read_callback_handle_little_endian_32(vocs->info.audio_location, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == vocs->audio_output_description_value_handle){

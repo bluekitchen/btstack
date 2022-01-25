@@ -102,8 +102,8 @@ typedef enum {
 
 typedef struct {
     int16_t  volume_offset;
-    int16_t  audio_location;
     char * audio_output_description;
+    uint32_t audio_location;
 
     btstack_packet_handler_t packet_handler;
 } vocs_info_t;
