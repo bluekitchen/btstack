@@ -395,3 +395,52 @@ void volume_control_service_server_set_volume_state(uint8_t volume_setting, vcs_
         volume_control_service_server_set_callback(VCS_TASK_SEND_VOLUME_SETTING);
     }
 }
+
+
+uint8_t volume_control_service_server_set_audio_input_state_for_aics(uint8_t aics_index, aics_audio_input_state_t * audio_input_state){
+    if (aics_index >= aics_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    return audio_input_control_service_server_set_audio_input_state(&aics_services[aics_index], audio_input_state);
+}
+
+uint8_t volume_control_service_server_set_audio_input_description_for_aics(uint8_t aics_index, const char * audio_input_desc){
+    if (aics_index >= aics_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    audio_input_control_service_server_set_audio_input_description(&aics_services[aics_index], audio_input_desc);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t  volume_control_service_server_set_audio_input_status_for_aics(uint8_t aics_index, aics_audio_input_status_t audio_input_status){
+    if (aics_index >= aics_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    audio_input_control_service_server_set_audio_input_status(&aics_services[aics_index], audio_input_status);
+    return ERROR_CODE_SUCCESS;
+}
+
+
+uint8_t volume_control_service_server_set_volume_offset_for_vocs(uint8_t voics_index, int16_t volume_offset){
+    if (voics_index >= vocs_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    volume_offset_control_service_server_set_volume_offset(&vocs_services[voics_index], volume_offset);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t volume_control_service_server_set_audio_location_for_vocs(uint8_t vocs_index, uint32_t audio_location){
+    if (vocs_index >= vocs_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    volume_offset_control_service_server_set_audio_location(&vocs_services[vocs_index], audio_location);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t volume_control_service_server_set_audio_output_description_for_vocs(uint8_t vocs_index, const char * audio_output_desc){
+    if (vocs_index >= vocs_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    volume_offset_control_service_server_set_audio_output_description(&vocs_services[vocs_index], audio_output_desc);
+    return ERROR_CODE_SUCCESS;
+}

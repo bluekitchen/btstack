@@ -98,6 +98,57 @@ void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
  */
 void volume_control_service_server_set_volume_state(uint8_t volume_setting, vcs_mute_t mute);
 
+
+/**
+ * @brief Set mute and gain mode, as well as gain setting of the AICS service identified by aics_index.
+ * @param aics_index
+ * @param audio_input_state see aics_audio_input_state_t in audio_input_control_service_server.h
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if aics_index is out of range, or ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if gain setting is out of valid range.
+ */
+uint8_t volume_control_service_server_set_audio_input_state_for_aics(uint8_t aics_index, aics_audio_input_state_t * audio_input_state);
+
+/**
+ * @brief Set audio input description of the AICS service identified by aics_index.
+ * @param aics_index
+ * @param audio_input_state see aics_audio_input_state_t in audio_input_control_service_server.h
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if aics_index is out of range.
+ */
+uint8_t volume_control_service_server_set_audio_input_description_for_aics(uint8_t aics_index, const char * audio_input_desc);
+
+/**
+ * @brief Set audio input status of the AICS service identified by aics_index.
+ * @param aics_index
+ * @param audio_input_status see aics_audio_input_status_t in audio_input_control_service_server.h
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if aics_index is out of range.
+ */
+uint8_t volume_control_service_server_set_audio_input_status_for_aics(uint8_t aics_index, aics_audio_input_status_t audio_input_status);
+
+
+/**
+ * @brief Set volume offset location of the VOCS service. If successful, all registered clients will be notified of change.
+ * @param vocs service
+ * @param volume_offset
+ * @return ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if aics_index is out of range.
+ */
+uint8_t volume_control_service_server_set_volume_offset_for_vocs(uint8_t vocs_index, int16_t volume_offset);
+
+/**
+ * @brief Set audio location of the VOCS service. If successful, all registered clients will be notified of change.
+ * @param vocs service
+ * @param audio_location see VOCS_AUDIO_LOCATION_* defines in volume_offset_control_service_server.h
+ * @return ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if aics_index is out of range.
+ */
+uint8_t volume_control_service_server_set_audio_location_for_vocs(uint8_t vocs_index, uint32_t audio_location);
+
+/**
+ * @brief Set audio output description of the VOCS service. If successful, all registered clients will be notified of change.
+ * @param vocs service
+ * @param audio_output_desc
+ * @return ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if aics_index is out of range.
+ */
+uint8_t volume_control_service_server_set_audio_output_description_for_vocs(uint8_t vocs_index, const char * audio_output_desc);
+
+
 /* API_END */
 
 #if defined __cplusplus
