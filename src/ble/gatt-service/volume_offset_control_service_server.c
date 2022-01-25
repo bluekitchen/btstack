@@ -115,11 +115,9 @@ static void volume_offset_control_service_can_send_now(void * context){
     if ((vocs->scheduled_tasks & VOCS_TASK_SEND_VOLUME_OFFSET) != 0){
         vocs->scheduled_tasks &= ~VOCS_TASK_SEND_VOLUME_OFFSET;
         uint8_t value[3];
-        little_endian_store_16(value, 0, vocs->info.volume_offset);
+        little_endian_store_16(value, 0, (uint16_t)vocs->info.volume_offset);
         value[2] = vocs->volume_offset_state_change_counter;
-
         att_server_notify(vocs->con_handle, vocs->volume_offset_state_value_handle, &value[0], sizeof(value));
-    } 
 
     if (vocs->scheduled_tasks != 0){
         att_server_register_can_send_now_callback(&vocs->scheduled_tasks_callback, vocs->con_handle);
@@ -154,6 +152,13 @@ static void vocs_set_con_handle(volume_offset_control_service_server_t * vocs, h
     vocs->con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
 }
 
+static bool vocs_set_volume_offset(volume_offset_control_service_server_t * vocs, int16_t volume_offset){
+    if (volume_offset < -255) return false;
+    if (volume_offset > 255) return false;
+
+    vocs->info.volume_offset = volume_offset;
+    return true;
+}
 static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(con_handle);
     UNUSED(transaction_mode);
@@ -179,8 +184,16 @@ static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
             return VOCS_ERROR_CODE_INVALID_CHANGE_COUNTER;
         }
 
+        int16_t volume_offset = (int16_t) little_endian_read_16(buffer, 2);
         switch (opcode){
             case VOCS_OPCODE_SET_VOLUME_OFFSET:
+                if (buffer_size != 4){
+                    return VOCS_ERROR_CODE_VALUE_OUT_OF_RANGE;
+                }
+
+                if (!vocs_set_volume_offset(vocs, volume_offset)) {
+                    return VOCS_ERROR_CODE_VALUE_OUT_OF_RANGE;
+                }
                 break;
 
             default:
