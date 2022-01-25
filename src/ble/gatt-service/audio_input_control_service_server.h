@@ -57,6 +57,7 @@ extern "C" {
  *
  */
 #define AICS_MAX_NUM_SERVICES 5
+#define AICS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH         30
 
 #define AICS_ERROR_CODE_INVALID_CHANGE_COUNTER          0x80
 #define AICS_ERROR_CODE_OPCODE_NOT_SUPPORTED            0x81
@@ -117,7 +118,7 @@ typedef struct {
     aics_gain_settings_properties_t gain_settings_properties;
 
     aics_audio_input_type_t audio_input_type;
-    char * audio_input_description;
+    char audio_input_description[AICS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH];
 
     btstack_packet_handler_t packet_handler;
 } aics_info_t;
@@ -167,6 +168,7 @@ typedef struct {
 
     // ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION
     uint16_t audio_input_description_value_handle;
+    uint8_t  audio_input_description_len;
 
     uint16_t audio_input_description_client_configuration_handle;
     uint16_t audio_input_description_client_configuration;

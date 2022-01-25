@@ -295,6 +295,7 @@ static void volume_control_init_included_aics_services(uint16_t vcs_start_handle
         service->index = aics_services_num;
         
         memcpy(&service->info, &aics_info[aics_services_num], sizeof(aics_info_t));
+        service->audio_input_description_len = strlen(aics_info->audio_input_description);
 
         audio_input_control_service_server_init(service);
         
@@ -329,7 +330,7 @@ static void volume_control_init_included_vocs_services(uint16_t vcs_start_handle
         service->index = vocs_services_num;
         
         memcpy(&service->info, &vocs_info[vocs_services_num], sizeof(vocs_info_t));
-        service->audio_output_description_len = sizeof(vocs_info->audio_output_description);
+        service->audio_output_description_len = strlen(vocs_info->audio_output_description);
 
         volume_offset_control_service_server_init(service);
         
