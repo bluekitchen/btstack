@@ -179,6 +179,58 @@ static bool vocs_set_audio_location(volume_offset_control_service_server_t * voc
     vocs->info.audio_location = audio_location;
     return true;
 }
+
+static void vocs_emit_volume_offset(volume_offset_control_service_server_t * vocs){
+    btstack_assert(vocs->info.packet_handler != NULL);
+    
+    uint8_t event[8];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_VOLUME_OFFSET;
+    little_endian_store_16(event, pos, vocs->con_handle);
+    pos += 2;
+    event[pos++] = vocs->index;
+    little_endian_store_16(event, pos, vocs->info.volume_offset);
+    pos += 2;
+    (*vocs->info.packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void vocs_emit_audio_location(volume_offset_control_service_server_t * vocs){
+    btstack_assert(vocs->info.packet_handler != NULL);
+    
+    uint8_t event[10];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_AUDIO_LOCATION;
+    little_endian_store_16(event, pos, vocs->con_handle);
+    pos += 2;
+    event[pos++] = vocs->index;
+    little_endian_store_32(event, pos, vocs->info.audio_location);
+    pos += 4;
+    (*vocs->info.packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void vocs_emit_audio_output_description(volume_offset_control_service_server_t * vocs){
+    btstack_assert(vocs->info.packet_handler != NULL);
+    
+    uint8_t event[7 + VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_AUDIO_OUTPUT_DESC_CHANGED;
+    little_endian_store_16(event, pos, vocs->con_handle);
+    pos += 2;
+    event[pos++] = vocs->index;
+    event[pos++] = (uint8_t)vocs->audio_output_description_len;
+    memcpy(&event[pos], (uint8_t *)vocs->info.audio_output_description, vocs->audio_output_description_len + 1);
+    pos += vocs->audio_output_description_len;
+    event[pos++] = 0;
+    (*vocs->info.packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+
 static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(con_handle);
     UNUSED(transaction_mode);
@@ -214,6 +266,7 @@ static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 if (!vocs_set_volume_offset(vocs, volume_offset)) {
                     return VOCS_ERROR_CODE_VALUE_OUT_OF_RANGE;
                 }
+                vocs_emit_volume_offset(vocs);
                 break;
 
             default:
@@ -230,13 +283,15 @@ static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
         }
         uint32_t audio_location = little_endian_read_32(buffer, 0);
         if (vocs_set_audio_location(vocs, audio_location)) {
+            vocs_emit_audio_location(vocs);
             volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_LOCATION);
         }
     }
 
     if (attribute_handle == vocs->audio_output_description_value_handle){
-        vocs->audio_output_description_len = btstack_min(VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH - 1, buffer_size);
         btstack_strcpy(vocs->info.audio_output_description, vocs->audio_output_description_len, (char *)buffer);
+        vocs->audio_output_description_len = strlen(vocs->info.audio_output_description);
+        vocs_emit_audio_output_description(vocs);
         volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION);
     }
 
@@ -332,7 +387,6 @@ void volume_offset_control_service_server_init(volume_offset_control_service_ser
 
 uint8_t volume_offset_control_service_server_set_volume_offset(volume_offset_control_service_server_t * vocs, int16_t volume_offset){
     btstack_assert(vocs != NULL);
-    
     vocs->info.volume_offset = volume_offset;
     volume_offset_control_service_update_change_counter(vocs);
     volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_VOLUME_OFFSET);
@@ -341,7 +395,6 @@ uint8_t volume_offset_control_service_server_set_volume_offset(volume_offset_con
 
 uint8_t volume_offset_control_service_server_set_audio_location(volume_offset_control_service_server_t * vocs, uint32_t audio_location){
     btstack_assert(vocs != NULL);
-
     vocs->info.audio_location = audio_location;
     volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_LOCATION);
     return ERROR_CODE_SUCCESS;
@@ -349,8 +402,7 @@ uint8_t volume_offset_control_service_server_set_audio_location(volume_offset_co
 
 void volume_offset_control_service_server_set_audio_output_description(volume_offset_control_service_server_t * vocs, const char * audio_output_desc){
     btstack_assert(vocs != NULL);
-    vocs->audio_output_description_len = btstack_min(VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH - 1, sizeof(audio_output_desc));
     btstack_strcpy(vocs->info.audio_output_description, vocs->audio_output_description_len, (char *)audio_output_desc);
-
+    vocs->audio_output_description_len = strlen(vocs->info.audio_output_description);
     volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION);
 }
