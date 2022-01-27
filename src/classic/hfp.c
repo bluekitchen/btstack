@@ -701,6 +701,17 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
     de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
 }
 
+static void hfp_handle_slc_setup_error(hfp_connection_t * hfp_connection, uint8_t status){
+    // cache fields for event
+    hfp_role_t local_role = hfp_connection->local_role;
+    bd_addr_t remote_addr;
+    (void)memcpy(remote_addr, hfp_connection, 6);
+    // finalize connection struct
+    hfp_finalize_connection_context(hfp_connection);
+    // emit event
+    hfp_emit_slc_connection_event(local_role, status, HCI_CON_HANDLE_INVALID, remote_addr);
+}
+
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: handling own sdp events
     UNUSED(channel);        // ok: no channel
@@ -740,14 +751,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
                     // report service not found
                     status = SDP_SERVICE_NOT_FOUND;
                 }
-                // cache fields for event
-                hfp_role_t local_role = hfp_connection->local_role;
-                bd_addr_t remote_addr;
-                (void)memcpy(remote_addr, hfp_connection, 6);
-                // finalize connection struct
-                hfp_finalize_connection_context(hfp_connection);
-                // emit event
-                hfp_emit_slc_connection_event(local_role, status, HCI_CON_HANDLE_INVALID, remote_addr);
+                hfp_handle_slc_setup_error(hfp_connection, status);
                 log_info("rfcomm service not found, status 0x%02x", status);
             }
 
@@ -1024,13 +1028,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 
             status = rfcomm_event_channel_opened_get_status(packet);          
             if (status != ERROR_CODE_SUCCESS) {
-                // cache fields for event
-                bd_addr_t remote_addr;
-                (void)memcpy(remote_addr, hfp_connection, 6);
-                // finalize connection struct
-                hfp_finalize_connection_context(hfp_connection);
-                // emit event
-                hfp_emit_slc_connection_event(local_role, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
+                hfp_handle_slc_setup_error(hfp_connection, status);
                 break;
             } 
 
