@@ -735,13 +735,19 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
                 rfcomm_create_channel(packet_handler, hfp_connection->remote_addr, hfp_connection->rfcomm_channel_nr, NULL); 
 
             } else {
-                hfp_connection->state = HFP_IDLE;
                 uint8_t status = sdp_event_query_complete_get_status(packet);
                 if (status == ERROR_CODE_SUCCESS){
                     // report service not found
                     status = SDP_SERVICE_NOT_FOUND;
                 }
-                hfp_emit_slc_connection_event(hfp_connection->local_role, status, HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
+                // cache fields for event
+                hfp_role_t local_role = hfp_connection->local_role;
+                bd_addr_t remote_addr;
+                (void)memcpy(remote_addr, hfp_connection, 6);
+                // finalize connection struct
+                hfp_finalize_connection_context(hfp_connection);
+                // emit event
+                hfp_emit_slc_connection_event(local_role, status, HCI_CON_HANDLE_INVALID, remote_addr);
                 log_info("rfcomm service not found, status 0x%02x", status);
             }
 
@@ -1018,8 +1024,13 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 
             status = rfcomm_event_channel_opened_get_status(packet);          
             if (status != ERROR_CODE_SUCCESS) {
-                hfp_emit_slc_connection_event(hfp_connection->local_role, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
+                // cache fields for event
+                bd_addr_t remote_addr;
+                (void)memcpy(remote_addr, hfp_connection, 6);
+                // finalize connection struct
                 hfp_finalize_connection_context(hfp_connection);
+                // emit event
+                hfp_emit_slc_connection_event(local_role, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
                 break;
             } 
 
