@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - GAP: disable scanning, advertising, connection before updating random address
 - HFP_AG: fix tracking for call dropped during outgoing ringing
- 
+- HFP: Free HFP Connection object on SDP error / Service not found
+
 ### Changed
 
 
