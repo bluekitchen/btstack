@@ -315,21 +315,23 @@ int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr){
     }
     return offset;
 }
+static void hfp_emit_event_for_role(hfp_role_t local_role, uint8_t * packet, uint16_t size){
+    switch (local_role){
+        case HFP_ROLE_HF:
+            (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, packet, size);
+            break;
+        case HFP_ROLE_AG:
+            (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, packet, size);
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+}
 
 static void hfp_emit_event_for_context(hfp_connection_t * hfp_connection, uint8_t * packet, uint16_t size){
     if (!hfp_connection) return;
-    btstack_packet_handler_t callback = NULL;
-    switch (hfp_connection->local_role){
-        case HFP_ROLE_HF:
-            callback = hfp_hf_callback;
-            break;
-        case HFP_ROLE_AG:
-            callback = hfp_ag_callback;
-            break;
-        default:
-            return;
-    }
-    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
+    hfp_emit_event_for_role(hfp_connection->local_role, packet, size);
 }
 
 void hfp_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype){
