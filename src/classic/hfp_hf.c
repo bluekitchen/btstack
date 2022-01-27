@@ -1049,7 +1049,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
 static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
 
-    hfp_emit_slc_connection_event(hfp_connection, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
+    hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
 
     uint8_t i;
     for (i = 0; i < hfp_connection->ag_indicators_nr; i++){

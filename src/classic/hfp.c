@@ -420,8 +420,7 @@ void hfp_emit_enhanced_voice_recognition_state_event(hfp_connection_t * hfp_conn
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
-    btstack_assert(hfp_connection != NULL);
+void hfp_emit_slc_connection_event(hfp_role_t local_role, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
     uint8_t event[12];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
@@ -432,7 +431,7 @@ void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t st
     event[pos++] = status; // status 0 == OK
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
-    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
+    hfp_emit_event_for_role(local_role, event, sizeof(event));
 }
 
 static void hfp_emit_audio_connection_released(hfp_connection_t * hfp_connection, hci_con_handle_t sco_handle){
@@ -742,7 +741,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
                     // report service not found
                     status = SDP_SERVICE_NOT_FOUND;
                 }
-                hfp_emit_slc_connection_event(hfp_connection, status, HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
+                hfp_emit_slc_connection_event(hfp_connection->local_role, status, HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
                 log_info("rfcomm service not found, status 0x%02x", status);
             }
 
@@ -1019,7 +1018,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 
             status = rfcomm_event_channel_opened_get_status(packet);          
             if (status != ERROR_CODE_SUCCESS) {
-                hfp_emit_slc_connection_event(hfp_connection, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
+                hfp_emit_slc_connection_event(hfp_connection->local_role, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
                 hfp_finalize_connection_context(hfp_connection);
                 break;
             } 
