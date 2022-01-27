@@ -262,12 +262,17 @@ void sm_allow_ltk_reconstruction_without_le_device_db_entry(int allow);
 uint8_t sm_generate_sc_oob_data(void (*callback)(const uint8_t * confirm_value, const uint8_t * random_value));
 
 /**
- *
  * @brief Registers OOB Data Callback for LE Secure Conections. The callback should set all arguments and return 1 if OOB data is availble
  * @note the oob_sc_local_random usually is the random_value returend by sm_generate_sc_oob_data
  * @param get_oob_data_callback
  */
 void sm_register_sc_oob_data_callback( int (*get_sc_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random));
+
+/**
+ * @bbrief Register LTK Callback that allows to provide a custom LTK on re-encryption. The callback returns true if LTK was modified
+ * @param get_ltk_callback
+ */
+void sm_register_ltk_callback( bool (*get_ltk_callback)(hci_con_handle_t con_handle, uint8_t address_type, bd_addr_t addr, uint8_t * ltk));
 
 /* API_END */
 
