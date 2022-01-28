@@ -164,8 +164,6 @@ static void volume_control_service_can_send_now(void * context){
     if ((vcs_tasks & VCS_TASK_SEND_VOLUME_SETTING) != 0){
         vcs_tasks &= ~VCS_TASK_SEND_VOLUME_SETTING;
         
-        volume_control_service_update_change_counter();
-
         uint8_t buffer[3];
         buffer[0] = vcs_volume_state_volume_setting;
         buffer[1] = (uint8_t)vcs_volume_state_mute;
@@ -198,11 +196,6 @@ static void volume_control_service_server_set_callback(uint8_t task){
     }   
 }
 
-static void volume_control_service_server_enable_user_set_volume_setting_flag(void){
-    vcs_volume_flags = VCS_FLAG_USER_SET_VOLUME_SETTING;
-    if (vcs_volume_flags_client_configuration != 0){
-        volume_control_service_server_set_callback(VCS_TASK_SEND_VOLUME_FLAGS);
-    }
 static void vcs_set_con_handle(hci_con_handle_t con_handle, uint16_t configuration){
     vcs_con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
 }
@@ -223,8 +216,8 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
             return VOLUME_CONTROL_INVALID_CHANGE_COUNTER;
         }
 
-        uint8_t    old_volume_setting = vcs_volume_state_volume_setting;
-        vcs_mute_t old_mute = vcs_volume_state_mute;
+        uint8_t    volume_setting = vcs_volume_state_volume_setting;
+        vcs_mute_t mute = vcs_volume_state_mute;
 
         switch (cmd){
             case VCS_CMD_RELATIVE_VOLUME_DOWN:  
@@ -263,14 +256,7 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
             default:
                 return VOLUME_CONTROL_OPCODE_NOT_SUPPORTED;
         }
-        
-        if ((old_volume_setting != vcs_volume_state_volume_setting) || (old_mute != vcs_volume_state_mute)){
-            volume_control_service_update_change_counter();
-        
-            if (vcs_volume_flags == VCS_FLAG_RESET_VOLUME_SETTING){
-                volume_control_service_server_enable_user_set_volume_setting_flag();
-            }
-        }
+        volume_control_service_server_set_volume_state(volume_setting, mute);
     } 
 
     else if (attribute_handle == vcs_volume_state_client_configuration_handle){
@@ -427,20 +413,22 @@ void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
 }
 
 void volume_control_service_server_set_volume_state(uint8_t volume_setting, vcs_mute_t mute){
-    uint8_t update_value = false;
+    uint8_t    old_volume_setting = vcs_volume_state_volume_setting;
+    vcs_mute_t old_mute = vcs_volume_state_mute;
 
-    if (vcs_volume_state_volume_setting != volume_setting){
-        vcs_volume_state_volume_setting = volume_setting;
-        update_value = true;
-    }
+    vcs_volume_state_volume_setting = volume_setting;
+    vcs_volume_state_mute = mute;
 
-    if (vcs_volume_state_mute != mute){
-        vcs_volume_state_mute = mute;
-        update_value = true;
-    }
-    
-    if (update_value && (vcs_volume_state_client_configuration != 0)){
+    if ((old_volume_setting != vcs_volume_state_volume_setting) || (old_mute != vcs_volume_state_mute)) {
+        volume_control_service_update_change_counter();
         volume_control_service_server_set_callback(VCS_TASK_SEND_VOLUME_SETTING);
+    }
+
+    if (old_volume_setting != vcs_volume_state_volume_setting) {
+        if (vcs_volume_flags_volume_setting_persisted == VCS_FLAG_RESET_VOLUME_SETTING){
+            vcs_volume_flags_volume_setting_persisted = VCS_FLAG_USER_SET_VOLUME_SETTING;
+            volume_control_service_server_set_callback(VCS_TASK_SEND_VOLUME_FLAGS);
+        }
     }
 }
 
