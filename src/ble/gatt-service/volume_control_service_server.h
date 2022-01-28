@@ -87,9 +87,9 @@ typedef enum {
  * @param vocs_info_num
  * @param vocs_info
  */
-void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute, uint8_t volume_change_step,
-    uint8_t aics_info_num, const aics_info_t * aics_info, 
-    uint8_t vocs_info_num, const vocs_info_t * vocs_info);
+void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
+    uint8_t aics_info_num, aics_info_t * aics_info, 
+    uint8_t vocs_info_num, vocs_info_t * vocs_info);
 
 /**
  * @brief Set volume state.

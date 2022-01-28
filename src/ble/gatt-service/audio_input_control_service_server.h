@@ -135,7 +135,7 @@ typedef struct {
     uint16_t end_handle;
     uint8_t index;
 
-    aics_info_t info;
+    aics_info_t * info;
 
     att_service_handler_t    service_handler;
     btstack_context_callback_registration_t  scheduled_tasks_callback;

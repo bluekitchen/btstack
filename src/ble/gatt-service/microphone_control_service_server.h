@@ -65,7 +65,7 @@ extern "C" {
  * @brief Init Microphone Control Service Server with ATT DB
  * @param mute_state
  */
-void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_state, uint8_t aics_info_num, const aics_info_t * aics_info);
+void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_state, uint8_t aics_info_num, aics_info_t * aics_info);
 
 /**
  * @brief Register callback to receive updates of mute value from remote side via MICS_MUTE event

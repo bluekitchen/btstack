@@ -138,7 +138,7 @@ static void microphone_control_service_can_send_now(void * context){
 	att_server_notify(con_handle, mc_mute_state_handle, &value, 1);
 }
 
-void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_state, uint8_t aics_info_num, const aics_info_t * aics_info){
+void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_state, uint8_t aics_info_num, aics_info_t * aics_info){
 	btstack_assert(aics_info_num <= AICS_MAX_NUM_SERVICES);
 	btstack_assert((aics_info_num == 0)|| (aics_info != NULL));
 
@@ -179,7 +179,7 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 		service->end_handle = included_service_end_handle;
 		service->index = aics_services_num;
 		
-		memcpy(&service->info, &aics_info[aics_services_num], sizeof(aics_info_t));
+		service->info = &aics_info[aics_services_num];
 		service->audio_input_description_len = strlen(aics_info->audio_input_description);
 
 		audio_input_control_service_server_init(service);

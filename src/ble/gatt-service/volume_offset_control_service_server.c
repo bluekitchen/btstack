@@ -78,17 +78,17 @@ static uint16_t vocs_read_callback(hci_con_handle_t con_handle, uint16_t attribu
 
     if (attribute_handle == vocs->volume_offset_state_value_handle){
         uint8_t value[3];
-        little_endian_store_16(value, 0, vocs->info.volume_offset);
+        little_endian_store_16(value, 0, vocs->info->volume_offset);
         value[2] = vocs->volume_offset_state_change_counter;
         return att_read_callback_handle_blob(value, sizeof(value), offset, buffer, buffer_size);
     }
 
     if (attribute_handle == vocs->audio_location_value_handle){
-        return att_read_callback_handle_little_endian_32(vocs->info.audio_location, offset, buffer, buffer_size);
+        return att_read_callback_handle_little_endian_32(vocs->info->audio_location, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == vocs->audio_output_description_value_handle){
-        return att_read_callback_handle_blob((uint8_t *)vocs->info.audio_output_description, strlen(vocs->info.audio_output_description), offset, buffer, buffer_size);
+        return att_read_callback_handle_blob((uint8_t *)vocs->info->audio_output_description, strlen(vocs->info->audio_output_description), offset, buffer, buffer_size);
     }
     
     
@@ -117,18 +117,18 @@ static void volume_offset_control_service_can_send_now(void * context){
     if ((vocs->scheduled_tasks & VOCS_TASK_SEND_VOLUME_OFFSET) != 0){
         vocs->scheduled_tasks &= ~VOCS_TASK_SEND_VOLUME_OFFSET;
         uint8_t value[3];
-        little_endian_store_16(value, 0, (uint16_t)vocs->info.volume_offset);
+        little_endian_store_16(value, 0, (uint16_t)vocs->info->volume_offset);
         value[2] = vocs->volume_offset_state_change_counter;
         att_server_notify(vocs->con_handle, vocs->volume_offset_state_value_handle, &value[0], sizeof(value));
 
     } else if ((vocs->scheduled_tasks & VOCS_TASK_SEND_AUDIO_LOCATION) != 0) {
         vocs->scheduled_tasks &= ~VOCS_TASK_SEND_AUDIO_LOCATION;
         uint8_t value[4];
-        little_endian_store_32(value, 0, vocs->info.audio_location);
+        little_endian_store_32(value, 0, vocs->info->audio_location);
         att_server_notify(vocs->con_handle, vocs->audio_location_value_handle, &value[0], sizeof(value));
     } else if ((vocs->scheduled_tasks & VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION) != 0) {
         vocs->scheduled_tasks &= ~VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION;
-        att_server_notify(vocs->con_handle, vocs->audio_output_description_value_handle, (uint8_t *)vocs->info.audio_output_description, vocs->audio_output_description_len);
+        att_server_notify(vocs->con_handle, vocs->audio_output_description_value_handle, (uint8_t *)vocs->info->audio_output_description, vocs->audio_output_description_len);
     }
 
     if (vocs->scheduled_tasks != 0){
@@ -168,7 +168,7 @@ static bool vocs_set_volume_offset(volume_offset_control_service_server_t * vocs
     if (volume_offset < -255) return false;
     if (volume_offset > 255) return false;
 
-    vocs->info.volume_offset = volume_offset;
+    vocs->info->volume_offset = volume_offset;
     return true;
 }
 
@@ -176,12 +176,12 @@ static bool vocs_set_audio_location(volume_offset_control_service_server_t * voc
     if (audio_location == VOCS_AUDIO_LOCATION_NOT_ALLOWED) return false;
     if (audio_location >= VOCS_AUDIO_LOCATION_RFU) return false;
 
-    vocs->info.audio_location = audio_location;
+    vocs->info->audio_location = audio_location;
     return true;
 }
 
 static void vocs_emit_volume_offset(volume_offset_control_service_server_t * vocs){
-    btstack_assert(vocs->info.packet_handler != NULL);
+    btstack_assert(vocs->info->packet_handler != NULL);
     
     uint8_t event[8];
     uint8_t pos = 0;
@@ -191,13 +191,13 @@ static void vocs_emit_volume_offset(volume_offset_control_service_server_t * voc
     little_endian_store_16(event, pos, vocs->con_handle);
     pos += 2;
     event[pos++] = vocs->index;
-    little_endian_store_16(event, pos, vocs->info.volume_offset);
+    little_endian_store_16(event, pos, vocs->info->volume_offset);
     pos += 2;
-    (*vocs->info.packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*vocs->info->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void vocs_emit_audio_location(volume_offset_control_service_server_t * vocs){
-    btstack_assert(vocs->info.packet_handler != NULL);
+    btstack_assert(vocs->info->packet_handler != NULL);
     
     uint8_t event[10];
     uint8_t pos = 0;
@@ -207,13 +207,13 @@ static void vocs_emit_audio_location(volume_offset_control_service_server_t * vo
     little_endian_store_16(event, pos, vocs->con_handle);
     pos += 2;
     event[pos++] = vocs->index;
-    little_endian_store_32(event, pos, vocs->info.audio_location);
+    little_endian_store_32(event, pos, vocs->info->audio_location);
     pos += 4;
-    (*vocs->info.packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*vocs->info->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void vocs_emit_audio_output_description(volume_offset_control_service_server_t * vocs){
-    btstack_assert(vocs->info.packet_handler != NULL);
+    btstack_assert(vocs->info->packet_handler != NULL);
     
     uint8_t event[7 + VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH];
     uint8_t pos = 0;
@@ -224,10 +224,10 @@ static void vocs_emit_audio_output_description(volume_offset_control_service_ser
     pos += 2;
     event[pos++] = vocs->index;
     event[pos++] = (uint8_t)vocs->audio_output_description_len;
-    memcpy(&event[pos], (uint8_t *)vocs->info.audio_output_description, vocs->audio_output_description_len + 1);
+    memcpy(&event[pos], (uint8_t *)vocs->info->audio_output_description, vocs->audio_output_description_len + 1);
     pos += vocs->audio_output_description_len;
     event[pos++] = 0;
-    (*vocs->info.packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    (*vocs->info->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 
@@ -289,8 +289,8 @@ static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
     }
 
     if (attribute_handle == vocs->audio_output_description_value_handle){
-        btstack_strcpy(vocs->info.audio_output_description, vocs->audio_output_description_len, (char *)buffer);
-        vocs->audio_output_description_len = strlen(vocs->info.audio_output_description);
+        btstack_strcpy(vocs->info->audio_output_description, vocs->audio_output_description_len, (char *)buffer);
+        vocs->audio_output_description_len = strlen(vocs->info->audio_output_description);
         vocs_emit_audio_output_description(vocs);
         volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION);
     }
@@ -343,7 +343,7 @@ static void vocs_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
 
 void volume_offset_control_service_server_init(volume_offset_control_service_server_t * vocs){
     btstack_assert(vocs != NULL);
-    btstack_assert(vocs->info.packet_handler != NULL);
+    btstack_assert(vocs->info->packet_handler != NULL);
 
     btstack_linked_list_add(&vocs_services, (btstack_linked_item_t *)vocs);
 
@@ -363,7 +363,7 @@ void volume_offset_control_service_server_init(volume_offset_control_service_ser
     vocs->audio_output_description_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(vocs->start_handle, vocs->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_OUTPUT_DESCRIPTION);
 
 #ifdef ENABLE_TESTING_SUPPORT
-    printf("vocs[%d] 0x%02x - 0x%02x \n", vocs->index, vocs->start_handle, vocs->end_handle);
+    printf("VOCS[%d] 0x%02x - 0x%02x \n", vocs->index, vocs->start_handle, vocs->end_handle);
     printf("    volume_offset_state            0x%02x \n", vocs->volume_offset_state_value_handle);
     printf("    volume_offset_state CCC        0x%02x \n", vocs->volume_offset_state_client_configuration_handle);
     
@@ -387,7 +387,7 @@ void volume_offset_control_service_server_init(volume_offset_control_service_ser
 
 uint8_t volume_offset_control_service_server_set_volume_offset(volume_offset_control_service_server_t * vocs, int16_t volume_offset){
     btstack_assert(vocs != NULL);
-    vocs->info.volume_offset = volume_offset;
+    vocs->info->volume_offset = volume_offset;
     volume_offset_control_service_update_change_counter(vocs);
     volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_VOLUME_OFFSET);
     return ERROR_CODE_SUCCESS;
@@ -395,14 +395,14 @@ uint8_t volume_offset_control_service_server_set_volume_offset(volume_offset_con
 
 uint8_t volume_offset_control_service_server_set_audio_location(volume_offset_control_service_server_t * vocs, uint32_t audio_location){
     btstack_assert(vocs != NULL);
-    vocs->info.audio_location = audio_location;
+    vocs->info->audio_location = audio_location;
     volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_LOCATION);
     return ERROR_CODE_SUCCESS;
 }
 
 void volume_offset_control_service_server_set_audio_output_description(volume_offset_control_service_server_t * vocs, const char * audio_output_desc){
     btstack_assert(vocs != NULL);
-    btstack_strcpy(vocs->info.audio_output_description, vocs->audio_output_description_len, (char *)audio_output_desc);
-    vocs->audio_output_description_len = strlen(vocs->info.audio_output_description);
+    btstack_strcpy(vocs->info->audio_output_description, vocs->audio_output_description_len, (char *)audio_output_desc);
+    vocs->audio_output_description_len = strlen(vocs->info->audio_output_description);
     volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION);
 }

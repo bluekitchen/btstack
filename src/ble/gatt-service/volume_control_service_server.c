@@ -270,7 +270,7 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
     return 0;
 }
 
-static void volume_control_init_included_aics_services(uint16_t vcs_start_handle, uint16_t vcs_end_handle, uint8_t aics_info_num, const aics_info_t * aics_info){
+static void volume_control_init_included_aics_services(uint16_t vcs_start_handle, uint16_t vcs_end_handle, uint8_t aics_info_num, aics_info_t * aics_info){
     uint16_t start_handle = vcs_start_handle + 1;
     uint16_t end_handle   = vcs_end_handle - 1;
     aics_services_num = 0;
@@ -294,7 +294,7 @@ static void volume_control_init_included_aics_services(uint16_t vcs_start_handle
         service->end_handle = included_service_end_handle;
         service->index = aics_services_num;
         
-        memcpy(&service->info, &aics_info[aics_services_num], sizeof(aics_info_t));
+        service->info = &aics_info[aics_services_num];
         service->audio_input_description_len = strlen(aics_info->audio_input_description);
 
         audio_input_control_service_server_init(service);
@@ -304,7 +304,7 @@ static void volume_control_init_included_aics_services(uint16_t vcs_start_handle
     }
 }
 
-static void volume_control_init_included_vocs_services(uint16_t vcs_start_handle, uint16_t vcs_end_handle, uint8_t vocs_info_num, const vocs_info_t * vocs_info){
+static void volume_control_init_included_vocs_services(uint16_t vcs_start_handle, uint16_t vcs_end_handle, uint8_t vocs_info_num, vocs_info_t * vocs_info){
     uint16_t start_handle = vcs_start_handle + 1;
     uint16_t end_handle = vcs_end_handle - 1;
     vocs_services_num = 0;
@@ -329,7 +329,7 @@ static void volume_control_init_included_vocs_services(uint16_t vcs_start_handle
         service->end_handle = included_service_end_handle;
         service->index = vocs_services_num;
         
-        memcpy(&service->info, &vocs_info[vocs_services_num], sizeof(vocs_info_t));
+        service->info = &vocs_info[vocs_services_num];
         service->audio_output_description_len = strlen(vocs_info->audio_output_description);
 
         volume_offset_control_service_server_init(service);
@@ -339,10 +339,9 @@ static void volume_control_init_included_vocs_services(uint16_t vcs_start_handle
     }
 }
 
-void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute, uint8_t volume_change_step, 
-    uint8_t aics_info_num, const aics_info_t * aics_info, 
-    uint8_t vocs_info_num, const vocs_info_t * vocs_info){
-    
+void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
+    uint8_t aics_info_num, aics_info_t * aics_info, 
+    uint8_t vocs_info_num, vocs_info_t * vocs_info){
     vcs_volume_state_volume_setting = volume_setting;
     vcs_volume_state_mute = mute;
     vcs_volume_flags = VCS_FLAG_RESET_VOLUME_SETTING;
