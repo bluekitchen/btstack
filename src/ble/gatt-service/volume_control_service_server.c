@@ -145,6 +145,14 @@ static uint16_t volume_control_service_read_callback(hci_con_handle_t con_handle
         return att_read_callback_handle_byte((uint8_t)vcs_volume_flags_volume_setting_persisted, offset, buffer, buffer_size);
     }
 
+    if (attribute_handle == vcs_volume_state_client_configuration_handle){
+        return att_read_callback_handle_little_endian_16(vcs_volume_state_client_configuration, offset, buffer, buffer_size);
+    }
+    
+    if (attribute_handle == vcs_volume_flags_client_configuration_handle){
+        return att_read_callback_handle_little_endian_16(vcs_volume_flags_client_configuration, offset, buffer, buffer_size);
+    }
+
     return 0;
 }
 
