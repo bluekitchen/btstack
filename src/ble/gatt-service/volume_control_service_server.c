@@ -43,6 +43,7 @@
  */
 
 #include "btstack_defines.h"
+#include "btstack_event.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "btstack_util.h"
@@ -176,6 +177,11 @@ static void volume_control_service_can_send_now(void * context){
 }
 
 static void volume_control_service_server_set_callback(uint8_t task){
+    if (vcs_con_handle == HCI_CON_HANDLE_INVALID){
+        vcs_tasks &= ~task;
+        return;
+    }
+
     uint8_t scheduled_tasks = vcs_tasks;
     vcs_tasks |= task;
     if (scheduled_tasks == 0){
@@ -272,6 +278,38 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
     return 0;
 }
 
+static void volume_control_service_server_reset_values(void){
+    vcs_volume_flags_volume_setting_persisted = VCS_FLAG_RESET_VOLUME_SETTING;
+    vcs_con_handle = HCI_CON_HANDLE_INVALID;
+    vcs_tasks = 0;
+
+    vcs_volume_change_step_size = 1;
+    vcs_volume_state_volume_setting = 0;
+    vcs_volume_state_mute = VCS_MUTE_OFF;
+}
+
+static void vcs_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(packet);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET){
+        return;
+    }
+
+    hci_con_handle_t con_handle;
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            if (vcs_con_handle == con_handle){
+                volume_control_service_server_reset_values();
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 static void volume_control_init_included_aics_services(uint16_t vcs_start_handle, uint16_t vcs_end_handle, uint8_t aics_info_num, aics_info_t * aics_info){
     uint16_t start_handle = vcs_start_handle + 1;
     uint16_t end_handle   = vcs_end_handle - 1;
@@ -344,13 +382,12 @@ static void volume_control_init_included_vocs_services(uint16_t vcs_start_handle
 void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
     uint8_t aics_info_num, aics_info_t * aics_info, 
     uint8_t vocs_info_num, vocs_info_t * vocs_info){
+
+    volume_control_service_server_reset_values();
+
     vcs_volume_state_volume_setting = volume_setting;
     vcs_volume_state_mute = mute;
-    vcs_volume_flags = VCS_FLAG_RESET_VOLUME_SETTING;
-    vcs_volume_change_step_size = volume_change_step;
-    
-    vcs_tasks = 0;
-    
+
     // get service handle range
     uint16_t start_handle = 0;
     uint16_t end_handle   = 0xfff;
@@ -377,6 +414,7 @@ void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
     volume_control_service.end_handle     = end_handle;
     volume_control_service.read_callback  = &volume_control_service_read_callback;
     volume_control_service.write_callback = &volume_control_service_write_callback;
+    volume_control_service.packet_handler = vcs_packet_handler;
     att_server_register_service_handler(&volume_control_service);
 }
 
