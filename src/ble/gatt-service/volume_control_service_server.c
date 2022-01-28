@@ -189,6 +189,8 @@ static void volume_control_service_server_enable_user_set_volume_setting_flag(vo
     if (vcs_volume_flags_client_configuration != 0){
         volume_control_service_server_set_callback(VCS_TASK_SEND_VOLUME_FLAGS);
     }
+static void vcs_set_con_handle(hci_con_handle_t con_handle, uint16_t configuration){
+    vcs_con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
 }
 
 static int volume_control_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
@@ -259,12 +261,12 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
 
     else if (attribute_handle == vcs_volume_state_client_configuration_handle){
         vcs_volume_state_client_configuration = little_endian_read_16(buffer, 0);
-        vcs_con_handle = con_handle;
+        vcs_set_con_handle(con_handle, vcs_volume_state_client_configuration);
     }
 
     else if (attribute_handle == vcs_volume_flags_client_configuration_handle){
         vcs_volume_flags_client_configuration = little_endian_read_16(buffer, 0);
-        vcs_con_handle = con_handle;
+        vcs_set_con_handle(con_handle, vcs_volume_flags_client_configuration);
     }
 
     return 0;
