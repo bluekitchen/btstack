@@ -89,7 +89,7 @@ static uint16_t   vcs_volume_flags_handle;
 static uint16_t   vcs_volume_flags_client_configuration_handle;
 static uint16_t   vcs_volume_flags_client_configuration;
 
-static vcs_flag_t vcs_volume_flags;
+static vcs_flag_t vcs_volume_flags_volume_setting_persisted;
 
 // characteristic: CONTROL_POINT
 static uint16_t   vcs_control_point_value_handle;
@@ -141,7 +141,7 @@ static uint16_t volume_control_service_read_callback(hci_con_handle_t con_handle
     }
 
     if (attribute_handle == vcs_volume_flags_handle){
-        return att_read_callback_handle_byte((uint8_t)vcs_volume_flags, offset, buffer, buffer_size);
+        return att_read_callback_handle_byte((uint8_t)vcs_volume_flags_volume_setting_persisted, offset, buffer, buffer_size);
     }
 
     return 0;
@@ -166,7 +166,7 @@ static void volume_control_service_can_send_now(void * context){
     } else if ((vcs_tasks & VCS_TASK_SEND_VOLUME_FLAGS) != 0){
         vcs_tasks &= ~VCS_TASK_SEND_VOLUME_FLAGS;
 
-        uint8_t value = (uint8_t)vcs_volume_flags;
+        uint8_t value = (uint8_t)vcs_volume_flags_volume_setting_persisted;
         att_server_notify(vcs_con_handle, vcs_volume_flags_handle, &value, 1);
     }
 
