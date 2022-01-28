@@ -95,6 +95,8 @@ static uint8_t    vcs_volume_flags;
 // characteristic: CONTROL_POINT
 static uint16_t   vcs_control_point_value_handle;
 
+static btstack_packet_handler_t vcs_event_callback;
+
 static audio_input_control_service_server_t aics_services[AICS_MAX_NUM_SERVICES];
 static uint8_t aics_services_num;
 
@@ -128,6 +130,36 @@ static void volume_control_service_mute(void){
 
 static void volume_control_service_unmute(void){
     vcs_volume_state_mute = VCS_MUTE_OFF;
+}
+
+static void vcs_emit_volume_state(void){
+    btstack_assert(vcs_event_callback != NULL);
+    
+    uint8_t event[8];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE;
+    little_endian_store_16(event, pos, vcs_con_handle);
+    pos += 2;
+    event[pos++] = vcs_volume_state_volume_setting;
+    event[pos++] = vcs_volume_change_step_size;
+    event[pos++] = (uint8_t)vcs_volume_state_mute;
+    (*vcs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void vcs_emit_volume_flags(void){
+    btstack_assert(vcs_event_callback != NULL);
+    
+    uint8_t event[6];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS;
+    little_endian_store_16(event, pos, vcs_con_handle);
+    pos += 2;
+    event[pos++] = vcs_volume_flags;
+    (*vcs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static uint16_t volume_control_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
@@ -254,6 +286,8 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
                 return VOLUME_CONTROL_OPCODE_NOT_SUPPORTED;
         }
         volume_control_service_server_set_volume_state(volume_setting, mute);
+        vcs_emit_volume_state();
+        vcs_emit_volume_flags();
     } 
 
     else if (attribute_handle == vcs_volume_state_client_configuration_handle){
@@ -407,6 +441,11 @@ void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
     volume_control_service.write_callback = &volume_control_service_write_callback;
     volume_control_service.packet_handler = vcs_packet_handler;
     att_server_register_service_handler(&volume_control_service);
+}
+
+void volume_control_service_server_register_packet_handler(btstack_packet_handler_t callback){
+    btstack_assert(callback != NULL);
+    vcs_event_callback = callback;
 }
 
 void volume_control_service_server_set_volume_state(uint8_t volume_setting, vcs_mute_t mute){

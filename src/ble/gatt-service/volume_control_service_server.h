@@ -97,6 +97,13 @@ void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
     uint8_t vocs_info_num, vocs_info_t * vocs_info);
 
 /**
+ * @brief Register callback to receive updates of volume state and volume flags GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE and GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS events respectively.
+ * @param callback
+ */
+void volume_control_service_server_register_packet_handler(btstack_packet_handler_t callback);
+
+
+/**
  * @brief Set volume state.
  * @param volume_setting        range [0,255]
  * @param mute                  see vcs_mute_t

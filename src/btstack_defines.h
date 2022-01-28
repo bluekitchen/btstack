@@ -3858,6 +3858,25 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_VOCS_AUDIO_OUTPUT_DESC_CHANGED                   0x23u
 
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param con_handle
+ * @param volume_setting
+ * @param volume_change_step
+ * @param mute 
+*/
+#define GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE                                 0x24u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param flags
+*/
+#define GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS                                 0x25u
+
+
 // MAP Meta Event Group
 
 /**

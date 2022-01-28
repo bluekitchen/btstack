@@ -12098,6 +12098,62 @@ static inline const uint8_t * gattservice_subevent_vocs_audio_output_desc_change
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_vcs_volume_state_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field volume_setting from event GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE
+ * @param event packet
+ * @return volume_setting
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_vcs_volume_state_get_volume_setting(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field volume_change_step from event GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE
+ * @param event packet
+ * @return volume_change_step
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_vcs_volume_state_get_volume_change_step(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field mute from event GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE
+ * @param event packet
+ * @return mute
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_vcs_volume_state_get_mute(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_vcs_volume_flags_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field flags from event GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS
+ * @param event packet
+ * @return flags
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_vcs_volume_flags_get_flags(const uint8_t * event){
+    return event[5];
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid
