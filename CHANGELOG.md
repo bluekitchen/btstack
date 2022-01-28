@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: support extended advertising with ENABLE_LE_EXTENDED_ADVERTISING
 - ATT DB: provide gatt_server_get_handle_range_for_service_with_uuid16 to find included service within handle range
 - GATT Service: Audio Input Control Service Server (AICS 1.0)
+- GATT Service: Volume Control Service Server (VCS 1.0)
 
 ### Fixed
 - GAP: disable scanning, advertising, connection before updating random address
