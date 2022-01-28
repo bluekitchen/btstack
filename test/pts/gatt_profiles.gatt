@@ -30,3 +30,9 @@ CHARACTERISTIC_FORMAT, READ, 04, 00, 27AD, 01, 01
 #import <volume_offset_control_service.gatt>
 #import <volume_control_service.gatt>
 
+
+#import <broadcast_audio_scan_service.gatt>
+#import <audio_stream_control_service.gatt>
+#import <published_audio_capabilities_service.gatt>
+
+
