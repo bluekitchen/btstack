@@ -85,9 +85,20 @@ AVRCP += \
 
 SRC_BLE_GATT_SERVICE_FILES += \
 	audio_input_control_service_server.c \
+	audio_stream_control_service_server.c \
+	broadcast_audio_scan_service_util.c \
+	broadcast_audio_scan_service_server.c \
 	microphone_control_service_server.c \
+	published_audio_capabilities_service_server.c \
 	volume_control_service_server.c \
-	
+	media_control_service_server.c \
+
+SRC_BLE_GATT_CLIENT_FILES += \
+	le_audio_util.c 					  \
+	broadcast_audio_scan_service_util.c   \
+	broadcast_audio_scan_service_client.c \
+	microphone_control_service_client.c \
+
 # include ${BTSTACK_ROOT}/example/Makefile.inc
 
 HXCMOD_PLAYER = \
@@ -120,8 +131,10 @@ CFLAGS += -I${BTSTACK_ROOT}/port/libusb
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
-VPATH += ${BTSTACK_ROOT}/src/ble/le_audio
-VPATH += ${BTSTACK_ROOT}/src/ble/mesh
+VPATH += ${BTSTACK_ROOT}/src/le-audio
+VPATH += ${BTSTACK_ROOT}/src/le-audio/gatt-service
+VPATH += ${BTSTACK_ROOT}/src/mesh
+VPATH += ${BTSTACK_ROOT}/src/mesh/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/platform/posix
@@ -156,14 +169,16 @@ AVDTP_OBJ  = $(AVDTP:.c=.o)
 AVRCP_OBJ  = $(AVRCP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
+SRC_BLE_GATT_CLIENT_FILES_OBJ = ${SRC_BLE_GATT_CLIENT_FILES}
 
 EXAMPLES  = iopt gatt_server_test gatt_client_test l2cap_test classic_test bnep_test l2cap_cbm_ecbm
 EXAMPLES += hsp_ag_test hsp_hs_test sco_loopback hfp_ag_test hfp_hf_test
-EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test gatt_profiles hrp_col_test hrp_server_test
+EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test hrp_col_test hrp_server_test
 EXAMPLES += hog_device_test hog_host_test hid_device_test hid_host_test 
 EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
 EXAMPLES += gap_peripheral_test gap_central_test
-EXAMPLES += microphone_control_service_client_test
+EXAMPLES += microphone_control_service_client_test 
+EXAMPLES += gatt_profiles gatt_profiles_bap
 
 all: ${EXAMPLES}
 
@@ -266,29 +281,40 @@ sco_loopback: ${CORE_OBJ} ${COMMON_OBJ} sco_loopback.c
 iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o hfp_gsm_model.o iopt.c hfp.o a2dp_sink.o a2dp_source.o ${AVDTP_OBJ} avrcp_controller.o avrcp_target.o avrcp.o ${SDP_CLIENT}
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+microphone_control_service_client_test.h: microphone_control_service_client_test.gatt
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+
+microphone_control_service_client_test: microphone_control_service_client_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} ${SRC_BLE_GATT_CLIENT_FILES_OBJ} ${SM_OBJ} microphone_control_service_client_test.c
+	${CC} $(filter-out microphone_control_service_client_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
 gatt_profiles.h: gatt_profiles.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o gatt_sdp.o gatt_profiles.o
 	${CC} $(filter-out gatt_profiles.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-microphone_control_service_client_test.h: microphone_control_service_client_test.gatt
+gatt_profiles_bap.h: gatt_profiles_bap.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-microphone_control_service_client_test: microphone_control_service_client_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} microphone_control_service_client_test.c
-	${CC} $(filter-out microphone_control_service_client_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+gatt_profiles_bap: gatt_profiles_bap.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o gatt_sdp.o gatt_profiles_bap.o
+	${CC} $(filter-out gatt_profiles_bap.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 myclean:
 	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o 
-	rm -f csc_server_test.h
-	rm -f cycling_power_server_test.h
-	rm -f gap_central_test.h
-	rm -f gap_peripheral_test.h
-	rm -f gatt_client_test.h
-	rm -f gatt_profiles.h
-	rm -f gatt_server_test.h
-	rm -f hog_device_test.h
-	rm -f hrp_server_test.h
+	rm -rf hog_device_test.h
+	rm -rf gatt_client_test.h
+	rm -rf gatt_server_test.h
+	rm -rf csc_server_test.h
+	rm -rf cycling_power_server_test.h
+	rm -rf gatt_profiles.h
+	rm -rf gatt_profiles_bap.h
+	rm -rf gap_peripheral_test.h
+	rm -rf gap_central_test.h
+	rm -rf ble_peripheral_test.h
+	rm -rf ble_central_test.h
+	rm -rf hrp_server_test.h
+	rm -f sco_input.msbc
+	rm -f sco_output.msbc
 	rm -f microphone_control_service_client_test.h
 
 clean: myclean

@@ -305,6 +305,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ATT DB: provide gatt_server_get_handle_range_for_service_with_uuid16 to find included service within handle range
 - GATT Service: Audio Input Control Service Server (AICS 1.0)
 - GATT Service: Microphone Control Service Server (MCS 1.0)
+- GATT Service: Published Audio Capabilities Service Server (PACS 1.0)
 - GATT Service: Volume Control Service Server (VCS 1.0)
 - GATT Service: Volume Offset Control Service Server (VOCS 1.0)
 

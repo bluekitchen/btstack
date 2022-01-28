@@ -17,6 +17,8 @@ cycling_power_server_test
 cycling_power_server_test.h
 gatt_profiles
 gatt_profiles.h
+gatt_profiles_bap
+gatt_profiles_bap.h
 hfp_ag_test
 hfp_hf_test
 hid_device_test
