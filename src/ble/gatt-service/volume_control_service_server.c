@@ -90,7 +90,7 @@ static uint16_t   vcs_volume_flags_handle;
 static uint16_t   vcs_volume_flags_client_configuration_handle;
 static uint16_t   vcs_volume_flags_client_configuration;
 
-static vcs_flag_t vcs_volume_flags_volume_setting_persisted;
+static uint8_t    vcs_volume_flags;
 
 // characteristic: CONTROL_POINT
 static uint16_t   vcs_control_point_value_handle;
@@ -142,7 +142,7 @@ static uint16_t volume_control_service_read_callback(hci_con_handle_t con_handle
     }
 
     if (attribute_handle == vcs_volume_flags_handle){
-        return att_read_callback_handle_byte((uint8_t)vcs_volume_flags_volume_setting_persisted, offset, buffer, buffer_size);
+        return att_read_callback_handle_byte(vcs_volume_flags, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == vcs_volume_state_client_configuration_handle){
@@ -155,7 +155,6 @@ static uint16_t volume_control_service_read_callback(hci_con_handle_t con_handle
 
     return 0;
 }
-
 
 static void volume_control_service_can_send_now(void * context){
     UNUSED(context);
@@ -172,9 +171,7 @@ static void volume_control_service_can_send_now(void * context){
 
     } else if ((vcs_tasks & VCS_TASK_SEND_VOLUME_FLAGS) != 0){
         vcs_tasks &= ~VCS_TASK_SEND_VOLUME_FLAGS;
-
-        uint8_t value = (uint8_t)vcs_volume_flags_volume_setting_persisted;
-        att_server_notify(vcs_con_handle, vcs_volume_flags_handle, &value, 1);
+        att_server_notify(vcs_con_handle, vcs_volume_flags_handle, &vcs_volume_flags, 1);
     }
 
     if (vcs_tasks != 0){
@@ -273,7 +270,7 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
 }
 
 static void volume_control_service_server_reset_values(void){
-    vcs_volume_flags_volume_setting_persisted = VCS_FLAG_RESET_VOLUME_SETTING;
+    vcs_volume_flags = 0;
     vcs_con_handle = HCI_CON_HANDLE_INVALID;
     vcs_tasks = 0;
 
@@ -425,8 +422,8 @@ void volume_control_service_server_set_volume_state(uint8_t volume_setting, vcs_
     }
 
     if (old_volume_setting != vcs_volume_state_volume_setting) {
-        if (vcs_volume_flags_volume_setting_persisted == VCS_FLAG_RESET_VOLUME_SETTING){
-            vcs_volume_flags_volume_setting_persisted = VCS_FLAG_USER_SET_VOLUME_SETTING;
+        if ((vcs_volume_flags & VCS_VOLUME_FLAGS_SETTING_PERSISTED_MASK) == VCS_VOLUME_FLAGS_SETTING_PERSISTED_RESET){
+            vcs_volume_flags |= VCS_VOLUME_FLAGS_SETTING_PERSISTED_USER_SET;
             volume_control_service_server_set_callback(VCS_TASK_SEND_VOLUME_FLAGS);
         }
     }

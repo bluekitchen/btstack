@@ -55,15 +55,20 @@ extern "C" {
 #define VOLUME_CONTROL_INVALID_CHANGE_COUNTER 0x80
 #define VOLUME_CONTROL_OPCODE_NOT_SUPPORTED 0x81
 
+#define VCS_VOLUME_FLAGS_SETTING_PERSISTED_BIT_POS      0
+
+// Volume flags bit position
+#define VCS_VOLUME_FLAGS_SETTING_PERSISTED_MASK         (1 << VCS_VOLUME_FLAGS_SETTING_PERSISTED_BIT_POS)
+
+// Volume Setting Persisted
+#define VCS_VOLUME_FLAGS_SETTING_PERSISTED_RESET        (0 << VCS_VOLUME_FLAGS_SETTING_PERSISTED_BIT_POS)
+#define VCS_VOLUME_FLAGS_SETTING_PERSISTED_USER_SET     (1 << VCS_VOLUME_FLAGS_SETTING_PERSISTED_BIT_POS)
+
 typedef enum {
     VCS_MUTE_OFF = 0,
     VCS_MUTE_ON
 } vcs_mute_t;
 
-typedef enum {
-    VCS_FLAG_RESET_VOLUME_SETTING = 0,
-    VCS_FLAG_USER_SET_VOLUME_SETTING
-} vcs_flag_t;
 
 /**
  * @text The Volume Control Service (VCS) enables a device to expose the controls and state of its audio volume.
