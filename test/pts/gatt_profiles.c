@@ -86,6 +86,8 @@ static uint8_t battery = 100;
 static bool accept_next_pairing = true;
 
 static gatt_microphone_control_mute_t mics_mute = GATT_MICROPHONE_CONTROL_MUTE_OFF;
+static vcs_mute_t  vcs_volume_state_mute = VCS_MUTE_OFF;
+static uint8_t vcs_volume_state_setting = 2;
 
 static aics_info_t aics_info[] = {
     {
@@ -300,6 +302,11 @@ static void show_usage(void){
     printf("\n##VOCS\n");
     printf("o - set audio location of VOCS[0]\n");
     printf("O - set audio output desc of VOCS[0]\n");
+
+    printf("\n##VCS\n");
+    // printf("o - set volume change step to 2\n");
+    printf("v - toggle volume setting [2, 253], current %d\n", vcs_volume_state_setting);
+    printf("V - toggle volume mute   [ON, OFF], current %s\n", vcs_volume_state_mute == VCS_MUTE_OFF ? "OFF" : "ON");
 }
 
 static void stdin_process(char c){
@@ -404,6 +411,25 @@ static void stdin_process(char c){
             volume_control_service_server_set_audio_output_description_for_vocs(0, "ao_desc3");
             break;
 
+        case 'v':
+            if (vcs_volume_state_setting == 2){
+                vcs_volume_state_setting = 253;
+            } else {
+                vcs_volume_state_setting = 2;
+            }
+            printf("VCS: toggle Volume state setting to %d\n", vcs_volume_state_setting);
+            volume_control_service_server_set_volume_state(vcs_volume_state_setting, vcs_volume_state_mute);
+            break;
+        case 'V':
+            if (vcs_volume_state_mute == VCS_MUTE_OFF){
+                vcs_volume_state_mute = VCS_MUTE_ON;
+            } else {
+                vcs_volume_state_mute = VCS_MUTE_OFF;
+            }
+            printf("VCS: toggle Mute state to %s\n", vcs_volume_state_mute == VCS_MUTE_OFF ? "OFF" : "ON");
+            volume_control_service_server_set_volume_state(vcs_volume_state_setting, vcs_volume_state_mute);
+            break;
+
         case '\n':
         case '\r':
             break;
@@ -464,7 +490,7 @@ int btstack_main(void)
 
     microphone_control_service_server_register_packet_handler(&packet_handler);
 
-    volume_control_service_server_init(128, VCS_MUTE_OFF, 16, aics_info_num, aics_info, vocs_info_num, vocs_info);
+    volume_control_service_server_init(vcs_volume_state_setting , vcs_volume_state_mute, aics_info_num, aics_info, vocs_info_num, vocs_info);
     
     // setup advertisements
     uint16_t adv_int_min = 0x0030;

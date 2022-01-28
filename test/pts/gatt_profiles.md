@@ -114,3 +114,22 @@ Tool: gatt_profiles
 - VOCS/SR/SPN/BV-04-C: O
 
 - VOCS/SR/SPE/BI-01-C: (wait)
+
+
+## VCS
+- VCS/SR/SGGIT/SER/BV-01-C: (wait)
+
+- VCS/SR/SGGIT/CHA/BV-01-C: (wait)
+- VCS/SR/SGGIT/CHA/BV-02-C: (wait)
+- VCS/SR/SGGIT/CHA/BV-03-C: (wait)
+
+- VCS/SR/SGGIT/CP/BI-01-C:(wait)
+- VCS/SR/SGGIT/CP/BI-02-C: (wait)
+
+- VCS/SR/CP/BV-01-C: "OK", (wait)
+- VCS/SR/CP/BV-02-C: v, "OK", (wait)
+- VCS/SR/CP/BV-03-C: v, V, "OK", (wait)
+- VCS/SR/CP/BV-04-C: v, "OK", (wait)
+- VCS/SR/CP/BV-05-C: (wait)
+- VCS/SR/CP/BV-06-C: (wait)
+- VCS/SR/CP/BV-07-C: (wait)
