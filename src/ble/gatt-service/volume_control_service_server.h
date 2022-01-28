@@ -98,6 +98,11 @@ void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
  */
 void volume_control_service_server_set_volume_state(uint8_t volume_setting, vcs_mute_t mute);
 
+/**
+ * @brief Set volume change step.
+ * @param volume_change_step    
+ */
+void volume_control_service_server_set_volume_change_step(uint8_t volume_change_step);
 
 /**
  * @brief Set mute and gain mode, as well as gain setting of the AICS service identified by aics_index.
