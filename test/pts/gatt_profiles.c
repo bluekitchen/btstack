@@ -61,19 +61,20 @@
 #define ATT_SERVICE_GATT_SERVICE_START_HANDLE 0x000c
 #define ATT_SERVICE_GATT_SERVICE_END_HANDLE 0x000e
 
-/* @section Main Application Setup
- *
- * @text Listing MainConfiguration shows main application code.
- * It initializes L2CAP, the Security Manager and configures the ATT Server with the pre-compiled
- * ATT Database generated from $le_counter.gatt$. 
- * Additionally, it enables the Battery Service Server with the current battery level.
- * Finally, it configures the advertisements 
- * and the heartbeat handler and boots the Bluetooth stack. 
- * In this example, the Advertisement contains the Flags attribute and the device name.
- * The flag 0x06 indicates: LE General Discoverable Mode and BR/EDR not supported.
- */
- 
-/* LISTING_START(MainConfiguration): Init L2CAP SM ATT Server and start heartbeat timer */
+#define BASS_NUM_CLIENTS 1
+#define BASS_NUM_SOURCES 2
+static bass_server_source_t bass_sources[BASS_NUM_SOURCES];
+static bass_remote_client_t bass_clients[BASS_NUM_CLIENTS];
+static bass_server_source_t bass_source_1;
+static bass_server_source_t bass_source_2;
+
+
+#define ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS 5
+#define ASCS_NUM_CLIENTS 3
+static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
+static ascs_remote_client_t ascs_clients[ASCS_NUM_CLIENTS];
+
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
@@ -113,21 +114,66 @@ static aics_info_t aics_info[] = {
     }
 
 };
-static uint8_t aics_info_num = 2;
+static uint8_t aics_info_num = 3;
+
+static pacs_streamendpoint_t sink_node;
 
 static vocs_info_t vocs_info[] = {
         {
-                10,VOCS_AUDIO_LOCATION_FRONT_RIGHT,
+                10, LE_AUDIO_LOCATION_MASK_FRONT_RIGHT,
                 "ao_description1",
                 packet_handler
         },
         {
-                20, VOCS_AUDIO_LOCATION_FRONT_LEFT,
+                20, LE_AUDIO_LOCATION_MASK_FRONT_LEFT,
                 "ao_description2",
                 packet_handler
         }
 };
 static uint8_t vocs_info_num = 2;
+
+static pacs_record_t sink_pac_records[] = {
+    // sink_record_0
+    {
+        // codec ID
+        {HCI_AUDIO_CODING_FORMAT_LC3, 0x0000, 0x0000},
+        // capabilities
+        {
+            0x3E,
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_16000_HZ | LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_44100_HZ,
+            LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US | LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US,
+            LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_4 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_8,
+            0x11AA,
+            0xBB22,
+            2
+        },
+        // metadata length
+       45, 
+        // metadata
+        {   
+            // all metadata set
+            0x0FFE, 
+            // (2) preferred_audio_contexts_mask
+            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+            // (2) streaming_audio_contexts_mask
+            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+            // program_info
+            3, {0xA1, 0xA2, 0xA3},
+            // language_code
+            0x0000DE,
+            // ccids_num
+            3, {0xB1, 0xB2, 0xB3},
+            // parental_rating
+            LE_AUDIO_PARENTAL_RATING_NO_RATING,
+            // program_info_uri_length
+            3, {0xC1, 0xC2, 0xC3},
+            // extended_metadata_type
+            0x0001, 3, {0xD1, 0xD2, 0xD3},
+            // vendor_specific_metadata_type
+            0x0002, 3, {0xE1, 0xE2, 0xE3},
+        }
+    }
+};
 
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
@@ -398,13 +444,13 @@ static void stdin_process(char c){
             char str[20];
             static uint8_t str_update = 0;
             str_update++;
-            sprintf(str, "Microphone %d", str_update);
+            snprintf(str, sizeof(str), "Microphone %d", str_update);
             microphone_control_service_server_set_audio_input_description_for_aics(0, (const char*)str);
             break;
         }
         case 'o':
             printf("VOCS: set audio location of VOCS[0]\n");
-            volume_control_service_server_set_audio_location_for_vocs(0, VOCS_AUDIO_LOCATION_FRONT_CENTER );
+            volume_control_service_server_set_audio_location_for_vocs(0, LE_AUDIO_LOCATION_MASK_FRONT_CENTER );
             break;
         case 'O':
             printf("VOCS: set audio output desc of VOCS[0]\n");
@@ -457,7 +503,7 @@ int btstack_main(void)
     sm_event_callback_registration.callback = &packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
     sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
-
+    sm_allow_ltk_reconstruction_without_le_device_db_entry(0);
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
     att_server_register_packet_handler(packet_handler);
@@ -492,6 +538,18 @@ int btstack_main(void)
 
     volume_control_service_server_init(vcs_volume_state_setting , vcs_volume_state_mute, aics_info_num, aics_info, vocs_info_num, vocs_info);
     
+    audio_stream_control_service_server_init(ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS, ascs_streamendpoint_characteristics, ASCS_NUM_CLIENTS, ascs_clients);
+
+    sink_node.records = &sink_pac_records[0];
+    sink_node.records_num = 1;
+    sink_node.audio_locations_mask = LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
+    
+    published_audio_capabilities_service_server_init(&sink_node, NULL);
+
+    bass_sources[0] = bass_source_1;
+    bass_sources[1] = bass_source_2;
+    broadcast_audio_scan_service_server_init(BASS_NUM_SOURCES, bass_sources, BASS_NUM_CLIENTS, bass_clients);
+
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;

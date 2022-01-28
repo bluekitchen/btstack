@@ -148,15 +148,23 @@
 #include "classic/spp_server.h"
 #endif
 
+#ifdef ENABLE_BLE
 #include "le-audio/le_audio.h"
 #include "le-audio/le_audio_util.h"
 #include "le-audio/gatt-service/audio_input_control_service_server.h"
+#include "le-audio/gatt-service/audio_stream_control_service_client.h"
+#include "le-audio/gatt-service/audio_stream_control_service_server.h"
+#include "le-audio/gatt-service/audio_stream_control_service_util.h"
 #include "le-audio/gatt-service/broadcast_audio_scan_service_client.h"
 #include "le-audio/gatt-service/broadcast_audio_scan_service_server.h"
+#include "le-audio/gatt-service/media_control_service_server.h"
 #include "le-audio/gatt-service/microphone_control_service_client.h"
 #include "le-audio/gatt-service/microphone_control_service_server.h"
+#include "le-audio/gatt-service/published_audio_capabilities_service_client.h"
+#include "le-audio/gatt-service/published_audio_capabilities_service_server.h"
 #include "le-audio/gatt-service/volume_control_service_server.h"
 #include "le-audio/gatt-service/volume_offset_control_service_server.h"
+#endif
 
 #ifdef ENABLE_MESH
 #include "mesh/adv_bearer.h"
