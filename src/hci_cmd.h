@@ -90,6 +90,8 @@ typedef enum {
     // Link Control
     HCI_OPCODE_HCI_INQUIRY = HCI_OPCODE (OGF_LINK_CONTROL, 0x01),
     HCI_OPCODE_HCI_INQUIRY_CANCEL = HCI_OPCODE (OGF_LINK_CONTROL, 0x02),
+    HCI_OPCODE_HCI_PERIODIC_INQUIRY_MODE = HCI_OPCODE(OGF_LINK_CONTROL, 0x03),
+    HCI_OPCODE_HCI_EXIT_PERIODIC_INQUIRY_MODE = HCI_OPCODE(OGF_LINK_CONTROL, 0x04),
     HCI_OPCODE_HCI_CREATE_CONNECTION = HCI_OPCODE (OGF_LINK_CONTROL, 0x05),
     HCI_OPCODE_HCI_DISCONNECT = HCI_OPCODE (OGF_LINK_CONTROL, 0x06),
     HCI_OPCODE_HCI_CREATE_CONNECTION_CANCEL = HCI_OPCODE (OGF_LINK_CONTROL, 0x08),
@@ -357,6 +359,8 @@ extern const hci_cmd_t hci_link_key_request_negative_reply;
 extern const hci_cmd_t hci_link_key_request_reply;
 extern const hci_cmd_t hci_park_state;
 extern const hci_cmd_t hci_exit_park_state;
+extern const hci_cmd_t hci_periodic_inquiry_mode;
+extern const hci_cmd_t hci_exit_periodic_inquiry_mode;
 extern const hci_cmd_t hci_pin_code_request_negative_reply;
 extern const hci_cmd_t hci_pin_code_request_reply;
 extern const hci_cmd_t hci_qos_setup;

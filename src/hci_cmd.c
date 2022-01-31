@@ -308,6 +308,23 @@ const hci_cmd_t hci_inquiry_cancel = {
 };
 
 /**
+ * @param max_period_length
+ * @param min_period_length
+ * @param lap
+ * @param inquiry_length
+ * @param num_responses
+ */
+const hci_cmd_t hci_periodic_inquiry_mode = {
+    HCI_OPCODE_HCI_PERIODIC_INQUIRY_MODE, "22311"
+};
+
+/**
+ */
+const hci_cmd_t hci_exit_periodic_inquiry_mode = {
+    HCI_OPCODE_HCI_EXIT_PERIODIC_INQUIRY_MODE, ""
+};
+
+/**
  * @param bd_addr
  * @param packet_type
  * @param page_scan_repetition_mode
