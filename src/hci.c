@@ -3844,6 +3844,7 @@ void hci_init(const hci_transport_t *transport, const void *config){
 }
 
 void hci_deinit(void){
+    btstack_run_loop_remove_timer(&hci_stack->timeout);
 #ifdef HAVE_MALLOC
     if (hci_stack) {
         free(hci_stack);
