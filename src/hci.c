@@ -6772,7 +6772,7 @@ uint8_t gap_extended_advertising_set_random_address(uint8_t advertising_handle, 
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gap_extended_advertising_set_adv_data(uint8_t advertising_handle, uint16_t advertising_data_length, uint8_t * advertising_data){
+uint8_t gap_extended_advertising_set_adv_data(uint8_t advertising_handle, uint16_t advertising_data_length, const uint8_t * advertising_data){
     le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     advertising_set->adv_data = advertising_data;
@@ -6783,7 +6783,7 @@ uint8_t gap_extended_advertising_set_adv_data(uint8_t advertising_handle, uint16
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_handle, uint16_t scan_response_data_length, uint8_t * scan_response_data){
+uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_handle, uint16_t scan_response_data_length, const uint8_t * scan_response_data){
     le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     advertising_set->scan_data = scan_response_data;
@@ -6794,7 +6794,7 @@ uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_hand
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gap_periodic_advertising_set_data(uint8_t advertising_handle, uint16_t periodic_data_length, uint8_t * periodic_data){
+uint8_t gap_periodic_advertising_set_data(uint8_t advertising_handle, uint16_t periodic_data_length, const uint8_t * periodic_data){
     le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     advertising_set->periodic_data = periodic_data;

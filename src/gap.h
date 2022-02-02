@@ -165,9 +165,9 @@ typedef struct {
     le_extended_advertising_parameters_t extended_params;
     le_periodic_advertising_parameters_t periodic_params;
     bd_addr_t random_address;
-    uint8_t * adv_data;
-    uint8_t * scan_data;
-    uint8_t * periodic_data;
+    const uint8_t * adv_data;
+    const uint8_t * scan_data;
+    const uint8_t * periodic_data;
     uint16_t  adv_data_len;
     uint16_t  scan_data_len;
     uint16_t  periodic_data_len;
@@ -560,7 +560,7 @@ uint8_t gap_extended_advertising_set_random_address(uint8_t advertising_handle, 
  * @param advertising_data
  * @return status
  */
-uint8_t gap_extended_advertising_set_adv_data(uint8_t advertising_handle, uint16_t advertising_data_length, uint8_t * advertising_data);
+uint8_t gap_extended_advertising_set_adv_data(uint8_t advertising_handle, uint16_t advertising_data_length, const uint8_t * advertising_data);
 
 /**
  * @brief Set Scan Response Data for a advertisement set
@@ -569,7 +569,7 @@ uint8_t gap_extended_advertising_set_adv_data(uint8_t advertising_handle, uint16
  * @param scan_response_data
  * @return status
  */
-uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_handle, uint16_t scan_response_data_length, uint8_t * scan_response_data);
+uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_handle, uint16_t scan_response_data_length, const uint8_t * scan_response_data);
 
 /**
  * @brief Set data for periodic advertisement set
@@ -578,7 +578,7 @@ uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_hand
  * @param periodic_data
  * @return status
  */
-uint8_t gap_periodic_advertising_set_data(uint8_t advertising_handle, uint16_t periodic_data_length, uint8_t * periodic_data);
+uint8_t gap_periodic_advertising_set_data(uint8_t advertising_handle, uint16_t periodic_data_length, const uint8_t * periodic_data);
 
 /**
  * @brief Start advertising advertising set
