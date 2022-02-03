@@ -5062,7 +5062,7 @@ static bool hci_run_general_gap_le(void){
                     advertising_set->adv_data_pos += data_to_upload;
                 }
                 hci_stack->le_advertising_set_in_current_command = advertising_set->advertising_handle;
-                hci_send_cmd(&hci_le_set_extended_advertising_data, operation, 0x03, 0x01, data_to_upload, &advertising_set->adv_data[pos]);
+                hci_send_cmd(&hci_le_set_extended_advertising_data, advertising_set->advertising_handle, operation, 0x01, data_to_upload, &advertising_set->adv_data[pos]);
                 return true;
             }
             if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA) != 0) {
@@ -5090,19 +5090,19 @@ static bool hci_run_general_gap_le(void){
                 return true;
             }
             if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_PERIODIC_DATA) != 0) {
-                uint16_t pos = advertising_set->periodic_data_len;
+                uint16_t pos = advertising_set->periodic_data_pos;
                 uint8_t  operation = hci_le_extended_advertising_operation_for_chunk(pos, advertising_set->periodic_data_len);
                 uint16_t data_to_upload = btstack_min(advertising_set->periodic_data_len - pos, LE_EXTENDED_ADVERTISING_MAX_CHUNK_LEN);
                 if ((operation & 0x02) != 0){
                     // last fragment or complete data
                     operation |= 2;
-                    advertising_set->periodic_pos = 0;
+                    advertising_set->periodic_data_pos = 0;
                     advertising_set->tasks &= ~LE_ADVERTISEMENT_TASKS_SET_PERIODIC_DATA;
                 } else {
-                    advertising_set->periodic_pos += data_to_upload;
+                    advertising_set->periodic_data_pos += data_to_upload;
                 }
                 hci_stack->le_advertising_set_in_current_command = advertising_set->advertising_handle;
-                hci_send_cmd(&hci_le_set_periodic_advertising_data, operation, 0x03, 0x01, data_to_upload, &advertising_set->periodic_data[pos]);
+                hci_send_cmd(&hci_le_set_periodic_advertising_data, advertising_set->advertising_handle, operation, data_to_upload, &advertising_set->periodic_data[pos]);
                 return true;
             }
         }
@@ -6716,10 +6716,12 @@ uint8_t gap_extended_advertising_setup(le_advertising_set_t * storage, const le_
     // clear
     memset(storage, 0, sizeof(le_advertising_set_t));
     // copy params
+    storage->advertising_handle = advertisement_handle;
     memcpy(&storage->extended_params, advertising_parameters, sizeof(le_extended_advertising_parameters_t));
     // add to list
     bool add_ok = btstack_linked_list_add(&hci_stack->le_advertising_sets, (btstack_linked_item_t *) storage);
     if (!add_ok) return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
+    *out_advertising_handle = advertisement_handle;
     // set tasks and start
     storage->tasks = LE_ADVERTISEMENT_TASKS_SET_PARAMS;
     hci_run();
@@ -6748,7 +6750,7 @@ uint8_t gap_periodic_advertising_set_params(uint8_t advertising_handle, const le
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     // periodic advertising requires neither connectable, scannable, legacy or anonymous
     if ((advertising_set->extended_params.advertising_event_properties & 0x1f) != 0) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
-    memcpy(&advertising_set->extended_params, advertising_parameters, sizeof(le_periodic_advertising_parameters_t));
+    memcpy(&advertising_set->periodic_params, advertising_parameters, sizeof(le_periodic_advertising_parameters_t));
     // set tasks and start
     advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_PERIODIC_PARAMS;
     hci_run();
