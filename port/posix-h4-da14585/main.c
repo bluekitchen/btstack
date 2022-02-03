@@ -195,7 +195,7 @@ int main(int argc, const char * argv[]){
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
-    btstack_chipset_da145xx_download_firmware_with_uart(uart_driver, da14581_fw_data, da14581_fw_size, &phase2);
+    btstack_chipset_da145xx_download_firmware_with_uart(uart_driver, da145xx_fw_data, da145xx_fw_size, &phase2);
 
     // go
     btstack_run_loop_execute();    
