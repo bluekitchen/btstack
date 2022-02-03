@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP: Free HFP Connection object on SDP error / Service not found
 
 ### Changed
+- Chipset: use da145xx in folder/file/function names for these SoCs
 
 
 ## Release v1.5.1
@@ -39,6 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Example: init SM if LE supported to avoid issue with Android Cross-Transport Key-Derivation
 - ESP32: update sdkconfig for esp-idf v4.3, disable Bluedroid host stack
 - ESP32: use I2S configuration from ESP32 LyraT V4.3
+
 
 ## Release v1.5.0
 

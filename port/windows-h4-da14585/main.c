@@ -51,7 +51,7 @@
 #include "btstack_config.h"
 
 #include "ble/le_device_db_tlv.h"
-#include "btstack_chipset_da14581.h"
+#include "btstack_chipset_da145xx.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -199,7 +199,7 @@ int main(int argc, const char * argv[]){
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
-    btstack_chipset_da14581_download_firmware(uart_driver, da14581_fw_data, da14581_fw_size, &phase2);
+    btstack_chipset_da145xx_download_firmware(uart_driver, da14581_fw_data, da14581_fw_size, &phase2);
 
     // go
     btstack_run_loop_execute();

@@ -9,7 +9,7 @@ COMMON  += \
 			btstack_uart_block_windows.c \
 			le_device_db_tlv.c           \
 			hci_585.c \
-			btstack_chipset_da14581.c \
+			btstack_chipset_da145xx.c \
             rijndael.c \
 
 # examples
@@ -22,7 +22,7 @@ CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
 		  -I${BTSTACK_ROOT}/platform/windows \
 		  -I${BTSTACK_ROOT}/platform/embedded \
-		  -I$(BTSTACK_ROOT)/chipset/da14581 \
+		  -I$(BTSTACK_ROOT)/chipset/da145xx \
           -I${BTSTACK_ROOT}/3rd-party/rijndael \
 		  -I${BTSTACK_ROOT}/3rd-party/tinydir
 
@@ -31,7 +31,7 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/platform/windows
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
-VPATH += ${BTSTACK_ROOT}/chipset/da14581
+VPATH += ${BTSTACK_ROOT}/chipset/da145xx
 
 EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_LE_ONLY}
 

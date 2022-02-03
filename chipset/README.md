@@ -64,9 +64,9 @@ Cypress CYW20704/7   | Dual mode | H4, H5, USB    | Don't know   | Partially (2)
 Cypress CYW20819     | Dual mode | H4, H5, USB    | Don't know   | Partially (2)    | Yes    |        Yes           | Yes            |    Don't know      | bcm            | Keep CTS high during power cycle
 Cypress CYW43xxx     | Dual mode + Wifi | H4, H5  | Don't know   | Partially (2)    | Don't know |     No           | Don't know     |    Don't know      | bcm            | Bluetooth + Wifi Combo Controller
 Cypress PSoC 4       | LE        | H4             | Don't know   | n.a.             | Yes    |    Don't know        | n.a.           |    Don't know      |                | HCI Firmware part of PSoC Creator kits examples
-Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | n.a.           |    Don't know      | da14581        | Official HCI firmware included in BTstack
-Dialog DA14585       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | n.a.           |       Yes          | da14581        | Official HCI firmware included in BTstack
-Dialog DA1469x       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | n.a.           |       Yes          | da14581        | HCI Firmware part of DA1469x SDK
+Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | n.a.           |    Don't know      | da145xx        | Official HCI firmware included in BTstack
+Dialog DA14585       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | n.a.           |       Yes          | da145xx        | Official HCI firmware included in BTstack
+Dialog DA1469x       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | n.a.           |       Yes          | da145xx        | HCI Firmware part of DA1469x SDK
 Espressif ESP32      | Dual mode + Wifi | VHCI    | Yes          | Yes              | Yes    |        Yes           | Yes            |    Don't know      |                | SoC with Bluetooth and Wifi
 EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | n.a.           |    Don't know      | em9301         | Custom HCI SPI implementation
 EM 9304              | LE        | SPI, H4        | Yes          | n.a.             | Yes    |        Yes           | n.a.           |    Don't know      | em9301         | Custom HCI SPI implementation
@@ -168,7 +168,7 @@ The newer DA1469x uses an external flash. The DA 1469x SDK contains a HCI firmwa
 
 **Baud rate**: The baud rate is fixed at 115200 with the provided firmware. A higher baud rate could be achieved by re-compiling the HCI firmware.
 
-**BTstack integration**: *btstack_chipset_da14581.c* contains the code to download the provided HCI firmware into the SRAM of the DA1458x. After that, it can be used as any other HCI chipset. No special support needed for DA1469x after compiling and flashing the HCI firmware.
+**BTstack integration**: *btstack_chipset_da145xx.c* contains the code to download the provided HCI firmware into the SRAM of the DA145xx. After that, it can be used as any other HCI chipset. No special support needed for DA1469x after compiling and flashing the HCI firmware.
 
 
 ## Espressif ESP32

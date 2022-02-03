@@ -35,17 +35,15 @@
  *
  */
 
-#define BTSTACK_FILE__ "btstack_chipset_da14581.c"
+#define BTSTACK_FILE__ "btstack_chipset_da145xx.c"
 
 /*
- *  btstack_chipset_da14581.c
- *
  *  Adapter to use da1458x-based chipsets with BTstack
  *  
  */
 
 #include "btstack_config.h"
-#include "btstack_chipset_da14581.h"
+#include "btstack_chipset_da145xx.h"
 #include "btstack_debug.h"
 
 
@@ -61,12 +59,12 @@
 #define CRC_INIT    0x00
 
 // prototypes
-static void da14581_w4_stx(void);
-static void da14581_w4_command_sent(void);
-static void da14581_w4_fw_sent(void);
-static void da14581_w4_ack(void);
-static void da14581_w4_crc(void);
-static void da14581_w4_final_ack_sent(void);
+static void da145xx_w4_stx(void);
+static void da145xx_w4_command_sent(void);
+static void da145xx_w4_fw_sent(void);
+static void da145xx_w4_ack(void);
+static void da145xx_w4_crc(void);
+static void da145xx_w4_final_ack_sent(void);
 
 // globals
 static void (*download_complete)(int result);
@@ -78,22 +76,22 @@ static uint8_t command_buffer[3];
 static const uint8_t * chipset_fw_data;
 static uint16_t        chipset_fw_size;
 
-static void da14581_start(void){
+static void da145xx_start(void){
     // start to read
-    the_uart_driver->set_block_received(&da14581_w4_stx);
+    the_uart_driver->set_block_received(&da145xx_w4_stx);
     the_uart_driver->receive_block(&response_buffer[0], 1);
-    log_info("da14581_start: wait for 0x%02x", STX);
+    log_info("da145xx_start: wait for 0x%02x", STX);
 }
 
-static void da14581_w4_stx(void){
-    log_debug("da14581_w4_stx: read %x", response_buffer[0]);
+static void da145xx_w4_stx(void){
+    log_debug("da145xx_w4_stx: read %x", response_buffer[0]);
     switch (response_buffer[0]){
         case STX:
-            log_info("da14581_w4_stx: send download command");
+            log_info("da145xx_w4_stx: send download command");
             // setup download config message
             command_buffer[0] = SOH;
             little_endian_store_16(command_buffer, 1, chipset_fw_size);
-            the_uart_driver->set_block_sent(da14581_w4_command_sent);
+            the_uart_driver->set_block_sent(da145xx_w4_command_sent);
             the_uart_driver->send_block(command_buffer, 3);
             break;
         default:
@@ -103,21 +101,21 @@ static void da14581_w4_stx(void){
     }
 }
 
-static void da14581_w4_command_sent(void){
-    log_info("da14581_w4_command_sent: wait for ACK 0x%02x", ACK);
+static void da145xx_w4_command_sent(void){
+    log_info("da145xx_w4_command_sent: wait for ACK 0x%02x", ACK);
     // write complete
-    the_uart_driver->set_block_received(&da14581_w4_ack);
+    the_uart_driver->set_block_received(&da145xx_w4_ack);
     the_uart_driver->receive_block(&response_buffer[0], 1);
 }
 
-static void da14581_w4_ack(void){
-    log_info("da14581_w4_ack: read %x", response_buffer[0]);
+static void da145xx_w4_ack(void){
+    log_info("da145xx_w4_ack: read %x", response_buffer[0]);
     switch (response_buffer[0]){
         case ACK:
             // calc crc
             // send file
-            log_info("da14581_w4_ack: ACK received, send firmware");
-            the_uart_driver->set_block_sent(da14581_w4_fw_sent);
+            log_info("da145xx_w4_ack: ACK received, send firmware");
+            the_uart_driver->set_block_sent(da145xx_w4_fw_sent);
             the_uart_driver->send_block(chipset_fw_data, chipset_fw_size);
             break;
         case NACK:
@@ -129,7 +127,7 @@ static void da14581_w4_ack(void){
             download_count++;
             if (download_count < 10){
                 // something else went wrong try again
-                da14581_start();
+                da145xx_start();
             } else {
                 // give up
                 the_uart_driver->close();
@@ -139,15 +137,15 @@ static void da14581_w4_ack(void){
     }
 }
 
-static void da14581_w4_fw_sent(void){
+static void da145xx_w4_fw_sent(void){
     // write complete
-    log_info("da14581_w4_fw_sent: wait for crc");
-    the_uart_driver->set_block_received(&da14581_w4_crc);
+    log_info("da145xx_w4_fw_sent: wait for crc");
+    the_uart_driver->set_block_received(&da145xx_w4_crc);
     the_uart_driver->receive_block(&response_buffer[0], 1);
 }
 
-static void da14581_w4_crc(void){
-    log_info("da14581_w4_crc: read %x\n", response_buffer[0]);
+static void da145xx_w4_crc(void){
+    log_info("da145xx_w4_crc: read %x\n", response_buffer[0]);
 
     // calculate crc
     int i;
@@ -158,22 +156,22 @@ static void da14581_w4_crc(void){
 
     // check crc
     if (fcrc != response_buffer[0]){
-        log_error("da14581_w4_crc: got 0x%02x expected 0x%02x", response_buffer[0], fcrc);
+        log_error("da145xx_w4_crc: got 0x%02x expected 0x%02x", response_buffer[0], fcrc);
         download_complete(1);
         return;
     }
 
     // everything's fine, send final ack
     command_buffer[0] = ACK;
-    the_uart_driver->set_block_sent(&da14581_w4_final_ack_sent);
+    the_uart_driver->set_block_sent(&da145xx_w4_final_ack_sent);
     the_uart_driver->send_block(command_buffer, 1);
 }
 
-static void da14581_w4_final_ack_sent(void){
+static void da145xx_w4_final_ack_sent(void){
     download_complete(0);
 }
 
-void btstack_chipset_da14581_download_firmware_with_uart(const btstack_uart_t * uart_driver, const uint8_t * fw_data, uint16_t fw_size, void (*done)(int result)){
+void btstack_chipset_da145xx_download_firmware_with_uart(const btstack_uart_t * uart_driver, const uint8_t * fw_data, uint16_t fw_size, void (*done)(int result)){
 
     the_uart_driver   = uart_driver;
     download_complete = done;
@@ -188,17 +186,17 @@ void btstack_chipset_da14581_download_firmware_with_uart(const btstack_uart_t * 
     }
 
     download_count = 0;
-    da14581_start();
+    da145xx_start();
 }
 
-void btstack_chipset_da14581_download_firmware(const btstack_uart_block_t * uart_driver, const uint8_t * fw, uint16_t fw_size, void (*done)(int result)){
-    btstack_chipset_da14581_download_firmware_with_uart(uart_driver, fw, fw_size, done);
+void btstack_chipset_da145xx_download_firmware(const btstack_uart_block_t * uart_driver, const uint8_t * fw, uint16_t fw_size, void (*done)(int result)){
+    btstack_chipset_da145xx_download_firmware_with_uart(uart_driver, fw, fw_size, done);
 }
 
 // not used currently
 
-static const btstack_chipset_t btstack_chipset_da14581 = {
-    "DA14581",
+static const btstack_chipset_t btstack_chipset_da145xx = {
+    "DA145xx",
     NULL, // chipset_init not used
     NULL, // chipset_next_command not used
     NULL, // chipset_set_baudrate_command not needed as we're connected via SPI
@@ -206,7 +204,7 @@ static const btstack_chipset_t btstack_chipset_da14581 = {
 };
 
 // MARK: public API
-const btstack_chipset_t * btstack_chipset_da14581_instance(void){
-    return &btstack_chipset_da14581;
+const btstack_chipset_t * btstack_chipset_da145xx_instance(void){
+    return &btstack_chipset_da145xx;
 }
 
