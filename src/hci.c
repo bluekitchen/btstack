@@ -1347,7 +1347,8 @@ void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t size) {
             event[0] = GAP_EVENT_EXTENDED_ADVERTISING_REPORT;
             uint8_t report_len = 24 + data_length;
             event[1] = report_len;
-            memcpy(&event[2], &packet[offset], report_len);
+            little_endian_store_16(event, 2, event_type);
+            memcpy(&event[4], &packet[offset], report_len);
             offset += report_len;
             hci_emit_event(event, 2 + report_len, 1);
         }
