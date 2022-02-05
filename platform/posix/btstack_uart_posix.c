@@ -61,6 +61,10 @@
 // uart config
 static const btstack_uart_config_t * uart_config;
 
+// on macOS 12.1, CTS/RTS control flags are always read back as zero.
+// To work around this, we cache our terios settings
+struct termios btstack_uart_block_termios;
+
 // data source for integration with BTstack Runloop
 static btstack_data_source_t transport_data_source;
 
@@ -164,13 +168,6 @@ static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
 
     log_info("h4_set_baudrate %u", baudrate);
 
-    struct termios toptions;
-
-    if (tcgetattr(fd, &toptions) < 0) {
-        log_error("btstack_uart_posix_set_baudrate: Couldn't get term attributes");
-        return -1;
-    }
-    
 #ifndef __APPLE__
 
     speed_t brate = baudrate; // let you override switch below if needed
@@ -223,14 +220,14 @@ static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
             log_error("can't set baudrate %dn", baudrate );
             return -1;
     }
-    cfsetospeed(&toptions, brate);
-    cfsetispeed(&toptions, brate);
+    cfsetospeed(&btstack_uart_block_termios, brate);
+    cfsetispeed(&btstack_uart_block_termios, brate);
 #endif
 
     // also set options for __APPLE__ to enforce write drain
     // Mac OS Mojave: tcsdrain did not work as expected
 
-    if( tcsetattr(fd, TCSADRAIN, &toptions) < 0) {
+    if( tcsetattr(fd, TCSADRAIN, &btstack_uart_block_termios) < 0) {
         log_error("Couldn't set term attributes");
         return -1;
     }
@@ -283,13 +280,9 @@ static void btstack_uart_posix_set_flowcontrol_option(struct termios * toptions,
 
 static int btstack_uart_posix_set_parity(int parity){
     int fd = transport_data_source.source.fd;
-    struct termios toptions;
-    if (tcgetattr(fd, &toptions) < 0) {
-        log_error("Couldn't get term attributes");
-        return -1;
-    }
-    btstack_uart_posix_set_parity_option(&toptions, parity);
-    if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
+    btstack_uart_posix_set_parity_option(&btstack_uart_block_termios, parity);
+    printf("set parity %lx", btstack_uart_block_termios.c_cflag);
+    if(tcsetattr(fd, TCSANOW, &btstack_uart_block_termios) < 0) {
         log_error("Couldn't set term attributes");
         return -1;
     }
@@ -299,13 +292,9 @@ static int btstack_uart_posix_set_parity(int parity){
 
 static int btstack_uart_posix_set_flowcontrol(int flowcontrol){
     int fd = transport_data_source.source.fd;
-    struct termios toptions;
-    if (tcgetattr(fd, &toptions) < 0) {
-        log_error("Couldn't get term attributes");
-        return -1;
-    }
-    btstack_uart_posix_set_flowcontrol_option(&toptions, flowcontrol);
-    if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
+    btstack_uart_posix_set_flowcontrol_option(&btstack_uart_block_termios, flowcontrol);
+    printf("set flow %lx", btstack_uart_block_termios.c_cflag);
+    if(tcsetattr(fd, TCSANOW, &btstack_uart_block_termios) < 0) {
         log_error("Couldn't set term attributes");
         return -1;
     }
@@ -319,7 +308,6 @@ static int btstack_uart_posix_open(void){
     const int flowcontrol    = uart_config->flowcontrol;
     const int parity         = uart_config->parity;
 
-    struct termios toptions;
     int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
     int fd = open(device_name, flags);
     if (fd == -1)  {
@@ -327,31 +315,32 @@ static int btstack_uart_posix_open(void){
         return -1;
     }
     
-    if (tcgetattr(fd, &toptions) < 0) {
+    if (tcgetattr(fd, &btstack_uart_block_termios) < 0) {
         log_error("Couldn't get term attributes");
         return -1;
     }
-    
-    cfmakeraw(&toptions);   // make raw
+    cfmakeraw(&btstack_uart_block_termios);   // make raw
 
     // 8N1
-    toptions.c_cflag &= ~CSTOPB;
-    toptions.c_cflag |= CS8;
+    btstack_uart_block_termios.c_cflag &= ~CSTOPB;
+    btstack_uart_block_termios.c_cflag |= CS8;
 
-    toptions.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
-    toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
+    btstack_uart_block_termios.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
+    btstack_uart_block_termios.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
     
     // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
-    toptions.c_cc[VMIN]  = 1;
-    toptions.c_cc[VTIME] = 0;
+    btstack_uart_block_termios.c_cc[VMIN]  = 1;
+    btstack_uart_block_termios.c_cc[VTIME] = 0;
     
     // no parity
-    btstack_uart_posix_set_parity_option(&toptions, parity);
+    btstack_uart_posix_set_parity_option(&btstack_uart_block_termios, parity);
 
     // flowcontrol
-    btstack_uart_posix_set_flowcontrol_option(&toptions, flowcontrol);
+    btstack_uart_posix_set_flowcontrol_option(&btstack_uart_block_termios, flowcontrol);
 
-    if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
+    printf("init %lx", btstack_uart_block_termios.c_cflag);
+
+    if(tcsetattr(fd, TCSANOW, &btstack_uart_block_termios) < 0) {
         log_error("Couldn't set term attributes");
         return -1;
     }
