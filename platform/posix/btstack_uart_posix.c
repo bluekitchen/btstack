@@ -281,7 +281,6 @@ static void btstack_uart_posix_set_flowcontrol_option(struct termios * toptions,
 static int btstack_uart_posix_set_parity(int parity){
     int fd = transport_data_source.source.fd;
     btstack_uart_posix_set_parity_option(&btstack_uart_block_termios, parity);
-    printf("set parity %lx", btstack_uart_block_termios.c_cflag);
     if(tcsetattr(fd, TCSANOW, &btstack_uart_block_termios) < 0) {
         log_error("Couldn't set term attributes");
         return -1;
@@ -293,7 +292,6 @@ static int btstack_uart_posix_set_parity(int parity){
 static int btstack_uart_posix_set_flowcontrol(int flowcontrol){
     int fd = transport_data_source.source.fd;
     btstack_uart_posix_set_flowcontrol_option(&btstack_uart_block_termios, flowcontrol);
-    printf("set flow %lx", btstack_uart_block_termios.c_cflag);
     if(tcsetattr(fd, TCSANOW, &btstack_uart_block_termios) < 0) {
         log_error("Couldn't set term attributes");
         return -1;
@@ -337,8 +335,6 @@ static int btstack_uart_posix_open(void){
 
     // flowcontrol
     btstack_uart_posix_set_flowcontrol_option(&btstack_uart_block_termios, flowcontrol);
-
-    printf("init %lx", btstack_uart_block_termios.c_cflag);
 
     if(tcsetattr(fd, TCSANOW, &btstack_uart_block_termios) < 0) {
         log_error("Couldn't set term attributes");
