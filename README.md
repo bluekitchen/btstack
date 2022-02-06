@@ -93,11 +93,11 @@ Cypress CYW20704             | Dual mode | H4, H5, USB     | Probably         | 
 Cypress CYW20819             | Dual mode | H4, H5, USB     | Probably         | bcm            | Keep CTS high during power cycle
 Cypress CYW43xxx             | Dual mode + Wifi | H4, H5   | Don't know       | bcm            | Bluetooth + Wifi Combo Controller
 Cypress PSoC 4               | LE        | H4              | n.a.             |                | HCI Firmware part of PSoC Creator kit examples
-Dialog Semiconductor DA14581, DA14585 | LE      | H4, SPI  | n.a.             | da14581        | Official HCI firmware used
+Dialog Semiconductor DA145xx | LE        | H4, SPI         | n.a.             | da14581        | Official HCI firmware used
 Dialog Semiconductor DA1469x | LE        | H4, SPI         | n.a              |                | HCI Firmware part of DA1469x SDK
-Espressif ESP32              | Dual mode + Wifi | VHCI            | Yes              |                | SoC with Bluetooth and Wifi
+Espressif ESP32              | Dual mode + Wifi | VHCI     | Yes              |                | SoC with Bluetooth and Wifi
 EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
-Intel Dual Wireless 3165, 8260, 8265 | Dual mode | USB           | Probably         | intel          | Firmware size: 400 kB 
+Intel Dual Wireless 3165, 8260, 8265 | Dual mode | USB     | Probably         | intel          | Firmware size: 400 kB 
 Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
 Realtek RTL8822CS            | Dual Mode + WIfi | H5       | Yes              |                | Requires initial firmware and config
 Renesas RX23W                | LE        | H4              | n.a.             |                | HCI Firmware part of BTTS
