@@ -79,6 +79,7 @@ extern "C" {
 #define HCI_ACL_HEADER_SIZE          4
 #define HCI_SCO_HEADER_SIZE          3
 #define HCI_EVENT_HEADER_SIZE        2
+#define HCI_ISO_HEADER_SIZE          4
 
 #define HCI_EVENT_PAYLOAD_SIZE     255
 #define HCI_CMD_PAYLOAD_SIZE       255

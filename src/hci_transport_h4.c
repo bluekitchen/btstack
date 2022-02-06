@@ -113,6 +113,7 @@ typedef enum {
     H4_W4_EVENT_HEADER,
     H4_W4_ACL_HEADER,
     H4_W4_SCO_HEADER,
+    H4_W4_ISO_HEADER,
     H4_W4_PAYLOAD,
 } H4_STATE;
 
@@ -243,6 +244,10 @@ static void hci_transport_h4_block_read(void){
                     bytes_to_read = HCI_SCO_HEADER_SIZE;
                     h4_state = H4_W4_SCO_HEADER;
                     break;
+                case HCI_ISO_DATA_PACKET:
+                    bytes_to_read = HCI_ISO_HEADER_SIZE;
+                    h4_state = H4_W4_SCO_HEADER;
+                    break;
 #ifdef ENABLE_EHCILL
                 case EHCILL_GO_TO_SLEEP_IND:
                 case EHCILL_GO_TO_SLEEP_ACK:
@@ -286,6 +291,17 @@ static void hci_transport_h4_block_read(void){
             // check SCO length
             if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_SCO_HEADER_SIZE)){
                 log_error("hci_transport_h4: invalid SCO payload len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_SCO_HEADER_SIZE);
+                hci_transport_h4_reset_statemachine();
+                break;
+            }
+            h4_state = H4_W4_PAYLOAD;
+            break;
+
+        case H4_W4_ISO_HEADER:
+            bytes_to_read = little_endian_read_16( hci_packet, 3) & 0x3fff;
+            // check ISO length
+            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE)){
+                log_error("hci_transport_h4: invalid ISO payload len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ISO_HEADER_SIZE);
                 hci_transport_h4_reset_statemachine();
                 break;
             }
