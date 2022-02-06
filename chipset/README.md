@@ -64,6 +64,7 @@ Cypress CYW20704/7   | Dual mode | H4, H5, USB    | Don't know   | Partially (2)
 Cypress CYW20819     | Dual mode | H4, H5, USB    | Don't know   | Partially (2)    | Yes    |        Yes           | Yes            |    Don't know      | bcm            | Keep CTS high during power cycle
 Cypress CYW43xxx     | Dual mode + Wifi | H4, H5  | Don't know   | Partially (2)    | Don't know |     No           | Don't know     |    Don't know      | bcm            | Bluetooth + Wifi Combo Controller
 Cypress PSoC 4       | LE        | H4             | Don't know   | n.a.             | Yes    |    Don't know        | n.a.           |    Don't know      |                | HCI Firmware part of PSoC Creator kits examples
+Dialog DA14531       | LE        | H4             | No           | n.a.             | Yes    |        Yes           | n.a.           |    Don't know      | da145xx        | Official HCI firmware included in BTstack
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | n.a.           |    Don't know      | da145xx        | Official HCI firmware included in BTstack
 Dialog DA14585       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | n.a.           |       Yes          | da145xx        | Official HCI firmware included in BTstack
 Dialog DA1469x       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | n.a.           |       Yes          | da145xx        | HCI Firmware part of DA1469x SDK
@@ -156,13 +157,14 @@ SCO Data is routed over HCI for USB dongles, but not for UART connections. HSP a
 
 ## Dialog Semiconductor
 
-Dialog Semiconductor offers the DA14581, an LE-only SoC that can be programmed with an HCI firmware. The HCI firmware can be uploaded on boot into SRAM or stored in the OTP (One-time programmable) memory, or in an external SPI.
+Dialog Semiconductor offers the DA145xx series of LE-only SoCs that can be programmed with an HCI firmware. 
+The HCI firmware can be uploaded on boot into SRAM or stored in the OTP (One-time programmable) memory, or in an external SPI.
 
-It does not implement the Data Length Extension or supports multiple concurrent roles.
+The 581 does not implement the Data Length Extension or supports multiple concurrent roles, while later versions support it.
 
-The DA14585 uses the same firmware upload mechanism as the 581 model. In addition, it supports both Data Length Extension as well as multiple concurrent roles.
+The mechanism to boot a firmware via UART/SPI has mostly stayed the same, while the set of supported interfaces and baudrates have slightly changed.
 
-The newer DA1469x uses an external flash. The DA 1469x SDK contains a HCI firmware that can be compiled and downloaded into flash using the SmartSnippets Studio.
+The DA1469x uses an external flash. The DA 1469x SDK contains a HCI firmware that can be compiled and downloaded into flash using the SmartSnippets Studio.
 
 **BD Addr** fixed to 80:EA:CA:00:00:01. No command in HCI firmware to set it differently. Random addresses could be used instead.
 
