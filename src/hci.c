@@ -3712,6 +3712,13 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
             sco_handler(packet, size);
             break;
 #endif
+#ifdef ENABLE_BLE
+        case HCI_ISO_DATA_PACKET:
+            if (hci_stack->iso_packet_handler != NULL){
+                (hci_stack->iso_packet_handler)(HCI_ISO_DATA_PACKET, 0, packet, size);
+            }
+            break;
+#endif
         default:
             break;
     }
@@ -3742,6 +3749,12 @@ void hci_register_acl_packet_handler(btstack_packet_handler_t handler){
  */
 void hci_register_sco_packet_handler(btstack_packet_handler_t handler){
     hci_stack->sco_packet_handler = handler;    
+}
+#endif
+
+#ifdef ENABLE_BLE
+void hci_register_iso_packet_handler(btstack_packet_handler_t handler){
+    hci_stack->iso_packet_handler = handler;
 }
 #endif
 

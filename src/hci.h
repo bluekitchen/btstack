@@ -897,6 +897,11 @@ typedef struct {
     int (*gap_classic_accept_callback)(bd_addr_t addr, hci_link_type_t link_type);
 #endif
 
+#ifdef ENABLE_BLE
+    /* callback for ISO data */
+    btstack_packet_handler_t iso_packet_handler;
+#endif
+
     // hardware error callback
     void (*hardware_error_callback)(uint8_t error);
 
@@ -1250,6 +1255,10 @@ void hci_register_acl_packet_handler(btstack_packet_handler_t handler);
  */
 void hci_register_sco_packet_handler(btstack_packet_handler_t handler);
 
+/**
+ * @brief Registers a packet handler for ISO data. Used for LE Audio profiles
+ */
+void hci_register_iso_packet_handler(btstack_packet_handler_t handler);
 
 // Sending HCI Commands
 
