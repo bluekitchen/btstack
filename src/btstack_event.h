@@ -4379,22 +4379,13 @@ static inline uint8_t hci_subevent_le_periodic_advertising_sync_establishment_ge
 }
 
 /**
- * @brief Get field status from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t hci_subevent_le_periodic_advertising_report_get_status(const uint8_t * event){
-    return event[3];
-}
-/**
  * @brief Get field sync_handle from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
  * @param event packet
  * @return sync_handle
  * @note: btstack_type H
  */
 static inline hci_con_handle_t hci_subevent_le_periodic_advertising_report_get_sync_handle(const uint8_t * event){
-    return little_endian_read_16(event, 4);
+    return little_endian_read_16(event, 3);
 }
 /**
  * @brief Get field tx_power from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
@@ -4403,7 +4394,7 @@ static inline hci_con_handle_t hci_subevent_le_periodic_advertising_report_get_s
  * @note: btstack_type 1
  */
 static inline uint8_t hci_subevent_le_periodic_advertising_report_get_tx_power(const uint8_t * event){
-    return event[6];
+    return event[5];
 }
 /**
  * @brief Get field rssi from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
@@ -4412,7 +4403,7 @@ static inline uint8_t hci_subevent_le_periodic_advertising_report_get_tx_power(c
  * @note: btstack_type 1
  */
 static inline uint8_t hci_subevent_le_periodic_advertising_report_get_rssi(const uint8_t * event){
-    return event[7];
+    return event[6];
 }
 /**
  * @brief Get field cte_type from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
@@ -4421,7 +4412,7 @@ static inline uint8_t hci_subevent_le_periodic_advertising_report_get_rssi(const
  * @note: btstack_type 1
  */
 static inline uint8_t hci_subevent_le_periodic_advertising_report_get_cte_type(const uint8_t * event){
-    return event[8];
+    return event[7];
 }
 /**
  * @brief Get field data_status from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
@@ -4430,7 +4421,7 @@ static inline uint8_t hci_subevent_le_periodic_advertising_report_get_cte_type(c
  * @note: btstack_type 1
  */
 static inline uint8_t hci_subevent_le_periodic_advertising_report_get_data_status(const uint8_t * event){
-    return event[9];
+    return event[8];
 }
 /**
  * @brief Get field data_length from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
@@ -4439,7 +4430,7 @@ static inline uint8_t hci_subevent_le_periodic_advertising_report_get_data_statu
  * @note: btstack_type J
  */
 static inline uint8_t hci_subevent_le_periodic_advertising_report_get_data_length(const uint8_t * event){
-    return event[10];
+    return event[9];
 }
 /**
  * @brief Get field data from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
@@ -4448,7 +4439,7 @@ static inline uint8_t hci_subevent_le_periodic_advertising_report_get_data_lengt
  * @note: btstack_type V
  */
 static inline const uint8_t * hci_subevent_le_periodic_advertising_report_get_data(const uint8_t * event){
-    return &event[11];
+    return &event[10];
 }
 
 /**

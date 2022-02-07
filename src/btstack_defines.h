@@ -690,9 +690,8 @@ typedef uint8_t sm_key_t[16];
 #define HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT 0x0Eu
 
 /**
- * @format 11H1111JV
+ * @format 1H1111JV
  * @param subevent_code
- * @param status
  * @param sync_handle
  * @param tx_power
  * @param rssi
