@@ -599,6 +599,16 @@ static inline uint8_t hci_event_hardware_error_get_hardware_code(const uint8_t *
 }
 
 /**
+ * @brief Get field handle from event HCI_EVENT_FLUSH_OCCURRED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_flush_occurred_get_handle(const uint8_t * event){
+    return event[2];
+}
+
+/**
  * @brief Get field status from event HCI_EVENT_ROLE_CHANGE
  * @param event packet
  * @return status
