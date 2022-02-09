@@ -1389,7 +1389,7 @@ static void l2cap_rtx_timeout(btstack_timer_source_t * ts){
 }
 
 static uint8_t l2cap_classic_packet_boundary_flag(void){
-    return hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+    return (hci_non_flushable_packet_boundary_flag_supported() && (hci_automatic_flush_timeout() == 0)) ? 0x00 : 0x02;
 }
 #endif
 

@@ -2887,6 +2887,16 @@ static void event_handler(uint8_t *packet, uint16_t size){
         }
 
 #ifdef ENABLE_CLASSIC
+        case HCI_EVENT_FLUSH_OCCURRED:
+            // flush occurs only if automatic flush has been enabled by gap_enable_link_watchdog()
+            handle = hci_event_flush_occurred_get_handle(packet);
+            conn = hci_connection_for_handle(handle);
+            if (conn) {
+                log_info("Flush occurred, disconnect 0x%04x", handle);
+                conn->state = SEND_DISCONNECT;
+            }
+            break;
+
         case HCI_EVENT_INQUIRY_COMPLETE:
             if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_ACTIVE){
                 hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
@@ -2956,6 +2966,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     // queue set supervision timeout if we're master
                     if ((hci_stack->link_supervision_timeout != HCI_LINK_SUPERVISION_TIMEOUT_DEFAULT) && (conn->role == HCI_ROLE_MASTER)){
                         connectionSetAuthenticationFlags(conn, AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT);
+                    }
+
+                    // queue write automatic flush timeout
+                    if (hci_stack->automatic_flush_timeout != 0){
+                        conn->gap_connection_tasks |= GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT;
                     }
 
                     // restart timer
@@ -3985,6 +4000,14 @@ uint8_t hci_get_allow_role_switch(void){
 
 void gap_set_link_supervision_timeout(uint16_t link_supervision_timeout){
     hci_stack->link_supervision_timeout = link_supervision_timeout;
+}
+
+void gap_enable_link_watchdog(uint16_t timeout_ms){
+    hci_stack->automatic_flush_timeout = btstack_min(timeout_ms, 1280) * 8 / 5; // divide by 0.625
+}
+
+uint16_t hci_automatic_flush_timeout(void){
+    return hci_stack->automatic_flush_timeout;
 }
 
 void hci_disable_l2cap_timeout_check(void){
@@ -5648,6 +5671,14 @@ static bool hci_run_general_pending_commands(void){
             connection->request_role = HCI_ROLE_INVALID;
             hci_send_cmd(&hci_switch_role_command, connection->address, role);
             return true;
+        }
+
+        if (connection->gap_connection_tasks != 0){
+            if ((connection->gap_connection_tasks & GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT) != 0){
+                connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT;
+                hci_send_cmd(&hci_write_automatic_flush_timeout, connection->con_handle, hci_stack->automatic_flush_timeout);
+                return true;
+            }
         }
 #endif
 

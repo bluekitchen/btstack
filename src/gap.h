@@ -271,6 +271,13 @@ void gap_set_allow_role_switch(bool allow_role_switch);
 void gap_set_link_supervision_timeout(uint16_t link_supervision_timeout);
 
 /**
+ * @brief Enable link watchdog. If no ACL packet is sent within timeout_ms, the link will get disconnected
+ * note: current implementation uses the automatic flush timeout controller feature with a max timeout of 1.28s
+ * @param timeout_ms
+ */
+void gap_enable_link_watchdog(uint16_t timeout_ms);
+
+/**
  * @brief Enable/disable bonding. Default is enabled.
  * @param enabled
  */
@@ -1021,7 +1028,7 @@ uint8_t gap_ssp_io_capabilities_negative(const bd_addr_t addr);
 
 /**
  * Send Link Key Reponse
- * @note Link Key (Negative) Reply is sent automaticallyu unless ENABLE_EXPLICIT_LINK_KEY_RESPONSE
+ * @note Link Key (Negative) Reply is sent automatically unless ENABLE_EXPLICIT_LINK_KEY_RESPONSE
  * @param addr
  * @param link_key
  * @param type or INVALID_LINK_KEY if link key not available

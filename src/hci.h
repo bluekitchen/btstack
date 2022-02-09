@@ -227,6 +227,9 @@ typedef enum {
 
 } hci_authentication_flags_t;
 
+// GAP Connection Tasks
+#define GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT 0x0001u
+
 /**
  * Connection State 
  */
@@ -596,7 +599,10 @@ typedef struct {
 #endif /* ENABLE_CLASSIC */
 
     // authentication and other errands
-    uint32_t authentication_flags;
+    uint16_t authentication_flags;
+
+    // gap connection tasks, see GAP_CONNECTION_TASK_x
+    uint16_t gap_connection_tasks;
 
     btstack_timer_source_t timeout;
 
@@ -905,7 +911,10 @@ typedef struct {
 
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
     uint8_t            gap_required_encyrption_key_size;
+
     uint16_t           link_supervision_timeout;
+    uint16_t           automatic_flush_timeout;
+
     gap_security_level_t gap_security_level;
     gap_security_level_t gap_minimal_service_security_level;
     gap_security_mode_t  gap_security_mode;
@@ -1355,6 +1364,11 @@ uint16_t hci_usable_acl_packet_types(void);
  * Check if ACL packets marked as non flushable can be sent. Called by L2CAP
  */
 bool hci_non_flushable_packet_boundary_flag_supported(void);
+
+/**
+ * Return current automatic flush timeout setting
+ */
+uint16_t hci_automatic_flush_timeout(void);
 
 /**
  * Check if remote supported features query has completed
