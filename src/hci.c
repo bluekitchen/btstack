@@ -2963,12 +2963,12 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     conn->state = OPEN;
                     conn->con_handle = little_endian_read_16(packet, 3);
 
-                    // queue set supervision timeout if we're master
+                    // trigger write supervision timeout if we're master
                     if ((hci_stack->link_supervision_timeout != HCI_LINK_SUPERVISION_TIMEOUT_DEFAULT) && (conn->role == HCI_ROLE_MASTER)){
-                        connectionSetAuthenticationFlags(conn, AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT);
+                        conn->gap_connection_tasks |= GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT;
                     }
 
-                    // queue write automatic flush timeout
+                    // trigger write automatic flush timeout
                     if (hci_stack->automatic_flush_timeout != 0){
                         conn->gap_connection_tasks |= GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT;
                     }
@@ -5426,19 +5426,7 @@ static bool hci_run_general_pending_commands(void){
         // no further commands if connection is about to get shut down
         if (connection->state == SENT_DISCONNECT) continue;
 
-        if (connection->authentication_flags & AUTH_FLAG_READ_RSSI){
-            connectionClearAuthenticationFlags(connection, AUTH_FLAG_READ_RSSI);
-            hci_send_cmd(&hci_read_rssi, connection->con_handle);
-            return true;
-        }
-
 #ifdef ENABLE_CLASSIC
-
-        if (connection->authentication_flags & AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT){
-            connectionClearAuthenticationFlags(connection, AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT);
-            hci_send_cmd(&hci_write_link_supervision_timeout, connection->con_handle, hci_stack->link_supervision_timeout);
-            return true;
-        }
 
         // Handling link key request requires remote supported features
         if (((connection->authentication_flags & AUTH_FLAG_HANDLE_LINK_KEY_REQUEST) != 0)){
@@ -5672,15 +5660,27 @@ static bool hci_run_general_pending_commands(void){
             hci_send_cmd(&hci_switch_role_command, connection->address, role);
             return true;
         }
+#endif
 
         if (connection->gap_connection_tasks != 0){
+#ifdef ENABLE_CLASSIC
             if ((connection->gap_connection_tasks & GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT) != 0){
                 connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT;
                 hci_send_cmd(&hci_write_automatic_flush_timeout, connection->con_handle, hci_stack->automatic_flush_timeout);
                 return true;
             }
-        }
+            if (connection->gap_connection_tasks & GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT){
+                connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT;
+                hci_send_cmd(&hci_write_link_supervision_timeout, connection->con_handle, hci_stack->link_supervision_timeout);
+                return true;
+            }
 #endif
+            if (connection->gap_connection_tasks & GAP_CONNECTION_TASK_READ_RSSI){
+                connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_READ_RSSI;
+                hci_send_cmd(&hci_read_rssi, connection->con_handle);
+                return true;
+            }
+        }
 
 #ifdef ENABLE_BLE
         switch (connection->le_con_parameter_update_state){
@@ -6932,7 +6932,7 @@ uint8_t gap_disconnect(hci_con_handle_t handle){
 int gap_read_rssi(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (hci_connection == NULL) return 0;
-    connectionSetAuthenticationFlags(hci_connection, AUTH_FLAG_READ_RSSI);
+    hci_connection->gap_connection_tasks |= GAP_CONNECTION_TASK_READ_RSSI;
     hci_run();
     return 1;
 }

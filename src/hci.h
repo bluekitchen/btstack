@@ -221,14 +221,12 @@ typedef enum {
     AUTH_FLAG_CONNECTION_AUTHENTICATED            = 0x1000,
     AUTH_FLAG_CONNECTION_ENCRYPTED                = 0x2000,
 
-    // errands
-    AUTH_FLAG_READ_RSSI                           = 0x4000,
-    AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT           = 0x8000,
-
 } hci_authentication_flags_t;
 
 // GAP Connection Tasks
 #define GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT 0x0001u
+#define GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT     0x0002u
+#define GAP_CONNECTION_TASK_READ_RSSI                     0x0004u
 
 /**
  * Connection State 
