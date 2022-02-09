@@ -7607,7 +7607,7 @@ authorization_state_t gap_authorization_state(hci_con_handle_t con_handle){
 #ifdef ENABLE_CLASSIC
 uint8_t gap_sniff_mode_enter(hci_con_handle_t con_handle, uint16_t sniff_min_interval, uint16_t sniff_max_interval, uint16_t sniff_attempt, uint16_t sniff_timeout){
     hci_connection_t * conn = hci_connection_for_handle(con_handle);
-    if (!conn) return GAP_CONNECTION_INVALID;
+    if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     conn->sniff_min_interval = sniff_min_interval;
     conn->sniff_max_interval = sniff_max_interval;
     conn->sniff_attempt = sniff_attempt;
@@ -7623,7 +7623,7 @@ uint8_t gap_sniff_mode_enter(hci_con_handle_t con_handle, uint16_t sniff_min_int
  */
 uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle){
     hci_connection_t * conn = hci_connection_for_handle(con_handle);
-    if (!conn) return GAP_CONNECTION_INVALID;
+    if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     conn->sniff_min_interval = 0xffff;
     hci_run();
     return 0;
@@ -7631,7 +7631,7 @@ uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle){
 
 uint8_t gap_sniff_subrating_configure(hci_con_handle_t con_handle, uint16_t max_latency, uint16_t min_remote_timeout, uint16_t min_local_timeout){
     hci_connection_t * conn = hci_connection_for_handle(con_handle);
-    if (!conn) return GAP_CONNECTION_INVALID;
+    if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     conn->sniff_subrating_max_latency = max_latency;
     conn->sniff_subrating_min_remote_timeout = min_remote_timeout;
     conn->sniff_subrating_min_local_timeout = min_local_timeout;
@@ -7641,7 +7641,7 @@ uint8_t gap_sniff_subrating_configure(hci_con_handle_t con_handle, uint16_t max_
 
 uint8_t gap_qos_set(hci_con_handle_t con_handle, hci_service_type_t service_type, uint32_t token_rate, uint32_t peak_bandwidth, uint32_t latency, uint32_t delay_variation){
     hci_connection_t * conn = hci_connection_for_handle(con_handle);
-    if (!conn) return GAP_CONNECTION_INVALID;
+    if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     conn->qos_service_type = service_type;
     conn->qos_token_rate = token_rate;
     conn->qos_peak_bandwidth = peak_bandwidth;
