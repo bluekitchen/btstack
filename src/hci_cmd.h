@@ -157,6 +157,7 @@ typedef enum {
     HCI_OPCODE_HCI_WRITE_INQUIRY_SCAN_ACTIVITY = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x1E),
     HCI_OPCODE_HCI_WRITE_AUTHENTICATION_ENABLE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x20),
     HCI_OPCODE_HCI_WRITE_CLASS_OF_DEVICE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x24),
+    HCI_OPCODE_HCI_WRITE_AUTOMATIC_FLUSH_TIMEOUT = HCI_OPCODE(OGF_CONTROLLER_BASEBAND, 0x28),
     HCI_OPCODE_HCI_READ_NUM_BROADCAST_RETRANSMISSIONS = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x29),
     HCI_OPCODE_HCI_WRITE_NUM_BROADCAST_RETRANSMISSIONS = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x2a),
     HCI_OPCODE_HCI_READ_TRANSMIT_POWER_LEVEL = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x2D),
@@ -407,6 +408,7 @@ extern const hci_cmd_t hci_user_confirmation_request_reply;
 extern const hci_cmd_t hci_user_passkey_request_negative_reply;
 extern const hci_cmd_t hci_user_passkey_request_reply;
 extern const hci_cmd_t hci_write_authentication_enable;
+extern const hci_cmd_t hci_write_automatic_flush_timeout;
 extern const hci_cmd_t hci_write_class_of_device;
 extern const hci_cmd_t hci_write_current_iac_lap_two_iacs;
 extern const hci_cmd_t hci_write_default_erroneous_data_reporting;

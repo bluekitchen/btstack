@@ -886,6 +886,14 @@ const hci_cmd_t hci_write_authentication_enable = {
 };
 
 /**
+ * @param handle
+ * @param timeout, max 0x07FF
+ */
+const hci_cmd_t hci_write_automatic_flush_timeout = {
+        HCI_OPCODE_HCI_WRITE_AUTOMATIC_FLUSH_TIMEOUT, "H2"
+};
+
+/**
  * @param class_of_device
  */
 const hci_cmd_t hci_write_class_of_device = {
