@@ -211,6 +211,7 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
 static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address);
 static void hci_whitelist_free(void);
 static hci_connection_t * gap_get_outgoing_connection(void);
+static void hci_le_scan_stop(void);
 static bool hci_run_general_gap_le(void);
 #endif
 #ifdef ENABLE_LE_PERIPHERAL
@@ -4358,7 +4359,7 @@ static void hci_halting_run(void) {
 #ifdef ENABLE_LE_CENTRAL
             if (hci_stack->le_scanning_active){
                 if (hci_can_send_command_packet_now()){
-                    hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
+                    hci_le_scan_stop();
                     hci_stack->substate = HCI_HALTING_DISCONNECT_ALL;
                 }
                 return;
@@ -4704,6 +4705,19 @@ static bool hci_run_general_gap_classic(void){
 
 #ifdef ENABLE_BLE
 
+#ifdef ENABLE_LE_CENTRAL
+static void hci_le_scan_stop(void){
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    if (hci_extended_advertising_supported()) {
+            hci_send_cmd(&hci_le_set_extended_scan_enable, 0, 0, 0, 0);
+        } else
+#endif
+    {
+        hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
+    }
+}
+#endif
+
 #ifdef ENABLE_LE_PERIPHERAL
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
 uint8_t hci_le_extended_advertising_operation_for_chunk(uint16_t pos, uint16_t len){
@@ -4897,14 +4911,7 @@ static bool hci_run_general_gap_le(void){
 #ifdef ENABLE_LE_CENTRAL
     if (scanning_stop){
         hci_stack->le_scanning_active = false;
-#ifdef ENABLE_LE_EXTENDED_ADVERTISING
-        if (hci_extended_advertising_supported()) {
-            hci_send_cmd(&hci_le_set_extended_scan_enable, 0, 0, 0, 0);
-        } else
-#endif
-        {
-            hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
-        }
+        hci_le_scan_stop();
         return true;
     }
 #endif
