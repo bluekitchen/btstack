@@ -4322,15 +4322,16 @@ static void hci_halting_run(void) {
     log_info("HCI_STATE_HALTING, substate %x\n", hci_stack->substate);
 
     hci_connection_t *connection;
+    bool stop_advertismenets;
 
     switch (hci_stack->substate) {
         case HCI_HALTING_CLASSIC_STOP:
 #ifdef ENABLE_CLASSIC
+            if (!hci_can_send_command_packet_now()) return;
+
             if (hci_stack->connectable || hci_stack->discoverable){
-                if (hci_can_send_command_packet_now()){
-                    hci_stack->substate = HCI_HALTING_LE_ADV_STOP;
-                    hci_send_cmd(&hci_write_scan_enable, 0);
-                }
+                hci_stack->substate = HCI_HALTING_LE_ADV_STOP;
+                hci_send_cmd(&hci_write_scan_enable, 0);
                 return;
             }
 #endif
@@ -4341,27 +4342,57 @@ static void hci_halting_run(void) {
 
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_PERIPHERAL
-            if ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_ACTIVE) != 0){
-                if (hci_can_send_command_packet_now()){
-                    hci_send_cmd(&hci_le_set_advertise_enable, 0);
-                    hci_stack->substate = HCI_HALTING_LE_SCAN_STOP;
+            if (!hci_can_send_command_packet_now()) return;
+
+            stop_advertismenets = (hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_ACTIVE) != 0;
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+            if (hci_extended_advertising_supported()){
+                btstack_linked_list_iterator_t it;
+                btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
+                // stop all periodic advertisements and check if an extended set is active
+                while (btstack_linked_list_iterator_has_next(&it)){
+                    le_advertising_set_t * advertising_set = (le_advertising_set_t*) btstack_linked_list_iterator_next(&it);
+                    if ((advertising_set->state & LE_ADVERTISEMENT_STATE_PERIODIC_ACTIVE) != 0) {
+                        advertising_set->state &= ~LE_ADVERTISEMENT_STATE_PERIODIC_ACTIVE;
+                        hci_send_cmd(&hci_le_set_periodic_advertising_enable, 0, advertising_set->advertising_handle);
+                        return;
+                    }
+                    if ((advertising_set->state & LE_ADVERTISEMENT_STATE_ACTIVE) != 0) {
+                        stop_advertismenets = true;
+                        advertising_set->state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
+                    }
                 }
-                return;
+                if (stop_advertismenets){
+                    hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
+                    hci_send_cmd(&hci_le_set_extended_advertising_enable, 0, 0, NULL, NULL, NULL);
+                    return;
+                }
             }
-#endif
-#endif
+            else
+#else
+            {
+                if (stop_advertismenets) {
+                    hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
+                    hci_send_cmd(&hci_le_set_advertise_enable, 0);
+                    return;
+                }
+            }
+#endif  /* ENABLE_LE_EXTENDED_ADVERTISING*/
+#endif  /* ENABLE_LE_PERIPHERAL */
+#endif  /* ENABLE_BLE */
+
             /* fall through */
 
         case HCI_HALTING_LE_SCAN_STOP:
             hci_stack->substate = HCI_HALTING_LE_SCAN_STOP;
+            if (!hci_can_send_command_packet_now()) return;
 
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
             if (hci_stack->le_scanning_active){
-                if (hci_can_send_command_packet_now()){
-                    hci_le_scan_stop();
-                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL;
-                }
+                hci_le_scan_stop();
+                hci_stack->substate = HCI_HALTING_DISCONNECT_ALL;
                 return;
             }
 #endif
@@ -4371,12 +4402,12 @@ static void hci_halting_run(void) {
 
         case HCI_HALTING_DISCONNECT_ALL:
             hci_stack->substate = HCI_HALTING_DISCONNECT_ALL;
+            if (!hci_can_send_command_packet_now()) return;
 
             // close all open connections
             connection = (hci_connection_t *) hci_stack->connections;
             if (connection) {
                 hci_con_handle_t con_handle = (uint16_t) connection->con_handle;
-                if (!hci_can_send_command_packet_now()) return;
 
                 // check state
                 if (connection->state == SENT_DISCONNECT) return;
