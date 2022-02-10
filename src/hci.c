@@ -4131,7 +4131,7 @@ static int hci_power_control_wake(void){
     return 0;
 }
 
-static void hci_power_transition_to_initializing(void){
+static void hci_power_enter_initializing_state(void){
     // set up state machine
     hci_stack->num_cmd_packets = 1; // assume that one cmd can be sent
     hci_stack->hci_packet_buffer_reserved = false;
@@ -4139,10 +4139,13 @@ static void hci_power_transition_to_initializing(void){
     hci_stack->substate = HCI_INIT_SEND_RESET;
 }
 
-static void hci_power_transition_to_halting(void){
+static void hci_power_enter_halting_state(void){
+#ifdef ENABLE_BLE
+    hci_whitelist_free();
+#endif
     // see hci_run
     hci_stack->state = HCI_STATE_HALTING;
-    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_TIMER;
+    hci_stack->substate = HCI_HALTING_CLASSIC_STOP;
     // setup watchdog timer for disconnect - only triggers if Controller does not respond anymore
     btstack_run_loop_set_timer(&hci_stack->timeout, 1000);
     btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
@@ -4159,7 +4162,7 @@ static int hci_power_control_state_off(HCI_POWER_MODE power_mode){
                 log_error("hci_power_control_on() error %d", err);
                 return err;
             }
-            hci_power_transition_to_initializing();
+            hci_power_enter_initializing_state();
             break;
         case HCI_POWER_OFF:
             // do nothing
@@ -4200,7 +4203,7 @@ static int hci_power_control_state_working(HCI_POWER_MODE power_mode) {
             // do nothing
             break;
         case HCI_POWER_OFF:
-            hci_power_transition_to_halting();
+            hci_power_enter_halting_state();
             break;
         case HCI_POWER_SLEEP:
             // see hci_run
@@ -4217,7 +4220,7 @@ static int hci_power_control_state_working(HCI_POWER_MODE power_mode) {
 static int hci_power_control_state_halting(HCI_POWER_MODE power_mode) {
     switch (power_mode){
         case HCI_POWER_ON:
-            hci_power_transition_to_initializing();
+            hci_power_enter_initializing_state();
             break;
         case HCI_POWER_OFF:
             // do nothing
@@ -4237,10 +4240,10 @@ static int hci_power_control_state_halting(HCI_POWER_MODE power_mode) {
 static int hci_power_control_state_falling_asleep(HCI_POWER_MODE power_mode) {
     switch (power_mode){
         case HCI_POWER_ON:
-            hci_power_transition_to_initializing();
+            hci_power_enter_initializing_state();
             break;
         case HCI_POWER_OFF:
-            hci_power_transition_to_halting();
+            hci_power_enter_halting_state();
             break;
         case HCI_POWER_SLEEP:
             // do nothing
@@ -4258,10 +4261,10 @@ static int hci_power_control_state_sleeping(HCI_POWER_MODE power_mode) {
         case HCI_POWER_ON:
             err = hci_power_control_wake();
             if (err) return err;
-            hci_power_transition_to_initializing();
+            hci_power_enter_initializing_state();
             break;
         case HCI_POWER_OFF:
-            hci_power_transition_to_halting();
+            hci_power_enter_halting_state();
             break;
         case HCI_POWER_SLEEP:
             // do nothing
@@ -4320,14 +4323,54 @@ static void hci_halting_run(void) {
     hci_connection_t *connection;
 
     switch (hci_stack->substate) {
-        case HCI_HALTING_DISCONNECT_ALL_NO_TIMER:
-        case HCI_HALTING_DISCONNECT_ALL_TIMER:
+        case HCI_HALTING_CLASSIC_STOP:
+#ifdef ENABLE_CLASSIC
+            if (hci_stack->connectable || hci_stack->discoverable){
+                if (hci_can_send_command_packet_now()){
+                    hci_stack->substate = HCI_HALTING_LE_ADV_STOP;
+                    hci_send_cmd(&hci_write_scan_enable, 0);
+                }
+                return;
+            }
+#endif
+            /* fall through */
+
+        case HCI_HALTING_LE_ADV_STOP:
+            hci_stack->substate = HCI_HALTING_LE_ADV_STOP;
+
+#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_PERIPHERAL
+            if ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_ACTIVE) != 0){
+                if (hci_can_send_command_packet_now()){
+                    hci_send_cmd(&hci_le_set_advertise_enable, 0);
+                    hci_stack->substate = HCI_HALTING_LE_SCAN_STOP;
+                }
+                return;
+            }
+#endif
+#endif
+            /* fall through */
+
+        case HCI_HALTING_LE_SCAN_STOP:
+            hci_stack->substate = HCI_HALTING_LE_SCAN_STOP;
 
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
-            hci_whitelist_free();
+            if (hci_stack->le_scanning_active){
+                if (hci_can_send_command_packet_now()){
+                    hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
+                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL;
+                }
+                return;
+            }
 #endif
 #endif
+
+            /* fall through */
+
+        case HCI_HALTING_DISCONNECT_ALL:
+            hci_stack->substate = HCI_HALTING_DISCONNECT_ALL;
+
             // close all open connections
             connection = (hci_connection_t *) hci_stack->connections;
             if (connection) {
@@ -4347,17 +4390,15 @@ static void hci_halting_run(void) {
 
             btstack_run_loop_remove_timer(&hci_stack->timeout);
 
-            if (hci_stack->substate == HCI_HALTING_DISCONNECT_ALL_TIMER) {
-                // no connections left, wait a bit to assert that btstack_cyrpto isn't waiting for an HCI event
-                log_info("HCI_STATE_HALTING: wait 50 ms");
-                hci_stack->substate = HCI_HALTING_W4_TIMER;
-                btstack_run_loop_set_timer(&hci_stack->timeout, 50);
-                btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
-                btstack_run_loop_add_timer(&hci_stack->timeout);
-                break;
-            }
+            hci_stack->substate = HCI_HALTING_READY_FOR_CLOSE;
 
-            /* fall through */
+            // no connections left, wait a bit to assert that btstack_cyrpto isn't waiting for an HCI event
+            log_info("HCI_STATE_HALTING: wait 50 ms");
+            hci_stack->substate = HCI_HALTING_W4_CLOSE_TIMER;
+            btstack_run_loop_set_timer(&hci_stack->timeout, 50);
+            btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
+            btstack_run_loop_add_timer(&hci_stack->timeout);
+            break;
 
         case HCI_HALTING_CLOSE:
             // close left over connections (that had not been properly closed before)
@@ -4373,7 +4414,7 @@ static void hci_halting_run(void) {
             log_info("HCI_STATE_HALTING, done");
             break;
 
-        case HCI_HALTING_W4_TIMER:
+        case HCI_HALTING_W4_CLOSE_TIMER:
             // keep waiting
 
             break;
@@ -7701,9 +7742,8 @@ void gap_set_page_timeout(uint16_t page_timeout){
 void hci_halting_defer(void){
     if (hci_stack->state != HCI_STATE_HALTING) return;
     switch (hci_stack->substate){
-        case HCI_HALTING_DISCONNECT_ALL_NO_TIMER:
-        case HCI_HALTING_CLOSE:
-            hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_TIMER;
+        case HCI_HALTING_READY_FOR_CLOSE:
+            hci_stack->substate = HCI_HALTING_DEFER_CLOSE;
             break;
         default:
             break;
