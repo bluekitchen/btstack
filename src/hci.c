@@ -386,6 +386,8 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t  addr, bd
     return NULL;
 }
 
+#ifdef ENABLE_CLASSIC
+
 inline static void connectionClearAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
     conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags & ~flags);
 }
@@ -393,8 +395,6 @@ inline static void connectionClearAuthenticationFlags(hci_connection_t * conn, h
 inline static void connectionSetAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
     conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags | flags);
 }
-
-#ifdef ENABLE_CLASSIC
 
 #ifdef ENABLE_SCO_OVER_HCI
 static int hci_number_sco_connections(void){
@@ -4322,7 +4322,11 @@ static void hci_halting_run(void) {
     log_info("HCI_STATE_HALTING, substate %x\n", hci_stack->substate);
 
     hci_connection_t *connection;
+#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_PERIPHERAL
     bool stop_advertismenets;
+#endif
+#endif
 
     switch (hci_stack->substate) {
         case HCI_HALTING_CLASSIC_STOP:
