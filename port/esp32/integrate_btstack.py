@@ -7,7 +7,13 @@
 import os
 import sys
 import shutil
+import re
 import create_examples
+
+component_manager_yml = '''version: "BTSTACK_VERSION"
+description: BTstack - BlueKitchen's implementation of the official Bluetooth stack.
+url: https://github.com/bluekitchen/btstack
+'''
 
 if not 'IDF_PATH' in os.environ:
 	print('Error: IDF_PATH not defined. Please set IDF_PATH as described here:\nhttp://esp-idf.readthedocs.io/en/latest/get-started/index.html#get-started-get-esp-idf');
@@ -55,6 +61,32 @@ for dir in dirs_to_copy:
 
 # add hci dump stdout
 shutil.copy(local_dir+'/../../platform/embedded/hci_dump_embedded_stdout.c', IDF_BTSTACK)
+
+# add support for idf-component-manager
+parsed_btstack_version = '0.0'
+with open('../../CHANGELOG.md', 'r') as f:
+	dev_version = False
+	while True:
+		rawline = f.readline()
+		if not rawline:
+			break
+		matchobj = re.match(r'^##[\s]+(?:(?:Release v)|(?:))([^\n]+)[\s]*$', rawline)
+		if matchobj is not None:
+			if matchobj.groups()[0] == 'Unreleased':
+				dev_version = True
+			else:
+				if re.match(r'^[\d]+(?:(?:.[\d]+)|(?:))(?:(?:.[\d]+)|(?:))(?:(?:.[\d]+)|(?:))$', matchobj.groups()[0]) is None:
+					continue
+				parsed_btstack_version = matchobj.groups()[0]
+				if dev_version:
+					ver_num = parsed_btstack_version.split('.')
+					ver_num[len(ver_num)-1] = str(int(ver_num[len(ver_num)-1]) + 1)
+					parsed_btstack_version = '.'.join(ver_num)
+					parsed_btstack_version += '-alpha'
+				print('BTstack version: ' + parsed_btstack_version)
+				break
+with open(IDF_BTSTACK + '/idf_component.yml', 'w') as f:
+	f.write(component_manager_yml.replace('BTSTACK_VERSION', parsed_btstack_version))
 
 # create example/btstack
 create_examples.create_examples(local_dir, '')

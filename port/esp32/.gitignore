@@ -34,3 +34,5 @@ create_examples.pyc
 example/
 template/build/
 sdkconfig_*
+sdkconfig
+__pycache__

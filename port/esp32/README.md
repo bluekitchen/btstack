@@ -20,17 +20,17 @@ Each example project folder, e.g. port/esp32/examples/spp_and_le_counter, contai
 
 To compile an example, run:
 
-	make
+	idf.py build
 
 
 To upload the binary to your device, run:
 
-	make flash
+	idf.py flash
 
 
 To get the debug output, run:
 
-	make monitor
+	idf.py monitor
 
 You can quit the monitor with CTRL-].
 
@@ -42,7 +42,7 @@ Interestingly, if you run make a second time, it completes the compilation.
 
 ## Configuration
 
-The sdkconfig of the example template disables the original Bluedroid stack by disabling the CONFIG_BLUEDROID_ENABLED kconfig option.
+The sdkconfig of the example template disables the original Bluedroid stack by disabling the `CONFIG_BT_BLUEDROID_ENABLED` and enabling `CONFIG_BT_CONTROLLER_ONLY` kconfig option.
 
 ## Limitations
 
