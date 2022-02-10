@@ -4139,6 +4139,16 @@ static void hci_power_transition_to_initializing(void){
     hci_stack->substate = HCI_INIT_SEND_RESET;
 }
 
+static void hci_power_transition_to_halting(void){
+    // see hci_run
+    hci_stack->state = HCI_STATE_HALTING;
+    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_TIMER;
+    // setup watchdog timer for disconnect - only triggers if Controller does not respond anymore
+    btstack_run_loop_set_timer(&hci_stack->timeout, 1000);
+    btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
+    btstack_run_loop_add_timer(&hci_stack->timeout);
+}
+
 // returns error
 static int hci_power_control_state_off(HCI_POWER_MODE power_mode){
     int err;
@@ -4190,13 +4200,7 @@ static int hci_power_control_state_working(HCI_POWER_MODE power_mode) {
             // do nothing
             break;
         case HCI_POWER_OFF:
-            // see hci_run
-            hci_stack->state = HCI_STATE_HALTING;
-            hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
-            // setup watchdog timer for disconnect - only triggers if Controller does not respond anymore
-            btstack_run_loop_set_timer(&hci_stack->timeout, 1000);
-            btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
-            btstack_run_loop_add_timer(&hci_stack->timeout);
+            hci_power_transition_to_halting();
             break;
         case HCI_POWER_SLEEP:
             // see hci_run
@@ -4236,9 +4240,7 @@ static int hci_power_control_state_falling_asleep(HCI_POWER_MODE power_mode) {
             hci_power_transition_to_initializing();
             break;
         case HCI_POWER_OFF:
-            // see hci_run
-            hci_stack->state = HCI_STATE_HALTING;
-            hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
+            hci_power_transition_to_halting();
             break;
         case HCI_POWER_SLEEP:
             // do nothing
@@ -4259,8 +4261,7 @@ static int hci_power_control_state_sleeping(HCI_POWER_MODE power_mode) {
             hci_power_transition_to_initializing();
             break;
         case HCI_POWER_OFF:
-            hci_stack->state = HCI_STATE_HALTING;
-            hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
+            hci_power_transition_to_halting();
             break;
         case HCI_POWER_SLEEP:
             // do nothing
@@ -4338,12 +4339,6 @@ static void hci_halting_run(void) {
                 connection->state = SENT_DISCONNECT;
 
                 log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, con_handle);
-
-                // cancel all l2cap connections right away instead of waiting for disconnection complete event ...
-                hci_emit_disconnection_complete(con_handle, 0x16); // terminated by local host
-
-                // ... which would be ignored anyway as we shutdown (free) the connection now
-                hci_shutdown_connection(connection);
 
                 // finally, send the disconnect command
                 hci_send_cmd(&hci_disconnect, con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
