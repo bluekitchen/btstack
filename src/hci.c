@@ -4827,7 +4827,7 @@ static bool hci_run_general_gap_le(void){
         bool scanning_uses_whitelist = (hci_stack->le_scan_filter_policy & 1) == 1;
         if ((hci_stack->le_scanning_param_update) ||
             !hci_stack->le_scanning_enabled ||
-            scanning_uses_whitelist ||
+            (scanning_uses_whitelist && whitelist_modification_pending) ||
             resolving_list_modification_pending ||
             random_address_change){
 
