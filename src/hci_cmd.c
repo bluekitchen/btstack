@@ -1788,7 +1788,7 @@ const hci_cmd_t hci_le_periodic_advertising_create_sync_cancel = {
  * @param sync_handle
  */
 const hci_cmd_t hci_le_periodic_advertising_terminate_sync = {
-    HCI_OPCODE_HCI_LE_PERIODIC_ADVERTISING_TERMINATE_SYNC, ""
+    HCI_OPCODE_HCI_LE_PERIODIC_ADVERTISING_TERMINATE_SYNC, "2"
 };
 
 /**
@@ -2188,7 +2188,7 @@ const hci_cmd_t hci_le_big_create_sync = {
  * @param big_handle
  */
 const hci_cmd_t hci_le_big_terminate_sync = {
-    HCI_OPCODE_HCI_LE_BIG_TERMINATE_SYNC, ""
+    HCI_OPCODE_HCI_LE_BIG_TERMINATE_SYNC, "1"
 };
 
 /**
