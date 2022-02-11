@@ -2575,6 +2575,14 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
             l2cap_handle_connection_complete(handle, channel);
         }
     }
+
+#ifdef ENABLE_L2CAP_INFORMATION_REQUESTS_ON_CONNECT
+    // trigger query of extended features and fixed channels right away (instead of later)
+    hci_connection_t * hci_connection = hci_connection_for_handle(handle);
+    btstack_assert(hci_connection != NULL);
+    hci_connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
+#endif
+
     // process
     l2cap_run();
 }
