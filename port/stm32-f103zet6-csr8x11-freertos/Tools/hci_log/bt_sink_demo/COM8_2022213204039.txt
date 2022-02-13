@@ -1,0 +1,789 @@
+[00:00:00.000] LOG -- btstack_tlv_flash_bank.c.443: found bank 0
+[00:00:00.002] LOG -- btstack_tlv_flash_bank.c.211: test erased: bank 0, offset 224
+[00:00:00.004] LOG -- btstack_tlv_flash_bank.c.472: Flash clean after last found tag
+[00:00:00.006] LOG -- btstack_tlv_flash_bank.c.487: write offset 224
+[00:00:00.007] LOG -- btstack_tlv.c.48: TLV Instance 0x8032710
+[00:00:00.010] LOG -- le_device_db_tlv.c.159: num valid le device entries 0
+[00:00:00.011] LOG -- l2cap.c.3863: L2CAP_REGISTER_SERVICE psm 0x19 mtu 65535
+[00:00:00.013] LOG -- l2cap.c.3863: L2CAP_REGISTER_SERVICE psm 0x17 mtu 65535
+[00:00:00.015] LOG -- l2cap.c.3863: L2CAP_REGISTER_SERVICE psm 0x1 mtu 65535
+[00:00:00.017] LOG -- hci.c.5467: BTSTACK_EVENT_DISCOVERABLE_ENABLED 1
+[00:00:00.018] EVT <= 66 01 01 
+Starting BTstack ...
+[00:00:00.019] LOG -- hci.c.3879: hci_power_control: 1, current mode 0
+Bluetooth power cycle
+[00:00:00.773] LOG -- hci.c.5341: BTSTACK_EVENT_STATE 1
+[00:00:00.774] EVT <= 60 01 01 
+[00:00:00.774] LOG -- hci.c.1305: hci_initializing_run: substate 0, can send 1
+[00:00:00.776] CMD => 03 0C 00 
+[00:00:00.777] EVT <= 6E 00 
+[00:00:00.977] LOG -- hci.c.1253: Resend HCI Reset
+[00:00:00.978] LOG -- hci.c.1305: hci_initializing_run: substate 0, can send 1
+[00:00:00.979] CMD => 03 0C 00 
+[00:00:00.982] EVT <= 6E 00 
+[00:00:00.000] LOG -- btstack_tlv_flash_bank.c.443: found bank 0
+[00:00:00.002] LOG -- btstack_tlv_flash_bank.c.211: test erased: bank 0, offset 224
+[00:00:00.004] LOG -- btstack_tlv_flash_bank.c.472: Flash clean after last found tag
+[00:00:00.006] LOG -- btstack_tlv_flash_bank.c.487: write offset 224
+[00:00:00.007] LOG -- btstack_tlv.c.48: TLV Instance 0x8032710
+[00:00:00.010] LOG -- le_device_db_tlv.c.159: num valid le device entries 0
+[00:00:00.011] LOG -- l2cap.c.3863: L2CAP_REGISTER_SERVICE psm 0x19 mtu 65535
+[00:00:00.013] LOG -- l2cap.c.3863: L2CAP_REGISTER_SERVICE psm 0x17 mtu 65535
+[00:00:00.015] LOG -- l2cap.c.3863: L2CAP_REGISTER_SERVICE psm 0x1 mtu 65535
+[00:00:00.017] LOG -- hci.c.5467: BTSTACK_EVENT_DISCOVERABLE_ENABLED 1
+[00:00:00.018] EVT <= 66 01 01 
+Starting BTstack ...
+[00:00:00.019] LOG -- hci.c.3879: hci_power_control: 1, current mode 0
+Bluetooth power cycle
+[00:00:00.773] LOG -- hci.c.5341: BTSTACK_EVENT_STATE 1
+[00:00:00.774] EVT <= 60 01 01 
+[00:00:00.774] LOG -- hci.c.1305: hci_initializing_run: substate 0, can send 1
+[00:00:00.776] CMD => 03 0C 00 
+[00:00:00.777] EVT <= 6E 00 
+[00:00:00.977] LOG -- hci.c.1253: Resend HCI Reset
+[00:00:00.978] LOG -- hci.c.1305: hci_initializing_run: substate 0, can send 1
+[00:00:00.979] CMD => 03 0C 00 
+[00:00:00.982] EVT <= 6E 00 
+[00:00:01.004] EVT <= 0F 04 00 01 00 00 
+[00:00:01.005] LOG -- hci.c.1698: Command status for opcode 0000, expected 0c03
+[00:00:01.006] LOG -- hci.c.1305: hci_initializing_run: substate 1, can send 1
+[00:00:01.180] LOG -- hci.c.1253: Resend HCI Reset
+[00:00:01.181] LOG -- hci.c.1305: hci_initializing_run: substate 0, can send 1
+[00:00:01.182] CMD => 03 0C 00 
+[00:00:01.183] EVT <= 6E 00 
+[00:00:01.299] EVT <= 0E 04 01 03 0C 00 
+[00:00:01.300] LOG -- hci.c.1681: Command complete for expected opcode 0c03 at substate 1
+[00:00:01.301] LOG -- hci.c.1305: hci_initializing_run: substate 2, can send 1
+[00:00:01.303] CMD => 01 10 00 
+[00:00:01.304] EVT <= 6E 00 
+[00:00:01.306] EVT <= 0E 0C 01 01 10 00 06 31 20 06 0A 00 31 20 
+[00:00:01.308] LOG -- hci.c.2233: Manufacturer: 0x000a
+[00:00:01.309] LOG -- hci.c.1681: Command complete for expected opcode 1001 at substate 3
+[00:00:01.311] LOG -- hci.c.1305: hci_initializing_run: substate 4, can send 1
+[00:00:01.312] CMD => 14 0C 00 
+[00:00:01.313] EVT <= 6E 00 
+[00:00:01.339] EVT <= 0E FC 01 14 0C 00 43 53 52 20 2D 20 62 63 37 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:01.360] LOG -- hci.c.2139: local name: CSR - bc7
+[00:00:01.361] LOG -- hci.c.1681: Command complete for expected opcode 0c14 at substate 5
+[00:00:01.363] LOG -- hci.c.1811: Received local name, need baud change 0
+[00:00:01.364] LOG -- hci.c.1305: hci_initializing_run: substate 8, can send 1
+[00:00:01.366] LOG -- btstack_chipset_csr.c.118: csr: pskey 0x01fe
+[00:00:01.367] CMD => 00 FC 13 C2 02 00 09 00 01 00 03 70 00 00 FE 01 01 00 08 00 90 65 
+[00:00:01.371] EVT <= 6E 00 
+[00:00:01.372] LOG -- hci.c.1305: hci_initializing_run: substate 9, can send 1
+[00:00:01.376] EVT <= FF 13 C2 01 00 09 00 01 00 03 70 00 00 FE 01 01 00 08 00 90 65 
+[00:00:01.378] LOG -- hci.c.1305: hci_initializing_run: substate 8, can send 1
+[00:00:01.379] LOG -- btstack_chipset_csr.c.118: csr: pskey 0x00f2
+[00:00:01.381] CMD => 00 FC 13 C2 02 00 09 00 01 00 03 70 00 00 F2 00 01 00 08 00 01 00 
+[00:00:01.385] EVT <= 6E 00 
+[00:00:01.386] LOG -- hci.c.1305: hci_initializing_run: substate 9, can send 1
+[00:00:01.389] EVT <= FF 13 C2 01 00 09 00 01 00 03 70 00 00 F2 00 01 00 08 00 01 00 
+[00:00:01.392] LOG -- hci.c.1305: hci_initializing_run: substate 8, can send 1
+[00:00:01.393] LOG -- btstack_chipset_csr.c.118: csr: pskey 0x01bf
+[00:00:01.394] CMD => 00 FC 13 C2 02 00 09 00 01 00 03 70 00 00 BF 01 01 00 08 00 0E 08 
+[00:00:01.399] EVT <= 6E 00 
+[00:00:01.399] LOG -- hci.c.1305: hci_initializing_run: substate 9, can send 1
+[00:00:01.403] EVT <= FF 13 C2 01 00 09 00 01 00 03 70 00 00 BF 01 01 00 08 00 0E 08 
+[00:00:01.405] LOG -- hci.c.1305: hci_initializing_run: substate 8, can send 1
+[00:00:01.407] LOG -- btstack_chipset_csr.c.118: csr: pskey 0x0001
+[00:00:01.408] LOG -- hci.c.1381: CSR Warm Boot
+[00:00:01.409] CMD => 00 FC 13 C2 02 00 09 00 03 0E 02 40 00 00 00 00 00 00 08 00 00 00 
+[00:00:01.413] EVT <= 6E 00 
+[00:00:01.414] LOG -- hci.c.1305: hci_initializing_run: substate 12, can send 1
+[00:00:01.610] LOG -- hci.c.1259: Resend HCI Reset - CSR Warm Boot with Link Reset
+[00:00:01.611] LOG -- hci.c.1267: Resend HCI Reset - CSR Warm Boot
+[00:00:01.612] LOG -- hci.c.1305: hci_initializing_run: substate 10, can send 1
+[00:00:01.614] CMD => 03 0C 00 
+[00:00:01.615] EVT <= 6E 00 
+[00:00:01.815] LOG -- hci.c.1267: Resend HCI Reset - CSR Warm Boot
+[00:00:01.816] LOG -- hci.c.1305: hci_initializing_run: substate 10, can send 1
+[00:00:01.817] CMD => 03 0C 00 
+[00:00:01.821] EVT <= 6E 00 
+[00:00:02.018] LOG -- hci.c.1267: Resend HCI Reset - CSR Warm Boot
+[00:00:02.019] LOG -- hci.c.1305: hci_initializing_run: substate 10, can send 1
+[00:00:02.020] CMD => 03 0C 00 
+[00:00:02.022] EVT <= 6E 00 
+[00:00:02.220] EVT <= 0E 04 01 03 0C 00 
+[00:00:02.221] LOG -- hci.c.1681: Command complete for expected opcode 0c03 at substate 11
+[00:00:02.223] LOG -- hci.c.1305: hci_initializing_run: substate 8, can send 1
+[00:00:02.224] LOG -- hci.c.1407: Init script done
+[00:00:02.225] CMD => 02 10 00 
+[00:00:02.226] EVT <= 6E 00 
+[00:00:02.234] EVT <= 0E 44 01 02 10 00 FF FF FF 03 FE FF FF FF FF FF FF FF F3 0F E8 FE 3F F7 83 FF 1C 00 00 00 61 F7 FF FF 7F 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.240] LOG -- hci.c.2251: Local supported commands summary 87 - 01
+[00:00:02.242] LOG -- hci.c.1681: Command complete for expected opcode 1002 at substate 15
+[00:00:02.243] LOG -- hci.c.1305: hci_initializing_run: substate 22, can send 1
+[00:00:02.245] CMD => 09 10 00 
+[00:00:02.246] EVT <= 6E 00 
+[00:00:02.248] EVT <= 0E 0A 01 09 10 00 A5 A5 00 5B 02 00 
+[00:00:02.249] LOG -- hci.c.2194: Local Address, Status: 0x00: Addr: 00:02:5B:00:A5:A5
+[00:00:02.251] LOG -- hci.c.1681: Command complete for expected opcode 1009 at substate 23
+[00:00:02.253] LOG -- hci.c.1305: hci_initializing_run: substate 24, can send 1
+[00:00:02.254] CMD => 05 10 00 
+[00:00:02.256] EVT <= 6E 00 
+[00:00:02.257] EVT <= 0E 0B 01 05 10 00 36 01 40 0A 00 08 00 
+[00:00:02.259] LOG -- hci.c.2154: hci_read_buffer_size: ACL size module 310 -> used 310, count 10 / SCO size 64, count 8
+[00:00:02.261] LOG -- hci.c.1681: Command complete for expected opcode 1005 at substate 25
+[00:00:02.263] LOG -- hci.c.1305: hci_initializing_run: substate 26, can send 1
+[00:00:02.265] CMD => 03 10 00 
+[00:00:02.266] EVT <= 6E 00 
+[00:00:02.268] EVT <= 0E 0C 01 03 10 00 FF FF 8F FE DB FF 5B 87 
+[00:00:02.270] LOG -- hci.c.2219: Packet types cc18, eSCO 1
+[00:00:02.271] LOG -- hci.c.2222: BR/EDR support 1, LE support 1
+[00:00:02.272] LOG -- hci.c.1681: Command complete for expected opcode 1003 at substate 27
+[00:00:02.274] LOG -- hci.c.1305: hci_initializing_run: substate 28, can send 1
+[00:00:02.275] CMD => 01 0C 08 FF FF FF FF FF FF FF 3F 
+[00:00:02.278] EVT <= 6E 00 
+[00:00:02.279] EVT <= 0E 04 01 01 0C 00 
+[00:00:02.280] LOG -- hci.c.1681: Command complete for expected opcode 0c01 at substate 29
+[00:00:02.282] LOG -- hci.c.1305: hci_initializing_run: substate 30, can send 1
+[00:00:02.283] CMD => 56 0C 01 01 
+[00:00:02.285] EVT <= 6E 00 
+[00:00:02.287] EVT <= 0E 04 01 56 0C 00 
+[00:00:02.288] LOG -- hci.c.1681: Command complete for expected opcode 0c56 at substate 31
+[00:00:02.290] LOG -- hci.c.1305: hci_initializing_run: substate 32, can send 1
+[00:00:02.291] CMD => 18 0C 02 00 60 
+[00:00:02.293] EVT <= 6E 00 
+[00:00:02.295] EVT <= 0E 04 01 18 0C 00 
+[00:00:02.296] LOG -- hci.c.1681: Command complete for expected opcode 0c18 at substate 33
+[00:00:02.297] LOG -- hci.c.1305: hci_initializing_run: substate 34, can send 1
+[00:00:02.299] CMD => 0F 08 02 00 00 
+[00:00:02.300] EVT <= 6E 00 
+[00:00:02.302] EVT <= 0E 04 01 0F 08 00 
+[00:00:02.303] LOG -- hci.c.1681: Command complete for expected opcode 080f at substate 35
+[00:00:02.305] LOG -- hci.c.1305: hci_initializing_run: substate 36, can send 1
+[00:00:02.307] CMD => 24 0C 03 08 04 20 
+[00:00:02.308] EVT <= 6E 00 
+[00:00:02.310] EVT <= 0E 04 01 24 0C 00 
+[00:00:02.311] LOG -- hci.c.1681: Command complete for expected opcode 0c24 at substate 37
+[00:00:02.313] LOG -- hci.c.1305: hci_initializing_run: substate 38, can send 1
+[00:00:02.314] CMD => 13 0C F8 41 32 44 50 20 53 69 6E 6B 20 44 65 6D 6F 20 30 30 3A 30 32 3A 35 42 3A 30 30 3A 41 35 3A 41 35 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.357] EVT <= 6E 00 
+[00:00:02.358] EVT <= 0E 04 01 13 0C 00 
+[00:00:02.359] LOG -- hci.c.1681: Command complete for expected opcode 0c13 at substate 39
+[00:00:02.361] LOG -- hci.c.1305: hci_initializing_run: substate 40, can send 1
+[00:00:02.362] CMD => 52 0C F1 00 21 09 41 32 44 50 20 53 69 6E 6B 20 44 65 6D 6F 20 30 30 3A 30 32 3A 35 42 3A 30 30 3A 41 35 3A 41 35 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.404] EVT <= 6E 00 
+[00:00:02.406] EVT <= 0E 04 01 52 0C 00 
+[00:00:02.407] LOG -- hci.c.1681: Command complete for expected opcode 0c52 at substate 41
+[00:00:02.409] LOG -- hci.c.1305: hci_initializing_run: substate 42, can send 1
+[00:00:02.411] CMD => 45 0C 01 00 
+[00:00:02.412] EVT <= 6E 00 
+[00:00:02.414] EVT <= 0E 04 01 45 0C 00 
+[00:00:02.415] LOG -- hci.c.1681: Command complete for expected opcode 0c45 at substate 43
+[00:00:02.417] LOG -- hci.c.1305: hci_initializing_run: substate 46, can send 1
+[00:00:02.418] CMD => 1A 0C 01 03 
+[00:00:02.420] EVT <= 6E 00 
+[00:00:02.422] EVT <= 0E 04 01 1A 0C 00 
+[00:00:02.423] LOG -- hci.c.5467: BTSTACK_EVENT_DISCOVERABLE_ENABLED 1
+[00:00:02.424] EVT <= 66 01 01 
+[00:00:02.425] LOG -- hci.c.1681: Command complete for expected opcode 0c1a at substate 47
+[00:00:02.427] LOG -- hci.c.1305: hci_initializing_run: substate 56, can send 1
+[00:00:02.428] CMD => 02 20 00 
+[00:00:02.429] EVT <= 6E 00 
+[00:00:02.431] EVT <= 0E 07 01 02 20 00 00 00 00 
+[00:00:02.432] LOG -- hci.c.2176: hci_le_read_buffer_size: size 0, count 0
+[00:00:02.434] LOG -- hci.c.1681: Command complete for expected opcode 2002 at substate 57
+[00:00:02.436] LOG -- hci.c.1305: hci_initializing_run: substate 58, can send 1
+[00:00:02.437] CMD => 6D 0C 02 01 00 
+[00:00:02.439] EVT <= 6E 00 
+[00:00:02.440] EVT <= 0E 04 01 6D 0C 00 
+[00:00:02.441] LOG -- hci.c.1681: Command complete for expected opcode 0c6d at substate 59
+[00:00:02.443] LOG -- hci.c.1305: hci_initializing_run: substate 60, can send 1
+[00:00:02.445] CMD => 01 20 08 FF 09 08 00 00 00 00 00 
+[00:00:02.447] EVT <= 6E 00 
+[00:00:02.448] EVT <= 0E 04 01 01 20 12 
+[00:00:02.450] LOG -- hci.c.1681: Command complete for expected opcode 2001 at substate 61
+[00:00:02.451] LOG -- hci.c.1305: hci_initializing_run: substate 62, can send 1
+[00:00:02.453] CMD => 0F 20 00 
+[00:00:02.454] EVT <= 6E 00 
+[00:00:02.455] EVT <= 0E 05 01 0F 20 00 19 
+[00:00:02.456] LOG -- hci.c.2189: hci_le_read_white_list_size: size 25
+[00:00:02.458] LOG -- hci.c.1681: Command complete for expected opcode 200f at substate 63
+[00:00:02.460] LOG -- hci.c.1305: hci_initializing_run: substate 64, can send 1
+[00:00:02.461] CMD => 0B 20 07 01 E0 01 30 00 00 00 
+[00:00:02.463] EVT <= 6E 00 
+[00:00:02.465] EVT <= 0E 04 01 0B 20 00 
+[00:00:02.466] LOG -- hci.c.1681: Command complete for expected opcode 200b at substate 65
+[00:00:02.467] LOG -- hci.c.1669: hci_init_done -> HCI_STATE_WORKING
+[00:00:02.469] LOG -- hci.c.5341: BTSTACK_EVENT_STATE 2
+[00:00:02.470] EVT <= 60 01 02 
+BTstack up and running on 00:02:5B:00:A5:A5.
+[00:00:22.500] EVT <= 04 0A 52 75 2F 4A 93 A8 0C 01 2A 01 
+[00:00:22.502] LOG -- hci.c.2567: Connection_incoming: A8:93:4A:2F:75:52, type 1
+[00:00:22.503] LOG -- hci.c.203: create_connection_for_addr A8:93:4A:2F:75:52, type fd
+[00:00:22.505] LOG -- hci.c.4509: sending hci_accept_connection_request
+[00:00:22.507] CMD => 09 04 07 52 75 2F 4A 93 A8 01 
+[00:00:22.509] EVT <= 6E 00 
+[00:00:22.510] EVT <= 0F 04 00 01 09 04 
+[00:00:22.516] EVT <= 03 0B 00 4C 00 52 75 2F 4A 93 A8 01 00 
+[00:00:22.517] LOG -- hci.c.2591: Connection_complete (status=0) A8:93:4A:2F:75:52
+[00:00:22.519] LOG -- hci.c.2611: New connection: handle 76, A8:93:4A:2F:75:52
+[00:00:22.520] LOG -- hci.c.5410: BTSTACK_EVENT_NR_CONNECTIONS_CHANGED 1
+[00:00:22.522] EVT <= 61 01 01 
+[00:00:22.523] CMD => 1B 04 02 4C 00 
+[00:00:22.524] EVT <= 6E 00 
+[00:00:22.525] EVT <= 20 07 52 75 2F 4A 93 A8 01 
+[00:00:22.527] EVT <= 1B 03 4C 00 05 
+[00:00:22.528] EVT <= 0F 04 00 00 1B 04 
+[00:00:22.532] EVT <= 0F 04 00 01 00 00 
+[00:00:22.535] ACL <= 4C 20 0C 00 08 00 01 00 02 15 04 00 01 00 40 00 
+[00:00:22.537] LOG -- l2cap.c.1997: create channel 0x2000378c, local_cid 0x0041
+[00:00:22.538] LOG -- l2cap.c.1087: L2CAP_EVENT_INCOMING_CONNECTION addr A8:93:4A:2F:75:52 handle 0x4c psm 0x1 local_cid 0x41 remote_cid 0x40
+[00:00:22.541] EVT <= 72 0E 52 75 2F 4A 93 A8 4C 00 01 00 41 00 40 00 
+[00:00:22.542] LOG -- l2cap.c.2645: L2CAP_ACCEPT_CONNECTION local_cid 0x41
+[00:00:22.544] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:22.545] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:22.547] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:22.548] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:22.549] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:22.551] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:22.553] ACL => 4C 00 10 00 0C 00 01 00 03 15 08 00 41 00 40 00 00 00 00 00 
+[00:00:22.555] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:22.557] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:22.558] EVT <= 6E 00 
+[00:00:22.559] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.560] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.561] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.563] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:22.564] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:22.566] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:22.567] ACL => 4C 00 10 00 0C 00 01 00 04 01 08 00 40 00 00 00 01 02 9B 06 
+[00:00:22.570] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:22.571] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:22.573] LOG -- l2cap.c.1246: l2cap_stop_rtx for local cid 0x41
+[00:00:22.574] LOG -- l2cap.c.1255: l2cap_start_rtx for local cid 0x41
+[00:00:22.576] EVT <= 6E 00 
+[00:00:22.576] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:22.578] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:22.580] EVT <= 0B 0B 00 4C 00 BF 3E 8D FE DB FF 7B 87 
+[00:00:22.582] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:22.583] CMD => 1C 04 03 4C 00 01 
+[00:00:22.585] EVT <= 6E 00 
+[00:00:22.585] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:22.587] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:22.588] EVT <= 13 05 01 4C 00 01 00 
+[00:00:22.589] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.591] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.594] ACL <= 4C 20 10 00 0C 00 01 00 04 16 08 00 41 00 00 00 01 02 00 04 
+[00:00:22.596] LOG -- l2cap.c.2856: L2CAP signaling handler code 4, state 11
+[00:00:22.597] LOG -- l2cap.c.2701: Remote MTU 1024
+[00:00:22.599] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.600] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.601] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.602] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:22.604] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:22.605] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:22.607] ACL => 4C 00 12 00 0E 00 01 00 05 16 0A 00 40 00 00 00 00 00 01 02 00 04 
+[00:00:22.610] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:22.611] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:22.613] EVT <= 6E 00 
+[00:00:22.613] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:22.615] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:22.617] EVT <= 0F 04 00 01 1C 04 
+[00:00:22.618] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:22.619] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:22.621] EVT <= 13 05 01 4C 00 01 00 
+[00:00:22.622] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.624] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.626] EVT <= 23 0D 00 4C 00 01 02 0F 00 00 00 00 00 00 00 
+[00:00:22.628] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.629] CMD => 1C 04 03 4C 00 02 
+[00:00:22.631] EVT <= 6E 00 
+[00:00:22.632] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.633] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:22.634] ACL <= 4C 20 12 00 0E 00 01 00 05 01 0A 00 41 00 00 00 00 00 01 02 00 04 
+[00:00:22.637] LOG -- l2cap.c.2856: L2CAP signaling handler code 5, state 11
+[00:00:22.638] LOG -- l2cap.c.1246: l2cap_stop_rtx for local cid 0x41
+[00:00:22.640] LOG -- l2cap.c.2786: l2cap_signaling_handle_configure_response
+[00:00:22.641] LOG -- l2cap.c.1052: L2CAP_EVENT_CHANNEL_OPENED status 0x0 addr A8:93:4A:2F:75:52 handle 0x4c psm 0x1 local_cid 0x41 remote_cid 0x40 local_mtu 1691, remote_mtu 1024, flush_timeout 0
+[00:00:22.645] EVT <= 70 18 00 52 75 2F 4A 93 A8 4C 00 01 00 41 00 40 00 9B 06 00 04 00 00 01 00 00 
+[00:00:22.648] EVT <= 0F 04 00 01 1C 04 
+[00:00:22.650] EVT <= 13 05 01 4C 00 01 00 
+[00:00:22.655] EVT <= 32 09 52 75 2F 4A 93 A8 01 00 05 
+[00:00:22.656] LOG -- hci.c.413: pairing started, ssp 1, initiator 0, requested level 2
+[00:00:22.658] EVT <= DF 0A 52 75 2F 4A 93 A8 4C 00 01 00 
+[00:00:22.660] EVT <= 31 06 52 75 2F 4A 93 A8 
+[00:00:22.661] LOG -- hci.c.5556: gap_mitm_protection_required_for_security_level 2
+[00:00:22.663] CMD => 2B 04 09 52 75 2F 4A 93 A8 03 00 04 
+[00:00:22.666] EVT <= 6E 00 
+[00:00:22.666] EVT <= 23 0D 00 4C 00 02 02 05 07 00 00 00 00 00 00 
+[00:00:22.668] LOG -- hci.c.2078: Remote features 03, bonding flags f8
+[00:00:22.670] LOG -- l2cap.c.2341: remote supported features, channel 0x2000378c, cid 0041 - state 12
+[00:00:22.673] EVT <= 0E 0A 01 2B 04 00 52 75 2F 4A 93 A8 
+[00:00:23.081] EVT <= 33 0A 52 75 2F 4A 93 A8 FB 6A 08 00 
+[00:00:23.082] CMD => 2C 04 06 52 75 2F 4A 93 A8 
+[00:00:23.085] EVT <= 6E 00 
+[00:00:23.086] EVT <= 0E 0A 01 2C 04 00 52 75 2F 4A 93 A8 
+[00:00:23.338] EVT <= 36 07 00 52 75 2F 4A 93 A8 
+[00:00:23.340] LOG -- hci.c.429: pairing complete, status 00
+[00:00:23.341] EVT <= E0 09 52 75 2F 4A 93 A8 4C 00 00 20 
+[00:00:23.370] EVT <= 18 17 52 75 2F 4A 93 A8 5C E0 9C 46 83 E4 27 63 F0 AD 39 A8 CE D8 73 77 04 
+[00:00:23.372] LOG -- hci.c.454: gap_store_link_key_for_bd_addr: A8:93:4A:2F:75:52, type 4
+[00:00:23.375] LOG -- btstack_tlv_flash_bank.c.333: Found tag '42544c0d' at position 188
+[00:00:23.377] LOG -- btstack_tlv_flash_bank.c.333: Found tag '42544c0e' at position 44
+[00:00:23.379] LOG -- btstack_tlv_flash_bank.c.333: Found tag '42544c0f' at position 152
+[00:00:23.380] LOG -- btstack_link_key_db_tlv.c.151: tag_for_addr 42544c0f, tag_for_empy 42544c0c, tag_for_lowest_seq_nr 42544c0e
+[00:00:23.383] LOG -- btstack_link_key_db_tlv.c.166: store with tag 42544c0f
+[00:00:23.384] LOG -- btstack_tlv_flash_bank.c.378: write '42544c0f', len 28 at 224
+[00:00:23.387] LOG -- btstack_tlv_flash_bank.c.299: Erase tag '42544c0f' at position 152
+[00:00:23.389] EVT <= 08 04 00 4C 00 01 
+[00:00:23.390] CMD => 08 14 02 4C 00 
+[00:00:23.392] EVT <= 6E 00 
+[00:00:23.394] ACL <= 4C 20 18 00 14 00 41 00 06 00 00 00 0F 35 03 19 01 00 03 F8 35 05 0A 00 00 FF FF 00 
+[00:00:23.400] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.401] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x41
+[00:00:23.402] EVT <= 78 02 41 00 
+[00:00:23.403] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.405] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.406] LOG -- l2cap.c.1314: l2cap_send_prepared cid 0x41, handle 76, 1 credit used
+[00:00:23.408] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.409] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.410] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.412] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 1)
+[00:00:23.414] ACL => 4C 00 36 01 CF 01 40 00 07 00 00 01 CA 01 C7 36 01 C4 36 00 92 09 00 00 0A 00 01 00 03 09 00 01 36 00 03 19 11 0C 09 00 04 36 00 12 36 00 06 19 01 00 09 00 17 36 00 06 19 00 17 09 01 04 09 00 05 36 00 03 19 10 02 09 00 09 36 00 09 36 00 06 19 11 0E 09 01 06 09 01 00 25 1C 42 54 73 74 61 63 6B 20 41 56 52 43 50 20 54 61 72 67 65 74 20 53 65 72 76 69 63 65 09 01 02 25 25 42 54 73 74 61 63 6B 20 41 56 52 43 50 20 54 61 72 67 65 74 20 53 65 72 76 69 63 65 20 50 72 6F 76 69 64 65 72 09 03 11 09 00 02 36 00 9D 09 00 00 0A 00 01 00 02 09 00 01 36 00 06 19 11 0E 19 11 0F 09 00 04 36 00 12 36 00 06 19 01 00 09 00 17 36 00 06 19 00 17 09 01 04 09 00 05 36 00 03 19 10 02 09 00 09 36 00 09 36 00 06 19 11 0E 09 01 06 09 01 00 25 20 42 54 73 74 61 63 6B 20 41 56 52 43 50 20 43 6F 6E 74 72 6F 6C 6C 65 72 20 53 65 72 76 69 63 65 09 01 02 25 29 42 54 73 74 61 63 6B 20 41 56 52 43 50 20 43 6F 6E 74 72 6F 6C 6C 65 72 20 53 65 72 76 69 63 65 20 50 
+[00:00:23.439] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 1)
+[00:00:23.442] EVT <= 0E 07 01 08 14 00 4C 00 10 
+[00:00:23.444] LOG -- hci.c.2266: Handle 004c key Size: 16
+[00:00:23.445] LOG -- hci.c.5441: hci_emit_security_level 2 for handle 4c
+[00:00:23.446] EVT <= D8 03 4C 00 02 
+[00:00:23.447] LOG -- l2cap.c.2361: l2cap - security level update for handle 0x004c
+[00:00:23.449] LOG -- l2cap.c.2371: channel 0x2000378c, cid 0041 - state 12: actual 2 >= required 0?
+[00:00:23.467] EVT <= 6E 00 
+[00:00:23.467] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.469] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.470] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.472] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.473] ACL => 4C 10 9D 00 72 6F 76 69 64 65 72 09 03 11 09 00 01 36 00 8C 09 00 00 0A 00 01 00 01 09 00 01 36 00 03 19 11 0B 09 00 04 36 00 12 36 00 06 19 01 00 09 00 19 36 00 06 19 00 19 09 01 03 09 00 05 36 00 03 19 10 02 09 00 09 36 00 09 36 00 06 19 11 0D 09 01 03 09 01 00 25 19 42 54 73 74 61 63 6B 20 41 32 44 50 20 53 69 6E 6B 20 53 65 72 76 69 63 65 09 01 02 25 22 42 54 73 74 61 63 6B 20 41 32 44 50 20 53 69 6E 6B 20 53 65 72 76 69 63 65 20 50 72 6F 76 69 64 65 72 09 03 11 09 00 01 00 
+[00:00:23.487] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.489] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.494] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.501] EVT <= 6E 00 
+[00:00:23.518] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.524] ACL <= 4C 20 18 00 14 00 41 00 06 00 01 00 0F 35 03 19 12 00 03 F8 35 05 0A 02 01 02 05 00 
+[00:00:23.529] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.530] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x41
+[00:00:23.532] EVT <= 78 02 41 00 
+[00:00:23.532] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.534] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.535] LOG -- l2cap.c.1314: l2cap_send_prepared cid 0x41, handle 76, 1 credit used
+[00:00:23.537] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.538] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.540] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.541] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.543] ACL => 4C 00 2F 00 2B 00 40 00 07 00 01 00 26 00 23 36 00 20 36 00 1D 09 02 01 09 04 8F 09 02 02 09 00 01 09 02 03 09 00 01 09 02 04 28 01 09 02 05 09 00 01 00 
+[00:00:23.547] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.549] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.552] EVT <= 6E 00 
+[00:00:23.580] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.598] ACL <= 4C 20 0C 00 08 00 01 00 06 17 04 00 41 00 40 00 
+[00:00:23.600] LOG -- l2cap.c.2856: L2CAP signaling handler code 6, state 12
+[00:00:23.601] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.602] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.604] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.605] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.606] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.608] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.610] ACL => 4C 00 0C 00 08 00 01 00 07 17 04 00 41 00 40 00 
+[00:00:23.612] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.613] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.615] LOG -- l2cap.c.1082: L2CAP_EVENT_CHANNEL_CLOSED local_cid 0x41
+[00:00:23.616] EVT <= 71 02 41 00 
+[00:00:23.617] LOG -- l2cap.c.2003: free channel 0x2000378c, local_cid 0x0041
+[00:00:23.619] LOG -- l2cap.c.1246: l2cap_stop_rtx for local cid 0x41
+[00:00:23.620] EVT <= 6E 00 
+[00:00:23.630] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.663] ACL <= 4C 20 0C 00 08 00 01 00 02 18 04 00 19 00 41 00 
+[00:00:23.665] LOG -- l2cap.c.1997: create channel 0x2000378c, local_cid 0x0042
+[00:00:23.666] LOG -- l2cap.c.1087: L2CAP_EVENT_INCOMING_CONNECTION addr A8:93:4A:2F:75:52 handle 0x4c psm 0x19 local_cid 0x42 remote_cid 0x41
+[00:00:23.669] EVT <= 72 0E 52 75 2F 4A 93 A8 4C 00 19 00 42 00 41 00 
+[00:00:23.670] LOG -- avdtp.c.870: incoming: A8:93:4A:2F:75:52, outoing_signaling_active 0, accept_streaming_connection 0
+[00:00:23.673] LOG -- l2cap.c.2645: L2CAP_ACCEPT_CONNECTION local_cid 0x42
+[00:00:23.674] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.676] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.677] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.678] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.680] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.681] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.683] ACL => 4C 00 10 00 0C 00 01 00 03 18 08 00 42 00 41 00 00 00 00 00 
+[00:00:23.685] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.687] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.688] EVT <= 6E 00 
+[00:00:23.689] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.690] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.692] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.693] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.694] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.696] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.698] ACL => 4C 00 10 00 0C 00 01 00 04 02 08 00 41 00 00 00 01 02 9B 06 
+[00:00:23.700] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.702] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.703] LOG -- l2cap.c.1246: l2cap_stop_rtx for local cid 0x42
+[00:00:23.704] LOG -- l2cap.c.1255: l2cap_start_rtx for local cid 0x42
+[00:00:23.706] EVT <= 6E 00 
+[00:00:23.707] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.708] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.710] ACL <= 4C 20 0C 00 08 00 01 00 04 19 04 00 42 00 00 00 
+[00:00:23.712] LOG -- l2cap.c.2856: L2CAP signaling handler code 4, state 11
+[00:00:23.714] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.715] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.716] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.718] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.719] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.721] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.722] ACL => 4C 00 0E 00 0A 00 01 00 05 19 06 00 41 00 00 00 00 00 
+[00:00:23.724] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.726] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.728] EVT <= 6E 00 
+[00:00:23.728] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:23.730] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:23.732] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.733] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.734] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.736] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.737] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.739] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.741] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.742] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.743] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.746] ACL <= 4C 20 0E 00 0A 00 01 00 05 02 06 00 42 00 00 00 00 00 
+[00:00:23.748] LOG -- l2cap.c.2856: L2CAP signaling handler code 5, state 11
+[00:00:23.750] LOG -- l2cap.c.1246: l2cap_stop_rtx for local cid 0x42
+[00:00:23.751] LOG -- l2cap.c.2786: l2cap_signaling_handle_configure_response
+[00:00:23.753] LOG -- l2cap.c.1052: L2CAP_EVENT_CHANNEL_OPENED status 0x0 addr A8:93:4A:2F:75:52 handle 0x4c psm 0x19 local_cid 0x42 remote_cid 0x41 local_mtu 1691, remote_mtu 672, flush_timeout 0
+[00:00:23.756] EVT <= 70 18 00 52 75 2F 4A 93 A8 4C 00 19 00 42 00 41 00 9B 06 A0 02 00 00 01 00 00 
+[00:00:23.759] LOG -- avdtp.c.928: Connection opened l2cap_signaling_cid 0x42, avdtp_cid 0x01, con_handle 0x4c
+A2DP  Sink      : Not parsed 0x0e
+[00:00:23.761] LOG -- a2dp_sink.c.238: A2DP sink signaling connection established avdtp_cid 0x01
+[00:00:23.764] ACL <= 4C 20 06 00 02 00 42 00 00 01 
+[00:00:23.766] LOG -- avdtp_acceptor.c.180: W2_ANSWER_DISCOVER_SEPS
+[00:00:23.767] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.768] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x42
+[00:00:23.770] EVT <= 78 02 42 00 
+[00:00:23.771] LOG -- avdtp.c.1024: avdtp_packet_handler, L2CAP_EVENT_CAN_SEND_NOW l2cap_cid 0x42
+[00:00:23.773] LOG -- avdtp.c.449: avdtp_packet_handler, L2CAP_EVENT_CAN_SEND_NOW l2cap_cid 0x42
+[00:00:23.774] LOG -- avdtp.c.456: call avdtp_acceptor_stream_config_subsm_run 0x20003dd4
+[00:00:23.776] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.777] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.779] LOG -- l2cap.c.1314: l2cap_send_prepared cid 0x42, handle 76, 1 credit used
+[00:00:23.780] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.782] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.783] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.785] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.786] ACL => 4C 00 08 00 04 00 41 00 02 01 04 08 
+[00:00:23.788] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.790] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.791] LOG -- avdtp_acceptor.c.524: DONE
+[00:00:23.792] EVT <= 6E 00 
+[00:00:23.794] ACL <= 4C 20 0A 00 06 00 01 00 0A 1A 02 00 02 00 
+[00:00:23.796] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.797] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.799] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.800] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.801] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.803] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.805] ACL => 4C 00 10 00 0C 00 01 00 0B 1A 08 00 02 00 00 00 80 02 00 00 
+[00:00:23.807] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.809] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.810] EVT <= 6E 00 
+[00:00:23.811] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.814] ACL <= 4C 20 07 00 03 00 42 00 10 0C 04 
+[00:00:23.815] LOG -- avdtp_acceptor.c.278: AVDTP_SI_GET_ALL_CAPABILITIES, local seid 1
+[00:00:23.817] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.818] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x42
+[00:00:23.820] EVT <= 78 02 42 00 
+[00:00:23.821] LOG -- avdtp.c.1024: avdtp_packet_handler, L2CAP_EVENT_CAN_SEND_NOW l2cap_cid 0x42
+[00:00:23.822] LOG -- avdtp.c.449: avdtp_packet_handler, L2CAP_EVENT_CAN_SEND_NOW l2cap_cid 0x42
+[00:00:23.824] LOG -- avdtp.c.456: call avdtp_acceptor_stream_config_subsm_run 0x20003dd4
+[00:00:23.826] LOG -- avdtp_acceptor.c.576: ACP:DONE
+[00:00:23.827] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.828] LOG -- l2cap.c.1314: l2cap_send_prepared cid 0x42, handle 76, 1 credit used
+[00:00:23.830] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.831] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.833] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.834] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.836] ACL => 4C 00 12 00 0E 00 41 00 12 0C 01 00 07 06 00 00 FF FF 02 35 08 00 
+[00:00:23.838] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.840] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.842] EVT <= 6E 00 
+[00:00:23.843] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.846] ACL <= 4C 20 0C 00 08 00 01 00 02 1B 04 00 17 00 42 00 
+[00:00:23.848] LOG -- l2cap.c.1997: create channel 0x20003730, local_cid 0x0043
+[00:00:23.849] LOG -- l2cap.c.1087: L2CAP_EVENT_INCOMING_CONNECTION addr A8:93:4A:2F:75:52 handle 0x4c psm 0x17 local_cid 0x43 remote_cid 0x42
+[00:00:23.852] EVT <= 72 0E 52 75 2F 4A 93 A8 4C 00 17 00 43 00 42 00 
+[00:00:23.854] LOG -- avrcp.c.433: avrcp_create_connection, role 1
+[00:00:23.855] LOG -- avrcp.c.433: avrcp_create_connection, role 0
+[00:00:23.856] LOG -- avrcp.c.796: AVRCP: L2CAP_EVENT_INCOMING_CONNECTION local cid 0x43, state 4
+[00:00:23.858] LOG -- l2cap.c.2645: L2CAP_ACCEPT_CONNECTION local_cid 0x43
+[00:00:23.860] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.861] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.862] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.864] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.865] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.866] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.868] ACL => 4C 00 10 00 0C 00 01 00 03 1B 08 00 43 00 42 00 00 00 00 00 
+[00:00:23.871] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.872] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.874] EVT <= 6E 00 
+[00:00:23.874] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.876] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.877] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.878] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.880] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.881] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.883] ACL => 4C 00 10 00 0C 00 01 00 04 03 08 00 42 00 00 00 01 02 9B 06 
+[00:00:23.885] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.887] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.889] LOG -- l2cap.c.1246: l2cap_stop_rtx for local cid 0x43
+[00:00:23.890] LOG -- l2cap.c.1255: l2cap_start_rtx for local cid 0x43
+[00:00:23.891] EVT <= 6E 00 
+[00:00:23.892] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:23.893] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:23.895] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.896] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.898] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.900] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.901] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.902] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.906] ACL <= 4C 20 14 00 10 00 42 00 20 03 04 D0 01 00 07 06 00 00 21 15 02 35 08 00 
+[00:00:23.908] LOG -- avdtp_acceptor.c.286: Received SET_CONFIGURATION cmd: config state 0
+[00:00:23.910] LOG -- avdtp_acceptor.c.93: W2_ANSWER_SET_CONFIGURATION cid 0x01
+[00:00:23.912] LOG -- avdtp_acceptor.c.126: local seid 1, remote seid 52
+[00:00:23.913] LOG -- avdtp_acceptor.c.150: add remote seid 52
+A2DP  Sink      : Received SBC codec configuration
+    - num_channels: 2
+    - sampling_frequency: 44100
+    - channel_mode: 3
+    - block_length: 16
+    - subbands: 8
+    - allocation_method: 0
+    - bitpool_value [2, 53] 
+
+[00:00:23.919] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.920] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x42
+[00:00:23.922] EVT <= 78 02 42 00 
+[00:00:23.923] LOG -- avdtp.c.1024: avdtp_packet_handler, L2CAP_EVENT_CAN_SEND_NOW l2cap_cid 0x42
+[00:00:23.925] LOG -- avdtp.c.449: avdtp_packet_handler, L2CAP_EVENT_CAN_SEND_NOW l2cap_cid 0x42
+[00:00:23.926] LOG -- avdtp.c.456: call avdtp_acceptor_stream_config_subsm_run 0x20003dd4
+[00:00:23.928] LOG -- avdtp_acceptor.c.582: DONE
+[00:00:23.929] LOG -- avdtp_acceptor.c.583:     -> AVDTP_STREAM_ENDPOINT_CONFIGURED
+[00:00:23.931] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.932] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.933] LOG -- l2cap.c.1314: l2cap_send_prepared cid 0x42, handle 76, 1 credit used
+[00:00:23.935] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.936] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.938] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.939] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.941] ACL => 4C 00 06 00 02 00 41 00 22 03 
+[00:00:23.942] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.944] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.946] EVT <= 6E 00 
+[00:00:23.946] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.948] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.950] ACL <= 4C 20 0C 00 08 00 01 00 04 1C 04 00 43 00 00 00 
+[00:00:23.952] LOG -- l2cap.c.2856: L2CAP signaling handler code 4, state 11
+[00:00:23.954] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.955] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.957] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.958] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:23.959] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:23.961] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:23.962] ACL => 4C 00 0E 00 0A 00 01 00 05 1C 06 00 42 00 00 00 00 00 
+[00:00:23.965] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:23.966] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:23.968] EVT <= 6E 00 
+[00:00:23.969] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:23.970] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:23.972] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.973] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.974] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:23.976] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.978] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.979] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:23.981] EVT <= 13 05 01 4C 00 01 00 
+[00:00:23.982] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.983] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:23.986] ACL <= 4C 20 0E 00 0A 00 01 00 05 03 06 00 43 00 00 00 00 00 
+[00:00:23.989] LOG -- l2cap.c.2856: L2CAP signaling handler code 5, state 11
+[00:00:23.990] LOG -- l2cap.c.1246: l2cap_stop_rtx for local cid 0x43
+[00:00:23.991] LOG -- l2cap.c.2786: l2cap_signaling_handle_configure_response
+[00:00:23.993] LOG -- l2cap.c.1052: L2CAP_EVENT_CHANNEL_OPENED status 0x0 addr A8:93:4A:2F:75:52 handle 0x4c psm 0x17 local_cid 0x43 remote_cid 0x42 local_mtu 1691, remote_mtu 672, flush_timeout 0
+[00:00:23.996] EVT <= 70 18 00 52 75 2F 4A 93 A8 4C 00 17 00 43 00 42 00 9B 06 A0 02 00 00 01 00 00 
+[00:00:23.999] LOG -- avrcp.c.696: L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x01, l2cap_signaling_cid 0x43, role 1, state 6
+[00:00:24.001] LOG -- avrcp.c.696: L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x01, l2cap_signaling_cid 0x43, role 0, state 6
+AVRCP: Connected to A8:93:4A:2F:75:52, cid 0x01
+[00:00:24.004] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:24.006] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x43
+[00:00:24.007] EVT <= 78 02 43 00 
+[00:00:24.008] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:24.009] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:24.011] LOG -- l2cap.c.1314: l2cap_send_prepared cid 0x43, handle 76, 1 credit used
+[00:00:24.012] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:24.014] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:24.015] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:24.017] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:24.018] ACL => 4C 00 16 00 12 00 42 00 10 11 0E 03 48 00 00 19 58 31 00 00 05 01 00 00 00 01 
+[00:00:24.021] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:24.023] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:24.024] EVT <= 6E 00 
+[00:00:24.025] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.026] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x43
+[00:00:24.028] EVT <= 78 02 43 00 
+[00:00:24.029] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.030] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.032] LOG -- l2cap.c.1314: l2cap_send_prepared cid 0x43, handle 76, 1 credit used
+[00:00:24.033] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.035] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:24.036] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:24.037] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:24.039] ACL => 4C 00 16 00 12 00 42 00 20 11 0E 03 48 00 00 19 58 31 00 00 05 02 00 00 00 01 
+[00:00:24.042] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:24.044] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:24.045] EVT <= 6E 00 
+[00:00:24.046] ACL <= 4C 20 07 00 03 00 42 00 30 06 04 
+[00:00:24.048] LOG -- avdtp_acceptor.c.364: AVDTP_STREAM_ENDPOINT_W2_ANSWER_OPEN_STREAM
+[00:00:24.050] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.051] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x42
+[00:00:24.053] EVT <= 78 02 42 00 
+[00:00:24.053] LOG -- avdtp.c.1024: avdtp_packet_handler, L2CAP_EVENT_CAN_SEND_NOW l2cap_cid 0x42
+[00:00:24.055] LOG -- avdtp.c.449: avdtp_packet_handler, L2CAP_EVENT_CAN_SEND_NOW l2cap_cid 0x42
+[00:00:24.057] LOG -- avdtp.c.456: call avdtp_acceptor_stream_config_subsm_run 0x20003dd4
+[00:00:24.059] LOG -- avdtp_acceptor.c.614: DONE
+[00:00:24.060] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.061] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.062] LOG -- l2cap.c.1314: l2cap_send_prepared cid 0x42, handle 76, 1 credit used
+[00:00:24.064] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.066] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:24.067] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:24.068] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:24.070] ACL => 4C 00 06 00 02 00 41 00 32 06 
+[00:00:24.072] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:24.073] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:24.075] EVT <= 6E 00 
+[00:00:24.076] EVT <= 13 05 01 4C 00 01 00 
+[00:00:24.078] EVT <= 13 05 01 4C 00 01 00 
+[00:00:24.081] ACL <= 4C 20 12 00 0E 00 43 00 00 11 0E 01 48 00 00 19 58 10 00 00 01 03 
+[00:00:24.084] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.085] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x43
+[00:00:24.087] EVT <= 78 02 43 00 
+[00:00:24.088] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.089] LOG -- l2cap.c.1314: l2cap_send_prepared cid 0x43, handle 76, 1 credit used
+[00:00:24.091] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.092] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:24.093] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:24.095] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:24.097] ACL => 4C 00 16 00 12 00 42 00 02 11 0E 0C 48 00 00 19 58 10 00 00 05 03 03 01 02 0D 
+[00:00:24.099] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:24.101] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:24.103] EVT <= 6E 00 
+[00:00:24.103] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.105] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x43
+[00:00:24.106] EVT <= 78 02 43 00 
+[00:00:24.109] ACL <= 4C 20 13 00 0F 00 43 00 12 11 0E 0F 48 00 00 19 58 31 00 00 02 01 00 
+[00:00:24.112] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.113] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x43
+[00:00:24.115] EVT <= 78 02 43 00 
+[00:00:24.115] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.117] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.118] LOG -- l2cap.c.1314: l2cap_send_prepared cid 0x43, handle 76, 1 credit used
+[00:00:24.120] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.121] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:24.122] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:24.124] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:24.126] ACL => 4C 00 16 00 12 00 42 00 30 11 0E 03 48 00 00 19 58 31 00 00 05 09 00 00 00 01 
+[00:00:24.128] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:24.130] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:24.132] EVT <= 6E 00 
+[00:00:24.133] EVT <= 13 05 01 4C 00 01 00 
+[00:00:24.135] EVT <= 13 05 01 4C 00 01 00 
+[00:00:24.139] ACL <= 4C 20 1A 00 16 00 43 00 22 11 0E 0F 48 00 00 19 58 31 00 00 09 02 FF FF FF FF FF FF FF FF 
+[00:00:24.144] ACL <= 4C 20 0C 00 08 00 01 00 02 1D 04 00 19 00 43 00 
+[00:00:24.146] LOG -- l2cap.c.1997: create channel 0x200036d4, local_cid 0x0044
+[00:00:24.147] LOG -- l2cap.c.1087: L2CAP_EVENT_INCOMING_CONNECTION addr A8:93:4A:2F:75:52 handle 0x4c psm 0x19 local_cid 0x44 remote_cid 0x43
+[00:00:24.150] EVT <= 72 0E 52 75 2F 4A 93 A8 4C 00 19 00 44 00 43 00 
+[00:00:24.151] LOG -- avdtp.c.870: incoming: A8:93:4A:2F:75:52, outoing_signaling_active 1, accept_streaming_connection 1
+[00:00:24.154] LOG -- l2cap.c.2645: L2CAP_ACCEPT_CONNECTION local_cid 0x44
+[00:00:24.155] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.156] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.158] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.159] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:24.160] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:24.162] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:24.164] ACL => 4C 00 10 00 0C 00 01 00 03 1D 08 00 44 00 43 00 00 00 00 00 
+[00:00:24.166] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:24.168] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:24.169] EVT <= 6E 00 
+[00:00:24.170] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.171] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.173] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.174] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:24.175] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:24.177] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:24.179] ACL => 4C 00 10 00 0C 00 01 00 04 04 08 00 43 00 00 00 01 02 9B 06 
+[00:00:24.181] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:24.183] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:24.184] LOG -- l2cap.c.1246: l2cap_stop_rtx for local cid 0x44
+[00:00:24.185] LOG -- l2cap.c.1255: l2cap_start_rtx for local cid 0x44
+[00:00:24.187] EVT <= 6E 00 
+[00:00:24.188] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:24.189] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:24.192] ACL <= 4C 20 16 00 12 00 43 00 10 11 0E 03 48 00 00 19 58 31 00 00 05 0D 00 00 00 00 
+[00:00:24.195] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:24.196] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x43
+[00:00:24.198] EVT <= 78 02 43 00 
+[00:00:24.199] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:24.200] LOG -- l2cap.c.1314: l2cap_send_prepared cid 0x43, handle 76, 1 credit used
+[00:00:24.202] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:24.203] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:24.204] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:24.206] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:24.208] ACL => 4C 00 13 00 0F 00 42 00 12 11 0E 0F 48 00 00 19 58 31 00 00 02 0D 00 
+[00:00:24.210] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:24.212] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:24.213] EVT <= 6E 00 
+[00:00:24.214] LOG -- hci.c.539: ACL classic buffers: 4 used of 10
+[00:00:24.216] LOG -- hci.c.539: ACL classic buffers: 4 used of 10
+[00:00:24.217] LOG -- l2cap.c.1026: L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x43
+[00:00:24.218] EVT <= 78 02 43 00 
+[00:00:24.219] LOG -- hci.c.539: ACL classic buffers: 4 used of 10
+[00:00:24.221] EVT <= 13 05 01 4C 00 01 00 
+[00:00:24.222] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:24.224] LOG -- hci.c.539: ACL classic buffers: 3 used of 10
+[00:00:24.226] EVT <= 13 05 01 4C 00 01 00 
+[00:00:24.227] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.228] LOG -- hci.c.539: ACL classic buffers: 2 used of 10
+[00:00:24.230] EVT <= 13 05 01 4C 00 01 00 
+[00:00:24.232] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.233] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.235] EVT <= 13 05 01 4C 00 01 00 
+[00:00:24.236] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:24.238] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:24.241] ACL <= 4C 20 12 00 0E 00 43 00 32 11 0E 0F 48 00 00 19 58 31 00 00 01 09 
+[00:00:24.243] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:24.247] ACL <= 4C 20 10 00 0C 00 01 00 04 1E 08 00 44 00 00 00 02 02 60 00 
+[00:00:24.249] LOG -- l2cap.c.2856: L2CAP signaling handler code 4, state 11
+[00:00:24.250] LOG -- l2cap.c.2711: Flush timeout: 96 ms
+[00:00:24.251] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:24.253] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:24.254] LOG -- hci.c.539: ACL classic buffers: 0 used of 10
+[00:00:24.255] LOG -- hci.c.731: hci_send_acl_packet_fragments entered
+[00:00:24.257] LOG -- hci.c.737: hci_send_acl_packet_fragments loop entered
+[00:00:24.258] LOG -- hci.c.762: hci_send_acl_packet_fragments loop before send (more fragments 0)
+[00:00:24.260] ACL => 4C 00 0E 00 0A 00 01 00 05 1E 06 00 43 00 00 00 00 00 
+[00:00:24.262] LOG -- hci.c.781: hci_send_acl_packet_fragments loop after send (more fragments 0)
+[00:00:24.264] LOG -- hci.c.790: hci_send_acl_packet_fragments loop over
+[00:00:24.265] EVT <= 6E 00 
+[00:00:24.266] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.267] LOG -- hci.c.539: ACL classic buffers: 1 used of 10
+[00:00:24.270] ACL <= 4C 20 0E 00 0A 00 01 00 05 04 06 00 44 00 00 00 00 00 
+[00:00:24.272] LOG -- l2cap.c.2856: L2CAP signaling handler code 5, state 11
+[00:00:24.274] LOG -- l2cap.c.1246: l2cap_stop_rtx for local cid 0x44
+[00:00:24.275] LOG -- l2cap.c.2786: l2cap_signaling_handle_configure_response
+[00:00:24.277] LOG -- l2cap.c.1052: L2CAP_EVENT_CHANNEL_OPENED status 0x0 addr A8:93:4A:2F:75:52 handle 0x4c psm 0x19 local_cid 0x44 remote_cid 0x43 local_mtu 1691, remote_mtu 672, flush_timeout 96
+[00:00:24.280] EVT <= 70 18 00 52 75 2F 4A 93 A8 4C 00 19 00 44 00 43 00 9B 06 A0 02 60 00 01 00 00 
+[00:00:24.283] LOG -- avdtp.c.966: AVDTP_STREAM_ENDPOINT_OPENED, avdtp cid 0x01, l2cap_media_cid 0x44, local seid 1, remote seid 52
+[00:00:24.285] LOG -- a2dp_sink.c.286: A2DP streaming connection established --- avdtp_cid 0x01, local seid 1, remote seid 52
+A2DP  Sink      : Streaming connection is established, address A8:93:4A:2F:75:52, cid 0x01, local seid 1
+[00:00:24.301] EVT <= 13 05 01 4C 00 01 00 
+[00:00:24.304] EVT <= 0D 15 00 4C 00 00 01 00 00 00 00 00 00 00 00 A8 61 00 00 FF FF FF FF 
+[00:00:24.632] EVT <= 38 04 4C 00 80 3E 

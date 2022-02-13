@@ -1,0 +1,45 @@
+[ESMDbInformation]
+{ID,Description,Value}
+[ESMConnect]
+{ID,ConnType,Parent,Statistics,StartFrame,EndFrame}
+1,ACL,-1,1,61,0
+2,L2CAP,1,1,67,103
+3,L2CAP,1,2,106,0
+4,A2DP,3,1,114,0
+5,L2CAP,1,3,123,0
+6,L2CAP,1,4,149,0
+7,A2DP,6,2,161,0
+[ESMACL]
+{ID,DeviceA,DeviceB,AddrType,Handle,Active,Errors,Interface}
+1,FF:FF:FF:FF:FF:FF,A8:93:4A:2F:75:52,BR_EDR,4c,1,0,14
+[ESMSCO]
+{ID,Type,Air Mode,Handle,Active,Errors}
+[ESML2cap]
+{ID,SrcCID,DestCID,ExtFeat,Mode,TxMtu,RxMtu,LocalPSM,RemotePSM,DataTx,DataRx,TxMps,RxMps,TxWindow,RxWindow,NumRetran,Active,Errors}
+1,40,41,"",Basic,1024,1691,0,1,0,0,0,0,0,0,0,0,1
+2,41,42,"",Basic,672,1691,0,25,0,0,0,0,0,0,0,1,3
+3,42,43,"",Basic,672,1691,0,23,0,0,0,0,0,0,0,1,3
+4,43,44,"",Basic,672,1691,0,25,0,0,0,0,0,0,0,1,3
+[ESMAudio]
+{ID,Signal ID,Source ID,Sink ID,ChannelType,StreamState,StateTimestamp,CodecType,Average Bitpool,Bitrate (Kbps),Optimal Bitrate (Kbps),NumFrames,StreamBytes,Errors}
+1,0,0,0,Signal,Open,132892583739440000,"",0,0,0,8,46,0
+2,1,1,52,Stream,Open,132892583744720000,SBC,0,0,0,0,0,0
+[ESMDevice]
+{ID,Address}
+1,FF:FF:FF:FF:FF:FF
+2,00:02:5B:00:A5:A5
+3,A8:93:4A:2F:75:52
+[ESMEvent]
+{ID,ErrorID,Frames,Timestamp,SolutionID,ConnID,Detail}
+1,1005,6,132892583515110000,10004,-1,""
+2,1005,21,132892583524290000,10004,-1,""
+3,1006,103,132892583738080000,10012,2,""
+4,1001,109,132892583739280000,10001,3,""
+5,1002,110,132892583739440000,10001,3,WARNING: L2CAP Configuration Response does not confirm local MTU : 672
+6,1002,114,132892583739590000,10001,3,WARNING: L2CAP Configuration Response does not confirm local MTU : 1691
+7,1001,130,132892583741700000,10001,5,""
+8,1002,131,132892583741700000,10001,5,WARNING: L2CAP Configuration Response does not confirm local MTU : 672
+9,1002,135,132892583742000000,10001,5,WARNING: L2CAP Configuration Response does not confirm local MTU : 1691
+10,1001,159,132892583744570000,10001,6,""
+11,1002,160,132892583744720000,10001,6,WARNING: L2CAP Configuration Response does not confirm local MTU : 672
+12,1002,161,132892583744870000,10001,6,WARNING: L2CAP Configuration Response does not confirm local MTU : 1691
