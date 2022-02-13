@@ -34,7 +34,7 @@ extern UART_HandleTypeDef huart3;
 //
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static const hci_transport_config_uart_t config = {
+static const hci_transport_config_uart_t config = {                                                                                                                                       
 	HCI_TRANSPORT_CONFIG_UART,
     115200,
     0,
@@ -98,28 +98,6 @@ static void dummy_handler(void){};
 
 #if 1
 void hal_uart_dma_set_sleep(uint8_t sleep){
-#if 0
-	// RTS is on PD12 - manually set it during sleep
-	GPIO_InitTypeDef RTS_InitStruct;
-	RTS_InitStruct.Pin = GPIO_PIN_12;
-    RTS_InitStruct.Pull = GPIO_NOPULL;
-    RTS_InitStruct.Alternate = GPIO_AF7_USART3;
-	if (sleep){
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
-		RTS_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	    RTS_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	} else {
-		RTS_InitStruct.Mode = GPIO_MODE_AF_PP;
-	    RTS_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-	}
-
-	HAL_GPIO_Init(GPIOD, &RTS_InitStruct);
-
-//	if (sleep){
-//		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
-//	}
-	hal_uart_needed_during_sleep = !sleep;
-#endif
 }
 #endif
 
@@ -167,41 +145,13 @@ void EXTI15_10_IRQHandler(void){
 	}
 }
 
-#if 1
 void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
-#if 0
-	GPIO_InitTypeDef CTS_InitStruct = {
-		.Pin       = GPIO_PIN_11,
-		.Mode      = GPIO_MODE_AF_PP,
-		.Pull      = GPIO_PULLUP,
-		.Speed     = GPIO_SPEED_FREQ_VERY_HIGH,
-		.Alternate = GPIO_AF7_USART3,
-	};
-
-	if( the_irq_handler )  {
-		/* Configure the EXTI11 interrupt (USART3_CTS is on PD11) */
-		HAL_NVIC_EnableIRQ( EXTI15_10_IRQn );
-		CTS_InitStruct.Mode = GPIO_MODE_IT_RISING;
-		CTS_InitStruct.Pull = GPIO_NOPULL;
-		HAL_GPIO_Init( GPIOD, &CTS_InitStruct );
-		log_info("enabled CTS irq");
-	}
-	else  {
-		CTS_InitStruct.Mode = GPIO_MODE_AF_PP;
-		CTS_InitStruct.Pull = GPIO_PULLUP;
-		HAL_GPIO_Init( GPIOD, &CTS_InitStruct );
-		HAL_NVIC_DisableIRQ( EXTI15_10_IRQn );
-		log_info("disabled CTS irq");
-	}
-    cts_irq_handler = the_irq_handler;
-#endif
 }
-#endif
+
 
 int  hal_uart_dma_set_baud(uint32_t baud){
 	huart2.Init.BaudRate = baud;
 	HAL_UART_Init(&huart2);
-	//HAL_Delay( 500 );
 	return 0;
 }
 
@@ -236,9 +186,6 @@ int _write(int file, char *ptr, int len){
 	int i;
     
 	if (file == STDOUT_FILENO || file == STDERR_FILENO) {
-		//HAL_UART_Transmit_DMA( &huart1, (uint8_t *) ptr, len);
-		//HAL_UART_Transmit( &huart1, &cr, 1, HAL_MAX_DELAY );
-		//HAL_UART_Transmit_DMA( &huart1, (uint8_t *) cn, strlen(cn));
 #if 1
 		for (i = 0; i < len; i++) {
 			if (ptr[i] == '\n') {
@@ -329,8 +276,8 @@ static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 static hal_flash_bank_stm32_t   hal_flash_bank_context;
 
 #define HAL_FLASH_PAGE_SIZE   (2 * 1024)	    //page size
-#define HAL_FLASH_PAGE_0_ID   100               //page0 id
-#define HAL_FLASH_PAGE_1_ID   101               //page1 id
+#define HAL_FLASH_PAGE_0_ID   200               //page0 id
+#define HAL_FLASH_PAGE_1_ID   201               //page1 id
 //#define HAL_FLASH_PAGE_0_ADDR 0x08032000      (FLASH_BASE + HAL_FLASH_PAGE_0_ID * HAL_FLASH_PAGE_SIZE)//flash page0 start address
 //#define HAL_FLASH_PAGE_1_ADDR 0x08032800	    (FLASH_BASE + HAL_FLASH_PAGE_0_ID * HAL_FLASH_PAGE_SIZE)//flash page1 start address
 #endif

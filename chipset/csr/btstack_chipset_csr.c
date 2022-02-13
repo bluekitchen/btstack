@@ -177,7 +177,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 }
 
 
-static const btstack_chipset_t btstack_chipset_bcm = {
+static const btstack_chipset_t btstack_chipset_csr = {
     "CSR",
     chipset_init,
     chipset_next_command,
@@ -187,32 +187,5 @@ static const btstack_chipset_t btstack_chipset_bcm = {
 
 // MARK: public API
 const btstack_chipset_t * btstack_chipset_csr_instance(void){
-    return &btstack_chipset_bcm;
-}
-
-/** 
- * Set BD ADDR before HCI POWER_ON
- * @param bd_addr
- */
-void btstack_chipset_csr_set_bd_addr(bd_addr_t new_bd_addr){
-    set_bd_addr = 1;
-    memcpy(bd_addr, new_bd_addr, 6);
-}
-
-void (*set_bd_addr_command)(bd_addr_t addr, uint8_t *hci_cmd_buffer);
-
-static uint8_t pskey_baud_921600[] = {0x00, 0xFC, 0x15, 0xc2, 0x02, 0x00, 0x0a, 0x00, 0x02, 0x00, 0x03, 0x70, 0x00, 0x00, 0xea, 0x01, 0x02, 0x00, 0x08, 0x00, 0x0E, 0x00, 0x00, 0x10};
-static uint8_t pskey_baud_115200[] = {0x00, 0xFC, 0x15, 0xc2, 0x02, 0x00, 0x0a, 0x00, 0x02, 0x00, 0x03, 0x70, 0x00, 0x00, 0xea, 0x01, 0x02, 0x00, 0x08, 0x00, 0x01, 0x00, 0x00, 0xc2};
-void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer)
-{
-    if (NULL == hci_cmd_buffer) {
-        return;
-    }
-    if (921600 == baudrate) {
-        memcpy(hci_cmd_buffer, pskey_baud_921600, sizeof(pskey_baud_921600));
-    } else if (115200 == baudrate) {
-        memcpy(hci_cmd_buffer, pskey_baud_115200, sizeof(pskey_baud_115200));
-    }
-    little_endian_store_16(hci_cmd_buffer, 20, baudrate >> 16);
-    little_endian_store_16(hci_cmd_buffer, 22, baudrate &  0xffff);
+    return &btstack_chipset_csr;
 }
