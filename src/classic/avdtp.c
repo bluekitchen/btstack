@@ -1323,7 +1323,8 @@ uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
 }
 
 
-uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
+uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_role_t role) {
+    UNUSED(role);
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

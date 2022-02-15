@@ -647,7 +647,7 @@ uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
 uint8_t avdtp_discover_stream_endpoints(uint16_t avdtp_cid);
 uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid);
-uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid);
+uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_role_t role);
 uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid);
 uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
