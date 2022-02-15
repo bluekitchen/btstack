@@ -437,10 +437,15 @@ static void obex_srm_init(obex_srm_t * obex_srm){
     obex_srm->srm_value = OBEX_SRM_DISABLE;
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
 }
+static void pbap_client_yml_append_character(yxml_t * xml_parser, char * buffer, uint16_t buffer_size){
+    // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
+    uint16_t char_len = strlen(xml_parser->data);
+    if ((strlen(buffer) + char_len + 1) >= buffer_size) return;
+    strcat(buffer, xml_parser->data);
+}
 
 static void pbap_client_process_vcard_list_body(const uint8_t * data, uint16_t data_len){
     while (data_len--) {
-        uint16_t char_len;
         yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
         switch (r) {
             case YXML_ELEMSTART:
@@ -468,21 +473,15 @@ static void pbap_client_process_vcard_list_body(const uint8_t * data, uint16_t d
                 break;
             case YXML_ATTRVAL:
                 if (pbap_client->parser_name_found) {
-                    // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                    char_len = strlen(pbap_client->xml_parser.data);
-                    if ((strlen(pbap_client->parser_name) + char_len + 1) >=
-                        sizeof(pbap_client->parser_name))
-                        break;
-                    strcat(pbap_client->parser_name, pbap_client->xml_parser.data);
+                    pbap_client_yml_append_character(&pbap_client->xml_parser,
+                                                     pbap_client->parser_name,
+                                                     sizeof(pbap_client->parser_name));
                     break;
                 }
                 if (pbap_client->parser_handle_found) {
-                    // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                    char_len = strlen(pbap_client->xml_parser.data);
-                    if ((strlen(pbap_client->parser_handle) + char_len + 1) >=
-                        sizeof(pbap_client->parser_handle))
-                        break;
-                    strcat(pbap_client->parser_handle, pbap_client->xml_parser.data);
+                    pbap_client_yml_append_character(&pbap_client->xml_parser,
+                                                     pbap_client->parser_handle,
+                                                     sizeof(pbap_client->parser_handle));
                     break;
                 }
                 break;
