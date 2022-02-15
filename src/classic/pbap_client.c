@@ -440,8 +440,12 @@ static void obex_srm_init(obex_srm_t * obex_srm){
 static void pbap_client_yml_append_character(yxml_t * xml_parser, char * buffer, uint16_t buffer_size){
     // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
     uint16_t char_len = strlen(xml_parser->data);
-    if ((strlen(buffer) + char_len + 1) >= buffer_size) return;
-    strcat(buffer, xml_parser->data);
+    btstack_assert(char_len <= 4);
+    uint16_t dest_len = strlen(buffer);
+    uint16_t zero_pos = dest_len + char_len;
+    if (zero_pos >= buffer_size) return;
+    memcpy(&buffer[dest_len], xml_parser->data, char_len);
+    buffer[zero_pos] = '\0';
 }
 
 static void pbap_client_process_vcard_list_body(const uint8_t * data, uint16_t data_len){
