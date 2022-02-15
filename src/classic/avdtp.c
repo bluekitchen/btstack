@@ -281,8 +281,14 @@ static void avdtp_handle_start_sdp_client_query(void * context){
                 connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE;
                 break;
             case AVDTP_SIGNALING_CONNECTION_OPENED:
-                if (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_SDP_QUERY_THEN_GET_ALL_CAPABILITIES) continue;
-                connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SDP_QUERY_COMPLETE_THEN_GET_ALL_CAPABILITIES;
+                switch (connection->initiator_connection_state ){
+                    case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_SDP_QUERY_THEN_GET_ALL_CAPABILITIES_FROM_REMOTE_SINK:
+                    case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_SDP_QUERY_THEN_GET_ALL_CAPABILITIES_FROM_REMOTE_SOURCE:
+                        connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SDP_QUERY_COMPLETE_THEN_GET_ALL_CAPABILITIES;
+                        break;
+                    default:
+                        continue;
+                }
                 break;
             default:
                 continue;
@@ -1324,7 +1330,6 @@ uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
 
 
 uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_role_t role) {
-    UNUSED(role);
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1338,7 +1343,17 @@ uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdt
     connection->initiator_remote_seid = remote_seid;
     
     if (connection->avdtp_version == 0){
-        connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_SDP_QUERY_THEN_GET_ALL_CAPABILITIES;
+        switch(role){
+            case AVDTP_ROLE_SINK:
+                connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_SDP_QUERY_THEN_GET_ALL_CAPABILITIES_FROM_REMOTE_SOURCE;
+                break;
+            case AVDTP_ROLE_SOURCE:
+                connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_SDP_QUERY_THEN_GET_ALL_CAPABILITIES_FROM_REMOTE_SINK;
+                break;
+            default:
+                btstack_unreachable();
+                break;
+        }
         avdtp_handle_sdp_client_query_request.callback = &avdtp_handle_start_sdp_client_query;
         // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
         (void) sdp_client_register_query_callback(&avdtp_handle_sdp_client_query_request);
