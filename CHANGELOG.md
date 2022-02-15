@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Chipset: use da145xx in folder/file/function names for these SoCs
-
+- AVDTP: use BLUETOOTH_SERVICE_CLASS_AUDIO_SINK / SOURCE instead of BLUETOOTH_PROTOCOL_AVDTP in SDP queries
 
 ## Release v1.5.1
 
