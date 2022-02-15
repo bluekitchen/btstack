@@ -57,8 +57,7 @@ static mesh_model_t                 mesh_vendor_model;
 static mesh_model_t                 mesh_generic_on_off_server_model;
 static mesh_generic_on_off_state_t  mesh_generic_on_off_state;
 
-static char gap_name_buffer[30];
-static char gap_name_prefix[] = "Mesh ";
+static char gap_name_buffer[] = "Mesh 00:00:00:00:00:00";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -74,10 +73,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     switch (hci_event_packet_get_type(packet)) {
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            // setup gap name
+            // setup gap name from local address
             gap_local_bd_addr(addr);
-            strcpy(gap_name_buffer, gap_name_prefix);
-            strcat(gap_name_buffer, bd_addr_to_str(addr));
+            btstack_replace_bd_addr_placeholder((uint8_t*)gap_name_buffer, sizeof(gap_name_buffer), addr);
             break;
         default:
             break;
