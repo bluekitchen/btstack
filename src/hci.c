@@ -1608,10 +1608,6 @@ static void hci_initializing_run(void){
             break;
 
 #ifndef HAVE_HOST_CONTROLLER_API
-        case HCI_INIT_SEND_READ_LOCAL_NAME:
-            hci_send_cmd(&hci_read_local_name);
-            hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_NAME;
-            break;
         case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
             hci_state_reset();
             // prepare reset if command complete not received in 100ms
@@ -1642,6 +1638,14 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3u + hci_stack->hci_packet_buffer[2u]);
             break;
+        case HCI_INIT_SEND_READ_LOCAL_NAME:
+#ifdef ENABLE_CLASSIC
+            hci_send_cmd(&hci_read_local_name);
+            hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_NAME;
+            break;
+#endif
+            /* fall through */
+
         case HCI_INIT_SEND_BAUD_CHANGE:
             if (need_baud_change) {
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
