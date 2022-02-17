@@ -296,7 +296,7 @@ typedef enum {
     HCI_OPCODE_HCI_LE_SET_DEFAULT_PERIODIC_ADVERTISING_SYNC_TRANSFER_PARAMETERS = HCI_OPCODE (OGF_LE_CONTROLLER, 0x5d),
     HCI_OPCODE_HCI_LE_GENERATE_DHKEY_V2 = HCI_OPCODE (OGF_LE_CONTROLLER, 0x5e),
     HCI_OPCODE_HCI_LE_MODIFY_SLEEP_CLOCK_ACCURACY = HCI_OPCODE (OGF_LE_CONTROLLER, 0x5f),
-    HCI_OPCODE_HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE_V2 = HCI_OPCODE (OGF_LE_CONTROLLER, 0x60),
+    HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE_V2 = HCI_OPCODE (OGF_LE_CONTROLLER, 0x60),
     HCI_OPCODE_HCI_LE_READ_ISO_TX_SYNC = HCI_OPCODE (OGF_LE_CONTROLLER, 0x61),
     HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS = HCI_OPCODE (OGF_LE_CONTROLLER, 0x62),
     HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS_TEST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x63),
@@ -473,6 +473,7 @@ extern const hci_cmd_t hci_le_rand;
 extern const hci_cmd_t hci_le_read_advertising_channel_tx_power;
 extern const hci_cmd_t hci_le_read_antenna_information;
 extern const hci_cmd_t hci_le_read_buffer_size;
+extern const hci_cmd_t hci_le_read_buffer_size_v2;
 extern const hci_cmd_t hci_le_read_channel_map;
 extern const hci_cmd_t hci_le_read_iso_link_quality;
 extern const hci_cmd_t hci_le_read_iso_tx_sync;

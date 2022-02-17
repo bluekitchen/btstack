@@ -2027,8 +2027,8 @@ const hci_cmd_t hci_le_modify_sleep_clock_accuracy = {
 
 /**
  */
-const hci_cmd_t hci_opcode_hci_le_read_buffer_size_v2 = {
-    HCI_OPCODE_HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE_V2, ""
+const hci_cmd_t hci_le_read_buffer_size_v2 = {
+        HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE_V2, ""
 };
 
 /**
