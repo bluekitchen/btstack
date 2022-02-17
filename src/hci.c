@@ -2194,10 +2194,10 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 
 static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status){
     // CC2564C might emit Connection Complete for rejected incoming SCO connection
-    // To prevent accidentally free'ing the CHI connection for the ACL connection,
-    // check if the hci connection has been outgoing
+    // To prevent accidentally free'ing the HCI connection for the ACL connection,
+    // check if we have been aware of the HCI connection
     switch (conn->state){
-        case SEND_CREATE_CONNECTION:
+        case SENT_CREATE_CONNECTION:
         case RECEIVED_CONNECTION_REQUEST:
             break;
         default:

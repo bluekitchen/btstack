@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - POSIX: fix RTS/CTS configuration by keeping local termios copy in btstack_uart_posix
+- HCI: fix handling of HCI Connection Complete with error (regression introduced in v1.5.1)
 - GAP: disable scanning, advertising, connection before updating random address
 - GAP: fix LE Scan with whitelist
 - HFP_AG: fix tracking for call dropped during outgoing ringing
