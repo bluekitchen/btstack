@@ -602,10 +602,10 @@ static inline uint8_t hci_event_hardware_error_get_hardware_code(const uint8_t *
  * @brief Get field handle from event HCI_EVENT_FLUSH_OCCURRED
  * @param event packet
  * @return handle
- * @note: btstack_type 1
+ * @note: btstack_type H
  */
-static inline uint8_t hci_event_flush_occurred_get_handle(const uint8_t * event){
-    return event[2];
+static inline hci_con_handle_t hci_event_flush_occurred_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
 }
 
 /**

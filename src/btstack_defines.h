@@ -378,7 +378,7 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_HARDWARE_ERROR                           0x10u
 
 /**
- * @format 1H
+ * @format H
  * @param handle
  */
 #define HCI_EVENT_FLUSH_OCCURRED                           0x11u
