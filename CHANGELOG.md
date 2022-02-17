@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 ### Fixed
+- HCI: fix handling of HCI Connection Complete with error (regression introduced in v1.5.1)
+
 ### Changed
 
 
