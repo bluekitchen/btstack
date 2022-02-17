@@ -154,6 +154,7 @@
     X( SUPPORTED_HCI_COMMAND_LE_SET_ADDRESS_RESOLUTION_ENABLE      , 35, 1) \
     X( SUPPORTED_HCI_COMMAND_LE_SET_DEFAULT_PHY                    , 35, 5) \
     X( SUPPORTED_HCI_COMMAND_LE_SET_EXTENDED_ADVERTISING_ENABLE    , 36, 6) \
+    X( SUPPORTED_HCI_COMMAND_LE_READ_BUFFER_SIZE_V2                , 41, 5) \
 
 // enumerate supported commands
 #define X(name, offset, bit) name,
@@ -1880,7 +1881,11 @@ static void hci_initializing_run(void){
         case HCI_INIT_LE_READ_BUFFER_SIZE:
             if (hci_le_supported()){
                 hci_stack->substate = HCI_INIT_W4_LE_READ_BUFFER_SIZE;
-                hci_send_cmd(&hci_le_read_buffer_size);
+                if (hci_command_supported(SUPPORTED_HCI_COMMAND_LE_READ_BUFFER_SIZE_V2)){
+                    hci_send_cmd(&hci_le_read_buffer_size_v2);
+                } else {
+                    hci_send_cmd(&hci_le_read_buffer_size);
+                }
                 break;
             }
 
@@ -2400,6 +2405,14 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             }
             break;
 #ifdef ENABLE_BLE
+        case HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE_V2:
+            hci_stack->le_iso_packets_length = little_endian_read_16(packet, 9);
+            hci_stack->le_iso_packets_total_num = packet[11];
+            log_info("hci_le_read_buffer_size_v2: iso size %u, iso count %u",
+                     hci_stack->le_iso_packets_length, hci_stack->le_iso_packets_total_num);
+
+            /* fall through */
+
         case HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE:
             hci_stack->le_data_packets_length = little_endian_read_16(packet, 6);
             hci_stack->le_acl_packets_total_num = packet[8];
@@ -2407,7 +2420,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             if (HCI_ACL_PAYLOAD_SIZE < hci_stack->le_data_packets_length){
                 hci_stack->le_data_packets_length = HCI_ACL_PAYLOAD_SIZE;
             }
-            log_info("hci_le_read_buffer_size: size %u, count %u", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
+            log_info("hci_le_read_buffer_size: acl size %u, acl count %u", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
             break;
 #endif
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION

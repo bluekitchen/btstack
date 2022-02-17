@@ -945,6 +945,8 @@ typedef struct {
     uint8_t  synchronous_flow_control_enabled;
     uint8_t  le_acl_packets_total_num;
     uint16_t le_data_packets_length;
+    uint8_t  le_iso_packets_total_num;
+    uint16_t le_iso_packets_length;
     uint8_t  sco_waiting_for_can_send_now;
     bool     sco_can_send_now;
 
