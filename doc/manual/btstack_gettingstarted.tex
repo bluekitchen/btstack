@@ -1,4 +1,4 @@
-\UseRawInputEncoding
+\noexpand\UseRawInputEncoding
 \documentclass[a4paper,titlepage,oneside,12pt]{amsart} %amsart
 \usepackage{graphicx}
 \usepackage[colorlinks=true]{hyperref}
@@ -8,6 +8,7 @@
 % \geometry{landscape} % rotated page geometry
 \usepackage{ifthen}
 \usepackage{longtable}
+\usepackage{calc,array}
 
 % See the ``Article customise'' template for come common customisations
 \usepackage[usenames,dvipsnames]{color}
@@ -81,7 +82,7 @@ morekeywords={*, btstack_timer_source_t, btstack_data_source_t, uint32_t, uint16
 \makeatletter
 \renewcommand{\maketitle}{
   \begin{titlepage}
-    \fosfamily
+    %\fosfamily
     \begin{center}
     \begin{minipage}[b]{\textwidth}
         \begin{minipage}[b]{.1\textwidth}
