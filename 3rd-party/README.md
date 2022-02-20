@@ -6,6 +6,8 @@ Library                                                                         
 ----------------------------------------------------------------------------------------------------------------|----------|---------------|------------------|----------
 [Android SBC Codec](https://android.googlesource.com/platform/external/bluetooth/bluedroid/+/master/embdrv/sbc) | e8c3d75b | Apache 2.0    | HFP WBS, A2DP    | optimized audio codec
 [hxcmod-player](https://github.com/jfdelnero/HxCModPlayer)                                                      | 03d495c8 | Public Domain | A2DP Source Demo | mod music player
+[kiss-fft](https://github.com/mborgerding/kissfft)                                                              | 131.1.0  | BSD 2-Clause  | LE Audio         | FFT library
+[EHIMA LC3 Codec](https://github.com/zephyrproject-rtos/liblc3codec)                                            | 6e8ad0bd | Apache 2.0    | LE Audio         | audio codec
 [lwIP](http://savannah.nongnu.org/projects/lwip/)                                                               | b3a93941 | BSD 3-Clause  | PAN Demo         | complete network stack
 [md5](http://openwall.info/wiki/people/solar/software/public-domain-source-code/md5)                            |      1.0 | Public Domain | PBAP             | cryptographic hash function
 [micro-ecc](https://github.com/kmackay/micro-ecc)                                                               | e4d264b5 | BSD 2-Clause  | LE SC, Mesh      | elliptic curve library
