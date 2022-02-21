@@ -1,6 +1,6 @@
 # List of Third-Party Libaries
 
-This folder contains all third-party libarires used by BTstack. The following table lists their source, license type, and what it is used for.
+This folder contains all third-party libraries used by BTstack. The following table lists their source, license type, and what it is used for.
 
 Library                                                                                                         | Version  | License       | Used             | Notes
 ----------------------------------------------------------------------------------------------------------------|----------|---------------|------------------|----------
