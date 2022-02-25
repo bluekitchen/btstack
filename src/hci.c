@@ -150,11 +150,12 @@
     X( SUPPORTED_HCI_COMMAND_WRITE_SECURE_CONNECTIONS_HOST         , 32, 3) \
     X( SUPPORTED_HCI_COMMAND_READ_LOCAL_OOB_EXTENDED_DATA_COMMAND  , 32, 6) \
     X( SUPPORTED_HCI_COMMAND_LE_WRITE_SUGGESTED_DEFAULT_DATA_LENGTH, 34, 0) \
-    X( SUPPORTED_HCI_COMMAND_LE_READ_MAXIMUM_DATA_LENGTH           , 35, 3) \
     X( SUPPORTED_HCI_COMMAND_LE_SET_ADDRESS_RESOLUTION_ENABLE      , 35, 1) \
+    X( SUPPORTED_HCI_COMMAND_LE_READ_MAXIMUM_DATA_LENGTH           , 35, 3) \
     X( SUPPORTED_HCI_COMMAND_LE_SET_DEFAULT_PHY                    , 35, 5) \
     X( SUPPORTED_HCI_COMMAND_LE_SET_EXTENDED_ADVERTISING_ENABLE    , 36, 6) \
     X( SUPPORTED_HCI_COMMAND_LE_READ_BUFFER_SIZE_V2                , 41, 5) \
+    X( SUPPORTED_HCI_COMMAND_SET_MIN_ENCRYPTION_KEY_SIZE           , 45, 7) \
 
 // enumerate supported commands
 #define X(name, offset, bit) name,
@@ -1803,6 +1804,16 @@ static void hci_initializing_run(void){
                 hci_stack->secure_connections_active = true;
                 hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
                 hci_send_cmd(&hci_write_secure_connections_host_support, 1);
+                break;
+            }
+
+            /* fall through */
+
+        case HCI_INIT_SET_MIN_ENCRYPTION_KEY_SIZE:
+            // skip set min encryption key size
+            if (hci_classic_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_SET_MIN_ENCRYPTION_KEY_SIZE)) {
+                hci_stack->substate = HCI_INIT_W4_SET_MIN_ENCRYPTION_KEY_SIZE;
+                hci_send_cmd(&hci_set_min_encryption_key_size, hci_stack->gap_required_encyrption_key_size);
                 break;
             }
 

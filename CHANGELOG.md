@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Chipset: use da145xx in folder/file/function names for these SoCs
+- GAP: set min encryption key size during init, if supported
 - ATT Server: use uint8_t for status returns
 - AVDTP: use BLUETOOTH_SERVICE_CLASS_AUDIO_SINK / SOURCE instead of BLUETOOTH_PROTOCOL_AVDTP in SDP queries
 - libusb, POSIX and Windows ports: use '-' instead of ':' in btstack_BD_ADDR.tlv filename
