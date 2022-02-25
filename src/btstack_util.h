@@ -223,6 +223,14 @@ char * uuid128_to_str(const uint8_t * uuid);
 /**
  * @brief Create human readable represenationt of Bluetooth address
  * @note uses fixed global buffer
+ * @param delimiter
+ * @return pointer to Bluetooth address string
+ */
+char * bd_addr_to_str_with_delimiter(const bd_addr_t addr, char delimiter);
+
+/**
+ * @brief Create human readable represenationt of Bluetooth address
+ * @note uses fixed global buffer
  * @return pointer to Bluetooth address string
  */
 char * bd_addr_to_str(const bd_addr_t addr);
