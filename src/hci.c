@@ -6034,7 +6034,7 @@ void gap_secure_connections_enable(bool enable){
     hci_stack->secure_connections_enable = enable;
 }
 bool gap_secure_connections_active(void){
-    hci_stack->secure_connections_active;
+    return hci_stack->secure_connections_active;
 }
 
 #endif
