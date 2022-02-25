@@ -182,6 +182,13 @@ typedef enum {
     HCI_OPCODE_HCI_WRITE_LE_HOST_SUPPORTED = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x6d),
     HCI_OPCODE_HCI_WRITE_SECURE_CONNECTIONS_HOST_SUPPORT = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x7a),
     HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x7d),
+    HCI_OPCODE_HCI_READ_EXTENDED_PAGE_TIMEOUT = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x7e),
+    HCI_OPCODE_HCI_WRITE_EXTENDED_PAGE_TIMEOUT = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x7f),
+    HCI_OPCODE_HCI_READ_EXTENDED_INQUIRY_LENGTH = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x80),
+    HCI_OPCODE_HCI_WRITE_EXTENDED_INQUIRY_LENGTH = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x81),
+    HCI_OPCODE_HCI_SET_ECOSYSTEM_BASE_INTERVAL = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x82),
+    HCI_OPCODE_HCI_CONFIGURE_DATA_PATH = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x83),
+    HCI_OPCODE_HCI_SET_MIN_ENCRYPTION_KEY_SIZE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x84),
 
     // Testing
     HCI_OPCODE_HCI_READ_LOOPBACK_MODE = HCI_OPCODE (OGF_TESTING, 0x01),
@@ -340,6 +347,7 @@ extern const hci_cmd_t hci_accept_synchronous_connection;
 extern const hci_cmd_t hci_authentication_requested;
 extern const hci_cmd_t hci_change_connection_link_key;
 extern const hci_cmd_t hci_change_connection_packet_type;
+extern const hci_cmd_t hci_configure_data_path;
 extern const hci_cmd_t hci_create_connection;
 extern const hci_cmd_t hci_create_connection_cancel;
 extern const hci_cmd_t hci_delete_stored_link_key;
@@ -347,6 +355,8 @@ extern const hci_cmd_t hci_disconnect;
 extern const hci_cmd_t hci_enable_device_under_test_mode;
 extern const hci_cmd_t hci_enhanced_accept_synchronous_connection;
 extern const hci_cmd_t hci_enhanced_setup_synchronous_connection;
+extern const hci_cmd_t hci_exit_park_state;
+extern const hci_cmd_t hci_exit_periodic_inquiry_mode;
 extern const hci_cmd_t hci_exit_sniff_mode;
 extern const hci_cmd_t hci_flow_specification;
 extern const hci_cmd_t hci_flush;
@@ -359,35 +369,35 @@ extern const hci_cmd_t hci_io_capability_request_reply;
 extern const hci_cmd_t hci_link_key_request_negative_reply;
 extern const hci_cmd_t hci_link_key_request_reply;
 extern const hci_cmd_t hci_park_state;
-extern const hci_cmd_t hci_exit_park_state;
 extern const hci_cmd_t hci_periodic_inquiry_mode;
-extern const hci_cmd_t hci_exit_periodic_inquiry_mode;
 extern const hci_cmd_t hci_pin_code_request_negative_reply;
 extern const hci_cmd_t hci_pin_code_request_reply;
 extern const hci_cmd_t hci_qos_setup;
 extern const hci_cmd_t hci_read_bd_addr;
 extern const hci_cmd_t hci_read_buffer_size;
 extern const hci_cmd_t hci_read_encryption_key_size;
+extern const hci_cmd_t hci_read_extended_inquiry_length;
+extern const hci_cmd_t hci_read_extended_page_timeout;
 extern const hci_cmd_t hci_read_inquiry_scan_activity;
 extern const hci_cmd_t hci_read_le_host_supported;
 extern const hci_cmd_t hci_read_link_policy_settings;
 extern const hci_cmd_t hci_read_link_supervision_timeout;
 extern const hci_cmd_t hci_read_local_extended_oob_data;
 extern const hci_cmd_t hci_read_local_name;
-extern const hci_cmd_t hci_read_page_timeout;
-extern const hci_cmd_t hci_read_page_scan_activity;
-extern const hci_cmd_t hci_read_pin_type;
 extern const hci_cmd_t hci_read_local_oob_data;
 extern const hci_cmd_t hci_read_local_supported_commands;
 extern const hci_cmd_t hci_read_local_supported_features;
 extern const hci_cmd_t hci_read_local_version_information;
 extern const hci_cmd_t hci_read_loopback_mode;
 extern const hci_cmd_t hci_read_num_broadcast_retransmissions;
-extern const hci_cmd_t hci_read_remote_supported_features_command;
+extern const hci_cmd_t hci_read_page_scan_activity;
+extern const hci_cmd_t hci_read_page_timeout;
+extern const hci_cmd_t hci_read_pin_type;
 extern const hci_cmd_t hci_read_remote_extended_features_command;
+extern const hci_cmd_t hci_read_remote_supported_features_command;
 extern const hci_cmd_t hci_read_remote_version_information;
-extern const hci_cmd_t hci_read_transmit_power_level;
 extern const hci_cmd_t hci_read_rssi;
+extern const hci_cmd_t hci_read_transmit_power_level;
 extern const hci_cmd_t hci_reject_connection_request;
 extern const hci_cmd_t hci_remote_name_request;
 extern const hci_cmd_t hci_remote_name_request_cancel;
@@ -398,7 +408,10 @@ extern const hci_cmd_t hci_reset;
 extern const hci_cmd_t hci_role_discovery;
 extern const hci_cmd_t hci_set_connection_encryption;
 extern const hci_cmd_t hci_set_controller_to_host_flow_control;
+extern const hci_cmd_t hci_set_ecosystem_base_interval;
 extern const hci_cmd_t hci_set_event_mask;
+extern const hci_cmd_t hci_set_min_encryption_key_size;
+extern const hci_cmd_t hci_set_min_encryption_key_size;
 extern const hci_cmd_t hci_setup_synchronous_connection;
 extern const hci_cmd_t hci_sniff_mode;
 extern const hci_cmd_t hci_sniff_subrating;
@@ -413,7 +426,9 @@ extern const hci_cmd_t hci_write_class_of_device;
 extern const hci_cmd_t hci_write_current_iac_lap_two_iacs;
 extern const hci_cmd_t hci_write_default_erroneous_data_reporting;
 extern const hci_cmd_t hci_write_default_link_policy_setting;
+extern const hci_cmd_t hci_write_extended_inquiry_length;
 extern const hci_cmd_t hci_write_extended_inquiry_response;
+extern const hci_cmd_t hci_write_extended_page_timeout;
 extern const hci_cmd_t hci_write_inquiry_mode;
 extern const hci_cmd_t hci_write_inquiry_scan_activity;
 extern const hci_cmd_t hci_write_inquiry_scan_type;
@@ -423,10 +438,10 @@ extern const hci_cmd_t hci_write_link_supervision_timeout;
 extern const hci_cmd_t hci_write_local_name;
 extern const hci_cmd_t hci_write_loopback_mode;
 extern const hci_cmd_t hci_write_num_broadcast_retransmissions;
-extern const hci_cmd_t hci_write_page_timeout;
-extern const hci_cmd_t hci_write_pin_type;
 extern const hci_cmd_t hci_write_page_scan_activity;
 extern const hci_cmd_t hci_write_page_scan_type;
+extern const hci_cmd_t hci_write_page_timeout;
+extern const hci_cmd_t hci_write_pin_type;
 extern const hci_cmd_t hci_write_scan_enable;
 extern const hci_cmd_t hci_write_secure_connections_host_support;
 extern const hci_cmd_t hci_write_secure_connections_test_mode;

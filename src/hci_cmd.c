@@ -1070,6 +1070,63 @@ const hci_cmd_t hci_read_local_extended_oob_data = {
     // return status, C_192, R_192, R_256, C_256
 };
 
+/**
+ */
+const hci_cmd_t hci_read_extended_page_timeout = {
+    HCI_OPCODE_HCI_READ_EXTENDED_PAGE_TIMEOUT, ""
+    // return: status, extender page timeout
+};
+
+/**
+ * @param extended_page_timeout
+ */
+const hci_cmd_t hci_write_extended_page_timeout = {
+    HCI_OPCODE_HCI_WRITE_EXTENDED_PAGE_TIMEOUT, "2"
+    // return: status
+};
+
+/**
+ */
+const hci_cmd_t hci_read_extended_inquiry_length = {
+    HCI_OPCODE_HCI_READ_EXTENDED_INQUIRY_LENGTH, ""
+    // return: status, extended_inquiry_length
+};
+
+/**
+ * @param extended_inquiry_length
+ */
+const hci_cmd_t hci_write_extended_inquiry_length = {
+    HCI_OPCODE_HCI_WRITE_EXTENDED_INQUIRY_LENGTH, "2"
+    // return: status
+};
+
+/**
+ * @param interval
+ */
+const hci_cmd_t hci_set_ecosystem_base_interval = {
+    HCI_OPCODE_HCI_SET_ECOSYSTEM_BASE_INTERVAL, "2"
+    // return: status
+};
+
+/**
+ * @param data_path_direction
+ * @param data_path_id
+ * @param vendor_specific_config_length
+ * @param vendor_specific_config
+ */
+const hci_cmd_t hci_configure_data_path = {
+    HCI_OPCODE_HCI_CONFIGURE_DATA_PATH, "11JV"
+    // return: status
+};
+
+/**
+ * @param min_encryption_key_size
+ */
+const hci_cmd_t hci_set_min_encryption_key_size = {
+    HCI_OPCODE_HCI_SET_MIN_ENCRYPTION_KEY_SIZE, "1"
+    // return: status
+};
+
 
 /**
  * Testing Commands
