@@ -362,6 +362,12 @@ void gap_ssp_set_authentication_requirement(int authentication_requirement);
 void gap_secure_connections_enable(bool enable);
 
 /**
+ * @brief Query if Secure Connections can be used for Classic connections.
+ * @note Requires gap_secure_connections_enable == true and Controller to support it
+ */
+bool gap_secure_connections_active(void);
+
+/**
  * @brief If set, BTstack will confirm a numeric comparison and enter '000000' if requested.
  */
 void gap_ssp_set_auto_accept(int auto_accept);

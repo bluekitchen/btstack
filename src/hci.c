@@ -6033,6 +6033,9 @@ void gap_ssp_set_auto_accept(int auto_accept){
 void gap_secure_connections_enable(bool enable){
     hci_stack->secure_connections_enable = enable;
 }
+bool gap_secure_connections_active(void){
+    hci_stack->secure_connections_active;
+}
 
 #endif
 
