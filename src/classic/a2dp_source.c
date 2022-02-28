@@ -358,8 +358,15 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             // notify app
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
 
-            // continue
-            a2dp_source_ready_for_sep_discovery(connection);
+            // Windows 10 as Source starts SEP discovery after 1500 ms, but only if it did not get a Discover command
+            // If BTstack is configured for both roles, we need to avoid sending Discover command in Source Role for outgoing Sink connections
+
+            // For this, we trigger SDP query only if:
+            // a) this is an outgoing source connection
+            // b) this connection wasn't caused by an outgoing sink request
+            if (connection->a2dp_source_outgoing_active || !connection->a2dp_sink_outgoing_active){
+                a2dp_source_ready_for_sep_discovery(connection);
+            }
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
