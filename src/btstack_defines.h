@@ -321,6 +321,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_name
  */
 #define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE             0x07u
+
 /**
  * @format 121
  * @param status
@@ -328,12 +329,14 @@ typedef uint8_t sm_key_t[16];
  * @param encryption_enabled 
  */
 #define HCI_EVENT_ENCRYPTION_CHANGE                        0x08u
+
 /**
  * @format 12
  * @param status
  * @param connection_handle
  */
 #define HCI_EVENT_CHANGE_CONNECTION_LINK_KEY_COMPLETE      0x09u
+
 /**
  * @format 121
  * @param status
@@ -421,6 +424,9 @@ typedef uint8_t sm_key_t[16];
 // TODO: bd_addr B, link_key 16octets, key_type 1
 #define HCI_EVENT_LINK_KEY_NOTIFICATION                    0x18u
 
+// event params contains HCI ccommand
+#define HCI_EVENT_LOOPBACK_COMMAND                         0x19u
+
 /**
  * @format 1
  * @param link_type
@@ -451,7 +457,37 @@ typedef uint8_t sm_key_t[16];
  */
 #define HCI_EVENT_CONNECTION_PACKET_TYPE_CHANGED           0x1Du
 
-/** 
+/**
+ * @format H
+ * @param handle
+ */
+#define HCI_EVENT_QOS_VIOLATION                            0x1Eu
+
+// 0x1f not defined
+
+/**
+ * @format H1
+ * @param handle
+ * @param page_scan_repetition_mode
+ */
+#define HCI_EVENT_PAGE_SCAN_REPETITION_MODE_CHANGE         0x20u
+
+/**
+ * @format 1H1114444
+ * @param status
+ * @param handle
+ * @param unused
+ * @param flow_direction
+ * @param service_type
+ * @param token_rate
+ * @param token_bucket_size
+ * @param peak_bandwidth
+ * @param access_latency
+ *
+ */
+#define HCI_EVENT_FLOW_SPECIFICATION_COMPLETE              0x21u
+
+/**
  * @format 1B11321
  * @param num_responses
  * @param bd_addr
@@ -464,6 +500,8 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI                 0x22u
 
 #define HCI_EVENT_READ_REMOTE_EXTENDED_FEATURES_COMPLETE   0x23u
+
+// 0x24..0x2b not defined
 
 /**
  * @format 1HB111221
@@ -479,8 +517,31 @@ typedef uint8_t sm_key_t[16];
  */
 #define HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE          0x2Cu
 
+/**
+ * @format 1H1122
+ * @param status
+ * @param handle
+ * @param transmission_interval
+ * @param retransmission_interval
+ * @param rx_packet_length
+ * @param tx_packet_length
+ */
+#define HCI_EVENT_SYNCHRONOUS_CONNECTION_CHANGED          0x2Du
+
+/**
+ * @format 1H2222
+ * @param status
+ * @param handle
+ * @param max_tx_latency
+ * @param max_rx_latency
+ * @param min_remote_timeout
+ * @param min_local_timeout
+ */
+#define HCI_EVENT_SNIFF_SUBRATING                         0x2Eu
+
 // TODO: serialize extended_inquiry_response and provide parser
-/** 
+
+/**
  * @format 1B11321
  * @param num_responses
  * @param bd_addr
@@ -541,6 +602,21 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_SIMPLE_PAIRING_COMPLETE                  0x36u
 
 /**
+ * @format H2
+ * @param handle
+ * @param link_supervision_timeout
+ */
+#define HCI_EVENT_LINK_SUPERVISION_TIMEOUT_CHANGED         0x38u
+
+/**
+ * @format H
+ * @param handle
+ */
+#define HCI_EVENT_ENHANCED_FLUSH_COMPLETE                  0x39u
+
+// 0x03a not defined
+
+/**
  * @format B4
  * @param bd_addr
  * @param numeric_value
@@ -554,11 +630,26 @@ typedef uint8_t sm_key_t[16];
  */
 #define HCI_EVENT_KEYPRESS_NOTIFICATION                    0x3Cu
 
+#define HCI_EVENT_REMOTE_HOST_SUPPORTED_FEATURES           0x3Du
+
 #define HCI_EVENT_LE_META                                  0x3Eu
 
-// last used HCI_EVENT in 2.1 is 0x3du
-// last used HCI_EVENT in 4.1 is 0x57u
-// last used HCI_EVENT in 5.2 is 0x58u
+// 0x3f..0x47 not defined
+
+#define HCI_EVENT_NUMBER_OF_COMPLETED_DATA_BLOCKS          0x48u
+
+// 0x49..0x58 not defined
+
+/**
+ * @format 1211
+ * @param status
+ * @param connection_handle
+ * @param encryption_enabled
+ * @param encryption_key_zie
+ */
+#define HCI_EVENT_ENCRYPTION_CHANGE_V2                     0x59u
+
+// last used HCI_EVENT in 5.3 is 0x59u
 
 #define HCI_EVENT_VENDOR_SPECIFIC                          0xFFu
 
