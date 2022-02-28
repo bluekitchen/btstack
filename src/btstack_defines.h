@@ -645,7 +645,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param connection_handle
  * @param encryption_enabled
- * @param encryption_key_zie
+ * @param encryption_key_size
  */
 #define HCI_EVENT_ENCRYPTION_CHANGE_V2                     0x59u
 

@@ -1428,12 +1428,12 @@ static inline uint8_t hci_event_encryption_change_v2_get_encryption_enabled(cons
     return event[5];
 }
 /**
- * @brief Get field encryption_key_zie from event HCI_EVENT_ENCRYPTION_CHANGE_V2
+ * @brief Get field encryption_key_size from event HCI_EVENT_ENCRYPTION_CHANGE_V2
  * @param event packet
- * @return encryption_key_zie
+ * @return encryption_key_size
  * @note: btstack_type 1
  */
-static inline uint8_t hci_event_encryption_change_v2_get_encryption_key_zie(const uint8_t * event){
+static inline uint8_t hci_event_encryption_change_v2_get_encryption_key_size(const uint8_t * event){
     return event[6];
 }
 
