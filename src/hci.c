@@ -3272,6 +3272,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
 
         case HCI_EVENT_ENCRYPTION_CHANGE:
+        case HCI_EVENT_ENCRYPTION_CHANGE_V2:
             handle = hci_event_encryption_change_get_connection_handle(packet);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
@@ -3311,12 +3312,19 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         // work around for issue with PTS dongle
                         conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
 #endif
-                        if (hci_command_supported(SUPPORTED_HCI_COMMAND_READ_ENCRYPTION_KEY_SIZE)){
-                            // For Classic, we need to validate encryption key size first, if possible (== supported by Controller)
-                            conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
+                        // validate encryption key size
+                        if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE_V2) {
+                            uint8_t encryption_key_size = hci_event_encryption_change_v2_get_encryption_key_size(packet);
+                            // already got encryption key size
+                            hci_handle_read_encryption_key_size_complete(conn, encryption_key_size);
                         } else {
-                            // if not, pretend everything is perfect
-                            hci_handle_read_encryption_key_size_complete(conn, 16);
+                            if (hci_command_supported(SUPPORTED_HCI_COMMAND_READ_ENCRYPTION_KEY_SIZE)) {
+                                // For Classic, we need to validate encryption key size first, if possible (== supported by Controller)
+                                conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
+                            } else {
+                                // if not, pretend everything is perfect
+                                hci_handle_read_encryption_key_size_complete(conn, 16);
+                            }
                         }
                     }
 #endif
