@@ -542,12 +542,16 @@ typedef struct {
     bool incoming_declined;
     btstack_timer_source_t retry_timer;
 
+    // A2DP SOURCE
     bool         a2dp_source_discover_seps;
     bool         a2dp_source_outgoing_active;
     bool         a2dp_source_have_config;
     bool         a2dp_source_stream_endpoint_configured;
     a2dp_state_t a2dp_source_state;
     struct avdtp_stream_endpoint * a2dp_source_local_stream_endpoint;
+
+    // A2DP SINK
+    bool         a2dp_sink_outgoing_active;
 
 } avdtp_connection_t;
 
