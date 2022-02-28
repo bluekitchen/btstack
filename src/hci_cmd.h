@@ -178,6 +178,7 @@ typedef enum {
     HCI_OPCODE_HCI_WRITE_SIMPLE_PAIRING_MODE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x56),
     HCI_OPCODE_HCI_READ_LOCAL_OOB_DATA = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x57),
     HCI_OPCODE_HCI_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x5B),
+    HCI_OPCODE_HCI_SET_EVENT_MASK_2 = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x63),
     HCI_OPCODE_HCI_READ_LE_HOST_SUPPORTED = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x6c),
     HCI_OPCODE_HCI_WRITE_LE_HOST_SUPPORTED = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x6d),
     HCI_OPCODE_HCI_WRITE_SECURE_CONNECTIONS_HOST_SUPPORT = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x7a),
@@ -410,6 +411,7 @@ extern const hci_cmd_t hci_set_connection_encryption;
 extern const hci_cmd_t hci_set_controller_to_host_flow_control;
 extern const hci_cmd_t hci_set_ecosystem_base_interval;
 extern const hci_cmd_t hci_set_event_mask;
+extern const hci_cmd_t hci_set_event_mask_2;
 extern const hci_cmd_t hci_set_min_encryption_key_size;
 extern const hci_cmd_t hci_set_min_encryption_key_size;
 extern const hci_cmd_t hci_setup_synchronous_connection;

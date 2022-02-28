@@ -773,7 +773,7 @@ const hci_cmd_t hci_flow_specification = {
 
 
 /**
- * @param event_mask_lover_octets
+ * @param event_mask_lower_octets
  * @param event_mask_higher_octets
  */
 const hci_cmd_t hci_set_event_mask = {
@@ -1037,6 +1037,14 @@ const hci_cmd_t hci_read_local_oob_data = {
  */
 const hci_cmd_t hci_write_default_erroneous_data_reporting = {
     HCI_OPCODE_HCI_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING, "1"
+};
+
+/**
+ * @param event_mask_page_2_lower_octets
+ * @param event_mask_page_2_higher_octets
+ */
+const hci_cmd_t hci_set_event_mask_2 = {
+        HCI_OPCODE_HCI_SET_EVENT_MASK_2, "44"
 };
 
 /**

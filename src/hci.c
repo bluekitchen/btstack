@@ -145,6 +145,7 @@
     X( SUPPORTED_HCI_COMMAND_READ_BUFFER_SIZE                      , 14, 7) \
     X( SUPPORTED_HCI_COMMAND_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING, 18, 3) \
     X( SUPPORTED_HCI_COMMAND_READ_ENCRYPTION_KEY_SIZE              , 20, 4) \
+    X( SUPPORTED_HCI_COMMAND_SET_EVENT_MASK_PAGE_2                 , 22, 2) \
     X( SUPPORTED_HCI_COMMAND_WRITE_LE_HOST_SUPPORTED               , 24, 6) \
     X( SUPPORTED_HCI_COMMAND_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY, 32, 1) \
     X( SUPPORTED_HCI_COMMAND_WRITE_SECURE_CONNECTIONS_HOST         , 32, 3) \
@@ -1778,7 +1779,17 @@ static void hci_initializing_run(void){
             }
             break;
 
+        case HCI_INIT_SET_EVENT_MASK_2:
+            if (hci_command_supported(SUPPORTED_HCI_COMMAND_SET_EVENT_MASK_PAGE_2)){
+                hci_stack->substate = HCI_INIT_W4_SET_EVENT_MASK_2;
+                // Encryption Change Event v2 - bit 25
+                hci_send_cmd(&hci_set_event_mask_2,0x02000000U, 0x0);
+                break;
+            }
+
 #ifdef ENABLE_CLASSIC
+            /* fall through */
+
         case HCI_INIT_WRITE_SIMPLE_PAIRING_MODE:
             if (hci_classic_supported() && gap_ssp_supported()){
                 hci_stack->substate = HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE;
