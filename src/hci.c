@@ -139,6 +139,7 @@
 //
 
 // format: command name, byte offset, bit nr in 64-byte supported commands
+// currently stored in 32-bit variable
 #define SUPPORTED_HCI_COMMANDS \
     X( SUPPORTED_HCI_COMMAND_READ_REMOTE_EXTENDED_FEATURES         ,  2, 5) \
     X( SUPPORTED_HCI_COMMAND_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE , 10, 4) \
@@ -165,11 +166,6 @@ enum {
     SUPPORTED_HCI_COMMANDS_COUNT
 };
 #undef X
-
-// assert supported hci commands bitmap fits into provided storage
-#if SUPPORTED_HCI_COMMANDS_COUNT > 16
-#error "Storage for supported HCI commands too small"
-#endif
 
 // prototypes
 #ifdef ENABLE_CLASSIC
