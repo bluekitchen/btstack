@@ -497,6 +497,13 @@ static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t stat
     reverse_bd_addr(hci_connection->address, &event[4]);
     event[10] = status;
     hci_emit_event(event, sizeof(event), 1);
+
+    // emit dedicated bonding done on failure, otherwise verify that connection can be encrypted
+    if ((status != ERROR_CODE_SUCCESS) && ((hci_connection->bonding_flags & BONDING_DEDICATED) != 0)){
+        hci_connection->bonding_flags &= ~BONDING_DEDICATED;
+        hci_connection->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
+        hci_connection->bonding_status = status;
+    }
 }
 
 bool hci_authentication_active_for_handle(hci_con_handle_t handle){
@@ -3282,14 +3289,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
                     else {
 
-                        // dedicated bonding: send result and disconnect
-                        if (conn->bonding_flags & BONDING_DEDICATED){
-                            conn->bonding_flags &= ~BONDING_DEDICATED;
-                            conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
-                            conn->bonding_status = packet[2];
-                            break;
-                        }
-
                         // Detect Secure Connection -> Legacy Connection Downgrade Attack (BIAS)
                         bool sc_used_during_pairing = gap_secure_connection_for_link_key_type(conn->link_key_type);
                         bool connected_uses_aes_ccm = encryption_enabled == 2;
@@ -3326,6 +3325,13 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
                 } else {
                     conn->authentication_flags &= ~AUTH_FLAG_CONNECTION_ENCRYPTED;
+                }
+            } else {
+                uint8_t status = hci_event_encryption_change_get_status(packet);
+                if ((conn->bonding_flags & BONDING_DEDICATED) != 0){
+                    conn->bonding_flags &= ~BONDING_DEDICATED;
+                    conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
+                    conn->bonding_status = status;
                 }
             }
 
