@@ -2330,10 +2330,19 @@ static void handle_event_for_current_stack_state(const uint8_t * packet, uint16_
 static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn, uint8_t encryption_key_size) {
     conn->authentication_flags |= AUTH_FLAG_CONNECTION_ENCRYPTED;
     conn->encryption_key_size = encryption_key_size;
+    gap_security_level_t security_level = gap_security_level_for_connection(conn);
+
+    // trigger disconnect for dedicated bonding, skip emit security level as disconnect is pending
+    if ((conn->bonding_flags & BONDING_DEDICATED) != 0){
+        conn->bonding_flags &= ~BONDING_DEDICATED;
+        conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
+        conn->bonding_status = security_level == 0 ? ERROR_CODE_INSUFFICIENT_SECURITY : ERROR_CODE_SUCCESS;
+        return;
+    }
 
     if ((conn->authentication_flags & AUTH_FLAG_CONNECTION_AUTHENTICATED) != 0) {
         conn->requested_security_level = LEVEL_0;
-        hci_emit_security_level(conn->con_handle, gap_security_level_for_connection(conn));
+        hci_emit_security_level(conn->con_handle, security_level);
         return;
     }
 
