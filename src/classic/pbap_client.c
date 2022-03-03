@@ -1020,7 +1020,7 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                         break;
                     case OBEX_RESP_SUCCESS:
                         pbap_client->state = PBAP_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, 0);
+                        pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
                         break;
                     default:
                         log_info("unexpected response 0x%02x", packet[0]);
@@ -1088,7 +1088,7 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                         break;
                     case OBEX_RESP_SUCCESS:
                         pbap_client->state = PBAP_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, 0);
+                        pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
                         break;
                     case OBEX_RESP_NOT_ACCEPTABLE:
                         pbap_client->state = PBAP_CONNECTED;
