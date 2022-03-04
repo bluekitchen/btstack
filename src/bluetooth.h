@@ -713,6 +713,12 @@ typedef enum {
 #define ATT_ERROR_TIMEOUT                          0x7F
 #define ATT_ERROR_WRITE_RESPONSE_PENDING           0x100
 
+// MARK: ATT Error Codes from Bluetooth Core Specification Supplement, Version 9 or later
+#define ATT_ERROR_WRITE_REQUEST_REJECTED                                                      0xFC
+#define ATT_ERROR_CLIENT_CHARACTERISTIC_CONFIGURATION_DESCRIPTOR_IMPROPERLY_CONFIGURED        0xFD
+#define ATT_ERROR_PROCEDURE_ALREADY_IN_PROGRESS                                               0xFE
+#define ATT_ERROR_OUT_OF_RANGE                                                                0xFF
+
 // MARK: ATT Error Codes from Cycling Power Service spec
 #define CYCLING_POWER_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS                          0x80
 #define CYCLING_POWER_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS                                0xFE
