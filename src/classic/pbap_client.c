@@ -95,7 +95,9 @@ typedef enum {
     PBAP_W4_GET_CARD_LIST_COMPLETE,
     // - pull vcard entry
     PBAP_W2_GET_CARD_ENTRY,
-    PBAP_W4_GET_CARD_ENTRY_COMPLETE
+    PBAP_W4_GET_CARD_ENTRY_COMPLETE,
+    // abort operation
+    PBAP_W4_ABORT_COMPLETE,
 
 } pbap_state_t;
 
@@ -675,8 +677,15 @@ static void pbap_handle_can_send_now(void){
 
     if (pbap_client->abort_operation){
         pbap_client->abort_operation = 0;
-        pbap_client->state = PBAP_CONNECTED;
+        // prepare request
         goep_client_request_create_abort(pbap_client->goep_cid);
+        // state
+        pbap_client->state = PBAP_W4_ABORT_COMPLETE;
+        // prepare response
+        obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_ABORT, NULL, pbap_client);
+        obex_srm_init(&pbap_client->obex_srm);
+        pbap_client->obex_parser_waiting_for_response = true;
+        // send packet
         goep_client_execute(pbap_client->goep_cid);
         return;
     }
@@ -1101,6 +1110,10 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                         break;
                 }
                 break;
+            case PBAP_W4_ABORT_COMPLETE:
+                pbap_client->state = PBAP_CONNECTED;
+                pbap_client_emit_operation_complete_event(pbap_client, OBEX_ABORTED);
+                break;
             default:
                 btstack_unreachable();
                 break;
@@ -1266,8 +1279,8 @@ uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
 
 uint8_t pbap_abort(uint16_t pbap_cid){
     UNUSED(pbap_cid);
-    if (pbap_client->state < PBAP_CONNECTED){
-        return BTSTACK_BUSY;
+    if ((pbap_client->state < PBAP_CONNECTED) || (pbap_client->abort_operation != 0)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
     log_info("abort current operation, state 0x%02x", pbap_client->state);
     pbap_client->abort_operation = 1;

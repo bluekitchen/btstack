@@ -308,6 +308,7 @@ typedef enum {
 #define OBEX_DISCONNECTED                                  0xB2
 #define OBEX_NOT_FOUND                                     0xB3
 #define OBEX_NOT_ACCEPTABLE                                0xB4
+#define OBEX_ABORTED                                       0xB5
 
 #define MESH_ERROR_APPKEY_INDEX_INVALID                    0xD0
 /* ENUM_END */
