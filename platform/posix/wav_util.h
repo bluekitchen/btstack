@@ -79,10 +79,21 @@ int wav_writer_close(void);
 
 
 /**
- * Open singleton war reader
+ * Open singleton wav reader
  * @return 0 if ok
  */
 int wav_reader_open(const char * filepath);
+
+/**
+ * Get number of channels
+ */
+uint8_t wav_reader_get_num_channels(void);
+
+/**
+ * Get sampling rate
+ */
+uint32_t wav_reader_get_sampling_rate(void);
+
 /**
  * Read Int8 samples
  * @return 0 if ok

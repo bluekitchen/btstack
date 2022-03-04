@@ -556,6 +556,7 @@ static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t
 
 static void avrcp_finalize_connection(avrcp_connection_t * connection){
     btstack_run_loop_remove_timer(&connection->retry_timer);
+    btstack_run_loop_remove_timer(&connection->controller_press_and_hold_cmd_timer);
     btstack_linked_list_remove(&avrcp_connections, (btstack_linked_item_t*) connection);
     btstack_memory_avrcp_connection_free(connection);
 }

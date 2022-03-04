@@ -223,6 +223,14 @@ char * uuid128_to_str(const uint8_t * uuid);
 /**
  * @brief Create human readable represenationt of Bluetooth address
  * @note uses fixed global buffer
+ * @param delimiter
+ * @return pointer to Bluetooth address string
+ */
+char * bd_addr_to_str_with_delimiter(const bd_addr_t addr, char delimiter);
+
+/**
+ * @brief Create human readable represenationt of Bluetooth address
+ * @note uses fixed global buffer
  * @return pointer to Bluetooth address string
  */
 char * bd_addr_to_str(const bd_addr_t addr);
@@ -301,6 +309,15 @@ uint8_t btstack_crc8_calc(uint8_t * data, uint16_t len);
  * @return next cid skiping 0
  */
 uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid);
+
+/**
+ * @brief Copy string (up to dst_size-1 characters) from src into dst buffer with terminating '\0'
+ * @note replaces strncpy + dst[dst_size-1] = '\0'
+ * @param dst
+ * @param dst_size
+ * @param src
+ */
+void btstack_strcpy(char * dst, uint16_t dst_size, const char * src);
 
 /* API_END */
 

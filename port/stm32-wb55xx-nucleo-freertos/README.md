@@ -8,10 +8,12 @@ For easy development, Ozone project files are generated as well.
 ## Hardware
 
 In this port, the Nucelo68 or the USB Dongle from the P-NUCLEO-WB55 can be used.
-Development was done using FUS v1.0.1 and v1.0.2 and Full BLE Stack v1.3.1.
-See STM32Cube_FW_WB_V1.3.0/Projects/STM32WB_Copro_Wireless_Binaries/Release_Notes.html for update instructions.
 
-Note: Segger RTT currently doesn't work as output stops after CPU2 (radio controller) has started up.
+Last test was done using FUS v1.2 and HCI BLE Firmware v1.13 on Nucleo68
+See STM32Cube_FW_WB_V1.13.0/Projects/STM32WB_Copro_Wireless_Binaries/Release_Notes.html for firmware install instructions.
+
+Note: Segger RTT is currently not really usable. When sleep modes ared disabled for debuggin (see port_thread())
+RTT works, but the output buffer quickly overflows. In Block mode, radio stops working.
 
 ### Nucleo68
 

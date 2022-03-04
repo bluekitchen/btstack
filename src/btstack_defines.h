@@ -321,6 +321,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_name
  */
 #define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE             0x07u
+
 /**
  * @format 121
  * @param status
@@ -328,12 +329,14 @@ typedef uint8_t sm_key_t[16];
  * @param encryption_enabled 
  */
 #define HCI_EVENT_ENCRYPTION_CHANGE                        0x08u
+
 /**
  * @format 12
  * @param status
  * @param connection_handle
  */
 #define HCI_EVENT_CHANGE_CONNECTION_LINK_KEY_COMPLETE      0x09u
+
 /**
  * @format 121
  * @param status
@@ -377,6 +380,10 @@ typedef uint8_t sm_key_t[16];
  */
 #define HCI_EVENT_HARDWARE_ERROR                           0x10u
 
+/**
+ * @format H
+ * @param handle
+ */
 #define HCI_EVENT_FLUSH_OCCURRED                           0x11u
 
 /**
@@ -417,6 +424,9 @@ typedef uint8_t sm_key_t[16];
 // TODO: bd_addr B, link_key 16octets, key_type 1
 #define HCI_EVENT_LINK_KEY_NOTIFICATION                    0x18u
 
+// event params contains HCI ccommand
+#define HCI_EVENT_LOOPBACK_COMMAND                         0x19u
+
 /**
  * @format 1
  * @param link_type
@@ -447,7 +457,37 @@ typedef uint8_t sm_key_t[16];
  */
 #define HCI_EVENT_CONNECTION_PACKET_TYPE_CHANGED           0x1Du
 
-/** 
+/**
+ * @format H
+ * @param handle
+ */
+#define HCI_EVENT_QOS_VIOLATION                            0x1Eu
+
+// 0x1f not defined
+
+/**
+ * @format H1
+ * @param handle
+ * @param page_scan_repetition_mode
+ */
+#define HCI_EVENT_PAGE_SCAN_REPETITION_MODE_CHANGE         0x20u
+
+/**
+ * @format 1H1114444
+ * @param status
+ * @param handle
+ * @param unused
+ * @param flow_direction
+ * @param service_type
+ * @param token_rate
+ * @param token_bucket_size
+ * @param peak_bandwidth
+ * @param access_latency
+ *
+ */
+#define HCI_EVENT_FLOW_SPECIFICATION_COMPLETE              0x21u
+
+/**
  * @format 1B11321
  * @param num_responses
  * @param bd_addr
@@ -460,6 +500,8 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI                 0x22u
 
 #define HCI_EVENT_READ_REMOTE_EXTENDED_FEATURES_COMPLETE   0x23u
+
+// 0x24..0x2b not defined
 
 /**
  * @format 1HB111221
@@ -475,8 +517,31 @@ typedef uint8_t sm_key_t[16];
  */
 #define HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE          0x2Cu
 
+/**
+ * @format 1H1122
+ * @param status
+ * @param handle
+ * @param transmission_interval
+ * @param retransmission_interval
+ * @param rx_packet_length
+ * @param tx_packet_length
+ */
+#define HCI_EVENT_SYNCHRONOUS_CONNECTION_CHANGED          0x2Du
+
+/**
+ * @format 1H2222
+ * @param status
+ * @param handle
+ * @param max_tx_latency
+ * @param max_rx_latency
+ * @param min_remote_timeout
+ * @param min_local_timeout
+ */
+#define HCI_EVENT_SNIFF_SUBRATING                         0x2Eu
+
 // TODO: serialize extended_inquiry_response and provide parser
-/** 
+
+/**
  * @format 1B11321
  * @param num_responses
  * @param bd_addr
@@ -537,6 +602,21 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_SIMPLE_PAIRING_COMPLETE                  0x36u
 
 /**
+ * @format H2
+ * @param handle
+ * @param link_supervision_timeout
+ */
+#define HCI_EVENT_LINK_SUPERVISION_TIMEOUT_CHANGED         0x38u
+
+/**
+ * @format H
+ * @param handle
+ */
+#define HCI_EVENT_ENHANCED_FLUSH_COMPLETE                  0x39u
+
+// 0x03a not defined
+
+/**
  * @format B4
  * @param bd_addr
  * @param numeric_value
@@ -550,11 +630,26 @@ typedef uint8_t sm_key_t[16];
  */
 #define HCI_EVENT_KEYPRESS_NOTIFICATION                    0x3Cu
 
+#define HCI_EVENT_REMOTE_HOST_SUPPORTED_FEATURES           0x3Du
+
 #define HCI_EVENT_LE_META                                  0x3Eu
 
-// last used HCI_EVENT in 2.1 is 0x3du
-// last used HCI_EVENT in 4.1 is 0x57u
-// last used HCI_EVENT in 5.2 is 0x58u
+// 0x3f..0x47 not defined
+
+#define HCI_EVENT_NUMBER_OF_COMPLETED_DATA_BLOCKS          0x48u
+
+// 0x49..0x58 not defined
+
+/**
+ * @format 1211
+ * @param status
+ * @param connection_handle
+ * @param encryption_enabled
+ * @param encryption_key_size
+ */
+#define HCI_EVENT_ENCRYPTION_CHANGE_V2                     0x59u
+
+// last used HCI_EVENT in 5.3 is 0x59u
 
 #define HCI_EVENT_VENDOR_SPECIFIC                          0xFFu
 
@@ -634,6 +729,7 @@ typedef uint8_t sm_key_t[16];
  * @param dhkey_y y coordinate of P256 public key
  */
 #define HCI_SUBEVENT_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE 0x08u
+
  /**
  * @format 11Q
  * @param subevent_code
@@ -649,7 +745,7 @@ typedef uint8_t sm_key_t[16];
  * @param connection_handle
  * @param role
  * @param peer_address_type
- * @param perr_addresss
+ * @param peer_addresss
  * @param local_resolvable_private_addres
  * @param peer_resolvable_private_addres
  * @param conn_interval
@@ -662,6 +758,221 @@ typedef uint8_t sm_key_t[16];
 // array of advertisements, not handled by event accessor generator
 #define HCI_SUBEVENT_LE_DIRECT_ADVERTISING_REPORT          0x0Bu
 
+/**
+ * @format 11H1
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param tx_phy
+ */
+#define HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE                0x0Cu
+
+// array of advertisements, not handled by event accessor generator
+#define HCI_SUBEVENT_LE_EXTENDED_ADVERTISING_REPORT        0x0Du
+
+/**
+ * @format 11H11B121
+ * @param subevent_code
+ * @param status
+ * @param sync_handle
+ * @param advertising_sid
+ * @param advertiser_address_type
+ * @param advertiser_address
+ * @param advertiser_phy
+ * @param periodic_advertising_interval
+ * @param advertiser_clock_accuracy
+ */
+#define HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT 0x0Eu
+
+/**
+ * @format 1H1111JV
+ * @param subevent_code
+ * @param sync_handle
+ * @param tx_power
+ * @param rssi
+ * @param cte_type
+ * @param data_status
+ * @param data_length
+ * @param data
+*/
+#define HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT             0x0Fu
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param sync_handle
+ */
+#define HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_LOST          0x10u
+
+/**
+ * @format 1
+ * @param subevent_code
+ */
+#define HCI_SUBEVENT_LE_SCAN_TIMEOUT                            0x11u
+
+/**
+ * @format 111H1
+ * @param subevent_code
+ * @param status
+ * @param advertising_handle
+ * @param connection_handle
+ * @param num_completed_exteneded_advertising_events
+ */
+#define HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED              0x12u
+
+/**
+ * @format 111B
+ * @param subevent_code
+ * @param advertising_handle
+ * @param scanner_address_type
+ * @param scanner_address
+ */
+#define HCI_SUBEVENT_LE_SCAN_REQUEST_RECEIVED                   0x13u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param connection_handle
+ * @param channel_selection_algorithm
+ */
+#define HCI_SUBEVENT_LE_CHANNEL_SELECTION_ALGORITHM             0x14u
+
+// array of advertisements, not handled by event accessor generator
+#define HCI_SUBEVENT_LE_CONNECTIONLESS_IQ_REPORT                0x15u
+
+// array of advertisements, not handled by event accessor generator
+#define HCI_SUBEVENT_LE_CONNECTION_IQ_REPORT                    0x16u
+
+/**
+ * @format 11H
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ */
+#define HCI_SUBEVENT_LE_LE_CTE_REQUEST_FAILED                   0x17u
+
+/**
+ * @format 11H2H11B121
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param service_data
+ * @param sync_handle
+ * @param advertising_sid
+ * @param advertiser_address_type
+ * @param advertiser_address
+ * @param advertiser_phy
+ * @param periodic_advertising_interval
+ * @param advertiser_clock_accuracy
+ */
+#define HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED 0x18u
+
+/**
+ * @format 11H33331111111222
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param cig_sync_delay
+ * @param cis_sync_delay
+ * @param transport_latency_c_to_p
+ * @param transport_latency_p_to_c
+ * @param phy_c_to_p
+ * @param phy_p_to_c
+ * @param nse
+ * @param bn_c_to_p
+ * @param bn_p_to_c
+ * @param ft_c_to_p
+ * @param ft_p_to_c
+ * @param max_pdu_c_to_p
+ * @param max_pdu_p_to_c
+ * @param iso_interval
+ */
+#define HCI_SUBEVENT_LE_CIS_ESTABLISHED                          0x19u
+
+/**
+ * @format 1HH11
+ * @param subevent_code
+ * @param acl_connection_handle
+ * @param cis_connection_handle
+ * @param cig_id
+ * @param cis_id
+ */
+#define HCI_SUBEVENT_LE_CIS_REQUEST                            0x1au
+
+// array of advertisements, not handled by event accessor generator
+#define HCI_SUBEVENT_LE_CREATE_BIG_COMPLETE                     0x1Bu
+
+/**
+ * @format 111
+ * @param subevent_code
+ * @param big_handle
+ * @param reason
+ */
+#define HCI_SUBEVENT_LE_TERMINATE_BIG_COMPLETE                   0x1Cu
+
+// array of advertisements, not handled by event accessor generator
+#define HCI_SUBEVENT_LE_BIG_SYNC_ESTABLISHED                     0x1Du
+
+/**
+ * @format 111
+ * @param subevent_code
+ * @param big_handle
+ * @param reason
+ */
+#define HCI_SUBEVENT_LE_BIG_SYNC_LOST                            0x1Eu
+
+/**
+ * @format 11H1
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param peer_clock_accuracy
+ */
+#define HCI_SUBEVENT_LE_REQUEST_PEER_SCA_COMPLETE                0x1Fu
+
+/**
+ * @format 11H11111
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param reason
+ * @param phy
+ * @param tx_power_level
+ * @param tx_power_level_flag
+ * @param delta
+ */
+#define HCI_SUBEVENT_LE_TRANSMIT_POWER_REPORTING                 0x21u
+
+/**
+ * @format 1H112111232111
+ * @param subevent_code
+ * @param sync_handle
+ * @param num_bis
+ * @param nse
+ * @param iso_interval
+ * @param bn
+ * @param pto
+ * @param irc
+ * @param max_pdu
+ * @param sdu_interval
+ * @param max_sdu
+ * @param phy
+ * @param framing
+ * @param encryption
+ */
+#define HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT                0x22u
+
+/**
+ * @format 11H2222
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param subrate_factor
+ * @param peripheral_latency
+ * @param continuation_number
+ * @param supervision_timeout
+ */
+#define HCI_SUBEVENT_LE_SUBRATE_CHANGE                            0x23u
 
 /**
  * @format 1
@@ -1422,6 +1733,24 @@ typedef uint8_t sm_key_t[16];
  */
 #define GAP_EVENT_ADVERTISING_REPORT                             0xDAu
 
+/**
+ * @format 21B1111121BJV
+ * @param advertising_event_type
+ * @param address_type
+ * @param address
+ * @param primary_phy
+ * @param secondary_phy
+ * @param advertising_sid
+ * @param tx_power
+ * @param rssi
+ * @param periodic_advertising_interval
+ * @param direct_address_type
+ * @param direct_address
+ * @param data_length
+ * @param data
+ */
+#define GAP_EVENT_EXTENDED_ADVERTISING_REPORT                    0xDBu
+
  /**
  * @format B13211122221JV
  * @param bd_addr
@@ -1439,13 +1768,13 @@ typedef uint8_t sm_key_t[16];
  * @param name_len
  * @param name
  */
-#define GAP_EVENT_INQUIRY_RESULT                                 0xDBu
+#define GAP_EVENT_INQUIRY_RESULT                                 0xDCu
 
 /**
  * @format 1
  * @param status
  */
-#define GAP_EVENT_INQUIRY_COMPLETE                               0xDCu
+#define GAP_EVENT_INQUIRY_COMPLETE                               0xDDu
 
 /**
  * @format H1
@@ -1454,7 +1783,7 @@ typedef uint8_t sm_key_t[16];
  * @note Classic: rssi is in dB relative to Golden Receive Power Range
  * @note LE: rssi is absolute dBm
  */
-#define GAP_EVENT_RSSI_MEASUREMENT                               0xDDu
+#define GAP_EVENT_RSSI_MEASUREMENT                               0xDEu
 
 /**
  * @format 1KKKK
@@ -1464,7 +1793,7 @@ typedef uint8_t sm_key_t[16];
  * @param c_256 Simple Pairing Hash C derived from P-256 public key
  * @param r_256 Simple Pairing Randomizer derived from P-256 public key
  */
-#define GAP_EVENT_LOCAL_OOB_DATA                                 0xDEu
+#define GAP_EVENT_LOCAL_OOB_DATA                                 0xDFu
 
 
 /**
@@ -1474,7 +1803,7 @@ typedef uint8_t sm_key_t[16];
  * @param ssp
  * @param initiator
  */
-#define GAP_EVENT_PAIRING_STARTED                                0xDFu
+#define GAP_EVENT_PAIRING_STARTED                                0xE0u
 
 /**
  * @format HB1
@@ -1482,9 +1811,10 @@ typedef uint8_t sm_key_t[16];
  * @param bd_addr
  * @param status
  */
-#define GAP_EVENT_PAIRING_COMPLETE                               0xE0u
+#define GAP_EVENT_PAIRING_COMPLETE                               0xE1u
 
 // Meta Events, see below for sub events
+#define HCI_EVENT_META_GAP                                       0xE7u
 #define HCI_EVENT_HSP_META                                       0xE8u
 #define HCI_EVENT_HFP_META                                       0xE9u
 #define HCI_EVENT_ANCS_META                                      0xEAu
@@ -1507,6 +1837,25 @@ typedef uint8_t sm_key_t[16];
 // #define HCI_EVENT_PAN_META                                 0xxx
 // #define HCI_EVENT_SDP_META                                 0xxx
 // #define HCI_EVENT_SM_META                                  0xxx
+
+/** GAP Subevent */
+
+
+/**
+ * @format 1111
+ * @param subevent_code
+ * @param advertisement_handle
+ * @param status
+ * @param selected_tx_power
+ */
+#define GAP_SUBEVENT_ADVERTISING_SET_INSTALLED                   0x00u
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param advertisement_handle
+ */
+#define GAP_SUBEVENT_ADVERTISING_SET_REMOVED                     0x01u
 
 
 /** HSP Subevent */
@@ -3519,16 +3868,108 @@ typedef uint8_t sm_key_t[16];
  * @param hids_cid
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_CONNECTED         0x19u
+#define GATTSERVICE_SUBEVENT_MICS_CONNECTED                               0x19u
 
 /**
  * @format 1211
  * @param subevent_code
- * @param mics_cid
+ * @param cid
  * @param status
- * @param mute_value
+ * @param state
 */
-#define GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE              0x1Au
+#define GATTSERVICE_SUBEVENT_REMOTE_MICS_MUTE                              0x1Au
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param state
+*/
+#define GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE                                0x1Bu
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param state
+*/
+#define GATTSERVICE_SUBEVENT_AICS_MUTE_MODE                                 0x1Cu
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param state
+*/
+#define GATTSERVICE_SUBEVENT_AICS_GAIN_MODE                                 0x1Du
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param gain_db
+*/
+#define GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED                              0x1Eu
+
+/**
+ * @format 121JV
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param description_len
+ * @param description 
+*/
+#define GATTSERVICE_SUBEVENT_AICS_AUDIO_INPUT_DESC_CHANGED                   0x20u
+
+/**
+ * @format 1212
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param volume_offset
+*/
+#define GATTSERVICE_SUBEVENT_VOCS_VOLUME_OFFSET                              0x21u
+
+/**
+ * @format 1214
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param audio_location
+*/
+#define GATTSERVICE_SUBEVENT_VOCS_AUDIO_LOCATION                             0x22u
+
+/**
+ * @format 121JV
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param description_len
+ * @param description 
+*/
+#define GATTSERVICE_SUBEVENT_VOCS_AUDIO_OUTPUT_DESC_CHANGED                   0x23u
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param con_handle
+ * @param volume_setting
+ * @param volume_change_step
+ * @param mute 
+*/
+#define GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE                                 0x24u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param flags
+*/
+#define GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS                                 0x25u
+
 
 // MAP Meta Event Group
 

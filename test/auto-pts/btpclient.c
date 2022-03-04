@@ -54,10 +54,6 @@
 #include "btp.h"
 #include "btp_socket.h"
 
-#ifdef COVERAGE
-#include <dlfcn.h>
-#endif
-
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
 
 #define BT_LE_AD_LIMITED  (1U << 0)

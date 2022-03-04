@@ -100,7 +100,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("BTstack up and running as %s\n",  bd_addr_to_str(static_address));
                     // setup TLV
                     strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
-                    strcat(tlv_db_path, bd_addr_to_str(static_address));
+                    strcat(tlv_db_path, bd_addr_to_str_with_delimiter(static_address, '-'));
                     strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
                     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);

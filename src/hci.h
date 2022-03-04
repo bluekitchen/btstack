@@ -221,11 +221,12 @@ typedef enum {
     AUTH_FLAG_CONNECTION_AUTHENTICATED            = 0x1000,
     AUTH_FLAG_CONNECTION_ENCRYPTED                = 0x2000,
 
-    // errands
-    AUTH_FLAG_READ_RSSI                           = 0x4000,
-    AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT           = 0x8000,
-
 } hci_authentication_flags_t;
+
+// GAP Connection Tasks
+#define GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT 0x0001u
+#define GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT     0x0002u
+#define GAP_CONNECTION_TASK_READ_RSSI                     0x0004u
 
 /**
  * Connection State 
@@ -596,7 +597,10 @@ typedef struct {
 #endif /* ENABLE_CLASSIC */
 
     // authentication and other errands
-    uint32_t authentication_flags;
+    uint16_t authentication_flags;
+
+    // gap connection tasks, see GAP_CONNECTION_TASK_x
+    uint16_t gap_connection_tasks;
 
     btstack_timer_source_t timeout;
 
@@ -711,6 +715,8 @@ typedef enum hci_init_state{
 
     HCI_INIT_SET_EVENT_MASK,
     HCI_INIT_W4_SET_EVENT_MASK,
+    HCI_INIT_SET_EVENT_MASK_2,
+    HCI_INIT_W4_SET_EVENT_MASK_2,
 
 #ifdef ENABLE_CLASSIC
     HCI_INIT_WRITE_SIMPLE_PAIRING_MODE,
@@ -719,6 +725,8 @@ typedef enum hci_init_state{
     HCI_INIT_W4_WRITE_INQUIRY_MODE,
     HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE,
     HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE,
+    HCI_INIT_SET_MIN_ENCRYPTION_KEY_SIZE,
+    HCI_INIT_W4_SET_MIN_ENCRYPTION_KEY_SIZE,
 
 #ifdef ENABLE_SCO_OVER_HCI
     // SCO over HCI
@@ -754,13 +762,17 @@ typedef enum hci_init_state{
     HCI_INIT_LE_WRITE_SUGGESTED_DATA_LENGTH,
     HCI_INIT_W4_LE_WRITE_SUGGESTED_DATA_LENGTH,
 #endif
-    
+
 #ifdef ENABLE_LE_CENTRAL
     HCI_INIT_READ_WHITE_LIST_SIZE,
     HCI_INIT_W4_READ_WHITE_LIST_SIZE,
+#endif
 
-    HCI_INIT_LE_SET_SCAN_PARAMETERS,
-    HCI_INIT_W4_LE_SET_SCAN_PARAMETERS,
+#ifdef ENABLE_LE_PERIPHERAL
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    HCI_INIT_LE_READ_MAX_ADV_DATA_LEN,
+    HCI_INIT_W4_LE_READ_MAX_ADV_DATA_LEN,
+#endif
 #endif
 
     HCI_INIT_DONE,
@@ -771,9 +783,13 @@ typedef enum hci_init_state{
 
     HCI_INIT_AFTER_SLEEP,
 
-    HCI_HALTING_DISCONNECT_ALL_NO_TIMER,
-    HCI_HALTING_DISCONNECT_ALL_TIMER,
-    HCI_HALTING_W4_TIMER,
+    HCI_HALTING_CLASSIC_STOP,
+    HCI_HALTING_LE_ADV_STOP,
+    HCI_HALTING_LE_SCAN_STOP,
+    HCI_HALTING_DISCONNECT_ALL,
+    HCI_HALTING_READY_FOR_CLOSE,
+    HCI_HALTING_DEFER_CLOSE,
+    HCI_HALTING_W4_CLOSE_TIMER,
     HCI_HALTING_CLOSE,
 
 } hci_substate_t;
@@ -790,12 +806,22 @@ typedef enum hci_init_state{
 
 enum {
     // Tasks
-    LE_ADVERTISEMENT_TASKS_SET_ADV_DATA  = 1 << 0,
-    LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA = 1 << 1,
-    LE_ADVERTISEMENT_TASKS_SET_PARAMS    = 1 << 2,
-    LE_ADVERTISEMENT_TASKS_SET_ADDRESS   = 1 << 3,
+    LE_ADVERTISEMENT_TASKS_SET_ADV_DATA         = 1 << 0,
+    LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA        = 1 << 1,
+    LE_ADVERTISEMENT_TASKS_SET_PARAMS           = 1 << 2,
+    LE_ADVERTISEMENT_TASKS_SET_ADDRESS          = 1 << 3,
+    LE_ADVERTISEMENT_TASKS_SET_PERIODIC_PARAMS  = 1 << 4,
+    LE_ADVERTISEMENT_TASKS_SET_PERIODIC_DATA    = 1 << 5,
+    LE_ADVERTISEMENT_TASKS_REMOVE_SET           = 1 << 6,
+};
+
+enum {
     // State
-    LE_ADVERTISEMENT_TASKS_PARAMS_SET    = 1 << 7,
+    LE_ADVERTISEMENT_STATE_PARAMS_SET       = 1 << 0,
+    LE_ADVERTISEMENT_STATE_ACTIVE           = 1 << 1,
+    LE_ADVERTISEMENT_STATE_ENABLED          = 1 << 2,
+    LE_ADVERTISEMENT_STATE_PERIODIC_ACTIVE  = 1 << 3,
+    LE_ADVERTISEMENT_STATE_PERIODIC_ENABLED = 1 << 4,
 };
 
 enum {
@@ -877,7 +903,7 @@ typedef struct {
 
 #ifdef ENABLE_CLASSIC
     /* GAP tasks, see GAP_TASK_* */
-    uint16_t           gap_tasks;
+    uint16_t           gap_tasks_classic;
 
     /* write page scan activity */
     uint16_t           new_page_scan_interval;
@@ -891,7 +917,10 @@ typedef struct {
 
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
     uint8_t            gap_required_encyrption_key_size;
+
     uint16_t           link_supervision_timeout;
+    uint16_t           automatic_flush_timeout;
+
     gap_security_level_t gap_security_level;
     gap_security_level_t gap_minimal_service_security_level;
     gap_security_mode_t  gap_security_mode;
@@ -920,6 +949,8 @@ typedef struct {
     uint8_t  synchronous_flow_control_enabled;
     uint8_t  le_acl_packets_total_num;
     uint16_t le_data_packets_length;
+    uint8_t  le_iso_packets_total_num;
+    uint16_t le_iso_packets_length;
     uint8_t  sco_waiting_for_can_send_now;
     bool     sco_can_send_now;
 
@@ -927,20 +958,7 @@ typedef struct {
     uint8_t local_supported_features[8];
 
     /* local supported commands summary - complete info is 64 bytes */
-    /*  0 - Read Buffer Size                        (Octet 14/bit 7) */
-    /*  1 - Write Le Host Supported                 (Octet 24/bit 6) */
-    /*  2 - Write Synchronous Flow Control Enable   (Octet 10/bit 4) */
-    /*  3 - Write Default Erroneous Data Reporting  (Octet 18/bit 3) */
-    /*  4 - LE Write Suggested Default Data Length  (Octet 34/bit 0) */
-    /*  5 - LE Read Maximum Data Length             (Octet 35/bit 3) */
-    /*  6 - LE Set Default PHY                      (Octet 35/bit 5) */
-    /*  7 - Read Encryption Key Size                (Octet 20/bit 4) */
-    /*  8 - Read Remote Extended Features           (Octet  2/bit 5) */
-    /*  9 - Write Secure Connections Host           (Octet 32/bit 3) */
-    /* 10 - LE Set Address Resolution Enable        (Octet 35/bit 1) */
-    /* 11 - Remote OOB Extended Data Request Reply  (Octet 32/bit 1) */
-    /* 12 - Read Local OOB Extended Data command    (Octet 32/bit 6) */
-    uint8_t local_supported_commands[2];
+    uint32_t local_supported_commands;
 
     /* bluetooth device information from hci read local version information */
     // uint16_t hci_version;
@@ -1043,11 +1061,6 @@ typedef struct {
     uint8_t  * le_scan_response_data;
     uint8_t    le_scan_response_data_len;
 
-    bool     le_advertisements_active;
-    bool     le_advertisements_enabled;
-    bool     le_advertisements_enabled_for_current_roles;
-    uint8_t  le_advertisements_todo;
-
     uint16_t le_advertisements_interval_min;
     uint16_t le_advertisements_interval_max;
     uint8_t  le_advertisements_type;
@@ -1058,7 +1071,17 @@ typedef struct {
     uint8_t   le_advertisements_own_addr_type;
     bd_addr_t le_advertisements_own_address;
 
+    uint8_t  le_advertisements_todo;
+    uint8_t  le_advertisements_state;
+
+    bool     le_advertisements_enabled_for_current_roles;
     uint8_t le_max_number_peripheral_connections;
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    btstack_linked_list_t le_advertising_sets;
+    uint16_t le_maximum_advertising_data_length;
+    uint8_t  le_advertising_set_in_current_command;
+#endif
 #endif
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
@@ -1349,6 +1372,11 @@ uint16_t hci_usable_acl_packet_types(void);
  * Check if ACL packets marked as non flushable can be sent. Called by L2CAP
  */
 bool hci_non_flushable_packet_boundary_flag_supported(void);
+
+/**
+ * Return current automatic flush timeout setting
+ */
+uint16_t hci_automatic_flush_timeout(void);
 
 /**
  * Check if remote supported features query has completed

@@ -24,6 +24,42 @@
 #include "microphone_control_service_profile.h"
 #include "mock_att_server.h"
 
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+static aics_info_t aics_info[] = {
+    {
+        {1, AICS_MUTE_MODE_NOT_MUTED, AICS_GAIN_MODE_AUTOMATIC},
+        {1, -10, 10},
+            AICS_AUDIO_INPUT_TYPE_MICROPHONE,
+        "audio_input_description1",
+        packet_handler
+    },
+    {
+        {2, AICS_MUTE_MODE_NOT_MUTED, AICS_GAIN_MODE_AUTOMATIC},
+        {1, -11, 11},
+            AICS_AUDIO_INPUT_TYPE_MICROPHONE,
+        "audio_input_description2",
+        packet_handler
+    },
+    {
+            {3, AICS_MUTE_MODE_NOT_MUTED, AICS_GAIN_MODE_MANUAL},
+            {2, -12, 12},
+            AICS_AUDIO_INPUT_TYPE_MICROPHONE,
+            "audio_input_description3",
+            packet_handler
+    }
+
+};
+static uint8_t aics_info_num = 3;
+
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    UNUSED(packet);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+}
+
 
 TEST_GROUP(MICROPHONE_CONTROL_SERVICE_SERVER){ 
     att_service_handler_t * service; 
@@ -38,7 +74,7 @@ TEST_GROUP(MICROPHONE_CONTROL_SERVICE_SERVER){
         mute_value_handle_client_configuration = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_MUTE);
 
         // setup battery service
-        microphone_control_service_server_init(GATT_MICROPHONE_CONTROL_MUTE_OFF);
+        microphone_control_service_server_init(GATT_MICROPHONE_CONTROL_MUTE_OFF, aics_info_num, aics_info);
 
         service = mock_att_server_get_service();
         con_handle = 0x00;

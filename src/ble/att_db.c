@@ -1542,6 +1542,34 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
 }
 
 
+bool gatt_server_get_included_service_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16, 
+    uint16_t * out_included_service_handle, uint16_t * out_included_service_start_handle, uint16_t * out_included_service_end_handle){
+
+    att_iterator_t it;
+    att_iterator_init(&it);
+    while (att_iterator_has_next(&it)){
+        att_iterator_fetch_next(&it);
+        if ((it.handle != 0u) && (it.handle < start_handle)){
+            continue;
+        }
+        if (it.handle > end_handle){
+            break;  // (1)
+        }
+        if (it.handle == 0u){
+            break;
+        }
+        if ((it.value_len == 6) && (att_iterator_match_uuid16(&it, GATT_INCLUDE_SERVICE_UUID))){
+            if (little_endian_read_16(it.value, 4) == uuid16){
+                *out_included_service_handle = it.handle;
+                *out_included_service_start_handle = little_endian_read_16(it.value, 0);
+                *out_included_service_end_handle = little_endian_read_16(it.value, 2);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 // 1-item cache to optimize query during write_callback
 static void att_persistent_ccc_cache(att_iterator_t * it){
     att_persistent_ccc_handle = it->handle;

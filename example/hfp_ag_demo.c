@@ -561,6 +561,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     sco_handle = HCI_CON_HANDLE_INVALID;
                     sco_demo_close();
                     break;
+
+                case HFP_SUBEVENT_SPEAKER_VOLUME:
+                    printf("Speaker volume: gain %u\n",
+                           hfp_subevent_speaker_volume_get_gain(event));
+                    break;
+                case HFP_SUBEVENT_MICROPHONE_VOLUME:
+                    printf("Microphone volume: gain %u\n",
+                           hfp_subevent_microphone_volume_get_gain(event));
+                    break;
+
                 case HFP_SUBEVENT_START_RINGING:
                     printf("** START Ringing **\n");
                     break;

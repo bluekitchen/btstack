@@ -9,10 +9,40 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+
 ### Fixed
-- HCI: fix handling of HCI Connection Complete with error (regression introduced in v1.5.1)
 
 ### Changed
+
+
+## Release v1.5.2
+
+### Added
+- GAP: ENABLE_HCI_SERIALIZED_CONTROLLER_OPERATIONS serializes Inquiry, Remote Name Request and Create Connection operations
+- GAP: support extended advertising with ENABLE_LE_EXTENDED_ADVERTISING
+- GAP: gap_enable_link_watchdog() uses automatic flush timeout to disconnect if data cannot be sent
+- GAP: gap_secure_connections_active() to query if BR/EDR Secure Connecions are possible
+- ATT DB: provide gatt_server_get_handle_range_for_service_with_uuid16 to find included service within handle range
+- GATT Service: Audio Input Control Service Server (AICS 1.0)
+- GATT Service: Microphone Control Service Server (MCS 1.0)
+- GATT Service: Volume Control Service Server (VCS 1.0)
+- GATT Service: Volume Offset Control Service Server (VOCS 1.0)
+
+### Fixed
+- POSIX: fix RTS/CTS configuration by keeping local termios copy in btstack_uart_posix
+- HCI: fix handling of HCI Connection Complete with error (regression introduced in v1.5.1)
+- GAP: disable scanning, advertising, connection before updating random address
+- GAP: fix LE Scan with whitelist
+- HFP_AG: fix tracking for call dropped during outgoing ringing
+- HFP: Free HFP Connection object on SDP error / Service not found
+- PBAP Client: emit operation complete with status OBEX_ABORTED
+
+### Changed
+- Chipset: use da145xx in folder/file/function names for Dialog Semiconductor SoCs
+- GAP: set min encryption key size during init, if supported
+- AVDTP: use BLUETOOTH_SERVICE_CLASS_AUDIO_SINK / SOURCE instead of BLUETOOTH_PROTOCOL_AVDTP in SDP queries
+- ATT Server: use uint8_t for status returns
+- libusb, POSIX and Windows ports: use '-' instead of ':' in btstack_BD_ADDR.tlv filename
 
 
 ## Release v1.5.1
@@ -31,6 +61,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Example: init SM if LE supported to avoid issue with Android Cross-Transport Key-Derivation
 - ESP32: update sdkconfig for esp-idf v4.3, disable Bluedroid host stack
 - ESP32: use I2S configuration from ESP32 LyraT V4.3
+
 
 ## Release v1.5.0
 

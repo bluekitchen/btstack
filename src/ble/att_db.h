@@ -310,6 +310,19 @@ uint16_t att_uuid_for_handle(uint16_t attribute_handle);
 bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle);
 
 /**
+ * @brief Get handle range for included service.
+ * @param start_handle
+ * @param end_handle
+ * @param uuid16
+ * @param out_included_service_handle
+ * @param out_included_service_start_handle
+ * @param out_included_service_end_handle
+ * @return false if not found
+ */
+bool gatt_server_get_included_service_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16, 
+    uint16_t * out_included_service_handle, uint16_t * out_included_service_start_handle, uint16_t * out_included_service_end_handle);
+
+/**
  * @brief Get value handle for characteristic.
  * @param start_handle
  * @param end_handle

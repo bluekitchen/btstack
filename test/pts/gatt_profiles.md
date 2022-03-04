@@ -55,3 +55,81 @@ Tool: gatt_profiles
 - BMS/SEN/CPE/BI-02-C: l
 - BMS/SEN/CPE/BI-03-C: C
 - BMS/SEN/CPE/BI-04-C: L
+
+## MICS
+- MICS/SR/SGGIT/SER/BV-01-C: (wait)
+- MICS/SR/SGGIT/SDP/BV-01-C: ignore when ATT_transport in IXIT is set to BR/EDR
+- MICS/SR/SGGIT/CHA/BV-01-C: (wait)
+
+- MICS/SR/SPN/BV-01-C: m, M
+
+- MICS/SR/SPE/BI-01-C: (wait)
+- MICS/SR/SPE/BI-02-C: P
+
+## AICS
+- AICS/SR/SGGIT/SER/BV-01-C: (wait)
+
+- AICS/SR/SGGIT/CHA/BV-01-C: (wait)
+- AICS/SR/SGGIT/CHA/BV-02-C: (wait)
+- AICS/SR/SGGIT/CHA/BV-03-C: (wait)
+- AICS/SR/SGGIT/CHA/BV-04-C: (wait)
+- AICS/SR/SGGIT/CHA/BV-05-C: (wait)
+- AICS/SR/SGGIT/CHA/BV-06-C: (wait)
+
+- AICS/SR/SGGIT/CP/BI-01-C: (wait)
+- AICS/SR/SGGIT/CP/BI-02-C: (wait)
+- AICS/SR/SGGIT/CP/BI-03-C: q
+- AICS/SR/SGGIT/CP/BI-04-C: f, F
+
+- AICS/SR/SPN/BV-01-C: p
+- AICS/SR/SPN/BV-01-C: p
+
+- AICS/SR/CP/BV-01-C: (wait)
+- AICS/SR/CP/BV-02-C: d
+- AICS/SR/CP/BV-03-C: D
+- AICS/SR/CP/BV-04-C: g
+- AICS/SR/CP/BV-05-C: G
+
+- AICS/SR/SPE/BI-01-C: (wait)
+
+## VOCS
+- VOCS/SR/SGGIT/SER/BV-01-C: (wait)
+
+- VOCS/SR/SGGIT/SDP/BV-01-C: (wait)
+
+- VOCS/SR/SGGIT/CHA/BV-01-C: (wait)
+- VOCS/SR/SGGIT/CHA/BV-02-C: (wait)
+- VOCS/SR/SGGIT/CHA/BV-03-C: (wait)
+- VOCS/SR/SGGIT/CHA/BV-04-C: (wait)
+
+- VOCS/SR/SGGIT/CP/BI-01-C: (wait)
+- VOCS/SR/SGGIT/CP/BI-02-C: (wait)
+- VOCS/SR/SGGIT/CP/BI-03-C: (wait)
+
+- VOCS/SR/CP/BV-01-C: (wait)
+
+- VOCS/SR/SPN/BV-01-C: (wait)
+- VOCS/SR/SPN/BV-02-C: o
+- VOCS/SR/SPN/BV-03-C: (wait)
+- VOCS/SR/SPN/BV-04-C: O
+
+- VOCS/SR/SPE/BI-01-C: (wait)
+
+
+## VCS
+- VCS/SR/SGGIT/SER/BV-01-C: (wait)
+
+- VCS/SR/SGGIT/CHA/BV-01-C: (wait)
+- VCS/SR/SGGIT/CHA/BV-02-C: (wait)
+- VCS/SR/SGGIT/CHA/BV-03-C: (wait)
+
+- VCS/SR/SGGIT/CP/BI-01-C:(wait)
+- VCS/SR/SGGIT/CP/BI-02-C: (wait)
+
+- VCS/SR/CP/BV-01-C: "OK", (wait)
+- VCS/SR/CP/BV-02-C: v, "OK", (wait)
+- VCS/SR/CP/BV-03-C: v, V, "OK", (wait)
+- VCS/SR/CP/BV-04-C: v, "OK", (wait)
+- VCS/SR/CP/BV-05-C: (wait)
+- VCS/SR/CP/BV-06-C: (wait)
+- VCS/SR/CP/BV-07-C: (wait)

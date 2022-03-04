@@ -135,6 +135,52 @@ typedef enum {
     AUTHORIZATION_GRANTED
 } authorization_state_t;
 
+// Extended Advertising Parameters
+typedef struct {
+    uint16_t        advertising_event_properties;
+    uint16_t        primary_advertising_interval_min;
+    uint16_t        primary_advertising_interval_max;
+    uint8_t         primary_advertising_channel_map;
+    bd_addr_type_t  own_address_type;
+    bd_addr_type_t  peer_address_type;
+    bd_addr_t       peer_address;
+    uint8_t         advertising_filter_policy;
+    int8_t          advertising_tx_power;
+    uint8_t         primary_advertising_phy;
+    uint8_t         secondary_advertising_max_skip;
+    uint8_t         secondary_advertising_phy;
+    uint8_t         advertising_sid;
+    uint8_t         scan_request_notification_enable;
+} le_extended_advertising_parameters_t;
+
+typedef struct {
+    uint16_t  periodic_advertising_interval_min;
+    uint16_t  periodic_advertising_interval_max;
+    uint16_t  periodic_advertising_properties;
+} le_periodic_advertising_parameters_t;
+
+// Extended Advertising Set State
+typedef struct {
+    btstack_linked_item_t item;
+    le_extended_advertising_parameters_t extended_params;
+    le_periodic_advertising_parameters_t periodic_params;
+    bd_addr_t random_address;
+    const uint8_t * adv_data;
+    const uint8_t * scan_data;
+    const uint8_t * periodic_data;
+    uint16_t  adv_data_len;
+    uint16_t  scan_data_len;
+    uint16_t  periodic_data_len;
+    uint16_t  adv_data_pos;
+    uint16_t  scan_data_pos;
+    uint16_t  periodic_data_pos;
+    uint16_t  enable_timeout;
+    uint8_t   advertising_handle;
+    uint8_t   enable_max_scan_events;
+    bool      periodic_include_adi;
+    uint8_t   state;
+    uint8_t   tasks;
+} le_advertising_set_t;
 
 /* API_START */
 
@@ -225,6 +271,13 @@ void gap_set_allow_role_switch(bool allow_role_switch);
 void gap_set_link_supervision_timeout(uint16_t link_supervision_timeout);
 
 /**
+ * @brief Enable link watchdog. If no ACL packet is sent within timeout_ms, the link will get disconnected
+ * note: current implementation uses the automatic flush timeout controller feature with a max timeout of 1.28s
+ * @param timeout_ms
+ */
+void gap_enable_link_watchdog(uint16_t timeout_ms);
+
+/**
  * @brief Enable/disable bonding. Default is enabled.
  * @param enabled
  */
@@ -307,6 +360,12 @@ void gap_ssp_set_authentication_requirement(int authentication_requirement);
  * @brief Enable/disable Secure Connections. Default: true if supported by Controller
  */
 void gap_secure_connections_enable(bool enable);
+
+/**
+ * @brief Query if Secure Connections can be used for Classic connections.
+ * @note Requires gap_secure_connections_enable == true and Controller to support it
+ */
+bool gap_secure_connections_active(void);
 
 /**
  * @brief If set, BTstack will confirm a numeric comparison and enter '000000' if requested.
@@ -426,7 +485,7 @@ void gap_random_address_set(const bd_addr_t addr);
 void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * advertising_data);
 
 /**
- * @brief Set Advertisement Paramters
+ * @brief Set Advertisement Parameters
  * @param adv_int_min
  * @param adv_int_max
  * @param adv_type
@@ -456,6 +515,122 @@ void gap_advertisements_enable(int enabled);
  * @note '00:00:00:00:00:00' in scan_response_data will be replaced with actual bd addr
  */
 void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * scan_response_data);
+
+/**
+ * @brief Provide storage for new advertising set and setup on Controller
+ * @param storage to use by stack, needs to stay valid until adv set is removed with gap_extended_advertising_remove
+ * @param advertising_parameters
+ * @param out_advertising_handle to use with other adv config commands
+ * @return status
+ * @events: GAP_SUBEVENT_ADVERTISING_SET_INSTALLED
+ */
+uint8_t gap_extended_advertising_setup(le_advertising_set_t * storage, const le_extended_advertising_parameters_t * advertising_parameters, uint8_t * out_advertising_handle);
+
+/**
+ * @param Set advertising params for advertising set
+ * @param advertising_handle
+ * @param advertising_parameters
+ * @return status
+ */
+uint8_t gap_extended_advertising_set_params(uint8_t advertising_handle, const le_extended_advertising_parameters_t * advertising_parameters);
+
+/**
+ * @param Get advertising params for advertising set, e.g. to update params
+ * @param advertising_handle
+ * @param advertising_parameters
+ * @return status
+ */
+uint8_t gap_extended_advertising_get_params(uint8_t advertising_handle, le_extended_advertising_parameters_t * advertising_parameters);
+
+/**
+ * @param Set periodic advertising params for advertising set
+ * @param advertising_handle
+ * @param advertising_parameters
+ * @return status
+ */
+uint8_t gap_periodic_advertising_set_params(uint8_t advertising_handle, const le_periodic_advertising_parameters_t * advertising_parameters);
+
+/**
+ * @param Get params for periodic advertising set, e.g. to update params
+ * @param advertising_handle
+ * @param advertising_parameters
+ * @return status
+ */
+uint8_t gap_periodic_advertising_get_params(uint8_t advertising_handle, le_periodic_advertising_parameters_t * advertising_parameters);
+
+/**
+ * @param Set random addrress for advertising set
+ * @param advertising_handle
+ * @param random_address
+ * @return status
+ */
+uint8_t gap_extended_advertising_set_random_address(uint8_t advertising_handle, bd_addr_t random_address);
+
+/**
+ * @brief Set Advertising Data for a advertisement set
+ * @param advertising_handle
+ * @param advertising_data_length
+ * @param advertising_data
+ * @return status
+ */
+uint8_t gap_extended_advertising_set_adv_data(uint8_t advertising_handle, uint16_t advertising_data_length, const uint8_t * advertising_data);
+
+/**
+ * @brief Set Scan Response Data for a advertisement set
+ * @param advertising_handle
+ * @param scan_response_data_length
+ * @param scan_response_data
+ * @return status
+ */
+uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_handle, uint16_t scan_response_data_length, const uint8_t * scan_response_data);
+
+/**
+ * @brief Set data for periodic advertisement set
+ * @param advertising_handle
+ * @param periodic_data_length
+ * @param periodic_data
+ * @return status
+ */
+uint8_t gap_periodic_advertising_set_data(uint8_t advertising_handle, uint16_t periodic_data_length, const uint8_t * periodic_data);
+
+/**
+ * @brief Start advertising advertising set
+ * @param advertising_handle
+ * @param timeout in 10ms, or 0 == no timeout
+ * @param num_extended_advertising_events Controller shall send, or 0 == no max number
+ * @return status
+ */
+uint8_t gap_extended_advertising_start(uint8_t advertising_handle, uint16_t timeout, uint8_t num_extended_advertising_events);
+
+/**
+ * @brief Stop advertising
+ * @param advertising_handle
+ * @return status
+ */
+uint8_t gap_extended_advertising_stop(uint8_t advertising_handle);
+
+/**
+ * @brief Start periodic advertising for given advertising set
+ * @param advertising_handle
+ * @param include_adi
+ * @return status
+ */
+uint8_t gap_periodic_advertising_start(uint8_t advertising_handle, bool include_adi);
+
+/**
+ * @brief Stop periodic advertising for given advertising set
+ * @param advertising_handle
+ * @return status
+ */
+uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle);
+
+/**
+ * @brief Remove advertising set from Controller
+ * @param advertising_handle
+ * @return status
+ * @events: GAP_SUBEVENT_ADVERTISING_SET_REMOVED
+ */
+uint8_t gap_extended_advertising_remove(uint8_t advertising_handle);
 
 /**
  * @brief Set connection parameters for outgoing connections
@@ -859,7 +1034,7 @@ uint8_t gap_ssp_io_capabilities_negative(const bd_addr_t addr);
 
 /**
  * Send Link Key Reponse
- * @note Link Key (Negative) Reply is sent automaticallyu unless ENABLE_EXPLICIT_LINK_KEY_RESPONSE
+ * @note Link Key (Negative) Reply is sent automatically unless ENABLE_EXPLICIT_LINK_KEY_RESPONSE
  * @param addr
  * @param link_key
  * @param type or INVALID_LINK_KEY if link key not available

@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -98,6 +98,14 @@ static inline uint8_t hci_event_avdtp_meta_get_subevent_code(const uint8_t * eve
  * @return subevent_code
  */
 static inline uint8_t hci_event_avrcp_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
+ * @brief Get subevent code for gap event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_gap_meta_get_subevent_code(const uint8_t * event){
     return event[2];
 }
 /***
@@ -591,6 +599,16 @@ static inline uint8_t hci_event_hardware_error_get_hardware_code(const uint8_t *
 }
 
 /**
+ * @brief Get field handle from event HCI_EVENT_FLUSH_OCCURRED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_flush_occurred_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+
+/**
  * @brief Get field status from event HCI_EVENT_ROLE_CHANGE
  * @param event packet
  * @return status
@@ -761,6 +779,117 @@ static inline uint16_t hci_event_connection_packet_type_changed_get_packet_types
 }
 
 /**
+ * @brief Get field handle from event HCI_EVENT_QOS_VIOLATION
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_qos_violation_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+
+/**
+ * @brief Get field handle from event HCI_EVENT_PAGE_SCAN_REPETITION_MODE_CHANGE
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_page_scan_repetition_mode_change_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field page_scan_repetition_mode from event HCI_EVENT_PAGE_SCAN_REPETITION_MODE_CHANGE
+ * @param event packet
+ * @return page_scan_repetition_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_page_scan_repetition_mode_change_get_page_scan_repetition_mode(const uint8_t * event){
+    return event[4];
+}
+
+/**
+ * @brief Get field status from event HCI_EVENT_FLOW_SPECIFICATION_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_flow_specification_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field handle from event HCI_EVENT_FLOW_SPECIFICATION_COMPLETE
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_flow_specification_complete_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field unused from event HCI_EVENT_FLOW_SPECIFICATION_COMPLETE
+ * @param event packet
+ * @return unused
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_flow_specification_complete_get_unused(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field flow_direction from event HCI_EVENT_FLOW_SPECIFICATION_COMPLETE
+ * @param event packet
+ * @return flow_direction
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_flow_specification_complete_get_flow_direction(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field service_type from event HCI_EVENT_FLOW_SPECIFICATION_COMPLETE
+ * @param event packet
+ * @return service_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_flow_specification_complete_get_service_type(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field token_rate from event HCI_EVENT_FLOW_SPECIFICATION_COMPLETE
+ * @param event packet
+ * @return token_rate
+ * @note: btstack_type 4
+ */
+static inline uint32_t hci_event_flow_specification_complete_get_token_rate(const uint8_t * event){
+    return little_endian_read_32(event, 8);
+}
+/**
+ * @brief Get field token_bucket_size from event HCI_EVENT_FLOW_SPECIFICATION_COMPLETE
+ * @param event packet
+ * @return token_bucket_size
+ * @note: btstack_type 4
+ */
+static inline uint32_t hci_event_flow_specification_complete_get_token_bucket_size(const uint8_t * event){
+    return little_endian_read_32(event, 12);
+}
+/**
+ * @brief Get field peak_bandwidth from event HCI_EVENT_FLOW_SPECIFICATION_COMPLETE
+ * @param event packet
+ * @return peak_bandwidth
+ * @note: btstack_type 4
+ */
+static inline uint32_t hci_event_flow_specification_complete_get_peak_bandwidth(const uint8_t * event){
+    return little_endian_read_32(event, 16);
+}
+/**
+ * @brief Get field access_latency from event HCI_EVENT_FLOW_SPECIFICATION_COMPLETE
+ * @param event packet
+ * @return access_latency
+ * @note: btstack_type 4
+ */
+static inline uint32_t hci_event_flow_specification_complete_get_access_latency(const uint8_t * event){
+    return little_endian_read_32(event, 20);
+}
+
+/**
  * @brief Get field num_responses from event HCI_EVENT_INQUIRY_RESULT_WITH_RSSI
  * @param event packet
  * @return num_responses
@@ -904,6 +1033,116 @@ static inline uint16_t hci_event_synchronous_connection_complete_get_tx_packet_l
  */
 static inline uint8_t hci_event_synchronous_connection_complete_get_air_mode(const uint8_t * event){
     return event[18];
+}
+
+/**
+ * @brief Get field status from event HCI_EVENT_SYNCHRONOUS_CONNECTION_CHANGED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_synchronous_connection_changed_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field handle from event HCI_EVENT_SYNCHRONOUS_CONNECTION_CHANGED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_synchronous_connection_changed_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field transmission_interval from event HCI_EVENT_SYNCHRONOUS_CONNECTION_CHANGED
+ * @param event packet
+ * @return transmission_interval
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_synchronous_connection_changed_get_transmission_interval(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field retransmission_interval from event HCI_EVENT_SYNCHRONOUS_CONNECTION_CHANGED
+ * @param event packet
+ * @return retransmission_interval
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_synchronous_connection_changed_get_retransmission_interval(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field rx_packet_length from event HCI_EVENT_SYNCHRONOUS_CONNECTION_CHANGED
+ * @param event packet
+ * @return rx_packet_length
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_synchronous_connection_changed_get_rx_packet_length(const uint8_t * event){
+    return little_endian_read_16(event, 7);
+}
+/**
+ * @brief Get field tx_packet_length from event HCI_EVENT_SYNCHRONOUS_CONNECTION_CHANGED
+ * @param event packet
+ * @return tx_packet_length
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_synchronous_connection_changed_get_tx_packet_length(const uint8_t * event){
+    return little_endian_read_16(event, 9);
+}
+
+/**
+ * @brief Get field status from event HCI_EVENT_SNIFF_SUBRATING
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_sniff_subrating_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field handle from event HCI_EVENT_SNIFF_SUBRATING
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_sniff_subrating_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field max_tx_latency from event HCI_EVENT_SNIFF_SUBRATING
+ * @param event packet
+ * @return max_tx_latency
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_sniff_subrating_get_max_tx_latency(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field max_rx_latency from event HCI_EVENT_SNIFF_SUBRATING
+ * @param event packet
+ * @return max_rx_latency
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_sniff_subrating_get_max_rx_latency(const uint8_t * event){
+    return little_endian_read_16(event, 7);
+}
+/**
+ * @brief Get field min_remote_timeout from event HCI_EVENT_SNIFF_SUBRATING
+ * @param event packet
+ * @return min_remote_timeout
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_sniff_subrating_get_min_remote_timeout(const uint8_t * event){
+    return little_endian_read_16(event, 9);
+}
+/**
+ * @brief Get field min_local_timeout from event HCI_EVENT_SNIFF_SUBRATING
+ * @param event packet
+ * @return min_local_timeout
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_sniff_subrating_get_min_local_timeout(const uint8_t * event){
+    return little_endian_read_16(event, 11);
 }
 
 /**
@@ -1095,6 +1334,35 @@ static inline void hci_event_simple_pairing_complete_get_bd_addr(const uint8_t *
 }
 
 /**
+ * @brief Get field handle from event HCI_EVENT_LINK_SUPERVISION_TIMEOUT_CHANGED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_link_supervision_timeout_changed_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field link_supervision_timeout from event HCI_EVENT_LINK_SUPERVISION_TIMEOUT_CHANGED
+ * @param event packet
+ * @return link_supervision_timeout
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_link_supervision_timeout_changed_get_link_supervision_timeout(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field handle from event HCI_EVENT_ENHANCED_FLUSH_COMPLETE
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_enhanced_flush_complete_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+
+/**
  * @brief Get field bd_addr from event HCI_EVENT_USER_PASSKEY_NOTIFICATION
  * @param event packet
  * @param Pointer to storage for bd_addr
@@ -1130,6 +1398,43 @@ static inline void hci_event_keypress_notification_get_bd_addr(const uint8_t * e
  */
 static inline uint8_t hci_event_keypress_notification_get_notification_type(const uint8_t * event){
     return event[8];
+}
+
+/**
+ * @brief Get field status from event HCI_EVENT_ENCRYPTION_CHANGE_V2
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_encryption_change_v2_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field connection_handle from event HCI_EVENT_ENCRYPTION_CHANGE_V2
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_encryption_change_v2_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field encryption_enabled from event HCI_EVENT_ENCRYPTION_CHANGE_V2
+ * @param event packet
+ * @return encryption_enabled
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_encryption_change_v2_get_encryption_enabled(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field encryption_key_size from event HCI_EVENT_ENCRYPTION_CHANGE_V2
+ * @param event packet
+ * @return encryption_key_size
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_encryption_change_v2_get_encryption_key_size(const uint8_t * event){
+    return event[6];
 }
 
 /**
@@ -3471,6 +3776,124 @@ static inline const uint8_t * gap_event_advertising_report_get_data(const uint8_
 }
 
 /**
+ * @brief Get field advertising_event_type from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @return advertising_event_type
+ * @note: btstack_type 2
+ */
+static inline uint16_t gap_event_extended_advertising_report_get_advertising_event_type(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field address_type from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @return address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_extended_advertising_report_get_address_type(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field address from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void gap_event_extended_advertising_report_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bytes(&event[5], address, 6);
+}
+/**
+ * @brief Get field primary_phy from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @return primary_phy
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_extended_advertising_report_get_primary_phy(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field secondary_phy from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @return secondary_phy
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_extended_advertising_report_get_secondary_phy(const uint8_t * event){
+    return event[12];
+}
+/**
+ * @brief Get field advertising_sid from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @return advertising_sid
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_extended_advertising_report_get_advertising_sid(const uint8_t * event){
+    return event[13];
+}
+/**
+ * @brief Get field tx_power from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @return tx_power
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_extended_advertising_report_get_tx_power(const uint8_t * event){
+    return event[14];
+}
+/**
+ * @brief Get field rssi from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @return rssi
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_extended_advertising_report_get_rssi(const uint8_t * event){
+    return event[15];
+}
+/**
+ * @brief Get field periodic_advertising_interval from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @return periodic_advertising_interval
+ * @note: btstack_type 2
+ */
+static inline uint16_t gap_event_extended_advertising_report_get_periodic_advertising_interval(const uint8_t * event){
+    return little_endian_read_16(event, 16);
+}
+/**
+ * @brief Get field direct_address_type from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @return direct_address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_extended_advertising_report_get_direct_address_type(const uint8_t * event){
+    return event[18];
+}
+/**
+ * @brief Get field direct_address from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @param Pointer to storage for direct_address
+ * @note: btstack_type B
+ */
+static inline void gap_event_extended_advertising_report_get_direct_address(const uint8_t * event, bd_addr_t direct_address){
+    reverse_bytes(&event[19], direct_address, 6);
+}
+/**
+ * @brief Get field data_length from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @return data_length
+ * @note: btstack_type J
+ */
+static inline uint8_t gap_event_extended_advertising_report_get_data_length(const uint8_t * event){
+    return event[25];
+}
+/**
+ * @brief Get field data from event GAP_EVENT_EXTENDED_ADVERTISING_REPORT
+ * @param event packet
+ * @return data
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gap_event_extended_advertising_report_get_data(const uint8_t * event){
+    return &event[26];
+}
+
+/**
  * @brief Get field bd_addr from event GAP_EVENT_INQUIRY_RESULT
  * @param event packet
  * @param Pointer to storage for bd_addr
@@ -4088,13 +4511,13 @@ static inline uint8_t hci_subevent_le_enhanced_connection_complete_get_peer_addr
     return event[7];
 }
 /**
- * @brief Get field perr_addresss from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
+ * @brief Get field peer_addresss from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
  * @param event packet
- * @param Pointer to storage for perr_addresss
+ * @param Pointer to storage for peer_addresss
  * @note: btstack_type B
  */
-static inline void hci_subevent_le_enhanced_connection_complete_get_perr_addresss(const uint8_t * event, bd_addr_t perr_addresss){
-    reverse_bytes(&event[8], perr_addresss, 6);
+static inline void hci_subevent_le_enhanced_connection_complete_get_peer_addresss(const uint8_t * event, bd_addr_t peer_addresss){
+    reverse_bytes(&event[8], peer_addresss, 6);
 }
 /**
  * @brief Get field local_resolvable_private_addres from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
@@ -4149,6 +4572,899 @@ static inline uint16_t hci_subevent_le_enhanced_connection_complete_get_supervis
  */
 static inline uint8_t hci_subevent_le_enhanced_connection_complete_get_master_clock_accuracy(const uint8_t * event){
     return event[32];
+}
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_phy_update_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_phy_update_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field tx_phy from event HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE
+ * @param event packet
+ * @return tx_phy
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_phy_update_complete_get_tx_phy(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_sync_establishment_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field sync_handle from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT
+ * @param event packet
+ * @return sync_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_periodic_advertising_sync_establishment_get_sync_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field advertising_sid from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT
+ * @param event packet
+ * @return advertising_sid
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_sync_establishment_get_advertising_sid(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field advertiser_address_type from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT
+ * @param event packet
+ * @return advertiser_address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_sync_establishment_get_advertiser_address_type(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field advertiser_address from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT
+ * @param event packet
+ * @param Pointer to storage for advertiser_address
+ * @note: btstack_type B
+ */
+static inline void hci_subevent_le_periodic_advertising_sync_establishment_get_advertiser_address(const uint8_t * event, bd_addr_t advertiser_address){
+    reverse_bytes(&event[8], advertiser_address, 6);
+}
+/**
+ * @brief Get field advertiser_phy from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT
+ * @param event packet
+ * @return advertiser_phy
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_sync_establishment_get_advertiser_phy(const uint8_t * event){
+    return event[14];
+}
+/**
+ * @brief Get field periodic_advertising_interval from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT
+ * @param event packet
+ * @return periodic_advertising_interval
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_periodic_advertising_sync_establishment_get_periodic_advertising_interval(const uint8_t * event){
+    return little_endian_read_16(event, 15);
+}
+/**
+ * @brief Get field advertiser_clock_accuracy from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT
+ * @param event packet
+ * @return advertiser_clock_accuracy
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_sync_establishment_get_advertiser_clock_accuracy(const uint8_t * event){
+    return event[17];
+}
+
+/**
+ * @brief Get field sync_handle from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
+ * @param event packet
+ * @return sync_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_periodic_advertising_report_get_sync_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field tx_power from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
+ * @param event packet
+ * @return tx_power
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_report_get_tx_power(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field rssi from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
+ * @param event packet
+ * @return rssi
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_report_get_rssi(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field cte_type from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
+ * @param event packet
+ * @return cte_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_report_get_cte_type(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field data_status from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
+ * @param event packet
+ * @return data_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_report_get_data_status(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field data_length from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
+ * @param event packet
+ * @return data_length
+ * @note: btstack_type J
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_report_get_data_length(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field data from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT
+ * @param event packet
+ * @return data
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hci_subevent_le_periodic_advertising_report_get_data(const uint8_t * event){
+    return &event[10];
+}
+
+/**
+ * @brief Get field sync_handle from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_LOST
+ * @param event packet
+ * @return sync_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_periodic_advertising_sync_lost_get_sync_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_advertising_set_terminated_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field advertising_handle from event HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED
+ * @param event packet
+ * @return advertising_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_advertising_set_terminated_get_advertising_handle(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_advertising_set_terminated_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field num_completed_exteneded_advertising_events from event HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED
+ * @param event packet
+ * @return num_completed_exteneded_advertising_events
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_advertising_set_terminated_get_num_completed_exteneded_advertising_events(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field advertising_handle from event HCI_SUBEVENT_LE_SCAN_REQUEST_RECEIVED
+ * @param event packet
+ * @return advertising_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_scan_request_received_get_advertising_handle(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field scanner_address_type from event HCI_SUBEVENT_LE_SCAN_REQUEST_RECEIVED
+ * @param event packet
+ * @return scanner_address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_scan_request_received_get_scanner_address_type(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field scanner_address from event HCI_SUBEVENT_LE_SCAN_REQUEST_RECEIVED
+ * @param event packet
+ * @param Pointer to storage for scanner_address
+ * @note: btstack_type B
+ */
+static inline void hci_subevent_le_scan_request_received_get_scanner_address(const uint8_t * event, bd_addr_t scanner_address){
+    reverse_bytes(&event[5], scanner_address, 6);
+}
+
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_CHANNEL_SELECTION_ALGORITHM
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_channel_selection_algorithm_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field channel_selection_algorithm from event HCI_SUBEVENT_LE_CHANNEL_SELECTION_ALGORITHM
+ * @param event packet
+ * @return channel_selection_algorithm
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_channel_selection_algorithm_get_channel_selection_algorithm(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_LE_CTE_REQUEST_FAILED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_le_cte_request_failed_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_LE_CTE_REQUEST_FAILED
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_le_cte_request_failed_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_sync_transfer_received_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_periodic_advertising_sync_transfer_received_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field service_data from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED
+ * @param event packet
+ * @return service_data
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_periodic_advertising_sync_transfer_received_get_service_data(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field sync_handle from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED
+ * @param event packet
+ * @return sync_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_periodic_advertising_sync_transfer_received_get_sync_handle(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field advertising_sid from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED
+ * @param event packet
+ * @return advertising_sid
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_sync_transfer_received_get_advertising_sid(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field advertiser_address_type from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED
+ * @param event packet
+ * @return advertiser_address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_sync_transfer_received_get_advertiser_address_type(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field advertiser_address from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED
+ * @param event packet
+ * @param Pointer to storage for advertiser_address
+ * @note: btstack_type B
+ */
+static inline void hci_subevent_le_periodic_advertising_sync_transfer_received_get_advertiser_address(const uint8_t * event, bd_addr_t advertiser_address){
+    reverse_bytes(&event[12], advertiser_address, 6);
+}
+/**
+ * @brief Get field advertiser_phy from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED
+ * @param event packet
+ * @return advertiser_phy
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_sync_transfer_received_get_advertiser_phy(const uint8_t * event){
+    return event[18];
+}
+/**
+ * @brief Get field periodic_advertising_interval from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED
+ * @param event packet
+ * @return periodic_advertising_interval
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_periodic_advertising_sync_transfer_received_get_periodic_advertising_interval(const uint8_t * event){
+    return little_endian_read_16(event, 19);
+}
+/**
+ * @brief Get field advertiser_clock_accuracy from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED
+ * @param event packet
+ * @return advertiser_clock_accuracy
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_sync_transfer_received_get_advertiser_clock_accuracy(const uint8_t * event){
+    return event[21];
+}
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_cis_established_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_cis_established_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field cig_sync_delay from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return cig_sync_delay
+ * @note: btstack_type 3
+ */
+static inline uint32_t hci_subevent_le_cis_established_get_cig_sync_delay(const uint8_t * event){
+    return little_endian_read_24(event, 6);
+}
+/**
+ * @brief Get field cis_sync_delay from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return cis_sync_delay
+ * @note: btstack_type 3
+ */
+static inline uint32_t hci_subevent_le_cis_established_get_cis_sync_delay(const uint8_t * event){
+    return little_endian_read_24(event, 9);
+}
+/**
+ * @brief Get field transport_latency_c_to_p from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return transport_latency_c_to_p
+ * @note: btstack_type 3
+ */
+static inline uint32_t hci_subevent_le_cis_established_get_transport_latency_c_to_p(const uint8_t * event){
+    return little_endian_read_24(event, 12);
+}
+/**
+ * @brief Get field transport_latency_p_to_c from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return transport_latency_p_to_c
+ * @note: btstack_type 3
+ */
+static inline uint32_t hci_subevent_le_cis_established_get_transport_latency_p_to_c(const uint8_t * event){
+    return little_endian_read_24(event, 15);
+}
+/**
+ * @brief Get field phy_c_to_p from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return phy_c_to_p
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_cis_established_get_phy_c_to_p(const uint8_t * event){
+    return event[18];
+}
+/**
+ * @brief Get field phy_p_to_c from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return phy_p_to_c
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_cis_established_get_phy_p_to_c(const uint8_t * event){
+    return event[19];
+}
+/**
+ * @brief Get field nse from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return nse
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_cis_established_get_nse(const uint8_t * event){
+    return event[20];
+}
+/**
+ * @brief Get field bn_c_to_p from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return bn_c_to_p
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_cis_established_get_bn_c_to_p(const uint8_t * event){
+    return event[21];
+}
+/**
+ * @brief Get field bn_p_to_c from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return bn_p_to_c
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_cis_established_get_bn_p_to_c(const uint8_t * event){
+    return event[22];
+}
+/**
+ * @brief Get field ft_c_to_p from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return ft_c_to_p
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_cis_established_get_ft_c_to_p(const uint8_t * event){
+    return event[23];
+}
+/**
+ * @brief Get field ft_p_to_c from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return ft_p_to_c
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_cis_established_get_ft_p_to_c(const uint8_t * event){
+    return event[24];
+}
+/**
+ * @brief Get field max_pdu_c_to_p from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return max_pdu_c_to_p
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_cis_established_get_max_pdu_c_to_p(const uint8_t * event){
+    return little_endian_read_16(event, 25);
+}
+/**
+ * @brief Get field max_pdu_p_to_c from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return max_pdu_p_to_c
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_cis_established_get_max_pdu_p_to_c(const uint8_t * event){
+    return little_endian_read_16(event, 27);
+}
+/**
+ * @brief Get field iso_interval from event HCI_SUBEVENT_LE_CIS_ESTABLISHED
+ * @param event packet
+ * @return iso_interval
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_cis_established_get_iso_interval(const uint8_t * event){
+    return little_endian_read_16(event, 29);
+}
+
+/**
+ * @brief Get field acl_connection_handle from event HCI_SUBEVENT_LE_CIS_REQUEST
+ * @param event packet
+ * @return acl_connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_cis_request_get_acl_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field cis_connection_handle from event HCI_SUBEVENT_LE_CIS_REQUEST
+ * @param event packet
+ * @return cis_connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_cis_request_get_cis_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field cig_id from event HCI_SUBEVENT_LE_CIS_REQUEST
+ * @param event packet
+ * @return cig_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_cis_request_get_cig_id(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field cis_id from event HCI_SUBEVENT_LE_CIS_REQUEST
+ * @param event packet
+ * @return cis_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_cis_request_get_cis_id(const uint8_t * event){
+    return event[8];
+}
+
+/**
+ * @brief Get field big_handle from event HCI_SUBEVENT_LE_TERMINATE_BIG_COMPLETE
+ * @param event packet
+ * @return big_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_terminate_big_complete_get_big_handle(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field reason from event HCI_SUBEVENT_LE_TERMINATE_BIG_COMPLETE
+ * @param event packet
+ * @return reason
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_terminate_big_complete_get_reason(const uint8_t * event){
+    return event[4];
+}
+
+/**
+ * @brief Get field big_handle from event HCI_SUBEVENT_LE_BIG_SYNC_LOST
+ * @param event packet
+ * @return big_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_big_sync_lost_get_big_handle(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field reason from event HCI_SUBEVENT_LE_BIG_SYNC_LOST
+ * @param event packet
+ * @return reason
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_big_sync_lost_get_reason(const uint8_t * event){
+    return event[4];
+}
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_REQUEST_PEER_SCA_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_request_peer_sca_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_REQUEST_PEER_SCA_COMPLETE
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_request_peer_sca_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field peer_clock_accuracy from event HCI_SUBEVENT_LE_REQUEST_PEER_SCA_COMPLETE
+ * @param event packet
+ * @return peer_clock_accuracy
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_request_peer_sca_complete_get_peer_clock_accuracy(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_TRANSMIT_POWER_REPORTING
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_transmit_power_reporting_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_TRANSMIT_POWER_REPORTING
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_transmit_power_reporting_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field reason from event HCI_SUBEVENT_LE_TRANSMIT_POWER_REPORTING
+ * @param event packet
+ * @return reason
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_transmit_power_reporting_get_reason(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field phy from event HCI_SUBEVENT_LE_TRANSMIT_POWER_REPORTING
+ * @param event packet
+ * @return phy
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_transmit_power_reporting_get_phy(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field tx_power_level from event HCI_SUBEVENT_LE_TRANSMIT_POWER_REPORTING
+ * @param event packet
+ * @return tx_power_level
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_transmit_power_reporting_get_tx_power_level(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field tx_power_level_flag from event HCI_SUBEVENT_LE_TRANSMIT_POWER_REPORTING
+ * @param event packet
+ * @return tx_power_level_flag
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_transmit_power_reporting_get_tx_power_level_flag(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field delta from event HCI_SUBEVENT_LE_TRANSMIT_POWER_REPORTING
+ * @param event packet
+ * @return delta
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_transmit_power_reporting_get_delta(const uint8_t * event){
+    return event[10];
+}
+
+/**
+ * @brief Get field sync_handle from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return sync_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_biginfo_advertising_report_get_sync_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field num_bis from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return num_bis
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_biginfo_advertising_report_get_num_bis(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field nse from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return nse
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_biginfo_advertising_report_get_nse(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field iso_interval from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return iso_interval
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_biginfo_advertising_report_get_iso_interval(const uint8_t * event){
+    return little_endian_read_16(event, 7);
+}
+/**
+ * @brief Get field bn from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return bn
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_biginfo_advertising_report_get_bn(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field pto from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return pto
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_biginfo_advertising_report_get_pto(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field irc from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return irc
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_biginfo_advertising_report_get_irc(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field max_pdu from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return max_pdu
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_biginfo_advertising_report_get_max_pdu(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+/**
+ * @brief Get field sdu_interval from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return sdu_interval
+ * @note: btstack_type 3
+ */
+static inline uint32_t hci_subevent_le_biginfo_advertising_report_get_sdu_interval(const uint8_t * event){
+    return little_endian_read_24(event, 14);
+}
+/**
+ * @brief Get field max_sdu from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return max_sdu
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_biginfo_advertising_report_get_max_sdu(const uint8_t * event){
+    return little_endian_read_16(event, 17);
+}
+/**
+ * @brief Get field phy from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return phy
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_biginfo_advertising_report_get_phy(const uint8_t * event){
+    return event[19];
+}
+/**
+ * @brief Get field framing from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return framing
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_biginfo_advertising_report_get_framing(const uint8_t * event){
+    return event[20];
+}
+/**
+ * @brief Get field encryption from event HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT
+ * @param event packet
+ * @return encryption
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_biginfo_advertising_report_get_encryption(const uint8_t * event){
+    return event[21];
+}
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_SUBRATE_CHANGE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_subrate_change_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_SUBRATE_CHANGE
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_subrate_change_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field subrate_factor from event HCI_SUBEVENT_LE_SUBRATE_CHANGE
+ * @param event packet
+ * @return subrate_factor
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_subrate_change_get_subrate_factor(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field peripheral_latency from event HCI_SUBEVENT_LE_SUBRATE_CHANGE
+ * @param event packet
+ * @return peripheral_latency
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_subrate_change_get_peripheral_latency(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field continuation_number from event HCI_SUBEVENT_LE_SUBRATE_CHANGE
+ * @param event packet
+ * @return continuation_number
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_subrate_change_get_continuation_number(const uint8_t * event){
+    return little_endian_read_16(event, 10);
+}
+/**
+ * @brief Get field supervision_timeout from event HCI_SUBEVENT_LE_SUBRATE_CHANGE
+ * @param event packet
+ * @return supervision_timeout
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_subrate_change_get_supervision_timeout(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+
+/**
+ * @brief Get field advertisement_handle from event GAP_SUBEVENT_ADVERTISING_SET_INSTALLED
+ * @param event packet
+ * @return advertisement_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_advertising_set_installed_get_advertisement_handle(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field status from event GAP_SUBEVENT_ADVERTISING_SET_INSTALLED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_advertising_set_installed_get_status(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field selected_tx_power from event GAP_SUBEVENT_ADVERTISING_SET_INSTALLED
+ * @param event packet
+ * @return selected_tx_power
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_advertising_set_installed_get_selected_tx_power(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field advertisement_handle from event GAP_SUBEVENT_ADVERTISING_SET_REMOVED
+ * @param event packet
+ * @return advertisement_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_advertising_set_removed_get_advertisement_handle(const uint8_t * event){
+    return event[3];
 }
 
 /**
@@ -10790,50 +12106,339 @@ static inline uint16_t gattservice_subevent_scan_parameters_service_scan_interva
 }
 
 /**
- * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_CONNECTED
+ * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_MICS_CONNECTED
  * @param event packet
  * @return hids_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_microphone_control_service_connected_get_hids_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_mics_connected_get_hids_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_CONNECTED
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_MICS_CONNECTED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_microphone_control_service_connected_get_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_mics_connected_get_status(const uint8_t * event){
     return event[5];
 }
 
 /**
- * @brief Get field mics_cid from event GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE
+ * @brief Get field cid from event GATTSERVICE_SUBEVENT_REMOTE_MICS_MUTE
  * @param event packet
- * @return mics_cid
+ * @return cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_microphone_control_service_mute_get_mics_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_remote_mics_mute_get_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_REMOTE_MICS_MUTE
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_microphone_control_service_mute_get_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_remote_mics_mute_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field mute_value from event GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_REMOTE_MICS_MUTE
  * @param event packet
- * @return mute_value
+ * @return state
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_microphone_control_service_mute_get_mute_value(const uint8_t * event){
+static inline uint8_t gattservice_subevent_remote_mics_mute_get_state(const uint8_t * event){
     return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_local_mics_mute_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_local_mics_mute_get_state(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_MUTE_MODE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_aics_mute_mode_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_MUTE_MODE
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_mute_mode_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_AICS_MUTE_MODE
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_mute_mode_get_state(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_GAIN_MODE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_aics_gain_mode_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_GAIN_MODE
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_gain_mode_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_AICS_GAIN_MODE
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_gain_mode_get_state(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_aics_gain_changed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_gain_changed_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field gain_db from event GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED
+ * @param event packet
+ * @return gain_db
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_gain_changed_get_gain_db(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_AUDIO_INPUT_DESC_CHANGED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_aics_audio_input_desc_changed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_AUDIO_INPUT_DESC_CHANGED
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_audio_input_desc_changed_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field description_len from event GATTSERVICE_SUBEVENT_AICS_AUDIO_INPUT_DESC_CHANGED
+ * @param event packet
+ * @return description_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_aics_audio_input_desc_changed_get_description_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field description from event GATTSERVICE_SUBEVENT_AICS_AUDIO_INPUT_DESC_CHANGED
+ * @param event packet
+ * @return description
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_aics_audio_input_desc_changed_get_description(const uint8_t * event){
+    return &event[7];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VOCS_VOLUME_OFFSET
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_vocs_volume_offset_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_VOCS_VOLUME_OFFSET
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_vocs_volume_offset_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field volume_offset from event GATTSERVICE_SUBEVENT_VOCS_VOLUME_OFFSET
+ * @param event packet
+ * @return volume_offset
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_vocs_volume_offset_get_volume_offset(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VOCS_AUDIO_LOCATION
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_vocs_audio_location_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_VOCS_AUDIO_LOCATION
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_vocs_audio_location_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field audio_location from event GATTSERVICE_SUBEVENT_VOCS_AUDIO_LOCATION
+ * @param event packet
+ * @return audio_location
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_vocs_audio_location_get_audio_location(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VOCS_AUDIO_OUTPUT_DESC_CHANGED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_vocs_audio_output_desc_changed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_VOCS_AUDIO_OUTPUT_DESC_CHANGED
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_vocs_audio_output_desc_changed_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field description_len from event GATTSERVICE_SUBEVENT_VOCS_AUDIO_OUTPUT_DESC_CHANGED
+ * @param event packet
+ * @return description_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_vocs_audio_output_desc_changed_get_description_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field description from event GATTSERVICE_SUBEVENT_VOCS_AUDIO_OUTPUT_DESC_CHANGED
+ * @param event packet
+ * @return description
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_vocs_audio_output_desc_changed_get_description(const uint8_t * event){
+    return &event[7];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_vcs_volume_state_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field volume_setting from event GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE
+ * @param event packet
+ * @return volume_setting
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_vcs_volume_state_get_volume_setting(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field volume_change_step from event GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE
+ * @param event packet
+ * @return volume_change_step
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_vcs_volume_state_get_volume_change_step(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field mute from event GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE
+ * @param event packet
+ * @return mute
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_vcs_volume_state_get_mute(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_vcs_volume_flags_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field flags from event GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS
+ * @param event packet
+ * @return flags
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_vcs_volume_flags_get_flags(const uint8_t * event){
+    return event[5];
 }
 
 /**

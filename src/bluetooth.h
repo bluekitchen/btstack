@@ -308,6 +308,7 @@ typedef enum {
 #define OBEX_DISCONNECTED                                  0xB2
 #define OBEX_NOT_FOUND                                     0xB3
 #define OBEX_NOT_ACCEPTABLE                                0xB4
+#define OBEX_ABORTED                                       0xB5
 
 #define MESH_ERROR_APPKEY_INDEX_INVALID                    0xD0
 /* ENUM_END */
@@ -362,6 +363,18 @@ typedef enum {
 #define HCI_ACL_3DH5_SIZE         1021
        
 #define LE_ADVERTISING_DATA_SIZE    31
+#define LE_EXTENDED_ADVERTISING_MAX_HANDLE 0xEFu
+#define LE_EXTENDED_ADVERTISING_MAX_CHUNK_LEN 251
+
+// advertising event properties for extended advertising
+#define LE_ADVERTISING_PROPERTIES_CONNECTABLE      (1u<<0)
+#define LE_ADVERTISING_PROPERTIES_SCANNABLE        (1u<<1)
+#define LE_ADVERTISING_PROPERTIES_DIRECTED         (1u<<2)
+#define LE_ADVERTISING_PROPERTIES_HIGH_DUTY_CYCLE  (1u<<3)
+#define LE_ADVERTISING_PROPERTIES_LEGACY           (1u<<4)
+#define LE_ADVERTISING_PROPERTIES_ANONYMOUS        (1u<<5)
+#define LE_ADVERTISING_PROPERTIES_INCLUDE_TX_POWER (1u<<6)
+
 
 // SCO Packet Types
 #define SCO_PACKET_TYPES_NONE  0x0000

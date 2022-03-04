@@ -1505,22 +1505,8 @@ static void daemon_emit_packet(void * connection, uint8_t packet_type, uint16_t 
     }
 }
 
-// copy from btstack_util, just using a '-'
-static char bd_addr_to_str_buffer[6*3];  // 12:45:78:01:34:67\0
 char * bd_addr_to_str_dashed(const bd_addr_t addr){
-    // orig code
-    // sprintf(bd_addr_to_str_buffer, "%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
-    // sprintf-free code
-    char * p = bd_addr_to_str_buffer;
-    int i;
-    for (i = 0; i < 6 ; i++) {
-        uint8_t byte = addr[i];
-        *p++ = char_for_nibble(byte >> 4);
-        *p++ = char_for_nibble(byte & 0x0f);
-        *p++ = '-';
-    }
-    *--p = 0;
-    return (char *) bd_addr_to_str_buffer;
+    return bd_addr_to_str_with_delimiter(addr, '-');
 }
 
 static uint8_t remote_name_event[2+1+6+DEVICE_NAME_LEN+1]; // +1 for \0 in log_info

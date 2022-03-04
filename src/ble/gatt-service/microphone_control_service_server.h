@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 BlueKitchen GmbH
+ * Copyright (C) 2021 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,6 +44,7 @@
 #define MICROPHONE_CONTROL_SERVICE_SERVER_H
 
 #include <stdint.h>
+#include "ble/gatt-service/audio_input_control_service_server.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -62,16 +63,45 @@ extern "C" {
 
 /**
  * @brief Init Microphone Control Service Server with ATT DB
- * @param mute_value
+ * @param mute_state
  */
-void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_value);
+void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_state, uint8_t aics_info_num, aics_info_t * aics_info);
+
+/**
+ * @brief Register callback to receive updates of mute value from remote side via MICS_MUTE event
+ * @param callback
+ */
+void microphone_control_service_server_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
  * @brief Set mute value.
- * @param mute_value
+ * @param mute_state
  */
-void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t mute_value);
+void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t mute_state);
 
+/**
+ * @brief Set mute and gain mode, as well as gain setting of the AICS service identified by aics_index.
+ * @param aics_index
+ * @param audio_input_state see aics_audio_input_state_t in audio_input_control_service_server.h
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if aics_index is out of range, or ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if gain setting is out of valid range.
+ */
+uint8_t microphone_control_service_server_set_audio_input_state_for_aics(uint8_t aics_index, aics_audio_input_state_t * audio_input_state);
+
+/**
+ * @brief Set audio input description of the AICS service identified by aics_index.
+ * @param aics_index
+ * @param audio_input_state see aics_audio_input_state_t in audio_input_control_service_server.h
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if aics_index is out of range.
+ */
+uint8_t microphone_control_service_server_set_audio_input_description_for_aics(uint8_t aics_index, const char * audio_input_desc);
+
+/**
+ * @brief Set audio input status of the AICS service identified by aics_index.
+ * @param aics_index
+ * @param audio_input_status see aics_audio_input_status_t in audio_input_control_service_server.h
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if aics_index is out of range.
+ */
+uint8_t microphone_control_service_server_set_audio_input_status_for_aics(uint8_t aics_index, aics_audio_input_status_t audio_input_status);
 
 /* API_END */
 
