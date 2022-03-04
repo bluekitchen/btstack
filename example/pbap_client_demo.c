@@ -291,7 +291,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("[+] Connection closed\n");
                             break;
                         case PBAP_SUBEVENT_OPERATION_COMPLETED:
-                            printf("[+] Operation complete\n");
+                            printf("[+] Operation complete, status 0x%02x\n",
+                                   pbap_subevent_operation_completed_get_status(packet));
                             break;
                         case PBAP_SUBEVENT_AUTHENTICATION_REQUEST:
                             printf("[?] Authentication requested\n");
