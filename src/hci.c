@@ -973,6 +973,20 @@ uint8_t hci_send_sco_packet_buffer(int size){
 }
 #endif
 
+#ifdef ENABLE_BLE
+uint8_t hci_send_iso_packet_buffer(uint16_t size){
+    btstack_assert(hci_stack->hci_packet_buffer_reserved);
+
+    uint8_t * packet = hci_stack->hci_packet_buffer;
+    // TODO: check for space on controller
+    // TODO: track outgoing packet sent
+    hci_dump_packet( HCI_ISO_DATA_PACKET, 0, packet, size);
+
+    int err = hci_stack->hci_transport->send_packet(HCI_ISO_DATA_PACKET, packet, size);
+    return (err == 0) ? ERROR_CODE_SUCCESS : ERROR_CODE_HARDWARE_FAILURE;
+}
+#endif
+
 static void acl_handler(uint8_t *packet, uint16_t size){
 
     // get info

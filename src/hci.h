@@ -1309,6 +1309,11 @@ bool hci_can_send_prepared_sco_packet_now(void);
 uint8_t hci_send_sco_packet_buffer(int size);
 
 /**
+ * @brief Send ISO packet prepared in HCI packet buffer
+ */
+uint8_t hci_send_iso_packet_buffer(uint16_t size);
+
+/**
  * Reserves outgoing packet buffer.
  * @return true on success
  */
