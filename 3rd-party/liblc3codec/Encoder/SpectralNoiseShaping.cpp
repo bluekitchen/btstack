@@ -109,7 +109,7 @@ void SpectralNoiseShaping::run(const double* const X, const double* E_B, bool F_
         E_B_patched[i*2+0] = E_B[i];
         E_B_patched[i*2+1] = E_B[i];
     }
-    for (uint8_t i=0; i < lc3Config.N_b; i++)
+    for (uint8_t i=0; i < lc3Config.N_b - n2; i++)
     {
         E_B_patched[2*n2+i] = E_B[n2+i];
     }
