@@ -6473,6 +6473,13 @@ void gap_inquiry_set_scan_activity(uint16_t inquiry_scan_interval, uint16_t inqu
     hci_run();
 }
 
+int gap_inquiry_force_stop(void)
+{
+    gap_inquiry_stop();
+    hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
+    hci_run();
+    return 0;
+}
 
 /**
  * @brief Remote Name Request
