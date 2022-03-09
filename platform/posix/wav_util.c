@@ -146,7 +146,9 @@ int wav_writer_close(void){
 }
 
 int wav_writer_write_int8(int num_samples, int8_t * data){
-    if (data == NULL) return 1;
+    btstack_assert(data != NULL);
+    if (wav_writer_state.wav_file == NULL) return 1;
+
     int i = 0;
     int8_t zero_byte = 0;
     for (i=0; i<num_samples; i++){
@@ -161,7 +163,9 @@ int wav_writer_write_int8(int num_samples, int8_t * data){
 }
 
 int wav_writer_write_le_int16(int num_samples, int16_t * data){
-    if (data == NULL) return 1;
+    btstack_assert(data != NULL);
+    if (wav_writer_state.wav_file == NULL) return 1;
+
     fwrite(data, num_samples, 2, wav_writer_state.wav_file);
     
     wav_writer_state.total_num_samples+=num_samples;
@@ -170,10 +174,12 @@ int wav_writer_write_le_int16(int num_samples, int16_t * data){
 }
 
 int wav_writer_write_int16(int num_samples, int16_t * data){
+    btstack_assert(data != NULL);
+    if (wav_writer_state.wav_file == NULL) return 1;
+
     if (btstack_is_little_endian()){
         return wav_writer_write_le_int16(num_samples, data);
     }
-    if (data == NULL) return 1;
 
     int i;
     for (i=0;i<num_samples;i++){
