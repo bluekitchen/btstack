@@ -131,11 +131,7 @@ int main (int argc, const char * argv[]){
             return -10;
     }
 
-    // init config
-
-
     // init decoder
-    uint32_t bitrate_per_channel = bitrate / num_channels;
     uint8_t channel;
     lc3_decoder_ehima_t decoder_contexts[MAX_NUM_CHANNELS];
     const lc3_decoder_t * lc3_decoder;
@@ -144,8 +140,27 @@ int main (int argc, const char * argv[]){
         lc3_decoder = lc3_decoder_ehima_init_instance(decoder_context);
         lc3_decoder->configure(decoder_context, sample_rate_hz, duration2);
     }
+
+    uint32_t bitrate_per_channel = bitrate / num_channels;
     uint16_t bytes_per_frame          = lc3_decoder->get_number_octets_for_bitrate(&decoder_contexts[0], bitrate_per_channel);
     uint16_t number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(&decoder_contexts[0]);
+
+    // fix bitrate for 8_1
+    if ((sample_rate_hz == 8000) && (bitrate_per_channel == 27700)){
+        bitrate_per_channel = 27734;
+        bitrate = bitrate_per_channel * num_channels;
+        bytes_per_frame = 26;
+    }
+
+    // fix bitrate for 441_1 and 441_2
+    if (sample_rate_hz == 44100){
+        if ((frame_us == 7500) && (bitrate_per_channel == 95000)) {
+            bitrate = 95060;
+        }
+        if ((frame_us == 10000) && (bitrate_per_channel == 95500)) {
+            bytes_per_frame = 130;
+        }
+    }
 
     if (number_samples_per_frame > MAX_SAMPLES_PER_FRAME) {
         printf("number samples per frame %u too large\n", number_samples_per_frame);
