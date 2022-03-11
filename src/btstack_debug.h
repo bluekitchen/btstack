@@ -49,6 +49,10 @@
 #include "btstack_defines.h"
 #include "hci_dump.h"
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 #ifdef __AVR__
 #include <avr/pgmspace.h>
 #endif
@@ -147,5 +151,9 @@ void log_info_hexdump(const void *data, int size);
 void log_debug_hexdump(const void *data, int size);
 
 /* API_END */
+
+#if defined __cplusplus
+}
+#endif
 
 #endif // DEBUG_H
