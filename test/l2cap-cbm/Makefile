@@ -1,6 +1,3 @@
-CC = gcc
-CXX = g++
-
 # Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..

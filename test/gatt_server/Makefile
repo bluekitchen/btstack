@@ -2,7 +2,7 @@
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST  -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
@@ -66,22 +66,22 @@ build-%/profile.h: profile.gatt | build-%
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 build-coverage/%.o: %.c | build-coverage
-	gcc -c $(CFLAGS_COVERAGE) $< -o $@
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
 build-coverage/%.o: %.cpp | build-coverage
-	g++ -c $(CFLAGS_COVERAGE) $< -o $@
+	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
 
 build-asan/%.o: %.c | build-asan
-	gcc -c $(CFLAGS_ASAN) $< -o $@
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
 build-asan/%.o: %.cpp | build-asan
-	g++ -c $(CFLAGS_ASAN) $< -o $@
+	${CXX} -c $(CFLAGS_ASAN) $< -o $@
 
 build-coverage/gatt_server_test: ${COMMON_OBJ_COVERAGE} build-coverage/profile.h build-coverage/gatt_server_test.o | build-coverage
-	g++ $(filter-out build-coverage/profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $(filter-out build-coverage/profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/gatt_server_test: ${COMMON_OBJ_ASAN} build-asan/profile.h build-asan/gatt_server_test.o | build-asan
-	g++ $(filter-out build-asan/profile.h,$^) ${LDFLAGS_ASAN} -o $@
+	${CXX} $(filter-out build-asan/profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
 test: all
 	build-asan/gatt_server_test

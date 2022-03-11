@@ -1,8 +1,8 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "btstack_memory.h"
 #include "btstack_debug.h"
+#include "btstack_util.h"
 
 TEST_GROUP(BTstackUtil){
     void setup(void){

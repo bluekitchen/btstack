@@ -27,11 +27,10 @@ static uint8_t connected;
 static uint8_t advertisement_packet[150];
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-void mock_simulate_hci_state_working(void);
-void mock_simulate_command_complete(const hci_cmd_t *cmd);
-void mock_simulate_scan_response(void);
-void mock_simulate_connected(void);
-
+extern "C" void mock_simulate_hci_state_working(void);
+extern "C" void mock_simulate_command_complete(const hci_cmd_t *cmd);
+extern "C" void mock_simulate_scan_response(void);
+extern "C" void mock_simulate_connected(void);
 
 void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
 	for (int i=0; i<size; i++){

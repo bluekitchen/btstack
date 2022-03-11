@@ -1,11 +1,9 @@
-CC = g++
-
 # Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I..
 
@@ -42,34 +40,39 @@ build-%:
 build-coverage/%.o: %.c | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
+build-coverage/%.o: %.cpp | build-coverage
+	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
+
 build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
+build-asan/%.o: %.cpp | build-asan
+	${CXX} -c $(CFLAGS_ASAN) $< -o $@
 
 build-coverage/sdp_rfcomm_query: ${COMMON_OBJ_COVERAGE} build-coverage/sdp_client_rfcomm.o build-coverage/sdp_rfcomm_query.o build-coverage/btstack_linked_list.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-coverage/general_sdp_query: ${COMMON_OBJ_COVERAGE} build-coverage/general_sdp_query.o build-coverage/btstack_linked_list.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-coverage/service_attribute_search_query: ${COMMON_OBJ_COVERAGE} build-coverage/service_attribute_search_query.o build-coverage/btstack_linked_list.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-coverage/service_search_query: ${COMMON_OBJ_COVERAGE} build-coverage/service_search_query.o build-coverage/btstack_linked_list.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 
 build-asan/sdp_rfcomm_query: ${COMMON_OBJ_ASAN} build-asan/sdp_client_rfcomm.o build-asan/sdp_rfcomm_query.o build-asan/btstack_linked_list.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 build-asan/general_sdp_query: ${COMMON_OBJ_ASAN} build-asan/general_sdp_query.o build-asan/btstack_linked_list.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 build-asan/service_attribute_search_query: ${COMMON_OBJ_ASAN} build-asan/service_attribute_search_query.o build-asan/btstack_linked_list.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 build-asan/service_search_query: ${COMMON_OBJ_ASAN} build-asan/service_search_query.o build-asan/btstack_linked_list.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 
 test: all

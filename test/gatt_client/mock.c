@@ -171,7 +171,7 @@ int  btstack_run_loop_remove_timer(btstack_timer_source_t *timer){
 }
 
 // todo:
-hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type){
+hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type){
 	printf("hci_connection_for_bd_addr_and_type not implemented in mock backend\n");
 	return NULL;
 }

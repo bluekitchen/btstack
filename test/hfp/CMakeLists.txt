@@ -43,11 +43,9 @@ list(SORT SOURCES)
 add_library(btstack STATIC ${SOURCES})
 
 # create targets for all tests
-file(GLOB EXAMPLES_C "*_test.c")
+file(GLOB EXAMPLES_C "*_test.cpp")
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-	# Use C++ Compiler
-	set_source_files_properties(${EXAMPLE_FILE} PROPERTIES LANGUAGE CXX )
 	set (SOURCE_FILES ${EXAMPLE_FILE})
 	message("test/hfp tool: ${EXAMPLE}")
 	add_executable(${EXAMPLE} ${SOURCE_FILES} )

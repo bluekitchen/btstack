@@ -1,10 +1,8 @@
-CC = g++
-
 # Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -Ibuild-coverage -I${BTSTACK_ROOT}/src
+CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null -I. -Ibuild-coverage -I${BTSTACK_ROOT}/src
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
@@ -48,20 +46,26 @@ build-%/profile.h: profile.gatt | build-%
 build-coverage/%.o: %.c | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
+build-coverage/%.o: %.cpp | build-coverage
+	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
+
 build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
+build-asan/%.o: %.cpp | build-asan
+	${CXX} -c $(CFLAGS_ASAN) $< -o $@
+
 build-coverage/gatt_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/profile.h build-coverage/gatt_client_test.o expected_results.h | build-coverage
-	${CC} $(filter-out build-coverage/profile.h expected_results.h,$^) ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $(filter-out build-coverage/profile.h expected_results.h,$^) ${LDFLAGS_COVERAGE} -o $@
 
 build-coverage/le_central: ${COMMON_OBJ_COVERAGE} build-coverage/le_central.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/gatt_client_test: ${COMMON_OBJ_ASAN} build-asan/profile.h  build-asan/gatt_client_test.o expected_results.h | build-asan
-	${CC} $(filter-out build-asan/profile.h expected_results.h,$^) ${LDFLAGS_ASAN} -o $@
+	${CXX} $(filter-out build-asan/profile.h expected_results.h,$^) ${LDFLAGS_ASAN} -o $@
 
 build-asan/le_central: ${COMMON_OBJ_ASAN} build-asan/le_central.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
 	build-asan/gatt_client_test

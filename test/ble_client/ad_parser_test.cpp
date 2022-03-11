@@ -58,7 +58,7 @@
 #include "ad_parser.h"
 #include "l2cap.h"
 
-void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
+extern "C" void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
 
 static uint8_t expected_bt_addr[] = {0x34, 0xB1, 0xF7, 0xD1, 0x77, 0x9B};
 static uint8_t adv_multi_packet[] = {

@@ -23,19 +23,19 @@ set(SOURCES
 	../../src/btstack_linked_list.c
 	../../src/btstack_util.c
 	../../src/hci_dump.c
-	../mock/mock_gatt_client.c
-	../../src/ble/gatt-service/battery_service_client.c
 	../../src/ble/gatt-service/ancs_client.c
+	../../src/ble/gatt-service/battery_service_client.c
+	../../src/ble/gatt-service/device_information_service_client.c
+	../mock/mock_gatt_client.c
 )
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
 # create targets
-file(GLOB TEST_FILES_C "*_test.c")
+file(GLOB TEST_FILES_C "*_test.cpp")
 foreach(TEST_FILE ${TEST_FILES_C})
 	# Use C++ Compiler
-	set_source_files_properties(${TEST_FILE} PROPERTIES LANGUAGE CXX )
 	set (SOURCE_FILES ${TEST_FILE})
 	get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
 	add_executable(${TEST_NAME} ${SOURCE_FILES} )
