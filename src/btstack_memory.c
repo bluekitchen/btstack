@@ -56,7 +56,7 @@
 #include <stdlib.h>
 
 #ifdef ENABLE_MALLOC_TEST
-extern "C" void * test_malloc(size_t size);
+void * test_malloc(size_t size);
 #define malloc test_malloc
 #endif
 
