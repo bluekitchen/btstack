@@ -68,7 +68,7 @@
 #define AVDTP_MAX_SEP_NUM 10
 #define A2DP_SET_CONFIG_DELAY_MS 200
 
-static const char * a2dp_default_source_service_name = "BTstack A2DP Source Service";
+static const char * a2dp_source_default_service_name = "BTstack A2DP Source Service";
 static const char * a2dp_default_source_service_provider_name = "BTstack A2DP Source Service Provider";
 
 static uint8_t (*a2dp_source_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
@@ -85,82 +85,14 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 static void a2dp_discover_seps_with_next_waiting_connection(void);
 
 void a2dp_source_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name){
-    uint8_t* attribute;
-    de_create_sequence(service);
-
-    // 0x0000 "Service Record Handle"
-    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
-    de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
-
-    // 0x0001 "Service Class ID List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
-    attribute = de_push_sequence(service);
-    {
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_AUDIO_SOURCE); 
+    if (service_provider_name == NULL){
+        service_provider_name = a2dp_default_source_service_provider_name;
     }
-    de_pop_sequence(service, attribute);
-
-    // 0x0004 "Protocol Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST);
-    attribute = de_push_sequence(service);
-    {
-        uint8_t* l2cpProtocol = de_push_sequence(attribute);
-        {
-            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVDTP);  
-        }
-        de_pop_sequence(attribute, l2cpProtocol);
-        
-        uint8_t* avProtocol = de_push_sequence(attribute);
-        {
-            de_add_number(avProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVDTP);  // avProtocol_service
-            de_add_number(avProtocol,  DE_UINT, DE_SIZE_16,  0x0103);  // version
-        }
-        de_pop_sequence(attribute, avProtocol);
+    if (service_name == NULL){
+        service_name = a2dp_source_default_service_name;
     }
-    de_pop_sequence(service, attribute);
-
-    // 0x0005 "Public Browse Group"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BROWSE_GROUP_LIST); // public browse group
-    attribute = de_push_sequence(service);
-    {
-        de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
-    }
-    de_pop_sequence(service, attribute);
-
-    // 0x0009 "Bluetooth Profile Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
-    attribute = de_push_sequence(service);
-    {
-        uint8_t *a2dProfile = de_push_sequence(attribute);
-        {
-            de_add_number(a2dProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_ADVANCED_AUDIO_DISTRIBUTION); 
-            de_add_number(a2dProfile,  DE_UINT, DE_SIZE_16, 0x0103); 
-        }
-        de_pop_sequence(attribute, a2dProfile);
-    }
-    de_pop_sequence(service, attribute);
-
-
-    // 0x0100 "Service Name"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-    if (service_name){
-        de_add_data(service,  DE_STRING, strlen(service_name), (uint8_t *) service_name);
-    } else {
-        de_add_data(service, DE_STRING, strlen(a2dp_default_source_service_name), (uint8_t *) a2dp_default_source_service_name);
-    }
-
-    // 0x0100 "Provider Name"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0102);
-    if (service_provider_name){
-        de_add_data(service,  DE_STRING, strlen(service_provider_name), (uint8_t *) service_provider_name);
-    } else {
-        de_add_data(service, DE_STRING, strlen(a2dp_default_source_service_provider_name), (uint8_t *) a2dp_default_source_service_provider_name);
-    }
-
-    // 0x0311 "Supported Features"
-    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);
-    de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
+    a2dp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_AUDIO_SOURCE,
+                           supported_features, service_name, service_provider_name);
 }
 
 static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer){

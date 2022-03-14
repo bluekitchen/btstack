@@ -57,6 +57,8 @@ void a2dp_init(void);
 
 void a2dp_deinit(void);
 
+void a2dp_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, uint16_t service_class_uuid, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+
 // source
 void a2dp_register_source_packet_handler(btstack_packet_handler_t callback);
 
