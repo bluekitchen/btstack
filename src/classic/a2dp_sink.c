@@ -146,7 +146,7 @@ uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16
     btstack_assert(connection != NULL);
 
     // setup state
-    connection->a2dp_sink_outgoing_active = true;
+    connection->a2dp_sink_config_process.outgoing_active = true;
     *avdtp_cid = outgoing_cid;
 
     return ERROR_CODE_SUCCESS;
@@ -192,9 +192,9 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 // notify about connection error only if we're initiator
-                if (connection->a2dp_sink_outgoing_active) {
+                if (connection->a2dp_sink_config_process.outgoing_active) {
                     log_info("A2DP sink signaling connection failed status %d", status);
-                    connection->a2dp_sink_outgoing_active = false;
+                    connection->a2dp_sink_config_process.outgoing_active = false;
                     a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
                 }
             }
@@ -225,7 +225,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             btstack_assert(connection != NULL);
 
             // about to notify client
-            connection->a2dp_sink_outgoing_active = false;
+            connection->a2dp_sink_config_process.outgoing_active = false;
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 log_info("A2DP sink streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", a2dp_sink_cid, status);
@@ -296,7 +296,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            connection->a2dp_sink_outgoing_active = false;
+            connection->a2dp_sink_config_process.outgoing_active = false;
 
             if (a2dp_sink_cid != cid) break;
 

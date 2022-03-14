@@ -108,7 +108,7 @@ static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer)
         return;
     }
 
-    if (connection->a2dp_source_stream_endpoint_configured) return;
+    if (connection->a2dp_source_config_process.stream_endpoint_configured) return;
     avdtp_source_discover_stream_endpoints(avdtp_cid);
 }
 
@@ -139,8 +139,8 @@ static void a2dp_source_set_config_timer_stop(void){
 
 // Discover seps, both incoming and outgoing
 static void a2dp_start_discovering_seps(avdtp_connection_t * connection){
-    connection->a2dp_source_state = A2DP_DISCOVER_SEPS;
-    connection->a2dp_source_discover_seps = false;
+    connection->a2dp_source_config_process.state = A2DP_DISCOVER_SEPS;
+    connection->a2dp_source_config_process.discover_seps = false;
 
     a2dp_source_sep_discovery_index = 0;
     a2dp_source_sep_discovery_count = 0;
@@ -148,7 +148,7 @@ static void a2dp_start_discovering_seps(avdtp_connection_t * connection){
     a2dp_source_sep_discovery_cid = connection->avdtp_cid;
 
     // if we initiated the connection, start config right away, else wait a bit to give remote a chance to do it first
-    if (connection->a2dp_source_outgoing_active){
+    if (connection->a2dp_source_config_process.outgoing_active){
         log_info("discover seps");
         avdtp_source_discover_stream_endpoints(connection->avdtp_cid);
     } else {
@@ -163,7 +163,7 @@ static void a2dp_discover_seps_with_next_waiting_connection(void){
     btstack_linked_list_iterator_init(&it, avdtp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_connection_t * next_connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (!next_connection->a2dp_source_discover_seps) continue;
+        if (!next_connection->a2dp_source_config_process.discover_seps) continue;
         a2dp_start_discovering_seps(next_connection);
     }
 }
@@ -178,7 +178,7 @@ static void a2dp_source_ready_for_sep_discovery(avdtp_connection_t * connection)
         a2dp_start_discovering_seps(connection);
     } else {
         // post-pone sep discovery
-        connection->a2dp_source_discover_seps = true;
+        connection->a2dp_source_config_process.discover_seps = true;
     }
 }
 
@@ -186,9 +186,9 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
     uint16_t cid = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
     avdtp_connection_t *avdtp_connection = avdtp_get_connection_for_avdtp_cid(cid);
     btstack_assert(avdtp_connection != NULL);
-    avdtp_connection->a2dp_source_local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
+    avdtp_connection->a2dp_source_config_process.local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     // bail out if local seid invalid
-    if (!avdtp_connection->a2dp_source_local_stream_endpoint) return;
+    if (!avdtp_connection->a2dp_source_config_process.local_stream_endpoint) return;
 
     // stop timer
     if (a2dp_source_sep_discovery_cid == cid) {
@@ -196,12 +196,12 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
         a2dp_source_sep_discovery_cid = 0;
     }
 
-    avdtp_connection->a2dp_source_stream_endpoint_configured = true;
+    avdtp_connection->a2dp_source_config_process.stream_endpoint_configured = true;
 
-    switch (avdtp_connection->a2dp_source_state) {
+    switch (avdtp_connection->a2dp_source_config_process.state) {
         case A2DP_W4_SET_CONFIGURATION:
             // outgoing: discovery and config of remote sink sep successful, trigger stream open
-            avdtp_connection->a2dp_source_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
+            avdtp_connection->a2dp_source_config_process.state = A2DP_W2_OPEN_STREAM_WITH_SEID;
             break;
         case A2DP_DISCOVER_SEPS:
         case A2DP_GET_CAPABILITIES:
@@ -209,7 +209,7 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
         case A2DP_DISCOVERY_DONE:
         case A2DP_W4_GET_CONFIGURATION:
             // incoming: wait for stream open
-            avdtp_connection->a2dp_source_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
+            avdtp_connection->a2dp_source_config_process.state = A2DP_W4_OPEN_STREAM_WITH_SEID;
             break;
         default:
             // wait for configuration after sending reconfigure - keep state
@@ -218,10 +218,15 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
 }
 
 static void a2dp_source_set_config(avdtp_connection_t * connection){
-    uint8_t remote_seid = connection->a2dp_source_local_stream_endpoint->set_config_remote_seid;
-    log_info("A2DP initiate set configuration locally and wait for response ... local seid 0x%02x, remote seid 0x%02x", avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), remote_seid);
-    connection->a2dp_source_state = A2DP_W4_SET_CONFIGURATION;
-    avdtp_source_set_configuration(connection->avdtp_cid, avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), remote_seid, connection->a2dp_source_local_stream_endpoint->remote_configuration_bitmap, connection->a2dp_source_local_stream_endpoint->remote_configuration);
+    uint8_t remote_seid = connection->a2dp_source_config_process.local_stream_endpoint->set_config_remote_seid;
+    log_info("A2DP initiate set configuration locally and wait for response ... local seid 0x%02x, remote seid 0x%02x",
+             avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint), remote_seid);
+    connection->a2dp_source_config_process.state = A2DP_W4_SET_CONFIGURATION;
+    avdtp_source_set_configuration(connection->avdtp_cid,
+                                   avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint),
+                                   remote_seid,
+                                   connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration_bitmap,
+                                   connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration);
 }
 
 static void a2dp_source_handle_media_capability(uint16_t cid, uint8_t a2dp_subevent_id, uint8_t *packet, uint16_t size){
@@ -255,16 +260,16 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 // notify about connection error only if we're initiator
-                if (connection->a2dp_source_outgoing_active){
+                if (connection->a2dp_source_config_process.outgoing_active){
                     log_info("A2DP source signaling connection failed status 0x%02x", status);
-                    connection->a2dp_source_outgoing_active = false;
+                    connection->a2dp_source_config_process.outgoing_active = false;
                     a2dp_replace_subevent_id_and_emit_source(packet, size,
                                                              A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
                 }
                 break;
             }
             log_info("A2DP source signaling connection established avdtp_cid 0x%02x", cid);
-            connection->a2dp_source_state = A2DP_CONNECTED;
+            connection->a2dp_source_config_process.state = A2DP_CONNECTED;
 
             // notify app
             a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
@@ -275,7 +280,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             // For this, we trigger SDP query only if:
             // a) this is an outgoing source connection
             // b) this connection wasn't caused by an outgoing sink request
-            if (connection->a2dp_source_outgoing_active || !connection->a2dp_sink_outgoing_active){
+            if (connection->a2dp_source_config_process.outgoing_active || !connection->a2dp_sink_config_process.outgoing_active){
                 a2dp_source_ready_for_sep_discovery(connection);
             }
             break;
@@ -285,7 +290,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (connection->a2dp_source_state == A2DP_DISCOVER_SEPS) {
+            if (connection->a2dp_source_config_process.state == A2DP_DISCOVER_SEPS) {
                 avdtp_sep_t sep;
                 memset(&sep, 0, sizeof(avdtp_sep_t));
                 sep.seid       = avdtp_subevent_signaling_sep_found_get_remote_seid(packet);;
@@ -306,15 +311,15 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (connection->a2dp_source_state != A2DP_DISCOVER_SEPS) break;
+            if (connection->a2dp_source_config_process.state != A2DP_DISCOVER_SEPS) break;
 
             if (a2dp_source_sep_discovery_count > 0){
-                connection->a2dp_source_state = A2DP_GET_CAPABILITIES;
+                connection->a2dp_source_config_process.state = A2DP_GET_CAPABILITIES;
                 a2dp_source_sep_discovery_index = 0;
-                connection->a2dp_source_have_config = false;
+                connection->a2dp_source_config_process.have_config = false;
             } else {
-                if (connection->a2dp_source_outgoing_active){
-                    connection->a2dp_source_outgoing_active = false;
+                if (connection->a2dp_source_config_process.outgoing_active){
+                    connection->a2dp_source_config_process.outgoing_active = false;
                     connection = avdtp_get_connection_for_avdtp_cid(cid);
                     btstack_assert(connection != NULL);
                     a2dp_emit_source_streaming_connection_failed(connection,
@@ -322,7 +327,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 }
 
                 // continue
-                connection->a2dp_source_state = A2DP_CONNECTED;
+                connection->a2dp_source_config_process.state = A2DP_CONNECTED;
                 a2dp_source_sep_discovery_cid = 0;
                 a2dp_discover_seps_with_next_waiting_connection();
             }
@@ -333,14 +338,14 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
+            if (connection->a2dp_source_config_process.state != A2DP_GET_CAPABILITIES) break;
 
             // forward codec capability
             a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY);
 
 #ifndef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
             // select SEP if none configured yet
-            if (connection->a2dp_source_have_config == false){
+            if (connection->a2dp_source_config_process.have_config == false){
                 // find SBC stream endpoint
                 avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_source_stream_endpoint_for_media_codec(AVDTP_CODEC_SBC);
                 if (stream_endpoint != NULL){
@@ -394,9 +399,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             cid = avdtp_subevent_signaling_delay_reporting_capability_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
-            log_info("received AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, cid 0x%02x, state %d", cid, connection->a2dp_source_state);
+            log_info("received AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, cid 0x%02x, state %d", cid, connection->a2dp_source_config_process.state);
 
-            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
+            if (connection->a2dp_source_config_process.state != A2DP_GET_CAPABILITIES) break;
 
             // store delay reporting capability
             a2dp_source_sep_discovery_seps[a2dp_source_sep_discovery_index].registered_service_categories |= 1 << AVDTP_DELAY_REPORTING;
@@ -409,7 +414,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
+            if (connection->a2dp_source_config_process.state != A2DP_GET_CAPABILITIES) break;
 
             // forward capabilities done for endpoint
             a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE);
@@ -428,9 +433,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 a2dp_emit_source(event, sizeof(event));
 
                 // do we have a valid config?
-                if (connection->a2dp_source_have_config){
-                    connection->a2dp_source_state = A2DP_SET_CONFIGURATION;
-                    connection->a2dp_source_have_config = false;
+                if (connection->a2dp_source_config_process.have_config){
+                    connection->a2dp_source_config_process.state = A2DP_SET_CONFIGURATION;
+                    connection->a2dp_source_config_process.have_config = false;
                     break;
                 }
 
@@ -440,14 +445,14 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 break;
 #else
                 // we didn't find a suitable SBC stream endpoint, sorry.
-                if (connection->a2dp_source_outgoing_active){
-                    connection->a2dp_source_outgoing_active = false;
+                if (connection->a2dp_source_config_process.outgoing_active){
+                    connection->a2dp_source_config_process.outgoing_active = false;
                     connection = avdtp_get_connection_for_avdtp_cid(cid);
                     btstack_assert(connection != NULL);
                     a2dp_emit_source_streaming_connection_failed(connection,
                                                                  ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
                 }
-                connection->a2dp_source_state = A2DP_CONNECTED;
+                connection->a2dp_source_config_process.state = A2DP_CONNECTED;
                 a2dp_source_sep_discovery_cid = 0;
                 a2dp_discover_seps_with_next_waiting_connection();
 #endif
@@ -503,9 +508,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (connection->a2dp_source_state != A2DP_W4_OPEN_STREAM_WITH_SEID) break;
+            if (connection->a2dp_source_config_process.state != A2DP_W4_OPEN_STREAM_WITH_SEID) break;
 
-            connection->a2dp_source_outgoing_active = false;
+            connection->a2dp_source_config_process.outgoing_active = false;
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 log_info("A2DP source streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
@@ -516,7 +521,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             log_info("A2DP source streaming connection established --- avdtp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x", cid, 
                 avdtp_subevent_streaming_connection_established_get_local_seid(packet),
                 avdtp_subevent_streaming_connection_established_get_remote_seid(packet));
-            connection->a2dp_source_state = A2DP_STREAMING_OPENED;
+            connection->a2dp_source_config_process.state = A2DP_STREAMING_OPENED;
             a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
             break;
 
@@ -536,9 +541,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
             
-            log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), connection->a2dp_source_state, cid);
+            log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), connection->a2dp_source_config_process.state, cid);
 
-            switch (connection->a2dp_source_state){
+            switch (connection->a2dp_source_config_process.state){
                 case A2DP_GET_CAPABILITIES:
                     remote_seid = a2dp_source_sep_discovery_seps[a2dp_source_sep_discovery_index].seid;
                     log_info("A2DP get capabilities for remote seid 0x%02x", remote_seid);
@@ -550,29 +555,38 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     return;
 
                 case A2DP_W2_OPEN_STREAM_WITH_SEID:
-                    log_info("A2DP open stream ... local seid 0x%02x, active remote seid 0x%02x", avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), connection->a2dp_source_local_stream_endpoint->remote_sep.seid);
-                    connection->a2dp_source_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
-                    avdtp_source_open_stream(cid, avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), connection->a2dp_source_local_stream_endpoint->remote_sep.seid);
+                    log_info("A2DP open stream ... local seid 0x%02x, active remote seid 0x%02x",
+                             avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint),
+                             connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.seid);
+                    connection->a2dp_source_config_process.state = A2DP_W4_OPEN_STREAM_WITH_SEID;
+                    avdtp_source_open_stream(cid,
+                                             avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint),
+                                             connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.seid);
                     break;
 
                 case A2DP_W2_RECONFIGURE_WITH_SEID:
-                    log_info("A2DP reconfigured ... local seid 0x%02x, active remote seid 0x%02x", avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), connection->a2dp_source_local_stream_endpoint->remote_sep.seid);
+                    log_info("A2DP reconfigured ... local seid 0x%02x, active remote seid 0x%02x",
+                             avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint),
+                             connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.seid);
                     a2dp_emit_source_stream_reconfigured(cid, avdtp_stream_endpoint_seid(
-                            connection->a2dp_source_local_stream_endpoint), ERROR_CODE_SUCCESS);
-                    connection->a2dp_source_state = A2DP_STREAMING_OPENED;
+                            connection->a2dp_source_config_process.local_stream_endpoint), ERROR_CODE_SUCCESS);
+                    connection->a2dp_source_config_process.state = A2DP_STREAMING_OPENED;
                     break;
 
                 case A2DP_STREAMING_OPENED:
                     switch (signal_identifier){
                         case  AVDTP_SI_START:
-                            a2dp_emit_source_stream_event(cid, avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), A2DP_SUBEVENT_STREAM_STARTED);
+                            a2dp_emit_source_stream_event(cid, avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint),
+                                                          A2DP_SUBEVENT_STREAM_STARTED);
                             break;
                         case AVDTP_SI_SUSPEND:
-                            a2dp_emit_source_stream_event(cid, avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), A2DP_SUBEVENT_STREAM_SUSPENDED);
+                            a2dp_emit_source_stream_event(cid, avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint),
+                                                          A2DP_SUBEVENT_STREAM_SUSPENDED);
                             break;
                         case AVDTP_SI_ABORT:
                         case AVDTP_SI_CLOSE:
-                            a2dp_emit_source_stream_event(cid, avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), A2DP_SUBEVENT_STREAM_STOPPED);
+                            a2dp_emit_source_stream_event(cid, avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint),
+                                                          A2DP_SUBEVENT_STREAM_STOPPED);
                             break;
                         default:
                             break;
@@ -591,15 +605,17 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
             if (avdtp_subevent_signaling_reject_get_is_initiator(packet) == 0) break;
 
-            switch (connection->a2dp_source_state) {
+            switch (connection->a2dp_source_config_process.state) {
                 case A2DP_W2_RECONFIGURE_WITH_SEID:
-                    log_info("A2DP reconfigure failed ... local seid 0x%02x, active remote seid 0x%02x", avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), connection->a2dp_source_local_stream_endpoint->remote_sep.seid);
+                    log_info("A2DP reconfigure failed ... local seid 0x%02x, active remote seid 0x%02x",
+                             avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint),
+                             connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.seid);
                     a2dp_emit_source_stream_reconfigured(cid, avdtp_stream_endpoint_seid(
-                            connection->a2dp_source_local_stream_endpoint), ERROR_CODE_UNSPECIFIED_ERROR);
-                    connection->a2dp_source_state = A2DP_STREAMING_OPENED;
+                            connection->a2dp_source_config_process.local_stream_endpoint), ERROR_CODE_UNSPECIFIED_ERROR);
+                    connection->a2dp_source_config_process.state = A2DP_STREAMING_OPENED;
                     break;
                 default:
-                    connection->a2dp_source_state = A2DP_CONNECTED;
+                    connection->a2dp_source_config_process.state = A2DP_CONNECTED;
                     break;
             }
 
@@ -613,7 +629,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
             if (avdtp_subevent_signaling_general_reject_get_is_initiator(packet) == 0) break;
 
-            connection->a2dp_source_state = A2DP_CONNECTED;
+            connection->a2dp_source_config_process.state = A2DP_CONNECTED;
             a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
             break;
 
@@ -622,7 +638,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            connection->a2dp_source_state = A2DP_CONFIGURED;
+            connection->a2dp_source_config_process.state = A2DP_CONFIGURED;
             a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_STREAM_RELEASED);
             break;
 
@@ -634,10 +650,10 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             // connect/release are passed on to app
             if (a2dp_source_sep_discovery_cid == cid){
                 a2dp_source_set_config_timer_stop();
-                connection->a2dp_source_stream_endpoint_configured = false;
-                connection->a2dp_source_local_stream_endpoint = NULL;
+                connection->a2dp_source_config_process.stream_endpoint_configured = false;
+                connection->a2dp_source_config_process.local_stream_endpoint = NULL;
 
-                connection->a2dp_source_state = A2DP_IDLE;
+                connection->a2dp_source_config_process.state = A2DP_IDLE;
                 a2dp_source_sep_discovery_cid = 0;
             }
             a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED);
@@ -706,21 +722,21 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint16_t *avdtp_cid)
         btstack_assert(connection != NULL);
 
         // setup state
-        connection->a2dp_source_outgoing_active = true;
-        connection->a2dp_source_state = A2DP_W4_CONNECTED;
+        connection->a2dp_source_config_process.outgoing_active = true;
+        connection->a2dp_source_config_process.state = A2DP_W4_CONNECTED;
         *avdtp_cid = outgoing_cid;
 
     } else {
-        if (connection->a2dp_source_outgoing_active || connection->a2dp_source_stream_endpoint_configured) {
+        if (connection->a2dp_source_config_process.outgoing_active || connection->a2dp_source_config_process.stream_endpoint_configured) {
             return ERROR_CODE_COMMAND_DISALLOWED;
         }
 
         // check state
-        switch (connection->a2dp_source_state){
+        switch (connection->a2dp_source_config_process.state){
             case A2DP_IDLE:
             case A2DP_CONNECTED:
                 // restart process e.g. if there no suitable stream endpoints or they had been in use
-                connection->a2dp_source_outgoing_active = true;
+                connection->a2dp_source_config_process.outgoing_active = true;
                 *avdtp_cid = connection->avdtp_cid;
                 a2dp_source_ready_for_sep_discovery(connection);
                 break;
@@ -768,7 +784,7 @@ static uint8_t a2dp_source_config_init(avdtp_connection_t *connection, uint8_t l
                                        avdtp_media_codec_type_t codec_type) {
 
     // check state
-    switch (connection->a2dp_source_state){
+    switch (connection->a2dp_source_config_process.state){
         case A2DP_DISCOVERY_DONE:
         case A2DP_GET_CAPABILITIES:
             break;
@@ -806,8 +822,8 @@ static uint8_t a2dp_source_config_init(avdtp_connection_t *connection, uint8_t l
     }
 
     // suitable Sink stream endpoint found, configure it
-    connection->a2dp_source_local_stream_endpoint = stream_endpoint;
-    connection->a2dp_source_have_config = true;
+    connection->a2dp_source_config_process.local_stream_endpoint = stream_endpoint;
+    connection->a2dp_source_config_process.have_config = true;
 
 #ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
     // continue outgoing configuration
@@ -830,9 +846,9 @@ uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_
         return status;
     }
     // set config in reserved buffer
-    connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) connection->a2dp_source_local_stream_endpoint->media_codec_info;
-    connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
-    avdtp_config_sbc_store(connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info;
+    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
+    avdtp_config_sbc_store(connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
 #ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
     a2dp_source_set_config(connection);
@@ -853,9 +869,9 @@ uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid,
     }
 
     // set config in reserved buffer
-    connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *)connection->a2dp_source_local_stream_endpoint->media_codec_info;
-    connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
-    avdtp_config_mpeg_audio_store( connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *)connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info;
+    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
+    avdtp_config_mpeg_audio_store(connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
 #ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
     a2dp_source_set_config(connection);
@@ -874,9 +890,9 @@ uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid, 
     if (status != 0) {
         return status;
     }
-    connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) connection->a2dp_source_local_stream_endpoint->media_codec_info;
-    connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 6;
-    avdtp_config_mpeg_aac_store( connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info;
+    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 6;
+    avdtp_config_mpeg_aac_store(connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
 #ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
     a2dp_source_set_config(connection);
@@ -896,9 +912,9 @@ uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid, uint8_t local_seid, uint
         return status;
     }
 
-    connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) connection->a2dp_source_local_stream_endpoint->media_codec_info;
-    connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 7;
-    avdtp_config_atrac_store( connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info;
+    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 7;
+    avdtp_config_atrac_store(connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
 #ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
     a2dp_source_set_config(connection);
@@ -919,8 +935,8 @@ uint8_t a2dp_source_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uin
         return status;
     }
 
-    connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) media_codec_information;
-    connection->a2dp_source_local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_information_len;
+    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) media_codec_information;
+    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_information_len;
 
 #ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
     a2dp_source_set_config(connection);
@@ -935,36 +951,36 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    if (connection->a2dp_source_state != A2DP_STREAMING_OPENED) {
+    if (connection->a2dp_source_config_process.state != A2DP_STREAMING_OPENED) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    btstack_assert(connection->a2dp_source_local_stream_endpoint != NULL);
+    btstack_assert(connection->a2dp_source_config_process.local_stream_endpoint != NULL);
 
     log_info("Reconfigure avdtp_cid 0x%02x", avdtp_cid);
 
-    avdtp_media_codec_type_t codec_type = connection->a2dp_source_local_stream_endpoint->sep.capabilities.media_codec.media_codec_type;
+    avdtp_media_codec_type_t codec_type = connection->a2dp_source_config_process.local_stream_endpoint->sep.capabilities.media_codec.media_codec_type;
     uint8_t codec_info_len;
     switch (codec_type){
         case AVDTP_CODEC_SBC:
             codec_info_len = 4;
-            (void)memcpy(connection->a2dp_source_local_stream_endpoint->media_codec_info, connection->a2dp_source_local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
-            avdtp_config_sbc_set_sampling_frequency(connection->a2dp_source_local_stream_endpoint->media_codec_info, sampling_frequency);
+            (void)memcpy(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            avdtp_config_sbc_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
         case AVDTP_CODEC_MPEG_1_2_AUDIO:
             codec_info_len = 4;
-            (void)memcpy(connection->a2dp_source_local_stream_endpoint->media_codec_info, connection->a2dp_source_local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
-            avdtp_config_mpeg_audio_set_sampling_frequency(connection->a2dp_source_local_stream_endpoint->media_codec_info, sampling_frequency);
+            (void)memcpy(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            avdtp_config_mpeg_audio_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
         case AVDTP_CODEC_MPEG_2_4_AAC:
             codec_info_len = 6;
-            (void)memcpy(connection->a2dp_source_local_stream_endpoint->media_codec_info, connection->a2dp_source_local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
-            avdtp_config_mpeg_aac_set_sampling_frequency(connection->a2dp_source_local_stream_endpoint->media_codec_info, sampling_frequency);
+            (void)memcpy(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            avdtp_config_mpeg_aac_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
         case AVDTP_CODEC_ATRAC_FAMILY:
             codec_info_len = 7;
-            (void)memcpy(connection->a2dp_source_local_stream_endpoint->media_codec_info, connection->a2dp_source_local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
-            avdtp_config_atrac_set_sampling_frequency(connection->a2dp_source_local_stream_endpoint->media_codec_info, sampling_frequency);
+            (void)memcpy(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            avdtp_config_atrac_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
         default:
             return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
@@ -974,15 +990,15 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
     new_configuration.media_codec.media_type = AVDTP_AUDIO;
     new_configuration.media_codec.media_codec_type = codec_type;
     new_configuration.media_codec.media_codec_information_len = codec_info_len;
-    new_configuration.media_codec.media_codec_information = connection->a2dp_source_local_stream_endpoint->media_codec_info;
+    new_configuration.media_codec.media_codec_information = connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info;
 
     // start reconfigure
-    connection->a2dp_source_state = A2DP_W2_RECONFIGURE_WITH_SEID;
+    connection->a2dp_source_config_process.state = A2DP_W2_RECONFIGURE_WITH_SEID;
 
     return avdtp_source_reconfigure(
             avdtp_cid,
-            avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint),
-            connection->a2dp_source_local_stream_endpoint->remote_sep.seid,
+            avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint),
+            connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.seid,
             1 << AVDTP_MEDIA_CODEC,
             new_configuration
     );
