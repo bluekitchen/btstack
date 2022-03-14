@@ -224,6 +224,13 @@ static void a2dp_source_set_config(avdtp_connection_t * connection){
     avdtp_source_set_configuration(connection->avdtp_cid, avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), remote_seid, connection->a2dp_source_local_stream_endpoint->remote_configuration_bitmap, connection->a2dp_source_local_stream_endpoint->remote_configuration);
 }
 
+static void a2dp_source_handle_media_capability(uint16_t cid, uint8_t a2dp_subevent_id, uint8_t *packet, uint16_t size){
+    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(cid);
+    btstack_assert(connection != NULL);
+    if (connection->a2dp_source_config_process.state != A2DP_GET_CAPABILITIES) return;
+    a2dp_replace_subevent_id_and_emit_source(packet, size, a2dp_subevent_id);
+}
+
 static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -359,37 +366,19 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
         // forward codec capability
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_mpeg_audio_capability_get_avdtp_cid(packet);
-            connection = avdtp_get_connection_for_avdtp_cid(cid);
-            btstack_assert(connection != NULL);
-
-            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
-            a2dp_replace_subevent_id_and_emit_source(packet, size,
-                                                     A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY);
+            a2dp_source_handle_media_capability(cid, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY, packet, size);
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_mpeg_aac_capability_get_avdtp_cid(packet);
-            connection = avdtp_get_connection_for_avdtp_cid(cid);
-            btstack_assert(connection != NULL);
-
-            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
-            a2dp_replace_subevent_id_and_emit_source(packet, size,
-                                                     A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY);
+            a2dp_source_handle_media_capability(cid, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY, packet, size);
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_atrac_capability_get_avdtp_cid(packet);
-            connection = avdtp_get_connection_for_avdtp_cid(cid);
-            btstack_assert(connection != NULL);
-
-            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
-            a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY);
+            a2dp_source_handle_media_capability(cid, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY, packet, size);
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_other_capability_get_avdtp_cid(packet);
-            connection = avdtp_get_connection_for_avdtp_cid(cid);
-            btstack_assert(connection != NULL);
-
-            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
-            a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY);
+            a2dp_source_handle_media_capability(cid, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY, packet, size);
             break;
 
         // not forwarded
