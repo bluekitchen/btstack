@@ -50,6 +50,10 @@
 extern "C" {
 #endif
 
+void a2dp_init(void);
+
+void a2dp_deinit(void);
+
 #if defined __cplusplus
 }
 #endif

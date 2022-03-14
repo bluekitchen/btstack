@@ -44,6 +44,7 @@
 #include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
+#include "classic/a2dp.h"
 #include "classic/a2dp_sink.h"
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_util.h"
@@ -159,10 +160,12 @@ void a2dp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8
 }
 
 void a2dp_sink_init(void){
+    a2dp_init();
     avdtp_sink_init();
 }
 
 void a2dp_sink_deinit(void){
+    a2dp_deinit();
     avdtp_sink_deinit();
 
     a2dp_sink_cid = 0;

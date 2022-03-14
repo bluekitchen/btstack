@@ -39,3 +39,8 @@
 
 #include "classic/a2dp.h"
 
+void a2dp_init(void) {
+}
+
+void a2dp_deinit(void){
+}

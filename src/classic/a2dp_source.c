@@ -57,6 +57,7 @@
 #include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
+#include "classic/a2dp.h"
 #include "classic/a2dp_source.h"
 #include "classic/avdtp_source.h"
 #include "classic/avdtp_util.h"
@@ -751,10 +752,12 @@ void a2dp_source_register_packet_handler(btstack_packet_handler_t callback){
 }
 
 void a2dp_source_init(void){
+    a2dp_init();
     avdtp_source_init();
 }
 
 void a2dp_source_deinit(void){
+    a2dp_deinit();
     avdtp_source_deinit();
     a2dp_source_packet_handler_user = NULL;
     a2dp_source_media_config_validator = NULL;
