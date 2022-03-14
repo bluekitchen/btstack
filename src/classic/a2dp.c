@@ -37,10 +37,35 @@
 
 #define BTSTACK_FILE__ "a2dp.c"
 
+#include <stddef.h>
+#include "bluetooth.h"
 #include "classic/a2dp.h"
+#include "classic/avdtp_util.h"
+#include "btstack_debug.h"
+
+// higher layer callbacks
+static btstack_packet_handler_t a2dp_source_callback;
 
 void a2dp_init(void) {
 }
 
 void a2dp_deinit(void){
 }
+
+void a2dp_register_source_packet_handler(btstack_packet_handler_t callback){
+    btstack_assert(callback != NULL);
+    a2dp_source_callback = callback;
+}
+
+void a2dp_emit_source(uint8_t * packet, uint16_t size){
+    (*a2dp_source_callback)(HCI_EVENT_PACKET, 0, packet, size);
+}
+
+void a2dp_replace_subevent_id_and_emit_source(uint8_t * packet, uint16_t size, uint8_t subevent_id) {
+    a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_callback, packet, size, subevent_id);
+}
+
+void a2dp_emit_source_stream_event(uint16_t cid, uint8_t local_seid, uint8_t subevent_id) {
+    a2dp_emit_stream_event(a2dp_source_callback, cid, local_seid, subevent_id);
+}
+

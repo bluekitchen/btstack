@@ -45,14 +45,25 @@
 #define A2DP_H
 
 #include <stdint.h>
+#include "btstack_defines.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
+// common
 void a2dp_init(void);
 
 void a2dp_deinit(void);
+
+// source
+void a2dp_register_source_packet_handler(btstack_packet_handler_t callback);
+
+void a2dp_emit_source(uint8_t * packet, uint16_t size);
+
+void a2dp_replace_subevent_id_and_emit_source(uint8_t * packet, uint16_t size, uint8_t subevent_id);
+
+void a2dp_emit_source_stream_event(uint16_t cid, uint8_t local_seid, uint8_t subevent_id);
 
 #if defined __cplusplus
 }
