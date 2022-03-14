@@ -35,6 +35,17 @@
  *
  */
 
+#include <stdint.h>
+#include <string.h>
+#include "a2dp.h"
+#include "l2cap.h"
+#include "classic/sdp_util.h"
+#include "classic/avdtp_source.h"
+#include "classic/a2dp_source.h"
+#include "btstack_event.h"
+#include "bluetooth_sdp.h"
+#include "bluetooth_psm.h"
+
 #define BTSTACK_FILE__ "a2dp.c"
 
 #include <stddef.h>
@@ -69,3 +80,18 @@ void a2dp_emit_source_stream_event(uint16_t cid, uint8_t local_seid, uint8_t sub
     a2dp_emit_stream_event(a2dp_source_callback, cid, local_seid, subevent_id);
 }
 
+void a2dp_emit_source_streaming_connection_failed(avdtp_connection_t *connection, uint8_t status) {
+    uint8_t event[14];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_A2DP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = A2DP_SUBEVENT_STREAM_ESTABLISHED;
+    little_endian_store_16(event, pos, connection->avdtp_cid);
+    pos += 2;
+    reverse_bd_addr(connection->remote_addr, &event[pos]);
+    pos += 6;
+    event[pos++] = 0;
+    event[pos++] = 0;
+    event[pos++] = status;
+    a2dp_emit_source(event, sizeof(event));
+}

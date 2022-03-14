@@ -46,6 +46,7 @@
 
 #include <stdint.h>
 #include "btstack_defines.h"
+#include "classic/avdtp.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -64,6 +65,8 @@ void a2dp_emit_source(uint8_t * packet, uint16_t size);
 void a2dp_replace_subevent_id_and_emit_source(uint8_t * packet, uint16_t size, uint8_t subevent_id);
 
 void a2dp_emit_source_stream_event(uint16_t cid, uint8_t local_seid, uint8_t subevent_id);
+
+void a2dp_emit_source_streaming_connection_failed(avdtp_connection_t *connection, uint8_t status);
 
 #if defined __cplusplus
 }

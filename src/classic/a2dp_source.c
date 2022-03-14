@@ -63,6 +63,7 @@
 #include "classic/avdtp_util.h"
 #include "classic/sdp_util.h"
 #include "l2cap.h"
+#include "a2dp.h"
 
 #define AVDTP_MAX_SEP_NUM 10
 #define A2DP_SET_CONFIG_DELAY_MS 200
@@ -82,22 +83,6 @@ static bool                     a2dp_source_set_config_timer_active;
 
 static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void a2dp_discover_seps_with_next_waiting_connection(void);
-
-static void a2dp_source_streaming_emit_connection_failed(avdtp_connection_t *connection, uint8_t status) {
-    uint8_t event[14];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_A2DP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = A2DP_SUBEVENT_STREAM_ESTABLISHED;
-    little_endian_store_16(event, pos, connection->avdtp_cid);
-    pos += 2;
-    reverse_bd_addr(connection->remote_addr, &event[pos]);
-    pos += 6;
-    event[pos++] = 0;
-    event[pos++] = 0;
-    event[pos++] = status;
-    a2dp_emit_source(event, sizeof(event));
-}
 
 void a2dp_source_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name){
     uint8_t* attribute;
@@ -406,7 +391,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     connection->a2dp_source_outgoing_active = false;
                     connection = avdtp_get_connection_for_avdtp_cid(cid);
                     btstack_assert(connection != NULL);
-                    a2dp_source_streaming_emit_connection_failed(connection, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
+                    a2dp_emit_source_streaming_connection_failed(connection,
+                                                                 ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
                 }
 
                 // continue
@@ -550,7 +536,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     connection->a2dp_source_outgoing_active = false;
                     connection = avdtp_get_connection_for_avdtp_cid(cid);
                     btstack_assert(connection != NULL);
-                    a2dp_source_streaming_emit_connection_failed(connection, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
+                    a2dp_emit_source_streaming_connection_failed(connection,
+                                                                 ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
                 }
                 connection->a2dp_source_state = A2DP_CONNECTED;
                 a2dp_source_sep_discovery_cid = 0;
