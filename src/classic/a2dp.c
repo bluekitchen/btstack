@@ -95,3 +95,17 @@ void a2dp_emit_source_streaming_connection_failed(avdtp_connection_t *connection
     event[pos++] = status;
     a2dp_emit_source(event, sizeof(event));
 }
+
+void a2dp_emit_source_stream_reconfigured(uint16_t cid, uint8_t local_seid, uint8_t status){
+    uint8_t event[7];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_A2DP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = A2DP_SUBEVENT_STREAM_RECONFIGURED;
+    little_endian_store_16(event, pos, cid);
+    pos += 2;
+    event[pos++] = local_seid;
+    event[pos++] = status;
+    a2dp_emit_source(event, sizeof(event));
+}
+

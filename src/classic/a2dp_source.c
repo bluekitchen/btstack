@@ -163,19 +163,6 @@ void a2dp_source_create_sdp_record(uint8_t * service, uint32_t service_record_ha
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
-static void a2dp_signaling_emit_reconfigured(uint16_t cid, uint8_t local_seid, uint8_t status){
-    uint8_t event[7];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_A2DP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = A2DP_SUBEVENT_STREAM_RECONFIGURED;
-    little_endian_store_16(event, pos, cid);
-    pos += 2;
-    event[pos++] = local_seid;
-    event[pos++] = status;
-    a2dp_emit_source(event, sizeof(event));
-}
-
 static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer){
     uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
 	avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
@@ -649,7 +636,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
                 case A2DP_W2_RECONFIGURE_WITH_SEID:
                     log_info("A2DP reconfigured ... local seid 0x%02x, active remote seid 0x%02x", avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), connection->a2dp_source_local_stream_endpoint->remote_sep.seid);
-                    a2dp_signaling_emit_reconfigured(cid, avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), ERROR_CODE_SUCCESS);
+                    a2dp_emit_source_stream_reconfigured(cid, avdtp_stream_endpoint_seid(
+                            connection->a2dp_source_local_stream_endpoint), ERROR_CODE_SUCCESS);
                     connection->a2dp_source_state = A2DP_STREAMING_OPENED;
                     break;
 
@@ -685,7 +673,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             switch (connection->a2dp_source_state) {
                 case A2DP_W2_RECONFIGURE_WITH_SEID:
                     log_info("A2DP reconfigure failed ... local seid 0x%02x, active remote seid 0x%02x", avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), connection->a2dp_source_local_stream_endpoint->remote_sep.seid);
-                    a2dp_signaling_emit_reconfigured(cid, avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), ERROR_CODE_UNSPECIFIED_ERROR);
+                    a2dp_emit_source_stream_reconfigured(cid, avdtp_stream_endpoint_seid(
+                            connection->a2dp_source_local_stream_endpoint), ERROR_CODE_UNSPECIFIED_ERROR);
                     connection->a2dp_source_state = A2DP_STREAMING_OPENED;
                     break;
                 default:

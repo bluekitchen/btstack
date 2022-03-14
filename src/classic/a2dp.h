@@ -68,6 +68,8 @@ void a2dp_emit_source_stream_event(uint16_t cid, uint8_t local_seid, uint8_t sub
 
 void a2dp_emit_source_streaming_connection_failed(avdtp_connection_t *connection, uint8_t status);
 
+void a2dp_emit_source_stream_reconfigured(uint16_t cid, uint8_t local_seid, uint8_t status);
+
 #if defined __cplusplus
 }
 #endif
