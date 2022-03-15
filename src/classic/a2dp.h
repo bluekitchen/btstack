@@ -91,6 +91,17 @@ uint8_t a2dp_config_process_config_init(avdtp_role_t role, avdtp_connection_t *c
                                         avdtp_media_codec_type_t codec_type);
 void    a2dp_config_process_set_config(avdtp_role_t role, avdtp_connection_t *connection);
 
+uint8_t a2dp_config_process_set_sbc(avdtp_role_t role, uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid,
+                                    const avdtp_configuration_sbc_t * configuration);
+uint8_t a2dp_config_process_set_mpeg_audio(avdtp_role_t role, uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid,
+                                           const avdtp_configuration_mpeg_audio_t * configuration);
+uint8_t a2dp_config_process_set_mpeg_aac(avdtp_role_t role, uint16_t a2dp_cid,  uint8_t local_seid,  uint8_t remote_seid,
+                                         const avdtp_configuration_mpeg_aac_t * configuration);
+uint8_t a2dp_config_process_set_atrac(avdtp_role_t role, uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid,
+                                      const avdtp_configuration_atrac_t * configuration);
+uint8_t a2dp_config_process_set_other(avdtp_role_t role, uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid,
+                                      const uint8_t * media_codec_information, uint8_t media_codec_information_len);
+
 #if defined __cplusplus
 }
 #endif

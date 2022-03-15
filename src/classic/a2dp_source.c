@@ -221,118 +221,24 @@ uint8_t	a2dp_source_stream_send_media_packet(uint16_t a2dp_cid, uint8_t local_se
 
 
 uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_sbc_t * configuration){
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(a2dp_cid);
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-
-    uint8_t status = a2dp_config_process_config_init(AVDTP_ROLE_SOURCE, connection, local_seid, remote_seid,
-                                                     AVDTP_CODEC_SBC);
-    if (status != 0) {
-        return status;
-    }
-    // set config in reserved buffer
-    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info;
-    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
-    avdtp_config_sbc_store(connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
-
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-    a2dp_config_process_set_config(AVDTP_ROLE_SOURCE, connection);
-#endif
-
-    return ERROR_CODE_SUCCESS;
+    return a2dp_config_process_set_sbc(AVDTP_ROLE_SOURCE, a2dp_cid, local_seid, remote_seid, configuration);
 }
 
 uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_mpeg_audio_t * configuration){
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(a2dp_cid);
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-
-    uint8_t status = a2dp_config_process_config_init(AVDTP_ROLE_SOURCE, connection, local_seid, remote_seid,
-                                                     AVDTP_CODEC_MPEG_1_2_AUDIO);
-    if (status != 0) {
-        return status;
-    }
-
-    // set config in reserved buffer
-    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *)connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info;
-    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
-    avdtp_config_mpeg_audio_store(connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
-
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-    a2dp_config_process_set_config(AVDTP_ROLE_SOURCE, connection);
-#endif
-
-    return ERROR_CODE_SUCCESS;
+    return a2dp_config_process_set_mpeg_audio(AVDTP_ROLE_SOURCE, a2dp_cid, local_seid, remote_seid, configuration);
 }
 
 uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid,  uint8_t remote_seid, const avdtp_configuration_mpeg_aac_t * configuration){
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(a2dp_cid);
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-
-    uint8_t status = a2dp_config_process_config_init(AVDTP_ROLE_SOURCE, connection, local_seid, remote_seid,
-                                                     AVDTP_CODEC_MPEG_2_4_AAC);
-    if (status != 0) {
-        return status;
-    }
-    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info;
-    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 6;
-    avdtp_config_mpeg_aac_store(connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
-
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-    a2dp_config_process_set_config(AVDTP_ROLE_SOURCE, connection);
-#endif
-
-    return ERROR_CODE_SUCCESS;
+    return a2dp_config_process_set_mpeg_aac(AVDTP_ROLE_SOURCE, a2dp_cid, local_seid, remote_seid, configuration);
 }
 
 uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_atrac_t * configuration){
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(a2dp_cid);
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-
-    uint8_t status = a2dp_config_process_config_init(AVDTP_ROLE_SOURCE, connection, local_seid, remote_seid,
-                                                     AVDTP_CODEC_ATRAC_FAMILY);
-    if (status != 0) {
-        return status;
-    }
-
-    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info;
-    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 7;
-    avdtp_config_atrac_store(connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
-
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-    a2dp_config_process_set_config(AVDTP_ROLE_SOURCE, connection);
-#endif
-
-    return ERROR_CODE_SUCCESS;
+    return a2dp_config_process_set_atrac(AVDTP_ROLE_SOURCE, a2dp_cid, local_seid, remote_seid, configuration);
 }
 
 uint8_t a2dp_source_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid,
                                      const uint8_t * media_codec_information, uint8_t media_codec_information_len){
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(a2dp_cid);
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-
-    uint8_t status = a2dp_config_process_config_init(AVDTP_ROLE_SOURCE, connection, local_seid, remote_seid,
-                                                     AVDTP_CODEC_NON_A2DP);
-    if (status != 0) {
-        return status;
-    }
-
-    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) media_codec_information;
-    connection->a2dp_source_config_process.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_information_len;
-
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-    a2dp_config_process_set_config(AVDTP_ROLE_SOURCE, connection);
-#endif
-
-    return status;
+    return a2dp_config_process_set_other(AVDTP_ROLE_SOURCE, a2dp_cid, local_seid, remote_seid, media_codec_information, media_codec_information_len);
 }
 
 uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, uint32_t sampling_frequency){
