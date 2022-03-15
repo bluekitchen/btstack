@@ -877,8 +877,7 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             break;
         
         default:
-            printf("A2DP  Sink      : Not parsed 0x%02x\n", packet[2]);
-            break; 
+            break;
     }
 }
 
