@@ -77,8 +77,9 @@ void a2dp_init(void) {
 
 void a2dp_deinit(void){
     a2dp_config_process_sep_discovery_cid = 0;
+    a2dp_source_callback = NULL;
+    a2dp_sink_callback = NULL;
 }
-
 
 void a2dp_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, uint16_t service_class_uuid, uint16_t supported_features, const char * service_name, const char * service_provider_name){
     uint8_t* attribute;
@@ -196,10 +197,22 @@ void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t cid, uin
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-
 void a2dp_register_source_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
     a2dp_source_callback = callback;
+}
+
+void a2dp_register_sink_packet_handler(btstack_packet_handler_t callback){
+    btstack_assert(callback != NULL);
+    a2dp_sink_callback = callback;
+}
+
+void a2dp_replace_subevent_id_and_emit_source(uint8_t * packet, uint16_t size, uint8_t subevent_id) {
+    a2dp_replace_subevent_id_and_emit(a2dp_source_callback, packet, size, subevent_id);
+}
+
+static void a2dp_replace_subevent_id_and_emit_sink(uint8_t *packet, uint16_t size, uint8_t subevent_id) {
+    a2dp_replace_subevent_id_and_emit(a2dp_sink_callback, packet, size, subevent_id);
 }
 
 static void a2dp_replace_subevent_id_and_emit_for_role(avdtp_role_t role, uint8_t * packet, uint16_t size, uint8_t subevent_id) {
@@ -210,65 +223,31 @@ static void a2dp_replace_subevent_id_and_emit_for_role(avdtp_role_t role, uint8_
     }
 }
 
-void a2dp_emit_source(uint8_t * packet, uint16_t size){
-    (*a2dp_source_callback)(HCI_EVENT_PACKET, 0, packet, size);
-}
-
-void a2dp_replace_subevent_id_and_emit_source(uint8_t * packet, uint16_t size, uint8_t subevent_id) {
-    a2dp_replace_subevent_id_and_emit(a2dp_source_callback, packet, size, subevent_id);
-}
-
-void a2dp_emit_source_stream_event(uint16_t cid, uint8_t local_seid, uint8_t subevent_id) {
-    a2dp_emit_stream_event(a2dp_source_callback, cid, local_seid, subevent_id);
-}
-
-void a2dp_emit_source_streaming_connection_failed(avdtp_connection_t *connection, uint8_t status) {
-    uint8_t event[14];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_A2DP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = A2DP_SUBEVENT_STREAM_ESTABLISHED;
-    little_endian_store_16(event, pos, connection->avdtp_cid);
-    pos += 2;
-    reverse_bd_addr(connection->remote_addr, &event[pos]);
-    pos += 6;
-    event[pos++] = 0;
-    event[pos++] = 0;
-    event[pos++] = status;
-    a2dp_emit_source(event, sizeof(event));
-}
-
-void a2dp_emit_source_stream_reconfigured(uint16_t cid, uint8_t local_seid, uint8_t status){
-    uint8_t event[7];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_A2DP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = A2DP_SUBEVENT_STREAM_RECONFIGURED;
-    little_endian_store_16(event, pos, cid);
-    pos += 2;
-    event[pos++] = local_seid;
-    event[pos++] = status;
-    a2dp_emit_source(event, sizeof(event));
-}
-
-void a2dp_register_sink_packet_handler(btstack_packet_handler_t callback){
-    btstack_assert(callback != NULL);
-    a2dp_sink_callback = callback;
-}
-
-void a2dp_replace_subevent_id_and_emit_sink(uint8_t *packet, uint16_t size, uint8_t subevent_id) {
-    a2dp_replace_subevent_id_and_emit(a2dp_sink_callback, packet, size, subevent_id);
-}
-
-void a2dp_emit_sink_stream_event(uint16_t cid, uint8_t local_seid, uint8_t subevent_id) {
-    a2dp_emit_stream_event(a2dp_sink_callback, cid, local_seid, subevent_id);
+static void a2dp_emit_role(avdtp_role_t role, uint8_t * packet, uint16_t size){
+    if (role == AVDTP_ROLE_SOURCE){
+        (*a2dp_source_callback)(HCI_EVENT_PACKET, 0, packet, size);
+    } else {
+        (*a2dp_sink_callback)(HCI_EVENT_PACKET, 0, packet, size);
+    }
 }
 
 static void a2dp_emit_sink(uint8_t * packet, uint16_t size){
     (*a2dp_sink_callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-void a2dp_emit_sink_stream_reconfigured(uint16_t cid, uint8_t local_seid, uint8_t status){
+void a2dp_emit_stream_event_for_role(avdtp_role_t role, uint16_t cid, uint8_t local_seid, uint8_t subevent_id) {
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_A2DP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = subevent_id;
+    little_endian_store_16(event, pos, cid);
+    pos += 2;
+    event[pos++] = local_seid;
+    a2dp_emit_role(role, event, sizeof(event));
+}
+
+void a2dp_emit_stream_reconfigured_role(avdtp_role_t role, uint16_t cid, uint8_t local_seid, uint8_t status){
     uint8_t event[7];
     int pos = 0;
     event[pos++] = HCI_EVENT_A2DP_META;
@@ -278,10 +257,10 @@ void a2dp_emit_sink_stream_reconfigured(uint16_t cid, uint8_t local_seid, uint8_
     pos += 2;
     event[pos++] = local_seid;
     event[pos++] = status;
-    a2dp_emit_sink(event, sizeof(event));
+    a2dp_emit_role(role, event, sizeof(event));
 }
 
-void a2dp_emit_sink_streaming_connection_failed(avdtp_connection_t *connection, uint8_t status) {
+void a2dp_emit_streaming_connection_failed_for_role(avdtp_role_t role, avdtp_connection_t *connection, uint8_t status) {
     uint8_t event[14];
     int pos = 0;
     event[pos++] = HCI_EVENT_A2DP_META;
@@ -294,31 +273,7 @@ void a2dp_emit_sink_streaming_connection_failed(avdtp_connection_t *connection, 
     event[pos++] = 0;
     event[pos++] = 0;
     event[pos++] = status;
-    a2dp_emit_sink(event, sizeof(event));
-}
-
-static void a2dp_emit_role(avdtp_role_t role, uint8_t * packet, uint16_t size){
-    if (role == AVDTP_ROLE_SOURCE){
-        a2dp_emit_source(packet, size);
-    } else {
-        a2dp_emit_sink(packet, size);
-    }
-}
-
-void a2dp_emit_stream_reconfigured_role(avdtp_role_t role, uint16_t cid, uint8_t local_seid, uint8_t status){
-    if (role == AVDTP_ROLE_SOURCE){
-        a2dp_emit_source_stream_reconfigured(cid, local_seid, status);
-    } else {
-        a2dp_emit_sink_stream_reconfigured(cid, local_seid, status);
-    }
-}
-
-void a2dp_emit_streaming_connection_failed_for_role(avdtp_role_t role, avdtp_connection_t *connection, uint8_t status) {
-    if (role == AVDTP_ROLE_SOURCE){
-        a2dp_emit_source_streaming_connection_failed(connection, status);
-    } else {
-        a2dp_emit_sink_streaming_connection_failed(connection, status);
-    }
+    a2dp_emit_role(role, event, sizeof(event));
 }
 
 static a2dp_config_process_t * a2dp_config_process_for_role(avdtp_role_t role, avdtp_connection_t *connection){
@@ -627,7 +582,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     config_process->outgoing_active = false;
                     connection = avdtp_get_connection_for_avdtp_cid(cid);
                     btstack_assert(connection != NULL);
-                    a2dp_emit_source_streaming_connection_failed(connection, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
+                    a2dp_emit_streaming_connection_failed_for_role(role, connection, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
                 }
 
                 // continue
@@ -895,16 +850,16 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                 case A2DP_STREAMING_OPENED:
                     switch (signal_identifier){
                         case  AVDTP_SI_START:
-                            a2dp_emit_source_stream_event(cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
+                            a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
                                                           A2DP_SUBEVENT_STREAM_STARTED);
                             break;
                         case AVDTP_SI_SUSPEND:
-                            a2dp_emit_source_stream_event(cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
+                            a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
                                                           A2DP_SUBEVENT_STREAM_SUSPENDED);
                             break;
                         case AVDTP_SI_ABORT:
                         case AVDTP_SI_CLOSE:
-                            a2dp_emit_source_stream_event(cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
+                            a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
                                                           A2DP_SUBEVENT_STREAM_STOPPED);
                             break;
                         default:
