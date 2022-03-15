@@ -63,6 +63,7 @@ static void a2dp_discover_seps_with_next_waiting_connection(void);
 static btstack_packet_handler_t a2dp_source_callback;
 
 // config process - singletons using sep_discovery_cid is used as mutex
+static avdtp_role_t             a2dp_config_process_role;
 static uint16_t                 a2dp_config_process_sep_discovery_cid;
 static uint16_t                 a2dp_config_process_sep_discovery_count;
 static uint16_t                 a2dp_config_process_sep_discovery_index;
@@ -238,10 +239,11 @@ static void a2dp_source_set_config_timer_stop(void){
 }
 
 // Discover seps, both incoming and outgoing
-static void a2dp_start_discovering_seps(avdtp_connection_t * connection){
+static void a2dp_start_discovering_seps(avdtp_role_t role, avdtp_connection_t *connection) {
     connection->a2dp_source_config_process.state = A2DP_DISCOVER_SEPS;
     connection->a2dp_source_config_process.discover_seps = false;
 
+    a2dp_config_process_role = role;
     a2dp_config_process_sep_discovery_index = 0;
     a2dp_config_process_sep_discovery_count = 0;
     memset(a2dp_config_process_sep_discovery_seps, 0, sizeof(avdtp_sep_t) * AVDTP_MAX_SEP_NUM);
@@ -263,8 +265,12 @@ static void a2dp_discover_seps_with_next_waiting_connection(void){
     btstack_linked_list_iterator_init(&it, avdtp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_connection_t * next_connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (!next_connection->a2dp_source_config_process.discover_seps) continue;
-        a2dp_start_discovering_seps(next_connection);
+        if (next_connection->a2dp_source_config_process.discover_seps) {
+            a2dp_start_discovering_seps(AVDTP_ROLE_SOURCE, next_connection);
+        }
+        if (next_connection->a2dp_sink_config_process.discover_seps) {
+            a2dp_start_discovering_seps(AVDTP_ROLE_SINK, next_connection);
+        }
     }
 }
 
@@ -275,7 +281,7 @@ void a2dp_config_process_ready_for_sep_discovery(avdtp_role_t role, avdtp_connec
 
     // sep discovery active?
     if (a2dp_config_process_sep_discovery_cid == 0){
-        a2dp_start_discovering_seps(connection);
+        a2dp_start_discovering_seps(role, connection);
     } else {
         // post-pone sep discovery
         connection->a2dp_source_config_process.discover_seps = true;
