@@ -231,10 +231,6 @@ static void a2dp_emit_role(avdtp_role_t role, uint8_t * packet, uint16_t size){
     }
 }
 
-static void a2dp_emit_sink(uint8_t * packet, uint16_t size){
-    (*a2dp_sink_callback)(HCI_EVENT_PACKET, 0, packet, size);
-}
-
 void a2dp_emit_stream_event_for_role(avdtp_role_t role, uint16_t cid, uint8_t local_seid, uint8_t subevent_id) {
     uint8_t event[6];
     int pos = 0;
