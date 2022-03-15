@@ -60,14 +60,7 @@ void a2dp_deinit(void);
 void a2dp_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, uint16_t service_class_uuid,
                             uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
-// config process
-void a2dp_config_process_ready_for_sep_discovery(avdtp_role_t role, avdtp_connection_t *connection);
-
-void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet, uint16_t size);
-
-uint8_t a2dp_config_process_config_init(avdtp_role_t role, avdtp_connection_t *connection, uint8_t local_seid, uint8_t remote_seid,
-                                        avdtp_media_codec_type_t codec_type);
-void    a2dp_config_process_set_config(avdtp_role_t role, avdtp_connection_t *connection);
+uint8_t a2dp_subevent_id_for_avdtp_subevent_id(uint8_t subevent);
 
 // source
 void a2dp_register_source_packet_handler(btstack_packet_handler_t callback);
@@ -81,6 +74,22 @@ void a2dp_emit_source_stream_event(uint16_t cid, uint8_t local_seid, uint8_t sub
 void a2dp_emit_source_streaming_connection_failed(avdtp_connection_t *connection, uint8_t status);
 
 void a2dp_emit_source_stream_reconfigured(uint16_t cid, uint8_t local_seid, uint8_t status);
+
+// sink
+void a2dp_register_sink_packet_handler(btstack_packet_handler_t callback);
+
+void a2dp_replace_subevent_id_and_emit_sink(uint8_t *packet, uint16_t size, uint8_t subevent_id);
+
+void a2dp_emit_sink_stream_event(uint16_t cid, uint8_t local_seid, uint8_t subevent_id);
+
+// config process
+void a2dp_config_process_ready_for_sep_discovery(avdtp_role_t role, avdtp_connection_t *connection);
+
+void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet, uint16_t size);
+
+uint8_t a2dp_config_process_config_init(avdtp_role_t role, avdtp_connection_t *connection, uint8_t local_seid, uint8_t remote_seid,
+                                        avdtp_media_codec_type_t codec_type);
+void    a2dp_config_process_set_config(avdtp_role_t role, avdtp_connection_t *connection);
 
 #if defined __cplusplus
 }

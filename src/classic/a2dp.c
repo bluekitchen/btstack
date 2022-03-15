@@ -61,6 +61,7 @@ static void a2dp_config_process_discover_seps_with_next_waiting_connection(void)
 
 // higher layer callbacks
 static btstack_packet_handler_t a2dp_source_callback;
+static btstack_packet_handler_t a2dp_sink_callback;
 
 // config process - singletons using sep_discovery_cid is used as mutex
 static avdtp_role_t             a2dp_config_process_role;
@@ -150,6 +151,50 @@ void a2dp_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, 
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
+uint8_t a2dp_subevent_id_for_avdtp_subevent_id(uint8_t subevent){
+    switch (subevent){
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
+            return A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION:
+            return A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION:
+            return A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION:
+            return A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
+            return A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION;
+        default:
+            btstack_unreachable();
+            return 0;
+    }
+}
+
+static void a2dp_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
+    UNUSED(size);
+    btstack_assert(callback != NULL);
+    // cache orig event and subevent id
+    uint8_t orig_event_id    = packet[0];
+    uint8_t orig_subevent_id = packet[2];
+    // execute callback
+    packet[0] = HCI_EVENT_A2DP_META;
+    packet[2] = subevent_id;
+    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
+    // restore id
+    packet[0] = orig_event_id;
+    packet[2] = orig_subevent_id;
+}
+
+void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t subevent_id){
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_A2DP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = subevent_id;
+    little_endian_store_16(event, pos, cid);
+    pos += 2;
+    event[pos++] = local_seid;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
 void a2dp_register_source_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
     a2dp_source_callback = callback;
@@ -160,7 +205,7 @@ void a2dp_emit_source(uint8_t * packet, uint16_t size){
 }
 
 void a2dp_replace_subevent_id_and_emit_source(uint8_t * packet, uint16_t size, uint8_t subevent_id) {
-    a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_callback, packet, size, subevent_id);
+    a2dp_replace_subevent_id_and_emit(a2dp_source_callback, packet, size, subevent_id);
 }
 
 void a2dp_emit_source_stream_event(uint16_t cid, uint8_t local_seid, uint8_t subevent_id) {
@@ -195,6 +240,20 @@ void a2dp_emit_source_stream_reconfigured(uint16_t cid, uint8_t local_seid, uint
     event[pos++] = status;
     a2dp_emit_source(event, sizeof(event));
 }
+
+void a2dp_register_sink_packet_handler(btstack_packet_handler_t callback){
+    btstack_assert(callback != NULL);
+    a2dp_sink_callback = callback;
+}
+
+void a2dp_replace_subevent_id_and_emit_sink(uint8_t *packet, uint16_t size, uint8_t subevent_id) {
+    a2dp_replace_subevent_id_and_emit(a2dp_source_callback, packet, size, subevent_id);
+}
+
+void a2dp_emit_sink_stream_event(uint16_t cid, uint8_t local_seid, uint8_t subevent_id) {
+    a2dp_emit_stream_event(a2dp_sink_callback, cid, local_seid, subevent_id);
+}
+
 static a2dp_config_process_t * a2dp_config_process_for_role(avdtp_role_t role, avdtp_connection_t *connection){
     return (role == AVDTP_ROLE_SOURCE) ? &connection->a2dp_source_config_process : &connection->a2dp_source_config_process;
 }
