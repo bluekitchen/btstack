@@ -268,7 +268,7 @@ static void a2dp_discover_seps_with_next_waiting_connection(void){
     }
 }
 
-void a2dp_source_ready_for_sep_discovery(avdtp_connection_t * connection){
+void a2dp_config_process_ready_for_sep_discovery(avdtp_role_t role, avdtp_connection_t *connection) {
     // start discover seps now if:
     // - outgoing active: signaling for outgoing connection
     // - outgoing not active: incoming connection and no sep discover ongoing
@@ -317,7 +317,7 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
     }
 }
 
-static void a2dp_source_set_config(avdtp_connection_t * connection){
+void a2dp_config_process_set_config(avdtp_role_t role, avdtp_connection_t *connection) {
     uint8_t remote_seid = connection->a2dp_source_config_process.local_stream_endpoint->set_config_remote_seid;
     log_info("A2DP initiate set configuration locally and wait for response ... local seid 0x%02x, remote seid 0x%02x",
              avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint), remote_seid);
@@ -336,8 +336,8 @@ static void a2dp_source_handle_media_capability(uint16_t cid, uint8_t a2dp_subev
     a2dp_replace_subevent_id_and_emit_source(packet, size, a2dp_subevent_id);
 }
 
-uint8_t a2dp_source_config_init(avdtp_connection_t *connection, uint8_t local_seid, uint8_t remote_seid,
-                                       avdtp_media_codec_type_t codec_type) {
+uint8_t a2dp_config_process_config_init(avdtp_role_t role, avdtp_connection_t *connection, uint8_t local_seid, uint8_t remote_seid,
+                                        avdtp_media_codec_type_t codec_type) {
 
     // check state
     switch (connection->a2dp_source_config_process.state){
@@ -390,7 +390,7 @@ uint8_t a2dp_source_config_init(avdtp_connection_t *connection, uint8_t local_se
 
     return ERROR_CODE_SUCCESS;
 }
-void a2dp_source_config_process_avdtp_event_handler(uint8_t *packet, uint16_t size) {
+void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet, uint16_t size) {
     uint16_t cid;
     avdtp_connection_t * connection;
     uint8_t signal_identifier;
@@ -427,7 +427,7 @@ void a2dp_source_config_process_avdtp_event_handler(uint8_t *packet, uint16_t si
             // a) this is an outgoing source connection
             // b) this connection wasn't caused by an outgoing sink request
             if (connection->a2dp_source_config_process.outgoing_active || !connection->a2dp_sink_config_process.outgoing_active){
-                a2dp_source_ready_for_sep_discovery(connection);
+                a2dp_config_process_ready_for_sep_discovery(AVDTP_ROLE_SOURCE, connection);
             }
             break;
 
@@ -683,7 +683,7 @@ void a2dp_source_config_process_avdtp_event_handler(uint8_t *packet, uint16_t si
                     return;
 
                 case A2DP_SET_CONFIGURATION:
-                    a2dp_source_set_config(connection);
+                    a2dp_config_process_set_config(AVDTP_ROLE_SOURCE, connection);
                     return;
 
                 case A2DP_W2_OPEN_STREAM_WITH_SEID:
