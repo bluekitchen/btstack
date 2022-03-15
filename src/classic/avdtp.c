@@ -147,12 +147,12 @@ avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid){
     return NULL;
 }
 
-avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec(avdtp_media_codec_type_t codec_type){
+avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec_and_type(avdtp_media_codec_type_t codec_type, avdtp_sep_type_t sep_type){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
-        if (stream_endpoint->sep.type != AVDTP_SOURCE) continue;
+        if (stream_endpoint->sep.type != sep_type) continue;
         if (stream_endpoint->sep.media_type != AVDTP_AUDIO) continue;
         if (stream_endpoint->sep.capabilities.media_codec.media_codec_type != codec_type) continue;
         if (stream_endpoint->sep.in_use) continue;
@@ -160,6 +160,11 @@ avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec(avdtp
     }
     return NULL;
 }
+
+avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec(avdtp_media_codec_type_t codec_type){
+    return avdtp_get_source_stream_endpoint_for_media_codec_and_type(codec_type, AVDTP_SOURCE);
+}
+
 
 avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec_other(uint32_t vendor_id, uint16_t codec_id){
     btstack_linked_list_iterator_t it;
