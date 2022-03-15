@@ -236,6 +236,11 @@ static void a2dp_source_handle_media_capability(uint16_t cid, uint8_t a2dp_subev
     a2dp_replace_subevent_id_and_emit_source(packet, size, a2dp_subevent_id);
 }
 
+static void a2dp_source_config_process_avdtp_event_handler(uint8_t *packet, uint16_t size) {
+    uint16_t cid;
+    avdtp_connection_t * connection;
+}
+
 static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -662,6 +667,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
         default:
             break;
     }
+
+    // forward events to config process
+    a2dp_source_config_process_avdtp_event_handler(packet, size);
 }
 void a2dp_source_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
