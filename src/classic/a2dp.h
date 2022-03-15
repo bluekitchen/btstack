@@ -72,6 +72,13 @@ void a2dp_emit_source_streaming_connection_failed(avdtp_connection_t *connection
 
 void a2dp_emit_source_stream_reconfigured(uint16_t cid, uint8_t local_seid, uint8_t status);
 
+void a2dp_source_ready_for_sep_discovery(avdtp_connection_t * connection);
+
+uint8_t a2dp_source_config_init(avdtp_connection_t *connection, uint8_t local_seid, uint8_t remote_seid,
+                                avdtp_media_codec_type_t codec_type);
+
+void a2dp_source_config_process_avdtp_event_handler(uint8_t *packet, uint16_t size);
+
 #if defined __cplusplus
 }
 #endif
