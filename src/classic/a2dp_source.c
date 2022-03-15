@@ -239,24 +239,12 @@ static void a2dp_source_handle_media_capability(uint16_t cid, uint8_t a2dp_subev
 static void a2dp_source_config_process_avdtp_event_handler(uint8_t *packet, uint16_t size) {
     uint16_t cid;
     avdtp_connection_t * connection;
-}
-
-static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
-
-    uint16_t cid;
-    avdtp_connection_t * connection;
-
     uint8_t signal_identifier;
     uint8_t status;
     uint8_t local_seid;
     uint8_t remote_seid;
 
-    if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
-
-    switch (packet[2]){
+    switch (hci_event_avdtp_meta_get_subevent_code(packet)){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
             cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);
@@ -268,8 +256,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 if (connection->a2dp_source_config_process.outgoing_active){
                     log_info("A2DP source signaling connection failed status 0x%02x", status);
                     connection->a2dp_source_config_process.outgoing_active = false;
-                    a2dp_replace_subevent_id_and_emit_source(packet, size,
-                                                             A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
+                    a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
                 }
                 break;
             }
@@ -372,8 +359,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             }
 #endif
             break;
-
-        // forward codec capability
+            // forward codec capability
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_mpeg_audio_capability_get_avdtp_cid(packet);
             a2dp_source_handle_media_capability(cid, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY, packet, size);
@@ -464,14 +450,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             }
             break;
 
-        case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT:
-            cid = avdtp_subevent_signaling_delay_report_get_avdtp_cid(packet);
-            connection = avdtp_get_connection_for_avdtp_cid(cid);
-            btstack_assert(connection != NULL);
-
-            a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_SIGNALING_DELAY_REPORT);
-            break;
-
             // forward codec configuration
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
             local_seid = avdtp_subevent_signaling_media_codec_sbc_configuration_get_local_seid(packet);
@@ -503,11 +481,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             a2dp_replace_subevent_id_and_emit_source(packet, size,
                                                      A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION);
             break;
-
-        case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:
-            a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW);
-            break;
-        
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
             cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);
@@ -523,7 +496,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 break;
             }
 
-            log_info("A2DP source streaming connection established --- avdtp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x", cid, 
+            log_info("A2DP source streaming connection established --- avdtp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x", cid,
                 avdtp_subevent_streaming_connection_established_get_local_seid(packet),
                 avdtp_subevent_streaming_connection_established_get_remote_seid(packet));
             connection->a2dp_source_config_process.state = A2DP_STREAMING_OPENED;
@@ -535,17 +508,17 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-			// restart set config timer while remote is active for current cid
-			if (a2dp_source_set_config_timer_active &&
-			    (avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) &&
-			    (cid == a2dp_source_sep_discovery_cid)){
+            // restart set config timer while remote is active for current cid
+            if (a2dp_source_set_config_timer_active &&
+                (avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) &&
+                (cid == a2dp_source_sep_discovery_cid)){
 
-			    a2dp_source_set_config_timer_restart();
-				break;
-			}
+                a2dp_source_set_config_timer_restart();
+                break;
+            }
 
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
-            
+
             log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), connection->a2dp_source_config_process.state, cid);
 
             switch (connection->a2dp_source_config_process.state){
@@ -667,9 +640,30 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
         default:
             break;
     }
+}
 
-    // forward events to config process
-    a2dp_source_config_process_avdtp_event_handler(packet, size);
+static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
+
+    switch (hci_event_avdtp_meta_get_subevent_code(packet)){
+
+        case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT:
+            a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_SIGNALING_DELAY_REPORT);
+            break;
+
+        case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:
+            a2dp_replace_subevent_id_and_emit_source(packet, size, A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW);
+            break;
+        
+        default:
+            // forward events to config process
+            a2dp_source_config_process_avdtp_event_handler(packet, size);
+            break;
+    }
 }
 void a2dp_source_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
