@@ -190,18 +190,6 @@ static void a2dp_replace_subevent_id_and_emit(btstack_packet_handler_t callback,
     packet[2] = orig_subevent_id;
 }
 
-void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t subevent_id){
-    uint8_t event[6];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_A2DP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = subevent_id;
-    little_endian_store_16(event, pos, cid);
-    pos += 2;
-    event[pos++] = local_seid;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 void a2dp_register_source_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
     a2dp_source_callback = callback;
@@ -216,7 +204,7 @@ void a2dp_replace_subevent_id_and_emit_source(uint8_t * packet, uint16_t size, u
     a2dp_replace_subevent_id_and_emit(a2dp_source_callback, packet, size, subevent_id);
 }
 
-static void a2dp_replace_subevent_id_and_emit_sink(uint8_t *packet, uint16_t size, uint8_t subevent_id) {
+void a2dp_replace_subevent_id_and_emit_sink(uint8_t *packet, uint16_t size, uint8_t subevent_id) {
     a2dp_replace_subevent_id_and_emit(a2dp_sink_callback, packet, size, subevent_id);
 }
 
@@ -236,7 +224,7 @@ static void a2dp_emit_role(avdtp_role_t role, uint8_t * packet, uint16_t size){
     }
 }
 
-void a2dp_emit_stream_event_for_role(avdtp_role_t role, uint16_t cid, uint8_t local_seid, uint8_t subevent_id) {
+static void a2dp_emit_stream_event_for_role(avdtp_role_t role, uint16_t cid, uint8_t local_seid, uint8_t subevent_id) {
     uint8_t event[6];
     int pos = 0;
     event[pos++] = HCI_EVENT_A2DP_META;
@@ -248,7 +236,7 @@ void a2dp_emit_stream_event_for_role(avdtp_role_t role, uint16_t cid, uint8_t lo
     a2dp_emit_role(role, event, sizeof(event));
 }
 
-void a2dp_emit_stream_reconfigured_role(avdtp_role_t role, uint16_t cid, uint8_t local_seid, uint8_t status){
+static void a2dp_emit_stream_reconfigured_role(avdtp_role_t role, uint16_t cid, uint8_t local_seid, uint8_t status){
     uint8_t event[7];
     int pos = 0;
     event[pos++] = HCI_EVENT_A2DP_META;
@@ -261,7 +249,7 @@ void a2dp_emit_stream_reconfigured_role(avdtp_role_t role, uint16_t cid, uint8_t
     a2dp_emit_role(role, event, sizeof(event));
 }
 
-void a2dp_emit_streaming_connection_failed_for_role(avdtp_role_t role, avdtp_connection_t *connection, uint8_t status) {
+static void a2dp_emit_streaming_connection_failed_for_role(avdtp_role_t role, avdtp_connection_t *connection, uint8_t status) {
     uint8_t event[14];
     int pos = 0;
     event[pos++] = HCI_EVENT_A2DP_META;
