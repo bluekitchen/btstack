@@ -282,8 +282,18 @@ static int a2dp_and_avrcp_setup(void){
     // replaced with a actual address once it is available, i.e. when BTstack boots
     // up and starts talking to a Bluetooth module.
     gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");
+
+    // allot to show up in Bluetooth inquiry
     gap_discoverable_control(1);
-    gap_set_class_of_device(0x200408);
+
+    // Service Class: Audio, Major Device Class: Audio, Minor: Loudspeaker
+    gap_set_class_of_device(0x200414);
+
+    // allow for role switch in general and sniff mode
+    gap_set_default_link_policy_settings( LM_LINK_POLICY_ENABLE_ROLE_SWITCH | LM_LINK_POLICY_ENABLE_SNIFF_MODE );
+
+    // allow for role switch on outgoing connections - this allows A2DP Source, e.g. smartphone, to become master when we re-connect to it
+    gap_set_allow_role_switch(true);
 
     // Register for HCI events
     hci_event_callback_registration.callback = &hci_packet_handler;

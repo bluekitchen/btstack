@@ -720,6 +720,15 @@ int btstack_main(int argc, const char * argv[]){
     hci_register_sco_packet_handler(&packet_handler);
     hci_register_sco_packet_handler(&packet_handler);
 
+    // Service Class: Audio, Major Device Class: Audio, Minor: Hands-Free device
+    gap_set_class_of_device(0x200408);
+
+    // allow for role switch in general and sniff mode
+    gap_set_default_link_policy_settings( LM_LINK_POLICY_ENABLE_ROLE_SWITCH | LM_LINK_POLICY_ENABLE_SNIFF_MODE );
+
+    // allow for role switch on outgoing connections - this allows HFP AG, e.g. smartphone, to become master when we re-connect to it
+    gap_set_allow_role_switch(true);
+
     // register for HFP events
     hfp_hf_register_packet_handler(packet_handler);
 
