@@ -482,7 +482,13 @@ uint8_t a2dp_config_process_config_init(avdtp_role_t role, avdtp_connection_t *c
 
 #ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
     // continue outgoing configuration
-    if (config_process->state == A2DP_DISCOVERY_DONE){
+    if ((role == AVDTP_ROLE_SOURCE) && (config_process->state == A2DP_DISCOVERY_DONE)){
+        config_process->state = A2DP_SET_CONFIGURATION;
+    }
+#endif
+#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
+    // continue outgoing configuration
+    if ((role == AVDTP_ROLE_SINK) && (config_process->state == A2DP_DISCOVERY_DONE)){
         config_process->state = A2DP_SET_CONFIGURATION;
     }
 #endif
@@ -959,6 +965,11 @@ uint8_t a2dp_config_process_set_sbc(avdtp_role_t role, uint16_t a2dp_cid, uint8_
         a2dp_config_process_set_config(role, connection);
     }
 #endif
+#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
+    if (role == AVDP_SINK){
+        a2dp_config_process_set_config(role, connection);
+    }
+#endif
 
     return ERROR_CODE_SUCCESS;
 }
@@ -985,6 +996,11 @@ uint8_t a2dp_config_process_set_mpeg_audio(avdtp_role_t role, uint16_t a2dp_cid,
         a2dp_config_process_set_config(role, connection);
     }
 #endif
+#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
+    if (role == AVDP_SINK){
+        a2dp_config_process_set_config(role, connection);
+    }
+#endif
 
     return ERROR_CODE_SUCCESS;
 }
@@ -1007,6 +1023,11 @@ uint8_t a2dp_config_process_set_mpeg_aac(avdtp_role_t role, uint16_t a2dp_cid,  
 
 #ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
     if (role == AVDP_SOURCE){
+        a2dp_config_process_set_config(role, connection);
+    }
+#endif
+#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
+    if (role == AVDP_SINK){
         a2dp_config_process_set_config(role, connection);
     }
 #endif
@@ -1036,6 +1057,11 @@ uint8_t a2dp_config_process_set_atrac(avdtp_role_t role, uint16_t a2dp_cid, uint
         a2dp_config_process_set_config(role, connection);
     }
 #endif
+#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
+    if (role == AVDP_SINK){
+        a2dp_config_process_set_config(role, connection);
+    }
+#endif
 
     return ERROR_CODE_SUCCESS;
 }
@@ -1059,6 +1085,11 @@ uint8_t a2dp_config_process_set_other(avdtp_role_t role, uint16_t a2dp_cid,  uin
 
 #ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
     if (role == AVDP_SOURCE){
+        a2dp_config_process_set_config(role, connection);
+    }
+#endif
+#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
+    if (role == AVDP_SINK){
         a2dp_config_process_set_config(role, connection);
     }
 #endif

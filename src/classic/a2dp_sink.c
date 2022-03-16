@@ -188,3 +188,25 @@ void a2dp_sink_register_media_config_validator(uint8_t (*callback)(const avdtp_s
     a2dp_sink_media_config_validator = callback;
     avdtp_sink_register_media_config_validator(&a2dp_sink_media_config_validator_callback);
 }
+
+
+uint8_t a2dp_sink_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_sbc_t * configuration){
+    return a2dp_config_process_set_sbc(AVDTP_ROLE_SINK, a2dp_cid, local_seid, remote_seid, configuration);
+}
+
+uint8_t a2dp_sink_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_mpeg_audio_t * configuration){
+    return a2dp_config_process_set_mpeg_audio(AVDTP_ROLE_SINK, a2dp_cid, local_seid, remote_seid, configuration);
+}
+
+uint8_t a2dp_sink_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid,  uint8_t remote_seid, const avdtp_configuration_mpeg_aac_t * configuration){
+    return a2dp_config_process_set_mpeg_aac(AVDTP_ROLE_SINK, a2dp_cid, local_seid, remote_seid, configuration);
+}
+
+uint8_t a2dp_sink_set_config_atrac(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_atrac_t * configuration){
+    return a2dp_config_process_set_atrac(AVDTP_ROLE_SINK, a2dp_cid, local_seid, remote_seid, configuration);
+}
+
+uint8_t a2dp_sink_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid,
+                                     const uint8_t * media_codec_information, uint8_t media_codec_information_len){
+    return a2dp_config_process_set_other(AVDTP_ROLE_SINK, a2dp_cid, local_seid, remote_seid, media_codec_information, media_codec_information_len);
+}
