@@ -2064,16 +2064,12 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         return 1;
     }
 
-    // update AG indicators
-    if (hfp_connection->ag_indicators_status_update_bitmap){
-        int i;
+    // update AG indicators only if enabled by AT+CMER=3,0,0,1
+    if ((hfp_connection->enable_status_update_for_ag_indicators == 1) && (hfp_connection->ag_indicators_status_update_bitmap != 0)){
+        uint16_t i;
         for (i=0;i<hfp_connection->ag_indicators_nr;i++){
             if (get_bit(hfp_connection->ag_indicators_status_update_bitmap, i)){
                 hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, i, 0);
-                if (!hfp_connection->enable_status_update_for_ag_indicators) {
-                    log_info("+CMER:3,0,0,0 - not sending update for '%s'", hfp_ag_indicators[i].name);
-                    break;
-                }
                 hfp_ag_send_transfer_ag_indicators_status_cmd(hfp_connection->rfcomm_cid, &hfp_ag_indicators[i]);
                 return 1;
             }
