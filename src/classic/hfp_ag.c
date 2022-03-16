@@ -648,7 +648,13 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
 static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
     hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
-    
+
+    // HFP 4.35: "When [...] a new Service Level Connection is established all indicators are activated by default."
+    uint16_t i;
+    for (i=0;i<hfp_connection->ag_indicators_nr;i++){
+        hfp_connection->ag_indicators[i].enabled = 1;
+    }
+
     // if active call exist, set per-hfp_connection state active, too (when audio is on)
     if (hfp_gsm_call_status() == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
         hfp_connection->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE;

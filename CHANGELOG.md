@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: support periodic advertising with ENABLE_LE_PERIODIC_ADVERTISING
 
 ### Fixed
-
+- HFP AG: activate all AG indicators upon service level connection establishment
+ 
 ### Changed
 
 
