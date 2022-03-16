@@ -33,7 +33,7 @@
 #define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SCO_OVER_HCI
 #define ENABLE_SDP_DES_DUMP
-#define ENABLE_SOFTWARE_AES1280
+#define ENABLE_SOFTWARE_AES128
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
