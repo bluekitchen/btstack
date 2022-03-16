@@ -4410,6 +4410,7 @@ static void hci_halting_run(void) {
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
             if (hci_extended_advertising_supported()){
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
                 btstack_linked_list_iterator_t it;
                 btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
                 // stop all periodic advertisements and check if an extended set is active
@@ -4425,6 +4426,7 @@ static void hci_halting_run(void) {
                         advertising_set->state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
                     }
                 }
+#endif /* ENABLE_LE_PERIODIC_ADVERTISING */
                 if (stop_advertismenets){
                     hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
                     hci_send_cmd(&hci_le_set_extended_advertising_enable, 0, 0, NULL, NULL, NULL);
@@ -4838,7 +4840,9 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     le_advertising_set_t * advertising_stop_set = NULL;
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
     bool periodic_stop = false;
+#endif
 #endif
 
 #ifndef ENABLE_LE_CENTRAL
@@ -4981,6 +4985,7 @@ static bool hci_run_general_gap_le(void){
                     break;
                 }
             }
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
             if ((advertising_set->state & LE_ADVERTISEMENT_STATE_PERIODIC_ACTIVE) != 0) {
                 // stop if:
                 // - it's disabled
@@ -4992,6 +4997,7 @@ static bool hci_run_general_gap_le(void){
                     advertising_stop_set = advertising_set;
                 }
             }
+#endif
         }
     }
 #endif
@@ -5041,12 +5047,14 @@ static bool hci_run_general_gap_le(void){
         return true;
     }
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
     if (periodic_stop){
         advertising_stop_set->state &= ~LE_ADVERTISEMENT_STATE_PERIODIC_ACTIVE;
         hci_send_cmd(&hci_le_set_periodic_advertising_enable, 0, advertising_stop_set->advertising_handle);
         return true;
     }
-#endif
+#endif /* ENABLE_LE_PERIODIC_ADVERTISING */
+#endif /* ENABLE_LE_EXTENDED_ADVERTISING */
 #endif
 
     // Phase 3: modify
@@ -5239,6 +5247,7 @@ static bool hci_run_general_gap_le(void){
                 hci_send_cmd(&hci_le_set_extended_scan_response_data, operation, 0x03, 0x01, data_to_upload, &advertising_set->scan_data[pos]);
                 return true;
             }
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
             if ((advertising_set->tasks & LE_ADVERTISEMENT_TASKS_SET_PERIODIC_PARAMS) != 0){
                 advertising_set->tasks &= ~LE_ADVERTISEMENT_TASKS_SET_PERIODIC_PARAMS;
                 hci_stack->le_advertising_set_in_current_command = advertising_set->advertising_handle;
@@ -5265,6 +5274,7 @@ static bool hci_run_general_gap_le(void){
                 hci_send_cmd(&hci_le_set_periodic_advertising_data, advertising_set->advertising_handle, operation, data_to_upload, &advertising_set->periodic_data[pos]);
                 return true;
             }
+#endif /* ENABLE_LE_PERIODIC_ADVERTISING */
         }
     }
 #endif
@@ -5471,6 +5481,7 @@ static bool hci_run_general_gap_le(void){
                 hci_send_cmd(&hci_le_set_extended_advertising_enable, 1, 1, advertising_handles, durations, max_events);
                 return true;
             }
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
             if (((advertising_set->state & LE_ADVERTISEMENT_STATE_PERIODIC_ENABLED) != 0) && ((advertising_set->state & LE_ADVERTISEMENT_STATE_PERIODIC_ACTIVE) == 0)){
                 advertising_set->state |= LE_ADVERTISEMENT_STATE_PERIODIC_ACTIVE;
                 uint8_t enable = 1;
@@ -5480,6 +5491,7 @@ static bool hci_run_general_gap_le(void){
                 hci_send_cmd(&hci_le_set_periodic_advertising_enable, enable, advertising_set->advertising_handle);
                 return true;
             }
+#endif /* ENABLE_LE_PERIODIC_ADVERTISING */
         }
     }
 #endif
@@ -6916,25 +6928,6 @@ uint8_t gap_extended_advertising_get_params(uint8_t advertising_handle, le_exten
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gap_periodic_advertising_set_params(uint8_t advertising_handle, const le_periodic_advertising_parameters_t * advertising_parameters){
-    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
-    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    // periodic advertising requires neither connectable, scannable, legacy or anonymous
-    if ((advertising_set->extended_params.advertising_event_properties & 0x1f) != 0) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
-    memcpy(&advertising_set->periodic_params, advertising_parameters, sizeof(le_periodic_advertising_parameters_t));
-    // set tasks and start
-    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_PERIODIC_PARAMS;
-    hci_run();
-    return ERROR_CODE_SUCCESS;
-}
-
-uint8_t gap_periodic_advertising_get_params(uint8_t advertising_handle, le_periodic_advertising_parameters_t * advertising_parameters){
-    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
-    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    memcpy(advertising_parameters, &advertising_set->extended_params, sizeof(le_periodic_advertising_parameters_t));
-    return ERROR_CODE_SUCCESS;
-}
-
 uint8_t gap_extended_advertising_set_random_address(uint8_t advertising_handle, bd_addr_t random_address){
     le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -6967,17 +6960,6 @@ uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_hand
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gap_periodic_advertising_set_data(uint8_t advertising_handle, uint16_t periodic_data_length, const uint8_t * periodic_data){
-    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
-    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    advertising_set->periodic_data = periodic_data;
-    advertising_set->periodic_data_len = periodic_data_length;
-    // set tasks and start
-    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_PERIODIC_DATA;
-    hci_run();
-    return ERROR_CODE_SUCCESS;
-}
-
 uint8_t gap_extended_advertising_start(uint8_t advertising_handle, uint16_t timeout, uint8_t num_extended_advertising_events){
     le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -6994,6 +6976,46 @@ uint8_t gap_extended_advertising_stop(uint8_t advertising_handle){
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     // set tasks and start
     advertising_set->state &= ~LE_ADVERTISEMENT_STATE_ENABLED;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_extended_advertising_remove(uint8_t advertising_handle){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    // set tasks and start
+    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_REMOVE_SET;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
+uint8_t gap_periodic_advertising_set_params(uint8_t advertising_handle, const le_periodic_advertising_parameters_t * advertising_parameters){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    // periodic advertising requires neither connectable, scannable, legacy or anonymous
+    if ((advertising_set->extended_params.advertising_event_properties & 0x1f) != 0) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    memcpy(&advertising_set->periodic_params, advertising_parameters, sizeof(le_periodic_advertising_parameters_t));
+    // set tasks and start
+    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_PERIODIC_PARAMS;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_periodic_advertising_get_params(uint8_t advertising_handle, le_periodic_advertising_parameters_t * advertising_parameters){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    memcpy(advertising_parameters, &advertising_set->extended_params, sizeof(le_periodic_advertising_parameters_t));
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_periodic_advertising_set_data(uint8_t advertising_handle, uint16_t periodic_data_length, const uint8_t * periodic_data){
+    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    advertising_set->periodic_data = periodic_data;
+    advertising_set->periodic_data_len = periodic_data_length;
+    // set tasks and start
+    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_PERIODIC_DATA;
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
@@ -7016,15 +7038,8 @@ uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle){
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
+#endif /* ENABLE_LE_PERIODIC_ADVERTISING */
 
-uint8_t gap_extended_advertising_remove(uint8_t advertising_handle){
-    le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
-    if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    // set tasks and start
-    advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_REMOVE_SET;
-    hci_run();
-    return ERROR_CODE_SUCCESS;
-}
 #endif
 
 #endif

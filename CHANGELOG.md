@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- GAP: support periodic advertising with ENABLE_LE_PERIODIC_ADVERTISING
 
 ### Fixed
 

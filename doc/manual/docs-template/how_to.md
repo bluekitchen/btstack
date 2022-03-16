@@ -94,6 +94,7 @@ ENABLE_GATT_CLIENT_PAIRING       | Enable GATT Client to start pairing and retry
 ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS | Use [micro-ecc library](https://github.com/kmackay/micro-ecc) for ECC operations
 ENABLE_LE_DATA_LENGTH_EXTENSION  | Enable LE Data Length Extension support
 ENABLE_LE_EXTENDED_ADVERTISING   | Enable extended advertising and scanning
+ENABLE_LE_PERIODIC_ADVERTISING   | Enable periodic advertising and scanning
 ENABLE_LE_SIGNED_WRITE           | Enable LE Signed Writes in ATT/GATT
 ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION | Enable address resolution for resolvable private addresses in Controller
 ENABLE_CROSS_TRANSPORT_KEY_DERIVATION | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections
