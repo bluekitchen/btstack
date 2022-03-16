@@ -54,6 +54,11 @@
 #include "classic/avdtp_util.h"
 #include "btstack_debug.h"
 
+// ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG has been replaced by ENABLE_A2DP_EXPLICIT_CONFIG which is valid for both roles
+#ifdef  ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
+#error "Please define ENABLE_A2DP_EXPLICIT_CONFIG instead of ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG"
+#endif
+
 #define AVDTP_MAX_SEP_NUM 10
 #define A2DP_SET_CONFIG_DELAY_MS 200
 
@@ -480,15 +485,8 @@ uint8_t a2dp_config_process_config_init(avdtp_role_t role, avdtp_connection_t *c
     config_process->local_stream_endpoint = stream_endpoint;
     config_process->have_config = true;
 
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-    // continue outgoing configuration
-    if ((role == AVDTP_ROLE_SOURCE) && (config_process->state == A2DP_DISCOVERY_DONE)){
-        config_process->state = A2DP_SET_CONFIGURATION;
-    }
-#endif
-#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
-    // continue outgoing configuration
-    if ((role == AVDTP_ROLE_SINK) && (config_process->state == A2DP_DISCOVERY_DONE)){
+#ifdef ENABLE_A2DP_EXPLICIT_CONFIG
+    if (config_process->state == A2DP_DISCOVERY_DONE)
         config_process->state = A2DP_SET_CONFIGURATION;
     }
 #endif
@@ -605,13 +603,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             // forward codec capability
             a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY);
 
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-            if (role == AVDTP_ROLE_SOURCE) break;
-#endif
-#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
-            if (role == AVDTP_ROLE_SINK) break;
-#endif
-
+#ifndef ENABLE_A2DP_EXPLICIT_CONFIG
             // select SEP if none configured yet
             if (config_process->have_config == false){
                 // find SBC stream endpoint
@@ -634,6 +626,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     a2dp_config_process_set_sbc(role, cid, local_seid, remote_seid, &configuration);
                 }
             }
+#endif
             break;
             // forward codec capability
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY:
@@ -717,19 +710,10 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     break;
                 }
 
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-                if (role == AVDTP_ROLE_SOURCE){
-                    config_process->state = A2DP_DISCOVERY_DONE;
-                    // TODO call a2dp_discover_seps_with_next_waiting_connection?
-                    break;
-                }
-#endif
-#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
-                if (role == AVDTP_ROLE_SINK){
-                    config_process->state = A2DP_DISCOVERY_DONE;
-                    // TODO call a2dp_discover_seps_with_next_waiting_connection?
-                    break;
-                }
+#ifdef ENABLE_A2DP_EXPLICIT_CONFIG
+                config_process->state = A2DP_DISCOVERY_DONE;
+                // TODO call a2dp_discover_seps_with_next_waiting_connection?
+                break;
 #endif
 
                 // we didn't find a suitable SBC stream endpoint, sorry.
@@ -960,15 +944,8 @@ uint8_t a2dp_config_process_set_sbc(avdtp_role_t role, uint16_t a2dp_cid, uint8_
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
     avdtp_config_sbc_store(config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-    if (role == AVDP_SOURCE){
-        a2dp_config_process_set_config(role, connection);
-    }
-#endif
-#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
-    if (role == AVDP_SINK){
-        a2dp_config_process_set_config(role, connection);
-    }
+#ifdef ENABLE_A2DP_EXPLICIT_CONFIG
+    a2dp_config_process_set_config(role, connection);
 #endif
 
     return ERROR_CODE_SUCCESS;
@@ -991,15 +968,8 @@ uint8_t a2dp_config_process_set_mpeg_audio(avdtp_role_t role, uint16_t a2dp_cid,
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
     avdtp_config_mpeg_audio_store(config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-    if (role == AVDP_SOURCE){
-        a2dp_config_process_set_config(role, connection);
-    }
-#endif
-#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
-    if (role == AVDP_SINK){
-        a2dp_config_process_set_config(role, connection);
-    }
+#ifdef ENABLE_A2DP_EXPLICIT_CONFIG
+    a2dp_config_process_set_config(role, connection);
 #endif
 
     return ERROR_CODE_SUCCESS;
@@ -1021,15 +991,8 @@ uint8_t a2dp_config_process_set_mpeg_aac(avdtp_role_t role, uint16_t a2dp_cid,  
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 6;
     avdtp_config_mpeg_aac_store(config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-    if (role == AVDP_SOURCE){
-        a2dp_config_process_set_config(role, connection);
-    }
-#endif
-#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
-    if (role == AVDP_SINK){
-        a2dp_config_process_set_config(role, connection);
-    }
+#ifdef ENABLE_A2DP_EXPLICIT_CONFIG
+    a2dp_config_process_set_config(role, connection);
 #endif
 
     return ERROR_CODE_SUCCESS;
@@ -1052,15 +1015,8 @@ uint8_t a2dp_config_process_set_atrac(avdtp_role_t role, uint16_t a2dp_cid, uint
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 7;
     avdtp_config_atrac_store(config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-    if (role == AVDP_SOURCE){
-        a2dp_config_process_set_config(role, connection);
-    }
-#endif
-#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
-    if (role == AVDP_SINK){
-        a2dp_config_process_set_config(role, connection);
-    }
+#ifdef ENABLE_A2DP_EXPLICIT_CONFIG
+    a2dp_config_process_set_config(role, connection);
 #endif
 
     return ERROR_CODE_SUCCESS;
@@ -1083,15 +1039,8 @@ uint8_t a2dp_config_process_set_other(avdtp_role_t role, uint16_t a2dp_cid,  uin
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) media_codec_information;
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_information_len;
 
-#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
-    if (role == AVDP_SOURCE){
+#ifdef ENABLE_A2DP_EXPLICIT_CONFIG
         a2dp_config_process_set_config(role, connection);
-    }
-#endif
-#ifdef ENABLE_A2DP_SINK_EXPLICIT_CONFIG
-    if (role == AVDP_SINK){
-        a2dp_config_process_set_config(role, connection);
-    }
 #endif
 
     return status;

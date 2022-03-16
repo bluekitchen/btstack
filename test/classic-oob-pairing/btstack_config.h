@@ -59,8 +59,8 @@
 #define ENABLE_CLASSIC_PAIRING_OOB
 /// Handle IOCAP by application
 #define ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
-/// Enable A2DP source codec config
-#define ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
+/// Enable A2DP codec config
+#define ENABLE_A2DP_EXPLICIT_CONFIG
 /// Allow defer of LINK Key Reply
 #define ENABLE_EXPLICIT_LINK_KEY_REPLY
 //  Trigger L2CAP Information Requests to get supported fixed channels
