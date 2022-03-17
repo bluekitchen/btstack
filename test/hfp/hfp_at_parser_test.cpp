@@ -84,12 +84,15 @@ TEST_GROUP(HFPParser){
     int offset;
 
     void setup(void){
+        memset(&context, 0, sizeof(hfp_connection_t));
         context.parser_state = HFP_PARSER_CMD_HEADER;
         context.parser_item_index = 0;
         context.line_size = 0;
         context.ag_indicators_nr = 0;
         context.remote_codecs_nr = 0;
-        memset(packet,0, sizeof(packet)); 
+        context.bnip_number[0] = 0;
+        context.bnip_type = 0;
+        memset(packet,0, sizeof(packet));
     }
 };
 
@@ -529,6 +532,45 @@ TEST(HFPParser, HFP_CMD_ENABLE_CLIP){
     parse_ag(packet);
     CHECK_EQUAL(HFP_CMD_ENABLE_CLIP, context.command);
     CHECK_EQUAL(param, context.clip_enabled);
+}
+
+TEST(HFPParser, HFP_CMD_AG_SENT_CLIP_INFORMATION_a){
+    // default/minimal
+    parse_hf("\r\n+CLIP: \"+123456789\",145\r\n");
+    CHECK_EQUAL(HFP_CMD_AG_SENT_CLIP_INFORMATION, context.command);
+    STRCMP_EQUAL("+123456789", context.bnip_number);
+    CHECK_EQUAL(145, context.bnip_type);
+    CHECK_EQUAL(false, context.clip_have_alpha);
+}
+
+TEST(HFPParser, HFP_CMD_AG_SENT_CLIP_INFORMATION_b){
+    // iOS
+    parse_hf("\r\n+CLIP: \"+123456789\",145,,,\"BlueKitchen GmbH\"\r\n");
+    CHECK_EQUAL(HFP_CMD_AG_SENT_CLIP_INFORMATION, context.command);
+    STRCMP_EQUAL("+123456789", context.bnip_number);
+    CHECK_EQUAL(145, context.bnip_type);
+    CHECK_EQUAL(true, context.clip_have_alpha);
+    STRCMP_EQUAL("BlueKitchen GmbH", (const char *)context.line_buffer);
+}
+
+TEST(HFPParser, HFP_CMD_AG_SENT_CLIP_INFORMATION_c){
+    // older iOS with additional ','
+    parse_hf("\r\n+CLIP: \"+123456789\",145,,,,\"BlueKitchen GmbH\"\r\n");
+    CHECK_EQUAL(HFP_CMD_AG_SENT_CLIP_INFORMATION, context.command);
+    STRCMP_EQUAL("+123456789", context.bnip_number);
+    CHECK_EQUAL(145, context.bnip_type);
+    CHECK_EQUAL(true, context.clip_have_alpha);
+    STRCMP_EQUAL("BlueKitchen GmbH", (const char *)context.line_buffer);
+}
+
+TEST(HFPParser, HFP_CMD_AG_SENT_CLIP_INFORMATION_d){
+    // BlackBerry, additional quotes
+    parse_hf("\r\n+CLIP: \"+123456789\",145,\"\",,\"BlueKitchen GmbH\"\r\n");
+    CHECK_EQUAL(HFP_CMD_AG_SENT_CLIP_INFORMATION, context.command);
+    STRCMP_EQUAL("+123456789", context.bnip_number);
+    CHECK_EQUAL(145, context.bnip_type);
+    CHECK_EQUAL(true, context.clip_have_alpha);
+    STRCMP_EQUAL("BlueKitchen GmbH", (const char *)context.line_buffer);
 }
 
 int main (int argc, const char * argv[]){
