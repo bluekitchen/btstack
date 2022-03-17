@@ -1428,8 +1428,6 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
 
             if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS){
                 hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
-            } else {
-                hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
             }
             return true;
 
