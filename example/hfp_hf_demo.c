@@ -580,7 +580,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             hfp_subevent_microphone_volume_get_gain(event));
                             break;
                         case HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION:
-                            printf("Caller ID, number %s\n", hfp_subevent_calling_line_identification_notification_get_number(event));
+                            printf("Caller ID, number '%s', alpha '%s'\n", (const char *) hfp_subevent_calling_line_identification_notification_get_number(event),
+                                   (const char *) hfp_subevent_calling_line_identification_notification_get_alpha(event));
                             break;
                         case HFP_SUBEVENT_ENHANCED_CALL_STATUS:
                             printf("Enhanced call status:\n");
