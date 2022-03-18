@@ -153,18 +153,28 @@ static void hfp_hf_emit_subscriber_information(const hfp_connection_t * hfp_conn
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 8 + bnip_number_len);
 }
 
-static void hfp_hf_emit_type_and_number(const hfp_connection_t * hfp_connection, uint8_t event_subtype){
+static void hfp_hf_emit_type_number_alpha(const hfp_connection_t * hfp_connection, uint8_t event_subtype){
     if (hfp_hf_callback == NULL) return;
     uint16_t bnip_number_len = btstack_min(strlen(hfp_connection->bnip_number), sizeof(hfp_connection->bnip_number)-1);
-    uint8_t event[6 + sizeof(hfp_connection->bnip_number)];
-    event[0] = HCI_EVENT_HFP_META;
-    event[1] = 5 + bnip_number_len;
-    event[2] = event_subtype;
+    // 10 fixed - 1 (bnip_number_len <= sizeof(hfp_connection->bnip_number)-1) + 1 (trailing \0 for line buffer)
+    uint8_t event[10 + sizeof(hfp_connection->bnip_number) + sizeof(hfp_connection->line_buffer)];
+    uint8_t alpha_len = hfp_connection->clip_have_alpha ? strlen((const char *) hfp_connection->line_buffer) : 0;
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = 8 + bnip_number_len + alpha_len;
+    event[pos++] = event_subtype;
     little_endian_store_16(event, 3, hfp_connection->acl_handle);
-    event[5] = hfp_connection->bnip_type;
-    memcpy(&event[6], hfp_connection->bnip_number, bnip_number_len);
-    event[6 + bnip_number_len] = 0;
-    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 7 + bnip_number_len);
+    pos += 2;
+    event[pos++] = hfp_connection->bnip_type;
+    event[pos++] = bnip_number_len;
+    memcpy(&event[7], hfp_connection->bnip_number, bnip_number_len);
+    pos += bnip_number_len;
+    event[pos++] = 0;
+    event[pos++] = alpha_len;
+    memcpy(&event[pos], hfp_connection->line_buffer, alpha_len);
+    pos += alpha_len;
+    event[pos++] = 0;
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void hfp_hf_emit_enhanced_call_status(const hfp_connection_t * hfp_connection){
@@ -1302,11 +1312,11 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             break;
         case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
             hfp_connection->command = HFP_CMD_NONE;
-            hfp_hf_emit_type_and_number(hfp_connection, HFP_SUBEVENT_CALL_WAITING_NOTIFICATION);
+            hfp_hf_emit_type_number_alpha(hfp_connection, HFP_SUBEVENT_CALL_WAITING_NOTIFICATION);
             break;
         case HFP_CMD_AG_SENT_CLIP_INFORMATION:
             hfp_connection->command = HFP_CMD_NONE;
-            hfp_hf_emit_type_and_number(hfp_connection, HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION);
+            hfp_hf_emit_type_number_alpha(hfp_connection, HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION);
             break;
         case HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR:
             hfp_connection->command = HFP_CMD_NONE;

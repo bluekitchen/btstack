@@ -2121,20 +2121,26 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_MICROPHONE_VOLUME                        0x15u
 
 /**
- * @format 1H1T
+ * @format 1H1JVJV
  * @param subevent_code
  * @param acl_handle
  * @param type
+ * @param number_length
  * @param number
+ * @param alpha_length
+ * @param alpha
  */
 #define HFP_SUBEVENT_CALL_WAITING_NOTIFICATION                0x16u
 
 /**
- * @format 1H1T
+ * @format 1H1JVJV
  * @param subevent_code
  * @param acl_handle
  * @param type
+ * @param number_length
  * @param number
+ * @param alpha_length
+ * @param alpha
  */
 #define HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION 0x17u
 

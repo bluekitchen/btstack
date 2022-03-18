@@ -6156,13 +6156,40 @@ static inline uint8_t hfp_subevent_call_waiting_notification_get_type(const uint
     return event[5];
 }
 /**
+ * @brief Get field number_length from event HFP_SUBEVENT_CALL_WAITING_NOTIFICATION
+ * @param event packet
+ * @return number_length
+ * @note: btstack_type J
+ */
+static inline uint8_t hfp_subevent_call_waiting_notification_get_number_length(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field number from event HFP_SUBEVENT_CALL_WAITING_NOTIFICATION
  * @param event packet
  * @return number
- * @note: btstack_type T
+ * @note: btstack_type V
  */
-static inline const char * hfp_subevent_call_waiting_notification_get_number(const uint8_t * event){
-    return (const char *) &event[6];
+static inline const uint8_t * hfp_subevent_call_waiting_notification_get_number(const uint8_t * event){
+    return &event[7];
+}
+/**
+ * @brief Get field alpha_length from event HFP_SUBEVENT_CALL_WAITING_NOTIFICATION
+ * @param event packet
+ * @return alpha_length
+ * @note: btstack_type J
+ */
+static inline uint8_t hfp_subevent_call_waiting_notification_get_alpha_length(const uint8_t * event){
+    return event[7u + event[6]];
+}
+/**
+ * @brief Get field alpha from event HFP_SUBEVENT_CALL_WAITING_NOTIFICATION
+ * @param event packet
+ * @return alpha
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hfp_subevent_call_waiting_notification_get_alpha(const uint8_t * event){
+    return &event[7u + event[6] + 1u];
 }
 
 /**
@@ -6184,13 +6211,40 @@ static inline uint8_t hfp_subevent_calling_line_identification_notification_get_
     return event[5];
 }
 /**
+ * @brief Get field number_length from event HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION
+ * @param event packet
+ * @return number_length
+ * @note: btstack_type J
+ */
+static inline uint8_t hfp_subevent_calling_line_identification_notification_get_number_length(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field number from event HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION
  * @param event packet
  * @return number
- * @note: btstack_type T
+ * @note: btstack_type V
  */
-static inline const char * hfp_subevent_calling_line_identification_notification_get_number(const uint8_t * event){
-    return (const char *) &event[6];
+static inline const uint8_t * hfp_subevent_calling_line_identification_notification_get_number(const uint8_t * event){
+    return &event[7];
+}
+/**
+ * @brief Get field alpha_length from event HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION
+ * @param event packet
+ * @return alpha_length
+ * @note: btstack_type J
+ */
+static inline uint8_t hfp_subevent_calling_line_identification_notification_get_alpha_length(const uint8_t * event){
+    return event[7u + event[6]];
+}
+/**
+ * @brief Get field alpha from event HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION
+ * @param event packet
+ * @return alpha
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hfp_subevent_calling_line_identification_notification_get_alpha(const uint8_t * event){
+    return &event[7u + event[6] + 1u];
 }
 
 /**
