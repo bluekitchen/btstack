@@ -715,7 +715,8 @@ typedef struct hfp_connection {
     uint8_t call_index;
     // also used for CLCC, CCWA, CLIP if set
     uint8_t bnip_type;       // 0 == not set
-    char    bnip_number[25]; // 
+    char    bnip_number[25]; //
+    bool    clip_have_alpha;
 
 #ifdef ENABLE_CC256X_ASSISTED_HFP
     bool cc256x_send_write_codec_config;

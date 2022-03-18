@@ -577,6 +577,7 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     hfp_connection->call_waiting_notification_enabled = 0;
     hfp_connection->command = HFP_CMD_NONE;
     hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
+    hfp_connection->clip_have_alpha = false;
     hfp_reset_voice_recognition(hfp_connection);
 }
 
@@ -1207,7 +1208,7 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 
 static void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
     hfp_connection->line_size = 0;
-    // hfp_connection->line_buffer[0] = 0; 
+    // we don't set the first byte to '\0' to allow access to last argument e.g. in hfp_hf_handle_rfcommand
 }
 
 static void hfp_parser_store_if_token(hfp_connection_t * hfp_connection, uint8_t byte){
@@ -1419,6 +1420,10 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                     hfp_connection->ag_indicators[hfp_connection->parser_item_index].max_range = btstack_atoi((char *)hfp_connection->line_buffer);
                     hfp_next_indicators_index(hfp_connection);
                     hfp_connection->ag_indicators_nr = hfp_connection->parser_item_index;
+                    break;
+                case HFP_CMD_AG_SENT_CLIP_INFORMATION:
+                    // track if last argument exists
+                    hfp_connection->clip_have_alpha = hfp_connection->line_size != 0;
                     break;
                 default:
                     break;

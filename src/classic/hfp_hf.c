@@ -1269,6 +1269,8 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
     int i;
     bool event_emited;
 
+    // last argument is still in line_buffer
+
     switch (hfp_connection->command){
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
             hfp_connection->command = HFP_CMD_NONE;
