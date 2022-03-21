@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - GAP: support periodic advertising with ENABLE_LE_PERIODIC_ADVERTISING
 - HFP HF: provide Calling Line Identification alpha field
- 
+- HFP HF: emit HFP_SUBEVENT_TRANSMIT_DTMF_CODES after sending DTMF command
+
 ### Fixed
 - HFP AG: activate all AG indicators upon service level connection establishment
  

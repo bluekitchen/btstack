@@ -968,6 +968,11 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         hfp_connection->hf_send_dtmf_code = 0;
         hfp_connection->ok_pending = 1;
         hfp_hf_send_dtmf(hfp_connection->rfcomm_cid, code);
+        // notify client that dtmf was sent
+        char buffer[2];
+        buffer[0] = code;
+        buffer[1] = 0;
+        hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_TRANSMIT_DTMF_CODES, buffer);
         return;
     }
 
