@@ -322,8 +322,9 @@ uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid);
  * @param dst
  * @param dst_size
  * @param src
+ * @retun bytes_copied including trailing 0
  */
-void btstack_strcpy(char * dst, uint16_t dst_size, const char * src);
+uint16_t btstack_strcpy(char * dst, uint16_t dst_size, const char * src);
 
 /**
  * @brief Append src string to string in dst buffer with terminating '\0'
