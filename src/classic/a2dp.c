@@ -474,7 +474,7 @@ uint8_t a2dp_config_process_config_init(avdtp_role_t role, avdtp_connection_t *c
     config_process->have_config = true;
 
 #ifdef ENABLE_A2DP_EXPLICIT_CONFIG
-    if (config_process->state == A2DP_DISCOVERY_DONE)
+    if (config_process->state == A2DP_DISCOVERY_DONE){
         config_process->state = A2DP_SET_CONFIGURATION;
     }
 #endif
