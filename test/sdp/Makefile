@@ -28,6 +28,7 @@ COMMON = \
 	btstack_memory_pool.c \
 	device_id_server.c \
 	avdtp.c \
+	a2dp.c \
 	a2dp_source.c \
 	a2dp_sink.c \
 	avdtp.c \
