@@ -6089,9 +6089,6 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
                 conn->role  = HCI_ROLE_MASTER;
             }
 
-            conn->con_handle = HCI_CON_HANDLE_INVALID;
-            conn->role = HCI_ROLE_INVALID;
-
             log_info("conn state %u", conn->state);
             // TODO: L2CAP should not send create connection command, instead a (new) gap function should be used
             switch (conn->state) {
