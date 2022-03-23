@@ -6252,7 +6252,7 @@ uint8_t hci_send_cmd(const hci_cmd_t * cmd, ...){
 static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
     // dump packet
     if (dump) {
-        hci_dump_packet( HCI_EVENT_PACKET, 0, event, size);
+        hci_dump_packet( HCI_EVENT_PACKET, 1, event, size);
     } 
 
     // dispatch to all event handlers
