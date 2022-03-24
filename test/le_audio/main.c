@@ -54,6 +54,7 @@
 #include "ble/le_device_db_tlv.h"
 #include "bluetooth_company_id.h"
 #include "btstack_audio.h"
+#include "btstack_chipset_zephyr.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -78,7 +79,13 @@ static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 static bd_addr_t             local_addr;
 
-static int is_bcm;
+static const uint8_t read_static_address_command_complete_prefix[] = { 0x0e, 0x1b, 0x01, 0x09, 0xfc };
+static bd_addr_t static_address;
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static bool is_zephyr;
+
 // shutdown
 static bool shutdown_triggered;
 
@@ -87,13 +94,11 @@ static void local_version_information_handler(uint8_t * packet);
 
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
-    115200,
+    1000000,
     0,  // main baudrate
     1,  // flow control
     NULL,
 };
-
-static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -101,7 +106,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)){
                 case HCI_STATE_WORKING:
-                    gap_local_bd_addr(local_addr);
+                    if (is_zephyr){
+                        memcpy(local_addr, static_address, 6);
+                    } else {
+                        gap_local_bd_addr(local_addr);
+                    }
                     printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
                     strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
                     strcat(tlv_db_path, bd_addr_to_str(local_addr));
@@ -137,6 +146,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
                 local_version_information_handler(packet);
             }
+            if (memcmp(packet, read_static_address_command_complete_prefix, sizeof(read_static_address_command_complete_prefix)) == 0){
+                reverse_48(&packet[7], static_address);
+                gap_random_address_set(static_address);
+            }
             break;
         default:
             break;
@@ -171,6 +184,10 @@ static void local_version_information_handler(uint8_t * packet){
     switch (manufacturer){
         case BLUETOOTH_COMPANY_ID_PACKETCRAFT_INC:
             printf("PacketCraft HCI Controller\n");
+            break;
+        case BLUETOOTH_COMPANY_ID_THE_LINUX_FOUNDATION:
+            printf("Zephyr HCI Controller\n");
+            is_zephyr = true;
             break;
         default:
             printf("Unknown manufacturer / manufacturer not supported yet.\n");
@@ -212,6 +229,7 @@ int main(int argc, const char * argv[]){
     const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
 	const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
 	hci_init(transport, (void*) &config);
+    hci_set_chipset(btstack_chipset_zephyr_instance());
 
 #ifdef HAVE_PORTAUDIO
     btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
