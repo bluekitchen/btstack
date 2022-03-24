@@ -141,7 +141,7 @@ static void hci_dump_posix_fs_log_packet(uint8_t packet_type, uint8_t in, uint8_
         case HCI_DUMP_BTSNOOP:
             // log messages not supported
             if (packet_type == LOG_MESSAGE_PACKET) return;
-            ts_usec = ((uint64_t)  curr_time.tv_sec) * 1000000 + curr_time.tv_usec;
+            ts_usec = 0xdcddb30f2f8000LLU + 1000000LLU * curr_time.tv_sec + curr_time.tv_usec;
             // append packet type to pcap header
             hci_dump_setup_header_btsnoop(header.header_btsnoop, ts_usec >> 32, ts_usec & 0xFFFFFFFF, 0, packet_type, in, len+1);
             header.header_btsnoop[HCI_DUMP_HEADER_SIZE_BTSNOOP] = packet_type;
