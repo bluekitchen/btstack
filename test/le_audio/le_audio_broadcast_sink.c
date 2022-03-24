@@ -235,6 +235,13 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
     // TODO: BASE might be split across multiple advertisements
     const uint8_t * adv_data = hci_subevent_le_periodic_advertising_report_get_data(packet);
     uint16_t adv_size = hci_subevent_le_periodic_advertising_report_get_data_length(packet);
+    uint8_t adv_status = hci_subevent_le_periodic_advertising_report_get_data_status(packet);
+
+    if (adv_status != 0) {
+        printf("Periodic Advertisement (status %u): ", adv_status);
+        printf_hexdump(adv_data, adv_size);
+        return;
+    }
 
     ad_context_t context;
     for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
@@ -447,14 +454,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT:
                     if (have_base) break;
                     handle_periodic_advertisement(packet, size);
-                    if (have_big_info){
+                    if (have_base & have_big_info){
                         enter_create_big_sync();
                     }
                     break;
                 case HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT:
                     if (have_big_info) break;
                     handle_big_info(packet, size);
-                    if (have_base){
+                    if (have_base & have_big_info){
                         enter_create_big_sync();
                     }
                     break;
