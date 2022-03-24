@@ -54,7 +54,6 @@
 #include "ble/le_device_db_tlv.h"
 #include "bluetooth_company_id.h"
 #include "btstack_audio.h"
-#include "btstack_chipset_zephyr.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -71,20 +70,22 @@
 #include "hci_transport.h"
 #include "hci_transport_h4.h"
 
+#define HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS 0xFC09
+const hci_cmd_t hci_zephyr_read_static_address = {
+        HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS, ""
+};
 
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
 static char tlv_db_path[100];
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
-static bd_addr_t             local_addr;
-
-static const uint8_t read_static_address_command_complete_prefix[] = { 0x0e, 0x1b, 0x01, 0x09, 0xfc };
-static bd_addr_t static_address;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static bool is_zephyr;
+static bool zephyr_read_static_address;
+static bd_addr_t zephyr_static_address;
 
 // shutdown
 static bool shutdown_triggered;
@@ -100,6 +101,21 @@ static hci_transport_config_uart_t config = {
     NULL,
 };
 
+static void setup_tlv(bd_addr_t addr){
+    printf("BTstack up and running on %s.\n", bd_addr_to_str(addr));
+    strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
+    strcat(tlv_db_path, bd_addr_to_str(addr));
+    strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+    tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
+    btstack_tlv_set_instance(tlv_impl, &tlv_context);
+#ifdef ENABLE_CLASSIC
+    hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
+#endif
+#ifdef ENABLE_BLE
+    le_device_db_tlv_configure(tlv_impl, &tlv_context);
+#endif
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
@@ -107,22 +123,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch(btstack_event_state_get_state(packet)){
                 case HCI_STATE_WORKING:
                     if (is_zephyr){
-                        memcpy(local_addr, static_address, 6);
+                        zephyr_read_static_address = true;
                     } else {
+                        bd_addr_t local_addr;
                         gap_local_bd_addr(local_addr);
+                        setup_tlv(local_addr);
                     }
-                    printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
-                    strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
-                    strcat(tlv_db_path, bd_addr_to_str(local_addr));
-                    strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
-                    tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
-                    btstack_tlv_set_instance(tlv_impl, &tlv_context);
-#ifdef ENABLE_CLASSIC
-                    hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
-#endif    
-#ifdef ENABLE_BLE
-                    le_device_db_tlv_configure(tlv_impl, &tlv_context);
-#endif
                     break;
                 case HCI_STATE_OFF:
                     btstack_tlv_posix_deinit(&tlv_context);
@@ -146,13 +152,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
                 local_version_information_handler(packet);
             }
-            if (memcmp(packet, read_static_address_command_complete_prefix, sizeof(read_static_address_command_complete_prefix)) == 0){
-                reverse_48(&packet[7], static_address);
-                gap_random_address_set(static_address);
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_zephyr_read_static_address)){
+                reverse_48(&packet[7], zephyr_static_address);
+                gap_random_address_set(zephyr_static_address);
+                setup_tlv(zephyr_static_address);
             }
             break;
         default:
             break;
+    }
+
+    if (zephyr_read_static_address && hci_can_send_command_packet_now()){
+        zephyr_read_static_address = false;
+        hci_send_cmd(&hci_zephyr_read_static_address);
     }
 }
 
@@ -229,7 +241,6 @@ int main(int argc, const char * argv[]){
     const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
 	const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
 	hci_init(transport, (void*) &config);
-    hci_set_chipset(btstack_chipset_zephyr_instance());
 
 #ifdef HAVE_PORTAUDIO
     btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
