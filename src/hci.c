@@ -6002,13 +6002,13 @@ static void hci_run(void){
     switch (hci_stack->state) {
         case HCI_STATE_INITIALIZING:
             hci_initializing_run();
-            break;
+            return;
         case HCI_STATE_HALTING:
             hci_halting_run();
-            break;
+            return;
         case HCI_STATE_FALLING_ASLEEP:
             hci_falling_asleep_run();
-            break;
+            return;
         default:
             break;
     }
