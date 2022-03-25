@@ -1360,10 +1360,34 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
         case L2CAP_DATA_PACKET:
             // process l2cap packet...
             err = l2cap_send(channel, data, length);
+            switch (err){
+                case BTSTACK_ACL_BUFFERS_FULL:
+                    // temp flow issue
+                    l2cap_request_can_send_now_event(channel);
+                    break;
+                default:
+                    // sending failed
+                    err = ERROR_CODE_SUCCESS;
+                    log_error("Dropping L2CAP packet");
+                    break;
+            }
             break;
         case RFCOMM_DATA_PACKET:
             // process rfcomm packet...
             err = rfcomm_send(channel, data, length);
+            switch (err){
+                case BTSTACK_ACL_BUFFERS_FULL:
+                case RFCOMM_NO_OUTGOING_CREDITS:
+                case RFCOMM_AGGREGATE_FLOW_OFF:
+                    // flow issue
+                    rfcomm_request_can_send_now_event(channel);
+                    break;
+                default:
+                    // sending failed
+                    err = ERROR_CODE_SUCCESS;
+                    log_error("Dropping RFCOMM packet");
+                    break;
+            }
             break;
         case DAEMON_EVENT_PACKET:
             switch (data[0]) {
@@ -1600,6 +1624,9 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                         daemon_add_client_rfcomm_channel(connection, cid);
                     }
                     break;
+                case RFCOMM_EVENT_CAN_SEND_NOW:
+                    daemon_retry_parked();
+                    break;
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
                     cid = little_endian_read_16(packet, 2);
                     connection = connection_for_rfcomm_cid(cid);
@@ -1619,6 +1646,9 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     } else {
                         daemon_add_client_l2cap_channel(connection, cid);
                     }
+                    break;
+                case L2CAP_EVENT_CAN_SEND_NOW:
+                    daemon_retry_parked();
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     cid = little_endian_read_16(packet, 2);
