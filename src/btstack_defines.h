@@ -1041,13 +1041,6 @@ typedef uint8_t sm_key_t[16];
 #define DAEMON_EVENT_L2CAP_SERVICE_REGISTERED              0x75u
 
 /**
- * @format 21
- * @param rfcomm_cid
- * @param credits
- */
-#define DAEMON_EVENT_RFCOMM_CREDITS                        0x84u
-
-/**
  * @format 11
  * @param status
  * @param channel_id

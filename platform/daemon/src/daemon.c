@@ -1589,12 +1589,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     }
                     return;
                 }
-                
-                case DAEMON_EVENT_RFCOMM_CREDITS:
-                    // RFCOMM CREDITS received...
-                    daemon_retry_parked();
-                    break;
-                
+
                 case RFCOMM_EVENT_CHANNEL_OPENED:
                     cid = little_endian_read_16(packet, 13);
                     connection = connection_for_rfcomm_cid(cid);
