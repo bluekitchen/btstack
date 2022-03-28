@@ -836,6 +836,12 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                             a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
                                                           A2DP_SUBEVENT_STREAM_STOPPED);
                             break;
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+                        case AVDTP_SI_ACCEPT_START:
+                            a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
+                                                            A2DP_SUBEVENT_START_STREAM_REQUESTED);
+                            break;
+#endif
                         default:
                             break;
                     }
