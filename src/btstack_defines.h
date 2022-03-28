@@ -183,6 +183,9 @@ typedef uint8_t sm_key_t[16];
 // create l2cap channel: param bd_addr(48), psm (16), mtu (16)
 #define L2CAP_CREATE_CHANNEL_MTU                           0x26u
 
+// request can send now event: l2cap_cid
+#define L2CAP_REQUEST_CAN_SEND_NOW                         0x27u
+
 // register SDP Service Record: service record (size)
 #define SDP_REGISTER_SERVICE_RECORD                        0x30u
 
@@ -196,17 +199,19 @@ typedef uint8_t sm_key_t[16];
 #define SDP_CLIENT_QUERY_SERVICES                          0x33u
 
 // RFCOMM "HCI" Commands
-#define RFCOMM_CREATE_CHANNEL       0x40u
-#define RFCOMM_DISCONNECT     0x41u
-#define RFCOMM_REGISTER_SERVICE     0x42u
-#define RFCOMM_UNREGISTER_SERVICE   0x43u
-#define RFCOMM_ACCEPT_CONNECTION    0x44u
-#define RFCOMM_DECLINE_CONNECTION   0x45u
-#define RFCOMM_PERSISTENT_CHANNEL   0x46u
-#define RFCOMM_CREATE_CHANNEL_WITH_CREDITS   0x47u
-#define RFCOMM_REGISTER_SERVICE_WITH_CREDITS 0x48u
-#define RFCOMM_GRANT_CREDITS                 0x49u
-    
+#define RFCOMM_CREATE_CHANNEL                              0x40u
+#define RFCOMM_DISCONNECT                                  0x41u
+#define RFCOMM_REGISTER_SERVICE                            0x42u
+#define RFCOMM_UNREGISTER_SERVICE                          0x43u
+#define RFCOMM_ACCEPT_CONNECTION                           0x44u
+#define RFCOMM_DECLINE_CONNECTION                          0x45u
+#define RFCOMM_CREATE_CHANNEL_WITH_CREDITS                 0x47u
+#define RFCOMM_PERSISTENT_CHANNEL                          0x46u
+#define RFCOMM_REGISTER_SERVICE_WITH_CREDITS               0x48u
+#define RFCOMM_GRANT_CREDITS                               0x49u
+// request can send now event: rfcomm_cid
+#define RFCOMM_REQUEST_CAN_SEND_NOW                        0x4Au
+
 // GAP Classic 0x50u
 #define GAP_DISCONNECT                0x50u
 #define GAP_INQUIRY_START             0x51u

@@ -1008,6 +1008,10 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             cid    = little_endian_read_16(packet, 3);
             l2cap_decline_connection(cid);
             break;
+        case L2CAP_REQUEST_CAN_SEND_NOW:
+            cid    = little_endian_read_16(packet, 3);
+            l2cap_request_can_send_now_event(cid);
+            break;
         case RFCOMM_CREATE_CHANNEL:
             reverse_bd_addr(&packet[3], addr);
             rfcomm_channel = packet[9];
@@ -1078,6 +1082,10 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
             break;
         }
+        case RFCOMM_REQUEST_CAN_SEND_NOW:
+            cid = little_endian_read_16(packet, 3);
+            rfcomm_request_can_send_now_event(cid);
+            break;
         case SDP_REGISTER_SERVICE_RECORD:
             log_info("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
             service_record_handle = daemon_sdp_create_and_register_service(&packet[3]);
