@@ -117,7 +117,7 @@ static void sdp_rfcomm_query_emit_service(void){
     event[2] = sdp_client_rfcomm_channel_nr;
     (void)memcpy(&event[3], sdp_client_rfcomm_service_name, sdp_client_rfcomm_service_name_len);
     event[3 + sdp_client_rfcomm_service_name_len] = 0;
-    (*sdp_client_rfcomm_app_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*sdp_client_rfcomm_app_callback)(HCI_EVENT_PACKET, 0, event, 3 + sdp_client_rfcomm_service_name_len + 1);
 }
 
 static void sdp_client_query_rfcomm_handle_record_parsed(void){
