@@ -113,7 +113,7 @@ static void sdp_rfcomm_query_prepare(void){
 static void sdp_rfcomm_query_emit_service(void){
     uint8_t event[3+SDP_SERVICE_NAME_LEN+1];
     event[0] = SDP_EVENT_QUERY_RFCOMM_SERVICE;
-    event[1] = sdp_client_rfcomm_service_name_len + 1;
+    event[1] = sdp_client_rfcomm_service_name_len + 2;
     event[2] = sdp_client_rfcomm_channel_nr;
     (void)memcpy(&event[3], sdp_client_rfcomm_service_name, sdp_client_rfcomm_service_name_len);
     event[3 + sdp_client_rfcomm_service_name_len] = 0;
