@@ -1054,6 +1054,10 @@ typedef struct {
 
     le_connection_parameter_range_t le_connection_parameter_range;
 
+    // TODO: move LE_ADVERTISEMENT_TASKS_SET_ADDRESS flag which is used for both roles into
+    //  some generic gap_le variable
+    uint8_t  le_advertisements_todo;
+
 #ifdef ENABLE_LE_PERIPHERAL
     uint8_t  * le_advertisements_data;
     uint8_t    le_advertisements_data_len;
@@ -1071,7 +1075,6 @@ typedef struct {
     uint8_t   le_advertisements_own_addr_type;
     bd_addr_t le_advertisements_own_address;
 
-    uint8_t  le_advertisements_todo;
     uint8_t  le_advertisements_state;
 
     bool     le_advertisements_enabled_for_current_roles;
