@@ -255,7 +255,7 @@ def create_event(fout, event_name, format, args):
      'X' : 'return btstack.btstack_types.GATTService(self.payload[{offset}:20])',
      'Y' : 'return btstack.btstack_types.GATTCharacteristic(self.payload[{offset}:24])',
      'Z' : 'return btstack.btstack_types.GATTCharacteristicDescriptor(self.payload[{offset}:18])',
-     'T' : 'return self.payload[{offset}:].decode("utf-8")',
+     'T' : 'return self.payload[{offset}:-1].decode("utf-8")',
      'N' : 'return self.payload[{offset}:{offset}+248].decode("utf-8")',
      # 'D' : 'Util.storeBytes(self.payload, %u, 8);',
      # 'Q' : 'Util.storeBytes(self.payload, %u, 32);',
