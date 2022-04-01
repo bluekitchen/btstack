@@ -8,7 +8,7 @@
     <property name="classes.dir" value="${build.dir}/classes"/>
     <property name="jar.dir"     value="${build.dir}/jar"/>
 
-    <property name="test-class"  value="com.bluekitchen.LEStreamerClient"/>
+    <property name="test-class"  value="com.bluekitchen.SPPStreamerClient"/>
 
     <target name="clean">
         <delete dir="${build.dir}"/>
