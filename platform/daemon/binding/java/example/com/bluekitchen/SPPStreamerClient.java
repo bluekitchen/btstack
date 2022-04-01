@@ -28,29 +28,24 @@ import com.bluekitchen.btstack.event.*;
  * ./src/BTdaemon --tcp
  *
  * 3. In a third terminal, run the java application:
- * 
+ *
  * cd platform/daemon/binding/java
- * 
- * Adapt the remote MAC address in:
- * 
- * example/com/bluekitchen/SPPStreamerClient.java
- *
- *  ant run
- *
+ * ant run
  */
 public class SPPStreamerClient implements PacketHandler {
 
     private final static int NUM_ROWS = 25;
     private final static int NUM_COLS = 40;
+    public static final int TEST_COD = 0x1234;
 
     private enum STATE {
-        BTSTACK_WORKING, SDP_QUERY_RESULT, CONNECTED, SENDING
+        BTSTACK_WORKING, INQUIRY_RESULT, SDP_QUERY_RESULT, CONNECTED, SENDING
     }
 
     private BTstack btstack;
     private STATE state;
 
-    private final BD_ADDR remote = new BD_ADDR("00:15:83:D1:17:9F");
+    private BD_ADDR remote;
 
     private int outgoing_channel_nr = -1;
     private int rfcommChannelID = 0;
@@ -118,8 +113,28 @@ public class SPPStreamerClient implements PacketHandler {
                 if (packet instanceof BTstackEventState) {
                     final BTstackEventState event = (BTstackEventState) packet;
                     if (event.getState() == 2) {
-                        System.out.println("BTstack working. Start SDP inquiry.");
+                        System.out.println("BTstack working. Start inquiry..");
+                        state = STATE.INQUIRY_RESULT;
+                        btstack.GAPInquiryStart(5);
+                    }
+                }
+                break;
+
+            case INQUIRY_RESULT:
+                if (packet instanceof GAPEventInquiryResult) {
+                    final GAPEventInquiryResult event = ((GAPEventInquiryResult) packet);
+                    System.out.printf("Found device with COD: %d with address: %s\n", event.getClassOfDevice(), event.getBdAddr());
+                    if (event.getClassOfDevice() == TEST_COD) {
+                        remote = event.getBdAddr();
+                        btstack.GAPInquiryStop();
+                        System.out.println("Start SDP query on: " + remote);
                         startSDPQuery();
+                    }
+                }
+                if (packet instanceof GAPEventInquiryComplete) {
+                    if (remote == null) {
+                        System.out.println("No device with COD: %d found -> scan again.");
+                        btstack.GAPInquiryStart(5);
                     }
                 }
                 break;
