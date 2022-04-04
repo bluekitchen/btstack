@@ -33,17 +33,21 @@ def configuration_from_block(block, line_ending):
         if item in block:
             block.remove(item)
 
+    defines_processed = []
     for item in temp_defines_to_add:
         if item in block:
-            temp_defines_to_add.remove(item)
+            defines_processed.append(item)
             continue
 
         if len(block) > 0:
             prefix = block[0].split("_")[0]
             if item.startswith(prefix):
                 block.append(item)
-                temp_defines_to_add.remove(item)
-    
+                defines_processed.append(item)
+
+    for item in defines_processed:
+        temp_defines_to_add.remove(item)
+
     block.sort()
     for item in block:
         configuration += ("#define %s%s" % (item, line_ending))
@@ -57,7 +61,7 @@ def read_and_update_configuration(full_path, line_ending):
     configuration = ""
     block = []
     temp_defines_to_add = defines_to_add.copy()
-    
+
     with open(full_path, "rt") as fin:
         for unstripped_line in fin:
             line = unstripped_line.strip()
@@ -84,7 +88,8 @@ def read_and_update_configuration(full_path, line_ending):
                     configuration += ("%s%s" % (line, line_ending))
     
     if len(temp_defines_to_add) > 0:
-        print("Cannot add defines: " % temp_defines_to_add)
+        print("Cannot add defines: \n- " + "\n- ".join(temp_defines_to_add))
+        print("ABORT")
         sys.exit(10)
 
     # if end of file could not be detected, process last block
