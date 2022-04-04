@@ -807,9 +807,9 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                              avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint),
                              config_process->local_stream_endpoint->remote_sep.seid);
                     config_process->state = A2DP_W4_OPEN_STREAM_WITH_SEID;
-                    avdtp_source_open_stream(cid,
-                                             avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
-                                             config_process->local_stream_endpoint->remote_sep.seid);
+                    avdtp_open_stream(cid,
+                                     avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
+                                     config_process->local_stream_endpoint->remote_sep.seid);
                     break;
 
                 case A2DP_W2_RECONFIGURE_WITH_SEID:
