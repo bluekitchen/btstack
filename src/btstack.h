@@ -132,6 +132,7 @@
 #include "classic/device_id_server.h"
 #include "classic/gatt_sdp.h"
 #include "classic/goep_client.h"
+#include "classic/goep_server.h"
 #include "classic/hfp.h"
 #include "classic/hfp_ag.h"
 #include "classic/hfp_hf.h"

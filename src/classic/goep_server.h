@@ -45,17 +45,23 @@ extern "C" {
 #include "btstack_config.h"
 #include <stdint.h>
 
+#ifdef ENABLE_GOEP_L2CAP
+#ifndef GOEP_SERVER_ERTM_BUFFER
+#define GOEP_SERVER_ERTM_BUFFER 1000
+#endif
+#endif
+
 /* API_START */
 
 typedef enum {
     GOEP_SERVER_IDLE,
-    GOEP_SERVER_W4_RFCOMM_CONNECTED,
-    GOEP_SERVER_RFCOMM_CONNECTED
+    GOEP_SERVER_W4_CONNECTED,
+    GOEP_SERVER_CONNECTED
 } goep_server_state_t;
 
 typedef enum {
-    GOEP_L2CAP_CONNECTION = 0,
-    GOEP_RFCOMM_CONNECTION
+    GOEP_CONNECTION_RFCOMM = 0,
+    GOEP_CONNECTION_L2CAP,
 } goep_connection_type_t;
 
 typedef struct {
@@ -71,12 +77,101 @@ typedef struct {
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
-    uint16_t bearer_cid;
+
     uint16_t goep_cid;
-    goep_connection_type_t  type;
-    goep_server_service_t * service;
     goep_server_state_t     state;
+    goep_connection_type_t  type;
+    uint16_t bearer_cid;
+    uint16_t bearer_mtu;
+    btstack_packet_handler_t callback;
+    uint32_t obex_connection_id;
+
+#ifdef ENABLE_GOEP_L2CAP
+    uint8_t ertm_buffer[GOEP_SERVER_ERTM_BUFFER];
+#endif
+
 } goep_server_connection_t;
+
+/**
+ * Init GOEP Server
+ */
+void goep_server_init(void);
+
+
+/**
+ * Register OBEX Service
+ * @param packet_handler
+ * @param rfcomm_channel
+ * @param rfcomm_max_frame_size
+ * @param l2cap_psm
+ * @param l2cap_mtu
+ * @param security_level
+ * @return status
+ */
+uint8_t goep_server_register_service(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel, uint16_t rfcomm_max_frame_size,
+                uint16_t l2cap_psm, uint16_t l2cap_mtu, gap_security_level_t security_level);
+
+/**
+ * Request GOEP_SUBEVENT_CAN_SEND_NOW
+ * @param goep_cid
+ * @return status
+ */
+uint8_t goep_server_request_can_send_now(uint16_t goep_cid);
+
+/**
+ * @brief Set Connection ID used for newly created requests
+ * @param goep_cid
+ * @return status
+ */
+uint8_t goep_server_set_connection_id(uint16_t goep_cid, uint32_t connection_id);
+
+/**
+ * @brief Start Connect response
+ * @param goep_cid
+ * @param obex_version_number
+ * @param flags
+ * @param maximum_obex_packet_length
+ * @return status
+ */
+uint8_t goep_server_response_create_connect(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length);
+
+/**
+ * @brief Start General response with opcode
+ * @param goep_cid
+ * @param opcode
+ * @return status
+ */
+uint8_t goep_server_response_create_general(uint16_t goep_cid, uint8_t opcode);
+
+/**
+ * @brief Add who header to current response
+ * @param goep_cid
+ * @param who - 16 bytes
+ * @return status
+ */
+uint8_t goep_server_header_add_who(uint16_t goep_cid, const uint8_t * who);
+
+/**
+ * @brief Add end_of_body header to current response
+ * @param goep_cid
+ * @param end_of_body
+ * @param length
+ * @return status
+ */
+uint8_t goep_server_header_add_end_of_body(uint16_t goep_cid, const uint8_t * end_of_body, uint16_t length);
+
+/**
+ * @brief Execute prepared request
+ * @param goep_cid
+ * @return status
+ */
+uint8_t goep_server_execute(uint16_t goep_cid);
+
+/**
+ * De-Init
+ */
+void geop_server_deinit(void);
+
 /* API_END */
 
 #if defined __cplusplus
