@@ -635,6 +635,121 @@ void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
 
 
 
+// MARK: goep_server_service_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_GOEP_SERVER_SERVICES)
+    #if defined(MAX_NO_GOEP_SERVER_SERVICES)
+        #error "Deprecated MAX_NO_GOEP_SERVER_SERVICES defined instead of MAX_NR_GOEP_SERVER_SERVICES. Please update your btstack_config.h to use MAX_NR_GOEP_SERVER_SERVICES."
+    #else
+        #define MAX_NR_GOEP_SERVER_SERVICES 0
+    #endif
+#endif
+
+#ifdef MAX_NR_GOEP_SERVER_SERVICES
+#if MAX_NR_GOEP_SERVER_SERVICES > 0
+static goep_server_service_t goep_server_service_storage[MAX_NR_GOEP_SERVER_SERVICES];
+static btstack_memory_pool_t goep_server_service_pool;
+goep_server_service_t * btstack_memory_goep_server_service_get(void){
+    void * buffer = btstack_memory_pool_get(&goep_server_service_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(goep_server_service_t));
+    }
+    return (goep_server_service_t *) buffer;
+}
+void btstack_memory_goep_server_service_free(goep_server_service_t *goep_server_service){
+    btstack_memory_pool_free(&goep_server_service_pool, goep_server_service);
+}
+#else
+goep_server_service_t * btstack_memory_goep_server_service_get(void){
+    return NULL;
+}
+void btstack_memory_goep_server_service_free(goep_server_service_t *goep_server_service){
+    UNUSED(goep_server_service);
+};
+#endif
+#elif defined(HAVE_MALLOC)
+
+typedef struct {
+    btstack_memory_buffer_t tracking;
+    goep_server_service_t data;
+} btstack_memory_goep_server_service_t;
+
+goep_server_service_t * btstack_memory_goep_server_service_get(void){
+    btstack_memory_goep_server_service_t * buffer = (btstack_memory_goep_server_service_t *) malloc(sizeof(btstack_memory_goep_server_service_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(btstack_memory_goep_server_service_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
+    } else {
+        return NULL;
+    }
+}
+void btstack_memory_goep_server_service_free(goep_server_service_t *goep_server_service){
+    // reconstruct buffer start
+    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) goep_server_service)[-1];
+    btstack_memory_tracking_remove(buffer);
+    free(buffer);
+}
+#endif
+
+
+// MARK: goep_server_connection_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_GOEP_SERVER_CONNECTIONS)
+    #if defined(MAX_NO_GOEP_SERVER_CONNECTIONS)
+        #error "Deprecated MAX_NO_GOEP_SERVER_CONNECTIONS defined instead of MAX_NR_GOEP_SERVER_CONNECTIONS. Please update your btstack_config.h to use MAX_NR_GOEP_SERVER_CONNECTIONS."
+    #else
+        #define MAX_NR_GOEP_SERVER_CONNECTIONS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_GOEP_SERVER_CONNECTIONS
+#if MAX_NR_GOEP_SERVER_CONNECTIONS > 0
+static goep_server_connection_t goep_server_connection_storage[MAX_NR_GOEP_SERVER_CONNECTIONS];
+static btstack_memory_pool_t goep_server_connection_pool;
+goep_server_connection_t * btstack_memory_goep_server_connection_get(void){
+    void * buffer = btstack_memory_pool_get(&goep_server_connection_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(goep_server_connection_t));
+    }
+    return (goep_server_connection_t *) buffer;
+}
+void btstack_memory_goep_server_connection_free(goep_server_connection_t *goep_server_connection){
+    btstack_memory_pool_free(&goep_server_connection_pool, goep_server_connection);
+}
+#else
+goep_server_connection_t * btstack_memory_goep_server_connection_get(void){
+    return NULL;
+}
+void btstack_memory_goep_server_connection_free(goep_server_connection_t *goep_server_connection){
+    UNUSED(goep_server_connection);
+};
+#endif
+#elif defined(HAVE_MALLOC)
+
+typedef struct {
+    btstack_memory_buffer_t tracking;
+    goep_server_connection_t data;
+} btstack_memory_goep_server_connection_t;
+
+goep_server_connection_t * btstack_memory_goep_server_connection_get(void){
+    btstack_memory_goep_server_connection_t * buffer = (btstack_memory_goep_server_connection_t *) malloc(sizeof(btstack_memory_goep_server_connection_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(btstack_memory_goep_server_connection_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
+    } else {
+        return NULL;
+    }
+}
+void btstack_memory_goep_server_connection_free(goep_server_connection_t *goep_server_connection){
+    // reconstruct buffer start
+    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) goep_server_connection)[-1];
+    btstack_memory_tracking_remove(buffer);
+    free(buffer);
+}
+#endif
+
+
+
 // MARK: hfp_connection_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_HFP_CONNECTIONS)
     #if defined(MAX_NO_HFP_CONNECTIONS)
@@ -744,64 +859,6 @@ hid_host_connection_t * btstack_memory_hid_host_connection_get(void){
 void btstack_memory_hid_host_connection_free(hid_host_connection_t *hid_host_connection){
     // reconstruct buffer start
     btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) hid_host_connection)[-1];
-    btstack_memory_tracking_remove(buffer);
-    free(buffer);
-}
-#endif
-
-
-
-// MARK: service_record_item_t
-#if !defined(HAVE_MALLOC) && !defined(MAX_NR_SERVICE_RECORD_ITEMS)
-    #if defined(MAX_NO_SERVICE_RECORD_ITEMS)
-        #error "Deprecated MAX_NO_SERVICE_RECORD_ITEMS defined instead of MAX_NR_SERVICE_RECORD_ITEMS. Please update your btstack_config.h to use MAX_NR_SERVICE_RECORD_ITEMS."
-    #else
-        #define MAX_NR_SERVICE_RECORD_ITEMS 0
-    #endif
-#endif
-
-#ifdef MAX_NR_SERVICE_RECORD_ITEMS
-#if MAX_NR_SERVICE_RECORD_ITEMS > 0
-static service_record_item_t service_record_item_storage[MAX_NR_SERVICE_RECORD_ITEMS];
-static btstack_memory_pool_t service_record_item_pool;
-service_record_item_t * btstack_memory_service_record_item_get(void){
-    void * buffer = btstack_memory_pool_get(&service_record_item_pool);
-    if (buffer){
-        memset(buffer, 0, sizeof(service_record_item_t));
-    }
-    return (service_record_item_t *) buffer;
-}
-void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
-    btstack_memory_pool_free(&service_record_item_pool, service_record_item);
-}
-#else
-service_record_item_t * btstack_memory_service_record_item_get(void){
-    return NULL;
-}
-void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
-    UNUSED(service_record_item);
-};
-#endif
-#elif defined(HAVE_MALLOC)
-
-typedef struct {
-    btstack_memory_buffer_t tracking;
-    service_record_item_t data;
-} btstack_memory_service_record_item_t;
-
-service_record_item_t * btstack_memory_service_record_item_get(void){
-    btstack_memory_service_record_item_t * buffer = (btstack_memory_service_record_item_t *) malloc(sizeof(btstack_memory_service_record_item_t));
-    if (buffer){
-        memset(buffer, 0, sizeof(btstack_memory_service_record_item_t));
-        btstack_memory_tracking_add(&buffer->tracking);
-        return &buffer->data;
-    } else {
-        return NULL;
-    }
-}
-void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
-    // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) service_record_item)[-1];
     btstack_memory_tracking_remove(buffer);
     free(buffer);
 }
@@ -1034,6 +1091,64 @@ avrcp_browsing_connection_t * btstack_memory_avrcp_browsing_connection_get(void)
 void btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *avrcp_browsing_connection){
     // reconstruct buffer start
     btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) avrcp_browsing_connection)[-1];
+    btstack_memory_tracking_remove(buffer);
+    free(buffer);
+}
+#endif
+
+
+
+// MARK: service_record_item_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_SERVICE_RECORD_ITEMS)
+    #if defined(MAX_NO_SERVICE_RECORD_ITEMS)
+        #error "Deprecated MAX_NO_SERVICE_RECORD_ITEMS defined instead of MAX_NR_SERVICE_RECORD_ITEMS. Please update your btstack_config.h to use MAX_NR_SERVICE_RECORD_ITEMS."
+    #else
+        #define MAX_NR_SERVICE_RECORD_ITEMS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_SERVICE_RECORD_ITEMS
+#if MAX_NR_SERVICE_RECORD_ITEMS > 0
+static service_record_item_t service_record_item_storage[MAX_NR_SERVICE_RECORD_ITEMS];
+static btstack_memory_pool_t service_record_item_pool;
+service_record_item_t * btstack_memory_service_record_item_get(void){
+    void * buffer = btstack_memory_pool_get(&service_record_item_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(service_record_item_t));
+    }
+    return (service_record_item_t *) buffer;
+}
+void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
+    btstack_memory_pool_free(&service_record_item_pool, service_record_item);
+}
+#else
+service_record_item_t * btstack_memory_service_record_item_get(void){
+    return NULL;
+}
+void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
+    UNUSED(service_record_item);
+};
+#endif
+#elif defined(HAVE_MALLOC)
+
+typedef struct {
+    btstack_memory_buffer_t tracking;
+    service_record_item_t data;
+} btstack_memory_service_record_item_t;
+
+service_record_item_t * btstack_memory_service_record_item_get(void){
+    btstack_memory_service_record_item_t * buffer = (btstack_memory_service_record_item_t *) malloc(sizeof(btstack_memory_service_record_item_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(btstack_memory_service_record_item_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
+    } else {
+        return NULL;
+    }
+}
+void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
+    // reconstruct buffer start
+    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) service_record_item)[-1];
     btstack_memory_tracking_remove(buffer);
     free(buffer);
 }
@@ -1881,14 +1996,17 @@ void btstack_memory_init(void){
 #if MAX_NR_BNEP_CHANNELS > 0
     btstack_memory_pool_create(&bnep_channel_pool, bnep_channel_storage, MAX_NR_BNEP_CHANNELS, sizeof(bnep_channel_t));
 #endif
+#if MAX_NR_GOEP_SERVER_SERVICES > 0
+    btstack_memory_pool_create(&goep_server_service_pool, goep_server_service_storage, MAX_NR_GOEP_SERVER_SERVICES, sizeof(goep_server_service_t));
+#endif
+#if MAX_NR_GOEP_SERVER_CONNECTIONS > 0
+    btstack_memory_pool_create(&goep_server_connection_pool, goep_server_connection_storage, MAX_NR_GOEP_SERVER_CONNECTIONS, sizeof(goep_server_connection_t));
+#endif
 #if MAX_NR_HFP_CONNECTIONS > 0
     btstack_memory_pool_create(&hfp_connection_pool, hfp_connection_storage, MAX_NR_HFP_CONNECTIONS, sizeof(hfp_connection_t));
 #endif
 #if MAX_NR_HID_HOST_CONNECTIONS > 0
     btstack_memory_pool_create(&hid_host_connection_pool, hid_host_connection_storage, MAX_NR_HID_HOST_CONNECTIONS, sizeof(hid_host_connection_t));
-#endif
-#if MAX_NR_SERVICE_RECORD_ITEMS > 0
-    btstack_memory_pool_create(&service_record_item_pool, service_record_item_storage, MAX_NR_SERVICE_RECORD_ITEMS, sizeof(service_record_item_t));
 #endif
 #if MAX_NR_AVDTP_STREAM_ENDPOINTS > 0
     btstack_memory_pool_create(&avdtp_stream_endpoint_pool, avdtp_stream_endpoint_storage, MAX_NR_AVDTP_STREAM_ENDPOINTS, sizeof(avdtp_stream_endpoint_t));
@@ -1901,6 +2019,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_AVRCP_BROWSING_CONNECTIONS > 0
     btstack_memory_pool_create(&avrcp_browsing_connection_pool, avrcp_browsing_connection_storage, MAX_NR_AVRCP_BROWSING_CONNECTIONS, sizeof(avrcp_browsing_connection_t));
+#endif
+#if MAX_NR_SERVICE_RECORD_ITEMS > 0
+    btstack_memory_pool_create(&service_record_item_pool, service_record_item_storage, MAX_NR_SERVICE_RECORD_ITEMS, sizeof(service_record_item_t));
 #endif
 #endif
 #ifdef ENABLE_BLE

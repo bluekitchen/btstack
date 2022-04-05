@@ -73,6 +73,7 @@ extern "C" {
 #include "classic/bnep.h"
 #include "classic/btstack_link_key_db.h"
 #include "classic/btstack_link_key_db_memory.h"
+#include "classic/goep_server.h"
 #include "classic/hfp.h"
 #include "classic/hid_host.h"
 #include "classic/rfcomm.h"
@@ -294,6 +295,7 @@ list_of_classic_structs = [
     ["rfcomm_multiplexer", "rfcomm_service", "rfcomm_channel"],
     ["btstack_link_key_db_memory_entry"],
     ["bnep_service", "bnep_channel"],
+    ["goep_server_service", "goep_server_connection"],
     ["hfp_connection"],
     ["hid_host_connection"],
     ["service_record_item"],
