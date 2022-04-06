@@ -138,6 +138,7 @@
 #include "classic/pan.h"
 #include "classic/pbap.h"
 #include "classic/pbap_client.h"
+#include "classic/pbap_server.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_client.h"
 #include "classic/sdp_client_rfcomm.h"
