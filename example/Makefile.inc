@@ -212,6 +212,7 @@ EXAMPLES_CLASSIC_ONLY =     \
 	hsp_ag_demo             \
 	hsp_hs_demo             \
 	pbap_client_demo        \
+	pbap_server_demo        \
 	sdp_bnep_query          \
 	sdp_general_query       \
 	sdp_rfcomm_query        \
@@ -313,6 +314,9 @@ sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${PAN_OBJ} ${SDP_CLIE
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 pbap_client_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} md5.o obex_iterator.o obex_parser.o obex_message_builder.o obex_srm_client.o goep_client.o yxml.o pbap_client.o pbap_client_demo.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+pbap_server_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} md5.o obex_iterator.o obex_parser.o obex_message_builder.o goep_server.o yxml.o pbap_server.o pbap_server_demo.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} sdp_general_query.c
