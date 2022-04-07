@@ -65,9 +65,11 @@ static btstack_data_source_t transport_data_source;
 // callbacks
 static void (*block_sent)(void);
 static void (*block_received)(void);
+static void (*wakeup_handler)(void);
 
 static int send_complete;
 static int receive_complete;
+static int wakeup_event;
 
 static void btstack_uart_block_freertos_received_isr(void){
     receive_complete = 1;
@@ -76,6 +78,11 @@ static void btstack_uart_block_freertos_received_isr(void){
 
 static void btstack_uart_block_freertos_sent_isr(void){
     send_complete = 1;
+    btstack_run_loop_poll_data_sources_from_irq();
+}
+
+static void btstack_uart_block_freertos_cts_pulse_isr(void){
+    wakeup_event = 1;
     btstack_run_loop_poll_data_sources_from_irq();
 }
 
@@ -92,6 +99,12 @@ static void btstack_uart_block_freertos_process(btstack_data_source_t *ds, btsta
                 receive_complete = 0;
                 if (block_received){
                     block_received();
+                }
+            }
+            if (wakeup_event){
+                wakeup_event = 0;
+                if (wakeup_handler){
+                    wakeup_handler();
                 }
             }
             break;
@@ -134,6 +147,10 @@ static void btstack_uart_block_freertos_set_block_sent( void (*block_handler)(vo
     block_sent = block_handler;
 }
 
+static void btstack_uart_block_freertos_set_wakeup_handler( void (*the_wakeup_handler)(void)){
+    wakeup_handler = the_wakeup_handler;
+}
+
 static int btstack_uart_block_freertos_set_parity(int parity){
     return 0;
 }
@@ -143,6 +160,30 @@ static int btstack_uart_block_freertos_set_parity(int parity){
 
 // static void btstack_uart_block_freertos_set_csr_irq_handler( void (*csr_irq_handler)(void)){
 // }
+
+static int btstack_uart_block_freertos_get_supported_sleep_modes(void){
+#ifdef HAVE_HAL_UART_DMA_SLEEP_MODES
+	return hal_uart_dma_get_supported_sleep_modes();
+#else
+	return BTSTACK_UART_SLEEP_MASK_RTS_HIGH_WAKE_ON_CTS_PULSE;
+#endif
+}
+
+static void btstack_uart_block_freertos_set_sleep(btstack_uart_sleep_mode_t sleep_mode){
+	log_info("set sleep %u", sleep_mode);
+	if (sleep_mode == BTSTACK_UART_SLEEP_RTS_HIGH_WAKE_ON_CTS_PULSE){
+		hal_uart_dma_set_csr_irq_handler(&btstack_uart_block_freertos_cts_pulse_isr);
+	} else {
+		hal_uart_dma_set_csr_irq_handler(NULL);
+	}
+
+#ifdef HAVE_HAL_UART_DMA_SLEEP_MODES
+	hal_uart_dma_set_sleep_mode(sleep_mode);
+#else
+	hal_uart_dma_set_sleep(sleep_mode != BTSTACK_UART_SLEEP_OFF);
+#endif
+	log_info("done");
+}
 
 static const btstack_uart_block_t btstack_uart_block_freertos = {
     /* int  (*init)(hci_transport_config_uart_t * config); */         &btstack_uart_block_freertos_init,
@@ -159,9 +200,9 @@ static const btstack_uart_block_t btstack_uart_block_freertos = {
 #endif
     /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &hal_uart_dma_receive_block,
     /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &hal_uart_dma_send_block,    
-    /* int (*get_supported_sleep_modes); */                           NULL,
-    /* void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode); */    NULL,
-    /* void (*set_wakeup_handler)(void (*wakeup_handler)(void)); */   NULL,
+    /* int (*get_supported_sleep_modes); */                           &btstack_uart_block_freertos_get_supported_sleep_modes,
+    /* void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode); */    &btstack_uart_block_freertos_set_sleep,
+    /* void (*set_wakeup_handler)(void (*wakeup_handler)(void)); */   &btstack_uart_block_freertos_set_wakeup_handler,
     NULL, NULL, NULL, NULL,
 };
 
