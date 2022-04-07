@@ -124,6 +124,10 @@ uint8_t obex_message_builder_response_create_connect(uint8_t * buffer, uint16_t 
     return obex_message_builder_header_add_connection_id(buffer, buffer_len, obex_connection_id);
 }
 
+uint8_t obex_message_builder_response_create_general(uint8_t * buffer, uint16_t buffer_len, uint8_t opcode){
+    return obex_message_builder_packet_init(buffer, buffer_len, opcode);
+}
+
 uint8_t obex_message_builder_request_create_get(uint8_t * buffer, uint16_t buffer_len, uint32_t obex_connection_id){
     uint8_t status = obex_message_builder_packet_init(buffer, buffer_len, OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK);
     if (status != ERROR_CODE_SUCCESS) return status;

@@ -91,6 +91,15 @@ uint8_t obex_message_builder_request_create_connect(uint8_t * buffer, uint16_t b
 uint8_t obex_message_builder_response_create_connect(uint8_t * buffer, uint16_t buffer_len, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length, uint32_t connection_id);
 
 /**
+ * @brief Start General response with given opcode
+ * @param buffer
+ * @param buffer_len
+ * @param opcode
+ * @return status
+ */
+ uint8_t obex_message_builder_response_create_general(uint8_t * buffer, uint16_t buffer_len, uint8_t opcode);
+
+/**
  * @brief Start Disconnect request
  * @param buffer
  * @param buffer_len
