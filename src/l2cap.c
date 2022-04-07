@@ -720,20 +720,18 @@ uint8_t l2cap_ertm_accept_connection(uint16_t local_cid, l2cap_ertm_config_t * e
     // configure L2CAP ERTM
     l2cap_ertm_configure_channel(channel, ertm_config, buffer, size);
 
-    // already available?
+    // we need to know if ERTM is supported before sending a config response
+    channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
     hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
     btstack_assert(connection != NULL);
-
-    // we need to know if ERTM is supported before sending a config response
     switch (connection->l2cap_state.information_state){
+        case L2CAP_INFORMATION_STATE_IDLE:
+            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
+            break;
         case L2CAP_INFORMATION_STATE_DONE:
             l2cap_handle_information_request_complete(connection);
             break;
-        case L2CAP_INFORMATION_STATE_IDLE:
-            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
-        /* fall through */
         default:
-            channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
             break;
     }
 

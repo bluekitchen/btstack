@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP HF: emit HFP_SUBEVENT_TRANSMIT_DTMF_CODES after sending DTMF command
 
 ### Fixed
+- L2CAP: Fix accept incoming ERTM connection when Information Request already complete
 - HFP AG: activate all AG indicators upon service level connection establishment
  
 ### Changed
