@@ -55,7 +55,6 @@
 
 #ifdef ENABLE_GOEP_L2CAP
 #include "l2cap.h"
-#include "obex_message_builder.h"
 
 static l2cap_ertm_config_t ertm_config = {
     1,  // ertm mandatory
