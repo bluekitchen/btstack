@@ -38,12 +38,13 @@
 #ifndef OBEX_H
 #define OBEX_H
 
+// From IR OBEX V1.5 - some opcodes have high bit always set
 #define OBEX_OPCODE_CONNECT                0x80
 #define OBEX_OPCODE_DISCONNECT             0x81
 #define OBEX_OPCODE_PUT                    0x02
-#define OBEX_OPCODE_CLOSE                  0x82
 #define OBEX_OPCODE_GET                    0x03
 #define OBEX_OPCODE_SETPATH                0x85
+#define OBEX_OPCODE_ACTION                 0x06
 #define OBEX_OPCODE_SESSION                0x87
 #define OBEX_OPCODE_ABORT                  0xFF
 
