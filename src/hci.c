@@ -111,11 +111,16 @@
 // GAP inquiry state: 0 = off, 0x01 - 0x30 = requested duration, 0xfe = active, 0xff = stop requested
 #define GAP_INQUIRY_DURATION_MIN       0x01
 #define GAP_INQUIRY_DURATION_MAX       0x30
+#define GAP_INQUIRY_MIN_PERIODIC_LEN_MIN 0x02
+#define GAP_INQUIRY_MAX_PERIODIC_LEN_MIN 0x03
 #define GAP_INQUIRY_STATE_IDLE         0x00
 #define GAP_INQUIRY_STATE_W4_ACTIVE    0x80
 #define GAP_INQUIRY_STATE_ACTIVE       0x81
 #define GAP_INQUIRY_STATE_W2_CANCEL    0x82
 #define GAP_INQUIRY_STATE_W4_CANCELLED 0x83
+#define GAP_INQUIRY_STATE_PERIODIC     0x84
+#define GAP_INQUIRY_STATE_W2_EXIT_PERIODIC 0x85
+#define GAP_INQUIRY_STATE_W4_EXIT_PERIODIC_COMPLETE 0x86
 
 // GAP Remote Name Request
 #define GAP_REMOTE_NAME_STATE_IDLE 0
@@ -2533,6 +2538,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             hci_emit_discoverable_enabled(hci_stack->discoverable);
             break;
         case HCI_OPCODE_HCI_INQUIRY_CANCEL:
+        case HCI_OPCODE_HCI_EXIT_PERIODIC_INQUIRY_MODE:
             if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W4_CANCELLED){
                 hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
                 uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
@@ -2908,11 +2914,20 @@ static void event_handler(uint8_t *packet, uint16_t size){
             }
 
 #ifdef ENABLE_CLASSIC
-            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_inquiry)) {
+            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_inquiry)){
                 uint8_t status = hci_event_command_status_get_status(packet);
                 log_info("command status (inquiry), status %x", status);
                 if (status == ERROR_CODE_SUCCESS) {
                     hci_stack->inquiry_state = GAP_INQUIRY_STATE_ACTIVE;
+                } else {
+                    hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
+                }
+            }
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_periodic_inquiry_mode)) {
+                uint8_t status = hci_event_command_status_get_status(packet);
+                log_info("command status (inquiry), status %x", status);
+                if (status == ERROR_CODE_SUCCESS) {
+                    hci_stack->inquiry_state = GAP_INQUIRY_STATE_PERIODIC;
                 } else {
                     hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
                 }
@@ -4757,7 +4772,11 @@ static bool hci_run_general_gap_classic(void){
         {
             uint8_t duration = hci_stack->inquiry_state;
             hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_ACTIVE;
-            hci_send_cmd(&hci_inquiry, hci_stack->inquiry_lap, duration, 0);
+            if (hci_stack->inquiry_max_period_length != 0){
+                hci_send_cmd(&hci_periodic_inquiry_mode, hci_stack->inquiry_max_period_length, hci_stack->inquiry_min_period_length, hci_stack->inquiry_lap, duration, 0);
+            } else {
+                hci_send_cmd(&hci_inquiry, hci_stack->inquiry_lap, duration, 0);
+            }
             return true;
         }
     }
@@ -4766,6 +4785,13 @@ static bool hci_run_general_gap_classic(void){
         hci_send_cmd(&hci_inquiry_cancel);
         return true;
     }
+
+    if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W2_EXIT_PERIODIC){
+        hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_EXIT_PERIODIC_COMPLETE;
+        hci_send_cmd(&hci_exit_periodic_inquiry_mode);
+        return true;
+    }
+
     // remote name request
     if (hci_stack->remote_name_state == GAP_REMOTE_NAME_STATE_W2_SEND){
 #ifdef ENABLE_HCI_SERIALIZED_CONTROLLER_OPERATIONS
@@ -7527,6 +7553,23 @@ int gap_inquiry_start(uint8_t duration_in_1280ms_units){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
     hci_stack->inquiry_state = duration_in_1280ms_units;
+    hci_stack->inquiry_max_period_length = 0;
+    hci_stack->inquiry_min_period_length = 0;
+    hci_run();
+    return 0;
+}
+
+uint8_t gap_inquiry_periodic_start(uint8_t duration, uint16_t max_period_length, uint16_t min_period_length){
+    if (hci_stack->state != HCI_STATE_WORKING)                return ERROR_CODE_COMMAND_DISALLOWED;
+    if (hci_stack->inquiry_state != GAP_INQUIRY_STATE_IDLE)   return ERROR_CODE_COMMAND_DISALLOWED;
+    if (duration < GAP_INQUIRY_DURATION_MIN)                  return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    if (duration > GAP_INQUIRY_DURATION_MAX)                  return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    if (max_period_length < GAP_INQUIRY_MAX_PERIODIC_LEN_MIN) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;;
+    if (min_period_length < GAP_INQUIRY_MIN_PERIODIC_LEN_MIN) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;;
+
+    hci_stack->inquiry_state = duration;
+    hci_stack->inquiry_max_period_length = max_period_length;
+    hci_stack->inquiry_min_period_length = min_period_length;
     hci_run();
     return 0;
 }
@@ -7542,10 +7585,18 @@ int gap_inquiry_stop(void){
         hci_emit_event(event, sizeof(event), 1);
         return 0;
     }
-    if (hci_stack->inquiry_state != GAP_INQUIRY_STATE_ACTIVE) return ERROR_CODE_COMMAND_DISALLOWED;
-    hci_stack->inquiry_state = GAP_INQUIRY_STATE_W2_CANCEL;
-    hci_run();
-    return 0;
+    switch (hci_stack->inquiry_state){
+        case GAP_INQUIRY_STATE_ACTIVE:
+            hci_stack->inquiry_state = GAP_INQUIRY_STATE_W2_CANCEL;
+            hci_run();
+            return ERROR_CODE_SUCCESS;
+        case GAP_INQUIRY_STATE_PERIODIC:
+            hci_stack->inquiry_state = GAP_INQUIRY_STATE_W2_EXIT_PERIODIC;
+            hci_run();
+            return ERROR_CODE_SUCCESS;
+        default:
+            return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 }
 
 void gap_inquiry_set_lap(uint32_t lap){

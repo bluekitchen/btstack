@@ -1009,6 +1009,8 @@ typedef struct {
     uint8_t   bondable;
 
     uint8_t   inquiry_state;    // see hci.c for state defines
+    uint16_t  inquiry_max_period_length;
+    uint16_t  inquiry_min_period_length;
 
     bd_addr_t remote_name_addr;
     uint16_t  remote_name_clock_offset;
