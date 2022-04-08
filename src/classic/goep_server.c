@@ -51,6 +51,7 @@
 #include "btstack_event.h"
 
 #include "classic/goep_server.h"
+#include "classic/obex_message_builder.h"
 
 #ifdef ENABLE_GOEP_L2CAP
 #include "l2cap.h"
