@@ -140,6 +140,22 @@ static uint16_t goep_server_get_next_goep_cid(void){
     return goep_server_cid_counter;
 }
 
+static inline void goep_server_emit_incoming_connection(btstack_packet_handler_t callback, uint16_t goep_cid, bd_addr_t bd_addr, hci_con_handle_t con_handle){
+    uint8_t event[13];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GOEP_META;
+    event[pos++] = 15 - 2;
+    event[pos++] = GOEP_SUBEVENT_INCOMING_CONNECTION;
+    little_endian_store_16(event, pos, goep_cid);
+    pos+=2;
+    memcpy(&event[pos], bd_addr, 6);
+    pos += 6;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    btstack_assert(pos == sizeof(event));
+    callback(HCI_EVENT_PACKET, goep_cid, &event[0], pos);
+}
+
 static inline void goep_server_emit_connection_opened(btstack_packet_handler_t callback, uint16_t goep_cid, bd_addr_t bd_addr, hci_con_handle_t con_handle, uint8_t status){
     uint8_t event[15];
     uint16_t pos = 0;
@@ -252,9 +268,13 @@ static void goep_server_packet_handler_l2cap(uint8_t packet_type, uint16_t chann
                     goep_connection->bearer_cid = l2cap_cid;
                     goep_connection->callback   = goep_service->callback;
                     goep_connection->type       = GOEP_CONNECTION_L2CAP;
-                    goep_connection->state      = GOEP_SERVER_W4_CONNECTED;
+                    goep_connection->state      = GOEP_SERVER_W4_ACCEPT_REJECT;
                     btstack_linked_list_add(&goep_server_connections, (btstack_linked_item_t *) goep_connection);
-                    l2cap_ertm_accept_connection(l2cap_cid, &ertm_config, goep_connection->ertm_buffer, GOEP_SERVER_ERTM_BUFFER);
+
+                    // notify user
+                    l2cap_event_incoming_connection_get_address(packet, event_addr);
+                    goep_server_emit_incoming_connection(goep_service->callback, goep_connection->goep_cid, event_addr,
+                                                         l2cap_event_incoming_connection_get_handle(packet));
                     break;
 
                 case L2CAP_EVENT_CHANNEL_OPENED:
@@ -331,9 +351,13 @@ static void goep_server_packet_handler_rfcomm(uint8_t packet_type, uint16_t chan
                     goep_connection->bearer_cid = rfcomm_cid;
                     goep_connection->callback   = goep_service->callback;
                     goep_connection->type       = GOEP_CONNECTION_RFCOMM;
-                    goep_connection->state      = GOEP_SERVER_W4_CONNECTED;
+                    goep_connection->state      = GOEP_SERVER_W4_ACCEPT_REJECT;
                     btstack_linked_list_add(&goep_server_connections, (btstack_linked_item_t *) goep_connection);
-                    rfcomm_accept_connection(rfcomm_cid);
+
+                    // notify user
+                    rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr);
+                    goep_server_emit_incoming_connection(goep_service->callback, goep_connection->goep_cid, event_addr,
+                                                         rfcomm_event_incoming_connection_get_con_handle(packet));
                     break;
 
                 case RFCOMM_EVENT_CHANNEL_OPENED:
@@ -454,6 +478,41 @@ uint8_t goep_server_register_service(btstack_packet_handler_t callback, uint8_t 
         rfcomm_unregister_service(rfcomm_channel);
     }
     return status;
+}
+
+uint8_t goep_server_accept_connection(uint16_t goep_cid){
+    goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != GOEP_SERVER_W4_ACCEPT_REJECT){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    connection->state = GOEP_SERVER_W4_CONNECTED;
+#ifdef ENABLE_GOEP_L2CAP
+    if (connection->type == GOEP_CONNECTION_L2CAP){
+        return l2cap_ertm_accept_connection(connection->bearer_cid, &ertm_config, connection->ertm_buffer, GOEP_SERVER_ERTM_BUFFER);
+    }
+#endif
+    return rfcomm_accept_connection(connection->bearer_cid);
+}
+
+uint8_t goep_server_decline_connection(uint16_t goep_cid){
+    goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    connection->state = GOEP_SERVER_W4_CONNECTED;
+    if (connection->state != GOEP_SERVER_W4_ACCEPT_REJECT){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+#ifdef ENABLE_GOEP_L2CAP
+    if (connection->type == GOEP_CONNECTION_L2CAP){
+        l2cap_decline_connection(connection->bearer_cid);
+        return ERROR_CODE_SUCCESS;
+    }
+#endif
+    return rfcomm_decline_connection(connection->bearer_cid);
 }
 
 uint8_t goep_server_request_can_send_now(uint16_t goep_cid){

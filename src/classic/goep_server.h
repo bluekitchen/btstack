@@ -55,6 +55,7 @@ extern "C" {
 
 typedef enum {
     GOEP_SERVER_IDLE,
+    GOEP_SERVER_W4_ACCEPT_REJECT,
     GOEP_SERVER_W4_CONNECTED,
     GOEP_SERVER_CONNECTED
 } goep_server_state_t;
@@ -110,6 +111,20 @@ void goep_server_init(void);
  */
 uint8_t goep_server_register_service(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel, uint16_t rfcomm_max_frame_size,
                 uint16_t l2cap_psm, uint16_t l2cap_mtu, gap_security_level_t security_level);
+
+/**
+ * @brief Accepts incoming GOEP connection.
+ * @param goep_cid
+ * @return status
+ */
+uint8_t goep_server_accept_connection(uint16_t goep_cid);
+
+/**
+ * @brief Deny incoming GOEP connection.
+ * @param goep_cid
+ * @return status
+ */
+uint8_t goep_server_decline_connection(uint16_t goep_cid);
 
 /**
  * Request GOEP_SUBEVENT_CAN_SEND_NOW
