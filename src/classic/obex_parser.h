@@ -114,9 +114,53 @@ typedef struct {
 } obex_parser_t;
 
 /**
+ * Callback to process chunked data
+ * @param user_data provided in obex_parser_init
+ * @param header_id current OBEX header ID
+ * @param total_len of header
+ * @param data_offset
+ * @param data_len
+ * @param data_buffer
+ */
+typedef void (*obex_app_param_parser_callback_t)(void * user_data, uint8_t tag_id, uint8_t total_len, uint8_t data_offset, const uint8_t * data_buffer, uint8_t data_len);
+
+typedef enum {
+    OBEX_APP_PARAM_PARSER_PARAMS_STATE_INCOMPLETE,
+    OBEX_APP_PARAM_PARSER_PARAMS_STATE_COMPLETE,
+    OBEX_APP_PARAM_PARSER_PARAMS_STATE_OVERRUN,
+    OBEX_APP_PARAM_PARSER_PARAMS_STATE_INVALID,
+} obex_app_param_parser_params_state_t;
+
+typedef enum {
+    OBEX_APP_PARAM_PARSER_TAG_INCOMPLETE,
+    OBEX_APP_PARAM_PARSER_TAG_COMPLETE,
+    OBEX_APP_PARAM_PARSER_TAG_OVERRUN,
+} obex_app_param_parser_tag_state_t;
+
+typedef enum {
+    OBEX_APP_PARAM_PARSER_STATE_W4_TYPE = 0,
+    OBEX_APP_PARAM_PARSER_STATE_W4_LEN,
+    OBEX_APP_PARAM_PARSER_STATE_W4_VALUE,
+    OBEX_APP_PARAM_PARSER_STATE_COMPLETE,
+    OBEX_APP_PARAM_PARSER_STATE_INVALID,
+    OBEX_APP_PARAM_PARSER_STATE_OVERRUN,
+} obex_app_param_parser_state_t;
+
+typedef struct {
+    obex_app_param_parser_callback_t callback;
+    obex_app_param_parser_state_t state;
+    void * user_data;
+    uint16_t param_size;
+    uint16_t param_pos;
+    uint16_t tag_len;
+    uint16_t tag_pos;
+    uint8_t  tag_id;
+} obex_app_param_parser_t;
+
+/**
  * Initialize OBEX Parser for next OBEX request
  * @param obex_parser
- * @param function to call for fields that are not registered
+ * @param function to call for field data
  * @param user_data provided to callback function
  */
 void obex_parser_init_for_request(obex_parser_t * obex_parser, obex_parser_callback_t obex_parser_callback, void * user_data);
@@ -125,7 +169,7 @@ void obex_parser_init_for_request(obex_parser_t * obex_parser, obex_parser_callb
  * Initialize OBEX Parser for next OBEX response
  * @param obex_parser
  * @param opcode of request - needed as responses with additional fields like connect and set path
- * @param function to call for fields that are not registered
+ * @param function to call for field data
  * @param user_data provided to callback function
  */
 void obex_parser_init_for_response(obex_parser_t * obex_parser, uint8_t opcode, obex_parser_callback_t obex_parser_callback, void * user_data);
@@ -151,13 +195,45 @@ void obex_parser_get_operation_info(obex_parser_t * obex_parser, obex_parser_ope
  * @param header_buffer
  * @param buffer_size of header_buffer
  * @param total_len of header value
- * @param data_offset of chunkc to store
+ * @param data_offset of chunk to store
  * @param data_buffer
  * @param data_len chunk length
  * @return OBEX_PARSER_HEADER_COMPLETE when header value complete
  */
 obex_parser_header_state_t obex_parser_header_store(uint8_t * header_buffer, uint16_t buffer_size, uint16_t total_len,
                                                     uint16_t data_offset, const uint8_t * data_buffer, uint16_t data_len);
+
+/**
+ * Initialize OBEX Application Param Parser
+ * @param parser
+ * @param function to call for tag data
+ * @param param_size of OBEX_HEADER_APPLICATION_PARAMETERS header
+ * @param user_data provided to callback function
+ */
+void obex_app_param_parser_init(obex_app_param_parser_t * parser, obex_app_param_parser_callback_t callback, uint8_t param_size, void * user_data);
+
+/**
+ * Process OBEX App Param data
+ * @param parser
+ * @param data_len
+ * @param data_buffer
+ * @return OBEX_APP_PARAM_PARSER_PARAMS_STATE_COMPLETE if packet has been completely parsed
+ */
+obex_app_param_parser_params_state_t obex_app_param_parser_process_data(obex_app_param_parser_t *parser, const uint8_t *data_buffer, uint16_t data_len);
+
+/**
+ * Helper to collect tag chunks in fixed-size data buffer
+ * @param tag_buffer
+ * @param buffer_size of data buffer
+ * @param total_len of tag value
+ * @param data_offset of chunk to store
+ * @param data_buffer
+ * @param data_len chunk length
+ * @return OBEX_APP_PARAM_PARSER_TAG_COMPLETE when tag complete
+ */
+
+obex_app_param_parser_tag_state_t obex_app_param_parser_tag_store(uint8_t * tag_buffer, uint8_t buffer_size, uint8_t total_len,
+                                                                  uint8_t data_offset, const uint8_t * data_buffer, uint8_t data_len);
 
 
 /* API_END */
