@@ -10763,6 +10763,34 @@ static inline uint16_t avrcp_subevent_browsing_set_browsed_player_get_player_id(
 }
 
 /**
+ * @brief Get field goep_cid from event GOEP_SUBEVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t goep_subevent_incoming_connection_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field address from event GOEP_SUBEVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void goep_subevent_incoming_connection_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bytes(&event[5], address, 6);
+}
+/**
+ * @brief Get field handle from event GOEP_SUBEVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t goep_subevent_incoming_connection_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 11);
+}
+
+/**
  * @brief Get field goep_cid from event GOEP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return goep_cid

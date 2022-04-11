@@ -3373,6 +3373,14 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_BROWSING_SET_BROWSED_PLAYER                            0x36u
 
 
+/**
+ * @format 12BH
+ * @param subevent_code
+ * @param goep_cid
+ * @param address
+ * @param handle
+ */
+#define GOEP_SUBEVENT_INCOMING_CONNECTION                                  0x01u
 
 /**
  * @format 121BH1
@@ -3383,21 +3391,21 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param incoming
  */
-#define GOEP_SUBEVENT_CONNECTION_OPENED                                    0x01u
+#define GOEP_SUBEVENT_CONNECTION_OPENED                                    0x02u
 
 /**
  * @format 12
  * @param subevent_code
  * @param goep_cid
 */
-#define GOEP_SUBEVENT_CONNECTION_CLOSED                                    0x02u
+#define GOEP_SUBEVENT_CONNECTION_CLOSED                                    0x03u
 
 /**
  * @format 12
  * @param subevent_code
  * @param goep_cid
 */
-#define GOEP_SUBEVENT_CAN_SEND_NOW                                         0x03u
+#define GOEP_SUBEVENT_CAN_SEND_NOW                                         0x04u
 
 /**
  * @format 121BH1
