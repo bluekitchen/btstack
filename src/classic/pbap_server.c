@@ -107,8 +107,10 @@ typedef struct {
     obex_srm_t  obex_srm;
     srm_state_t srm_state;
     // header fields
-    uint8_t name[PBAP_SERVER_MAX_NAME_LEN];
-    uint8_t type[PBAP_SERVER_MAX_TYPE_LEN];
+    struct {
+        uint8_t name[PBAP_SERVER_MAX_NAME_LEN];
+        uint8_t type[PBAP_SERVER_MAX_TYPE_LEN];
+    } headers;
 } pbap_server_t;
 
 static pbap_server_t pbap_server_singleton;
@@ -258,6 +260,7 @@ static void pbap_server_add_srm_headers(pbap_server_t *pbap_server){
 static void pbap_server_operation_complete(pbap_server_t * pbap_server){
     pbap_server->state = PBAP_SERVER_STATE_CONNECTED;
     pbap_server->srm_state = SRM_DISABLED;
+    memset(&pbap_server->headers, 0, sizeof(pbap_server->headers));
 }
 
 static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
@@ -430,18 +433,18 @@ static void pbap_server_parser_callback_get(void * user_data, uint8_t header_id,
                 uint16_t i;
                 for (i = 0; i < data_len ; i++){
                     if (((data_offset + i) & 1) == 1) {
-                        pbap_server->name[(data_offset + i) >> 1] = data_buffer[i];
+                        pbap_server->headers.name[(data_offset + i) >> 1] = data_buffer[i];
                     }
                 }
-                pbap_server->name[total_len/2] = 0;
-                printf("- Name: '%s'\n", pbap_server->name);
+                pbap_server->headers.name[total_len/2] = 0;
+                printf("- Name: '%s'\n", pbap_server->headers.name);
             }
             break;
         case OBEX_HEADER_TYPE:
             if (total_len < PBAP_SERVER_MAX_TYPE_LEN){
-                memcpy(&pbap_server->type[data_offset], data_buffer, data_len);
-                pbap_server->type[total_len] = 0;
-                printf("- Type: '%s'\n", pbap_server->type);
+                memcpy(&pbap_server->headers.type[data_offset], data_buffer, data_len);
+                pbap_server->headers.type[total_len] = 0;
+                printf("- Type: '%s'\n", pbap_server->headers.type);
             }
             break;
         case OBEX_HEADER_APPLICATION_PARAMETERS:
@@ -532,7 +535,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                         break;
                     case OBEX_OPCODE_SETPATH:
                         // test set path request - return ok
-                        printf("- SetPath: flags %02x, name %s\n", op_info.flags, pbap_server->name);
+                        printf("- SetPath: flags %02x, name %s\n", op_info.flags, pbap_server->headers.name);
                         pbap_server->state = PBAP_SERVER_STATE_SEND_SUCCESS_RESPONSE;
                         goep_server_request_can_send_now(pbap_server->goep_cid);
                         break;
