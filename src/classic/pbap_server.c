@@ -102,7 +102,7 @@ typedef struct {
     pbap_server_state_t state;
     obex_parser_t obex_parser;
     uint32_t connection_id;
-    bool target_matched;
+    uint16_t pbap_supported_features;
     // SRM
     obex_srm_t  obex_srm;
     srm_state_t srm_state;
@@ -110,6 +110,10 @@ typedef struct {
     struct {
         uint8_t name[PBAP_SERVER_MAX_NAME_LEN];
         uint8_t type[PBAP_SERVER_MAX_TYPE_LEN];
+        obex_app_param_parser_t app_param_parser;
+        uint8_t app_param_buffer[4];
+        struct {
+        } app_params;
     } headers;
 } pbap_server_t;
 
@@ -389,6 +393,16 @@ static void pbap_server_packet_handler_hci(uint8_t *packet, uint16_t size){
             break;
     }
 }
+static void pbap_server_app_param_callback(void * user_data, uint8_t tag_id, uint8_t total_len, uint8_t data_offset, const uint8_t * data_buffer, uint8_t data_len){
+    pbap_server_t * pbap_server = (pbap_server_t *) user_data;
+    if (tag_id == PBAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES){
+        obex_app_param_parser_tag_state_t state = obex_app_param_parser_tag_store(pbap_server->headers.app_param_buffer, sizeof(pbap_server->headers.app_param_buffer), total_len, data_offset, data_buffer, data_len);
+        if (state == OBEX_APP_PARAM_PARSER_TAG_COMPLETE){
+            pbap_server->pbap_supported_features = big_endian_read_32(pbap_server->headers.app_param_buffer, 0);
+            printf(" - PBAP Supported Features %04x\n", pbap_server->pbap_supported_features);
+        }
+    }
+}
 
 static void pbap_server_parser_callback_connect(void * user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t * data_buffer, uint16_t data_len){
     UNUSED(total_len);
@@ -397,13 +411,17 @@ static void pbap_server_parser_callback_connect(void * user_data, uint8_t header
     printf("CONNECT Header: %02x - len %u - ", header_id, data_len);
     printf_hexdump(data_buffer, data_len);
 
+    pbap_server_t * pbap_server = (pbap_server_t *) user_data;
+
     switch (header_id) {
         case OBEX_HEADER_TARGET:
             // TODO: verify target
-            printf("- todo: verify target\n");
             break;
         case OBEX_HEADER_APPLICATION_PARAMETERS:
-            printf("- todo: parse app params\n");
+            if (data_offset == 0){
+                obex_app_param_parser_init(&pbap_server->headers.app_param_parser, &pbap_server_app_param_callback, total_len, pbap_server);
+            }
+            obex_app_param_parser_process_data(&pbap_server->headers.app_param_parser, data_buffer, data_len);
             break;
         default:
             break;
