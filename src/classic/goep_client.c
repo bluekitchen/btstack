@@ -412,10 +412,24 @@ bool goep_client_version_20_or_higher(uint16_t goep_cid){
     return context->l2cap_psm != 0;
 }
 
+void goep_client_request_can_send_now(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    if (context->l2cap_psm){
+        l2cap_request_can_send_now_event(context->bearer_cid);
+    } else {
+        rfcomm_request_can_send_now_event(context->bearer_cid);
+    }
+}
+
 uint8_t goep_client_disconnect(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    rfcomm_disconnect(context->bearer_cid);
+    if (context->l2cap_psm){
+        l2cap_disconnect(context->bearer_cid);
+    } else {
+        rfcomm_disconnect(context->bearer_cid);
+    }
     return ERROR_CODE_SUCCESS;
 }
 
@@ -429,16 +443,6 @@ uint8_t goep_client_get_request_opcode(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
     return context->obex_opcode;
-}
-
-void goep_client_request_can_send_now(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    if (context->l2cap_psm){
-        l2cap_request_can_send_now_event(context->bearer_cid);
-    } else {
-        rfcomm_request_can_send_now_event(context->bearer_cid);
-    }
 }
 
 void goep_client_request_create_connect(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length){
