@@ -347,6 +347,11 @@ static void pbap_server_packet_handler_hci(uint8_t *packet, uint16_t size){
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_GOEP_META:
             switch (hci_event_goep_meta_get_subevent_code(packet)){
+                case GOEP_SUBEVENT_INCOMING_CONNECTION:
+                    // TODO: check if resources available
+                    printf("Accept incoming connection\n");
+                    goep_server_accept_connection(goep_subevent_incoming_connection_get_goep_cid(packet));
+                    break;
                 case GOEP_SUBEVENT_CONNECTION_OPENED:
                     goep_cid = goep_subevent_connection_opened_get_goep_cid(packet);
                     pbap_server = pbap_server_for_goep_cid(goep_cid);
