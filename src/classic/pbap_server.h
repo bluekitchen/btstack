@@ -162,6 +162,14 @@ uint8_t pbap_server_connect( bd_addr_t addr, uint16_t * out_cid);
 uint8_t pbap_server_disconnect(uint16_t pbap_cid);
 
 /**
+ * @bbrief Respond to PBAP_SUBEVENT_SET_PHONE_BOOK_X, with X in: ROOT, DOWN, UP
+ * @param pbap_cid
+ * @param response_code, see obex.h
+ * @return status
+ */
+uint8_t pbap_server_send_set_phonebook_result(uint16_t pbap_cid, uint8_t response_code);
+
+/**
  * @brief De-Init PBAP Client
  */
 void pbap_server_deinit(void);

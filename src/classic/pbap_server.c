@@ -74,8 +74,8 @@ typedef enum {
     PBAP_SERVER_STATE_W4_GET_REQUEST,
     PBAP_SERVER_STATE_W4_PUT_OPCODE,
     PBAP_SERVER_STATE_W4_PUT_REQUEST,
-    PBAP_SERVER_STATE_SEND_SUCCESS_RESPONSE,
-    PBAP_SERVER_STATE_SEND_BAD_REQUEST_RESPONSE,
+    PBAP_SERVER_STATE_W4_SET_PATH_RESPONSE,
+    PBAP_SERVER_STATE_SEND_RESPONSE,
     PBAP_SERVER_STATE_SEND_EMPTY_RESPONSE,
     PBAP_SERVER_STATE_SEND_CONTINUE_DATA,
     PBAP_SERVER_STATE_SEND_FINAL_DATA,
@@ -94,22 +94,25 @@ typedef enum {
     SRM_ENABLED_WAIT,
 } srm_state_t;
 
+static  btstack_packet_handler_t pbap_server_user_packet_handler;
+
 typedef struct {
+    uint16_t pbap_cid;
     uint16_t goep_cid;
     bd_addr_t bd_addr;
     hci_con_handle_t con_handle;
     bool     incoming;
     pbap_server_state_t state;
     obex_parser_t obex_parser;
-    uint32_t connection_id;
+    uint8_t response_code;
     uint16_t pbap_supported_features;
     // SRM
     obex_srm_t  obex_srm;
     srm_state_t srm_state;
     // header fields
     struct {
-        uint8_t name[PBAP_SERVER_MAX_NAME_LEN];
-        uint8_t type[PBAP_SERVER_MAX_TYPE_LEN];
+        char name[PBAP_SERVER_MAX_NAME_LEN];
+        char type[PBAP_SERVER_MAX_TYPE_LEN];
         obex_app_param_parser_t app_param_parser;
         uint8_t app_param_buffer[4];
         struct {
@@ -135,6 +138,10 @@ static pbap_server_t * pbap_server_for_goep_cid(uint16_t goep_cid){
     // TODO: check goep_cid after incoming connection -> accept/reject is implemented and state has been setup
     // return pbap_server_singleton.goep_cid == goep_cid ? &pbap_server_singleton : NULL;
     return &pbap_server_singleton;
+}
+
+static pbap_server_t * pbap_server_for_pbap_cid(uint16_t pbap_cid){
+    return (pbap_cid == pbap_server_singleton.pbap_cid) ? &pbap_server_singleton : NULL;
 }
 
 void pbap_server_create_sdp_record(uint8_t *service, uint32_t service_record_handle, uint8_t rfcomm_channel_nr,
@@ -210,6 +217,32 @@ void pbap_server_create_sdp_record(uint8_t *service, uint32_t service_record_han
     // 0x0317 "PBAP Supported Features"
     de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES);
     de_add_number(service, DE_UINT, DE_SIZE_16, l2cap_psm);
+}
+
+static void pbap_server_emit_set_path_event(pbap_server_t *server, uint8_t flags, const char * name) {
+    uint8_t event[5+PBAP_MAX_NAME_LEN];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_PBAP_META;
+
+    uint16_t name_len = strlen(name);
+    if (name_len == 0){
+        event[pos++] = 1;
+        if ((flags & 1) == 1){
+            event[pos++] = PBAP_SUBEVENT_SET_PHONEBOOK_UP;
+        } else {
+            event[pos++] = PBAP_SUBEVENT_SET_PHONEBOOK_ROOT;
+        };
+        little_endian_store_16(event, pos, server->pbap_cid);
+        pos += 2;
+    } else {
+        event[pos++] = name_len + 1;
+        event[pos++] = PBAP_SUBEVENT_SET_PHONEBOOK_DOWN;
+        little_endian_store_16(event, pos, server->pbap_cid);
+        pos += 2;
+        memcpy(&event[pos], name, name_len+1);
+        pos += name_len + 1;
+    }
+    (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void obex_srm_init(obex_srm_t * obex_srm){
@@ -325,17 +358,9 @@ static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
             // send packet
             goep_server_execute(pbap_server->goep_cid);
             break;
-        case PBAP_SERVER_STATE_SEND_SUCCESS_RESPONSE:
+        case PBAP_SERVER_STATE_SEND_RESPONSE:
             // prepare response
-            goep_server_response_create_general(pbap_server->goep_cid, OBEX_RESP_SUCCESS);
-            // next state
-            pbap_server_operation_complete(pbap_server);
-            // send packet
-            goep_server_execute(pbap_server->goep_cid);
-            break;
-        case PBAP_SERVER_STATE_SEND_BAD_REQUEST_RESPONSE:
-            // prepare response
-            goep_server_response_create_general(pbap_server->goep_cid, OBEX_RESP_BAD_REQUEST);
+            goep_server_response_create_general(pbap_server->goep_cid, pbap_server->response_code);
             // next state
             pbap_server_operation_complete(pbap_server);
             // send packet
@@ -399,7 +424,6 @@ static void pbap_server_app_param_callback(void * user_data, uint8_t tag_id, uin
         obex_app_param_parser_tag_state_t state = obex_app_param_parser_tag_store(pbap_server->headers.app_param_buffer, sizeof(pbap_server->headers.app_param_buffer), total_len, data_offset, data_buffer, data_len);
         if (state == OBEX_APP_PARAM_PARSER_TAG_COMPLETE){
             pbap_server->pbap_supported_features = big_endian_read_32(pbap_server->headers.app_param_buffer, 0);
-            printf(" - PBAP Supported Features %04x\n", pbap_server->pbap_supported_features);
         }
     }
 }
@@ -407,9 +431,6 @@ static void pbap_server_app_param_callback(void * user_data, uint8_t tag_id, uin
 static void pbap_server_parser_callback_connect(void * user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t * data_buffer, uint16_t data_len){
     UNUSED(total_len);
     UNUSED(data_offset);
-
-    printf("CONNECT Header: %02x - len %u - ", header_id, data_len);
-    printf_hexdump(data_buffer, data_len);
 
     pbap_server_t * pbap_server = (pbap_server_t *) user_data;
 
@@ -442,7 +463,6 @@ static void pbap_server_parser_callback_get(void * user_data, uint8_t header_id,
             obex_parser_header_store(&pbap_server->obex_srm.srmp_value, 1, total_len, data_offset, data_buffer, data_len);
             break;
         case OBEX_HEADER_CONNECTION_ID:
-            printf("- todo: verify connection id\n");
             // TODO: verify connection id
             break;
         case OBEX_HEADER_NAME:
@@ -552,10 +572,8 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                         goep_server_request_can_send_now(pbap_server->goep_cid);
                         break;
                     case OBEX_OPCODE_SETPATH:
-                        // test set path request - return ok
-                        printf("- SetPath: flags %02x, name %s\n", op_info.flags, pbap_server->headers.name);
-                        pbap_server->state = PBAP_SERVER_STATE_SEND_SUCCESS_RESPONSE;
-                        goep_server_request_can_send_now(pbap_server->goep_cid);
+                        pbap_server->state = PBAP_SERVER_STATE_W4_SET_PATH_RESPONSE;
+                        pbap_server_emit_set_path_event(pbap_server, op_info.flags, &pbap_server->headers.name[0]);
                         break;
                     case OBEX_OPCODE_DISCONNECT:
                         // todo: emit disconnect
@@ -564,7 +582,8 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                     case (OBEX_OPCODE_ACTION | OBEX_OPCODE_FINAL_BIT_MASK):
                     case OBEX_OPCODE_SESSION:
                     default:
-                        pbap_server->state = PBAP_SERVER_STATE_SEND_BAD_REQUEST_RESPONSE;
+                        pbap_server->response_code = OBEX_RESP_BAD_REQUEST;
+                        pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
                         goep_server_request_can_send_now(pbap_server->goep_cid);
                         break;
                 }
@@ -588,7 +607,8 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                 // TODO: check Target
                 if (ok == false) {
                     // send bad request response
-                    pbap_server->state = PBAP_SERVER_STATE_SEND_BAD_REQUEST_RESPONSE;
+                    pbap_server->response_code = OBEX_RESP_BAD_REQUEST;
+                    pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
                 } else {
                     pbap_server_handle_srm_headers(pbap_server);
                     // send next card
@@ -626,11 +646,22 @@ static void pbap_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     }
 }
 
-static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+uint8_t pbap_server_send_set_phonebook_result(uint16_t pbap_cid, uint8_t response_code){
+    pbap_server_t * pbap_server = pbap_server_for_pbap_cid(pbap_cid);
+    if (pbap_server == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (pbap_server->state != PBAP_SERVER_STATE_W4_SET_PATH_RESPONSE) {
+        ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    pbap_server->response_code = response_code;
+    pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
+    return goep_server_request_can_send_now(pbap_server->goep_cid);
 }
 
 uint8_t pbap_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, gap_security_level_t security_level){
     uint8_t status = goep_server_register_service(&pbap_server_packet_handler, rfcomm_channel_nr, 0xffff, l2cap_psm, 0xffff, security_level);
+    pbap_server_user_packet_handler = packet_handler;
     return status;
 }
 
