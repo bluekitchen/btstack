@@ -199,7 +199,7 @@ void btstack_run_loop_base_poll_data_sources(void);
 void btstack_run_loop_base_add_callback(btstack_context_callback_registration_t * callback_registration);
 
 /**
- * @bried Procss Callbacks: remove all callback-registrations and call the registered function with its context
+ * @bried Process Callbacks: remove all callback-registrations and call the registered function with its context
  */
 void btstack_run_loop_base_execute_callbacks(void);
 
@@ -330,7 +330,11 @@ void btstack_run_loop_execute(void);
 
 /**
  * @brief Registers callback with run loop and mark main thread as ready
- * @note Callback can only be registered once
+ * @note If callback is already registered, the call will be ignored.
+ *       This function allows to implement, e.g., a quque-based message passing mechanism:
+ *       The external thread puts an item into a queue and call this function to trigger
+ *       processing by the BTstack main thread. If this happens multiple times, it is
+ *       guranteed that the callback will run at least once after the last item was added.
  * @param callback_registration
  */
 void btstack_run_loop_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration);
