@@ -140,6 +140,7 @@
 #include "classic/hid_host.h"
 #include "classic/hsp_ag.h"
 #include "classic/hsp_hs.h"
+#include "classic/obex.h"
 #include "classic/pan.h"
 #include "classic/pbap_client.h"
 #include "classic/rfcomm.h"
