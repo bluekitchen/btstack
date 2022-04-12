@@ -570,15 +570,6 @@ static void goep_server_packet_init(goep_server_connection_t * connection){
     }
 }
 
-uint8_t goep_server_set_connection_id(uint16_t goep_cid, uint32_t connection_id){
-    goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
-    if (connection == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    connection->obex_connection_id = connection_id;
-    return ERROR_CODE_SUCCESS;
-}
-
 uint8_t goep_server_response_create_connect(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length){
     goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
     if (connection == NULL) {
@@ -592,7 +583,7 @@ uint8_t goep_server_response_create_connect(uint16_t goep_cid, uint8_t obex_vers
 
     uint8_t * buffer = goep_server_get_outgoing_buffer(connection);
     uint16_t buffer_len = goep_server_get_outgoing_buffer_len(connection);
-    return obex_message_builder_response_create_connect(buffer, buffer_len, obex_version_number, flags, maximum_obex_packet_length, connection->obex_connection_id);
+    return obex_message_builder_response_create_connect(buffer, buffer_len, obex_version_number, flags, maximum_obex_packet_length, (uint32_t) goep_cid);
 }
 
 uint8_t goep_server_response_create_general(uint16_t goep_cid, uint8_t opcode){

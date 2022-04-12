@@ -134,13 +134,6 @@ uint8_t goep_server_decline_connection(uint16_t goep_cid);
 uint8_t goep_server_request_can_send_now(uint16_t goep_cid);
 
 /**
- * @brief Set Connection ID used for newly created requests
- * @param goep_cid
- * @return status
- */
-uint8_t goep_server_set_connection_id(uint16_t goep_cid, uint32_t connection_id);
-
-/**
  * @brief Start Connect response
  * @param goep_cid
  * @param obex_version_number
