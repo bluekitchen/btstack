@@ -165,12 +165,6 @@ static struct libusb_transfer *acl_out_transfer;
 static struct libusb_transfer *event_in_transfer[EVENT_IN_BUFFER_COUNT];
 static struct libusb_transfer *acl_in_transfer[ACL_IN_BUFFER_COUNT];
 
-#ifdef ENABLE_SCO_OVER_HCI
-
-#ifdef _WIN32
-#error "SCO not working on Win32 (Windows 8, libusb 1.0.19, Zadic WinUSB), please uncomment ENABLE_SCO_OVER_HCI in btstack-config.h for now"
-#endif
-
 // known devices
 typedef struct {
     btstack_linked_item_t next;
@@ -179,6 +173,12 @@ typedef struct {
 } usb_known_device_t;
 
 static btstack_linked_list_t usb_knwon_devices;
+
+#ifdef ENABLE_SCO_OVER_HCI
+
+#ifdef _WIN32
+#error "SCO not working on Win32 (Windows 8, libusb 1.0.19, Zadic WinUSB), please uncomment ENABLE_SCO_OVER_HCI in btstack-config.h for now"
+#endif
 
 // incoming SCO
 static H2_SCO_STATE sco_state;
