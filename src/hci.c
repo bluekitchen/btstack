@@ -2866,6 +2866,17 @@ static void event_handler(uint8_t *packet, uint16_t size){
     switch (hci_event_packet_get_type(packet)) {
                         
         case HCI_EVENT_COMMAND_COMPLETE:
+#ifdef ENABLE_CLASSIC
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_periodic_inquiry_mode)) {
+                const uint8_t *params= hci_event_command_complete_get_return_parameters(packet);
+                log_info("command complete (periodic inquiry), status %x", params[0]);
+                if (params[0] == ERROR_CODE_SUCCESS) {
+                    hci_stack->inquiry_state = GAP_INQUIRY_STATE_PERIODIC;
+                } else {
+                    hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
+                }
+            }
+#endif
             handle_command_complete_event(packet, size);
             break;
             
@@ -2919,15 +2930,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 log_info("command status (inquiry), status %x", status);
                 if (status == ERROR_CODE_SUCCESS) {
                     hci_stack->inquiry_state = GAP_INQUIRY_STATE_ACTIVE;
-                } else {
-                    hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
-                }
-            }
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_periodic_inquiry_mode)) {
-                uint8_t status = hci_event_command_status_get_status(packet);
-                log_info("command status (inquiry), status %x", status);
-                if (status == ERROR_CODE_SUCCESS) {
-                    hci_stack->inquiry_state = GAP_INQUIRY_STATE_PERIODIC;
                 } else {
                     hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
                 }
