@@ -1078,6 +1078,16 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_TRANSPORT_SLEEP_MODE                     0x69u
 
 /**
+ * @brief Transport USB Bluetooth Controller info
+ * @format 22JV
+ * @param vendor_id
+ * @param product_id
+ * @param path_len
+ * @param path
+ */
+#define HCI_EVENT_TRANSPORT_USB_INFO                       0x6Au
+
+/**
  * @brief Transport ready 
  */
 #define HCI_EVENT_TRANSPORT_READY                          0x6Du
