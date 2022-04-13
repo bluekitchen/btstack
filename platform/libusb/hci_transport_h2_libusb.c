@@ -53,7 +53,6 @@
 // SCO Data     0 0 0x83 Isochronous (IN)
 // SCO Data     0 0 0x03 Isochronous (Out)
 
-#include <stdio.h>
 #include <strings.h>
 #include <string.h>
 #include <unistd.h>   /* UNIX standard function definitions */
@@ -491,8 +490,6 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
             }
             if (!pack->actual_length) continue;
             uint8_t * data = libusb_get_iso_packet_buffer_simple(transfer, i);
-            // printf_hexdump(data, pack->actual_length);
-            // log_info("handle_isochronous_data,size %u/%u", pack->length, pack->actual_length);
             handle_isochronous_data(data, pack->actual_length);
         }
         resubmit = 1;
@@ -727,15 +724,6 @@ static int prepare_device(libusb_device_handle * aHandle){
     libusb_device * device = libusb_get_device(aHandle);
     usb_path_len = libusb_get_port_numbers(device, usb_path, USB_MAX_PATH_LEN);
 
-    // print device path
-    printf("USB Path: ");
-    int i;
-    for (i=0;i<usb_path_len;i++){
-        if (i) printf("-");
-        printf("%02x", usb_path[i]);
-    }
-    printf("\n");
-
     int r;
     int kernel_driver_detached = 0;
 
@@ -844,7 +832,6 @@ static libusb_device_handle * try_open_device(libusb_device * device){
 
 static int usb_sco_start(void){
 
-    printf("usb_sco_start\n");
     log_info("usb_sco_start");
 
     sco_state_machine_init();
@@ -898,8 +885,6 @@ static int usb_sco_start(void){
 
 static void usb_sco_stop(void){
 
-    printf("usb_sco_stop\n");
-
     log_info("usb_sco_stop");
     sco_shutdown = 1;
 
@@ -926,7 +911,7 @@ static void usb_sco_stop(void){
         }
         struct libusb_transfer * next_transfer = (struct libusb_transfer *) transfer->user_data;
         if (drop_transfer) {
-            printf("Drop completed SCO transfer %p\n", transfer);
+            log_info("Drop completed SCO transfer %p", transfer);
             if (prev_transfer == NULL) {
                 // first item
                 handle_packet = (struct libusb_transfer *) next_transfer;
@@ -997,7 +982,7 @@ static void usb_sco_stop(void){
         return;
     }
 
-    printf("usb_sco_stop done\n");
+    log_info("usb_sco_stop done");
 }
 
 
@@ -1100,7 +1085,6 @@ static int usb_open(void){
         }
         if (!handle){
             log_error("USB device with given path not found");
-            printf("USB device with given path not found\n");
             return -1;
         }
     } else {
