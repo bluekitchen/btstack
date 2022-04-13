@@ -224,9 +224,11 @@ static int acl_out_addr;
 static int sco_in_addr;
 static int sco_out_addr;
 
-// device path
+// device info
 static int usb_path_len;
 static uint8_t usb_path[USB_MAX_PATH_LEN];
+static uint16_t usb_vendor_id;
+static uint16_t usb_product_id;
 
 // transport interface state
 static int usb_transport_open;
@@ -793,6 +795,14 @@ static int prepare_device(libusb_device_handle * aHandle){
 static libusb_device_handle * try_open_device(libusb_device * device){
     int r;
 
+    r = libusb_get_device_descriptor(device, &desc);
+    if (r < 0) {
+        log_error("libusb_get_device_descriptor failed!");
+        return NULL;
+    }
+    usb_vendor_id = desc.idVendor;
+    usb_product_id = desc.idProduct;
+
     libusb_device_handle * dev_handle;
     r = libusb_open(device, &dev_handle);
 
@@ -1030,6 +1040,9 @@ static int usb_open(void){
         usb_close();
         return -1;
     }
+
+    usb_vendor_id = USB_VENDOR_ID;
+    usb_product_id = USB_PRODUCT_ID;
 
 #else
     // Scan system for an appropriate devices
