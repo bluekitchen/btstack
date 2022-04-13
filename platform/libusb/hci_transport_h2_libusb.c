@@ -707,15 +707,16 @@ static int scan_for_bt_device(libusb_device **devs, int start_index) {
 
 static int prepare_device(libusb_device_handle * aHandle){
 
-    // print device path
-    uint8_t port_numbers[USB_MAX_PATH_LEN];
+    // get device path
     libusb_device * device = libusb_get_device(aHandle);
-    int path_len = libusb_get_port_numbers(device, port_numbers, USB_MAX_PATH_LEN);
+    usb_path_len = libusb_get_port_numbers(device, usb_path, USB_MAX_PATH_LEN);
+
+    // print device path
     printf("USB Path: ");
     int i;
-    for (i=0;i<path_len;i++){
+    for (i=0;i<usb_path_len;i++){
         if (i) printf("-");
-        printf("%02x", port_numbers[i]);
+        printf("%02x", usb_path[i]);
     }
     printf("\n");
 
