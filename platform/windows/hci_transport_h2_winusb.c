@@ -341,7 +341,7 @@ static bool usb_is_vmware_bluetooth_adapter(const char * device_path){
     return (pos > 0);
 }
 
-static bool usb_device_path_match(uint16_t vendor_id, uint16_t product_id){
+static bool usb_device_path_match(const char * device_path, uint16_t vendor_id, uint16_t product_id){
     // construct pid/vid substring
     char substring[20];
     sprintf(substring, "vid_%04x&pid_%04x", vendor_id, product_id);
@@ -353,7 +353,7 @@ static bool usb_device_path_match(uint16_t vendor_id, uint16_t product_id){
 static bool usb_is_known_bluetooth_device(const char * device_path){
     int i;
     for (i=0; i<num_known_devices; i++){
-        if (usb_device_path_match( known_bluetooth_devices[i*2], known_bluetooth_devices[i*2+1])){
+        if (usb_device_path_match( device_path, known_bluetooth_devices[i*2], known_bluetooth_devices[i*2+1])){
             return true;
         }
     }
@@ -361,7 +361,7 @@ static bool usb_is_known_bluetooth_device(const char * device_path){
     btstack_linked_list_iterator_init(&it, &usb_knwon_devices);
     while (btstack_linked_list_iterator_has_next(&it)) {
         usb_known_device_t * device = (usb_known_device_t *) btstack_linked_list_iterator_next(&it);
-        if (usb_device_path_match( device->vendor_id, device->product_id)){
+        if (usb_device_path_match( device_path, device->vendor_id, device->product_id)){
             return true;
         }
     }
