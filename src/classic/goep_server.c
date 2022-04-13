@@ -86,6 +86,7 @@ static goep_server_service_t * goep_server_get_service_for_rfcomm_channel(uint8_
     return NULL;
 }
 
+#ifdef ENABLE_GOEP_L2CAP
 static goep_server_service_t * goep_server_get_service_for_l2cap_psm(uint16_t l2cap_psm){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) goep_server_services; it ; it = it->next){
@@ -96,6 +97,7 @@ static goep_server_service_t * goep_server_get_service_for_l2cap_psm(uint16_t l2
     }
     return NULL;
 }
+#endif
 
 static goep_server_connection_t * goep_server_get_connection_for_rfcomm_cid(uint16_t bearer_cid){
     btstack_linked_item_t *it;
@@ -109,6 +111,7 @@ static goep_server_connection_t * goep_server_get_connection_for_rfcomm_cid(uint
     return NULL;
 }
 
+#ifdef ENABLE_GOEP_L2CAP
 static goep_server_connection_t * goep_server_get_connection_for_l2cap_cid(uint16_t bearer_cid){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) goep_server_connections; it ; it = it->next){
@@ -120,6 +123,7 @@ static goep_server_connection_t * goep_server_get_connection_for_l2cap_cid(uint1
     }
     return NULL;
 }
+#endif
 
 static goep_server_connection_t * goep_server_get_connection_for_goep_cid(uint16_t goep_cid){
     btstack_linked_item_t *it;
