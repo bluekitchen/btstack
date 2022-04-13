@@ -171,6 +171,15 @@ static struct libusb_transfer *acl_in_transfer[ACL_IN_BUFFER_COUNT];
 #error "SCO not working on Win32 (Windows 8, libusb 1.0.19, Zadic WinUSB), please uncomment ENABLE_SCO_OVER_HCI in btstack-config.h for now"
 #endif
 
+// known devices
+typedef struct {
+    btstack_linked_item_t next;
+    uint16_t vendor_id;
+    uint16_t product_id;
+} usb_known_device_t;
+
+static btstack_linked_list_t usb_knwon_devices;
+
 // incoming SCO
 static H2_SCO_STATE sco_state;
 static uint8_t  sco_buffer[255+3 + SCO_PACKET_SIZE];
@@ -256,6 +265,15 @@ static int sco_ring_have_space(void){
     return sco_out_transfers_active < SCO_OUT_BUFFER_COUNT;
 }
 #endif
+
+void hci_transport_usb_add_device(uint16_t vendor_id, uint16_t product_id) {
+    usb_known_device_t * device = malloc(sizeof(usb_known_device_t));
+    if (device != NULL) {
+        device->vendor_id = vendor_id;
+        device->product_id = product_id;
+        btstack_linked_list_add(&usb_knwon_devices, (btstack_linked_item_t *) device);
+    }
+}
 
 void hci_transport_usb_set_path(int len, uint8_t * port_numbers){
     if (len > USB_MAX_PATH_LEN || !port_numbers){
@@ -681,6 +699,14 @@ static int is_known_bt_device(uint16_t vendor_id, uint16_t product_id){
         if (known_bluetooth_devices[i*2] == vendor_id && known_bluetooth_devices[i*2+1] == product_id){
             return 1;
         }
+    }
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &usb_knwon_devices);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        usb_known_device_t * device = (usb_known_device_t *) btstack_linked_list_iterator_next(&it);
+        if (device->vendor_id != vendor_id) continue;
+        if (device->product_id != product_id) continue;
+        return 1;
     }
     return 0;
 }
