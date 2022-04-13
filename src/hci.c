@@ -209,11 +209,11 @@ static void hci_trigger_remote_features_for_connection(hci_connection_t * connec
 #endif
 
 #ifdef ENABLE_BLE
+static void hci_whitelist_free(void);
 #ifdef ENABLE_LE_CENTRAL
 // called from test/ble_client/advertising_data_parser.c
 void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
 static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address);
-static void hci_whitelist_free(void);
 static hci_connection_t * gap_get_outgoing_connection(void);
 static void hci_le_scan_stop(void);
 static bool hci_run_general_gap_le(void);
