@@ -901,6 +901,11 @@ typedef struct {
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     /* callback for ISO data */
     btstack_packet_handler_t iso_packet_handler;
+
+    /* fragmentation for ISO data */
+    uint16_t  iso_fragmentation_pos;
+    uint16_t  iso_fragmentation_total_size;
+    bool      iso_fragmentation_tx_active;
 #endif
 
     // hardware error callback

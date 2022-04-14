@@ -978,16 +978,90 @@ uint8_t hci_send_sco_packet_buffer(int size){
 #endif
 
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+static uint8_t hci_send_iso_packet_fragments(void){
+
+    uint16_t max_iso_data_packet_length = hci_stack->le_iso_packets_length;
+    uint8_t status = ERROR_CODE_SUCCESS;
+    // multiple packets could be send on a synchronous HCI transport
+    while (true){
+
+        // get current data
+        const uint16_t iso_header_pos = hci_stack->iso_fragmentation_pos - 4u;
+        int current_iso_data_packet_length = hci_stack->iso_fragmentation_total_size - hci_stack->iso_fragmentation_pos;
+        bool more_fragments = false;
+
+        // if ISO packet is larger than Bluetooth packet buffer, only send max_acl_data_packet_length
+        if (current_iso_data_packet_length > max_iso_data_packet_length){
+            more_fragments = true;
+            current_iso_data_packet_length = max_iso_data_packet_length;
+        }
+
+        // copy handle_and_flags if not first fragment and update packet boundary flags to be 01 (continuing fragmnent)
+        uint16_t handle_and_flags = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
+        uint8_t pb_flags;
+        if (iso_header_pos == 0u){
+            // first fragment, keep TS field
+            pb_flags = more_fragments ? 0x00 : 0x02;
+            handle_and_flags = (handle_and_flags & 0x4fffu) | (pb_flags << 12u);
+        } else {
+            // later fragment, drop TS field
+            pb_flags = more_fragments ? 0x01 : 0x03;
+            handle_and_flags = (handle_and_flags & 0x0fffu) | (pb_flags << 12u);
+        }
+        little_endian_store_16(hci_stack->hci_packet_buffer, iso_header_pos, handle_and_flags);
+
+        // update header len
+        little_endian_store_16(hci_stack->hci_packet_buffer, iso_header_pos + 2u, current_iso_data_packet_length);
+
+        // update state for next fragment (if any) as "transport done" might be sent during send_packet already
+        if (more_fragments){
+            // update start of next fragment to send
+            hci_stack->iso_fragmentation_pos += current_iso_data_packet_length;
+        } else {
+            // done
+            hci_stack->iso_fragmentation_pos = 0;
+            hci_stack->iso_fragmentation_total_size = 0;
+        }
+
+        // send packet
+        uint8_t * packet = &hci_stack->hci_packet_buffer[iso_header_pos];
+        const int size = current_iso_data_packet_length + 4;
+        hci_dump_packet(HCI_ISO_DATA_PACKET, 0, packet, size);
+        hci_stack->iso_fragmentation_tx_active = true;
+        int err = hci_stack->hci_transport->send_packet(HCI_ISO_DATA_PACKET, packet, size);
+        if (err != 0){
+            // no error from HCI Transport expected
+            status = ERROR_CODE_HARDWARE_FAILURE;
+        }
+
+        // done yet?
+        if (!more_fragments) break;
+
+        // can send more?
+        if (!hci_transport_can_send_prepared_packet_now(HCI_ISO_DATA_PACKET)) return false;
+    }
+
+    // release buffer now for synchronous transport
+    if (hci_transport_synchronous()){
+        hci_stack->iso_fragmentation_tx_active = false;
+        hci_release_packet_buffer();
+        hci_emit_transport_packet_sent();
+    }
+
+    return status;
+}
+
 uint8_t hci_send_iso_packet_buffer(uint16_t size){
     btstack_assert(hci_stack->hci_packet_buffer_reserved);
 
-    uint8_t * packet = hci_stack->hci_packet_buffer;
+    // setup data
+    hci_stack->iso_fragmentation_total_size = size;
+    hci_stack->iso_fragmentation_pos = 4;   // start of L2CAP packet
+
     // TODO: check for space on controller
     // TODO: track outgoing packet sent
-    hci_dump_packet( HCI_ISO_DATA_PACKET, 0, packet, size);
 
-    int err = hci_stack->hci_transport->send_packet(HCI_ISO_DATA_PACKET, packet, size);
-    return (err == 0) ? ERROR_CODE_SUCCESS : ERROR_CODE_HARDWARE_FAILURE;
+    return hci_send_iso_packet_fragments();
 }
 #endif
 
@@ -4717,6 +4791,19 @@ static bool hci_run_acl_fragments(void){
     return false;
 }
 
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+static bool hci_run_iso_fragments(void){
+    if (hci_stack->iso_fragmentation_total_size > 0u) {
+        // TODO: flow control
+        if (hci_transport_can_send_prepared_packet_now(HCI_ISO_DATA_PACKET)){
+            hci_send_iso_packet_fragments();
+            return true;
+        }
+    }
+    return false;
+}
+#endif
+
 #ifdef ENABLE_CLASSIC
 
 #ifdef ENABLE_HCI_SERIALIZED_CONTROLLER_OPERATIONS
@@ -6076,7 +6163,12 @@ static void hci_run(void){
     // send continuation fragments first, as they block the prepared packet buffer
     done = hci_run_acl_fragments();
     if (done) return;
-    
+
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    done = hci_run_iso_fragments();
+    if (done) return;
+#endif
+
 #ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
     // send host num completed packets next as they don't require num_cmd_packets > 0
     if (!hci_can_send_comand_packet_transport()) return;
