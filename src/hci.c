@@ -120,7 +120,6 @@
 #define GAP_INQUIRY_STATE_W4_CANCELLED 0x83
 #define GAP_INQUIRY_STATE_PERIODIC     0x84
 #define GAP_INQUIRY_STATE_W2_EXIT_PERIODIC 0x85
-#define GAP_INQUIRY_STATE_W4_EXIT_PERIODIC_COMPLETE 0x86
 
 // GAP Remote Name Request
 #define GAP_REMOTE_NAME_STATE_IDLE 0
@@ -4786,7 +4785,7 @@ static bool hci_run_general_gap_classic(void){
     }
 
     if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W2_EXIT_PERIODIC){
-        hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_EXIT_PERIODIC_COMPLETE;
+        hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_CANCELLED;
         hci_send_cmd(&hci_exit_periodic_inquiry_mode);
         return true;
     }
