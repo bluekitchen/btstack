@@ -492,9 +492,23 @@ void btstack_chipset_realtek_set_config_folder_path(const char *path) {
 #endif
 }
 
-void btstack_chipset_realtek_set_lmp_subversion(uint16_t version) { lmp_subversion = version; }
+void btstack_chipset_realtek_set_lmp_subversion(uint16_t version) {
+    lmp_subversion = version;
+}
 
-void btstack_chipset_realtek_set_product_id(uint16_t id) { product_id = id; }
+void btstack_chipset_realtek_set_product_id(uint16_t id) {
+    product_id = id;
+}
+
+uint16_t btstack_chipset_realtek_get_num_usb_controllers(void){
+    return (sizeof(fw_patch_table) / sizeof(patch_info)) - 1; // sentinel
+}
+
+void btstack_chipset_realtek_get_vendor_product_id(uint16_t index, uint16_t * out_vendor_id, uint16_t * out_product_id){
+    btstack_assert(index < ((sizeof(fw_patch_table) / sizeof(patch_info)) - 1));
+    *out_vendor_id = 0xbda;
+    *out_product_id = fw_patch_table[index].prod_id;
+}
 
 static const btstack_chipset_t btstack_chipset_realtek = {
     "REALTEK", chipset_init, chipset_next_command,

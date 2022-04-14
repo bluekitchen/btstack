@@ -89,6 +89,20 @@ void btstack_chipset_realtek_set_lmp_subversion(uint16_t version);
 void btstack_chipset_realtek_set_product_id(uint16_t id);
 
 /**
+ * @brief Get num USB Controllers
+ * @return num controllers
+ */
+uint16_t btstack_chipset_realtek_get_num_usb_controllers(void);
+
+/**
+ * @brief Get Vendor/Product ID for Controller with index
+ * @param index
+ * @param out_vendor_id
+ * @param out_product_id
+ */
+void btstack_chipset_realtek_get_vendor_product_id(uint16_t index, uint16_t * out_vendor_id, uint16_t * out_product_id);
+
+/**
  * Get chipset instance for REALTEK chipsets
  */
 const btstack_chipset_t *btstack_chipset_realtek_instance(void);
