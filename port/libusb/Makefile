@@ -21,6 +21,7 @@ CFLAGS += -I${BTSTACK_ROOT}/platform/posix    \
 		  -I${BTSTACK_ROOT}/platform/embedded \
 		  -I${BTSTACK_ROOT}/3rd-party/tinydir \
 		  -I${BTSTACK_ROOT}/3rd-party/rijndael \
+		  -I${BTSTACK_ROOT}/chipset/realtek \
 		  -I${BTSTACK_ROOT}/chipset/zephyr
 
 VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
@@ -28,6 +29,7 @@ VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/libusb
 VPATH += ${BTSTACK_ROOT}/chipset/csr
+VPATH += ${BTSTACK_ROOT}/chipset/realtek
 VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 
 # use pkg-config

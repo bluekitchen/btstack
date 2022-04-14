@@ -64,6 +64,7 @@ include_directories(../../3rd-party/rijndael)
 include_directories(../../3rd-party/yxml)
 include_directories(../../3rd-party/tinydir)
 include_directories(../../src)
+include_directories(../../chipset/realtek)
 include_directories(../../chipset/zephyr)
 include_directories(../../platform/posix)
 include_directories(../../platform/embedded)
@@ -84,6 +85,7 @@ file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
 file(GLOB SOURCES_LIBUSB    "../../port/libusb/*.c" "../../platform/libusb/*.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
+file(GLOB SOURCES_REALTEK   "../../chipset/realtek/*.c")
 
 set(LWIP_CORE_SRC 
 	../../3rd-party/lwip/core/src/core/def.c
@@ -150,6 +152,7 @@ set(SOURCES
 	${SOURCES_CLASSIC} 
 	${SOURCES_UECC}
 	${SOURCES_HXCMOD}
+	${SOURCES_REALTEK}
 	${SOURCES_ZEPHYR}
 )
 list(SORT SOURCES)

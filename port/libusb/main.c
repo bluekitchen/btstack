@@ -54,6 +54,7 @@
 #include "ble/le_device_db_tlv.h"
 #include "bluetooth_company_id.h"
 #include "btstack_audio.h"
+#include "btstack_chipset_realtek.h"
 #include "btstack_chipset_zephyr.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -110,6 +111,11 @@ static void local_version_information_handler(uint8_t * packet){
             // sm required to setup static random Bluetooth address
             sm_init();
             break;
+        case BLUETOOTH_COMPANY_ID_REALTEK_SEMICONDUCTOR_CORPORATION:
+            printf("- Realtek controller - provide firmware and config\n");
+            btstack_chipset_realtek_set_lmp_subversion(lmp_subversion);
+            hci_set_chipset(btstack_chipset_realtek_instance());
+            break;
         default:
             break;
     }
@@ -121,6 +127,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     uint8_t i;
     uint8_t usb_path_len;
     const uint8_t * usb_path;
+    uint16_t product_id;
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
@@ -129,14 +136,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             usb_path_len = hci_event_transport_usb_info_get_path_len(packet);
             usb_path = hci_event_transport_usb_info_get_path(packet);
             // print device path
+            product_id = hci_event_transport_usb_info_get_product_id(packet);
             printf("USB device 0x%04x/0x%04x, path: ",
-                   hci_event_transport_usb_info_get_vendor_id(packet),
-                   hci_event_transport_usb_info_get_product_id(packet));
+                   hci_event_transport_usb_info_get_vendor_id(packet), product_id);
             for (i=0;i<usb_path_len;i++){
                 if (i) printf("-");
                 printf("%02x", usb_path[i]);
             }
             printf("\n");
+            // set Product ID for Realtek Controllers
+            btstack_chipset_realtek_set_product_id(product_id);
             break;
         case BTSTACK_EVENT_STATE:
             switch (btstack_event_state_get_state(packet)){
@@ -258,6 +267,16 @@ int main(int argc, const char * argv[]){
 
     // register callback for CTRL-c
     btstack_signal_register_callback(SIGINT, &trigger_shutdown);
+
+    // register known Realtek USB Controllers
+    uint16_t realtek_num_controllers = btstack_chipset_realtek_get_num_usb_controllers();
+    uint16_t i;
+    for (i=0;i<realtek_num_controllers;i++){
+        uint16_t vendor_id;
+        uint16_t product_id;
+        btstack_chipset_realtek_get_vendor_product_id(i, &vendor_id, &product_id);
+        hci_transport_usb_add_device(vendor_id, product_id);
+    }
 
     // setup app
     btstack_main(argc, argv);
