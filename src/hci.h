@@ -898,7 +898,7 @@ typedef struct {
     int (*gap_classic_accept_callback)(bd_addr_t addr, hci_link_type_t link_type);
 #endif
 
-#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     /* callback for ISO data */
     btstack_packet_handler_t iso_packet_handler;
 #endif

@@ -244,10 +244,12 @@ static void hci_transport_h4_block_read(void){
                     bytes_to_read = HCI_SCO_HEADER_SIZE;
                     h4_state = H4_W4_SCO_HEADER;
                     break;
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
                 case HCI_ISO_DATA_PACKET:
                     bytes_to_read = HCI_ISO_HEADER_SIZE;
                     h4_state = H4_W4_SCO_HEADER;
                     break;
+#endif
 #ifdef ENABLE_EHCILL
                 case EHCILL_GO_TO_SLEEP_IND:
                 case EHCILL_GO_TO_SLEEP_ACK:

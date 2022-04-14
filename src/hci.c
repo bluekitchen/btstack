@@ -977,7 +977,7 @@ uint8_t hci_send_sco_packet_buffer(int size){
 }
 #endif
 
-#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
 uint8_t hci_send_iso_packet_buffer(uint16_t size){
     btstack_assert(hci_stack->hci_packet_buffer_reserved);
 
@@ -3739,7 +3739,7 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
             sco_handler(packet, size);
             break;
 #endif
-#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
         case HCI_ISO_DATA_PACKET:
             if (hci_stack->iso_packet_handler != NULL){
                 (hci_stack->iso_packet_handler)(HCI_ISO_DATA_PACKET, 0, packet, size);
@@ -3779,7 +3779,7 @@ void hci_register_sco_packet_handler(btstack_packet_handler_t handler){
 }
 #endif
 
-#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
 void hci_register_iso_packet_handler(btstack_packet_handler_t handler){
     hci_stack->iso_packet_handler = handler;
 }
