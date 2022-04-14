@@ -2539,7 +2539,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             break;
         case HCI_OPCODE_HCI_INQUIRY_CANCEL:
         case HCI_OPCODE_HCI_EXIT_PERIODIC_INQUIRY_MODE:
-            if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W4_CANCELLED){
+            if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W4_CANCELLED || hci_stack->inquiry_state == GAP_INQUIRY_STATE_W4_EXIT_PERIODIC_COMPLETE){
                 hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
                 uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
                 hci_emit_event(event, sizeof(event), 1);
