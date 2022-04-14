@@ -99,7 +99,8 @@ Espressif ESP32              | Dual mode + Wifi | VHCI     | Yes              | 
 EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
 Intel Dual Wireless 3165, 8260, 8265 | Dual mode | USB     | Probably         | intel          | Firmware size: 400 kB 
 Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
-Realtek RTL8822CS            | Dual Mode + WIfi | H5       | Yes              |                | Requires initial firmware and config
+Realtek RTL8822CS            | Dual mode + Wifi | H5       | Yes              |                | Requires initial firmware and config
+Realtek USB Dongles          | Dual mode + Wifi | USB      | Yes              | realtek        | Requires initial firmware and config
 Renesas RX23W                | LE        | H4              | n.a.             |                | HCI Firmware part of BTTS
 STM STLC2500D                | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported
 STM32-WB5x                   | LE        | VHCI            | n.a.             |                | SoC with multi-protocol Radio co-processor
