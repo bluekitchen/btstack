@@ -54,8 +54,8 @@
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
-#include "lc3.h"
-#include "lc3_ehima.h"
+#include "btstack_lc3.h"
+#include "btstack_lc3_ehima.h"
 
 #include "hxcmod.h"
 #include "mods/mod.h"
@@ -234,13 +234,13 @@ static btstack_timer_source_t send_timer;
 
 // lc3 codec config
 static uint32_t sampling_frequency_hz;
-static lc3_frame_duration_t frame_duration;
+static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
 static uint8_t  num_bis = 1;
 
 // lc3 encoder
-static const lc3_encoder_t * lc3_encoder;
+static const btstack_lc3_encoder_t * lc3_encoder;
 static lc3_encoder_ehima_t encoder_contexts[MAX_NUM_BIS];
 static int16_t pcm[MAX_NUM_BIS * MAX_SAMPLES_PER_FRAME];
 static uint32_t time_generation_ms;
@@ -281,54 +281,54 @@ static struct {
     uint8_t  num_variants;
     struct {
         const char * name;
-        lc3_frame_duration_t frame_duration;
+        btstack_lc3_frame_duration_t frame_duration;
         uint16_t octets_per_frame;
     } variants[6];
 } codec_configurations[] = {
     {
         8000, 0x01, 2,
         {
-            {  "8_1",  LC3_FRAME_DURATION_7500US, 26},
-            {  "8_2", LC3_FRAME_DURATION_10000US, 30}
+            {  "8_1",  BTSTACK_LC3_FRAME_DURATION_7500US, 26},
+            {  "8_2", BTSTACK_LC3_FRAME_DURATION_10000US, 30}
         }
     },
     {
        16000, 0x03, 2,
        {
-            {  "16_1",  LC3_FRAME_DURATION_7500US, 30},
-            {  "16_2", LC3_FRAME_DURATION_10000US, 40}
+            {  "16_1",  BTSTACK_LC3_FRAME_DURATION_7500US, 30},
+            {  "16_2", BTSTACK_LC3_FRAME_DURATION_10000US, 40}
        }
     },
     {
         24000, 0x05, 2,
         {
-            {  "24_1",  LC3_FRAME_DURATION_7500US, 45},
-            {  "24_2", LC3_FRAME_DURATION_10000US, 60}
+            {  "24_1",  BTSTACK_LC3_FRAME_DURATION_7500US, 45},
+            {  "24_2", BTSTACK_LC3_FRAME_DURATION_10000US, 60}
        }
     },
     {
         32000, 0x06, 2,
         {
-            {  "32_1",  LC3_FRAME_DURATION_7500US, 60},
-            {  "32_2", LC3_FRAME_DURATION_10000US, 80}
+            {  "32_1",  BTSTACK_LC3_FRAME_DURATION_7500US, 60},
+            {  "32_2", BTSTACK_LC3_FRAME_DURATION_10000US, 80}
         }
     },
     {
         44100, 0x07, 2,
         {
-            { "441_1",  LC3_FRAME_DURATION_7500US,  97},
-            { "441_2", LC3_FRAME_DURATION_10000US, 130}
+            { "441_1",  BTSTACK_LC3_FRAME_DURATION_7500US,  97},
+            { "441_2", BTSTACK_LC3_FRAME_DURATION_10000US, 130}
         }
     },
     {
         48000, 0x08, 6,
         {
-            {  "48_1", LC3_FRAME_DURATION_7500US, 75},
-            {  "48_2", LC3_FRAME_DURATION_10000US, 100},
-            {  "48_3", LC3_FRAME_DURATION_7500US, 90},
-            {  "48_4", LC3_FRAME_DURATION_10000US, 120},
-            {  "48_5", LC3_FRAME_DURATION_7500US, 117},
-            {  "48_6", LC3_FRAME_DURATION_10000US, 155}
+            {  "48_1", BTSTACK_LC3_FRAME_DURATION_7500US, 75},
+            {  "48_2", BTSTACK_LC3_FRAME_DURATION_10000US, 100},
+            {  "48_3", BTSTACK_LC3_FRAME_DURATION_7500US, 90},
+            {  "48_4", BTSTACK_LC3_FRAME_DURATION_10000US, 120},
+            {  "48_5", BTSTACK_LC3_FRAME_DURATION_7500US, 117},
+            {  "48_6", BTSTACK_LC3_FRAME_DURATION_10000US, 155}
         }
     },
 };
@@ -340,7 +340,7 @@ static void print_config(void) {
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
            num_bis,
            codec_configurations[menu_sampling_frequency].samplingrate_hz,
-           codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == LC3_FRAME_DURATION_7500US ? "7.5" : "10",
+           codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame,
            audio_source == AUDIO_SOURCE_SINE ? "Sine" : "Modplayer");
 }
@@ -355,7 +355,7 @@ static void setup_lc3_encoder(void){
     number_samples_per_frame = lc3_encoder->get_number_samples_per_frame(&encoder_contexts[0]);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
     printf("LC3 Encoder config: %u hz, frame duration %s ms, num samples %u, num octets %u\n",
-           sampling_frequency_hz, frame_duration == LC3_FRAME_DURATION_7500US ? "7.5" : "10",
+           sampling_frequency_hz, frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
            number_samples_per_frame, octets_per_frame);
 }
 
@@ -638,10 +638,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 if (sampling_frequency_hz == 44100){
                     framed_pdus = 1;
                     // same config as for 48k -> frame is longer by 48/44.1
-                    frame_duration_us = frame_duration == LC3_FRAME_DURATION_7500US ? 8163 : 10884;
+                    frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
                 } else {
                     framed_pdus = 0;
-                    frame_duration_us = frame_duration == LC3_FRAME_DURATION_7500US ? 7500 : 10000;
+                    frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
                 }
                 hci_send_cmd(&hci_le_create_big, 0, adv_handle, num_bis, frame_duration_us, octets_per_frame, 0x1F, 2, 2, 0, framed_pdus, 0, broadcast_code);
             }
@@ -733,11 +733,11 @@ static void stdin_process(char c){
 
             // update BASEs
             periodic_adv_data_1[17] = codec_configurations[menu_sampling_frequency].samplingrate_index;
-            periodic_adv_data_1[20] = (frame_duration == LC3_FRAME_DURATION_7500US) ? 0 : 1;
+            periodic_adv_data_1[20] = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;
             little_endian_store_16(periodic_adv_data_1, 23, octets_per_frame);
 
             periodic_adv_data_2[17] = codec_configurations[menu_sampling_frequency].samplingrate_index;
-            periodic_adv_data_2[20] = (frame_duration == LC3_FRAME_DURATION_7500US) ? 0 : 1;
+            periodic_adv_data_2[20] = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;
             little_endian_store_16(periodic_adv_data_2, 23, octets_per_frame);
 
             // setup mod player

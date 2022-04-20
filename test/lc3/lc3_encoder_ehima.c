@@ -52,8 +52,8 @@
 #include "btstack_util.h"
 #include "btstack_debug.h"
 
-#include "lc3.h"
-#include "lc3_ehima.h"
+#include "btstack_lc3.h"
+#include "btstack_lc3_ehima.h"
 
 #define MAX_NUM_CHANNELS 2
 #define MAX_SAMPLES_PER_FRAME 480
@@ -81,11 +81,11 @@ int main (int argc, const char * argv[]){
     const char * wav_filename = argv[argv_pos++];
     const char * lc3_filename = argv[argv_pos++];
 
-    lc3_frame_duration_t frame_duration;
+    btstack_lc3_frame_duration_t frame_duration;
     if (strcmp(argv[argv_pos], "10") == 0){
-        frame_duration = LC3_FRAME_DURATION_10000US;
+        frame_duration = BTSTACK_LC3_FRAME_DURATION_10000US;
     } else if (strcmp(argv[argv_pos], "7.5") == 0){
-        frame_duration = LC3_FRAME_DURATION_7500US;
+        frame_duration = BTSTACK_LC3_FRAME_DURATION_7500US;
     } else {
         printf("Invalid frame duration %s, must be either 7.5 or 10\n", argv[2]);
         return -10;
@@ -111,7 +111,7 @@ int main (int argc, const char * argv[]){
     // init decoder
     uint8_t channel;
     lc3_encoder_ehima_t encoder_contexts[MAX_NUM_CHANNELS];
-    const lc3_encoder_t * lc3_encoder;
+    const btstack_lc3_encoder_t * lc3_encoder;
     for (channel = 0 ; channel < num_channels ; channel++){
         lc3_encoder_ehima_t * encoder_context = &encoder_contexts[channel];
         lc3_encoder = lc3_encoder_ehima_init_instance(encoder_context);
@@ -127,7 +127,7 @@ int main (int argc, const char * argv[]){
     FILE * lc3_file = fopen(lc3_filename, "wb");
     if (!lc3_file) return 1;
 
-    uint16_t frame_duration_100us = (frame_duration == LC3_FRAME_DURATION_10000US) ? 100 : 75;
+    uint16_t frame_duration_100us = (frame_duration == BTSTACK_LC3_FRAME_DURATION_10000US) ? 100 : 75;
 
     uint8_t header[18];
     little_endian_store_16(header, 0, 0xcc1c);
@@ -145,7 +145,7 @@ int main (int argc, const char * argv[]){
     printf("LC3 file:          %s\n", lc3_filename);
     printf("Samplerate:        %u Hz\n", sampling_frequency_hz);
     printf("Channels:          %u\n", num_channels);
-    printf("Frame duration:    %s ms\n", (frame_duration == LC3_FRAME_DURATION_10000US) ? "10" : "7.5");
+    printf("Frame duration:    %s ms\n", (frame_duration == BTSTACK_LC3_FRAME_DURATION_10000US) ? "10" : "7.5");
     printf("Bitrate:           %u\n", bitrate);
     printf("Samples per Frame: %u\n", number_samples_per_frame);
 

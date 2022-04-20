@@ -66,8 +66,8 @@
 #include "gap.h"
 #include "hci.h"
 #include "hci_cmd.h"
-#include "lc3.h"
-#include "lc3_ehima.h"
+#include "btstack_lc3.h"
+#include "btstack_lc3_ehima.h"
 #include "wav_util.h"
 
 // max config
@@ -145,13 +145,13 @@ static uint32_t lc3_frames;
 
 // lc3 codec config
 static uint32_t sampling_frequency_hz;
-static lc3_frame_duration_t frame_duration;
+static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
 static uint8_t  num_bis;
 
 // lc3 decoder
-static const lc3_decoder_t * lc3_decoder;
+static const btstack_lc3_decoder_t * lc3_decoder;
 static lc3_decoder_ehima_t decoder_contexts[MAX_NUM_BIS];
 static int16_t pcm[MAX_NUM_BIS * MAX_SAMPLES_PER_FRAME];
 
@@ -197,7 +197,7 @@ static void open_lc3_file(void) {
     printf("LC3 binary file: %s\n", filename_lc3);
 
     // calc bps
-    uint16_t frame_duration_100us = (frame_duration == LC3_FRAME_DURATION_7500US) ? 75 : 100;
+    uint16_t frame_duration_100us = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 75 : 100;
     uint32_t bits_per_second = (uint32_t) octets_per_frame * num_bis * 8 * 10000 / frame_duration_100us;
 
     // write header for floating point implementation
@@ -291,8 +291,8 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                                     break;
                                 case 0x02: // 0 = 7.5, 1 = 10 ms
                                     frame_duration_index =  codec_specific_configuration[codec_offset+1];
-                                    frame_duration = (frame_duration_index == 0) ? LC3_FRAME_DURATION_7500US : LC3_FRAME_DURATION_10000US;
-                                    printf("    - frame duration[%u]: %s ms\n", i, (frame_duration == LC3_FRAME_DURATION_7500US) ? "7.5" : "10");
+                                    frame_duration = (frame_duration_index == 0) ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
+                                    printf("    - frame duration[%u]: %s ms\n", i, (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? "7.5" : "10");
                                     break;
                                 case 0x04:  // octets per coding frame
                                     octets_per_frame = little_endian_read_16(codec_specific_configuration, codec_offset+1);

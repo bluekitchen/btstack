@@ -52,8 +52,8 @@
 #include "btstack_util.h"
 #include "btstack_debug.h"
 
-#include "lc3.h"
-#include "lc3_ehima.h"
+#include "btstack_lc3.h"
+#include "btstack_lc3_ehima.h"
 
 #define MAX_NUM_CHANNELS 2
 #define MAX_SAMPLES_PER_FRAME 480
@@ -119,13 +119,13 @@ int main (int argc, const char * argv[]){
     }
 
     // pick frame duration
-    lc3_frame_duration_t duration2;
+    btstack_lc3_frame_duration_t duration2;
     switch (frame_us) {
         case 7500:
-            duration2 = LC3_FRAME_DURATION_7500US;
+            duration2 = BTSTACK_LC3_FRAME_DURATION_7500US;
             break;
         case 10000:
-            duration2 = LC3_FRAME_DURATION_10000US;
+            duration2 = BTSTACK_LC3_FRAME_DURATION_10000US;
             break;
         default:
             return -10;
@@ -134,7 +134,7 @@ int main (int argc, const char * argv[]){
     // init decoder
     uint8_t channel;
     lc3_decoder_ehima_t decoder_contexts[MAX_NUM_CHANNELS];
-    const lc3_decoder_t * lc3_decoder;
+    const btstack_lc3_decoder_t * lc3_decoder;
     for (channel = 0 ; channel < num_channels ; channel++){
         lc3_decoder_ehima_t * decoder_context = &decoder_contexts[channel];
         lc3_decoder = lc3_decoder_ehima_init_instance(decoder_context);

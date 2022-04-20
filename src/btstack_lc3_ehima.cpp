@@ -29,6 +29,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "btstack_lc3_ehima.c"
+
 /**
  * @title LC3 EHIMA Wrapper
  */
@@ -38,14 +40,14 @@
 
 #ifdef HAVE_LC3_EHIMA
 
-#include "lc3_ehima.h"
+#include "btstack_lc3_ehima.h"
 #include <Lc3Config.hpp>
 #include <Lc3Decoder.hpp>
 #include <Lc3Encoder.hpp>
 
 /* Decoder implementation */
 
-static uint8_t lc3_decoder_ehima_configure(void * context, uint32_t sample_rate, lc3_frame_duration_t frame_duration){
+static uint8_t lc3_decoder_ehima_configure(void * context, uint32_t sample_rate, btstack_lc3_frame_duration_t frame_duration){
     lc3_decoder_ehima_t * instance = static_cast<lc3_decoder_ehima_t*>(context);
 
     // free decoder if it exists
@@ -61,10 +63,10 @@ static uint8_t lc3_decoder_ehima_configure(void * context, uint32_t sample_rate,
     // map frame duration
     Lc3Config::FrameDuration duration;
     switch (frame_duration) {
-        case LC3_FRAME_DURATION_7500US:
+        case BTSTACK_LC3_FRAME_DURATION_7500US:
             duration = Lc3Config::FrameDuration::d7p5ms;
             break;
-        case LC3_FRAME_DURATION_10000US:
+        case BTSTACK_LC3_FRAME_DURATION_10000US:
             duration = Lc3Config::FrameDuration::d10ms;
             break;
         default:
@@ -95,21 +97,21 @@ static uint8_t lc3_decoder_ehima_decode(void * context, const uint8_t *bytes, ui
     return ERROR_CODE_SUCCESS;
 }
 
-static const lc3_decoder_t l3c_decoder_ehima_instance = {
+static const btstack_lc3_decoder_t l3c_decoder_ehima_instance = {
     lc3_decoder_ehima_configure,
     lc3_decoder_ehima_get_number_octets_for_bitrate,
     lc3_decoder_ehima_get_number_samples_per_frame,
     lc3_decoder_ehima_decode
 };
 
-const lc3_decoder_t * lc3_decoder_ehima_init_instance(lc3_decoder_ehima_t * context){
+const btstack_lc3_decoder_t * lc3_decoder_ehima_init_instance(lc3_decoder_ehima_t * context){
     memset(context, 0, sizeof(lc3_decoder_ehima_t));
     return &l3c_decoder_ehima_instance;
 }
 
 /* Encoder implementation */
 
-static uint8_t lc3_encoder_ehima_configure(void * context, uint32_t sample_rate, lc3_frame_duration_t frame_duration){
+static uint8_t lc3_encoder_ehima_configure(void * context, uint32_t sample_rate, btstack_lc3_frame_duration_t frame_duration){
     lc3_encoder_ehima_t * instance = static_cast<lc3_encoder_ehima_t*>(context);
 
     // free decoder if it exists
@@ -125,10 +127,10 @@ static uint8_t lc3_encoder_ehima_configure(void * context, uint32_t sample_rate,
     // map frame duration
     Lc3Config::FrameDuration duration;
     switch (frame_duration) {
-        case LC3_FRAME_DURATION_7500US:
+        case BTSTACK_LC3_FRAME_DURATION_7500US:
             duration = Lc3Config::FrameDuration::d7p5ms;
             break;
-        case LC3_FRAME_DURATION_10000US:
+        case BTSTACK_LC3_FRAME_DURATION_10000US:
             duration = Lc3Config::FrameDuration::d10ms;
             break;
         default:
@@ -162,14 +164,14 @@ static uint8_t lc3_encoder_ehima_encode(void * context, const int16_t* pcm_in, u
     return ERROR_CODE_SUCCESS;
 }
 
-static const lc3_encoder_t l3c_encoder_ehima_instance = {
+static const btstack_lc3_encoder_t l3c_encoder_ehima_instance = {
         lc3_encoder_ehima_configure,
         lc3_encoder_ehima_get_bitrate_for_number_of_octets,
         lc3_encoder_ehima_get_number_samples_per_frame,
         lc3_encoder_ehima_encode
 };
 
-const lc3_encoder_t * lc3_encoder_ehima_init_instance(lc3_encoder_ehima_t * context){
+const btstack_lc3_encoder_t * lc3_encoder_ehima_init_instance(lc3_encoder_ehima_t * context){
     memset(context, 0, sizeof(lc3_decoder_ehima_t));
     return &l3c_encoder_ehima_instance;
 }

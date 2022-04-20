@@ -36,8 +36,8 @@
  *
  */
 
-#ifndef LC3_H
-#define LC3_H
+#ifndef BTSTACK_LC3_H
+#define BTSTACK_LC3_H
 
 #include <stdint.h>
 
@@ -48,9 +48,9 @@ extern "C" {
 /* API_START */
 
 typedef enum {
-    LC3_FRAME_DURATION_10000US,
-    LC3_FRAME_DURATION_7500US
-} lc3_frame_duration_t;
+    BTSTACK_LC3_FRAME_DURATION_10000US,
+    BTSTACK_LC3_FRAME_DURATION_7500US
+} btstack_lc3_frame_duration_t;
 
 typedef struct {
 
@@ -62,7 +62,7 @@ typedef struct {
      * @param context
      * @return status
      */
-    uint8_t (*configure)(void * context, uint32_t sample_rate, lc3_frame_duration_t frame_duration);
+    uint8_t (*configure)(void * context, uint32_t sample_rate, btstack_lc3_frame_duration_t frame_duration);
 
     /**
      * Get number of octets per LC3 frame for bitrate
@@ -93,7 +93,7 @@ typedef struct {
      uint8_t (*decode)(void * context, const uint8_t *bytes, uint16_t byte_count, uint8_t BFI,
                        int16_t* pcm_out, uint16_t pcm_out_size, uint8_t * BEC_detect);
 
-} lc3_decoder_t;
+} btstack_lc3_decoder_t;
 
 typedef struct {
     /**
@@ -104,7 +104,7 @@ typedef struct {
      * @param context
      * @return status
      */
-    uint8_t (*configure)(void * context, uint32_t sample_rate, lc3_frame_duration_t frame_duration);
+    uint8_t (*configure)(void * context, uint32_t sample_rate, btstack_lc3_frame_duration_t frame_duration);
 
     /**
      * Get bitrate from number of octets per LC3 frame
@@ -131,7 +131,7 @@ typedef struct {
      */
     uint8_t (*encode)(void * context, const int16_t* pcm_in, uint8_t *bytes, uint16_t byte_count);
 
-} lc3_encoder_t;
+} btstack_lc3_encoder_t;
 
 /* API_END */
 

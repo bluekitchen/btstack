@@ -33,11 +33,11 @@
  * @title LC3 EHIMA Implementation
  */
 
-#ifndef LC3_EHIMA_H
-#define LC3_EHIMA_H
+#ifndef BTSTACK_LC3_EHIMA_H
+#define BTSTACK_LC3_EHIMA_H
 
 #include <stdint.h>
-#include "lc3.h"
+#include "btstack_lc3.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -46,32 +46,32 @@ extern "C" {
 /* API_START */
 
 typedef struct {
-    void *               decoder;
-    uint32_t             sample_rate;
-    lc3_frame_duration_t frame_duration;
+    void *                          decoder;
+    uint32_t                        sample_rate;
+    btstack_lc3_frame_duration_t    frame_duration;
 } lc3_decoder_ehima_t;
 
 typedef struct {
-    void *               encoder;
-    uint32_t             sample_rate;
-    lc3_frame_duration_t frame_duration;
+    void *                          encoder;
+    uint32_t                        sample_rate;
+    btstack_lc3_frame_duration_t    frame_duration;
 } lc3_encoder_ehima_t;
 
 /**
  * Init LC3 Decoder Instance
  * @param context for EHIMA LC3 decoder
  */
-const lc3_decoder_t * lc3_decoder_ehima_init_instance(lc3_decoder_ehima_t * context);
+const btstack_lc3_decoder_t * lc3_decoder_ehima_init_instance(lc3_decoder_ehima_t * context);
 
 /**
  * Init LC3 Decoder Instance
  * @param context for EHIMA LC3 decoder
  */
-const lc3_encoder_t * lc3_encoder_ehima_init_instance(lc3_encoder_ehima_t * context);
+const btstack_lc3_encoder_t * lc3_encoder_ehima_init_instance(lc3_encoder_ehima_t * context);
 
 /* API_END */
 
 #if defined __cplusplus
 }
 #endif
-#endif // LC3_EHIMA_H
+#endif // BTSTACK_LC3_EHIMA_H

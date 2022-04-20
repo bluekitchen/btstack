@@ -68,8 +68,8 @@
 #include "gap.h"
 #include "hci.h"
 #include "hci_cmd.h"
-#include "lc3.h"
-#include "lc3_ehima.h"
+#include "btstack_lc3.h"
+#include "btstack_lc3_ehima.h"
 #include "wav_util.h"
 
 // max config
@@ -148,13 +148,13 @@ static uint32_t lc3_frames;
 
 // lc3 codec config
 static uint32_t sampling_frequency_hz;
-static lc3_frame_duration_t frame_duration;
+static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
 static uint8_t  num_channels;
 
 // lc3 decoder
-static const lc3_decoder_t * lc3_decoder;
+static const btstack_lc3_decoder_t * lc3_decoder;
 static lc3_decoder_ehima_t decoder_contexts[MAX_CHANNELS];
 static int16_t pcm[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME];
 
@@ -200,7 +200,7 @@ static void open_lc3_file(void) {
     printf("LC3 binary file: %s\n", filename_lc3);
 
     // calc bps
-    uint16_t frame_duration_100us = (frame_duration == LC3_FRAME_DURATION_7500US) ? 75 : 100;
+    uint16_t frame_duration_100us = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 75 : 100;
     uint32_t bits_per_second = (uint32_t) octets_per_frame * num_channels * 8 * 10000 / frame_duration_100us;
 
     // write header for floating point implementation
@@ -330,7 +330,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             // sampling frequency
                             sampling_frequency_hz = 1000 * data[5];
                             // frame duration
-                            frame_duration = data[6] == 0 ? LC3_FRAME_DURATION_7500US : LC3_FRAME_DURATION_10000US;
+                            frame_duration = data[6] == 0 ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
                             // octets per frame
                             octets_per_frame = data[7];
                             // done
@@ -413,10 +413,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 if (sampling_frequency_hz == 44100){
                     framed_pdus = 1;
                     // same config as for 48k -> frame is longer by 48/44.1
-                    frame_duration_us = frame_duration == LC3_FRAME_DURATION_7500US ? 8163 : 10884;
+                    frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
                 } else {
                     framed_pdus = 0;
-                    frame_duration_us = frame_duration == LC3_FRAME_DURATION_7500US ? 7500 : 10000;
+                    frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
                 }
                 printf("Send: LE Set CIG Parameters\n");
 
