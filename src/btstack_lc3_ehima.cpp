@@ -90,10 +90,11 @@ static uint16_t lc3_decoder_ehima_get_number_samples_per_frame(void * context){
     return decoder->lc3Config.NF;
 }
 
-static uint8_t lc3_decoder_ehima_decode(void * context, const uint8_t *bytes, uint16_t byte_count, uint8_t BFI, int16_t* pcm_out, uint16_t pcm_out_size, uint8_t * BEC_detect){
+static uint8_t lc3_decoder_ehima_decode(void * context, const uint8_t *bytes, uint16_t byte_count, uint8_t BFI, int16_t* pcm_out, uint16_t stride, uint8_t * BEC_detect){
+    (void)stride;
     lc3_decoder_ehima_t * instance = static_cast<lc3_decoder_ehima_t*>(context);
     Lc3Decoder * decoder = static_cast<Lc3Decoder*>(instance->decoder);
-    uint8_t res = decoder->run(bytes, byte_count, BFI, pcm_out, pcm_out_size, *BEC_detect);
+    uint8_t res = decoder->run(bytes, byte_count, BFI, pcm_out, decoder->lc3Config.NF, *BEC_detect);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -157,7 +158,8 @@ static uint16_t lc3_encoder_ehima_get_number_samples_per_frame(void * context){
     return encoder->lc3Config.NF;
 }
 
-static uint8_t lc3_encoder_ehima_encode(void * context, const int16_t* pcm_in, uint8_t *bytes, uint16_t byte_count){
+static uint8_t lc3_encoder_ehima_encode(void * context, const int16_t* pcm_in, uint16_t stride, uint8_t *bytes, uint16_t byte_count){
+    (void)stride;
     lc3_encoder_ehima_t * instance = static_cast<lc3_encoder_ehima_t*>(context);
     Lc3Encoder * encoder = static_cast<Lc3Encoder*>(instance->encoder);
     uint8_t res = encoder->run(pcm_in, byte_count, bytes);

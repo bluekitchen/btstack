@@ -582,7 +582,7 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             uint8_t tmp_BEC_detect;
             uint8_t BFI = 0;
             (void) lc3_decoder->decode(&decoder_contexts[channel], &packet[offset], octets_per_frame, BFI,
-                                       &pcm[channel * MAX_SAMPLES_PER_FRAME], number_samples_per_frame,
+                                       &pcm[channel * MAX_SAMPLES_PER_FRAME], 1,
                                        &tmp_BEC_detect);
             offset += octets_per_frame;
         }

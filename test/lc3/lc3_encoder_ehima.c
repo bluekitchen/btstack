@@ -168,7 +168,7 @@ int main (int argc, const char * argv[]){
             for (sample = 0 ; sample < number_samples_per_frame ; sample++){
                 frame_buffer[sample] = samples_buffer[ sample * num_channels + channel];
             }
-            status = lc3_encoder->encode(&encoder_contexts[channel], frame_buffer, write_buffer, bytes_per_frame);
+            status = lc3_encoder->encode(&encoder_contexts[channel], frame_buffer, 1, write_buffer, bytes_per_frame);
             if (status != ERROR_CODE_SUCCESS){
                 printf("Error %u\n", status);
                 break;

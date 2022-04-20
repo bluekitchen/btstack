@@ -86,12 +86,12 @@ typedef struct {
      * @param byte_count
      * @param BFI Bad Frame Indication flags
      * @param pcm_out buffer for decoded PCM samples
-     * @param pcm_out_size size of PCM sample buffer
+     * @param stride count between two consecutive samples
      * @param BEC_detect Bit Error Detected flag
      * @return status
      */
      uint8_t (*decode)(void * context, const uint8_t *bytes, uint16_t byte_count, uint8_t BFI,
-                       int16_t* pcm_out, uint16_t pcm_out_size, uint8_t * BEC_detect);
+                       int16_t* pcm_out, uint16_t stride, uint8_t * BEC_detect);
 
 } btstack_lc3_decoder_t;
 
@@ -125,11 +125,12 @@ typedef struct {
      * Encode LC3 Frame
      * @param context
      * @param pcm_in buffer for decoded PCM samples
+     * @param stride count between two consecutive samples
      * @param bytes
      * @param byte_count
      * @return status
      */
-    uint8_t (*encode)(void * context, const int16_t* pcm_in, uint8_t *bytes, uint16_t byte_count);
+    uint8_t (*encode)(void * context, const int16_t* pcm_in, uint16_t stride, uint8_t *bytes, uint16_t byte_count);
 
 } btstack_lc3_encoder_t;
 

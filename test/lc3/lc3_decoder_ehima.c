@@ -212,7 +212,7 @@ int main (int argc, const char * argv[]){
             uint8_t tmp_BEC_detect;
             uint8_t BFI = 0;
 
-            uint8_t status = lc3_decoder->decode(&decoder_contexts[channel], read_buffer, bytes_per_frame, BFI, &pcm[channel * MAX_SAMPLES_PER_FRAME], number_samples_per_frame, &tmp_BEC_detect);
+            uint8_t status = lc3_decoder->decode(&decoder_contexts[channel], read_buffer, bytes_per_frame, BFI, &pcm[channel * MAX_SAMPLES_PER_FRAME], 1, &tmp_BEC_detect);
             if (status != ERROR_CODE_SUCCESS){
                 printf("Error %u\n", status);
                 done = true;
