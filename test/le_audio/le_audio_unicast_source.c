@@ -366,7 +366,7 @@ static void encode_and_send(uint8_t cis_index){
     uint8_t channel;
     uint16_t offset = 8;
     for (channel = 0; channel < num_channels; channel++){
-        lc3_encoder->encode(&encoder_contexts[channel], &pcm[channel * MAX_SAMPLES_PER_FRAME], 1, &buffer[offset], octets_per_frame);
+        lc3_encoder->encode_signed_16(&encoder_contexts[channel], &pcm[channel * MAX_SAMPLES_PER_FRAME], 1, &buffer[offset], octets_per_frame);
         offset += octets_per_frame;
     }
 #endif

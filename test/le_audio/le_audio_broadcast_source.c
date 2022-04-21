@@ -446,7 +446,7 @@ static void encode_and_send(uint8_t bis_index){
     memset(&buffer[9], iso_frame_counter, octets_per_frame - 1);
 #else
     // encode as lc3
-    lc3_encoder->encode(&encoder_contexts[bis_index], &pcm[bis_index * MAX_SAMPLES_PER_FRAME], 1, &buffer[8], octets_per_frame);
+    lc3_encoder->encode_signed_16(&encoder_contexts[bis_index], &pcm[bis_index * MAX_SAMPLES_PER_FRAME], 1, &buffer[8], octets_per_frame);
 #endif
     // send
     hci_send_iso_packet_buffer(4 + 0 + 4 + octets_per_frame);

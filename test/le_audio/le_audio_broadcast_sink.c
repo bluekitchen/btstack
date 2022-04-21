@@ -598,7 +598,7 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         // decode codec frame
         uint8_t tmp_BEC_detect;
         uint8_t BFI = 0;
-        (void) lc3_decoder->decode(&decoder_contexts[bis_channel], &packet[offset], iso_sdu_length, BFI,
+        (void) lc3_decoder->decode_signed_16(&decoder_contexts[bis_channel], &packet[offset], iso_sdu_length, BFI,
                                    &pcm[bis_channel * MAX_SAMPLES_PER_FRAME], 1,
                                    &tmp_BEC_detect);
 

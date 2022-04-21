@@ -80,7 +80,7 @@ typedef struct {
     uint16_t (*get_number_samples_per_frame)(void * context);
 
     /**
-     * Decode LC3 Frame
+     * Decode LC3 Frame into signed 16-bit samples
      * @param context
      * @param bytes
      * @param byte_count
@@ -90,8 +90,22 @@ typedef struct {
      * @param BEC_detect Bit Error Detected flag
      * @return status
      */
-     uint8_t (*decode)(void * context, const uint8_t *bytes, uint16_t byte_count, uint8_t BFI,
+     uint8_t (*decode_signed_16)(void * context, const uint8_t *bytes, uint16_t byte_count, uint8_t BFI,
                        int16_t* pcm_out, uint16_t stride, uint8_t * BEC_detect);
+
+    /**
+     * Decode LC3 Frame into signed 24-bit samples, sign-extended to 32-bit
+     * @param context
+     * @param bytes
+     * @param byte_count
+     * @param BFI Bad Frame Indication flags
+     * @param pcm_out buffer for decoded PCM samples
+     * @param stride count between two consecutive samples
+     * @param BEC_detect Bit Error Detected flag
+     * @return status
+     */
+    uint8_t (*decode_signed_24)(void * context, const uint8_t *bytes, uint16_t byte_count, uint8_t BFI,
+                                int32_t* pcm_out, uint16_t stride, uint8_t * BEC_detect);
 
 } btstack_lc3_decoder_t;
 
@@ -122,7 +136,7 @@ typedef struct {
     uint16_t (*get_number_samples_per_frame)(void * context);
 
     /**
-     * Encode LC3 Frame
+     * Encode LC3 Frame with 16-bit signed PCM samples
      * @param context
      * @param pcm_in buffer for decoded PCM samples
      * @param stride count between two consecutive samples
@@ -130,7 +144,18 @@ typedef struct {
      * @param byte_count
      * @return status
      */
-    uint8_t (*encode)(void * context, const int16_t* pcm_in, uint16_t stride, uint8_t *bytes, uint16_t byte_count);
+    uint8_t (*encode_signed_16)(void * context, const int16_t* pcm_in, uint16_t stride, uint8_t *bytes, uint16_t byte_count);
+
+    /**
+     * Encode LC3 Frame with 24-bit signed PCM samples, sign-extended to 32 bit
+     * @param context
+     * @param pcm_in buffer for decoded PCM samples
+     * @param stride count between two consecutive samples
+     * @param bytes
+     * @param byte_count
+     * @return status
+     */
+    uint8_t (*encode_signed_24)(void * context, const int32_t* pcm_in, uint16_t stride, uint8_t *bytes, uint16_t byte_count);
 
 } btstack_lc3_encoder_t;
 
