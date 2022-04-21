@@ -6032,7 +6032,8 @@ static bool hci_run_general_pending_commands(void){
                 return true;
             case CON_PARAMETER_UPDATE_NEGATIVE_REPLY:
                 connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
-                hci_send_cmd(&hci_le_remote_connection_parameter_request_negative_reply, ERROR_CODE_UNSUPPORTED_LMP_PARAMETER_VALUE_UNSUPPORTED_LL_PARAMETER_VALUE);
+                hci_send_cmd(&hci_le_remote_connection_parameter_request_negative_reply, connection->con_handle,
+                             ERROR_CODE_UNACCEPTABLE_CONNECTION_PARAMETERS);
                 return true;
             default:
                 break;
