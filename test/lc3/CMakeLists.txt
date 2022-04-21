@@ -17,26 +17,14 @@ endif()
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
 include_directories(.)
 
-include_directories(../../3rd-party/kissfft)
-include_directories(../../3rd-party/liblc3codec)
+include_directories(../../3rd-party/lc3-google/include)
 include_directories(../../3rd-party/tinydir)
-include_directories(../../src)
 include_directories(../../platform/posix)
-
-include_directories(../../3rd-party/liblc3codec/Api)
-include_directories(../../3rd-party/liblc3codec/Common)
-include_directories(../../3rd-party/liblc3codec/Common/KissFft)
-include_directories(../../3rd-party/liblc3codec/Common/Tables)
-include_directories(../../3rd-party/liblc3codec/TestSupport)
+include_directories(../../src)
 
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
 file(GLOB SOURCES_SRC       "../../src/*.c" "../../src/*.cpp")
-file(GLOB LC3_COMMON        "../../3rd-party/liblc3codec/Common/*.cpp")
-file(GLOB LC3_TABLES        "../../3rd-party/liblc3codec/Common/Tables/*.cpp")
-file(GLOB LC3_DECODER       "../../3rd-party/liblc3codec/Decoder/*.cpp")
-file(GLOB LC3_ENCODER       "../../3rd-party/liblc3codec/Encoder/*.cpp")
-
-set (SOURCES_LC3 ${LC3_COMMON} ${LC3_TABLES} ${LC3_DECODER} ${LC3_ENCODER} ${LC3_TESTSUPPORT})
+file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 
 # Enable ASAN
 add_compile_options( -g -fsanitize=address)
@@ -46,7 +34,7 @@ add_link_options(       -fsanitize=address)
 file(GLOB EXAMPLES "lc3_*.c")
 foreach(EXAMPLE_FILE ${EXAMPLES})
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-	set (SOURCE_FILES ${SOURCES_POSIX} ${SOURCES_SRC} ${SOURCES_LC3} ${EXAMPLE_FILE})
+	set (SOURCE_FILES ${SOURCES_POSIX} ${SOURCES_SRC} ${SOURCES_LC3_GOOGLE} ${EXAMPLE_FILE})
 	message("Tool: ${EXAMPLE}")
 	add_executable(${EXAMPLE} ${SOURCE_FILES} )
 endforeach(EXAMPLE_FILE)

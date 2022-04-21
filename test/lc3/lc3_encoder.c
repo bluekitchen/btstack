@@ -53,7 +53,7 @@
 #include "btstack_debug.h"
 
 #include "btstack_lc3.h"
-#include "btstack_lc3_ehima.h"
+#include "btstack_lc3_google.h"
 
 #define MAX_NUM_CHANNELS 2
 #define MAX_SAMPLES_PER_FRAME 480
@@ -110,11 +110,11 @@ int main (int argc, const char * argv[]){
 
     // init decoder
     uint8_t channel;
-    lc3_encoder_ehima_t encoder_contexts[MAX_NUM_CHANNELS];
+    btstack_lc3_encoder_google_t encoder_contexts[MAX_NUM_CHANNELS];
     const btstack_lc3_encoder_t * lc3_encoder;
     for (channel = 0 ; channel < num_channels ; channel++){
-        lc3_encoder_ehima_t * encoder_context = &encoder_contexts[channel];
-        lc3_encoder = lc3_encoder_ehima_init_instance(encoder_context);
+        btstack_lc3_encoder_google_t * encoder_context = &encoder_contexts[channel];
+        lc3_encoder = btstack_lc3_encoder_google_init_instance(encoder_context);
         lc3_encoder->configure(encoder_context, sampling_frequency_hz, frame_duration);
     }
     uint32_t bitrate_per_channel = lc3_encoder->get_bitrate_for_number_of_octets(&encoder_contexts[0], bytes_per_frame);

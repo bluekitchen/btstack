@@ -55,7 +55,7 @@
 #include "hci_cmd.h"
 #include "hci_dump.h"
 #include "btstack_lc3.h"
-#include "btstack_lc3_ehima.h"
+#include "btstack_lc3_google.h"
 
 #include "hxcmod.h"
 #include "mods/mod.h"
@@ -241,7 +241,7 @@ static uint8_t  num_bis = 1;
 
 // lc3 encoder
 static const btstack_lc3_encoder_t * lc3_encoder;
-static lc3_encoder_ehima_t encoder_contexts[MAX_NUM_BIS];
+static btstack_lc3_encoder_google_t encoder_contexts[MAX_NUM_BIS];
 static int16_t pcm[MAX_NUM_BIS * MAX_SAMPLES_PER_FRAME];
 static uint32_t time_generation_ms;
 
@@ -348,8 +348,8 @@ static void print_config(void) {
 static void setup_lc3_encoder(void){
     uint8_t channel;
     for (channel = 0 ; channel < num_bis ; channel++){
-        lc3_encoder_ehima_t * context = &encoder_contexts[channel];
-        lc3_encoder = lc3_encoder_ehima_init_instance(context);
+        btstack_lc3_encoder_google_t * context = &encoder_contexts[channel];
+        lc3_encoder = btstack_lc3_encoder_google_init_instance(context);
         lc3_encoder->configure(context, sampling_frequency_hz, frame_duration);
     }
     number_samples_per_frame = lc3_encoder->get_number_samples_per_frame(&encoder_contexts[0]);

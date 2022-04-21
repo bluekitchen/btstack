@@ -37,7 +37,7 @@
  
 // *****************************************************************************
 //
-// LC3 decoder EHIMA
+// LC3 decoder Google
 //
 // *****************************************************************************
 
@@ -53,7 +53,7 @@
 #include "btstack_debug.h"
 
 #include "btstack_lc3.h"
-#include "btstack_lc3_ehima.h"
+#include "btstack_lc3_google.h"
 
 #define MAX_NUM_CHANNELS 2
 #define MAX_SAMPLES_PER_FRAME 480
@@ -133,11 +133,11 @@ int main (int argc, const char * argv[]){
 
     // init decoder
     uint8_t channel;
-    lc3_decoder_ehima_t decoder_contexts[MAX_NUM_CHANNELS];
+    btstack_lc3_decoder_google_t decoder_contexts[MAX_NUM_CHANNELS];
     const btstack_lc3_decoder_t * lc3_decoder;
     for (channel = 0 ; channel < num_channels ; channel++){
-        lc3_decoder_ehima_t * decoder_context = &decoder_contexts[channel];
-        lc3_decoder = lc3_decoder_ehima_init_instance(decoder_context);
+        btstack_lc3_decoder_google_t * decoder_context = &decoder_contexts[channel];
+        lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
         lc3_decoder->configure(decoder_context, sample_rate_hz, duration2);
     }
 

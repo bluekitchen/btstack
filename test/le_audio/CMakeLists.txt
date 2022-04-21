@@ -75,12 +75,7 @@ include_directories(../../3rd-party/bluedroid/encoder/include)
 include_directories(../../3rd-party/md5)
 include_directories(../../3rd-party/hxcmod-player)
 include_directories(../../3rd-party/hxcmod-player/mod)
-include_directories(../../3rd-party/kissfft)
-include_directories(../../3rd-party/liblc3codec/Api)
-include_directories(../../3rd-party/liblc3codec/Common)
-include_directories(../../3rd-party/liblc3codec/Common/KissFft)
-include_directories(../../3rd-party/liblc3codec/Common/Tables)
-include_directories(../../3rd-party/liblc3codec/TestSupport)
+include_directories(../../3rd-party/lc3-google/include)
 include_directories(../../3rd-party/lwip/core/src/include)
 include_directories(../../3rd-party/lwip/dhcp-server)
 include_directories(../../3rd-party/rijndael)
@@ -107,13 +102,7 @@ file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
 file(GLOB SOURCES_MAIN      "main.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
-
-file(GLOB LC3_COMMON        "../../3rd-party/liblc3codec/Common/*.cpp")
-file(GLOB LC3_TABLES        "../../3rd-party/liblc3codec/Common/Tables/*.cpp")
-file(GLOB LC3_DECODER       "../../3rd-party/liblc3codec/Decoder/*.cpp")
-file(GLOB LC3_ENCODER       "../../3rd-party/liblc3codec/Encoder/*.cpp")
-
-set (SOURCES_LC3 ${LC3_COMMON} ${LC3_TABLES} ${LC3_DECODER} ${LC3_ENCODER} ${LC3_TESTSUPPORT})
+file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 
 file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
 list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
@@ -124,7 +113,7 @@ list(REMOVE_ITEM SOURCES_POSIX ${SOURCES_POSIX_OFF})
 set(SOURCES 
 	${SOURCES_MD5}
 	${SOURCES_YXML}
-	${SOURCES_LC3}
+	${SOURCES_LC3_GOOGLE}
 	${SOURCES_POSIX}
 	${SOURCES_MAIN}
 	${SOURCES_RIJNDAEL}

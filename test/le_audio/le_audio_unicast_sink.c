@@ -69,7 +69,7 @@
 #include "hci.h"
 #include "hci_cmd.h"
 #include "btstack_lc3.h"
-#include "btstack_lc3_ehima.h"
+#include "btstack_lc3_google.h"
 #include "wav_util.h"
 
 // max config
@@ -155,7 +155,7 @@ static uint8_t  num_channels;
 
 // lc3 decoder
 static const btstack_lc3_decoder_t * lc3_decoder;
-static lc3_decoder_ehima_t decoder_contexts[MAX_CHANNELS];
+static btstack_lc3_decoder_google_t decoder_contexts[MAX_CHANNELS];
 static int16_t pcm[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME];
 
 // playback
@@ -219,8 +219,8 @@ static void open_lc3_file(void) {
 static void setup_lc3_decoder(void){
     uint8_t channel;
     for (channel = 0 ; channel < num_channels ; channel++){
-        lc3_decoder_ehima_t * decoder_context = &decoder_contexts[channel];
-        lc3_decoder = lc3_decoder_ehima_init_instance(decoder_context);
+        btstack_lc3_decoder_google_t * decoder_context = &decoder_contexts[channel];
+        lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
         lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration);
     }
     number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(&decoder_contexts[0]);
