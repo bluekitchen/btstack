@@ -55,6 +55,7 @@ include_directories(.)
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
 include_directories(../../3rd-party/bluedroid/encoder/include)
+include_directories(../../3rd-party/lc3-google/include)
 include_directories(../../3rd-party/md5)
 include_directories(../../3rd-party/hxcmod-player)
 include_directories(../../3rd-party/hxcmod-player/mod)
@@ -86,6 +87,7 @@ file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
 file(GLOB SOURCES_LIBUSB    "../../port/libusb/*.c" "../../platform/libusb/*.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 file(GLOB SOURCES_REALTEK   "../../chipset/realtek/*.c")
+file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 
 set(LWIP_CORE_SRC 
 	../../3rd-party/lwip/core/src/core/def.c
@@ -145,6 +147,7 @@ set(SOURCES
 	${SOURCES_POSIX}
 	${SOURCES_RIJNDAEL}
 	${SOURCES_LIBUSB}
+	${SOURCES_LC3_GOOGLE}
 	${SOURCES_SRC}
 	${SOURCES_BLE}
 	${SOURCES_GATT}
