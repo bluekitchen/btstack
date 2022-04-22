@@ -60,7 +60,6 @@
 
 static uint8_t  write_buffer[200];
 static int16_t  samples_buffer[MAX_SAMPLES_PER_FRAME + MAX_NUM_CHANNELS];
-static int16_t  frame_buffer[MAX_SAMPLES_PER_FRAME];
 
 static uint32_t frame_count = 0;
 
@@ -164,11 +163,7 @@ int main (int argc, const char * argv[]){
 
         // encode frame by frame
         for (channel = 0; channel < num_channels ; channel++){
-            uint16_t sample;
-            for (sample = 0 ; sample < number_samples_per_frame ; sample++){
-                frame_buffer[sample] = samples_buffer[ sample * num_channels + channel];
-            }
-            status = lc3_encoder->encode_signed_16(&encoder_contexts[channel], frame_buffer, 1, write_buffer, bytes_per_frame);
+            status = lc3_encoder->encode_signed_16(&encoder_contexts[channel], &samples_buffer[channel], num_channels, write_buffer, bytes_per_frame);
             if (status != ERROR_CODE_SUCCESS){
                 printf("Error %u\n", status);
                 break;

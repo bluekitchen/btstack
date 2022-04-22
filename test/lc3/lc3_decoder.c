@@ -212,7 +212,7 @@ int main (int argc, const char * argv[]){
             uint8_t tmp_BEC_detect;
             uint8_t BFI = 0;
 
-            uint8_t status = lc3_decoder->decode_signed_16(&decoder_contexts[channel], read_buffer, bytes_per_frame, BFI, &pcm[channel * MAX_SAMPLES_PER_FRAME], 1, &tmp_BEC_detect);
+            uint8_t status = lc3_decoder->decode_signed_16(&decoder_contexts[channel], read_buffer, bytes_per_frame, BFI, &pcm[channel], num_channels, &tmp_BEC_detect);
             if (status != ERROR_CODE_SUCCESS){
                 printf("Error %u\n", status);
                 done = true;
@@ -222,14 +222,7 @@ int main (int argc, const char * argv[]){
 
         if (done) break;
 
-        uint16_t sample;
-        int16_t wav_frame[MAX_NUM_CHANNELS];
-        for (sample = 0 ; sample < number_samples_per_frame ; sample++){
-            for (channel = 0; channel < num_channels; channel++) {
-                wav_frame[channel] = pcm[channel * MAX_SAMPLES_PER_FRAME + sample];
-            }
-            wav_writer_write_int16(num_channels, wav_frame);
-        }
+        wav_writer_write_int16(num_channels * number_samples_per_frame, pcm);
 
         frame_count++;
     }

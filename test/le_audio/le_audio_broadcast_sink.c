@@ -599,32 +599,20 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         uint8_t tmp_BEC_detect;
         uint8_t BFI = 0;
         (void) lc3_decoder->decode_signed_16(&decoder_contexts[bis_channel], &packet[offset], iso_sdu_length, BFI,
-                                   &pcm[bis_channel * MAX_SAMPLES_PER_FRAME], 1,
+                                   &pcm[bis_channel], num_bis,
                                    &tmp_BEC_detect);
 
-        // interleave channel samples
+        // process complete iso frame
         if ((bis_channel + 1) == num_bis) {
-            uint16_t sample;
-            int16_t wav_frame[MAX_NUM_BIS];
-            uint8_t wav_channel;
-            for (sample = 0; sample < number_samples_per_frame; sample++) {
-                for (wav_channel = 0; wav_channel < num_bis; wav_channel++) {
-                    wav_frame[wav_channel] = pcm[wav_channel * MAX_SAMPLES_PER_FRAME + sample];
-                }
-
-                // write wav sample
-                if (lc3_frames < DUMP_LEN_LC3_FRAMES) {
-                    wav_writer_write_int16(num_bis, wav_frame);
-                }
-
-                // store sample in playback buffer
-                uint32_t bytes_to_store = num_bis * 2;
-                samples_received++;
-                if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
-                    btstack_ring_buffer_write(&playback_buffer, (uint8_t *) wav_frame, bytes_to_store);
-                } else {
-                    samples_dropped++;
-                }
+            // write wav samples
+            wav_writer_write_int16(num_bis * number_samples_per_frame, pcm);
+            // store samples in playback buffer
+            uint32_t bytes_to_store = num_bis * number_samples_per_frame * 2;
+            samples_received += number_samples_per_frame;
+            if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
+                btstack_ring_buffer_write(&playback_buffer, (uint8_t *) pcm, bytes_to_store);
+            } else {
+                samples_dropped += number_samples_per_frame;
             }
         }
 

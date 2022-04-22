@@ -170,7 +170,6 @@ static uint8_t menu_variant;
 static int hxcmod_initialized;
 static modcontext mod_context;
 static tracker_buffer_state trkbuf;
-static int16_t mod_pcm[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME];
 
 // sine generator
 static uint8_t  sine_step;
@@ -296,7 +295,7 @@ static void generate_audio(void){
                 uint8_t channel;
                 for (channel = 0; channel < num_channels; channel++) {
                     int16_t value = sine_int16[sine_phases[channel]] / 4;
-                    pcm[channel * MAX_SAMPLES_PER_FRAME + sample] = value;
+                    pcm[sample * num_channels + channel] = value;
                     sine_phases[channel] += sine_step * (1+channel);    // second channel, double frequency
                     if (sine_phases[channel] >= (sizeof(sine_int16) / sizeof(int16_t))) {
                         sine_phases[channel] = 0;
@@ -306,18 +305,12 @@ static void generate_audio(void){
             break;
         case AUDIO_SOURCE_MODPLAYER:
             // mod player configured for stereo
-            hxcmod_fillbuffer(&mod_context, (unsigned short *) &mod_pcm[0], number_samples_per_frame, &trkbuf);
-            uint16_t i;
-            if (num_channels == 1){
+            hxcmod_fillbuffer(&mod_context, (unsigned short *) pcm, number_samples_per_frame, &trkbuf);
+            if (num_channels == 1) {
                 // stereo -> mono
+                uint16_t i;
                 for (i=0;i<number_samples_per_frame;i++){
-                    pcm[i] = (mod_pcm[2*i] / 2) + (mod_pcm[2*i+1] / 2);
-                }
-            } else {
-                // sort interleaved samples
-                for (i=0;i<number_samples_per_frame;i++){
-                    pcm[i] = mod_pcm[2*i];
-                    pcm[MAX_SAMPLES_PER_FRAME+i] = mod_pcm[2*i+1];
+                    pcm[i] = (pcm[2*i] / 2) + (pcm[2*i+1] / 2);
                 }
             }
             break;
@@ -366,7 +359,7 @@ static void encode_and_send(uint8_t cis_index){
     uint8_t channel;
     uint16_t offset = 8;
     for (channel = 0; channel < num_channels; channel++){
-        lc3_encoder->encode_signed_16(&encoder_contexts[channel], &pcm[channel * MAX_SAMPLES_PER_FRAME], 1, &buffer[offset], octets_per_frame);
+        lc3_encoder->encode_signed_16(&encoder_contexts[channel], &pcm[channel], num_channels, &buffer[offset], octets_per_frame);
         offset += octets_per_frame;
     }
 #endif

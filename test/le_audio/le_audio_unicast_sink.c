@@ -582,33 +582,21 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             uint8_t tmp_BEC_detect;
             uint8_t BFI = 0;
             (void) lc3_decoder->decode_signed_16(&decoder_contexts[channel], &packet[offset], octets_per_frame, BFI,
-                                       &pcm[channel * MAX_SAMPLES_PER_FRAME], 1,
+                                       &pcm[channel], num_channels,
                                        &tmp_BEC_detect);
             offset += octets_per_frame;
         }
 
-        // interleave channel samples
-        uint16_t sample;
-        int16_t wav_frame[MAX_CHANNELS];
-        uint8_t wav_channel;
-        for (sample = 0; sample < number_samples_per_frame; sample++) {
-            for (wav_channel = 0; wav_channel < num_channels; wav_channel++) {
-                wav_frame[wav_channel] = pcm[wav_channel * MAX_SAMPLES_PER_FRAME + sample];
-            }
+        // write wav samples
+        wav_writer_write_int16(num_channels * number_samples_per_frame, pcm);
 
-            // write wav sample
-            if (lc3_frames < DUMP_LEN_LC3_FRAMES) {
-                wav_writer_write_int16(num_channels, wav_frame);
-            }
-
-            // store sample in playback buffer
-            uint32_t bytes_to_store = num_channels * 2;
-            samples_received++;
-            if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
-                btstack_ring_buffer_write(&playback_buffer, (uint8_t *) wav_frame, bytes_to_store);
-            } else {
-                samples_dropped++;
-            }
+        // store samples in playback buffer
+        uint32_t bytes_to_store = num_channels * number_samples_per_frame * 2;
+        samples_received += number_samples_per_frame;
+        if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
+            btstack_ring_buffer_write(&playback_buffer, (uint8_t *) pcm, bytes_to_store);
+        } else {
+            samples_dropped += number_samples_per_frame;
         }
 
         log_info("Samples in playback buffer %5u", btstack_ring_buffer_bytes_available(&playback_buffer) / (num_channels * 2));
