@@ -2597,25 +2597,25 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
             // send if we have more data and remote windows isn't full yet
             if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) {
                 if (channel->unacked_frames >= btstack_min(channel->num_stored_tx_frames, channel->remote_tx_window_size)) return false;
-                return hci_can_send_acl_classic_packet_now() != 0;
+                return hci_can_send_acl_packet_now(channel->con_handle) != 0;
             }
 #endif
             if (!channel->waiting_for_can_send_now) return false;
-            return (hci_can_send_acl_classic_packet_now() != 0);
+            return hci_can_send_acl_packet_now(channel->con_handle) != 0;
         case L2CAP_CHANNEL_TYPE_CONNECTIONLESS:
             if (!channel->waiting_for_can_send_now) return false;
-            return hci_can_send_acl_classic_packet_now() != 0;
+            return hci_can_send_acl_packet_now(channel->con_handle) != 0;
 #endif
 #ifdef ENABLE_BLE
         case L2CAP_CHANNEL_TYPE_FIXED:
             if (!channel->waiting_for_can_send_now) return false;
-            return hci_can_send_acl_le_packet_now() != 0;
+            return hci_can_send_acl_packet_now(channel->con_handle) != 0;
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
         case L2CAP_CHANNEL_TYPE_CHANNEL_CBM:
             if (channel->state != L2CAP_STATE_OPEN) return false;
             if (channel->send_sdu_buffer == NULL) return false;
             if (channel->credits_outgoing == 0u) return false;
-            return hci_can_send_acl_le_packet_now() != 0;
+            return hci_can_send_acl_packet_now(channel->con_handle) != 0;
 #endif
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
@@ -2623,11 +2623,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
             if (channel->state != L2CAP_STATE_OPEN) return false;
             if (channel->send_sdu_buffer == NULL) return false;
             if (channel->credits_outgoing == 0u) return false;
-            if (channel->address_type == BD_ADDR_TYPE_ACL) {
-                return hci_can_send_acl_classic_packet_now() != 0;
-            } else {
-                return hci_can_send_acl_le_packet_now() != 0;
-            }
+            return hci_can_send_acl_packet_now(channel->con_handle) != 0;
 #endif
         default:
             return false;
