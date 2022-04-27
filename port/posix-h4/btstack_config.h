@@ -60,4 +60,3 @@
 #define MAX_NR_MESH_NETWORK_KEYS      (MAX_NR_MESH_SUBNETS+1)
 
 #endif
-

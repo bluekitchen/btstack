@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -116,7 +116,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
                     hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
-#endif    
+#endif
 #ifdef ENABLE_BLE
                     le_device_db_tlv_configure(tlv_impl, &tlv_context);
 #endif
@@ -130,7 +130,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     exit(0);
                     break;
                 default:
-                    break;                    
+                    break;
             }
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
@@ -142,7 +142,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 if (is_bcm){
                     btstack_chipset_bcm_set_device_name((const char *)&packet[6]);
                 }
-            }        
+            }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
                 local_version_information_handler(packet);
             }
@@ -187,7 +187,7 @@ static void local_version_information_handler(uint8_t * packet){
             use_fast_uart();
             hci_set_chipset(btstack_chipset_csr_instance());
             break;
-        case BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC: 
+        case BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC:
             printf("Texas Instruments - CC256x compatible chipset.\n");
             if (lmp_subversion != btstack_chipset_cc256x_lmp_subversion()){
                 printf("Error: LMP Subversion does not match initscript! ");
@@ -204,13 +204,13 @@ static void local_version_information_handler(uint8_t * packet){
 #endif
 
             break;
-        case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:   
+        case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:
             printf("Broadcom/Cypress - using BCM driver.\n");
             hci_set_chipset(btstack_chipset_bcm_instance());
             use_fast_uart();
             is_bcm = 1;
             break;
-        case BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS:   
+        case BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS:
             printf("ST Microelectronics - using STLC2500d driver.\n");
             use_fast_uart();
             hci_set_chipset(btstack_chipset_stlc2500d_instance());
@@ -222,7 +222,7 @@ static void local_version_information_handler(uint8_t * packet){
             break;
         case BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
             printf("Nordic Semiconductor nRF5 chipset.\n");
-            break;        
+            break;
         case BLUETOOTH_COMPANY_ID_TOSHIBA_CORP:
             printf("Toshiba - using TC3566x driver.\n");
             hci_set_chipset(btstack_chipset_tc3566x_instance());
@@ -239,7 +239,7 @@ int main(int argc, const char * argv[]){
 	/// GET STARTED with BTstack ///
 	btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-	    
+
     // log into file using HCI_DUMP_PACKETLOGGER format
     const char * pklg_path = "/tmp/hci_dump.pklg";
     hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
@@ -274,7 +274,7 @@ int main(int argc, const char * argv[]){
     // set BD_ADDR for CSR without Flash/unique address
     // bd_addr_t own_address = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
     // btstack_chipset_csr_set_bd_addr(own_address);
-    
+
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -286,7 +286,7 @@ int main(int argc, const char * argv[]){
     btstack_main(argc, argv);
 
     // go
-    btstack_run_loop_execute();    
+    btstack_run_loop_execute();
 
     return 0;
 }
