@@ -652,5 +652,5 @@ static const btstack_uart_t btstack_uart_posix = {
 };
 
 const btstack_uart_t * btstack_uart_posix_instance(void){
-	return &btstack_uart_posix;
+    return &btstack_uart_posix;
 }

@@ -49,9 +49,9 @@ extern "C" {
 #endif
 
 typedef struct {
-	btstack_linked_list_t entry_list;
-	const char * db_path;
-	FILE * file;
+    btstack_linked_list_t entry_list;
+    const char * db_path;
+    FILE * file;
 } btstack_tlv_posix_t;
 
 /**
