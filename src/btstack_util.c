@@ -495,7 +495,7 @@ uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid){
 }
 
 void btstack_strcpy(char * dst, uint16_t dst_size, const char * src){
-    uint16_t bytes_to_copy = btstack_min( dst_size - 1, strlen(src));
+    uint16_t bytes_to_copy = (uint16_t) btstack_min( dst_size - 1, (uint32_t) strlen(src));
     (void) memcpy(dst, src, bytes_to_copy);
     dst[dst_size-1] = 0;
 }
