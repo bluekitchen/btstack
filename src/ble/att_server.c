@@ -949,7 +949,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
                 log_info("CCC Index %u: Up-to-date", index);
                 return;
             }
-            entry.value = value;
+            entry.value = (uint8_t) value;
             entry.seq_nr = highest_seq_nr + 1u;
             log_info("CCC Index %u: Store", index);
             int result = tlv_impl->store_tag(tlv_context, tag, (const uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
@@ -984,7 +984,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
     entry.seq_nr       = highest_seq_nr + 1u;
     entry.device_index = le_device_index;
     entry.att_handle   = att_handle;
-    entry.value        = value;
+    entry.value        = (uint8_t) value;
     int result = tlv_impl->store_tag(tlv_context, tag_to_use, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
     if (result != 0){
         log_error("Store tag index %u failed", index);
