@@ -56,30 +56,30 @@ extern "C" {
 
 typedef enum {
 
-	// MITM protection not required
-	// No encryption required
-	// No user interaction required
-	LEVEL_0 = 0,
+    // MITM protection not required
+    // No encryption required
+    // No user interaction required
+    LEVEL_0 = 0,
 
-	// MITM protection not required
-	// No encryption required
-	// Minimal user interaction desired
-	LEVEL_1,
+    // MITM protection not required
+    // No encryption required
+    // Minimal user interaction desired
+    LEVEL_1,
 
-	// MITM protection not required
-	// Encryption required
-	LEVEL_2,
+    // MITM protection not required
+    // Encryption required
+    LEVEL_2,
 
-	// MITM protection required
-	// Encryption required
-	// User interaction acceptable
-	LEVEL_3,
+    // MITM protection required
+    // Encryption required
+    // User interaction acceptable
+    LEVEL_3,
 
-	// MITM protection required
-	// Encryption required
-	// 128-bit equivalent strength for link and encryption keys required (P-192 is not enough)
-	// User interaction acceptable
-	LEVEL_4,
+    // MITM protection required
+    // Encryption required
+    // 128-bit equivalent strength for link and encryption keys required (P-192 is not enough)
+    // User interaction acceptable
+    LEVEL_4,
 } gap_security_level_t;
 
 
@@ -98,17 +98,17 @@ typedef enum {
 } gap_security_mode_t;
 
 typedef enum {
-	GAP_SECURITY_NONE,
-	GAP_SECURITY_ENCRYPTED,		// SSP: JUST WORKS
-	GAP_SECURITY_AUTHENTICATED, // SSP: numeric comparison, passkey, OOB
-	// GAP_SECURITY_AUTHORIZED
+    GAP_SECURITY_NONE,
+    GAP_SECURITY_ENCRYPTED,     // SSP: JUST WORKS
+    GAP_SECURITY_AUTHENTICATED, // SSP: numeric comparison, passkey, OOB
+    // GAP_SECURITY_AUTHORIZED
 } gap_security_state;
 
 typedef enum {
-	GAP_CONNECTION_INVALID,
-	GAP_CONNECTION_ACL,
-	GAP_CONNECTION_SCO,
-	GAP_CONNECTION_LE
+    GAP_CONNECTION_INVALID,
+    GAP_CONNECTION_ACL,
+    GAP_CONNECTION_SCO,
+    GAP_CONNECTION_LE
 } gap_connection_type_t;
 
 typedef struct le_connection_parameter_range{
@@ -496,7 +496,7 @@ void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * adve
  * @note own_address_type is used from gap_random_address_set_mode
  */
 void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
-	uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
+    uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
 
 /**
  * @brief Enable/Disable Advertisements. OFF by default.
@@ -657,7 +657,7 @@ void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_sc
  * @return 0 if ok
  */
 int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_t conn_interval_min,
-	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
+    uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
 
 /**
  * @brief Updates the connection parameters for a given LE connection
@@ -669,7 +669,7 @@ int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_
  * @return 0 if ok
  */
 int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_interval_min,
-	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
+    uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
 
 /**
  * @brief Set accepted connection parameter range

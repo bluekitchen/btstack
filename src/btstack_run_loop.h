@@ -64,21 +64,21 @@ extern "C" {
  * Callback types for run loop data sources
  */
 typedef enum {
-	DATA_SOURCE_CALLBACK_POLL  = 1 << 0,
-	DATA_SOURCE_CALLBACK_READ  = 1 << 1,
-	DATA_SOURCE_CALLBACK_WRITE = 1 << 2,
+    DATA_SOURCE_CALLBACK_POLL  = 1 << 0,
+    DATA_SOURCE_CALLBACK_READ  = 1 << 1,
+    DATA_SOURCE_CALLBACK_WRITE = 1 << 2,
 } btstack_data_source_callback_type_t;
 
 typedef struct btstack_data_source {
-	// linked item
+    // linked item
     btstack_linked_item_t item;
 
     // item to watch in run loop
     union {
-	    // file descriptor for posix systems
-	    int  fd;
-    	// handle on windows
-    	void * handle;
+        // file descriptor for posix systems
+        int  fd;
+        // handle on windows
+        void * handle;
     } source;
 
     // callback to call for enabled callback types
@@ -99,20 +99,20 @@ typedef struct btstack_timer_source {
 } btstack_timer_source_t;
 
 typedef struct btstack_run_loop {
-	void (*init)(void);
-	void (*add_data_source)(btstack_data_source_t * data_source);
-	bool (*remove_data_source)(btstack_data_source_t * data_source);
-	void (*enable_data_source_callbacks)(btstack_data_source_t * data_source, uint16_t callbacks);
-	void (*disable_data_source_callbacks)(btstack_data_source_t * data_source, uint16_t callbacks);
-	void (*set_timer)(btstack_timer_source_t * timer, uint32_t timeout_in_ms);
-	void (*add_timer)(btstack_timer_source_t *timer);
-	bool  (*remove_timer)(btstack_timer_source_t *timer);
-	void (*execute)(void);
-	void (*dump_timer)(void);
-	uint32_t (*get_time_ms)(void);
-	void (*poll_data_sources_from_irq)(void);
-	void (*execute_on_main_thread)(btstack_context_callback_registration_t * callback_registration);
-	void (*trigger_exit)(void);
+    void (*init)(void);
+    void (*add_data_source)(btstack_data_source_t * data_source);
+    bool (*remove_data_source)(btstack_data_source_t * data_source);
+    void (*enable_data_source_callbacks)(btstack_data_source_t * data_source, uint16_t callbacks);
+    void (*disable_data_source_callbacks)(btstack_data_source_t * data_source, uint16_t callbacks);
+    void (*set_timer)(btstack_timer_source_t * timer, uint32_t timeout_in_ms);
+    void (*add_timer)(btstack_timer_source_t *timer);
+    bool  (*remove_timer)(btstack_timer_source_t *timer);
+    void (*execute)(void);
+    void (*dump_timer)(void);
+    uint32_t (*get_time_ms)(void);
+    void (*poll_data_sources_from_irq)(void);
+    void (*execute_on_main_thread)(btstack_context_callback_registration_t * callback_registration);
+    void (*trigger_exit)(void);
 } btstack_run_loop_t;
 
 

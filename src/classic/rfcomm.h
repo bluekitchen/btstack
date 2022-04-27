@@ -63,13 +63,13 @@ extern "C" {
 
 // private structs
 typedef enum {
-	RFCOMM_MULTIPLEXER_CLOSED = 1,
-	RFCOMM_MULTIPLEXER_W4_CONNECT,  // outgoing
-	RFCOMM_MULTIPLEXER_SEND_SABM_0,     //    "
-	RFCOMM_MULTIPLEXER_W4_UA_0,     //    "
-	RFCOMM_MULTIPLEXER_W4_SABM_0,   // incoming
+    RFCOMM_MULTIPLEXER_CLOSED = 1,
+    RFCOMM_MULTIPLEXER_W4_CONNECT,  // outgoing
+    RFCOMM_MULTIPLEXER_SEND_SABM_0,     //    "
+    RFCOMM_MULTIPLEXER_W4_UA_0,     //    "
+    RFCOMM_MULTIPLEXER_W4_SABM_0,   // incoming
     RFCOMM_MULTIPLEXER_SEND_UA_0,
-	RFCOMM_MULTIPLEXER_OPEN,
+    RFCOMM_MULTIPLEXER_OPEN,
     RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC,
     RFCOMM_MULTIPLEXER_SHUTTING_DOWN,
 } RFCOMM_MULTIPLEXER_STATE;
@@ -79,15 +79,15 @@ typedef enum {
 } RFCOMM_MULTIPLEXER_EVENT;
 
 typedef enum {
-	RFCOMM_CHANNEL_CLOSED = 1,
-	RFCOMM_CHANNEL_W4_MULTIPLEXER,
-	RFCOMM_CHANNEL_SEND_UIH_PN,
+    RFCOMM_CHANNEL_CLOSED = 1,
+    RFCOMM_CHANNEL_W4_MULTIPLEXER,
+    RFCOMM_CHANNEL_SEND_UIH_PN,
     RFCOMM_CHANNEL_W4_PN_RSP,
-	RFCOMM_CHANNEL_SEND_SABM_W4_UA,
-	RFCOMM_CHANNEL_W4_UA,
+    RFCOMM_CHANNEL_SEND_SABM_W4_UA,
+    RFCOMM_CHANNEL_W4_UA,
     RFCOMM_CHANNEL_INCOMING_SETUP,
     RFCOMM_CHANNEL_DLC_SETUP,
-	RFCOMM_CHANNEL_OPEN,
+    RFCOMM_CHANNEL_OPEN,
     RFCOMM_CHANNEL_SEND_UA_AFTER_DISC,
     RFCOMM_CHANNEL_SEND_DISC,
     RFCOMM_CHANNEL_W4_UA_AFTER_DISC,
@@ -157,16 +157,16 @@ typedef struct {
     btstack_timer_source_t   timer;
     int              timer_active;
 
-	RFCOMM_MULTIPLEXER_STATE state;
+    RFCOMM_MULTIPLEXER_STATE state;
 
     uint16_t  l2cap_cid;
 
     uint8_t   fcon; // only send if fcon & 1, send rsp if fcon & 0x80
 
-	bd_addr_t remote_addr;
+    bd_addr_t remote_addr;
     hci_con_handle_t con_handle;
 
-	uint8_t   outgoing;
+    uint8_t   outgoing;
 
     // hack to deal with authentication failure only observed by remote side
     uint8_t at_least_one_connection;
@@ -200,7 +200,7 @@ typedef struct {
     // server channel (see rfcomm_service_t) - NULL => outgoing channel
     rfcomm_service_t * service;
 
-	// muliplexer for this channel
+    // muliplexer for this channel
     rfcomm_multiplexer_t *multiplexer;
 
     // RFCOMM Channel ID
@@ -230,7 +230,7 @@ typedef struct {
     // priority set by incoming side in PN
     uint8_t pn_priority;
 
-	// negotiated frame size
+    // negotiated frame size
     uint16_t max_frame_size;
 
     // local rpn data

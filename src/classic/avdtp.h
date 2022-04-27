@@ -527,7 +527,7 @@ typedef struct {
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
     bool    wait_to_send_acceptor;
-	bool    wait_to_send_initiator;
+    bool    wait_to_send_initiator;
 
     uint8_t suspended_seids[AVDTP_MAX_NUM_SEPS];
     uint8_t num_suspended_seids;

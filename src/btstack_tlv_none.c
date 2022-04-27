@@ -42,7 +42,7 @@
  * @return size of value
  */
 static int btstack_tlv_none_get_tag(void * context, uint32_t tag, uint8_t * buffer, uint32_t buffer_size){
-	return 0;
+    return 0;
 }
 
 /**
@@ -52,7 +52,7 @@ static int btstack_tlv_none_get_tag(void * context, uint32_t tag, uint8_t * buff
  * @param data_size
  */
 static int btstack_tlv_none_store_tag(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size){
-	return 0;
+    return 0;
 }
 
 /**
@@ -63,14 +63,14 @@ static void btstack_tlv_none_delete_tag(void * context, uint32_t tag){
 }
 
 static const btstack_tlv_t btstack_tlv_none = {
-	/* int  (*get_tag)(..);     */ &btstack_tlv_none_get_tag,
-	/* int (*store_tag)(..);    */ &btstack_tlv_none_store_tag,
-	/* void (*delete_tag)(v..); */ &btstack_tlv_none_delete_tag,
+    /* int  (*get_tag)(..);     */ &btstack_tlv_none_get_tag,
+    /* int (*store_tag)(..);    */ &btstack_tlv_none_store_tag,
+    /* void (*delete_tag)(v..); */ &btstack_tlv_none_delete_tag,
 };
 
 /**
  * Init Tag Length Value Store
  */
 const btstack_tlv_t * btstack_tlv_none_init_instance(void){
-	return &btstack_tlv_none;
+    return &btstack_tlv_none;
 }

@@ -63,10 +63,10 @@ extern "C" {
 #define MAX_BNEP_MULTICAST_FILTER_OUT                   140
 
 typedef enum {
-	BNEP_CHANNEL_STATE_CLOSED = 1,
+    BNEP_CHANNEL_STATE_CLOSED = 1,
     BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST,
     BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE,
-	BNEP_CHANNEL_STATE_CONNECTED,
+    BNEP_CHANNEL_STATE_CONNECTED,
 } BNEP_CHANNEL_STATE;
 
 typedef enum {
@@ -90,14 +90,14 @@ typedef struct bnep_channel_event {
 
 /* network protocol type filter */
 typedef struct {
-	uint16_t	        range_start;
-	uint16_t	        range_end;
+    uint16_t            range_start;
+    uint16_t            range_end;
 } bnep_net_filter_t;
 
 /* multicast address filter */
 typedef struct {
-	uint8_t		        addr_start[ETHER_ADDR_LEN];
-	uint8_t		        addr_end[ETHER_ADDR_LEN];
+    uint8_t             addr_start[ETHER_ADDR_LEN];
+    uint8_t             addr_end[ETHER_ADDR_LEN];
 } bnep_multi_filter_t;
 
 
@@ -107,14 +107,14 @@ typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t      item;
 
-    BNEP_CHANNEL_STATE state;	          // Channel state
+    BNEP_CHANNEL_STATE state;             // Channel state
 
     BNEP_CHANNEL_STATE_VAR state_var;     // State flag variable. Needed for asynchronous packet sending
 
     uint16_t           max_frame_size;    // incomming max. frame size
     void              *connection;        // client connection
     bd_addr_t          local_addr;        // locale drvice address
-	bd_addr_t          remote_addr;       // remote device address
+    bd_addr_t          remote_addr;       // remote device address
     uint16_t           l2cap_cid;         // l2cap channel id
     hci_con_handle_t   con_handle;        // hci connection handle
 

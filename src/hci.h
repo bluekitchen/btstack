@@ -397,7 +397,7 @@ typedef enum {
     SM_SC_W4_DHKEY_CHECK_COMMAND,
     SM_SC_W4_LTK_REQUEST_SC,
     SM_SC_W2_CALCULATE_ILK_USING_H6,
-	SM_SC_W2_CALCULATE_ILK_USING_H7,
+    SM_SC_W2_CALCULATE_ILK_USING_H7,
     SM_SC_W4_CALCULATE_ILK,
     SM_SC_W2_CALCULATE_BR_EDR_LINK_KEY,
     SM_SC_W4_CALCULATE_BR_EDR_LINK_KEY,
@@ -842,7 +842,7 @@ typedef enum {
     LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION,
     LE_RESOLVING_LIST_READ_SIZE,
     LE_RESOLVING_LIST_SEND_CLEAR,
-	LE_RESOLVING_LIST_REMOVE_ENTRIES,
+    LE_RESOLVING_LIST_REMOVE_ENTRIES,
     LE_RESOLVING_LIST_ADD_ENTRIES,
     LE_RESOLVING_LIST_DONE
 } le_resolving_list_state_t;
@@ -1110,16 +1110,16 @@ typedef struct {
     le_resolving_list_state_t le_resolving_list_state;
     uint16_t                  le_resolving_list_size;
     uint8_t                   le_resolving_list_add_entries[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];
-	uint8_t                   le_resolving_list_remove_entries[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];
+    uint8_t                   le_resolving_list_remove_entries[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];
 #endif
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
-	bool                      classic_read_local_oob_data;
-	hci_con_handle_t          classic_oob_con_handle;
+    bool                      classic_read_local_oob_data;
+    hci_con_handle_t          classic_oob_con_handle;
 #endif
 
 #ifdef HAVE_SCO_TRANSPORT
-	const btstack_sco_transport_t * sco_transport;
+    const btstack_sco_transport_t * sco_transport;
 #endif
 } hci_stack_t;
 

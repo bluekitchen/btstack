@@ -48,7 +48,7 @@ extern "C"
 #endif
 
 typedef struct {
-	btstack_linked_item_t item;
+    btstack_linked_item_t item;
     uint16_t pseudo_dst;
     uint16_t hash;
     uint16_t ref_count;
@@ -56,9 +56,9 @@ typedef struct {
 } mesh_virtual_address_t;
 
 typedef struct {
-	btstack_linked_list_iterator_t it;
-	uint16_t hash;
-	mesh_virtual_address_t * address;
+    btstack_linked_list_iterator_t it;
+    uint16_t hash;
+    mesh_virtual_address_t * address;
 } mesh_virtual_address_iterator_t;
 
 // virtual address management

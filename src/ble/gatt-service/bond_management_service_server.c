@@ -265,8 +265,8 @@ void bond_management_service_server_init(uint32_t supported_features){
     uint16_t start_handle = 0;
     uint16_t end_handle   = 0xffff;
     int service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_BOND_MANAGEMENT, &start_handle, &end_handle);
-	btstack_assert(service_found != 0);
-	UNUSED(service_found);
+    btstack_assert(service_found != 0);
+    UNUSED(service_found);
 
     bm_control_point_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BOND_MANAGEMENT_CONTROL_POINT);
     bm_supported_features_value_handle       = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BOND_MANAGEMENT_FEATURE);

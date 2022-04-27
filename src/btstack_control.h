@@ -60,7 +60,7 @@ typedef enum {
 /* API_START */
 
 typedef struct {
-	void (*init) (const void *config);
+    void (*init) (const void *config);
     int  (*on)   (void);  // <-- turn BT module on and configure
     int  (*off)  (void);  // <-- turn BT module off
     int  (*sleep)(void);  // <-- put BT module to sleep    - only to be called after ON

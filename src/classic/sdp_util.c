@@ -259,8 +259,8 @@ void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
         data_size += 2;
     }
     if (size > 0){
-		(void)memcpy(seq + 3 + data_size, data, size);
-		data_size += size;
+        (void)memcpy(seq + 3 + data_size, data, size);
+        data_size += size;
     }
     big_endian_store_16(seq, 1, data_size);
 }
@@ -670,7 +670,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
     unsigned int end_pos = de_get_len(element);
     printf("type %5s (%u), element len %2u ", type_names[de_type], de_type, end_pos);
     if (de_type == DE_DES) {
-		printf("\n");
+        printf("\n");
         indent++;
         de_traverse_sequence(element, de_traversal_dump_data, (void *)&indent);
     } else if (de_type == DE_UUID && de_size == DE_SIZE_128) {
@@ -698,10 +698,10 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
                 }
                 break;
             case DE_SIZE_16:
-				value = big_endian_read_16(element,pos);
+                value = big_endian_read_16(element,pos);
                 break;
             case DE_SIZE_32:
-				value = big_endian_read_32(element,pos);
+                value = big_endian_read_32(element,pos);
                 break;
             default:
                 break;

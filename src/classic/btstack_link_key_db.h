@@ -52,7 +52,7 @@ extern "C" {
 #endif
 
 typedef struct {
-	void * context;
+    void * context;
 } btstack_link_key_iterator_t;
 
 /* API_START */

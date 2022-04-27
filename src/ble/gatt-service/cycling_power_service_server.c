@@ -1023,7 +1023,7 @@ void cycling_power_service_server_init(uint32_t feature_flags,
     uint16_t end_handle   = 0xffff;
     int service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_CYCLING_POWER, &start_handle, &end_handle);
     btstack_assert(service_found != 0);
-	UNUSED(service_found);
+    UNUSED(service_found);
 
     // get CP Mesurement characteristic value handle and client configuration handle
     instance->measurement_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_CYCLING_POWER_MEASUREMENT);

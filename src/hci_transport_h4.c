@@ -63,11 +63,11 @@
 
 // eHCILL commands
 enum EHCILL_MESSAGES {
-	EHCILL_GO_TO_SLEEP_IND = 0x030,
-	EHCILL_GO_TO_SLEEP_ACK = 0x031,
-	EHCILL_WAKE_UP_IND     = 0x032,
-	EHCILL_WAKE_UP_ACK     = 0x033,
-	EHCILL_WAKEUP_SIGNAL   = 0x034,
+    EHCILL_GO_TO_SLEEP_IND = 0x030,
+    EHCILL_GO_TO_SLEEP_ACK = 0x031,
+    EHCILL_WAKE_UP_IND     = 0x032,
+    EHCILL_WAKE_UP_ACK     = 0x033,
+    EHCILL_WAKEUP_SIGNAL   = 0x034,
 };
 
 static int  hci_transport_h4_ehcill_outgoing_packet_ready(void);
@@ -542,7 +542,7 @@ static void hci_transport_h4_ehcill_send_ehcill_command(void){
 }
 
 static void hci_transport_h4_ehcill_sleep_ack_timer_handler(btstack_timer_source_t * timer){
-	UNUSED(timer);
+    UNUSED(timer);
 #ifdef ENABLE_LOG_EHCILL
     log_info("eHCILL: timer triggered");
 #endif

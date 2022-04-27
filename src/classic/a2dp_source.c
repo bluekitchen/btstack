@@ -194,11 +194,11 @@ static void a2dp_signaling_emit_reconfigured(uint16_t cid, uint8_t local_seid, u
 
 static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer){
     uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
-	avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
-	btstack_run_loop_set_timer_context(&a2dp_source_set_config_timer, NULL);
-	a2dp_source_set_config_timer_active = false;
+    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
+    btstack_run_loop_set_timer_context(&a2dp_source_set_config_timer, NULL);
+    a2dp_source_set_config_timer_active = false;
 
-	log_info("Set Config timer fired, avdtp_cid 0x%02x", avdtp_cid);
+    log_info("Set Config timer fired, avdtp_cid 0x%02x", avdtp_cid);
 
     if (connection == NULL) {
         a2dp_discover_seps_with_next_waiting_connection();
@@ -230,8 +230,8 @@ static void a2dp_source_set_config_timer_stop(void){
     if (a2dp_source_set_config_timer_active == false) return;
     log_info("Set Config timer stop");
     btstack_run_loop_remove_timer(&a2dp_source_set_config_timer);
-	btstack_run_loop_set_timer_context(&a2dp_source_set_config_timer, NULL);
-	a2dp_source_set_config_timer_active = false;
+    btstack_run_loop_set_timer_context(&a2dp_source_set_config_timer, NULL);
+    a2dp_source_set_config_timer_active = false;
 }
 
 // Discover seps, both incoming and outgoing
@@ -623,14 +623,14 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-			// restart set config timer while remote is active for current cid
-			if (a2dp_source_set_config_timer_active &&
-			    (avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) &&
-			    (cid == a2dp_source_sep_discovery_cid)){
+            // restart set config timer while remote is active for current cid
+            if (a2dp_source_set_config_timer_active &&
+                (avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) &&
+                (cid == a2dp_source_sep_discovery_cid)){
 
-			    a2dp_source_set_config_timer_restart();
-				break;
-			}
+                a2dp_source_set_config_timer_restart();
+                break;
+            }
 
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
 
@@ -771,11 +771,11 @@ avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t 
     avdtp_source_register_media_transport_category(avdtp_stream_endpoint_seid(stream_endpoint));
     avdtp_source_register_media_codec_category(avdtp_stream_endpoint_seid(stream_endpoint), media_type, media_codec_type,
                                                codec_capabilities, codec_capabilities_len);
-	avdtp_source_register_delay_reporting_category(avdtp_stream_endpoint_seid(stream_endpoint));
+    avdtp_source_register_delay_reporting_category(avdtp_stream_endpoint_seid(stream_endpoint));
 
-	// store user codec configuration buffer
-	stream_endpoint->media_codec_type = media_codec_type;
-	stream_endpoint->media_codec_configuration_info = codec_configuration;
+    // store user codec configuration buffer
+    stream_endpoint->media_codec_type = media_codec_type;
+    stream_endpoint->media_codec_configuration_info = codec_configuration;
     stream_endpoint->media_codec_configuration_len  = codec_configuration_len;
 
     return stream_endpoint;
@@ -855,7 +855,7 @@ uint8_t a2dp_source_stream_send_media_payload_rtp(uint16_t a2dp_cid, uint8_t loc
     return avdtp_source_stream_send_media_payload_rtp(a2dp_cid, local_seid, marker, payload, payload_size);
 }
 
-uint8_t	a2dp_source_stream_send_media_packet(uint16_t a2dp_cid, uint8_t local_seid, const uint8_t * packet, uint16_t size){
+uint8_t a2dp_source_stream_send_media_packet(uint16_t a2dp_cid, uint8_t local_seid, const uint8_t * packet, uint16_t size){
     return avdtp_source_stream_send_media_packet(a2dp_cid, local_seid, packet, size);
 }
 

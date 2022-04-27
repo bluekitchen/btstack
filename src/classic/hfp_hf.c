@@ -94,22 +94,22 @@ static char hfp_hf_phone_number[25];
 
 
 static int has_codec_negotiation_feature(hfp_connection_t * hfp_connection){
-	int hf = get_bit(hfp_hf_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
-	int ag = get_bit(hfp_connection->remote_supported_features, HFP_AGSF_CODEC_NEGOTIATION);
-	return hf && ag;
+    int hf = get_bit(hfp_hf_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
+    int ag = get_bit(hfp_connection->remote_supported_features, HFP_AGSF_CODEC_NEGOTIATION);
+    return hf && ag;
 }
 
 static int has_call_waiting_and_3way_calling_feature(hfp_connection_t * hfp_connection){
-	int hf = get_bit(hfp_hf_supported_features, HFP_HFSF_THREE_WAY_CALLING);
-	int ag = get_bit(hfp_connection->remote_supported_features, HFP_AGSF_THREE_WAY_CALLING);
-	return hf && ag;
+    int hf = get_bit(hfp_hf_supported_features, HFP_HFSF_THREE_WAY_CALLING);
+    int ag = get_bit(hfp_connection->remote_supported_features, HFP_AGSF_THREE_WAY_CALLING);
+    return hf && ag;
 }
 
 
 static int has_hf_indicators_feature(hfp_connection_t * hfp_connection){
-	int hf = get_bit(hfp_hf_supported_features, HFP_HFSF_HF_INDICATORS);
-	int ag = get_bit(hfp_connection->remote_supported_features, HFP_AGSF_HF_INDICATORS);
-	return hf && ag;
+    int hf = get_bit(hfp_hf_supported_features, HFP_HFSF_HF_INDICATORS);
+    int ag = get_bit(hfp_connection->remote_supported_features, HFP_AGSF_HF_INDICATORS);
+    return hf && ag;
 }
 
 static bool hfp_hf_vra_flag_supported(hfp_connection_t * hfp_connection){
@@ -203,38 +203,38 @@ static void hfp_emit_ag_indicator_mapping_event(const hfp_connection_t * hfp_con
 }
 
 static void hfp_emit_ag_indicator_status_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
-	if (hfp_hf_callback == NULL) return;
-	uint8_t event[12+HFP_MAX_INDICATOR_DESC_SIZE];
+    if (hfp_hf_callback == NULL) return;
+    uint8_t event[12+HFP_MAX_INDICATOR_DESC_SIZE];
     uint16_t indicator_len = btstack_min(strlen(indicator->name), HFP_MAX_INDICATOR_DESC_SIZE-1);
-	event[0] = HCI_EVENT_HFP_META;
-	event[1] = 11 + indicator_len;
-	event[2] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = 11 + indicator_len;
+    event[2] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
     little_endian_store_16(event, 3, hfp_connection->acl_handle);
-	event[5] = indicator->index;
-	event[6] = indicator->status;
-	event[7] = indicator->min_range;
-	event[8] = indicator->max_range;
-	event[9] = indicator->mandatory;
-	event[10] = indicator->enabled;
-	event[11] = indicator->status_changed;
-	memcpy(&event[12], indicator->name, indicator_len);
-	event[12+indicator_len] = 0;
-	(*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 13 + indicator_len);
+    event[5] = indicator->index;
+    event[6] = indicator->status;
+    event[7] = indicator->min_range;
+    event[8] = indicator->max_range;
+    event[9] = indicator->mandatory;
+    event[10] = indicator->enabled;
+    event[11] = indicator->status_changed;
+    memcpy(&event[12], indicator->name, indicator_len);
+    event[12+indicator_len] = 0;
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 13 + indicator_len);
 }
 
 static void hfp_emit_network_operator_event(const hfp_connection_t * hfp_connection){
     if (hfp_hf_callback == NULL) return;
     uint16_t operator_len = btstack_min(strlen(hfp_connection->network_operator.name), HFP_MAX_NETWORK_OPERATOR_NAME_SIZE-1);
-	uint8_t event[7+HFP_MAX_NETWORK_OPERATOR_NAME_SIZE];
-	event[0] = HCI_EVENT_HFP_META;
-	event[1] = sizeof(event) - 2;
-	event[2] = 6 + operator_len;
+    uint8_t event[7+HFP_MAX_NETWORK_OPERATOR_NAME_SIZE];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = 6 + operator_len;
     little_endian_store_16(event, 3, hfp_connection->acl_handle);
-	event[5] = hfp_connection->network_operator.mode;
-	event[6] = hfp_connection->network_operator.format;
-	memcpy(&event[7], hfp_connection->network_operator.name, operator_len);
-	event[7+operator_len] = 0;
-	(*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 8 + operator_len);
+    event[5] = hfp_connection->network_operator.mode;
+    event[6] = hfp_connection->network_operator.format;
+    memcpy(&event[7], hfp_connection->network_operator.name, operator_len);
+    event[7+operator_len] = 0;
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 8 + operator_len);
 }
 
 
@@ -656,27 +656,27 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
     if (hfp_connection->ok_pending) return 0;
 
     if (hfp_connection->trigger_codec_exchange){
-		hfp_connection->trigger_codec_exchange = 0;
+        hfp_connection->trigger_codec_exchange = 0;
 
-		hfp_connection->ok_pending = 1;
-		hfp_hf_cmd_trigger_codec_connection_setup(hfp_connection->rfcomm_cid);
-		return 1;
+        hfp_connection->ok_pending = 1;
+        hfp_hf_cmd_trigger_codec_connection_setup(hfp_connection->rfcomm_cid);
+        return 1;
     }
 
     if (hfp_connection->hf_send_codec_confirm){
-		hfp_connection->hf_send_codec_confirm = false;
+        hfp_connection->hf_send_codec_confirm = false;
 
-		hfp_connection->ok_pending = 1;
-		hfp_hf_cmd_confirm_codec(hfp_connection->rfcomm_cid, hfp_connection->codec_confirmed);
-		return 1;
+        hfp_connection->ok_pending = 1;
+        hfp_hf_cmd_confirm_codec(hfp_connection->rfcomm_cid, hfp_connection->codec_confirmed);
+        return 1;
     }
 
     if (hfp_connection->hf_send_supported_codecs){
-		hfp_connection->hf_send_supported_codecs = false;
+        hfp_connection->hf_send_supported_codecs = false;
 
-		hfp_connection->ok_pending = 1;
-		hfp_hf_cmd_notify_on_codecs(hfp_connection->rfcomm_cid);
-		return 1;
+        hfp_connection->ok_pending = 1;
+        hfp_hf_cmd_notify_on_codecs(hfp_connection->rfcomm_cid);
+        return 1;
     }
 
     return 0;
@@ -712,7 +712,7 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
 
 static int call_setup_state_machine(hfp_connection_t * hfp_connection){
 
-	if (hfp_connection->ok_pending) return 0;
+    if (hfp_connection->ok_pending) return 0;
 
     if (hfp_connection->hf_answer_incoming_call){
         hfp_hf_cmd_ata(hfp_connection->rfcomm_cid);
@@ -724,11 +724,11 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
 
 static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
 
-	btstack_assert(hfp_connection != NULL);
-	btstack_assert(hfp_connection->local_role == HFP_ROLE_HF);
+    btstack_assert(hfp_connection != NULL);
+    btstack_assert(hfp_connection->local_role == HFP_ROLE_HF);
 
-	// during SDP query, RFCOMM CID is not set
-	if (hfp_connection->rfcomm_cid == 0) return;
+    // during SDP query, RFCOMM CID is not set
+    if (hfp_connection->rfcomm_cid == 0) return;
 
     // emit postponed VRA event
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED && hfp_connection->emit_vra_enabled_after_audio_established){
@@ -736,8 +736,8 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
     }
 
-	// assert command could be sent
-	if (hci_can_send_command_packet_now() == 0) return;
+    // assert command could be sent
+    if (hci_can_send_command_packet_now() == 0) return;
 
 #ifdef ENABLE_CC256X_ASSISTED_HFP
     // WBS Disassociate
@@ -1076,23 +1076,23 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
 }
 
 static void hfp_hf_handle_suggested_codec(hfp_connection_t * hfp_connection){
-	if (hfp_supports_codec(hfp_connection->suggested_codec, hfp_hf_codecs_nr, hfp_hf_codecs)){
-		// Codec supported, confirm
-		hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
-		hfp_connection->codec_confirmed = hfp_connection->suggested_codec;
-		log_info("hfp: codec confirmed: %s", (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? "mSBC" : "CVSD");
-		hfp_connection->codecs_state = HFP_CODECS_HF_CONFIRMED_CODEC;
+    if (hfp_supports_codec(hfp_connection->suggested_codec, hfp_hf_codecs_nr, hfp_hf_codecs)){
+        // Codec supported, confirm
+        hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
+        hfp_connection->codec_confirmed = hfp_connection->suggested_codec;
+        log_info("hfp: codec confirmed: %s", (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? "mSBC" : "CVSD");
+        hfp_connection->codecs_state = HFP_CODECS_HF_CONFIRMED_CODEC;
 
-		hfp_connection->hf_send_codec_confirm = true;
-	} else {
-		// Codec not supported, send supported codecs
-		hfp_connection->codec_confirmed = 0;
-		hfp_connection->suggested_codec = 0;
-		hfp_connection->negotiated_codec = 0;
-		hfp_connection->codecs_state = HFP_CODECS_W4_AG_COMMON_CODEC;
+        hfp_connection->hf_send_codec_confirm = true;
+    } else {
+        // Codec not supported, send supported codecs
+        hfp_connection->codec_confirmed = 0;
+        hfp_connection->suggested_codec = 0;
+        hfp_connection->negotiated_codec = 0;
+        hfp_connection->codecs_state = HFP_CODECS_W4_AG_COMMON_CODEC;
 
-		hfp_connection->hf_send_supported_codecs = true;
-	}
+        hfp_connection->hf_send_supported_codecs = true;
+    }
 }
 
 static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_t status){
@@ -1372,10 +1372,10 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
                 hfp_emit_ag_indicator_mapping_event(hfp_connection, &hfp_connection->ag_indicators[i]);
             }
             break;
-    	case HFP_CMD_AG_SUGGESTED_CODEC:
+        case HFP_CMD_AG_SUGGESTED_CODEC:
             hfp_connection->command = HFP_CMD_NONE;
-    		hfp_hf_handle_suggested_codec(hfp_connection);
-			break;
+            hfp_hf_handle_suggested_codec(hfp_connection);
+            break;
         case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_IN_BAND_RING_TONE, get_bit(hfp_connection->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE));
         default:
@@ -1384,7 +1384,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
 }
 
 static int hfp_parser_is_end_of_line(uint8_t byte){
-	return (byte == '\n') || (byte == '\r');
+    return (byte == '\n') || (byte == '\r');
 }
 
 static void hfp_hf_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t *packet, uint16_t size){
@@ -2160,22 +2160,22 @@ int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle){
 }
 
 void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech){
-	if (!name){
-		name = hfp_hf_default_service_name;
-	}
-	hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE, rfcomm_channel_nr, name);
+    if (!name){
+        name = hfp_hf_default_service_name;
+    }
+    hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE, rfcomm_channel_nr, name);
 
-	// Construct SupportedFeatures for SDP bitmap:
-	//
-	// "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
-	//  of the Bits 0 to 4 of the unsolicited result code +BRSF"
-	//
-	// Wide band speech (bit 5) requires Codec negotiation
-	//
-	uint16_t sdp_features = supported_features & 0x1f;
-	if ( (wide_band_speech != 0) && (supported_features & (1 << HFP_HFSF_CODEC_NEGOTIATION))){
-		sdp_features |= 1 << 5;
-	}
+    // Construct SupportedFeatures for SDP bitmap:
+    //
+    // "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
+    //  of the Bits 0 to 4 of the unsolicited result code +BRSF"
+    //
+    // Wide band speech (bit 5) requires Codec negotiation
+    //
+    uint16_t sdp_features = supported_features & 0x1f;
+    if ( (wide_band_speech != 0) && (supported_features & (1 << HFP_HFSF_CODEC_NEGOTIATION))){
+        sdp_features |= 1 << 5;
+    }
 
     if (supported_features & (1 << HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS)){
         sdp_features |= 1 << 6;
@@ -2185,13 +2185,13 @@ void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
         sdp_features |= 1 << 7;
     }
 
-	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
-	de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
+    de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
 }
 
 void hfp_hf_register_packet_handler(btstack_packet_handler_t callback){
-	btstack_assert(callback != NULL);
+    btstack_assert(callback != NULL);
 
-	hfp_hf_callback = callback;
-	hfp_set_hf_callback(callback);
+    hfp_hf_callback = callback;
+    hfp_set_hf_callback(callback);
 }

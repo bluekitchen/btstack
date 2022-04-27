@@ -516,14 +516,14 @@ static uint16_t sdp_waiting_list_get(void){
 
 // we assume that we don't get two requests in a row
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-	uint16_t transaction_id;
+    uint16_t transaction_id;
     sdp_pdu_id_t pdu_id;
     uint16_t remote_mtu;
     uint16_t param_len;
 
-	switch (packet_type) {
+    switch (packet_type) {
 
-		case L2CAP_DATA_PACKET:
+        case L2CAP_DATA_PACKET:
             pdu_id = (sdp_pdu_id_t) packet[0];
             transaction_id = big_endian_read_16(packet, 1);
             param_len = big_endian_read_16(packet, 3);
@@ -559,13 +559,13 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             }
             if (!sdp_server_response_size) break;
             l2cap_request_can_send_now_event(sdp_server_l2cap_cid);
-			break;
+            break;
 
-		case HCI_EVENT_PACKET:
+        case HCI_EVENT_PACKET:
 
-			switch (hci_event_packet_get_type(packet)) {
+            switch (hci_event_packet_get_type(packet)) {
 
-				case L2CAP_EVENT_INCOMING_CONNECTION:
+                case L2CAP_EVENT_INCOMING_CONNECTION:
                     if (sdp_server_l2cap_cid) {
                         // try to queue up
                         if (sdp_server_l2cap_waiting_list_count < SDP_WAITING_LIST_MAX_COUNT){
@@ -582,7 +582,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     sdp_server_l2cap_cid = channel;
                     sdp_server_response_size = 0;
                     l2cap_accept_connection(sdp_server_l2cap_cid);
-					break;
+                    break;
 
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     if (packet[2]) {
@@ -614,14 +614,14 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     }
                     break;
 
-				default:
-					// other event
-					break;
-			}
-			break;
+                default:
+                    // other event
+                    break;
+            }
+            break;
 
-		default:
-			// other packet type
-			break;
-	}
+        default:
+            // other packet type
+            break;
+    }
 }

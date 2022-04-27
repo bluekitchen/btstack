@@ -55,49 +55,49 @@ extern "C" {
 #define CMAC_TEMP_API
 
 typedef enum {
-	BTSTACK_CRYPTO_RANDOM,
-	BTSTACK_CRYPTO_AES128,
-	BTSTACK_CRYPTO_CMAC_GENERATOR,
-	BTSTACK_CRYPTO_CMAC_MESSAGE,
-	BTSTACK_CRYPTO_ECC_P256_GENERATE_KEY,
-	BTSTACK_CRYPTO_ECC_P256_CALCULATE_DHKEY,
-	BTSTACK_CRYPTO_CCM_DIGEST_BLOCK,
-	BTSTACK_CRYPTO_CCM_ENCRYPT_BLOCK,
-	BTSTACK_CRYPTO_CCM_DECRYPT_BLOCK,
+    BTSTACK_CRYPTO_RANDOM,
+    BTSTACK_CRYPTO_AES128,
+    BTSTACK_CRYPTO_CMAC_GENERATOR,
+    BTSTACK_CRYPTO_CMAC_MESSAGE,
+    BTSTACK_CRYPTO_ECC_P256_GENERATE_KEY,
+    BTSTACK_CRYPTO_ECC_P256_CALCULATE_DHKEY,
+    BTSTACK_CRYPTO_CCM_DIGEST_BLOCK,
+    BTSTACK_CRYPTO_CCM_ENCRYPT_BLOCK,
+    BTSTACK_CRYPTO_CCM_DECRYPT_BLOCK,
 } btstack_crypto_operation_t;
 
 typedef struct {
-	btstack_context_callback_registration_t context_callback;
-	btstack_crypto_operation_t              operation;
+    btstack_context_callback_registration_t context_callback;
+    btstack_crypto_operation_t              operation;
 } btstack_crypto_t;
 
 typedef struct {
-	btstack_crypto_t btstack_crypto;
-	uint8_t  * buffer;
-	uint16_t   size;
+    btstack_crypto_t btstack_crypto;
+    uint8_t  * buffer;
+    uint16_t   size;
 } btstack_crypto_random_t;
 
 typedef struct {
-	btstack_crypto_t btstack_crypto;
-	const uint8_t  * key;
-	const uint8_t  * plaintext;
-	uint8_t  * ciphertext;
+    btstack_crypto_t btstack_crypto;
+    const uint8_t  * key;
+    const uint8_t  * plaintext;
+    uint8_t  * ciphertext;
 } btstack_crypto_aes128_t;
 
 typedef struct {
-	btstack_crypto_t btstack_crypto;
-	const uint8_t  * key;
-	uint16_t         size;
-	union {
-		uint8_t (*get_byte_callback)(uint16_t pos);
-		const uint8_t * message;
-	} data;
-	uint8_t  * hash;
+    btstack_crypto_t btstack_crypto;
+    const uint8_t  * key;
+    uint16_t         size;
+    union {
+        uint8_t (*get_byte_callback)(uint16_t pos);
+        const uint8_t * message;
+    } data;
+    uint8_t  * hash;
 } btstack_crypto_aes128_cmac_t;
 
 typedef struct {
-	btstack_crypto_t btstack_crypto;
-	uint8_t * public_key;
+    btstack_crypto_t btstack_crypto;
+    uint8_t * public_key;
     uint8_t * dhkey;
 } btstack_crypto_ecc_p256_t;
 
@@ -115,20 +115,20 @@ typedef enum {
 } btstack_crypto_ccm_state_t;
 
 typedef struct {
-	btstack_crypto_t btstack_crypto;
-	btstack_crypto_ccm_state_t state;
-	const uint8_t * key;
-	const uint8_t * nonce;
-	const uint8_t * input;
-	uint8_t       * output;
-	uint8_t         x_i[16];
-	uint16_t        aad_offset;
-	uint16_t        aad_len;
-	uint16_t        message_len;
-	uint16_t        counter;
-	uint16_t        block_len;
-	uint8_t         auth_len;
-	uint8_t         aad_remainder_len;
+    btstack_crypto_t btstack_crypto;
+    btstack_crypto_ccm_state_t state;
+    const uint8_t * key;
+    const uint8_t * nonce;
+    const uint8_t * input;
+    uint8_t       * output;
+    uint8_t         x_i[16];
+    uint16_t        aad_offset;
+    uint16_t        aad_len;
+    uint16_t        message_len;
+    uint16_t        counter;
+    uint16_t        block_len;
+    uint8_t         auth_len;
+    uint8_t         aad_remainder_len;
 } btstack_crypto_ccm_t;
 
 /**

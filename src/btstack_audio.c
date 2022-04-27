@@ -53,7 +53,7 @@ static const btstack_audio_source_t * btstack_audio_source_instance;
  * @return btstack_audio_sink implementation
  */
 const btstack_audio_sink_t * btstack_audio_sink_get_instance(void){
-	return btstack_audio_sink_instance;
+    return btstack_audio_sink_instance;
 }
 
 /**
@@ -61,7 +61,7 @@ const btstack_audio_sink_t * btstack_audio_sink_get_instance(void){
  * @return btstack_audio_source implementation
  */
 const btstack_audio_source_t * btstack_audio_source_get_instance(void){
-	return btstack_audio_source_instance;
+    return btstack_audio_source_instance;
 }
 
 /**
@@ -69,7 +69,7 @@ const btstack_audio_source_t * btstack_audio_source_get_instance(void){
  * @param btstack_audio_sink implementation
  */
 void btstack_audio_sink_set_instance(const btstack_audio_sink_t * audio_sink_impl){
-	btstack_audio_sink_instance = audio_sink_impl;
+    btstack_audio_sink_instance = audio_sink_impl;
 }
 
 /**
@@ -77,5 +77,5 @@ void btstack_audio_sink_set_instance(const btstack_audio_sink_t * audio_sink_imp
  * @param btstack_audio_source implementation
  */
 void btstack_audio_source_set_instance(const btstack_audio_source_t * audio_source_impl){
-	btstack_audio_source_instance = audio_source_impl;
+    btstack_audio_source_instance = audio_source_impl;
 }

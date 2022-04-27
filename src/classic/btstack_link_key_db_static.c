@@ -55,16 +55,16 @@
 #include <string.h>
 
 typedef struct {
-	const char * bd_addr;
-	const char * link_key;
-	int          link_key_type;
+    const char * bd_addr;
+    const char * link_key;
+    int          link_key_type;
 } link_key_entry_t;
 
 // fixed link key db
 static const link_key_entry_t link_key_db[] = {
-		// Example enry
-		{ "11:22:33:44:55:66", "11223344556677889900112233445566", 1},
-		// Add new link keys here..
+        // Example enry
+        { "11:22:33:44:55:66", "11223344556677889900112233445566", 1},
+        // Add new link keys here..
 };
 
 static char link_key_to_str_buffer[LINK_KEY_STR_LEN+1];  // 11223344556677889900112233445566\0
@@ -112,16 +112,16 @@ static void link_key_db_close(void){
 
 // returns 1 if found
 static int link_key_db_get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type) {
-	int i;
-	int num_entries = sizeof(link_key_db) / sizeof(link_key_entry_t);
+    int i;
+    int num_entries = sizeof(link_key_db) / sizeof(link_key_entry_t);
 
-	for (i=0;i<num_entries;i++){
-		if (strcmp(bd_addr_to_str(bd_addr), link_key_db[i].bd_addr)) continue;
-		*link_key_type = (link_key_type_t) link_key_db[i].link_key_type;
-		sscanf_link_key(link_key_db[i].link_key, link_key);
-		return 1;
-	}
-	return 0;
+    for (i=0;i<num_entries;i++){
+        if (strcmp(bd_addr_to_str(bd_addr), link_key_db[i].bd_addr)) continue;
+        *link_key_type = (link_key_type_t) link_key_db[i].link_key_type;
+        sscanf_link_key(link_key_db[i].link_key, link_key);
+        return 1;
+    }
+    return 0;
 }
 
 static void link_key_db_delete_link_key(bd_addr_t bd_addr){
@@ -130,8 +130,8 @@ static void link_key_db_delete_link_key(bd_addr_t bd_addr){
 
 
 static void link_key_db_put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t link_key_type){
-	log_info("Please add the following line to btstack_link_key_db.c");
-	log_info("{ \"%s\", \"%s\", %u },\n", bd_addr_to_str(bd_addr), link_key_to_str(link_key), (int) link_key_type);
+    log_info("Please add the following line to btstack_link_key_db.c");
+    log_info("{ \"%s\", \"%s\", %u },\n", bd_addr_to_str(bd_addr), link_key_to_str(link_key), (int) link_key_type);
 }
 
 static void link_key_db_set_local_bd_addr(bd_addr_t bd_addr){

@@ -146,8 +146,8 @@ static inline uint16_t btstack_flip_16(uint16_t value){
  * @return 1 if on big endian
  */
 static inline int btstack_is_big_endian(void){
-	uint16_t sample = 0x0100;
-	return (int) *(uint8_t*) &sample;
+    uint16_t sample = 0x0100;
+    return (int) *(uint8_t*) &sample;
 }
 
 /**
@@ -155,8 +155,8 @@ static inline int btstack_is_big_endian(void){
  * @return 1 if on little endian
  */
 static inline int btstack_is_little_endian(void){
-	uint16_t sample = 0x0001;
-	return (int) *(uint8_t*) &sample;
+    uint16_t sample = 0x0001;
+    return (int) *(uint8_t*) &sample;
 }
 
 /**

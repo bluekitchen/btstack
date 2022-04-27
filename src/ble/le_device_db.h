@@ -52,14 +52,14 @@ extern "C" {
 
 /**
 
-	Note: LE Device DB for pure LE Peripherals is not required if only LE Legacy Pairing without signed writes is used
+    Note: LE Device DB for pure LE Peripherals is not required if only LE Legacy Pairing without signed writes is used
 
-	Per bonded device:
-	- it stores the Identity Resolving Key (IRK) and its address to resolve private addresses
+    Per bonded device:
+    - it stores the Identity Resolving Key (IRK) and its address to resolve private addresses
     - it stores the LTK + EDIV, RAND. EDIV + RAND allows a LE Peripheral to reconstruct the LTK
     - it stores the Connection Signature Resolving Key (CSRK) and the last used counter.
-    	The CSRK is used to generate the signatur on the remote device and is needed to verify the signature itself
-		The Counter is necessary to prevent reply attacks
+        The CSRK is used to generate the signatur on the remote device and is needed to verify the signature itself
+        The Counter is necessary to prevent reply attacks
 
 */
 

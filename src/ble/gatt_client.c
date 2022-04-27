@@ -747,28 +747,28 @@ static uint8_t * setup_long_characteristic_value_packet(uint8_t type, hci_con_ha
 // test if notification/indication should be delivered to application (BLESA)
 static bool gatt_client_accept_server_message(hci_con_handle_t con_handle){
 #ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
-	// ignore messages until re-encryption is complete
+    // ignore messages until re-encryption is complete
     if (gap_reconnect_security_setup_active(con_handle)) return false;
 
-	// after that ignore if bonded but not encrypted
-	return !gap_bonded(con_handle) || (gap_encryption_key_size(con_handle) > 0);
+    // after that ignore if bonded but not encrypted
+    return !gap_bonded(con_handle) || (gap_encryption_key_size(con_handle) > 0);
 #else
     UNUSED(con_handle);
-	return true;
+    return true;
 #endif
 }
 
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes
 static void report_gatt_notification(hci_con_handle_t con_handle, uint16_t value_handle, uint8_t * value, int length){
-	if (!gatt_client_accept_server_message(con_handle)) return;
+    if (!gatt_client_accept_server_message(con_handle)) return;
     uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_NOTIFICATION, con_handle, value_handle, value, length);
     emit_event_to_registered_listeners(con_handle, value_handle, packet, characteristic_value_event_header_size + length);
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes
 static void report_gatt_indication(hci_con_handle_t con_handle, uint16_t value_handle, uint8_t * value, int length){
-	if (!gatt_client_accept_server_message(con_handle)) return;
+    if (!gatt_client_accept_server_message(con_handle)) return;
     uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_INDICATION, con_handle, value_handle, value, length);
     emit_event_to_registered_listeners(con_handle, value_handle, packet, characteristic_value_event_header_size + length);
 }

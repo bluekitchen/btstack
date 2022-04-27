@@ -747,18 +747,18 @@ static void avdtp_signaling_emit_media_codec_other_capability(uint16_t avdtp_cid
 
 static void
 avdtp_signaling_emit_media_transport_capability(uint16_t avdtp_cid, uint8_t remote_seid) {
-	avdtp_signaling_emit_capability(AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY, avdtp_cid,
-									remote_seid);
+    avdtp_signaling_emit_capability(AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY, avdtp_cid,
+                                    remote_seid);
 }
 
 static void avdtp_signaling_emit_reporting_capability(uint16_t avdtp_cid, uint8_t remote_seid) {
-	avdtp_signaling_emit_capability(AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY, avdtp_cid, remote_seid);
+    avdtp_signaling_emit_capability(AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY, avdtp_cid, remote_seid);
 }
 
 static void
 avdtp_signaling_emit_delay_reporting_capability(uint16_t avdtp_cid, uint8_t remote_seid) {
-	avdtp_signaling_emit_capability(AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, avdtp_cid,
-									remote_seid);
+    avdtp_signaling_emit_capability(AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, avdtp_cid,
+                                    remote_seid);
 }
 
 static void avdtp_signaling_emit_recovery_capability(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_recovery_capabilities_t *recovery) {
@@ -880,36 +880,36 @@ static void avdtp_signaling_emit_media_codec_capability(uint16_t avdtp_cid, uint
 
 // emit events for all capabilities incl. final done event
 void avdtp_signaling_emit_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_capabilities_t *capabilities,
-									   uint16_t registered_service_categories) {
+                                       uint16_t registered_service_categories) {
     if (get_bit16(registered_service_categories, AVDTP_MEDIA_CODEC)){
         avdtp_signaling_emit_media_codec_capability(avdtp_cid, remote_seid, capabilities->media_codec);
     }
 
     if (get_bit16(registered_service_categories, AVDTP_MEDIA_TRANSPORT)){
-		avdtp_signaling_emit_media_transport_capability(avdtp_cid, remote_seid);
+        avdtp_signaling_emit_media_transport_capability(avdtp_cid, remote_seid);
     }
     if (get_bit16(registered_service_categories, AVDTP_REPORTING)){
-		avdtp_signaling_emit_reporting_capability(avdtp_cid, remote_seid);
+        avdtp_signaling_emit_reporting_capability(avdtp_cid, remote_seid);
     }
     if (get_bit16(registered_service_categories, AVDTP_RECOVERY)){
-		avdtp_signaling_emit_recovery_capability(avdtp_cid, remote_seid, &capabilities->recovery);
+        avdtp_signaling_emit_recovery_capability(avdtp_cid, remote_seid, &capabilities->recovery);
     }
     if (get_bit16(registered_service_categories, AVDTP_CONTENT_PROTECTION)){
-		avdtp_signaling_emit_content_protection_capability(avdtp_cid, remote_seid,
-														   &capabilities->content_protection);
+        avdtp_signaling_emit_content_protection_capability(avdtp_cid, remote_seid,
+                                                           &capabilities->content_protection);
     }
     if (get_bit16(registered_service_categories, AVDTP_HEADER_COMPRESSION)){
-		avdtp_signaling_emit_header_compression_capability(avdtp_cid, remote_seid,
-														   &capabilities->header_compression);
+        avdtp_signaling_emit_header_compression_capability(avdtp_cid, remote_seid,
+                                                           &capabilities->header_compression);
     }
     if (get_bit16(registered_service_categories, AVDTP_MULTIPLEXING)){
-		avdtp_signaling_emit_content_multiplexing_capability(avdtp_cid, remote_seid,
-															 &capabilities->multiplexing_mode);
+        avdtp_signaling_emit_content_multiplexing_capability(avdtp_cid, remote_seid,
+                                                             &capabilities->multiplexing_mode);
     }
     if (get_bit16(registered_service_categories, AVDTP_DELAY_REPORTING)){
-		avdtp_signaling_emit_delay_reporting_capability(avdtp_cid, remote_seid);
+        avdtp_signaling_emit_delay_reporting_capability(avdtp_cid, remote_seid);
     }
-	avdtp_signaling_emit_capability_done(avdtp_cid, remote_seid);
+    avdtp_signaling_emit_capability_done(avdtp_cid, remote_seid);
 }
 
 static uint16_t

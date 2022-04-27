@@ -58,22 +58,22 @@
 #include "ble/gatt-service/device_information_service_server.h"
 
 typedef enum {
-	MANUFACTURER_NAME = 0,
-	MODEL_NUMBER,
-	SERIAL_NUMBER,
-	HARDWARE_REVISION,
-	FIRMWARE_REVISION,
-	SOFTWARE_REVISION,
-	SYSTEM_ID,
-	IEEE_REGULATORY_CERTIFICATION,
-	PNP_ID,
-	NUM_INFORMATION_FIELDS
+    MANUFACTURER_NAME = 0,
+    MODEL_NUMBER,
+    SERIAL_NUMBER,
+    HARDWARE_REVISION,
+    FIRMWARE_REVISION,
+    SOFTWARE_REVISION,
+    SYSTEM_ID,
+    IEEE_REGULATORY_CERTIFICATION,
+    PNP_ID,
+    NUM_INFORMATION_FIELDS
 } device_information_field_id_t;
 
 typedef struct {
-	uint8_t * data;
-	uint16_t  len;
-	uint16_t  value_handle;
+    uint8_t * data;
+    uint16_t  len;
+    uint16_t  value_handle;
 } device_information_field_t;
 
 static device_information_field_t device_information_fields[NUM_INFORMATION_FIELDS];
@@ -84,19 +84,19 @@ static uint8_t device_information_pnp_id[7];
 
 static att_service_handler_t       device_information_service;
 static void set_string(device_information_field_id_t field_id, const char * text){
-	device_information_fields[field_id].data = (uint8_t*) text;
-	device_information_fields[field_id].len  = strlen(text);
+    device_information_fields[field_id].data = (uint8_t*) text;
+    device_information_fields[field_id].len  = strlen(text);
 }
 
 static uint16_t device_information_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-	UNUSED(con_handle);	// ok: info same for all devices
-	unsigned int i;
-	for (i=0;i<NUM_INFORMATION_FIELDS;i++){
-		if ((device_information_fields[i].value_handle == attribute_handle) && (device_information_fields[i].data != NULL)){
-			return att_read_callback_handle_blob(device_information_fields[i].data, device_information_fields[i].len, offset, buffer, buffer_size);
-		};
-	}
-	return 0;
+    UNUSED(con_handle); // ok: info same for all devices
+    unsigned int i;
+    for (i=0;i<NUM_INFORMATION_FIELDS;i++){
+        if ((device_information_fields[i].value_handle == attribute_handle) && (device_information_fields[i].data != NULL)){
+            return att_read_callback_handle_blob(device_information_fields[i].data, device_information_fields[i].len, offset, buffer, buffer_size);
+        };
+    }
+    return 0;
 }
 
 void device_information_service_server_init(void){
@@ -115,32 +115,32 @@ void device_information_service_server_init(void){
 
 
     // get service handle range
-	uint16_t start_handle;
-	uint16_t end_handle;
-	int service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_DEVICE_INFORMATION, &start_handle, &end_handle);
-	btstack_assert(service_found != 0);
-	UNUSED(service_found);
+    uint16_t start_handle;
+    uint16_t end_handle;
+    int service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_DEVICE_INFORMATION, &start_handle, &end_handle);
+    btstack_assert(service_found != 0);
+    UNUSED(service_found);
 
-	// set length for fixed size characateristics
-	device_information_fields[SYSTEM_ID].data = device_information_system_id;
-	device_information_fields[SYSTEM_ID].len = 8;
-	device_information_fields[IEEE_REGULATORY_CERTIFICATION].data = device_information_ieee_regulatory_certification;
-	device_information_fields[IEEE_REGULATORY_CERTIFICATION].len = 4;
-	device_information_fields[PNP_ID].data = device_information_pnp_id;
-	device_information_fields[PNP_ID].len = 7;
+    // set length for fixed size characateristics
+    device_information_fields[SYSTEM_ID].data = device_information_system_id;
+    device_information_fields[SYSTEM_ID].len = 8;
+    device_information_fields[IEEE_REGULATORY_CERTIFICATION].data = device_information_ieee_regulatory_certification;
+    device_information_fields[IEEE_REGULATORY_CERTIFICATION].len = 4;
+    device_information_fields[PNP_ID].data = device_information_pnp_id;
+    device_information_fields[PNP_ID].len = 7;
 
-	// get characteristic value handles
-	int i;
-	for (i=0;i<NUM_INFORMATION_FIELDS;i++){
-		device_information_fields[i].value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, device_information_characteristic_uuids[i]);
-	}
+    // get characteristic value handles
+    int i;
+    for (i=0;i<NUM_INFORMATION_FIELDS;i++){
+        device_information_fields[i].value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, device_information_characteristic_uuids[i]);
+    }
 
-	// register service with ATT Server
-	device_information_service.start_handle   = start_handle;
-	device_information_service.end_handle     = end_handle;
-	device_information_service.read_callback  = &device_information_service_read_callback;
-	device_information_service.write_callback = NULL;
-	att_server_register_service_handler(&device_information_service);
+    // register service with ATT Server
+    device_information_service.start_handle   = start_handle;
+    device_information_service.end_handle     = end_handle;
+    device_information_service.read_callback  = &device_information_service_read_callback;
+    device_information_service.write_callback = NULL;
+    att_server_register_service_handler(&device_information_service);
 }
 
 /**
@@ -148,7 +148,7 @@ void device_information_service_server_init(void){
  * @param manufacturer_name
  */
 void device_information_service_server_set_manufacturer_name(const char * manufacturer_name){
-	set_string(MANUFACTURER_NAME, manufacturer_name);
+    set_string(MANUFACTURER_NAME, manufacturer_name);
 }
 
 /**
@@ -156,7 +156,7 @@ void device_information_service_server_set_manufacturer_name(const char * manufa
  * @param model_number
  */
 void device_information_service_server_set_model_number(const char * model_number){
-	set_string(MODEL_NUMBER, model_number);
+    set_string(MODEL_NUMBER, model_number);
 }
 
 /**
@@ -164,7 +164,7 @@ void device_information_service_server_set_model_number(const char * model_numbe
  * @param serial_number
  */
 void device_information_service_server_set_serial_number(const char * serial_number){
-	set_string(SERIAL_NUMBER, serial_number);
+    set_string(SERIAL_NUMBER, serial_number);
 }
 
 /**
@@ -172,7 +172,7 @@ void device_information_service_server_set_serial_number(const char * serial_num
  * @param hardware_revision
  */
 void device_information_service_server_set_hardware_revision(const char * hardware_revision){
-	set_string(HARDWARE_REVISION, hardware_revision);
+    set_string(HARDWARE_REVISION, hardware_revision);
 }
 
 /**
@@ -180,7 +180,7 @@ void device_information_service_server_set_hardware_revision(const char * hardwa
  * @param firmware_revision
  */
 void device_information_service_server_set_firmware_revision(const char * firmware_revision){
-	set_string(FIRMWARE_REVISION, firmware_revision);
+    set_string(FIRMWARE_REVISION, firmware_revision);
 }
 
 /**
@@ -188,7 +188,7 @@ void device_information_service_server_set_firmware_revision(const char * firmwa
  * @param software_revision
  */
 void device_information_service_server_set_software_revision(const char * software_revision){
-	set_string(SOFTWARE_REVISION, software_revision);
+    set_string(SOFTWARE_REVISION, software_revision);
 }
 
 /**
@@ -197,10 +197,10 @@ void device_information_service_server_set_software_revision(const char * softwa
  * @param organizationally_unique_identifier uint24
  */
 void device_information_service_server_set_system_id(uint64_t manufacturer_identifier, uint32_t organizationally_unique_identifier){
-	little_endian_store_32(device_information_system_id, 0, manufacturer_identifier);
-	device_information_system_id[4] = manufacturer_identifier >> 32;
-	little_endian_store_16(device_information_system_id, 5, organizationally_unique_identifier);
-	device_information_system_id[7] = organizationally_unique_identifier >> 16;
+    little_endian_store_32(device_information_system_id, 0, manufacturer_identifier);
+    device_information_system_id[4] = manufacturer_identifier >> 32;
+    little_endian_store_16(device_information_system_id, 5, organizationally_unique_identifier);
+    device_information_system_id[7] = organizationally_unique_identifier >> 16;
 }
 
 /**
@@ -209,8 +209,8 @@ void device_information_service_server_set_system_id(uint64_t manufacturer_ident
  * @param ieee_regulatory_certification
  */
 void device_information_service_server_set_ieee_regulatory_certification(uint16_t value_a, uint16_t value_b){
-	little_endian_store_16(device_information_ieee_regulatory_certification, 0, value_a);
-	little_endian_store_16(device_information_ieee_regulatory_certification, 2, value_b);
+    little_endian_store_16(device_information_ieee_regulatory_certification, 0, value_a);
+    little_endian_store_16(device_information_ieee_regulatory_certification, 2, value_b);
 }
 
 /**
@@ -220,8 +220,8 @@ void device_information_service_server_set_ieee_regulatory_certification(uint16_
  * @param product_id
  */
 void device_information_service_server_set_pnp_id(uint8_t vendor_source_id, uint16_t vendor_id, uint16_t product_id, uint16_t product_version){
-	device_information_pnp_id[0] = vendor_source_id;
-	little_endian_store_16(device_information_pnp_id, 1, vendor_id);
-	little_endian_store_16(device_information_pnp_id, 3, product_id);
-	little_endian_store_16(device_information_pnp_id, 5, product_version);
+    device_information_pnp_id[0] = vendor_source_id;
+    little_endian_store_16(device_information_pnp_id, 1, vendor_id);
+    little_endian_store_16(device_information_pnp_id, 3, product_id);
+    little_endian_store_16(device_information_pnp_id, 5, product_version);
 }

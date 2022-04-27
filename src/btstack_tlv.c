@@ -42,15 +42,15 @@
 
 
 static const btstack_tlv_t * btstack_tlv_singleton_impl;
-static void * 		         btstack_tlv_singleton_context;
+static void *                btstack_tlv_singleton_context;
 
 void btstack_tlv_set_instance(const btstack_tlv_t * tlv_impl, void * tlv_context){
-	log_info("TLV Instance %p", tlv_impl);
-	btstack_tlv_singleton_impl 	  = tlv_impl;
-	btstack_tlv_singleton_context = tlv_context;
+    log_info("TLV Instance %p", tlv_impl);
+    btstack_tlv_singleton_impl    = tlv_impl;
+    btstack_tlv_singleton_context = tlv_context;
 }
 
 void btstack_tlv_get_instance(const btstack_tlv_t ** tlv_impl, void ** tlv_context){
-	*tlv_impl    = btstack_tlv_singleton_impl;
-	*tlv_context = btstack_tlv_singleton_context;
+    *tlv_impl    = btstack_tlv_singleton_impl;
+    *tlv_context = btstack_tlv_singleton_context;
 }

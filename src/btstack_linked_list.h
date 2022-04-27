@@ -58,9 +58,9 @@ typedef struct btstack_linked_item {
 typedef btstack_linked_item_t * btstack_linked_list_t;
 
 typedef struct {
-	int advance_on_next;
-    btstack_linked_item_t * prev;	// points to the item before the current one
-    btstack_linked_item_t * curr;	// points to the current item (to detect item removal)
+    int advance_on_next;
+    btstack_linked_item_t * prev;   // points to the item before the current one
+    btstack_linked_item_t * curr;   // points to the current item (to detect item removal)
 } btstack_linked_list_iterator_t;
 
 

@@ -118,7 +118,7 @@ static bool le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
 
     uint32_t tag = le_device_db_tlv_tag_for_index(index);
     int size = le_device_db_tlv_btstack_tlv_impl->get_tag(le_device_db_tlv_btstack_tlv_context, tag, (uint8_t*) entry, sizeof(le_device_db_entry_t));
-	return size == sizeof(le_device_db_entry_t);
+    return size == sizeof(le_device_db_entry_t);
 }
 
 // @return success
@@ -141,7 +141,7 @@ static bool le_device_db_tlv_delete(int index){
 
     uint32_t tag = le_device_db_tlv_tag_for_index(index);
     le_device_db_tlv_btstack_tlv_impl->delete_tag(le_device_db_tlv_btstack_tlv_context, tag);
-	return true;
+    return true;
 }
 
 static void le_device_db_tlv_scan(void){
@@ -172,7 +172,7 @@ void le_device_db_set_local_bd_addr(bd_addr_t bd_addr){
 
 // @return number of device in db
 int le_device_db_count(void){
-	return num_valid_entries;
+    return num_valid_entries;
 }
 
 int le_device_db_max_count(void){
@@ -186,10 +186,10 @@ void le_device_db_remove(int index){
     // check if entry exists
     if (entry_map[index] == 0u) return;
 
-	// delete entry in TLV
-	le_device_db_tlv_delete(index);
+    // delete entry in TLV
+    le_device_db_tlv_delete(index);
 
-	// mark as unused
+    // mark as unused
     entry_map[index] = 0;
 
     // keep track
@@ -205,7 +205,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     int index_for_empty = -1;
     bool new_entry = false;
 
-	// find unused entry in the used list
+    // find unused entry in the used list
     int i;
     for (i=0;i<NVM_NUM_DEVICE_DB_ENTRIES;i++){
          if (entry_map[i]) {
@@ -247,7 +247,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     log_info("new entry for index %u", (unsigned int) index_to_use);
 
     // store entry at index
-	le_device_db_entry_t entry;
+    le_device_db_entry_t entry;
     log_info("LE Device DB adding type %u - %s", addr_type, bd_addr_to_str(addr));
     log_info_key("irk", irk);
 
@@ -282,7 +282,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
 // get device information: addr type and address
 void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk){
 
-	// fetch entry
+    // fetch entry
     le_device_db_entry_t entry;
     int ok = le_device_db_tlv_fetch(index, &entry);
 
@@ -300,12 +300,12 @@ void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk)
 
 void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized, int secure_connection){
 
-	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return;
+    // fetch entry
+    le_device_db_entry_t entry;
+    int ok = le_device_db_tlv_fetch(index, &entry);
+    if (!ok) return;
 
-	// update
+    // update
     log_info("LE Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u, secure connection %u",
         index, ediv, key_size, authenticated, authorized, secure_connection);
     entry.ediv = ediv;
@@ -325,12 +325,12 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
 
 void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized, int * secure_connection){
 
-	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return;
+    // fetch entry
+    le_device_db_entry_t entry;
+    int ok = le_device_db_tlv_fetch(index, &entry);
+    if (!ok) return;
 
-	// update user fields
+    // update user fields
     log_info("LE Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u, secure connection %u",
         index, entry.ediv, entry.key_size, entry.authenticated, entry.authorized, entry.secure_connection);
     if (ediv != NULL) *ediv = entry.ediv;
@@ -347,20 +347,20 @@ void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm
 // get signature key
 void le_device_db_remote_csrk_get(int index, sm_key_t csrk){
 
-	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return;
+    // fetch entry
+    le_device_db_entry_t entry;
+    int ok = le_device_db_tlv_fetch(index, &entry);
+    if (!ok) return;
 
     if (csrk) (void)memcpy(csrk, entry.remote_csrk, 16);
 }
 
 void le_device_db_remote_csrk_set(int index, sm_key_t csrk){
 
-	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return;
+    // fetch entry
+    le_device_db_entry_t entry;
+    int ok = le_device_db_tlv_fetch(index, &entry);
+    if (!ok) return;
 
     if (!csrk) return;
 
@@ -373,10 +373,10 @@ void le_device_db_remote_csrk_set(int index, sm_key_t csrk){
 
 void le_device_db_local_csrk_get(int index, sm_key_t csrk){
 
-	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return;
+    // fetch entry
+    le_device_db_entry_t entry;
+    int ok = le_device_db_tlv_fetch(index, &entry);
+    if (!ok) return;
 
     if (!csrk) return;
 
@@ -386,10 +386,10 @@ void le_device_db_local_csrk_get(int index, sm_key_t csrk){
 
 void le_device_db_local_csrk_set(int index, sm_key_t csrk){
 
-	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return;
+    // fetch entry
+    le_device_db_entry_t entry;
+    int ok = le_device_db_tlv_fetch(index, &entry);
+    if (!ok) return;
 
     if (!csrk) return;
 
@@ -403,10 +403,10 @@ void le_device_db_local_csrk_set(int index, sm_key_t csrk){
 // query last used/seen signing counter
 uint32_t le_device_db_remote_counter_get(int index){
 
-	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return 0;
+    // fetch entry
+    le_device_db_entry_t entry;
+    int ok = le_device_db_tlv_fetch(index, &entry);
+    if (!ok) return 0;
 
     return entry.remote_counter;
 }
@@ -414,10 +414,10 @@ uint32_t le_device_db_remote_counter_get(int index){
 // update signing counter
 void le_device_db_remote_counter_set(int index, uint32_t counter){
 
-	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return;
+    // fetch entry
+    le_device_db_entry_t entry;
+    int ok = le_device_db_tlv_fetch(index, &entry);
+    if (!ok) return;
 
     entry.remote_counter = counter;
 
@@ -428,10 +428,10 @@ void le_device_db_remote_counter_set(int index, uint32_t counter){
 // query last used/seen signing counter
 uint32_t le_device_db_local_counter_get(int index){
 
-	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return 0;
+    // fetch entry
+    le_device_db_entry_t entry;
+    int ok = le_device_db_tlv_fetch(index, &entry);
+    if (!ok) return 0;
 
     return entry.local_counter;
 }
@@ -439,12 +439,12 @@ uint32_t le_device_db_local_counter_get(int index){
 // update signing counter
 void le_device_db_local_counter_set(int index, uint32_t counter){
 
-	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return;
+    // fetch entry
+    le_device_db_entry_t entry;
+    int ok = le_device_db_tlv_fetch(index, &entry);
+    if (!ok) return;
 
-	// update
+    // update
     entry.local_counter = counter;
 
     // store
@@ -459,9 +459,9 @@ void le_device_db_dump(void){
 
     for (i=0;i<NVM_NUM_DEVICE_DB_ENTRIES;i++){
         if (!entry_map[i]) continue;
-		// fetch entry
-		le_device_db_entry_t entry;
-		le_device_db_tlv_fetch(i, &entry);
+        // fetch entry
+        le_device_db_entry_t entry;
+        le_device_db_tlv_fetch(i, &entry);
         log_info("%u: %u %s", (unsigned int) i, entry.addr_type, bd_addr_to_str(entry.addr));
         log_info_key("irk", entry.irk);
 #ifdef ENABLE_LE_SIGNED_WRITE
@@ -472,7 +472,7 @@ void le_device_db_dump(void){
 }
 
 void le_device_db_tlv_configure(const btstack_tlv_t * btstack_tlv_impl, void * btstack_tlv_context){
-	le_device_db_tlv_btstack_tlv_impl = btstack_tlv_impl;
-	le_device_db_tlv_btstack_tlv_context = btstack_tlv_context;
+    le_device_db_tlv_btstack_tlv_impl = btstack_tlv_impl;
+    le_device_db_tlv_btstack_tlv_context = btstack_tlv_context;
     le_device_db_tlv_scan();
 }

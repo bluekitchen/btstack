@@ -393,7 +393,7 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
     if (result != 0){
         bd_addr_copy(addr, buffer);
     }
-	return result;
+    return result;
 }
 
 uint32_t btstack_atoi(const char * str){

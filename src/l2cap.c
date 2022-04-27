@@ -2484,9 +2484,9 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     // limit MTU to the size of our outgoing HCI buffer
     uint16_t local_mtu = btstack_min(mtu, l2cap_max_mtu());
 
-	// determine security level based on psm
-	const gap_security_level_t security_level = l2cap_security_level_0_allowed_for_PSM(psm) ? LEVEL_0 : gap_get_security_level();
-	log_info("create channel addr %s psm 0x%x mtu %u -> local mtu %u, sec level %u", bd_addr_to_str(address), psm, mtu, local_mtu, (int) security_level);
+    // determine security level based on psm
+    const gap_security_level_t security_level = l2cap_security_level_0_allowed_for_PSM(psm) ? LEVEL_0 : gap_get_security_level();
+    log_info("create channel addr %s psm 0x%x mtu %u -> local mtu %u, sec level %u", bd_addr_to_str(address), psm, mtu, local_mtu, (int) security_level);
 
     l2cap_channel_t * channel = l2cap_create_channel_entry(channel_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_ACL, psm, local_mtu, security_level);
     if (!channel) {
@@ -2505,19 +2505,19 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
        *out_local_cid = channel->local_cid;
     }
 
-	// state: L2CAP_STATE_WILL_SEND_CREATE_CONNECTION
+    // state: L2CAP_STATE_WILL_SEND_CREATE_CONNECTION
 
     // check if hci connection is already usable,
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_ACL);
     if (conn && conn->state == OPEN){
-    	// simulate connection complete
-	    l2cap_handle_connection_complete(conn->con_handle, channel);
+        // simulate connection complete
+        l2cap_handle_connection_complete(conn->con_handle, channel);
 
-	    // state: L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES or L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST
+        // state: L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES or L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST
 
         // simulate if remote supported features if requested and already received
         if ((channel->state == L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) && hci_remote_features_available(conn->con_handle)) {
-        	// simulate remote features received
+            // simulate remote features received
             l2cap_handle_remote_supported_features_received(channel);
         }
     }

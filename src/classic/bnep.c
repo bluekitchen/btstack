@@ -127,7 +127,7 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
     reverse_bd_addr(channel->remote_addr, &event[11]);
     little_endian_store_16(event, 17, channel->con_handle);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+    (*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_channel_timeout(bnep_channel_t *channel)
@@ -144,7 +144,7 @@ static void bnep_emit_channel_timeout(bnep_channel_t *channel)
     reverse_bd_addr(channel->remote_addr, &event[8]);
     event[14] = channel->state;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+    (*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_channel_closed(bnep_channel_t *channel)
@@ -160,7 +160,7 @@ static void bnep_emit_channel_closed(bnep_channel_t *channel)
     little_endian_store_16(event, 6, channel->uuid_dest);
     reverse_bd_addr(channel->remote_addr, &event[8]);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+    (*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_ready_to_send(bnep_channel_t *channel)
@@ -172,7 +172,7 @@ static void bnep_emit_ready_to_send(bnep_channel_t *channel)
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->l2cap_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+    (*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 /* Send BNEP connection request */
@@ -190,8 +190,8 @@ static int bnep_send_command_not_understood(bnep_channel_t *channel, uint8_t con
     bnep_out_buffer = l2cap_get_outgoing_buffer();
 
     /* Setup control packet type */
-	bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
-	bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_COMMAND_NOT_UNDERSTOOD;
+    bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
+    bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_COMMAND_NOT_UNDERSTOOD;
 
     /* Add not understood control type */
     bnep_out_buffer[pos++] = control_type;
@@ -220,8 +220,8 @@ static int bnep_send_connection_request(bnep_channel_t *channel, uint16_t uuid_s
     bnep_out_buffer = l2cap_get_outgoing_buffer();
 
     /* Setup control packet type */
-	bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
-	bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_SETUP_CONNECTION_REQUEST;
+    bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
+    bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_SETUP_CONNECTION_REQUEST;
 
     /* Add UUID Size */
     bnep_out_buffer[pos++] = 2;
@@ -256,8 +256,8 @@ static int bnep_send_connection_response(bnep_channel_t *channel, uint16_t respo
     bnep_out_buffer = l2cap_get_outgoing_buffer();
 
     /* Setup control packet type */
-	bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
-	bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_SETUP_CONNECTION_RESPONSE;
+    bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
+    bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_SETUP_CONNECTION_RESPONSE;
 
     /* Add response code */
     big_endian_store_16(bnep_out_buffer, pos, response_code);
@@ -287,8 +287,8 @@ static int bnep_send_filter_net_type_set(bnep_channel_t *channel, bnep_net_filte
     bnep_out_buffer = l2cap_get_outgoing_buffer();
 
     /* Setup control packet type */
-	bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
-	bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_FILTER_NET_TYPE_SET;
+    bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
+    bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_FILTER_NET_TYPE_SET;
 
     big_endian_store_16(bnep_out_buffer, pos, len * 2 * 2);
     pos += 2;
@@ -323,8 +323,8 @@ static int bnep_send_filter_net_type_response(bnep_channel_t *channel, uint16_t 
     bnep_out_buffer = l2cap_get_outgoing_buffer();
 
     /* Setup control packet type */
-	bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
-	bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_FILTER_NET_TYPE_RESPONSE;
+    bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
+    bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_FILTER_NET_TYPE_RESPONSE;
 
     /* Add response code */
     big_endian_store_16(bnep_out_buffer, pos, response_code);
@@ -355,8 +355,8 @@ static int bnep_send_filter_multi_addr_set(bnep_channel_t *channel, bnep_multi_f
     bnep_out_buffer = l2cap_get_outgoing_buffer();
 
     /* Setup control packet type */
-	bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
-	bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_SET;
+    bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
+    bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_SET;
 
     big_endian_store_16(bnep_out_buffer, pos, len * 2 * ETHER_ADDR_LEN);
     pos += 2;
@@ -391,8 +391,8 @@ static int bnep_send_filter_multi_addr_response(bnep_channel_t *channel, uint16_
     bnep_out_buffer = l2cap_get_outgoing_buffer();
 
     /* Setup control packet type */
-	bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
-	bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_RESPONSE;
+    bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
+    bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_RESPONSE;
 
     /* Add response code */
     big_endian_store_16(bnep_out_buffer, pos, response_code);
@@ -434,7 +434,7 @@ void bnep_request_can_send_now_event(uint16_t bnep_cid)
 
 static int bnep_filter_protocol(bnep_channel_t *channel, uint16_t network_protocol_type)
 {
-	int i;
+    int i;
 
     if (channel->net_filter_count == 0) {
         /* No filter set */
@@ -453,12 +453,12 @@ static int bnep_filter_protocol(bnep_channel_t *channel, uint16_t network_protoc
 
 static int bnep_filter_multicast(bnep_channel_t *channel, bd_addr_t addr_dest)
 {
-	int i;
+    int i;
 
     /* Check if the multicast flag is set int the destination address */
-	if ((addr_dest[0] & 0x01) == 0x00) {
+    if ((addr_dest[0] & 0x01) == 0x00) {
         /* Not a multicast frame, do not apply filtering and send it in any case */
-		return 1;
+        return 1;
     }
 
     if (channel->multicast_filter_count == 0) {
@@ -466,14 +466,14 @@ static int bnep_filter_multicast(bnep_channel_t *channel, bd_addr_t addr_dest)
         return 1;
     }
 
-	for (i = 0; i < channel->multicast_filter_count; i ++) {
-		if ((memcmp(addr_dest, channel->multicast_filter[i].addr_start, sizeof(bd_addr_t)) >= 0) &&
-		    (memcmp(addr_dest, channel->multicast_filter[i].addr_end, sizeof(bd_addr_t)) <= 0)) {
-			return 1;
+    for (i = 0; i < channel->multicast_filter_count; i ++) {
+        if ((memcmp(addr_dest, channel->multicast_filter[i].addr_start, sizeof(bd_addr_t)) >= 0) &&
+            (memcmp(addr_dest, channel->multicast_filter[i].addr_end, sizeof(bd_addr_t)) <= 0)) {
+            return 1;
         }
-	}
+    }
 
-	return 0;
+    return 0;
 }
 
 
@@ -519,14 +519,14 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
 
     payload_len = len - pos;
 
-	if (network_protocol_type == ETHERTYPE_VLAN) {	/* IEEE 802.1Q tag header */
-		if (payload_len < 4) {
+    if (network_protocol_type == ETHERTYPE_VLAN) {  /* IEEE 802.1Q tag header */
+        if (payload_len < 4) {
             /* Omit this packet */
-			return 0;
+            return 0;
         }
         /* The "real" network protocol type is 4 bytes ahead in a VLAN packet */
-		network_protocol_type = big_endian_read_16(packet, pos + 2);
-	}
+        network_protocol_type = big_endian_read_16(packet, pos + 2);
+    }
 
     /* Check network protocol and multicast filters before sending */
     if (!bnep_filter_protocol(channel, network_protocol_type) ||
@@ -993,7 +993,7 @@ static int bnep_handle_filter_net_type_set(bnep_channel_t *channel, uint8_t *pac
 
 static int bnep_handle_filter_net_type_response(bnep_channel_t *channel, uint8_t *packet, uint16_t size)
 {
-	uint16_t response_code;
+    uint16_t response_code;
 
     // TODO: Currently we do not support setting a network filter.
 
@@ -1079,7 +1079,7 @@ static int bnep_handle_multi_addr_set(bnep_channel_t *channel, uint8_t *packet, 
 
 static int bnep_handle_multi_addr_response(bnep_channel_t *channel, uint8_t *packet, uint16_t size)
 {
-	uint16_t response_code;
+    uint16_t response_code;
 
     // TODO: Currently we do not support setting multicast address filter.
 

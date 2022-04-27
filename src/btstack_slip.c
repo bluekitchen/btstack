@@ -46,10 +46,10 @@
 #include "btstack_debug.h"
 
 typedef enum {
-	SLIP_ENCODER_DEFAULT,
-	SLIP_ENCODER_SEND_C0,
-	SLIP_ENCODER_SEND_DC,
-	SLIP_ENCODER_SEND_DD
+    SLIP_ENCODER_DEFAULT,
+    SLIP_ENCODER_SEND_C0,
+    SLIP_ENCODER_SEND_DC,
+    SLIP_ENCODER_SEND_DD
 } btstack_slip_encoder_state_t;
 
 // h5 slip state machine
@@ -82,10 +82,10 @@ static uint16_t  decoder_pos;
  * @param len
  */
 void btstack_slip_encoder_start(const uint8_t * data, uint16_t len){
-	// start with C0 SOF
-	encoder_state = SLIP_ENCODER_SEND_C0;
-	encoder_data  = data;
-	encoder_len   = len;
+    // start with C0 SOF
+    encoder_state = SLIP_ENCODER_SEND_C0;
+    encoder_data  = data;
+    encoder_len   = len;
 }
 
 /**
@@ -93,8 +93,8 @@ void btstack_slip_encoder_start(const uint8_t * data, uint16_t len){
  * @return True if data ready
  */
 int  btstack_slip_encoder_has_data(void){
-	if (encoder_state != SLIP_ENCODER_DEFAULT) return 1;
-	return encoder_len > 0u;
+    if (encoder_state != SLIP_ENCODER_DEFAULT) return 1;
+    return encoder_len > 0u;
 }
 
 /**
@@ -102,59 +102,59 @@ int  btstack_slip_encoder_has_data(void){
  * @return Next bytes from encoder
  */
 uint8_t btstack_slip_encoder_get_byte(void){
-	uint8_t next_byte;
-	switch (encoder_state){
-		case SLIP_ENCODER_DEFAULT:
-			next_byte = *encoder_data++;
-			encoder_len--;
-			switch (next_byte){
-				case BTSTACK_SLIP_SOF:
-					encoder_state = SLIP_ENCODER_SEND_DC;
-					next_byte = 0xdb;
-					break;
-				case 0xdb:
-					encoder_state = SLIP_ENCODER_SEND_DD;
-					next_byte = 0xdb;
-				default:
+    uint8_t next_byte;
+    switch (encoder_state){
+        case SLIP_ENCODER_DEFAULT:
+            next_byte = *encoder_data++;
+            encoder_len--;
+            switch (next_byte){
+                case BTSTACK_SLIP_SOF:
+                    encoder_state = SLIP_ENCODER_SEND_DC;
+                    next_byte = 0xdb;
                     break;
-			}
-			break;
-		case SLIP_ENCODER_SEND_C0:
-			encoder_state = SLIP_ENCODER_DEFAULT;
-			return 0xc0;
-		case SLIP_ENCODER_SEND_DC:
-			encoder_state = SLIP_ENCODER_DEFAULT;
-			next_byte = 0xdc;
-			break;
-		case SLIP_ENCODER_SEND_DD:
-			encoder_state = SLIP_ENCODER_DEFAULT;
-			next_byte = 0x0dd;
-			break;
+                case 0xdb:
+                    encoder_state = SLIP_ENCODER_SEND_DD;
+                    next_byte = 0xdb;
+                default:
+                    break;
+            }
+            break;
+        case SLIP_ENCODER_SEND_C0:
+            encoder_state = SLIP_ENCODER_DEFAULT;
+            return 0xc0;
+        case SLIP_ENCODER_SEND_DC:
+            encoder_state = SLIP_ENCODER_DEFAULT;
+            next_byte = 0xdc;
+            break;
+        case SLIP_ENCODER_SEND_DD:
+            encoder_state = SLIP_ENCODER_DEFAULT;
+            next_byte = 0x0dd;
+            break;
         default:
             log_error("btstack_slip_encoder_get_byte invalid state %x", encoder_state);
             return 0x00;
-	}
+    }
 
-	// After last byte, send CO SOF again
-	if ((encoder_state == SLIP_ENCODER_DEFAULT) && (encoder_len == 0)){
-		encoder_state = SLIP_ENCODER_SEND_C0;
-	}
-	return next_byte;
+    // After last byte, send CO SOF again
+    if ((encoder_state == SLIP_ENCODER_DEFAULT) && (encoder_len == 0)){
+        encoder_state = SLIP_ENCODER_SEND_C0;
+    }
+    return next_byte;
 }
 
 // Decoder
 
 static void btstack_slip_decoder_reset(void){
-	decoder_state = SLIP_DECODER_UNKNOWN;
-	decoder_pos = 0;
+    decoder_state = SLIP_DECODER_UNKNOWN;
+    decoder_pos = 0;
 }
 
 static void btstack_slip_decoder_store_byte(uint8_t input){
-	if (decoder_pos >= decoder_max_size){
-	    log_error("btstack_slip_decoder_store_byte: packet to long");
-	    btstack_slip_decoder_reset();
-	}
-	decoder_buffer[decoder_pos++] = input;
+    if (decoder_pos >= decoder_max_size){
+        log_error("btstack_slip_decoder_store_byte: packet to long");
+        btstack_slip_decoder_reset();
+    }
+    decoder_buffer[decoder_pos++] = input;
 }
 
 /**
@@ -163,9 +163,9 @@ static void btstack_slip_decoder_store_byte(uint8_t input){
  * @param max_size of buffer
  */
 void btstack_slip_decoder_init(uint8_t * buffer, uint16_t max_size){
-	decoder_buffer = buffer;
-	decoder_max_size = max_size;
-	btstack_slip_decoder_reset();
+    decoder_buffer = buffer;
+    decoder_max_size = max_size;
+    btstack_slip_decoder_reset();
 }
 
 /**
@@ -174,16 +174,16 @@ void btstack_slip_decoder_init(uint8_t * buffer, uint16_t max_size){
  */
 
 void btstack_slip_decoder_process(uint8_t input){
-	switch(decoder_state){
+    switch(decoder_state){
         case SLIP_DECODER_UNKNOWN:
             if (input != BTSTACK_SLIP_SOF) break;
             btstack_slip_decoder_reset();
             decoder_state = SLIP_DECODER_X_C0;
             break;
         case SLIP_DECODER_COMPLETE:
-        	log_error("btstack_slip_decoder_process called in state COMPLETE");
+            log_error("btstack_slip_decoder_process called in state COMPLETE");
             btstack_slip_decoder_reset();
-        	break;
+            break;
         case SLIP_DECODER_X_C0:
             switch(input){
                 case BTSTACK_SLIP_SOF:
@@ -216,9 +216,9 @@ void btstack_slip_decoder_process(uint8_t input){
             switch(input){
                 case BTSTACK_SLIP_SOF:
                     if (decoder_pos != 0){
-                    	decoder_state = SLIP_DECODER_COMPLETE;
+                        decoder_state = SLIP_DECODER_COMPLETE;
                     } else {
-	                    btstack_slip_decoder_reset();
+                        btstack_slip_decoder_reset();
                     }
                     break;
                 case 0xdb:
@@ -229,9 +229,9 @@ void btstack_slip_decoder_process(uint8_t input){
                     break;
             }
             break;
-		default:
-			btstack_assert(false);
-			break;
+        default:
+            btstack_assert(false);
+            break;
     }
 }
 
@@ -241,10 +241,10 @@ void btstack_slip_decoder_process(uint8_t input){
  */
 
 uint16_t btstack_slip_decoder_frame_size(void){
-	switch (decoder_state){
-		case SLIP_DECODER_COMPLETE:
-			return decoder_pos;
-		default:
-			return 0;
-	}
+    switch (decoder_state){
+        case SLIP_DECODER_COMPLETE:
+            return decoder_pos;
+        default:
+            return 0;
+    }
 }

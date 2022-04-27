@@ -99,7 +99,7 @@ static int btstack_link_key_db_tlv_get_link_key(bd_addr_t bd_addr, link_key_t li
         *link_key_type = entry.link_key_type;
         return 1;
     }
-	return 0;
+    return 0;
 }
 
 static void btstack_link_key_db_tlv_delete_link_key(bd_addr_t bd_addr){

@@ -55,50 +55,50 @@
 
 void device_id_create_sdp_record(uint8_t *service, uint32_t service_record_handle, uint16_t vendor_id_source, uint16_t vendor_id, uint16_t product_id, uint16_t version){
 
-	uint8_t* attribute;
-	de_create_sequence(service);
+    uint8_t* attribute;
+    de_create_sequence(service);
 
     // 0x0000 "Service Record Handle"
-	de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
-	de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
+    de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
 
-	// 0x0001 "Service Class ID List"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
-	attribute = de_push_sequence(service);
-	{
-		de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_PNP_INFORMATION );
-	}
-	de_pop_sequence(service, attribute);
+    // 0x0001 "Service Class ID List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
+    attribute = de_push_sequence(service);
+    {
+        de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_PNP_INFORMATION );
+    }
+    de_pop_sequence(service, attribute);
 
-	// 0x0005 "Public Browse Group"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BROWSE_GROUP_LIST); // public browse group
-	attribute = de_push_sequence(service);
-	{
-		de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT );
-	}
-	de_pop_sequence(service, attribute);
+    // 0x0005 "Public Browse Group"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BROWSE_GROUP_LIST); // public browse group
+    attribute = de_push_sequence(service);
+    {
+        de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT );
+    }
+    de_pop_sequence(service, attribute);
 
-	// 0x0200 "SpecificationID"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SPECIFICATION_ID);
-	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0103);	// v1.3
+    // 0x0200 "SpecificationID"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SPECIFICATION_ID);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0103);   // v1.3
 
-	// 0x0201 "VendorID"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_VENDOR_ID);
-	de_add_number(service,  DE_UINT, DE_SIZE_16, vendor_id);
+    // 0x0201 "VendorID"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_VENDOR_ID);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, vendor_id);
 
-	// 0x0202 "ProductID"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PRODUCT_ID);
-	de_add_number(service,  DE_UINT, DE_SIZE_16, product_id);
+    // 0x0202 "ProductID"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PRODUCT_ID);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, product_id);
 
-	// 0x0203 "Version"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_VERSION);
-	de_add_number(service,  DE_UINT, DE_SIZE_16, version);
+    // 0x0203 "Version"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_VERSION);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, version);
 
-	// 0x0204 "PrimaryRecord"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PRIMARY_RECORD);
-	de_add_number(service,  DE_BOOL, DE_SIZE_8,  1);	// yes, this is the primary record - there are no others
+    // 0x0204 "PrimaryRecord"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PRIMARY_RECORD);
+    de_add_number(service,  DE_BOOL, DE_SIZE_8,  1);    // yes, this is the primary record - there are no others
 
-	// 0x0205 "VendorIDSource"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_VENDOR_ID_SOURCE);
-	de_add_number(service,  DE_UINT, DE_SIZE_16, vendor_id_source);
+    // 0x0205 "VendorIDSource"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_VENDOR_ID_SOURCE);
+    de_add_number(service,  DE_UINT, DE_SIZE_16, vendor_id_source);
 }

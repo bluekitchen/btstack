@@ -49,9 +49,9 @@ extern "C" {
 #endif
 
 typedef struct {
-	void * next;
-	uint8_t adv_length;
-	uint8_t adv_data[31];
+    void * next;
+    uint8_t adv_length;
+    uint8_t adv_data[31];
 } adv_bearer_connectable_advertisement_data_item_t;
 
 /**
@@ -92,7 +92,7 @@ void adv_bearer_advertisements_remove_item(adv_bearer_connectable_advertisement_
  * @note own_address_type is used from gap_random_address_set_mode
  */
 void adv_bearer_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
-	uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
+    uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
 
 /**
  * @brief Enable/Disable Advertisements. OFF by default.

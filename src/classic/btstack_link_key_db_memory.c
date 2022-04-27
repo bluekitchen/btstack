@@ -82,10 +82,10 @@ static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t 
     if (link_key_type) {
         *link_key_type = item->link_key_type;
     }
-	btstack_linked_list_remove(&db_mem_link_keys, (btstack_linked_item_t *) item);
+    btstack_linked_list_remove(&db_mem_link_keys, (btstack_linked_item_t *) item);
     btstack_linked_list_add(&db_mem_link_keys, (btstack_linked_item_t *) item);
 
-	return 1;
+    return 1;
 }
 
 static void delete_link_key(bd_addr_t bd_addr){

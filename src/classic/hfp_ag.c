@@ -2155,11 +2155,11 @@ static int hfp_ag_run_ring_and_clip(hfp_connection_t *hfp_connection){
 
 static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
 
-	btstack_assert(hfp_connection != NULL);
-	btstack_assert(hfp_connection->local_role == HFP_ROLE_AG);
+    btstack_assert(hfp_connection != NULL);
+    btstack_assert(hfp_connection->local_role == HFP_ROLE_AG);
 
-	// during SDP query, RFCOMM CID is not set
-	if (hfp_connection->rfcomm_cid == 0) return;
+    // during SDP query, RFCOMM CID is not set
+    if (hfp_connection->rfcomm_cid == 0) return;
 
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED && hfp_connection->emit_vra_enabled_after_audio_established){
         hfp_connection->emit_vra_enabled_after_audio_established = false;
@@ -2452,7 +2452,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                     default:
                         break;
                 }
-				hfp_connection->call_index = 0;
+                hfp_connection->call_index = 0;
                 break;
             }
             case HFP_CMD_CALL_PHONE_NUMBER:
@@ -3116,29 +3116,29 @@ uint8_t hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle){
 }
 
 void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech){
-	if (!name){
-		name = hfp_ag_default_service_name;
-	}
-	hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY, rfcomm_channel_nr, name);
+    if (!name){
+        name = hfp_ag_default_service_name;
+    }
+    hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY, rfcomm_channel_nr, name);
 
-	/*
-	 * 0x01 – Ability to reject a call
-	 * 0x00 – No ability to reject a call
-	 */
-	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0301);    // Hands-Free Profile - Network
-	de_add_number(service, DE_UINT, DE_SIZE_8, ability_to_reject_call);
+    /*
+     * 0x01 – Ability to reject a call
+     * 0x00 – No ability to reject a call
+     */
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0301);    // Hands-Free Profile - Network
+    de_add_number(service, DE_UINT, DE_SIZE_8, ability_to_reject_call);
 
-	// Construct SupportedFeatures for SDP bitmap:
-	//
-	// "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
-	//  of the Bits 0 to 4 of the unsolicited result code +BRSF"
-	//
-	// Wide band speech (bit 5) requires Codec negotiation
-	//
-	uint16_t sdp_features = supported_features & 0x1f;
-	if ( (wide_band_speech == 1) && (supported_features & (1 << HFP_AGSF_CODEC_NEGOTIATION))){
-		sdp_features |= 1 << 5;
-	}
+    // Construct SupportedFeatures for SDP bitmap:
+    //
+    // "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
+    //  of the Bits 0 to 4 of the unsolicited result code +BRSF"
+    //
+    // Wide band speech (bit 5) requires Codec negotiation
+    //
+    uint16_t sdp_features = supported_features & 0x1f;
+    if ( (wide_band_speech == 1) && (supported_features & (1 << HFP_AGSF_CODEC_NEGOTIATION))){
+        sdp_features |= 1 << 5;
+    }
 
     if (supported_features & (1 << HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS)){
         sdp_features |= 1 << 6;
@@ -3148,15 +3148,15 @@ void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
         sdp_features |= 1 << 7;
     }
 
-	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
-	de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
+    de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
 }
 
 void hfp_ag_register_packet_handler(btstack_packet_handler_t callback){
-	btstack_assert(callback != NULL);
+    btstack_assert(callback != NULL);
 
-	hfp_ag_callback = callback;
-	hfp_set_ag_callback(callback);
+    hfp_ag_callback = callback;
+    hfp_set_ag_callback(callback);
 }
 
 void hfp_ag_register_custom_call_sm_handler(bool (*handler)(hfp_ag_call_event_t event)){

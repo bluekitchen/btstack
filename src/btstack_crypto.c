@@ -285,7 +285,7 @@ static inline void btstack_crypto_cmac_next_state(void){
 }
 
 static int btstack_crypto_cmac_last_block_complete(btstack_crypto_aes128_cmac_t * btstack_crypto_cmac){
-	uint16_t len = btstack_crypto_cmac->size;
+    uint16_t len = btstack_crypto_cmac->size;
     if (len == 0u) return 0u;
     return (len & 0x0fu) == 0u;
 }
@@ -379,8 +379,8 @@ static void btstack_crypto_cmac_handle_encryption_result(btstack_crypto_aes128_c
             btstack_crypto_cmac_state = CMAC_IDLE;
             log_info_key("CMAC", data);
             (void)memcpy(btstack_crypto_cmac->hash, data, 16);
-			btstack_linked_list_pop(&btstack_crypto_operations);
-			(*btstack_crypto_cmac->btstack_crypto.context_callback.callback)(btstack_crypto_cmac->btstack_crypto.context_callback.context);
+            btstack_linked_list_pop(&btstack_crypto_operations);
+            (*btstack_crypto_cmac->btstack_crypto.context_callback.callback)(btstack_crypto_cmac->btstack_crypto.context_callback.context);
             break;
         default:
             log_info("btstack_crypto_cmac_handle_encryption_result called in state %u", btstack_crypto_cmac_state);
@@ -852,13 +852,13 @@ static void btstack_crypto_run(void){
         if (!hci_can_send_command_packet_now()) return;
 
         // ok, find next task
-    	btstack_crypto_t * btstack_crypto = (btstack_crypto_t*) btstack_linked_list_get_first_item(&btstack_crypto_operations);
-    	switch (btstack_crypto->operation){
-    		case BTSTACK_CRYPTO_RANDOM:
-    			btstack_crypto_wait_for_hci_result = true;
-    		    hci_send_cmd(&hci_le_rand);
-    		    break;
-    		case BTSTACK_CRYPTO_AES128:
+        btstack_crypto_t * btstack_crypto = (btstack_crypto_t*) btstack_linked_list_get_first_item(&btstack_crypto_operations);
+        switch (btstack_crypto->operation){
+            case BTSTACK_CRYPTO_RANDOM:
+                btstack_crypto_wait_for_hci_result = true;
+                hci_send_cmd(&hci_le_rand);
+                break;
+            case BTSTACK_CRYPTO_AES128:
                 btstack_crypto_aes128 = (btstack_crypto_aes128_t *) btstack_crypto;
 #ifdef USE_BTSTACK_AES128
                 btstack_aes128_calc(btstack_crypto_aes128->key, btstack_crypto_aes128->plaintext, btstack_crypto_aes128->ciphertext);
@@ -866,23 +866,23 @@ static void btstack_crypto_run(void){
 #else
                 btstack_crypto_aes128_start(btstack_crypto_aes128->key, btstack_crypto_aes128->plaintext);
 #endif
-    		    break;
+                break;
 
-    		case BTSTACK_CRYPTO_CMAC_MESSAGE:
-    		case BTSTACK_CRYPTO_CMAC_GENERATOR:
+            case BTSTACK_CRYPTO_CMAC_MESSAGE:
+            case BTSTACK_CRYPTO_CMAC_GENERATOR:
                 btstack_crypto_cmac = (btstack_crypto_aes128_cmac_t *) btstack_crypto;
 #ifdef USE_BTSTACK_AES128
                 btstack_crypto_cmac_calc( btstack_crypto_cmac );
                 btstack_crypto_done(btstack_crypto);
 #else
-    			btstack_crypto_wait_for_hci_result = 1;
-    			if (btstack_crypto_cmac_state == CMAC_IDLE){
-    				btstack_crypto_cmac_start(btstack_crypto_cmac);
-    			} else {
-    				btstack_crypto_cmac_handle_aes_engine_ready(btstack_crypto_cmac);
-    			}
+                btstack_crypto_wait_for_hci_result = 1;
+                if (btstack_crypto_cmac_state == CMAC_IDLE){
+                    btstack_crypto_cmac_start(btstack_crypto_cmac);
+                } else {
+                    btstack_crypto_cmac_handle_aes_engine_ready(btstack_crypto_cmac);
+                }
 #endif
-    			break;
+                break;
 
             case BTSTACK_CRYPTO_CCM_DIGEST_BLOCK:
             case BTSTACK_CRYPTO_CCM_ENCRYPT_BLOCK:
@@ -985,7 +985,7 @@ static void btstack_crypto_handle_random_data(const uint8_t * data, uint16_t len
     btstack_crypto_random_t * btstack_crypto_random;
     btstack_crypto_t * btstack_crypto = (btstack_crypto_t*) btstack_linked_list_get_first_item(&btstack_crypto_operations);
     uint16_t bytes_to_copy;
-	if (!btstack_crypto) return;
+    if (!btstack_crypto) return;
     switch (btstack_crypto->operation){
         case BTSTACK_CRYPTO_RANDOM:
             btstack_crypto_random = (btstack_crypto_random_t*) btstack_crypto;
@@ -1003,7 +1003,7 @@ static void btstack_crypto_handle_random_data(const uint8_t * data, uint16_t len
 #ifdef ENABLE_ECC_P256
         case BTSTACK_CRYPTO_ECC_P256_GENERATE_KEY:
             (void)memcpy(&btstack_crypto_ecc_p256_random[btstack_crypto_ecc_p256_random_len],
-			 data, 8);
+             data, 8);
             btstack_crypto_ecc_p256_random_len += 8u;
             if (btstack_crypto_ecc_p256_random_len >= 64u) {
                 btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_ACTIVE;
@@ -1015,31 +1015,31 @@ static void btstack_crypto_handle_random_data(const uint8_t * data, uint16_t len
         default:
             break;
     }
-	// more work?
-	btstack_crypto_run();
+    // more work?
+    btstack_crypto_run();
 }
 
 #ifndef USE_BTSTACK_AES128
 static void btstack_crypto_handle_encryption_result(const uint8_t * data){
-	btstack_crypto_aes128_t      * btstack_crypto_aes128;
-	btstack_crypto_aes128_cmac_t * btstack_crypto_cmac;
+    btstack_crypto_aes128_t      * btstack_crypto_aes128;
+    btstack_crypto_aes128_cmac_t * btstack_crypto_cmac;
     btstack_crypto_ccm_t         * btstack_crypto_ccm;
-	uint8_t result[16];
+    uint8_t result[16];
 
     btstack_crypto_t * btstack_crypto = (btstack_crypto_t*) btstack_linked_list_get_first_item(&btstack_crypto_operations);
-	if (!btstack_crypto) return;
-	switch (btstack_crypto->operation){
-		case BTSTACK_CRYPTO_AES128:
-			btstack_crypto_aes128 = (btstack_crypto_aes128_t*) btstack_linked_list_get_first_item(&btstack_crypto_operations);
-		    reverse_128(data, btstack_crypto_aes128->ciphertext);
+    if (!btstack_crypto) return;
+    switch (btstack_crypto->operation){
+        case BTSTACK_CRYPTO_AES128:
+            btstack_crypto_aes128 = (btstack_crypto_aes128_t*) btstack_linked_list_get_first_item(&btstack_crypto_operations);
+            reverse_128(data, btstack_crypto_aes128->ciphertext);
             btstack_crypto_done(btstack_crypto);
-			break;
-		case BTSTACK_CRYPTO_CMAC_GENERATOR:
-		case BTSTACK_CRYPTO_CMAC_MESSAGE:
-			btstack_crypto_cmac = (btstack_crypto_aes128_cmac_t*) btstack_linked_list_get_first_item(&btstack_crypto_operations);
-		    reverse_128(data, result);
-		    btstack_crypto_cmac_handle_encryption_result(btstack_crypto_cmac, result);
-			break;
+            break;
+        case BTSTACK_CRYPTO_CMAC_GENERATOR:
+        case BTSTACK_CRYPTO_CMAC_MESSAGE:
+            btstack_crypto_cmac = (btstack_crypto_aes128_cmac_t*) btstack_linked_list_get_first_item(&btstack_crypto_operations);
+            reverse_128(data, result);
+            btstack_crypto_cmac_handle_encryption_result(btstack_crypto_cmac, result);
+            break;
         case BTSTACK_CRYPTO_CCM_DIGEST_BLOCK:
         case BTSTACK_CRYPTO_CCM_ENCRYPT_BLOCK:
         case BTSTACK_CRYPTO_CCM_DECRYPT_BLOCK:
@@ -1067,9 +1067,9 @@ static void btstack_crypto_handle_encryption_result(const uint8_t * data){
                     break;
             }
             break;
-		default:
-			break;
-	}
+        default:
+            break;
+    }
 }
 #endif
 
@@ -1095,17 +1095,17 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
 
         case HCI_EVENT_COMMAND_COMPLETE:
 #ifndef USE_BTSTACK_AES128
-    	    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_encrypt)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_encrypt)){
                 if (!btstack_crypto_wait_for_hci_result) return;
                 btstack_crypto_wait_for_hci_result = 0;
-    	        btstack_crypto_handle_encryption_result(&packet[6]);
-    	    }
+                btstack_crypto_handle_encryption_result(&packet[6]);
+            }
 #endif
-    	    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_rand)){
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_rand)){
                 if (!btstack_crypto_wait_for_hci_result) return;
                 btstack_crypto_wait_for_hci_result = false;
                 btstack_crypto_handle_random_data(&packet[6], 8);
-    	    }
+            }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
                 int ecdh_operations_supported = (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+34u] & 0x06u) == 0x06u;
                 UNUSED(ecdh_operations_supported);
@@ -1160,14 +1160,14 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
     }
 
     // try processing
-	btstack_crypto_run();
+    btstack_crypto_run();
 }
 
 void btstack_crypto_init(void){
-	if (btstack_crypto_initialized) return;
-	btstack_crypto_initialized = true;
+    if (btstack_crypto_initialized) return;
+    btstack_crypto_initialized = true;
 
-	// register with HCI
+    // register with HCI
     hci_event_callback_registration.callback = &btstack_crypto_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 #ifndef USE_BTSTACK_AES128
@@ -1177,54 +1177,54 @@ void btstack_crypto_init(void){
     btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_IDLE;
 #endif
 #ifdef USE_MBEDTLS_ECC_P256
-	mbedtls_ecp_group_init(&mbedtls_ec_group);
-	mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
+    mbedtls_ecp_group_init(&mbedtls_ec_group);
+    mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
 #endif
 }
 
 void btstack_crypto_random_generate(btstack_crypto_random_t * request, uint8_t * buffer, uint16_t size, void (* callback)(void * arg), void * callback_arg){
-	request->btstack_crypto.context_callback.callback  = callback;
-	request->btstack_crypto.context_callback.context   = callback_arg;
-	request->btstack_crypto.operation         		   = BTSTACK_CRYPTO_RANDOM;
-	request->buffer = buffer;
-	request->size   = size;
-	btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
-	btstack_crypto_run();
+    request->btstack_crypto.context_callback.callback  = callback;
+    request->btstack_crypto.context_callback.context   = callback_arg;
+    request->btstack_crypto.operation                  = BTSTACK_CRYPTO_RANDOM;
+    request->buffer = buffer;
+    request->size   = size;
+    btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
+    btstack_crypto_run();
 }
 
 void btstack_crypto_aes128_encrypt(btstack_crypto_aes128_t * request, const uint8_t * key, const uint8_t * plaintext, uint8_t * ciphertext, void (* callback)(void * arg), void * callback_arg){
-	request->btstack_crypto.context_callback.callback  = callback;
-	request->btstack_crypto.context_callback.context   = callback_arg;
-	request->btstack_crypto.operation         		   = BTSTACK_CRYPTO_AES128;
-	request->key 									   = key;
-	request->plaintext      					       = plaintext;
-	request->ciphertext 							   = ciphertext;
-	btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
-	btstack_crypto_run();
+    request->btstack_crypto.context_callback.callback  = callback;
+    request->btstack_crypto.context_callback.context   = callback_arg;
+    request->btstack_crypto.operation                  = BTSTACK_CRYPTO_AES128;
+    request->key                                       = key;
+    request->plaintext                                 = plaintext;
+    request->ciphertext                                = ciphertext;
+    btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
+    btstack_crypto_run();
 }
 
 void btstack_crypto_aes128_cmac_generator(btstack_crypto_aes128_cmac_t * request, const uint8_t * key, uint16_t size, uint8_t (*get_byte_callback)(uint16_t pos), uint8_t * hash, void (* callback)(void * arg), void * callback_arg){
-	request->btstack_crypto.context_callback.callback  = callback;
-	request->btstack_crypto.context_callback.context   = callback_arg;
-	request->btstack_crypto.operation         		   = BTSTACK_CRYPTO_CMAC_GENERATOR;
-	request->key 									   = key;
-	request->size 									   = size;
-	request->data.get_byte_callback					   = get_byte_callback;
-	request->hash 									   = hash;
-	btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
-	btstack_crypto_run();
+    request->btstack_crypto.context_callback.callback  = callback;
+    request->btstack_crypto.context_callback.context   = callback_arg;
+    request->btstack_crypto.operation                  = BTSTACK_CRYPTO_CMAC_GENERATOR;
+    request->key                                       = key;
+    request->size                                      = size;
+    request->data.get_byte_callback                    = get_byte_callback;
+    request->hash                                      = hash;
+    btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
+    btstack_crypto_run();
 }
 
 void btstack_crypto_aes128_cmac_message(btstack_crypto_aes128_cmac_t * request, const uint8_t * key, uint16_t size, const uint8_t * message, uint8_t * hash, void (* callback)(void * arg), void * callback_arg){
-	request->btstack_crypto.context_callback.callback  = callback;
-	request->btstack_crypto.context_callback.context   = callback_arg;
-	request->btstack_crypto.operation         		   = BTSTACK_CRYPTO_CMAC_MESSAGE;
-	request->key 									   = key;
-	request->size 									   = size;
-	request->data.message      						   = message;
-	request->hash 									   = hash;
-	btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
-	btstack_crypto_run();
+    request->btstack_crypto.context_callback.callback  = callback;
+    request->btstack_crypto.context_callback.context   = callback_arg;
+    request->btstack_crypto.operation                  = BTSTACK_CRYPTO_CMAC_MESSAGE;
+    request->key                                       = key;
+    request->size                                      = size;
+    request->data.message                              = message;
+    request->hash                                      = hash;
+    btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
+    btstack_crypto_run();
 }
 
 void btstack_crypto_aes128_cmac_zero(btstack_crypto_aes128_cmac_t * request, uint16_t size, const uint8_t * message,  uint8_t * hash, void (* callback)(void * arg), void * callback_arg){

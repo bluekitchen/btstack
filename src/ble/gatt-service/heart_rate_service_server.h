@@ -80,20 +80,20 @@ extern "C" {
 /* API_START */
 
 typedef enum {
-	HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_OTHER = 0,
-	HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_CHEST,
-	HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_WRIST,
-	HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_FINGER,
-	HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_HAND,
-	HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_EAR_LOBE,
-	HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_FOOT
+    HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_OTHER = 0,
+    HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_CHEST,
+    HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_WRIST,
+    HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_FINGER,
+    HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_HAND,
+    HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_EAR_LOBE,
+    HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_FOOT
 } heart_rate_service_body_sensor_location_t;
 
 typedef enum {
-	HEART_RATE_SERVICE_SENSOR_CONTACT_UNKNOWN = 0,
-	HEART_RATE_SERVICE_SENSOR_CONTACT_UNSUPPORTED,
-	HEART_RATE_SERVICE_SENSOR_CONTACT_NO_CONTACT,
-	HEART_RATE_SERVICE_SENSOR_CONTACT_HAVE_CONTACT
+    HEART_RATE_SERVICE_SENSOR_CONTACT_UNKNOWN = 0,
+    HEART_RATE_SERVICE_SENSOR_CONTACT_UNSUPPORTED,
+    HEART_RATE_SERVICE_SENSOR_CONTACT_NO_CONTACT,
+    HEART_RATE_SERVICE_SENSOR_CONTACT_HAVE_CONTACT
 } heart_rate_service_sensor_contact_status_t;
 
 
@@ -114,13 +114,13 @@ void heart_rate_service_add_energy_expended(uint16_t energy_expended_kJ);
 /**
  * @brief Update heart rate (unit: beats per minute)
  * @note triggers notifications if subscribed
- * @param heart_rate_bpm 		beats per minute
+ * @param heart_rate_bpm        beats per minute
  * @param contact
  * @param rr_interval_count
  * @param rr_intervals      resolution in 1/1024 seconds
  */
 void heart_rate_service_server_update_heart_rate_values(uint16_t heart_rate_bpm,
-	heart_rate_service_sensor_contact_status_t contact, int rr_interval_count, uint16_t * rr_intervals);
+    heart_rate_service_sensor_contact_status_t contact, int rr_interval_count, uint16_t * rr_intervals);
 
 /* API_END */
 

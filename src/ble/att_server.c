@@ -319,8 +319,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             hci_connection = hci_connection_for_handle(con_handle);
                             if (!hci_connection) break;
                             att_server = &hci_connection->att_server;
-                        	// store connection info
-                        	att_server->peer_addr_type = packet[7];
+                            // store connection info
+                            att_server->peer_addr_type = packet[7];
                             reverse_bd_addr(&packet[8], att_server->peer_address);
                             att_connection = &hci_connection->att_connection;
                             att_connection->con_handle = con_handle;
@@ -333,7 +333,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             }
                             att_connection->encryption_key_size = 0u;
                             att_connection->authenticated = 0u;
-		                	att_connection->authorized = 0u;
+                            att_connection->authorized = 0u;
                             // workaround: identity resolving can already be complete, at least store result
                             att_server->ir_le_device_db_index = sm_le_device_index(con_handle);
                             att_server->ir_lookup_active = 0u;
@@ -351,7 +351,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
 
                 case HCI_EVENT_ENCRYPTION_CHANGE:
                 case HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE:
-                	// check handle
+                    // check handle
                     con_handle = little_endian_read_16(packet, 3);
                     hci_connection = hci_connection_for_handle(con_handle);
                     if (!hci_connection) break;
@@ -475,7 +475,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_connection = &hci_connection->att_connection;
                     att_connection->authorized = sm_event_authorization_result_get_authorization_result(packet);
                     att_server_request_can_send_now(hci_connection);
-                	break;
+                    break;
                 }
                 default:
                     break;
@@ -1243,7 +1243,7 @@ uint8_t att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle
         return  l2cap_send_prepared(att_server->l2cap_cid, size);;
     }
 #endif
-	return l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
+    return l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
 }
 
 uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
@@ -1269,7 +1269,7 @@ uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_hand
         return  l2cap_send_prepared(att_server->l2cap_cid, size);;
     }
 #endif
-	l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
+    l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
     return 0;
 }
 
