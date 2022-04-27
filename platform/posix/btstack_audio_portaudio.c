@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -98,7 +98,7 @@ static int                   input_buffer_to_fill;
 static btstack_timer_source_t  driver_timer_sink;
 static btstack_timer_source_t  driver_timer_source;
 
-static int portaudio_callback_sink( const void *                     inputBuffer, 
+static int portaudio_callback_sink( const void *                     inputBuffer,
                                     void *                           outputBuffer,
                                     unsigned long                    samples_per_buffer,
                                     const PaStreamCallbackTimeInfo * timeInfo,
@@ -139,7 +139,7 @@ static int portaudio_callback_sink( const void *                     inputBuffer
     return 0;
 }
 
-static int portaudio_callback_source( const void *                     inputBuffer, 
+static int portaudio_callback_source( const void *                     inputBuffer,
                                       void *                           outputBuffer,
                                       unsigned long                    samples_per_buffer,
                                       const PaStreamCallbackTimeInfo * timeInfo,
@@ -187,7 +187,7 @@ static void driver_timer_handler_source(btstack_timer_source_t * ts){
 
         // next
         input_buffer_to_record = (input_buffer_to_record + 1 ) % NUM_INPUT_BUFFERS;
-    }    
+    }
 
     // re-set timer
     btstack_run_loop_set_timer(ts, DRIVER_POLL_INTERVAL_MS);
@@ -196,7 +196,7 @@ static void driver_timer_handler_source(btstack_timer_source_t * ts){
 
 static int btstack_audio_portaudio_sink_init(
     uint8_t channels,
-    uint32_t samplerate, 
+    uint32_t samplerate,
     void (*playback)(int16_t * buffer, uint16_t num_samples)
 ){
     PaError err;
@@ -215,8 +215,8 @@ static int btstack_audio_portaudio_sink_init(
         if (err != paNoError){
             log_error("Portudio: error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
             return err;
-        } 
-        portaudio_initialized = 1;        
+        }
+        portaudio_initialized = 1;
     }
 
     /* -- setup output -- */
@@ -240,8 +240,8 @@ static int btstack_audio_portaudio_sink_init(
            NUM_FRAMES_PER_PA_BUFFER,
            paClipOff,           /* we won't output out of range samples so don't bother clipping them */
            portaudio_callback_sink,  /* use callback */
-           NULL );   
-    
+           NULL );
+
     if (err != paNoError){
         log_error("Portudio: error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
         return err;
@@ -262,7 +262,7 @@ static int btstack_audio_portaudio_sink_init(
 
 static int btstack_audio_portaudio_source_init(
     uint8_t channels,
-    uint32_t samplerate, 
+    uint32_t samplerate,
     void (*recording)(const int16_t * buffer, uint16_t num_samples)
 ){
     PaError err;
@@ -281,8 +281,8 @@ static int btstack_audio_portaudio_source_init(
         if (err != paNoError){
             log_error("Portudio: Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
             return err;
-        } 
-        portaudio_initialized = 1;        
+        }
+        portaudio_initialized = 1;
     }
 
     /* -- setup input -- */
@@ -306,8 +306,8 @@ static int btstack_audio_portaudio_source_init(
            NUM_FRAMES_PER_PA_BUFFER,
            paClipOff,           /* we won't output out of range samples so don't bother clipping them */
            portaudio_callback_source,  /* use callback */
-           NULL );   
-    
+           NULL );
+
     if (err != paNoError){
         log_error("Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
         return err;
@@ -389,7 +389,7 @@ static void btstack_audio_portaudio_sink_stop_stream(void){
     if (err != paNoError){
         log_error("PortAudio: error stopping sink stream: \"%s\"",  Pa_GetErrorText(err));
         return;
-    } 
+    }
 
     sink_active = 0;
 }
@@ -406,7 +406,7 @@ static void btstack_audio_portaudio_source_stop_stream(void){
     if (err != paNoError){
         log_error("PortAudio: error stopping source stream: \"%s\"",  Pa_GetErrorText(err));
         return;
-    } 
+    }
 
     source_active = 0;
 }
@@ -418,7 +418,7 @@ static void btstack_audio_portaudio_close_pa_if_not_needed(void){
     if (err != paNoError){
         log_error("Portudio: Error terminating portaudio: \"%s\"",  Pa_GetErrorText(err));
         return;
-    } 
+    }
     portaudio_initialized = 0;
 }
 
@@ -434,7 +434,7 @@ static void btstack_audio_portaudio_sink_close(void){
     if (err != paNoError){
         log_error("PortAudio: error closing sink stream: \"%s\"",  Pa_GetErrorText(err));
         return;
-    } 
+    }
 
     sink_initialized = 0;
     btstack_audio_portaudio_close_pa_if_not_needed();
@@ -452,7 +452,7 @@ static void btstack_audio_portaudio_source_close(void){
     if (err != paNoError){
         log_error("PortAudio: error closing source stream: \"%s\"",  Pa_GetErrorText(err));
         return;
-    } 
+    }
 
     source_initialized = 0;
     btstack_audio_portaudio_close_pa_if_not_needed();

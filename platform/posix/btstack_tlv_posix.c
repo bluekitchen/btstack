@@ -136,7 +136,7 @@ static int btstack_tlv_posix_get_tag(void * context, uint32_t tag, uint8_t * buf
 }
 
 /**
- * Store Tag 
+ * Store Tag
  * @param tag
  * @param data
  * @param data_size

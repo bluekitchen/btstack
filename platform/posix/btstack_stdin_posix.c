@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -95,7 +95,7 @@ void btstack_stdin_reset(void){
     activated = 0;
     stdin_handler = NULL;
 
-    btstack_run_loop_remove_data_source(&stdin_source);    
+    btstack_run_loop_remove_data_source(&stdin_source);
 
     struct termios term = {0};
     if (tcgetattr(0, &term) < 0){
@@ -107,4 +107,3 @@ void btstack_stdin_reset(void){
         perror("tcsetattr ICANON");
     }
 }
-

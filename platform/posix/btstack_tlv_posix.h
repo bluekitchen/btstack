@@ -56,7 +56,7 @@ typedef struct {
 
 /**
  * Init Tag Length Value Store
- * @param context btstack_tlv_posix_t 
+ * @param context btstack_tlv_posix_t
  * @param db_path on disc
  */
 const btstack_tlv_t * btstack_tlv_posix_init_instance(btstack_tlv_posix_t * context, const char * db_path);

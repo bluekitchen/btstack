@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -159,7 +159,7 @@ static uint32_t btstack_run_loop_posix_get_time_ms(void){
 static void btstack_run_loop_posix_execute(void) {
     fd_set descriptors_read;
     fd_set descriptors_write;
-    
+
     btstack_linked_list_iterator_t it;
     struct timeval * timeout;
     struct timeval tv;
@@ -206,7 +206,7 @@ static void btstack_run_loop_posix_execute(void) {
             tv.tv_usec = (int) (delta_ms - (tv.tv_sec * 1000)) * 1000;
             log_debug("btstack_run_loop_execute next timeout in %u ms", delta_ms);
         }
-                
+
         // wait for ready FDs
         select( highest_fd+1 , &descriptors_read, &descriptors_write, NULL, timeout);
 
@@ -315,7 +315,7 @@ static int btstack_run_loop_posix_register_pipe_datasource(btstack_data_source_t
 
 static void btstack_run_loop_posix_init(void){
     btstack_run_loop_base_init();
-    
+
 #ifdef _POSIX_MONOTONIC_CLOCK
     clock_gettime(CLOCK_MONOTONIC, &init_ts);
     init_ts.tv_nsec = 0;
@@ -357,4 +357,3 @@ static const btstack_run_loop_t btstack_run_loop_posix = {
 const btstack_run_loop_t * btstack_run_loop_posix_get_instance(void){
     return &btstack_run_loop_posix;
 }
-

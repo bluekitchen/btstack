@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -102,7 +102,7 @@ static void (*btstack_network_send_packet_callback)(const uint8_t * packet, uint
 /*
  * @text Listing processTapData shows how a packet is received from the TAP network interface
  * and forwarded over the BNEP connection.
- * 
+ *
  * After successfully reading a network packet, the call to
  * the *bnep_can_send_packet_now* function checks, if BTstack can forward
  * a network packet now. If that's not possible, the received data stays
@@ -112,7 +112,7 @@ static void (*btstack_network_send_packet_callback)(const uint8_t * packet, uint
  */
 
 /* LISTING_START(processTapData): Process incoming network packets */
-static void process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) 
+static void process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type)
 {
     UNUSED(ds);
     UNUSED(callback_type);
@@ -145,7 +145,7 @@ void btstack_network_init(void (*send_packet_callback)(const uint8_t * packet, u
  * @text This code requries a TUN/TAP interface to connect the Bluetooth network interface
  * with the native system. It has been tested on Linux and OS X, but should work on any
  * system that provides TUN/TAP with minor modifications.
- * 
+ *
  * On Linux, TUN/TAP is available by default. On OS X, tuntaposx from
  * http://tuntaposx.sourceforge.net needs to be installed.
  *
@@ -169,7 +169,7 @@ int btstack_network_up(bd_addr_t network_address){
 
 #ifdef __linux
     memset(&ifr, 0, sizeof(ifr));
-    ifr.ifr_flags = IFF_TAP | IFF_NO_PI; 
+    ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
     strncpy(ifr.ifr_name, tap_dev_name_template, IFNAMSIZ);  // device name pattern
 
     int err;
@@ -177,12 +177,12 @@ int btstack_network_up(bd_addr_t network_address){
         fprintf(stderr, "TAP: Error setting device name: %s\n", strerror(errno));
         close(fd_dev);
         return -1;
-    }  
+    }
     strcpy(tap_dev_name, ifr.ifr_name);
 #endif
 #ifdef __APPLE__
     strcpy(tap_dev_name, tap_dev_name_template);
-#endif    
+#endif
 
     fd_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
     if (fd_socket < 0) {
@@ -191,7 +191,7 @@ int btstack_network_up(bd_addr_t network_address){
         return -1;
     }
 
-    // Configure the MAC address of the newly created bnep(x) 
+    // Configure the MAC address of the newly created bnep(x)
     // device to the local bd_address
     memset (&ifr, 0, sizeof(struct ifreq));
     strcpy(ifr.ifr_name, tap_dev_name);
@@ -217,7 +217,7 @@ int btstack_network_up(bd_addr_t network_address){
         exit(1);
         return -1;
 }
-#endif    
+#endif
 
     // Bring the interface up
     if (ioctl(fd_socket, SIOCGIFFLAGS, &ifr) == -1) {
@@ -276,26 +276,26 @@ int btstack_network_down(void){
     return 0;
 }
 
-/** 
- * @brief Receive packet on network interface, e.g., forward packet to TCP/IP stack 
+/**
+ * @brief Receive packet on network interface, e.g., forward packet to TCP/IP stack
  * @param packet
  * @param size
  */
 void btstack_network_process_packet(const uint8_t * packet, uint16_t size){
 
     if (tap_fd < 0) return;
-    // Write out the ethernet frame to the tap device 
+    // Write out the ethernet frame to the tap device
 
     int rc = write(tap_fd, packet, size);
     if (rc < 0) {
         log_error("TAP: Could not write to TAP device: %s", strerror(errno));
-    } else 
+    } else
     if (rc != size) {
         log_error("TAP: Package written only partially %d of %d bytes", rc, size);
     }
 }
 
-/** 
+/**
  * @brief Notify network interface that packet from send_packet_callback was sent and the next packet can be delivered.
  */
 void btstack_network_packet_sent(void){

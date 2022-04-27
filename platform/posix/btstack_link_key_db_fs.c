@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -130,13 +130,13 @@ static void db_set_local_bd_addr(bd_addr_t bd_addr){
     memcpy(local_addr, bd_addr, 6);
 }
 
-static void db_close(void){ 
+static void db_close(void){
 }
 
 static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t link_key_type){
     set_path(bd_addr);
     char * link_key_str = link_key_to_str(link_key);
-    char * link_key_type_str = link_key_type_to_str(link_key_type); 
+    char * link_key_type_str = link_key_type_to_str(link_key_type);
 
     FILE * wFile = fopen(keypath,"w+");
     if (wFile == NULL){
@@ -150,7 +150,7 @@ static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t
 
 static int read_link_key(const char * path, link_key_t link_key, link_key_type_t * link_key_type){
     if (access(path, R_OK)) return 0;
-    
+
     char link_key_str[LINK_KEY_STR_LEN + 1];
     char link_key_type_str[2];
 
@@ -163,11 +163,11 @@ static int read_link_key(const char * path, link_key_t link_key, link_key_type_t
         objects_read = fread(link_key_type_str, 1, 1, rFile );
     }
     fclose(rFile);
-    
+
     if (objects_read != 1) return 0;
     link_key_type_str[1] = 0;
     log_info("Found link key type %s\n", link_key_type_str);
-    
+
     int scan_result = sscanf_link_key(link_key_str, link_key);
     if (scan_result == 0 ) return 0;
 
@@ -214,7 +214,7 @@ static int  iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_add
         tinydir_file file;
         tinydir_readfile(dir, &file);
         tinydir_next(dir);
-        // compare 
+        // compare
         if (strncmp(keypath, file.name, strlen(keypath)) == 0){
             // parse bd_addr
             const int addr_offset = sizeof(LINK_KEY_PREFIX) + LINK_KEY_STRING_LEN + sizeof(LINK_KEY_FOR) - 2;   // -1 for each sizeof
@@ -250,5 +250,3 @@ static const btstack_link_key_db_t btstack_link_key_db_fs = {
 const btstack_link_key_db_t * btstack_link_key_db_fs_instance(void){
     return &btstack_link_key_db_fs;
 }
-
-

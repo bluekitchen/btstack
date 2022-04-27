@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -89,7 +89,7 @@ static int btstack_uart_posix_init(const btstack_uart_config_t * config){
 static void hci_uart_posix_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 
 static void btstack_uart_block_posix_process_write(btstack_data_source_t *ds) {
-    
+
     if (btstack_uart_block_write_bytes_len == 0) return;
 
     uint32_t start = btstack_run_loop_get_time_ms();
@@ -134,7 +134,7 @@ static void btstack_uart_block_posix_process_read(btstack_data_source_t *ds) {
     }
 
     uint32_t start = btstack_run_loop_get_time_ms();
-    
+
     // read up to bytes_to_read data in
     ssize_t bytes_read = read(ds->source.fd, btstack_uart_block_read_bytes_data, btstack_uart_block_read_bytes_len);
     // log_info("read need %u bytes, got %d", btstack_uart_block_read_bytes_len, (int) bytes_read);
@@ -154,7 +154,7 @@ static void btstack_uart_block_posix_process_read(btstack_data_source_t *ds) {
     btstack_uart_block_read_bytes_len   -= bytes_read;
     btstack_uart_block_read_bytes_data  += bytes_read;
     if (btstack_uart_block_read_bytes_len > 0) return;
-    
+
     btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
 
     if (block_received){
@@ -312,7 +312,7 @@ static int btstack_uart_posix_open(void){
         log_error("Unable to open port %s", device_name);
         return -1;
     }
-    
+
     if (tcgetattr(fd, &btstack_uart_block_termios) < 0) {
         log_error("Couldn't get term attributes");
         return -1;
@@ -325,11 +325,11 @@ static int btstack_uart_posix_open(void){
 
     btstack_uart_block_termios.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
     btstack_uart_block_termios.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
-    
+
     // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
     btstack_uart_block_termios.c_cc[VMIN]  = 1;
     btstack_uart_block_termios.c_cc[VTIME] = 0;
-    
+
     // no parity
     btstack_uart_posix_set_parity_option(&btstack_uart_block_termios, parity);
 
@@ -343,7 +343,7 @@ static int btstack_uart_posix_open(void){
 
     // store fd in data source
     transport_data_source.source.fd = fd;
-    
+
     // also set baudrate
     if (btstack_uart_posix_set_baudrate(baudrate) < 0){
         return -1;
@@ -358,14 +358,14 @@ static int btstack_uart_posix_open(void){
     usleep(100000);
 
     return 0;
-} 
+}
 
 static int btstack_uart_posix_close_new(void){
 
     // first remove run loop handler
     btstack_run_loop_remove_data_source(&transport_data_source);
-    
-    // then close device 
+
+    // then close device
     close(transport_data_source.source.fd);
     transport_data_source.source.fd = -1;
     return 0;
@@ -397,7 +397,7 @@ static void btstack_uart_posix_receive_block(uint8_t *buffer, uint16_t len){
 // SLIP Implementation Start
 #include "btstack_slip.h"
 
-// max size of outgoing SLIP chunks 
+// max size of outgoing SLIP chunks
 #define SLIP_TX_CHUNK_LEN   128
 
 #define SLIP_RECEIVE_BUFFER_SIZE 128
@@ -425,7 +425,7 @@ static void (*frame_received)(uint16_t frame_size);
 static void btstack_uart_slip_posix_block_sent(void);
 
 static void btstack_uart_slip_posix_process_write(btstack_data_source_t *ds) {
-    
+
     if (btstack_uart_slip_write_bytes_len == 0) return;
 
     uint32_t start = btstack_run_loop_get_time_ms();
@@ -498,7 +498,7 @@ static void btstack_uart_slip_posix_process_read(btstack_data_source_t *ds) {
         btstack_uart_slip_receive_track_start = 0;
         btstack_uart_slip_receive_start_time = start;
     }
-    
+
     // read up to bytes_to_read data in
     ssize_t bytes_read = read(ds->source.fd, btstack_uart_slip_receive_buffer, SLIP_RECEIVE_BUFFER_SIZE);
 
@@ -508,7 +508,7 @@ static void btstack_uart_slip_posix_process_read(btstack_data_source_t *ds) {
         log_info("read took %u ms", end - start);
     }
     if (bytes_read < 0) return;
-    
+
     btstack_uart_slip_receive_pos = 0;
     btstack_uart_slip_receive_len = (uint16_t ) bytes_read;
 
@@ -573,7 +573,7 @@ static void btstack_uart_slip_posix_receive_frame(uint8_t *buffer, uint16_t len)
     // setup SLIP decoder
     btstack_slip_decoder_init(buffer, len);
 
-    // process bytes received in earlier read. might deliver packet, which in turn will call us again. 
+    // process bytes received in earlier read. might deliver packet, which in turn will call us again.
     // just make sure to exit right away
     if (btstack_uart_slip_receive_len){
         int frame_found = btstack_uart_slip_posix_process_buffer();

@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -48,7 +48,7 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-	
+
 /**
  * Provide btstack_run_loop_posix instance
  */
