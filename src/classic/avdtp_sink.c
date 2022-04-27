@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -177,7 +177,7 @@ uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
         log_error("delay_report: no connection for signaling cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) ||
         (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         log_error("delay_report: connection in wrong state, state %d, initiator state %d", connection->state, connection->initiator_connection_state);
@@ -189,12 +189,12 @@ uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
         log_error("delay_report: no stream_endpoint with seid %d found", local_seid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_CONFIGURED){
         log_error("Stream endpoint seid %d in wrong state %d", local_seid, stream_endpoint->state);
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    
+
     connection->initiator_transaction_label++;
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_DELAY_REPORT;
     connection->delay_ms = delay_100us;
@@ -203,4 +203,3 @@ uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
 	avdtp_request_can_send_now_initiator(connection);
     return ERROR_CODE_SUCCESS;
 }
-

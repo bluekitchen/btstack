@@ -30,13 +30,13 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
- 
+
 /**
- * @title HFP mSBC Encoder 
+ * @title HFP mSBC Encoder
  *
  */
 
@@ -96,4 +96,4 @@ void hfp_msbc_deinit(void);
 }
 #endif
 
-#endif 
+#endif

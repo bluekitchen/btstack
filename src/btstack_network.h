@@ -29,7 +29,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -71,14 +71,14 @@ int  btstack_network_up(bd_addr_t network_address);
  */
 int  btstack_network_down(void);
 
-/** 
- * @brief Receive packet on network interface, e.g., forward packet to TCP/IP stack 
+/**
+ * @brief Receive packet on network interface, e.g., forward packet to TCP/IP stack
  * @param packet
  * @param size
  */
 void btstack_network_process_packet(const uint8_t * packet, uint16_t size);
 
-/** 
+/**
  * @brief Notify network interface that packet from send_packet_callback was sent and the next packet can be delivered.
  */
 void btstack_network_packet_sent(void);

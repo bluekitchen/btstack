@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title u-blox SPP Service Server
- * 
+ *
  */
 
 #ifndef UBLOX_SPP_H
@@ -66,7 +66,7 @@ extern "C" {
  */
 void ublox_spp_service_server_init(btstack_packet_handler_t packet_handler);
 
-/** 
+/**
  * @brief Queue send request. When called, one packet can be send via ublox_spp_service_send below
  * @param request
  * @param con_handle
@@ -88,4 +88,3 @@ int ublox_spp_service_server_send(hci_con_handle_t con_handle, const uint8_t * d
 #endif
 
 #endif
-

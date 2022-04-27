@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -94,7 +94,7 @@ void adv_bearer_advertisements_remove_item(adv_bearer_connectable_advertisement_
 void adv_bearer_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
 	uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
 
-/** 
+/**
  * @brief Enable/Disable Advertisements. OFF by default.
  * @param enabled
  */
@@ -129,8 +129,8 @@ void adv_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size, uin
  * @param data_len max 29 bytes
  */
 void adv_bearer_send_beacon(const uint8_t * beacon_update, uint16_t size);
-void adv_bearer_send_provisioning_pdu(const uint8_t * pb_adv_pdu, uint16_t size); 
- 
+void adv_bearer_send_provisioning_pdu(const uint8_t * pb_adv_pdu, uint16_t size);
+
 
 #if defined __cplusplus
 }

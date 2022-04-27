@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "volume_control_service_server.c"
 
 /**
- * Implementation of the GATT Battery Service Server 
+ * Implementation of the GATT Battery Service Server
  * To use with your application, add '#import <volume_control_service.gatt' to your .gatt file
  */
 
@@ -74,7 +74,7 @@ static uint8_t           vcs_tasks;
 
 static uint8_t    vcs_volume_change_step_size;
 
-// characteristic: VOLUME_STATE 
+// characteristic: VOLUME_STATE
 static uint16_t   vcs_volume_state_handle;
 
 static uint16_t   vcs_volume_state_client_configuration_handle;
@@ -114,7 +114,7 @@ static void volume_control_service_volume_up(void){
     } else {
         vcs_volume_state_volume_setting = 255;
     }
-} 
+}
 
 static void volume_control_service_volume_down(void){
     if (vcs_volume_state_volume_setting > vcs_volume_change_step_size){
@@ -122,7 +122,7 @@ static void volume_control_service_volume_down(void){
     } else {
         vcs_volume_state_volume_setting = 0;
     }
-} 
+}
 
 static void volume_control_service_mute(void){
     vcs_volume_state_mute = VCS_MUTE_ON;
@@ -134,7 +134,7 @@ static void volume_control_service_unmute(void){
 
 static void vcs_emit_volume_state(void){
     btstack_assert(vcs_event_callback != NULL);
-    
+
     uint8_t event[8];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -150,7 +150,7 @@ static void vcs_emit_volume_state(void){
 
 static void vcs_emit_volume_flags(void){
     btstack_assert(vcs_event_callback != NULL);
-    
+
     uint8_t event[6];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -180,7 +180,7 @@ static uint16_t volume_control_service_read_callback(hci_con_handle_t con_handle
     if (attribute_handle == vcs_volume_state_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(vcs_volume_state_client_configuration, offset, buffer, buffer_size);
     }
-    
+
     if (attribute_handle == vcs_volume_flags_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(vcs_volume_flags_client_configuration, offset, buffer, buffer_size);
     }
@@ -194,7 +194,7 @@ static void volume_control_service_can_send_now(void * context){
     // checks task
     if ((vcs_tasks & VCS_TASK_SEND_VOLUME_SETTING) != 0){
         vcs_tasks &= ~VCS_TASK_SEND_VOLUME_SETTING;
-        
+
         uint8_t buffer[3];
         buffer[0] = vcs_volume_state_volume_setting;
         buffer[1] = (uint8_t)vcs_volume_state_mute;
@@ -222,7 +222,7 @@ static void volume_control_service_server_set_callback(uint8_t task){
     if (scheduled_tasks == 0){
         vcs_callback.callback = &volume_control_service_can_send_now;
         att_server_register_can_send_now_callback(&vcs_callback, vcs_con_handle);
-    }   
+    }
 }
 
 static void vcs_set_con_handle(hci_con_handle_t con_handle, uint16_t configuration){
@@ -249,7 +249,7 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
         vcs_mute_t mute = vcs_volume_state_mute;
 
         switch (cmd){
-            case VCS_CMD_RELATIVE_VOLUME_DOWN:  
+            case VCS_CMD_RELATIVE_VOLUME_DOWN:
                 volume_control_service_volume_down();
                 break;
 
@@ -262,23 +262,23 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
                 volume_control_service_unmute();
                 break;
 
-            case VCS_CMD_UNMUTE_RELATIVE_VOLUME_UP:     
+            case VCS_CMD_UNMUTE_RELATIVE_VOLUME_UP:
                 volume_control_service_volume_up();
                 volume_control_service_unmute();
                 break;
 
-            case VCS_CMD_SET_ABSOLUTE_VOLUME: 
+            case VCS_CMD_SET_ABSOLUTE_VOLUME:
                 if (buffer_size != 3){
                     return VOLUME_CONTROL_OPCODE_NOT_SUPPORTED;
                 }
                 vcs_volume_state_volume_setting = buffer[2];
                 break;
-            
-            case VCS_CMD_UNMUTE:                    
+
+            case VCS_CMD_UNMUTE:
                 volume_control_service_unmute();
                 break;
 
-            case VCS_CMD_MUTE:                          
+            case VCS_CMD_MUTE:
                 volume_control_service_mute();
                 break;
 
@@ -288,7 +288,7 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
         volume_control_service_server_set_volume_state(volume_setting, mute);
         vcs_emit_volume_state();
         vcs_emit_volume_flags();
-    } 
+    }
 
     else if (attribute_handle == vcs_volume_state_client_configuration_handle){
         vcs_volume_state_client_configuration = little_endian_read_16(buffer, 0);
@@ -346,7 +346,7 @@ static void volume_control_init_included_aics_services(uint16_t vcs_start_handle
         uint16_t included_service_start_handle;
         uint16_t included_service_end_handle;
 
-        bool service_found = gatt_server_get_included_service_with_uuid16(start_handle, end_handle, 
+        bool service_found = gatt_server_get_included_service_with_uuid16(start_handle, end_handle,
             ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL, &included_service_handle, &included_service_start_handle, &included_service_end_handle);
 
         if (!service_found){
@@ -358,12 +358,12 @@ static void volume_control_init_included_aics_services(uint16_t vcs_start_handle
         service->start_handle = included_service_start_handle;
         service->end_handle = included_service_end_handle;
         service->index = aics_services_num;
-        
+
         service->info = &aics_info[aics_services_num];
         service->audio_input_description_len = strlen(aics_info->audio_input_description);
 
         audio_input_control_service_server_init(service);
-        
+
         start_handle = included_service_handle + 1;
         aics_services_num++;
     }
@@ -380,7 +380,7 @@ static void volume_control_init_included_vocs_services(uint16_t vcs_start_handle
         uint16_t included_service_start_handle;
         uint16_t included_service_end_handle;
 
-        bool service_found = gatt_server_get_included_service_with_uuid16(start_handle, end_handle, 
+        bool service_found = gatt_server_get_included_service_with_uuid16(start_handle, end_handle,
             ORG_BLUETOOTH_SERVICE_VOLUME_OFFSET_CONTROL,
             &included_service_handle, &included_service_start_handle, &included_service_end_handle);
 
@@ -393,19 +393,19 @@ static void volume_control_init_included_vocs_services(uint16_t vcs_start_handle
         service->start_handle = included_service_start_handle;
         service->end_handle = included_service_end_handle;
         service->index = vocs_services_num;
-        
+
         service->info = &vocs_info[vocs_services_num];
         service->audio_output_description_len = strlen(vocs_info->audio_output_description);
 
         volume_offset_control_service_server_init(service);
-        
+
         start_handle = included_service_handle + 1;
         vocs_services_num++;
     }
 }
 
 void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
-    uint8_t aics_info_num, aics_info_t * aics_info, 
+    uint8_t aics_info_num, aics_info_t * aics_info,
     uint8_t vocs_info_num, vocs_info_t * vocs_info){
 
     volume_control_service_server_reset_values();
@@ -422,7 +422,7 @@ void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
 
     // get characteristic value handle and client configuration handle
     vcs_control_point_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_CONTROL_POINT);
-    
+
     vcs_volume_state_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_STATE);
     vcs_volume_state_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_STATE);
 

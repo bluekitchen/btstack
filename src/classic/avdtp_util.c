@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -89,15 +89,15 @@ static const char * avdtp_si_name[] = {
     "AVDTP_SI_GET_CAPABILITIES",
     "AVDTP_SI_SET_CONFIGURATION",
     "AVDTP_SI_GET_CONFIGURATION",
-    "AVDTP_SI_RECONFIGURE", 
-    "AVDTP_SI_OPEN", 
-    "AVDTP_SI_START", 
+    "AVDTP_SI_RECONFIGURE",
+    "AVDTP_SI_OPEN",
+    "AVDTP_SI_START",
     "AVDTP_SI_CLOSE",
     "AVDTP_SI_SUSPEND",
-    "AVDTP_SI_ABORT", 
+    "AVDTP_SI_ABORT",
     "AVDTP_SI_SECURITY_CONTROL",
-    "AVDTP_SI_GET_ALL_CAPABILITIES", 
-    "AVDTP_SI_DELAY_REPORT" 
+    "AVDTP_SI_GET_ALL_CAPABILITIES",
+    "AVDTP_SI_DELAY_REPORT"
 };
 const char * avdtp_si2str(uint16_t index){
     if ((index <= 0) || (index >= sizeof(avdtp_si_name)/sizeof(avdtp_si_name[0]) )) return avdtp_si_name[0];
@@ -109,7 +109,7 @@ void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
     stream_endpoint->l2cap_media_cid = 0;
     stream_endpoint->l2cap_reporting_cid = 0;
     stream_endpoint->l2cap_recovery_cid = 0;
-    
+
     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
@@ -123,7 +123,7 @@ void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
     memset(&stream_endpoint->remote_capabilities, 0, sizeof(avdtp_capabilities_t));
     stream_endpoint->remote_configuration_bitmap = 0;
     memset(&stream_endpoint->remote_configuration, 0, sizeof(avdtp_capabilities_t));
-    
+
     // temporary SBC config used by A2DP Source
     memset(stream_endpoint->media_codec_info, 0, 8);
 
@@ -156,7 +156,7 @@ avdtp_message_type_t avdtp_get_signaling_packet_type(uint8_t * packet){
 
 int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uint8_t * packet, uint16_t size){
     int pos = 0;
-    if (size < 2) return pos;   
+    if (size < 2) return pos;
     signaling_header->transaction_label = packet[pos] >> 4;
     signaling_header->packet_type = (avdtp_packet_type_t)((packet[pos] >> 2) & 0x03);
     signaling_header->message_type = (avdtp_message_type_t) (packet[pos] & 0x03);
@@ -246,8 +246,8 @@ int avdtp_pack_service_capabilities(uint8_t *buffer, int size, avdtp_capabilitie
 
 static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * connection, avdtp_signal_identifier_t signal_identifier, avdtp_service_category_t category, uint8_t cap_len){
     connection->error_code = 0;
-    
-    if ((category == AVDTP_SERVICE_CATEGORY_INVALID_0) || 
+
+    if ((category == AVDTP_SERVICE_CATEGORY_INVALID_0) ||
         ((category == AVDTP_SERVICE_CATEGORY_INVALID_FF) && (signal_identifier == AVDTP_SI_RECONFIGURE))){
         log_info("    ERROR: BAD SERVICE CATEGORY %d\n", category);
         connection->reject_service_category = category;
@@ -265,7 +265,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
     }
 
     switch(category){
-        case AVDTP_MEDIA_TRANSPORT:   
+        case AVDTP_MEDIA_TRANSPORT:
             if (cap_len != 0){
                 log_info("    ERROR: REJECT CATEGORY, BAD_MEDIA_TRANSPORT\n");
                 connection->reject_service_category = category;
@@ -273,8 +273,8 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
                 return 1;
             }
             break;
-        case AVDTP_REPORTING:                
-        case AVDTP_DELAY_REPORTING:                
+        case AVDTP_REPORTING:
+        case AVDTP_DELAY_REPORTING:
             if (cap_len != 0){
                 log_info("    ERROR: REJECT CATEGORY, BAD_LENGTH\n");
                 connection->reject_service_category = category;
@@ -282,13 +282,13 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
                 return 1;
             }
             break;
-        case AVDTP_RECOVERY:     
+        case AVDTP_RECOVERY:
             if (cap_len != 3){
                 log_info("    ERROR: REJECT CATEGORY, BAD_MEDIA_TRANSPORT\n");
                 connection->reject_service_category = category;
                 connection->error_code = AVDTP_ERROR_CODE_BAD_RECOVERY_FORMAT;
                 return 1;
-            }           
+            }
             break;
         case AVDTP_CONTENT_PROTECTION:
             if (cap_len < 2){
@@ -305,11 +305,11 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
                 connection->reject_service_category = category;
                 connection->error_code = AVDTP_ERROR_CODE_BAD_RECOVERY_FORMAT;
                 return 1;
-            }           
+            }
             break;
-        case AVDTP_MULTIPLEXING:                
+        case AVDTP_MULTIPLEXING:
             break;
-        case AVDTP_MEDIA_CODEC:                
+        case AVDTP_MEDIA_CODEC:
             break;
         default:
             break;
@@ -318,7 +318,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
 }
 
 uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdtp_signal_identifier_t signal_identifier, avdtp_capabilities_t * caps, uint8_t * packet, uint16_t size){
-    
+
     int i;
 
     uint16_t registered_service_categories = 0;
@@ -345,7 +345,7 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
         uint16_t  pos = 0;
 
         switch(category){
-            case AVDTP_RECOVERY:                
+            case AVDTP_RECOVERY:
                 caps->recovery.recovery_type = data[pos++];
                 caps->recovery.maximum_recovery_window_size = data[pos++];
                 caps->recovery.maximum_number_media_packets = data[pos++];
@@ -358,11 +358,11 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
                 // support for content protection goes here
                 break;
             case AVDTP_HEADER_COMPRESSION:
-                caps->header_compression.back_ch  = (data[0] >> 7) & 1; 
+                caps->header_compression.back_ch  = (data[0] >> 7) & 1;
                 caps->header_compression.media    = (data[0] >> 6) & 1;
                 caps->header_compression.recovery = (data[0] >> 5) & 1;
                 break;
-            case AVDTP_MULTIPLEXING:                
+            case AVDTP_MULTIPLEXING:
                 caps->multiplexing_mode.fragmentation = (data[pos++] >> 7) & 1;
                 // read [tsid, tcid] for media, reporting. recovery respectively
                 caps->multiplexing_mode.transport_identifiers_num = 3;
@@ -371,15 +371,15 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
                     caps->multiplexing_mode.tcid[i] = (data[pos++] >> 7) & 1;
                 }
                 break;
-            case AVDTP_MEDIA_CODEC:   
+            case AVDTP_MEDIA_CODEC:
                 caps->media_codec.media_type = (avdtp_media_type_t)(data[pos++] >> 4);
                 caps->media_codec.media_codec_type = (avdtp_media_codec_type_t)(data[pos++]);
                 caps->media_codec.media_codec_information_len = cap_len - 2;
                 caps->media_codec.media_codec_information = &data[pos++];
                 break;
-            case AVDTP_MEDIA_TRANSPORT:   
-            case AVDTP_REPORTING:                
-            case AVDTP_DELAY_REPORTING:             
+            case AVDTP_MEDIA_TRANSPORT:
+            case AVDTP_REPORTING:
+            case AVDTP_DELAY_REPORTING:
                 break;
             default:
                 category_valid = 0;
@@ -402,7 +402,7 @@ void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uin
     bool basic_capabilities_only = false;
     signaling_packet->message_type = AVDTP_RESPONSE_ACCEPT_MSG;
     int i;
-    
+
     signaling_packet->size = 0;
     memset(signaling_packet->command, 0 , sizeof(signaling_packet->command));
 
@@ -421,11 +421,11 @@ void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uin
             signaling_packet->command[signaling_packet->size++] = signaling_packet->acp_seid << 2;
             signaling_packet->message_type = AVDTP_CMD_MSG;
             break;
-        default: 
+        default:
             log_error("avdtp_prepare_capabilities wrong identifier %d", identifier);
             break;
-    } 
-    
+    }
+
     for (i = AVDTP_MEDIA_TRANSPORT; i <= AVDTP_DELAY_REPORTING; i++){
         int registered_category = get_bit16(service_categories, i);
         if (!registered_category && (identifier == AVDTP_SI_SET_CONFIGURATION)){
@@ -456,7 +456,7 @@ int avdtp_signaling_create_fragment(uint16_t cid, avdtp_signaling_packet_t * sig
 
     uint16_t offset = signaling_packet->offset;
     uint16_t pos = 1;
-    
+
     if (offset == 0){
         if (signaling_packet->size <= (mtu - 2)){
             signaling_packet->packet_type = AVDTP_SINGLE_PACKET;
@@ -484,7 +484,7 @@ int avdtp_signaling_create_fragment(uint16_t cid, avdtp_signaling_packet_t * sig
     out_buffer[0] = avdtp_header(signaling_packet->transaction_label, signaling_packet->packet_type, signaling_packet->message_type);
     (void)memcpy(out_buffer + pos, signaling_packet->command + offset,
                  data_len);
-    pos += data_len; 
+    pos += data_len;
     return pos;
 }
 
@@ -832,7 +832,7 @@ avdtp_signaling_emit_content_multiplexing_capability(uint16_t avdtp_cid, uint8_t
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
     event[pos++] = remote_seid;
-    
+
     event[pos++] = multiplexing_mode->fragmentation;
     event[pos++] = multiplexing_mode->transport_identifiers_num;
 
@@ -1309,7 +1309,7 @@ uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, con
 
 void avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t reconfigure,
                                         avdtp_capabilities_t *configuration, uint16_t configured_service_categories) {
-    
+
     if (get_bit16(configured_service_categories, AVDTP_MEDIA_CODEC)){
         uint16_t pos = 0;
         // assume MEDIA_CONFIG_OTHER_EVENT_LEN is larger than all other events

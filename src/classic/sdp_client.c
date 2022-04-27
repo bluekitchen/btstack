@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -54,7 +54,7 @@
 #include "l2cap.h"
 
 // Types SDP Parser - Data Element stream helper
-typedef enum { 
+typedef enum {
     GET_LIST_LENGTH = 1,
     GET_RECORD_LENGTH,
     GET_ATTRIBUTE_ID_HEADER_LENGTH,
@@ -63,7 +63,7 @@ typedef enum {
     GET_ATTRIBUTE_VALUE
 } sdp_parser_state_t;
 
-// Types SDP Client 
+// Types SDP Client
 typedef enum {
     INIT, W4_CONNECT, W2_SEND, W4_RESPONSE, QUERY_COMPLETE
 } sdp_client_state_t;
@@ -151,11 +151,11 @@ int de_state_size(uint8_t eventByte, de_state_t *de_state){
         de_state->in_state_GET_DE_HEADER_LENGTH = 0;
         return 0;
     }
-   
+
     if (de_state->addon_header_bytes > 0){
         de_state->de_size = (de_state->de_size << 8) | eventByte;
         de_state->addon_header_bytes--;
-    } 
+    }
     if (de_state->addon_header_bytes > 0) return 0;
     // log_info("Data element payload is %d bytes.", de_state->de_size);
     de_state->in_state_GET_DE_HEADER_LENGTH = 1;
@@ -172,7 +172,7 @@ static void sdp_parser_emit_value_byte(uint8_t event_byte){
     little_endian_store_16(event, 6, sdp_parser_attribute_value_size);
     little_endian_store_16(event, 8, sdp_parser_attribute_bytes_delivered);
     event[10] = event_byte;
-    (*sdp_parser_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
+    (*sdp_parser_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void sdp_parser_process_byte(uint8_t eventByte){
@@ -187,7 +187,7 @@ static void sdp_parser_process_byte(uint8_t eventByte){
             sdp_parser_list_offset = des_parser_de_header_state.de_offset;
             sdp_parser_list_size = des_parser_de_header_state.de_size;
             // log_info("parser: List offset %u, list size %u", list_offset, list_size);
-            
+
             sdp_parser_record_counter = 0;
             sdp_parser_state = GET_RECORD_LENGTH;
             break;
@@ -207,7 +207,7 @@ static void sdp_parser_process_byte(uint8_t eventByte){
             log_debug("ID data is stored in %d bytes.", (int) des_parser_de_header_state.de_size);
             sdp_parser_state = GET_ATTRIBUTE_ID;
             break;
-        
+
         case GET_ATTRIBUTE_ID:
             sdp_parser_attribute_id = (sdp_parser_attribute_id << 8) | eventByte;
             des_parser_de_header_state.de_size--;
@@ -220,7 +220,7 @@ static void sdp_parser_process_byte(uint8_t eventByte){
             sdp_parser_attribute_value_size      = 0;
             de_state_init(&des_parser_de_header_state);
             break;
-        
+
         case GET_ATTRIBUTE_VALUE_LENGTH:
             sdp_parser_attribute_bytes_received++;
             sdp_parser_emit_value_byte(eventByte);
@@ -231,8 +231,8 @@ static void sdp_parser_process_byte(uint8_t eventByte){
 
             sdp_parser_state = GET_ATTRIBUTE_VALUE;
             break;
-        
-        case GET_ATTRIBUTE_VALUE: 
+
+        case GET_ATTRIBUTE_VALUE:
             sdp_parser_attribute_bytes_received++;
             sdp_parser_emit_value_byte(eventByte);
             sdp_parser_attribute_bytes_delivered++;
@@ -247,7 +247,7 @@ static void sdp_parser_process_byte(uint8_t eventByte){
             }
             sdp_parser_record_offset = 0;
             // log_debug("parser: List offset %u, list size %u", list_offset, list_size);
-            
+
             if ((sdp_parser_list_size > 0) && (sdp_parser_list_offset != sdp_parser_list_size)){
                 sdp_parser_record_counter++;
                 sdp_parser_state = GET_RECORD_LENGTH;
@@ -342,8 +342,8 @@ void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint
         little_endian_store_16(event, 2, total_count);
         little_endian_store_16(event, 4, sdp_parser_record_counter);
         little_endian_store_32(event, 6, sdp_client_record_handle);
-        (*sdp_parser_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
-    }        
+        (*sdp_parser_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    }
 }
 #endif
 
@@ -367,7 +367,7 @@ void sdp_parser_handle_done(uint8_t status){
     event[0] = SDP_EVENT_QUERY_COMPLETE;
     event[1] = 1;
     event[2] = status;
-    (*sdp_parser_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
+    (*sdp_parser_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 
     // trigger next query if pending
     sdp_client_notify_callbacks();
@@ -452,7 +452,7 @@ static void sdp_client_parse_service_search_attribute_response(uint8_t* packet, 
 }
 
 void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    
+
     // uint16_t handle;
     if (packet_type == L2CAP_DATA_PACKET){
         if (size < 3) return;
@@ -496,13 +496,13 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         l2cap_request_can_send_now_event(sdp_client_sdp_cid);
         return;
     }
-    
+
     if (packet_type != HCI_EVENT_PACKET) return;
-    
+
     switch(hci_event_packet_get_type(packet)){
         case L2CAP_EVENT_CHANNEL_OPENED:
             if (sdp_client_state != W4_CONNECT) break;
-            // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
+            // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16)
             if (packet[2]) {
                 log_info("SDP Client Connection failed, status 0x%02x.", packet[2]);
                 sdp_parser_handle_done(packet[2]);
@@ -551,7 +551,7 @@ static uint16_t sdp_client_setup_service_search_attribute_request(uint8_t * data
     // param legnth
     offset += 2;
 
-    // parameters: 
+    // parameters:
     //     Service_search_pattern - DES (min 1 UUID, max 12)
     uint16_t service_search_pattern_len = de_get_len(sdp_client_service_search_pattern);
     (void)memcpy(data + offset, sdp_client_service_search_pattern,
@@ -562,18 +562,18 @@ static uint16_t sdp_client_setup_service_search_attribute_request(uint8_t * data
     big_endian_store_16(data, offset, sdp_client_mtu);
     offset += 2;
 
-    //     AttibuteIDList  
+    //     AttibuteIDList
     uint16_t attribute_id_list_len = de_get_len(sdp_client_attribute_id_list);
     (void)memcpy(data + offset, sdp_client_attribute_id_list, attribute_id_list_len);
     offset += attribute_id_list_len;
 
-    //     ContinuationState - uint8_t number of cont. bytes N<=16 
+    //     ContinuationState - uint8_t number of cont. bytes N<=16
     data[offset++] = sdp_client_continuation_state_len;
     //                       - N-bytes previous response from server
     (void)memcpy(data + offset, sdp_client_continuation_state, sdp_client_continuation_state_len);
     offset += sdp_client_continuation_state_len;
 
-    // uint16_t paramLength 
+    // uint16_t paramLength
     big_endian_store_16(data, 3, offset - 5);
 
     return offset;
@@ -596,7 +596,7 @@ static uint16_t sdp_client_setup_service_search_request(uint8_t * data){
     // param legnth
     offset += 2;
 
-    // parameters: 
+    // parameters:
     //     Service_search_pattern - DES (min 1 UUID, max 12)
     uint16_t service_search_pattern_len = de_get_len(sdp_client_service_search_pattern);
     (void)memcpy(data + offset, sdp_client_service_search_pattern,
@@ -607,13 +607,13 @@ static uint16_t sdp_client_setup_service_search_request(uint8_t * data){
     big_endian_store_16(data, offset, sdp_client_mtu);
     offset += 2;
 
-    //     ContinuationState - uint8_t number of cont. bytes N<=16 
+    //     ContinuationState - uint8_t number of cont. bytes N<=16
     data[offset++] = sdp_client_continuation_state_len;
     //                       - N-bytes previous response from server
     (void)memcpy(data + offset, sdp_client_continuation_state, sdp_client_continuation_state_len);
     offset += sdp_client_continuation_state_len;
 
-    // uint16_t paramLength 
+    // uint16_t paramLength
     big_endian_store_16(data, 3, offset - 5);
 
     return offset;
@@ -633,7 +633,7 @@ static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data){
     // param legnth
     offset += 2;
 
-    // parameters: 
+    // parameters:
     //     ServiceRecordHandle
     big_endian_store_32(data, offset, sdp_client_service_record_handle);
     offset += 4;
@@ -642,7 +642,7 @@ static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data){
     big_endian_store_16(data, offset, sdp_client_mtu);
     offset += 2;
 
-    //     AttibuteIDList  
+    //     AttibuteIDList
     uint16_t attribute_id_list_len = de_get_len(sdp_client_attribute_id_list);
     (void)memcpy(data + offset, sdp_client_attribute_id_list, attribute_id_list_len);
     offset += attribute_id_list_len;
@@ -653,7 +653,7 @@ static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data){
     (void)memcpy(data + offset, sdp_client_continuation_state, sdp_client_continuation_state_len);
     offset += sdp_client_continuation_state_len;
 
-    // uint16_t paramLength 
+    // uint16_t paramLength
     big_endian_store_16(data, 3, offset - 5);
 
     return offset;
@@ -677,7 +677,7 @@ static void sdp_client_parse_service_search_response(uint8_t* packet, uint16_t s
         log_error("CurrentServiceRecordCount is larger then TotalServiceRecordCount.");
         return;
     }
-    
+
     if (offset + currentServiceRecordCount * 4 > size) return;
     sdp_client_parse_service_record_handle_list(packet+offset, totalServiceRecordCount, currentServiceRecordCount);
     offset+= currentServiceRecordCount * 4;
@@ -796,4 +796,3 @@ uint8_t sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t r
     return 0;
 }
 #endif
-

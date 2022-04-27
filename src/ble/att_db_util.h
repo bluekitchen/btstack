@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Runtine ATT Database Setup
- * 
+ *
  * Helper to construct ATT DB at runtime (BTstack GATT Compiler is not used).
  *
  */
@@ -156,7 +156,7 @@ uint16_t att_db_util_add_descriptor_uuid128(const uint8_t * uuid128, uint16_t pr
 uint8_t * att_db_util_get_address(void);
 
 /**
- * @brief Get size of constructed ATT DB 
+ * @brief Get size of constructed ATT DB
  */
 uint16_t att_db_util_get_size(void);
 

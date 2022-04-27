@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -92,7 +92,7 @@ static union {
 
 static const mesh_network_key_t *  current_network_key;
 
-// PECB calculation 
+// PECB calculation
 static uint8_t encryption_block[16];
 static uint8_t obfuscation_block[16];
 
@@ -149,7 +149,7 @@ static void process_network_pdu_validate(void);
 
 // network caching
 static uint32_t mesh_network_cache_hash(mesh_network_pdu_t * network_pdu){
-    // - The SEQ field is a 24-bit integer that when combined with the IV Index, 
+    // - The SEQ field is a 24-bit integer that when combined with the IV Index,
     // shall be a unique value for each new Network PDU originated by this node (=> SRC)
     // - IV updates only rarely
     // => 16 bit SRC, 1 bit IVI, 15 bit SEQ
@@ -330,7 +330,7 @@ static void mesh_network_send_b(void *arg){
     outgoing_pdu->len += net_mic_len;
 
     btstack_assert(outgoing_pdu->len <= 29);
-    
+
 #ifdef LOG_NETWORK
     printf("TX-B-NetworkPDU (%p): ", outgoing_pdu);
     printf_hexdump(outgoing_pdu->data, outgoing_pdu->len);
@@ -372,13 +372,13 @@ static void mesh_network_send_a(void){
 
     // get network nonce
     if (outgoing_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
-        mesh_proxy_create_nonce(network_nonce, outgoing_pdu, iv_index); 
+        mesh_proxy_create_nonce(network_nonce, outgoing_pdu, iv_index);
 #ifdef LOG_NETWORK
         printf("TX-ProxyNonce:  ");
         printf_hexdump(network_nonce, 13);
 #endif
     } else {
-        mesh_network_create_nonce(network_nonce, outgoing_pdu, iv_index); 
+        mesh_network_create_nonce(network_nonce, outgoing_pdu, iv_index);
 #ifdef LOG_NETWORK
         printf("TX-NetworkNonce:  ");
         printf_hexdump(network_nonce, 13);
@@ -430,7 +430,7 @@ void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network
     // check if address does not matches elements on our node and TTL >= 2
     uint16_t src     = mesh_network_src(network_pdu);
     uint8_t  ttl     = mesh_network_ttl(network_pdu);
-    
+
     uint16_t mesh_network_primary_address = mesh_node_get_primary_element_address();
 
     if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_node_element_count()))) && (ttl >= 2)){
@@ -498,7 +498,7 @@ static void process_network_pdu_validate_d(void * arg){
     uint8_t net_mic[8];
     btstack_crypto_ccm_get_authentication_value(&mesh_network_crypto_request.ccm, net_mic);
 #ifdef LOG_NETWORK
-    printf("RX-NetMIC (%p): ", incoming_pdu_decoded); 
+    printf("RX-NetMIC (%p): ", incoming_pdu_decoded);
     printf_hexdump(net_mic, net_mic_len);
 #endif
     // store in decoded pdu
@@ -520,7 +520,7 @@ static void process_network_pdu_validate_d(void * arg){
         printf("RX-NetMIC mismatch, try next key (%p)\n", incoming_pdu_decoded);
         process_network_pdu_validate();
         return;
-    }    
+    }
 
     // remove NetMIC from payload
     incoming_pdu_decoded->len -= net_mic_len;
@@ -541,7 +541,7 @@ static void process_network_pdu_validate_d(void * arg){
 
         // no additional checks for proxy messages
         (*mesh_network_proxy_message_handler)(MESH_NETWORK_PDU_RECEIVED, decoded_pdu);
- 
+
     } else {
 
         // validate src/dest addresses
@@ -638,7 +638,7 @@ static void process_network_pdu_validate_b(void * arg){
 #endif
     }
 
-    // 
+    //
     uint8_t ctl_ttl     = incoming_pdu_decoded->data[1];
     uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
     uint8_t cypher_len  = incoming_pdu_decoded->len - 7 - net_mic_len;
@@ -748,7 +748,7 @@ static bool mesh_network_run_adv(void){
     if (btstack_linked_list_empty(&network_pdus_outgoing_adv)){
         return true;
     }
-    
+
 #ifdef ENABLE_MESH_ADV_BEARER
     if (adv_bearer_network_pdu != NULL){
         return true;
@@ -822,7 +822,7 @@ static bool mesh_network_run_queued(void){
     if (btstack_linked_list_empty(&network_pdus_queued)){
         return true;
     }
-    
+
     // get queued network pdu and start processing
     outgoing_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_queued);
 
@@ -852,7 +852,7 @@ static void mesh_adv_bearer_handle_network_event(uint8_t packet_type, uint16_t c
     uint8_t  transmission_count;
     uint16_t transmission_interval;
     uint8_t  transmit_config;
-    
+
     switch (packet_type){
         case MESH_NETWORK_PACKET:
             // check len. minimal transport PDU len = 1, 32 bit NetMIC -> 13 bytes
@@ -1219,7 +1219,7 @@ void mesh_network_reset(void){
     mesh_network_reset_network_pdus(&network_pdus_queued);
     mesh_network_reset_network_pdus(&network_pdus_outgoing_gatt);
     mesh_network_reset_network_pdus(&network_pdus_outgoing_adv);
-    
+
     // outgoing network pdus are owned by higher layer, so we don't free:
     // - adv_bearer_network_pdu
     // - gatt_bearer_network_pdu
@@ -1241,7 +1241,7 @@ void mesh_network_reset(void){
         btstack_memory_mesh_network_pdu_free(outgoing_pdu);
     }
     outgoing_pdu = NULL;
-    
+
     if (incoming_pdu_raw){
         mesh_network_pdu_free(incoming_pdu_raw);
         incoming_pdu_raw = NULL;

@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -46,17 +46,17 @@ extern "C"
 #endif
 
 
-#define MESH_GENERIC_ON_OFF_GET                                     0x8201u    
+#define MESH_GENERIC_ON_OFF_GET                                     0x8201u
 #define MESH_GENERIC_ON_OFF_SET                                     0x8202u
 #define MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED                      0x8203u
 #define MESH_GENERIC_ON_OFF_STATUS                                  0x8204u
 
-#define MESH_GENERIC_DEFAULT_TRANSITION_TIME_GET                    0x820Du    
+#define MESH_GENERIC_DEFAULT_TRANSITION_TIME_GET                    0x820Du
 #define MESH_GENERIC_DEFAULT_TRANSITION_TIME_SET                    0x820Eu
 #define MESH_GENERIC_DEFAULT_TRANSITION_TIME_SET_UNACKNOWLEDGED     0x820Fu
 #define MESH_GENERIC_DEFAULT_TRANSITION_TIME_STATUS                 0x8210u
 
-#define MESH_GENERIC_LEVEL_GET                                      0x8205u    
+#define MESH_GENERIC_LEVEL_GET                                      0x8205u
 #define MESH_GENERIC_LEVEL_SET                                      0x8206u
 #define MESH_GENERIC_LEVEL_SET_UNACKNOWLEDGED                       0x8207u
 #define MESH_GENERIC_LEVEL_STATUS                                   0x8208u
@@ -64,7 +64,7 @@ extern "C"
 #define MESH_GENERIC_DELTA_SET_UNACKNOWLEDGED                       0x820Au
 #define MESH_GENERIC_MOVE_SET                                       0x820Bu
 #define MESH_GENERIC_MOVE_SET_UNACKNOWLEDGED                        0x820Cu
- 
+
 typedef struct {
     mesh_transition_t base_transition;
 
@@ -82,15 +82,15 @@ typedef struct {
 } mesh_transition_int16_t;
 
 typedef struct {
-    mesh_transition_bool_t transition_data;          
+    mesh_transition_bool_t transition_data;
 } mesh_generic_on_off_state_t;
 
 typedef struct {
-    uint8_t  value;          
+    uint8_t  value;
 } mesh_generic_default_transition_time_state_t;
 
 typedef struct {
-    mesh_transition_int16_t transition_data;       
+    mesh_transition_int16_t transition_data;
 } mesh_generic_level_state_t;
 
 #ifdef __cplusplus

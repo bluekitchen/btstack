@@ -37,7 +37,7 @@
 
 /**
  * @title HID Service Server
- * 
+ *
  */
 
 #ifndef HIDS_DEVICE_H

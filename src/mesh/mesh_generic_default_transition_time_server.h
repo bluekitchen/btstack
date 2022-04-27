@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -50,7 +50,7 @@ extern "C"
 const mesh_operation_t * mesh_generic_default_transition_time_server_get_operations(void);
 
 /**
- * @brief Set Transition Time 
+ * @brief Set Transition Time
  * @param default_transition_time_server_model
  * @param transition_time_gdtt
  */

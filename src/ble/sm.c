@@ -263,7 +263,7 @@ static btstack_linked_list_t sm_address_resolution_general_queue;
 // aes128 crypto engine.
 static sm_aes128_state_t  sm_aes128_state;
 
-// crypto 
+// crypto
 static btstack_crypto_random_t   sm_crypto_random_request;
 static btstack_crypto_aes128_t   sm_crypto_aes128_request;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
@@ -862,7 +862,7 @@ static void sm_setup_tk(void){
         use_oob = (sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq) | sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres)) != 0;
     } else {
         // In LE legacy pairing, the out of band method is used if both the devices have
-        // the other device's out of band authentication data available. 
+        // the other device's out of band authentication data available.
         use_oob = (sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq) & sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres)) != 0;
     }
     if (use_oob){
@@ -2907,7 +2907,7 @@ static void sm_run(void){
                     key_distribution_flags &= ~SM_KEYDIST_ENC_KEY;
                 }
 #endif
-                // setup in response 
+                // setup in response
                 sm_pairing_packet_set_initiator_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_initiator_key_distribution(setup->sm_m_preq) & key_distribution_flags);
                 sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq) & key_distribution_flags);
 
@@ -3522,8 +3522,8 @@ static void sm_handle_random_result_ph2_tk(void * arg){
                 btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random, (void *)(uintptr_t) connection->sm_handle);
             }
         }
-    }   
-    sm_trigger_run(); 
+    }
+    sm_trigger_run();
 }
 
 static void sm_handle_random_result_ph3_div(void * arg){
@@ -3676,7 +3676,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         gap_random_address_set_mode(gap_random_adress_type);
 					}
 					break;
-					
+
 #ifdef ENABLE_CLASSIC
 			    case HCI_EVENT_CONNECTION_COMPLETE:
 			        // ignore if connection failed
@@ -4117,7 +4117,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         sm_dispatch_event(HCI_EVENT_PACKET, 0, buffer, sizeof(buffer));
         return;
     }
-    
+
     switch (sm_conn->sm_engine_state){
 
         // a sm timeout requires a new physical connection
@@ -4372,7 +4372,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             log_info("SM_SC_W4_PAIRING_RANDOM, responder: %u, just works: %u, passkey used %u, passkey entry %u",
                      IS_RESPONDER(sm_conn->sm_role), sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method),
                      sm_passkey_used(setup->sm_stk_generation_method), sm_passkey_entry(setup->sm_stk_generation_method));
-            if ( (!IS_RESPONDER(sm_conn->sm_role) && sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)) 
+            if ( (!IS_RESPONDER(sm_conn->sm_role) && sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method))
             ||   (sm_passkey_entry(setup->sm_stk_generation_method)) ) {
                  sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
                  break;
@@ -4770,7 +4770,7 @@ void sm_init(void){
     hci_event_callback_registration.callback = &sm_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    // 
+    //
     btstack_crypto_init();
 
     // init le_device_db

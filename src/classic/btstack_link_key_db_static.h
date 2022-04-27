@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Static Link Key Storage
- *  
+ *
  * Static Link Key Storage implementation to use during development/porting:
  *  - Link keys have to be manually added to this file to make them usable
  *  + Link keys are preserved on reflash in constrast to the program flash based link key store

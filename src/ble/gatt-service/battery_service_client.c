@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -87,7 +87,7 @@ static battery_service_client_t * battery_service_create_client(hci_con_handle_t
     client->need_poll_bitmap = 0;
     client->polled_service_index = BATTERY_SERVICE_INVALID_INDEX;
     client->state = BATTERY_SERVICE_CLIENT_STATE_IDLE;
-    
+
     btstack_linked_list_add(&clients, (btstack_linked_item_t *) client);
     return client;
 }
@@ -103,11 +103,11 @@ static void battery_service_finalize_client(battery_service_client_t * client){
     btstack_run_loop_remove_timer(&client->poll_timer);
 
     btstack_linked_list_remove(&clients, (btstack_linked_item_t *) client);
-    btstack_memory_battery_service_client_free(client); 
+    btstack_memory_battery_service_client_free(client);
 }
 
 static battery_service_client_t * battery_service_get_client_for_con_handle(hci_con_handle_t con_handle){
-    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &clients);
     while (btstack_linked_list_iterator_has_next(&it)){
         battery_service_client_t * client = (battery_service_client_t *)btstack_linked_list_iterator_next(&it);
@@ -118,7 +118,7 @@ static battery_service_client_t * battery_service_get_client_for_con_handle(hci_
 }
 
 static battery_service_client_t * battery_service_get_client_for_cid(uint16_t battery_service_cid){
-    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &clients);
     while (btstack_linked_list_iterator_has_next(&it)){
         battery_service_client_t * client = (battery_service_client_t *)btstack_linked_list_iterator_next(&it);
@@ -166,23 +166,23 @@ static void battery_service_emit_battery_level(battery_service_client_t * client
 
 static bool battery_service_registered_notification(battery_service_client_t * client, uint16_t service_index){
     gatt_client_characteristic_t characteristic;
-    // if there are services without notification, register pool timer, 
+    // if there are services without notification, register pool timer,
     // othervise register for notifications
     characteristic.value_handle = client->services[service_index].value_handle;
     characteristic.properties   = client->services[service_index].properties;
     characteristic.end_handle   = client->services[service_index].end_handle;
 
     uint8_t status = gatt_client_write_client_characteristic_configuration(
-                &handle_gatt_client_event, 
-                client->con_handle, 
-                &characteristic, 
+                &handle_gatt_client_event,
+                client->con_handle,
+                &characteristic,
                 GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
-  
+
     // notification supported, register for value updates
     if (status == ERROR_CODE_SUCCESS){
         gatt_client_listen_for_characteristic_value_updates(
-            &client->services[service_index].notification_listener, 
-            &handle_gatt_client_event, 
+            &client->services[service_index].notification_listener,
+            &handle_gatt_client_event,
             client->con_handle, &characteristic);
     } else {
         client->poll_bitmap |= 1u << client->service_index;
@@ -209,7 +209,7 @@ static void battery_service_run_for_client(battery_service_client_t * client){
                     // clear bit of polled service
                     client->need_poll_bitmap &= ~(1u << i);
                     client->polled_service_index = i;
-    
+
                     // poll value of characteristic
                     characteristic.value_handle = client->services[i].value_handle;
                     characteristic.properties   = client->services[i].properties;
@@ -220,7 +220,7 @@ static void battery_service_run_for_client(battery_service_client_t * client){
             }
             break;
 
-        case BATTERY_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE:   
+        case BATTERY_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE:
             client->state = BATTERY_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
             status = gatt_client_discover_primary_services_by_uuid16(&handle_gatt_client_event, client->con_handle, ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE);
             // TODO handle status
@@ -230,10 +230,10 @@ static void battery_service_run_for_client(battery_service_client_t * client){
             client->state = BATTERY_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT;
 
             gatt_client_discover_characteristics_for_handle_range_by_uuid16(
-                &handle_gatt_client_event, 
-                client->con_handle, 
-                client->services[client->service_index].start_handle, 
-                client->services[client->service_index].end_handle, 
+                &handle_gatt_client_event,
+                client->con_handle,
+                client->services[client->service_index].start_handle,
+                client->services[client->service_index].end_handle,
                 ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
 
             break;
@@ -241,7 +241,7 @@ static void battery_service_run_for_client(battery_service_client_t * client){
 #ifdef ENABLE_TESTING_SUPPORT
         case BATTERY_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS:
             client->state = BATTERY_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT;
-            // if there are services without notification, register pool timer, 
+            // if there are services without notification, register pool timer,
             // othervise register for notifications
             characteristic.value_handle = client->services[client->service_index].value_handle;
             characteristic.properties   = client->services[client->service_index].properties;
@@ -251,7 +251,7 @@ static void battery_service_run_for_client(battery_service_client_t * client){
             break;
 
         case BATTERY_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION:
-            printf("Read client characteristic value [Service %d, handle 0x%04X]:\n", 
+            printf("Read client characteristic value [Service %d, handle 0x%04X]:\n",
                 client->service_index,
                 client->services[client->service_index].ccc_handle);
 
@@ -260,20 +260,20 @@ static void battery_service_run_for_client(battery_service_client_t * client){
             // result in GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
             (void) gatt_client_read_characteristic_descriptor_using_descriptor_handle(
                 &handle_gatt_client_event,
-                client->con_handle, 
+                client->con_handle,
                 client->services[client->service_index].ccc_handle);
             break;
 #endif
-            
+
         case BATTERY_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION:
             client->state = BATTERY_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
-    
+
             for (; client->service_index < client->num_instances; client->service_index++){
                 status = battery_service_registered_notification(client, client->service_index);
                 if (status == ERROR_CODE_SUCCESS) return;
             }
-            
-                
+
+
 #ifdef ENABLE_TESTING_SUPPORT
             for (client->service_index = 0; client->service_index < client->num_instances; client->service_index++){
                 bool need_polling = (client->poll_bitmap & (1 << client->service_index)) != 0;
@@ -307,7 +307,7 @@ static void battery_service_poll_timer_start(battery_service_client_t * client){
     btstack_run_loop_set_timer_handler(&client->poll_timer,  battery_service_poll_timer_timeout_handler);
     btstack_run_loop_set_timer_context(&client->poll_timer, (void *)(uintptr_t)client->cid);
 
-    btstack_run_loop_set_timer(&client->poll_timer, client->poll_interval_ms); 
+    btstack_run_loop_set_timer(&client->poll_timer, client->poll_interval_ms);
     btstack_run_loop_add_timer(&client->poll_timer);
 }
 
@@ -319,7 +319,7 @@ static void battery_service_client_validate_service(battery_service_client_t * c
         if (client->services[src_index].value_handle != 0){
             if (src_index != dest_index) {
                 client->services[dest_index] = client->services[src_index];
-            } 
+            }
             dest_index++;
         }
     }
@@ -435,7 +435,7 @@ static bool battery_service_client_handle_query_complete(battery_service_client_
 }
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(packet_type); 
+    UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
 
@@ -456,49 +456,49 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
 #ifdef ENABLE_TESTING_SUPPORT
                 printf("Battery Service: start handle 0x%04X, end handle 0x%04X\n", client->services[client->num_instances].start_handle, client->services[client->num_instances].end_handle);
-#endif          
+#endif
                 client->num_instances++;
             } else {
                 log_info("Found more then %d, Battery Service instances. Increase MAX_NUM_BATTERY_SERVICES to store all.", MAX_NUM_BATTERY_SERVICES);
             }
             break;
-        
+
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
             client = battery_service_get_client_for_con_handle(gatt_event_characteristic_query_result_get_handle(packet));
             btstack_assert(client != NULL);
 
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
             btstack_assert(client->service_index < client->num_instances);
-            btstack_assert(characteristic.uuid16 == ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL); 
-                
+            btstack_assert(characteristic.uuid16 == ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+
             client->services[client->service_index].value_handle = characteristic.value_handle;
             client->services[client->service_index].properties = characteristic.properties;
 
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("Battery Level Characteristic:\n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X, service %d\n", 
+            printf("Battery Level Characteristic:\n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X, service %d\n",
                 // hid_characteristic_name(characteristic.uuid16),
-                characteristic.start_handle, 
-                characteristic.properties, 
+                characteristic.start_handle,
+                characteristic.properties,
                 characteristic.value_handle, characteristic.uuid16,
                 client->service_index);
-#endif               
+#endif
             break;
 
         case GATT_EVENT_NOTIFICATION:
             if (gatt_event_notification_get_value_length(packet) != 1) break;
-            
+
             client = battery_service_get_client_for_con_handle(gatt_event_notification_get_handle(packet));
             btstack_assert(client != NULL);
 
-            battery_service_emit_battery_level(client, 
-                gatt_event_notification_get_value_handle(packet), 
+            battery_service_emit_battery_level(client,
+                gatt_event_notification_get_value_handle(packet),
                 ATT_ERROR_SUCCESS,
                 gatt_event_notification_get_value(packet)[0]);
             break;
-        
+
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             client = battery_service_get_client_for_con_handle(gatt_event_characteristic_value_query_result_get_handle(packet));
-            btstack_assert(client != NULL);                
+            btstack_assert(client != NULL);
 
 #ifdef ENABLE_TESTING_SUPPORT
             if (client->state == BATTERY_SERVICE_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT){
@@ -506,11 +506,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 printf_hexdump(gatt_event_characteristic_value_query_result_get_value(packet),  gatt_event_characteristic_value_query_result_get_value_length(packet));
                 break;
             }
-#endif  
+#endif
             if (gatt_event_characteristic_value_query_result_get_value_length(packet) != 1) break;
-                
-            battery_service_emit_battery_level(client, 
-                gatt_event_characteristic_value_query_result_get_value_handle(packet), 
+
+            battery_service_emit_battery_level(client,
+                gatt_event_characteristic_value_query_result_get_value_handle(packet),
                 ATT_ERROR_SUCCESS,
                 gatt_event_characteristic_value_query_result_get_value(packet)[0]);
             break;
@@ -522,11 +522,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client = battery_service_get_client_for_con_handle(gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
             btstack_assert(client != NULL);
             gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &characteristic_descriptor);
-            
+
             if (characteristic_descriptor.uuid16 == ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION){
                 client->services[client->service_index].ccc_handle = characteristic_descriptor.handle;
 
-                printf("    Battery Level Client Characteristic Configuration Descriptor[%d]:  Handle 0x%04X, UUID 0x%04X\n", 
+                printf("    Battery Level Client Characteristic Configuration Descriptor[%d]:  Handle 0x%04X, UUID 0x%04X\n",
                     client->service_index,
                     characteristic_descriptor.handle,
                     characteristic_descriptor.uuid16);
@@ -553,7 +553,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
 uint8_t battery_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, uint32_t poll_interval_ms, uint16_t * battery_service_cid){
     btstack_assert(packet_handler != NULL);
-    
+
     battery_service_client_t * client = battery_service_get_client_for_con_handle(con_handle);
     if (client != NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -569,7 +569,7 @@ uint8_t battery_service_client_connect(hci_con_handle_t con_handle, btstack_pack
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
 
-    client->client_handler = packet_handler; 
+    client->client_handler = packet_handler;
     client->poll_interval_ms = poll_interval_ms;
     client->state = BATTERY_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
     battery_service_run_for_client(client);
@@ -607,6 +607,5 @@ void battery_service_client_init(void){}
 
 void battery_service_client_deinit(void){
     battery_service_cid_counter = 0;
-    clients = NULL;    
+    clients = NULL;
 }
-

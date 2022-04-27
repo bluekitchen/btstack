@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title TX Power Service Server
- * 
+ *
  */
 
 #ifndef TX_POWER_SERVICE_SERVER_H
@@ -50,14 +50,14 @@ extern "C" {
 #endif
 
 /**
- * @text The TX Power service exposes a device’s current transmit power level when in a connection. 
+ * @text The TX Power service exposes a device’s current transmit power level when in a connection.
  * There shall only be one instance of the Tx Power service on a device.
- * 
- * To use with your application, add `#import <tx_power_service.gatt>` to your .gatt file. 
- * After adding it to your .gatt file, you call *tx_power_service_server_init(value)* with the
- * device’s current transmit power level value. 
  *
- * If the power level value changes, you can call *tx_power_service_server_set_level(tx_power_level_dBm)*. 
+ * To use with your application, add `#import <tx_power_service.gatt>` to your .gatt file.
+ * After adding it to your .gatt file, you call *tx_power_service_server_init(value)* with the
+ * device’s current transmit power level value.
+ *
+ * If the power level value changes, you can call *tx_power_service_server_set_level(tx_power_level_dBm)*.
  * The service does not support sending Notifications.
  */
 
@@ -82,4 +82,3 @@ void tx_power_service_server_set_level(int8_t tx_power_level_dBm);
 #endif
 
 #endif
-

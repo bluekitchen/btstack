@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -86,7 +86,7 @@ int  btstack_base64_decoder_process_byte(btstack_base64_decoder_t * context, uin
             context->pos++;
             return BTSTACK_BASE64_DECODER_MORE;
         }
-    }   
+    }
 
     // lookup
     uint8_t value = table[c];
@@ -100,18 +100,18 @@ int  btstack_base64_decoder_process_byte(btstack_base64_decoder_t * context, uin
     switch (context->pos){
         case 0:
             context->value = value; // 6 bit
-            context->pos++; 
+            context->pos++;
             result = BTSTACK_BASE64_DECODER_MORE;
             break;
         case 1:
             result = (context->value << 2) | (value >> 4);
             context->value = value; // 4 bit
-            context->pos++; 
+            context->pos++;
             break;
         case 2:
             result = (context->value << 4) | (value >> 2);
             context->value = value; // 2 bit
-            context->pos++; 
+            context->pos++;
             break;
         case 3:
             result = (context->value << 6) | value;
@@ -148,5 +148,5 @@ int btstack_base64_decoder_process_block(const uint8_t * input_data, uint32_t in
                 break;
         }
     }
-    return size;    
+    return size;
 }

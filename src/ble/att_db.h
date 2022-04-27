@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -53,7 +53,7 @@
 extern "C" {
 #endif
 
-// MARK: Attribute PDU Opcodes 
+// MARK: Attribute PDU Opcodes
 #define ATT_ERROR_RESPONSE              0x01u
 
 #define ATT_EXCHANGE_MTU_REQUEST        0x02u
@@ -137,7 +137,7 @@ typedef struct att_connection {
  * @param con_handle of hci le connection
  * @param attribute_handle to be read
  * @param offset defines start of attribute value
- * @param buffer 
+ * @param buffer
  * @param buffer_size
  * @return size of value if buffer is NULL, otherwise number of bytes copied
  */
@@ -156,7 +156,7 @@ typedef uint16_t (*att_read_callback_t)(hci_con_handle_t con_handle, uint16_t at
  * @param attribute_handle to be written
  * @param transaction - ATT_TRANSACTION_MODE_NONE for regular writes. For prepared writes: ATT_TRANSACTION_MODE_ACTIVE, ATT_TRANSACTION_MODE_VALIDATE, ATT_TRANSACTION_MODE_EXECUTE, ATT_TRANSACTION_MODE_CANCEL
  * @param offset into the value - used for queued writes and long attributes
- * @param buffer 
+ * @param buffer
  * @param buffer_size
  * @param signature used for signed write commmands
  * @return 0 if write was ok, ATT_ERROR_PREPARE_QUEUE_FULL if no space in queue, ATT_ERROR_INVALID_OFFSET if offset is larger than max buffer
@@ -203,7 +203,7 @@ void att_dump_attributes(void);
  * @param att_connection used for mtu and security properties
  * @param request_buffer, request_len: ATT request from clinet
  * @param response_buffer for result
- * @return len of data in response buffer. 0 = no response, 
+ * @return len of data in response buffer. 0 = no response,
  *          ATT_READ_RESPONSE_PENDING if it was returned at least once for dynamic data (requires ENABLE_ATT_DELAYED_READ_RESPONSE)
  */
 uint16_t att_handle_request(att_connection_t * att_connection,
@@ -222,7 +222,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
 uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection,
                                                uint16_t attribute_handle,
                                                const uint8_t *value,
-                                               uint16_t value_len, 
+                                               uint16_t value_len,
                                                uint8_t * response_buffer);
 
 /**
@@ -236,7 +236,7 @@ uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection
 uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
                                              uint16_t attribute_handle,
                                              const uint8_t *value,
-                                             uint16_t value_len, 
+                                             uint16_t value_len,
                                              uint8_t * response_buffer);
 
 /**
@@ -319,7 +319,7 @@ bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint1
  * @param out_included_service_end_handle
  * @return false if not found
  */
-bool gatt_server_get_included_service_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16, 
+bool gatt_server_get_included_service_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16,
     uint16_t * out_included_service_handle, uint16_t * out_included_service_start_handle, uint16_t * out_included_service_end_handle);
 
 /**

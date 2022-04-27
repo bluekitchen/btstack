@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -76,7 +76,7 @@ void mesh_trigger_iv_update(void){
     //  when the node has transmitted a Segmented Access message or a Segmented Control message without receiving the
     //  corresponding Segment Acknowledgment messages. The deferred change of the state shall be executed when the appropriate
     //  Segment Acknowledgment message is received or timeout for the delivery of this message is reached.
-    //  
+    //
     //  Note: This requirement is necessary because upon completing the IV Update procedure the sequence number is reset
     //  to 0x000000 and the SeqAuth value would not be valid."
 
@@ -123,5 +123,3 @@ uint32_t mesh_sequence_number_next(void){
 uint32_t mesh_sequence_number_peek(void){
     return sequence_number_current;
 }
-
-

@@ -79,4 +79,3 @@ void btstack_audio_sink_set_instance(const btstack_audio_sink_t * audio_sink_imp
 void btstack_audio_source_set_instance(const btstack_audio_source_t * audio_source_impl){
 	btstack_audio_source_instance = audio_source_impl;
 }
-

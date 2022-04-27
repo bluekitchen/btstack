@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -126,11 +126,11 @@ static void generic_client_send_message_acknowledged(uint16_t src, uint16_t dest
     mesh_access_send_acknowledged_pdu(pdu, mesh_access_acknowledged_message_retransmissions(), ack_opcode);
 }
 
-static inline uint8_t mesh_generic_level_client_set_value(mesh_model_t * mesh_model, 
+static inline uint8_t mesh_generic_level_client_set_value(mesh_model_t * mesh_model,
     const mesh_access_message_t * message_template_with_transition, const mesh_access_message_t * message_template_instantaneous,
-    uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+    uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id, uint8_t acknowledged){
-    
+
     mesh_upper_transport_pdu_t * transport_pdu;
     if (transition_time_gdtt != 0) {
         transport_pdu = mesh_access_setup_message(message_template_with_transition, value, transaction_id, transition_time_gdtt, delay_time_gdtt);
@@ -158,17 +158,17 @@ uint8_t mesh_generic_level_client_level_get(mesh_model_t *mesh_model, uint16_t d
     return ERROR_CODE_SUCCESS;;
 }
 
-uint8_t mesh_generic_level_client_level_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_level_client_level_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
 
-    return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_level_set_with_transition, &mesh_generic_level_set_instantaneous, 
+    return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_level_set_with_transition, &mesh_generic_level_set_instantaneous,
         dest, netkey_index, appkey_index, level_value, transition_time_gdtt, delay_time_gdtt, transaction_id, 1);
 }
 
-uint8_t mesh_generic_level_client_level_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_level_client_level_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
-    
-    return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_level_set_unacknowledged_with_transition, &mesh_generic_level_set_unacknowledged_instantaneous, 
+
+    return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_level_set_unacknowledged_with_transition, &mesh_generic_level_set_unacknowledged_instantaneous,
         dest, netkey_index, appkey_index, level_value, transition_time_gdtt, delay_time_gdtt, transaction_id, 0);
 }
 
@@ -182,32 +182,32 @@ uint8_t mesh_generic_level_client_publish_level(mesh_model_t * mesh_model, int16
 }
 
 // Delta
-uint8_t mesh_generic_level_client_delta_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_level_client_delta_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
-    
-    return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_delta_set_with_transition, &mesh_generic_delta_set_instantaneous, 
+
+    return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_delta_set_with_transition, &mesh_generic_delta_set_instantaneous,
         dest, netkey_index, appkey_index, delta_value, transition_time_gdtt, delay_time_gdtt, transaction_id, 1);
 }
 
-uint8_t mesh_generic_level_client_delta_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_level_client_delta_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
 
-    return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_delta_set_unacknowledged_with_transition, &mesh_generic_delta_set_unacknowledged_instantaneous, 
+    return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_delta_set_unacknowledged_with_transition, &mesh_generic_delta_set_unacknowledged_instantaneous,
         dest, netkey_index, appkey_index, delta_value, transition_time_gdtt, delay_time_gdtt, transaction_id, 0);
 }
 
 // Move
-uint8_t mesh_generic_level_client_move_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_level_client_move_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
-    
-    return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_move_set_with_transition, &mesh_generic_move_set_instantaneous, 
+
+    return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_move_set_with_transition, &mesh_generic_move_set_instantaneous,
         dest, netkey_index, appkey_index, delta_value, transition_time_gdtt, delay_time_gdtt, transaction_id, 1);
 }
 
-uint8_t mesh_generic_level_client_move_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_level_client_move_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
 
-    return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_move_set_unacknowledged_with_transition, &mesh_generic_move_set_unacknowledged_instantaneous, 
+    return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_move_set_unacknowledged_with_transition, &mesh_generic_move_set_unacknowledged_instantaneous,
         dest, netkey_index, appkey_index, delta_value, transition_time_gdtt, delay_time_gdtt, transaction_id, 0);
 }
 
@@ -220,7 +220,7 @@ static void generic_level_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    
+
     uint8_t present_value = mesh_access_parser_get_uint8(&parser);
     uint8_t target_value = 0;
     uint8_t remaining_time_gdtt = 0;
@@ -231,21 +231,21 @@ static void generic_level_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     }
 
     uint8_t event[14] = {HCI_EVENT_MESH_META, 12, MESH_SUBEVENT_GENERIC_LEVEL};
-    
+
     int pos = 3;
     // dest
     little_endian_store_16(event, pos, mesh_pdu_src(pdu));
     pos += 2;
     event[pos++] = ERROR_CODE_SUCCESS;
-    
+
     little_endian_store_16(event, pos, present_value);
     pos += 2;
     little_endian_store_16(event, pos, target_value);
     pos += 2;
-    
+
     little_endian_store_32(event, pos, (uint32_t) mesh_access_time_gdtt2ms(remaining_time_gdtt));
     pos += 4;
-    
+
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     mesh_access_message_processed(pdu);
 }

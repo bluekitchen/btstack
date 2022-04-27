@@ -30,13 +30,13 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 #define BTSTACK_FILE__ "pbap_client.c"
- 
+
 #include "btstack_config.h"
 
 #include <stdint.h>
@@ -220,7 +220,7 @@ static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t st
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("goep_client_emit_connected_event size %u", pos);
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
-}   
+}
 
 static void pbap_client_emit_connection_closed_event(pbap_client_t * context){
     uint8_t event[5];
@@ -233,7 +233,7 @@ static void pbap_client_emit_connection_closed_event(pbap_client_t * context){
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("pbap_client_emit_connection_closed_event size %u", pos);
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
-}   
+}
 
 static void pbap_client_emit_operation_complete_event(pbap_client_t * context, uint8_t status){
     uint8_t event[6];
@@ -853,14 +853,14 @@ static void pbap_handle_can_send_now(void){
             path_element_start = pbap_client->set_path_offset;
             while ((pbap_client->current_folder[pbap_client->set_path_offset] != '\0') &&
                 (pbap_client->current_folder[pbap_client->set_path_offset] != '/')){
-                pbap_client->set_path_offset++;              
+                pbap_client->set_path_offset++;
             }
             path_element_len = pbap_client->set_path_offset-path_element_start;
             path_element = (const char *) &pbap_client->current_folder[path_element_start];
 
             // skip /
             if (pbap_client->current_folder[pbap_client->set_path_offset] == '/'){
-                pbap_client->set_path_offset++;  
+                pbap_client->set_path_offset++;
             }
 
             goep_client_request_create_set_path(pbap_client->goep_cid, 1 << 1); // Don’t create directory
@@ -1165,7 +1165,7 @@ void pbap_client_deinit(void){
 uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
     if (pbap_client->state != PBAP_INIT){
         return BTSTACK_MEMORY_ALLOC_FAILED;
-    } 
+    }
 
     pbap_client->state = PBAP_W4_GOEP_CONNECTION;
     pbap_client->client_handler = handler;

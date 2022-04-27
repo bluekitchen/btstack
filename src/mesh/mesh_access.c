@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -186,7 +186,7 @@ static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
     }
 
     if (mesh_access_acknowledged_timer_active) return;
-    
+
     // find earliest timeout and set timer
     btstack_linked_list_iterator_init(&ack_it, &mesh_access_acknowledged_messages);
     int32_t next_timeout_ms = 0;
@@ -343,7 +343,7 @@ static void mesh_server_transition_timeout(btstack_timer_source_t * ts){
 }
 
 void mesh_access_transition_setup(mesh_model_t *mesh_model, mesh_transition_t * base_transition, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, void (*transition_callback)(mesh_transition_t * base_transition, model_state_update_reason_t event)){
-    
+
     base_transition->mesh_model          = mesh_model;
     base_transition->num_steps           = mesh_access_transitions_num_steps_from_gdtt(transition_time_gdtt);
     base_transition->step_resolution     = (mesh_default_transition_step_resolution_t) (transition_time_gdtt >> 6);
@@ -368,7 +368,7 @@ void mesh_access_transition_setup(mesh_model_t *mesh_model, mesh_transition_t * 
         btstack_run_loop_add_timer(&base_transition->timer);
         return;
     }
-    
+
     // instanteneous update
     base_transition->state = MESH_TRANSITION_STATE_IDLE;
     (*transition_callback)(base_transition, MODEL_STATE_UPDATE_REASON_SET);
@@ -774,7 +774,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
 
     // init use count
     mesh_access_received_pdu_refcount = 1;
-    
+
     // get opcode and size
     uint32_t opcode = 0;
     uint16_t opcode_size = 0;
@@ -819,8 +819,8 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
             switch (dst){
                 case MESH_ADDRESS_ALL_PROXIES:
                     if (mesh_foundation_gatt_proxy_get() == 1){
-                        deliver_to_primary_element = 1;                        
-                    } 
+                        deliver_to_primary_element = 1;
+                    }
                     break;
                 case MESH_ADDRESS_ALL_FRIENDS:
                     // TODO: not implemented
@@ -928,7 +928,7 @@ static void mesh_model_publication_setup_retransmission(mesh_publication_model_t
 
     // check next publication timeout is before next retransmission
     if (publication_period_ms != 0){
-        if (btstack_time_delta(retransmission_ms, publication_model->next_publication_ms) > 0) return;   
+        if (btstack_time_delta(retransmission_ms, publication_model->next_publication_ms) > 0) return;
     }
 
     // schedule next retransmission
@@ -956,7 +956,7 @@ static void mesh_model_publication_publish_now_model(void * arg){
     if (ttl == 0xff){
         ttl = mesh_foundation_default_ttl_get();
     }
-    
+
     mesh_upper_transport_setup_access_pdu_header(pdu, app_key->netkey_index, appkey_index, ttl, mesh_access_get_element_address(mesh_model), dest, 0);
     mesh_access_send_unacknowledged_pdu(pdu);
 }
@@ -1088,4 +1088,3 @@ void mesh_access_state_changed(mesh_model_t * mesh_model){
     publication_model->state = MESH_MODEL_PUBLICATION_STATE_PUBLICATION_READY;
     mesh_model_publication_run(NULL);
 }
-

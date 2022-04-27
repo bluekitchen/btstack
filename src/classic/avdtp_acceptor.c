@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -131,7 +131,7 @@ avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int 
     // find or add sep
 
     log_info("local seid %d, remote seid %d", connection->acceptor_local_seid, sep.seid);
-    
+
     if (is_avdtp_remote_seid_registered(stream_endpoint)){
         if (stream_endpoint->remote_sep.in_use){
             log_info("remote seid already in use");
@@ -157,7 +157,7 @@ avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int 
         stream_endpoint->remote_sep = sep;
         log_info("add remote seid %d", stream_endpoint->remote_sep.seid);
     }
-    
+
     // mark as in_use
     stream_endpoint->sep.in_use = 1;
 
@@ -183,7 +183,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
 		avdtp_request_can_send_now_acceptor(connection);
         return;
     }
-    
+
     // handle error cases
     switch (connection->acceptor_signaling_packet.signal_identifier){
         case AVDTP_SI_DISCOVER:
@@ -210,7 +210,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                 if (connection->acceptor_signaling_packet.signal_identifier == AVDTP_SI_OPEN){
                     connection->error_code = AVDTP_ERROR_CODE_BAD_STATE;
                 }
-                
+
                 connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                 if (connection->acceptor_signaling_packet.signal_identifier == AVDTP_SI_RECONFIGURE){
                     connection->reject_service_category = connection->acceptor_local_seid;
@@ -221,7 +221,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                 return;
             }
             break;
-        
+
         case AVDTP_SI_SUSPEND:{
             int i;
             log_info("AVDTP_SI_SUSPEND");
@@ -233,7 +233,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                 log_info("%d, ", connection->suspended_seids[connection->num_suspended_seids]);
                 connection->num_suspended_seids++;
             }
-            
+
             if (connection->num_suspended_seids == 0) {
                 log_info("no susspended seids, BAD_ACP_SEID");
                 connection->error_code = AVDTP_ERROR_CODE_BAD_ACP_SEID;
@@ -243,7 +243,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
 				avdtp_request_can_send_now_acceptor(connection);
                 return;
             }
-            // deal with first susspended seid 
+            // deal with first susspended seid
             connection->acceptor_local_seid = connection->suspended_seids[0];
             stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
             if (!stream_endpoint){
@@ -270,10 +270,10 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
 
     bool command_complete = avdtp_acceptor_process_chunk(&connection->acceptor_signaling_packet, packet, size);
     if (!command_complete) return;
-    
+
     uint16_t packet_size = connection->acceptor_signaling_packet.size;
     connection->acceptor_signaling_packet.size = 0;
-    
+
     int request_to_send = 1;
     switch (stream_endpoint->acceptor_config_state){
         case AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE:
@@ -284,7 +284,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                     avdtp_signaling_emit_delay(connection->avdtp_cid, connection->acceptor_local_seid,
                                                big_endian_read_16(packet, offset));
                     break;
-                
+
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                     log_info("AVDTP_SI_GET_ALL_CAPABILITIES, local seid %d", connection->acceptor_local_seid);
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ACCEPT_GET_ALL_CAPABILITIES;
@@ -330,7 +330,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                     log_info("W2_ANSWER_RECONFIGURE, local seid %d, remote seid %d", connection->acceptor_local_seid, stream_endpoint->remote_sep.seid);
                     sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, connection->acceptor_signaling_packet.signal_identifier, &sep.configuration, connection->acceptor_signaling_packet.command+offset, packet_size-offset);
                     if (connection->error_code){
-                        // fire configuration parsing errors 
+                        // fire configuration parsing errors
                         connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
                         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                         break;
@@ -346,7 +346,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                     }
                     stream_endpoint->remote_sep.configured_service_categories = sep.configured_service_categories;
                     stream_endpoint->remote_sep.configuration = sep.configuration;
-                    
+
                     log_info("update active remote seid %d", stream_endpoint->remote_sep.seid);
 
 					// if media codec configuration updated, copy configuration and emit event
@@ -388,7 +388,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
 #ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
                     log_info("W2_ACCEPT_START_STREAM");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W4_USER_CONFIRM_START_STREAM;
-#else 
+#else
                     log_info("W2_ANSWER_START_STREAM");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ACCEPT_START_STREAM;
 #endif
@@ -469,7 +469,7 @@ static int avdtp_acceptor_send_seps_response(uint16_t cid, uint8_t transaction_l
     command[pos++] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
     command[pos++] = (uint8_t)AVDTP_SI_DISCOVER;
 
-    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) endpoints);
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
@@ -539,9 +539,9 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
     }
     if (sent){
         log_info("DONE");
-        return;      
-    } 
-    
+        return;
+    }
+
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
     if (!stream_endpoint) return;
 
@@ -558,7 +558,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
 
     bool emit_accept = false;
     bool emit_reject = false;
-    
+
     switch (acceptor_config_state){
         case AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE:
             break;
@@ -689,7 +689,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
             avdtp_acceptor_send_response_reject_with_error_code(cid, reject_signal_identifier, error_code, trid);
             emit_reject = true;
             break;
-        default:  
+        default:
             log_info("NOT IMPLEMENTED");
             sent = 0;
             break;

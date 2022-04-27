@@ -35,7 +35,7 @@
  *
  */
 
-/** 
+/**
  * @title Audio Interface
  *
  * Abstraction layer for 16-bit audio playback and recording within BTstack.
@@ -65,7 +65,7 @@ typedef struct {
      * @return 1 on success
      */
     int (*init)(uint8_t channels,
-                uint32_t samplerate, 
+                uint32_t samplerate,
                 void (*playback) (int16_t * buffer, uint16_t num_samples));
 
     /**
@@ -79,7 +79,7 @@ typedef struct {
      */
     void (*start_stream)(void);
 
-    /** 
+    /**
      * @brief Stop stream
      */
     void (*stop_stream)(void);
@@ -102,7 +102,7 @@ typedef struct {
      * @return 1 on success
      */
     int (*init)(uint8_t channels,
-                uint32_t samplerate, 
+                uint32_t samplerate,
                 void (*recording)(const int16_t * buffer, uint16_t num_samples));
 
     /**
@@ -116,7 +116,7 @@ typedef struct {
      */
     void (*start_stream)(void);
 
-    /** 
+    /**
      * @brief Stop stream
      */
     void (*stop_stream)(void);

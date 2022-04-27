@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -79,7 +79,7 @@ static inline uint16_t mesh_composition_data_iterator_element_len(mesh_composite
 }
 
 uint16_t mesh_subevent_configuration_composition_data_get_num_elements(const uint8_t * event, uint16_t size){
-    uint16_t pos = MESH_COMPOSITION_DATA_ELEMENT_DESCRIPTION_OFFSET; 
+    uint16_t pos = MESH_COMPOSITION_DATA_ELEMENT_DESCRIPTION_OFFSET;
     uint16_t num_elements = 0;
 
     while ((pos + 4) <= size){
@@ -108,7 +108,7 @@ void mesh_composition_data_iterator_next_element(mesh_composite_data_iterator_t 
     it->sig_model_iterator.models = &it->elements[it->offset + 4];
     it->sig_model_iterator.size = mesh_composition_data_iterator_sig_model_list_size(it);
     it->sig_model_iterator.offset = 0;
-    
+
     it->vendor_model_iterator.models = &it->elements[it->offset + 4 + it->sig_model_iterator.size];
     it->vendor_model_iterator.size = mesh_composition_data_iterator_vendor_model_list_size(it);
     it->vendor_model_iterator.offset = 0;
@@ -470,12 +470,12 @@ static uint8_t mesh_validate_publication_model_config_parameters(mesh_publicatio
 uint8_t mesh_configuration_client_send_model_publication_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_id, mesh_publication_model_config_t * publication_config){
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
-    
+
     if (!mesh_network_address_unicast(dest) ||
         mesh_validate_publication_model_config_parameters(publication_config, true) != ERROR_CODE_SUCCESS){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-    
+
     mesh_upper_transport_pdu_t * upper_pdu = mesh_access_setup_message(&mesh_configuration_client_model_publication_set,
                                                                    dest,
                                                                    publication_config->publish_address_unicast,
@@ -494,14 +494,14 @@ uint8_t mesh_configuration_client_send_model_publication_set(mesh_model_t * mesh
 uint8_t mesh_configuration_client_send_model_publication_virtual_address_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_id, mesh_publication_model_config_t * publication_config){
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
-    
+
     if (!mesh_network_address_unicast(dest) ||
         mesh_validate_publication_model_config_parameters(publication_config, false) != ERROR_CODE_SUCCESS){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
     mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_configuration_client_model_publication_virtual_address_set,
-        dest, 
+        dest,
         publication_config->publish_address_virtual,
         (publication_config->credential_flag << 12) | publication_config->appkey_index,
         publication_config->publish_ttl,
@@ -605,7 +605,7 @@ uint8_t mesh_configuration_client_send_model_subscription_get(mesh_model_t * mes
         upper_pdu = mesh_access_setup_message(&mesh_configuration_client_vendor_model_subscription_get, dest, model_id);
         ack_opcode = MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_LIST;
     }
-    
+
     if (!upper_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) upper_pdu, ack_opcode);
@@ -957,7 +957,7 @@ uint16_t mesh_subevent_configuration_composition_data_get_features(const uint8_t
 static inline void mesh_configuration_client_handle_uint8_value(mesh_model_t *mesh_model, mesh_pdu_t * pdu, uint8_t subevent_type){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    
+
     uint8_t value = mesh_access_parser_get_uint8(&parser);
 
     uint8_t event[7];
@@ -971,7 +971,7 @@ static inline void mesh_configuration_client_handle_uint8_value(mesh_model_t *me
     pos += 2;
     event[pos++] = ERROR_CODE_SUCCESS;
     event[pos++] = value;
-    
+
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     mesh_access_message_processed(pdu);
 }
@@ -991,7 +991,7 @@ static void mesh_configuration_client_gatt_proxy_handler(mesh_model_t *mesh_mode
 static void mesh_configuration_client_relay_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    
+
     uint8_t relay = mesh_access_parser_get_uint8(&parser);
     uint8_t retransmition = mesh_access_parser_get_uint8(&parser);
 
@@ -1008,7 +1008,7 @@ static void mesh_configuration_client_relay_handler(mesh_model_t *mesh_model, me
     event[pos++] = relay;
     event[pos++] = (retransmition >> 5) + 1;
     event[pos++] = ((retransmition & 0x07) + 1) * 10;
-    
+
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     mesh_access_message_processed(pdu);
 }
@@ -1018,14 +1018,14 @@ static void mesh_configuration_client_model_publication_handler(mesh_model_t *me
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint8_t  status = mesh_access_parser_get_uint8(&parser);
     uint16_t publish_addres = mesh_access_parser_get_uint16(&parser);
-    
+
     uint16_t value = mesh_access_parser_get_uint16(&parser);
     uint16_t appkey_index = value & 0xFFF;
     uint8_t  credential_flag = (value & 0x1000) >> 12;
 
     uint8_t publish_ttl = mesh_access_parser_get_uint8(&parser);
     uint8_t publish_period = mesh_access_parser_get_uint8(&parser);
-    
+
     uint8_t retransmit = mesh_access_parser_get_uint8(&parser);
     uint8_t publish_retransmit_count = retransmit & 0x111;
     uint8_t publish_retransmit_interval_steps = retransmit >> 5;
@@ -1169,7 +1169,7 @@ static void mesh_configuration_client_netkey_list_handler(mesh_model_t *mesh_mod
     little_endian_store_16(event, pos, mesh_pdu_src(pdu));
     pos += 2;
     event[pos++] = status;
-    
+
     event[pos++] = list_size;
     uint8_t i;
     for (i = 0; i < list_size; i++){
@@ -1221,7 +1221,7 @@ static void mesh_configuration_client_appkey_list_handler(mesh_model_t *mesh_mod
     little_endian_store_16(event, pos, mesh_pdu_src(pdu));
     pos += 2;
     event[pos++] = status;
-    
+
     event[pos++] = list_size;
     uint8_t i;
     for (i = 0; i < list_size; i++){
@@ -1307,7 +1307,7 @@ static void mesh_configuration_client_model_app_list_handler(mesh_model_t *mesh_
     if (element_address != mesh_pdu_src(pdu)){
         log_info("MESH_SUBEVENT_CONFIGURATION_MODEL_APP_LIST_ITEM event, element_address differs from mesh_pdu_src");
     }
-    
+
     if (is_sig_model == true) {
         model_identifier = mesh_access_parser_get_sig_model_identifier(&parser);
     } else {
@@ -1358,7 +1358,7 @@ static void mesh_configuration_client_node_reset_handler(mesh_model_t *mesh_mode
     little_endian_store_16(event, pos, mesh_pdu_src(pdu));
     pos += 2;
     event[pos++] = ERROR_CODE_SUCCESS;
-    
+
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     mesh_access_message_processed(pdu);
 }
@@ -1367,7 +1367,7 @@ static void mesh_configuration_client_friend_handler(mesh_model_t *mesh_model, m
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint8_t friend_state = mesh_access_parser_get_uint8(&parser);
-    
+
     uint8_t event[7];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
@@ -1389,7 +1389,7 @@ static void mesh_configuration_client_key_refresh_phase_handler(mesh_model_t *me
     uint8_t  status = mesh_access_parser_get_uint8(&parser);
     uint16_t netkey_index = mesh_access_parser_get_uint16(&parser);
     uint8_t  phase = mesh_access_parser_get_uint8(&parser);
-    
+
     uint8_t event[9];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
@@ -1417,7 +1417,7 @@ static void mesh_configuration_client_heartbeat_publication_handler(mesh_model_t
     uint8_t  ttl        = mesh_access_parser_get_uint8(&parser);
     uint16_t features   = mesh_access_parser_get_uint16(&parser);
     uint16_t netkey_index = mesh_access_parser_get_uint16(&parser);
-    
+
     uint8_t event[17];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
@@ -1452,7 +1452,7 @@ static void mesh_configuration_client_heartbeat_subscription_handler(mesh_model_
     uint16_t count      = mesh_heartbeat_pwr2(mesh_access_parser_get_uint8(&parser));
     uint8_t  min_hops   = mesh_access_parser_get_uint8(&parser);
     uint8_t  max_hops   = mesh_access_parser_get_uint8(&parser);
-    
+
     uint8_t event[16];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
@@ -1482,7 +1482,7 @@ static void mesh_configuration_client_low_power_node_poll_timeout_handler(mesh_m
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint16_t lpn_address  = mesh_access_parser_get_uint16(&parser);
     uint32_t poll_timeout = mesh_access_parser_get_uint24(&parser);
-    
+
     uint8_t event[11];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
@@ -1498,7 +1498,7 @@ static void mesh_configuration_client_low_power_node_poll_timeout_handler(mesh_m
 
     little_endian_store_24(event, pos, poll_timeout);
     pos += 3;
-    
+
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     mesh_access_message_processed(pdu);
 }
@@ -1551,8 +1551,8 @@ const static mesh_operation_t mesh_configuration_client_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS,           4, mesh_configuration_client_key_refresh_phase_handler },
     { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS,      12, mesh_configuration_client_heartbeat_publication_handler },
     { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS,     11, mesh_configuration_client_heartbeat_subscription_handler },
-    { MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_STATUS, 5, mesh_configuration_client_low_power_node_poll_timeout_handler}, 
-    { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS,            1, mesh_configuration_client_network_transmit_handler}, 
+    { MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_STATUS, 5, mesh_configuration_client_low_power_node_poll_timeout_handler},
+    { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS,            1, mesh_configuration_client_network_transmit_handler},
     { 0, 0, NULL }
 };
 
@@ -1563,7 +1563,6 @@ const mesh_operation_t * mesh_configuration_client_get_operations(void){
 void mesh_configuration_client_register_packet_handler(mesh_model_t *configuration_client_model, btstack_packet_handler_t events_packet_handler){
     btstack_assert(events_packet_handler != NULL);
     btstack_assert(configuration_client_model != NULL);
-    
+
     configuration_client_model->model_packet_handler = events_packet_handler;
 }
-

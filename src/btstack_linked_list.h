@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -50,7 +50,7 @@ extern "C" {
 #endif
 
 /* API_START */
-	
+
 typedef struct btstack_linked_item {
     struct btstack_linked_item *next; // <-- next element in list, or NULL
 } btstack_linked_item_t;
@@ -114,7 +114,7 @@ btstack_linked_item_t * btstack_linked_list_get_first_item(btstack_linked_list_t
  * @param list
  * @return first element or NULL if list is empty
  */
-btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t * list);   
+btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t * list);
 
 /**
  * @brief Counts number of items in list

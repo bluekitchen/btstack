@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -39,7 +39,7 @@
 
 
 /**
- * Implementation of the GATT TX Power Service Server 
+ * Implementation of the GATT TX Power Service Server
  * To use with your application, add '#import <tx_power_service.gatt' to your .gatt file
  */
 

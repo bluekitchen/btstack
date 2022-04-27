@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -76,7 +76,7 @@ static uint16_t scan_refresh_value_handle_client_configuration;
 
 static void scan_parameters_service_emit_state(hci_con_handle_t con_handle, uint16_t max_scan_interval, uint16_t min_scan_window){
     if (scan_parameters_packet_handler == NULL) return;
-    
+
     uint8_t  event[9];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -88,7 +88,7 @@ static void scan_parameters_service_emit_state(hci_con_handle_t con_handle, uint
     pos += 2;
     little_endian_store_16(event, pos, min_scan_window);
     pos += 2;
-    
+
     (*scan_parameters_packet_handler)(HCI_EVENT_GATTSERVICE_META, 0, event, pos);
 }
 
@@ -144,7 +144,7 @@ static void scan_parameters_service_refresh_can_send_now(void * context){
 
 /**
  * @brief Init Nordic SPP Service Server with ATT DB
- * @param callback for tx data from peer  
+ * @param callback for tx data from peer
  */
 void scan_parameters_service_server_init(btstack_packet_handler_t packet_handler){
     scan_parameters_packet_handler = packet_handler;

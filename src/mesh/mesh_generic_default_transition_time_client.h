@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -63,9 +63,9 @@ void mesh_generic_default_transition_time_client_register_packet_handler(mesh_mo
  * @param netkey_index
  * @param appkey_index
  * @param transition_time_gdtt
- * @return status    0 if successful 
+ * @return status    0 if successful
  */
- uint8_t mesh_generic_default_transition_time_client_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+ uint8_t mesh_generic_default_transition_time_client_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     uint8_t transition_time_gdtt);
 
 /**
@@ -77,9 +77,9 @@ void mesh_generic_default_transition_time_client_register_packet_handler(mesh_mo
  * @param on_off_value
  * @param transition_time_gdtt
  * @param delay_time_gdtt
- * @return status    0 if successful 
+ * @return status    0 if successful
  */
-uint8_t mesh_generic_default_transition_time_client_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_default_transition_time_client_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     uint8_t transition_time_gdtt);
 
 /**
@@ -88,7 +88,7 @@ uint8_t mesh_generic_default_transition_time_client_set_unacknowledged(mesh_mode
  * @param dest
  * @param netkey_index
  * @param appkey_index
- * @return status    0 if successful 
+ * @return status    0 if successful
  */
 uint8_t mesh_generic_default_transition_time_client_get(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
 

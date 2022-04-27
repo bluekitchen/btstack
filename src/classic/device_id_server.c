@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -57,11 +57,11 @@ void device_id_create_sdp_record(uint8_t *service, uint32_t service_record_handl
 
 	uint8_t* attribute;
 	de_create_sequence(service);
-    
+
     // 0x0000 "Service Record Handle"
 	de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
 	de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
-    
+
 	// 0x0001 "Service Class ID List"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
 	attribute = de_push_sequence(service);
@@ -69,7 +69,7 @@ void device_id_create_sdp_record(uint8_t *service, uint32_t service_record_handl
 		de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_PNP_INFORMATION );
 	}
 	de_pop_sequence(service, attribute);
-	
+
 	// 0x0005 "Public Browse Group"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BROWSE_GROUP_LIST); // public browse group
 	attribute = de_push_sequence(service);
@@ -77,7 +77,7 @@ void device_id_create_sdp_record(uint8_t *service, uint32_t service_record_handl
 		de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT );
 	}
 	de_pop_sequence(service, attribute);
-	
+
 	// 0x0200 "SpecificationID"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SPECIFICATION_ID);
 	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0103);	// v1.3

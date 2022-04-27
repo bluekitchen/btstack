@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -55,7 +55,7 @@
 #ifdef MAX_ATT_DB_SIZE
 static uint8_t att_db_storage[MAX_ATT_DB_SIZE];
 #else
-#error Neither HAVE_MALLOC nor MAX_ATT_DB_SIZE is defined. 
+#error Neither HAVE_MALLOC nor MAX_ATT_DB_SIZE is defined.
 #endif
 #endif
 
@@ -236,12 +236,12 @@ static void att_db_util_add_client_characteristic_configuration(uint16_t flags){
 	uint8_t buffer[2];
 	// drop permission for read (0xc00), keep write permissions (0x0091)
 	uint16_t flags_to_store = (flags & 0x1f391u) | (uint16_t)ATT_PROPERTY_READ | (uint16_t)ATT_PROPERTY_WRITE | (uint16_t)ATT_PROPERTY_DYNAMIC;
-	little_endian_store_16(buffer, 0, 0); 
+	little_endian_store_16(buffer, 0, 0);
 	att_db_util_add_attribute_uuid16(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, flags_to_store, buffer, 2);
 }
 
 static uint16_t att_db_util_encode_permissions(uint16_t properties, uint8_t read_permission, uint8_t write_permission){
-    // drop Broadcast (0x01), Notify (0x10), Indicate (0x20), Extended Attributes (0x80) - not used for flags 
+    // drop Broadcast (0x01), Notify (0x10), Indicate (0x20), Extended Attributes (0x80) - not used for flags
     uint16_t flags = properties & 0xfff4eu;
     // if encryption requested, set encryption key size to 16
     if ((read_permission > (uint8_t)ATT_SECURITY_NONE) || (write_permission > (uint8_t)ATT_SECURITY_NONE)){
@@ -284,7 +284,7 @@ uint16_t att_db_util_add_characteristic_uuid16(uint16_t uuid16, uint16_t propert
 	little_endian_store_16(buffer, 1u, att_db_next_handle + 1u);
 	little_endian_store_16(buffer, 3, uuid16);
 	att_db_util_add_attribute_uuid16(GATT_CHARACTERISTICS_UUID, ATT_PROPERTY_READ, buffer, sizeof(buffer));
-	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
+	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);
 	uint16_t value_handle = att_db_next_handle;
 	att_db_util_add_attribute_uuid16(uuid16, flags, data, data_len);
 	if (properties & (uint8_t)(ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)){
@@ -299,7 +299,7 @@ uint16_t att_db_util_add_characteristic_uuid128(const uint8_t * uuid128, uint16_
 	little_endian_store_16(buffer, 1u, att_db_next_handle + 1u);
 	reverse_128(uuid128, &buffer[3]);
 	att_db_util_add_attribute_uuid16(GATT_CHARACTERISTICS_UUID, ATT_PROPERTY_READ, buffer, sizeof(buffer));
-	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
+	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);
 	uint16_t value_handle = att_db_next_handle;
 	att_db_util_add_attribute_uuid128(uuid128, flags, data, data_len);
 	if (properties & (uint8_t)(ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)){
@@ -310,14 +310,14 @@ uint16_t att_db_util_add_characteristic_uuid128(const uint8_t * uuid128, uint16_
 
 uint16_t att_db_util_add_descriptor_uuid16(uint16_t uuid16, uint16_t properties, uint8_t read_permission, uint8_t write_permission, uint8_t * data, uint16_t data_len){
     uint16_t descriptor_handler = att_db_next_handle;
-	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
+	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);
     att_db_util_add_attribute_uuid16(uuid16, flags, data, data_len);
     return descriptor_handler;
 }
 
 uint16_t att_db_util_add_descriptor_uuid128(const uint8_t * uuid128, uint16_t properties, uint8_t read_permission, uint8_t write_permission, uint8_t * data, uint16_t data_len){
     uint16_t descriptor_handler = att_db_next_handle;
-	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
+	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);
     att_db_util_add_attribute_uuid128(uuid128, flags, data, data_len);
     return descriptor_handler;
  }
@@ -327,7 +327,7 @@ uint8_t * att_db_util_get_address(void){
 }
 
 uint16_t att_db_util_get_size(void){
-	return att_db_size + 2u;	// end tag 
+	return att_db_size + 2u;	// end tag
 }
 
 static uint8_t * att_db_util_hash_att_ptr;

@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -165,17 +165,17 @@ static hid_device_t * hid_device_create_instance(void){
 void hid_create_sdp_record(uint8_t *service, uint32_t service_record_handle, const hid_sdp_record_t * params){
     uint8_t * attribute;
     de_create_sequence(service);
-    
+
     de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
-    de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);        
-    
+    de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
+
     de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
     attribute = de_push_sequence(service);
     {
         de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_HUMAN_INTERFACE_DEVICE_SERVICE);
     }
     de_pop_sequence(service, attribute);
-    
+
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
     {
@@ -188,7 +188,7 @@ void hid_create_sdp_record(uint8_t *service, uint32_t service_record_handle, con
 
         uint8_t * hidProtocol = de_push_sequence(attribute);
         {
-            de_add_number(hidProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_HIDP); 
+            de_add_number(hidProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_HIDP);
         }
         de_pop_sequence(attribute, hidProtocol);
     }
@@ -203,11 +203,11 @@ void hid_create_sdp_record(uint8_t *service, uint32_t service_record_handle, con
         de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x0100);
     }
     de_pop_sequence(service, attribute);
- 
+
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS);
     attribute = de_push_sequence(service);
     {
-        uint8_t * additionalDescriptorAttribute = de_push_sequence(attribute); 
+        uint8_t * additionalDescriptorAttribute = de_push_sequence(attribute);
         {
             uint8_t * l2cpProtocol = de_push_sequence(additionalDescriptorAttribute);
             {
@@ -218,17 +218,17 @@ void hid_create_sdp_record(uint8_t *service, uint32_t service_record_handle, con
 
             uint8_t * hidProtocol = de_push_sequence(additionalDescriptorAttribute);
             {
-                de_add_number(hidProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_HIDP); 
+                de_add_number(hidProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_HIDP);
             }
             de_pop_sequence(additionalDescriptorAttribute, hidProtocol);
         }
         de_pop_sequence(attribute, additionalDescriptorAttribute);
     }
-    de_pop_sequence(service, attribute); 
+    de_pop_sequence(service, attribute);
 
     // 0x0100 "ServiceName"
     de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-    de_add_data(service,  DE_STRING, strlen(params->device_name), (uint8_t *) params->device_name); 
+    de_add_data(service,  DE_STRING, strlen(params->device_name), (uint8_t *) params->device_name);
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
@@ -251,15 +251,15 @@ void hid_create_sdp_record(uint8_t *service, uint32_t service_record_handle, con
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_DEVICE_SUBCLASS);
     de_add_number(service,  DE_UINT, DE_SIZE_8,  params->hid_device_subclass);
-    
+
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_COUNTRY_CODE);
     de_add_number(service,  DE_UINT, DE_SIZE_8,  params->hid_country_code);
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_VIRTUAL_CABLE);
     de_add_number(service,  DE_BOOL, DE_SIZE_8,  params->hid_virtual_cable);
 
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_RECONNECT_INITIATE); 
-    de_add_number(service,  DE_BOOL, DE_SIZE_8,  params->hid_reconnect_initiate); 
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_RECONNECT_INITIATE);
+    de_add_number(service,  DE_BOOL, DE_SIZE_8,  params->hid_reconnect_initiate);
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
@@ -270,9 +270,9 @@ void hid_create_sdp_record(uint8_t *service, uint32_t service_record_handle, con
             de_add_data(hidDescriptor,  DE_STRING, params->hid_descriptor_size, (uint8_t *) params->hid_descriptor);
         }
         de_pop_sequence(attribute, hidDescriptor);
-    }        
-    de_pop_sequence(service, attribute);  
-    
+    }
+    de_pop_sequence(service, attribute);
+
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HIDLANGID_BASE_LIST);
     attribute = de_push_sequence(service);
     {
@@ -286,25 +286,25 @@ void hid_create_sdp_record(uint8_t *service, uint32_t service_record_handle, con
     }
     de_pop_sequence(service, attribute);
 
-    // battery power 
+    // battery power
 
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_REMOTE_WAKE); 
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_REMOTE_WAKE);
     de_add_number(service,  DE_BOOL, DE_SIZE_8,  params->hid_remote_wake ? 1 : 0);
 
     // supervision timeout
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_SUPERVISION_TIMEOUT); 
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_SUPERVISION_TIMEOUT);
     de_add_number(service,  DE_UINT, DE_SIZE_16, params->hid_supervision_timeout);
 
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_NORMALLY_CONNECTABLE); 
-    de_add_number(service,  DE_BOOL, DE_SIZE_8,  params->hid_normally_connectable); 
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_NORMALLY_CONNECTABLE);
+    de_add_number(service,  DE_BOOL, DE_SIZE_8,  params->hid_normally_connectable);
 
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_BOOT_DEVICE); 
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_BOOT_DEVICE);
     de_add_number(service,  DE_BOOL, DE_SIZE_8,  params->hid_boot_device ? 1 : 0);
 
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HIDSSR_HOST_MAX_LATENCY); 
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HIDSSR_HOST_MAX_LATENCY);
     de_add_number(service,  DE_UINT, DE_SIZE_16, params->hid_ssr_host_max_latency);
 
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HIDSSR_HOST_MIN_TIMEOUT); 
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HIDSSR_HOST_MIN_TIMEOUT);
     de_add_number(service,  DE_UINT, DE_SIZE_16, params->hid_ssr_host_min_timeout);
 }
 
@@ -324,7 +324,7 @@ static inline void hid_device_emit_connected_event(hid_device_t * context, uint8
     event[pos++] = context->incoming;
     event[1] = pos - 2;
     hid_device_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
-}   
+}
 
 static inline void hid_device_emit_event(hid_device_t * context, uint8_t subevent_type){
     uint8_t event[5];
@@ -401,7 +401,7 @@ static hid_handshake_param_type_t hid_device_set_report_cmd_is_valid(uint16_t ci
                 break;
         }
     }
-    
+
     if (!hid_report_size_valid(cid, report_id, report_type, report_size-pos)){
         // TODO clarify DCT/BI-03c
         return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
@@ -442,7 +442,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     device->state = HID_DEVICE_W2_GET_REPORT;
 
                     switch (device->protocol_mode){
-                        case HID_PROTOCOL_MODE_BOOT: 
+                        case HID_PROTOCOL_MODE_BOOT:
                             if (packet_size < 2){
                                 device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                                 break;
@@ -452,7 +452,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         case HID_PROTOCOL_MODE_REPORT:
                             if (!btstack_hid_report_id_declared(hid_device_descriptor_len, hid_device_descriptor)) {
                                 if (packet_size < 2) break;
-                                if (packet[0] & 0x08){ 
+                                if (packet[0] & 0x08){
                                     if (packet_size > 2) {
                                         device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
                                     }
@@ -476,7 +476,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     if (device->report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
                         l2cap_request_can_send_now_event(device->control_cid);
                         break;
-                    } 
+                    }
                     switch (hid_report_id_status(device->cid, device->report_id)){
                         case HID_REPORT_ID_INVALID:
                             device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
@@ -484,10 +484,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         default:
                             break;
                     }
-                    
+
                     device->expected_report_size = hid_get_report_size_for_id(device->cid, device->report_id, device->report_type, hid_device_descriptor_len, hid_device_descriptor);
                     report_size =  device->expected_report_size + pos; // add 1 for header size and report id
-                    
+
                     if ((packet[0] & 0x08) && (packet_size >= (pos + 1))){
                         device->report_size = btstack_min(btstack_min(little_endian_read_16(packet, pos), report_size), sizeof(report));
                     } else {
@@ -498,7 +498,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     break;
 
                 case HID_MESSAGE_TYPE_SET_REPORT:
-                    device->state = HID_DEVICE_W2_SET_REPORT;  
+                    device->state = HID_DEVICE_W2_SET_REPORT;
                     device->report_size = l2cap_max_mtu();
                     device->report_type = (hid_report_type_t)(packet[0] & 0x03);
                     if (packet_size < 1){
@@ -507,7 +507,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     }
 
                     switch (device->protocol_mode){
-                        case HID_PROTOCOL_MODE_BOOT: 
+                        case HID_PROTOCOL_MODE_BOOT:
                             if (packet_size < 3){
                                 device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                                 break;
@@ -520,13 +520,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         case HID_PROTOCOL_MODE_REPORT:
                             device->report_status = hid_device_set_report_cmd_is_valid(device->cid, device->report_type, packet_size - 1, &packet[1]);
                             if (device->report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL) break;
-                            
+
                             if (packet_size >= 2){
                                 (*hci_device_set_report)(device->cid, device->report_type, packet_size-1, &packet[1]);
                             } else {
                                 uint8_t payload[] = {0};
                                 (*hci_device_set_report)(device->cid, device->report_type, 1, payload);
-                            } 
+                            }
                             break;
                         default:
                             btstack_assert(false);
@@ -536,7 +536,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     l2cap_request_can_send_now_event(device->control_cid);
                     break;
                 case HID_MESSAGE_TYPE_GET_PROTOCOL:
-                    device->state = HID_DEVICE_W2_GET_PROTOCOL;  
+                    device->state = HID_DEVICE_W2_GET_PROTOCOL;
                     if (packet_size != 1) {
                         device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                         break;
@@ -547,7 +547,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     break;
 
                 case HID_MESSAGE_TYPE_SET_PROTOCOL:
-                    device->state = HID_DEVICE_W2_SET_PROTOCOL;  
+                    device->state = HID_DEVICE_W2_SET_PROTOCOL;
                     if (packet_size != 1) {
                         device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                         break;
@@ -559,7 +559,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     }
                     device->protocol_mode = (hid_protocol_mode_t) param;
                     switch (device->protocol_mode){
-                        case HID_PROTOCOL_MODE_BOOT: 
+                        case HID_PROTOCOL_MODE_BOOT:
                             break;
                         case HID_PROTOCOL_MODE_REPORT:
                             break;
@@ -601,7 +601,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     if (btstack_hid_report_id_declared(hid_device_descriptor_len, hid_device_descriptor)){
                         device->report_id = packet[pos++];
                     }
-                    
+
                     if (hid_report_id_status(device->cid, device->report_id) == HID_REPORT_ID_INVALID){
                         log_info("Ignore invalid report data packet");
                         break;
@@ -624,7 +624,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     switch (l2cap_event_incoming_connection_get_psm(packet)){
                         case PSM_HID_CONTROL:
                         case PSM_HID_INTERRUPT:
-                            l2cap_event_incoming_connection_get_address(packet, address); 
+                            l2cap_event_incoming_connection_get_address(packet, address);
                             device = hid_device_provide_instance_for_bd_addr(address);
                             if (!device) {
                                 log_error("L2CAP_EVENT_INCOMING_CONNECTION, cannot create instance for %s", bd_addr_to_str(address));
@@ -727,7 +727,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     local_cid = l2cap_event_can_send_now_get_local_cid(packet);
                     device = hid_device_get_instance_for_l2cap_cid(local_cid);
-                    
+
                     if (!device) return;
                     switch (device->state){
                         case HID_DEVICE_W2_GET_REPORT:{
@@ -742,7 +742,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             if (device->report_id){
                                 report[pos++] = device->report_id;
                             }
-                            
+
                             report_size = 0;
                             status = (*hci_device_get_report)(device->cid, device->report_type, device->report_id, &report_size, &report[pos]);
 
@@ -770,7 +770,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 hid_device_send_control_message(device->cid, &report[0], 1);
                                 break;
                             }
-                            
+
                             // if (report_size > l2cap_max_mtu()){
                             //     report[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                             //     hid_device_send_control_message(device->cid, &report[0], 1);
@@ -797,7 +797,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             report[1] =  device->protocol_mode;
                             hid_device_send_control_message(device->cid, &report[0], 2);
                             break;
-                            
+
 
                         case HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST:
                             report[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | HID_HANDSHAKE_PARAM_TYPE_ERR_UNSUPPORTED_REQUEST;
@@ -822,7 +822,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 }
 
 /**
- * @brief Set up HID Device 
+ * @brief Set up HID Device
  */
 void hid_device_init(bool boot_protocol_mode_supported, uint16_t descriptor_len, const uint8_t * descriptor){
     hid_device_boot_protocol_mode_supported = boot_protocol_mode_supported;
@@ -851,7 +851,7 @@ void hid_device_deinit(void){
 }
 
 /**
- * @brief Register callback for the HID Device client. 
+ * @brief Register callback for the HID Device client.
  * @param callback
  */
 void hid_device_register_packet_handler(btstack_packet_handler_t callback){
@@ -928,7 +928,7 @@ uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid){
     hid_device_t * hid_device = hid_device_create_instance();
     if (!hid_device){
         log_error("hid_device_connect: could not create a hid device instace");
-        return BTSTACK_MEMORY_ALLOC_FAILED; 
+        return BTSTACK_MEMORY_ALLOC_FAILED;
     }
     // assign hic_cid
     *hid_cid = hid_device_get_next_cid();

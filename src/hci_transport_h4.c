@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -105,7 +105,7 @@ static btstack_timer_source_t ehcill_sleep_ack_timer;
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
 #endif
 
-static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
+static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 typedef enum {
     H4_OFF,
@@ -121,7 +121,7 @@ typedef enum {
     TX_IDLE,
     TX_W4_PACKET_SENT,
 #ifdef ENABLE_EHCILL
-    TX_W4_WAKEUP, 
+    TX_W4_WAKEUP,
     TX_W2_EHCILL_SEND,
     TX_W4_EHCILL_SENT,
 #endif
@@ -132,7 +132,7 @@ static const btstack_uart_t * btstack_uart;
 static btstack_uart_config_t hci_transport_h4_uart_config;
 
 // write state
-static TX_STATE tx_state;         
+static TX_STATE tx_state;
 #ifdef ENABLE_EHCILL
 static uint8_t * ehcill_tx_data;
 static uint16_t  ehcill_tx_len;   // 0 == no outgoing packet
@@ -186,7 +186,7 @@ static void hci_transport_h4_reset_statemachine(void){
 
 static void hci_transport_h4_trigger_next_read(void){
     // log_info("hci_transport_h4_trigger_next_read: %u bytes", bytes_to_read);
-    btstack_uart->receive_block(&hci_packet[read_pos], bytes_to_read);  
+    btstack_uart->receive_block(&hci_packet[read_pos], bytes_to_read);
 }
 
 static void hci_transport_h4_packet_complete(void){
@@ -258,7 +258,7 @@ static void hci_transport_h4_block_read(void){
                     break;
             }
             break;
-            
+
         case H4_W4_EVENT_HEADER:
             bytes_to_read = hci_packet[2];
             // check Event length
@@ -269,7 +269,7 @@ static void hci_transport_h4_block_read(void){
             }
             h4_state = H4_W4_PAYLOAD;
             break;
-            
+
         case H4_W4_ACL_HEADER:
             bytes_to_read = little_endian_read_16( hci_packet, 3);
             // check ACL length
@@ -280,7 +280,7 @@ static void hci_transport_h4_block_read(void){
             }
             h4_state = H4_W4_PAYLOAD;
             break;
-            
+
         case H4_W4_SCO_HEADER:
             bytes_to_read = hci_packet[3];
             // check SCO length
@@ -301,7 +301,7 @@ static void hci_transport_h4_block_read(void){
             break;
         default:
             btstack_assert(false);
-            break; 
+            break;
     }
 
 #ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
@@ -343,8 +343,8 @@ static void hci_transport_h4_block_sent(void){
             hci_transport_h4_packet_handler(HCI_EVENT_PACKET, (uint8_t *) &packet_sent_event[0], sizeof(packet_sent_event));
             break;
 
-#ifdef ENABLE_EHCILL        
-        case TX_W4_EHCILL_SENT: 
+#ifdef ENABLE_EHCILL
+        case TX_W4_EHCILL_SENT:
         case TX_W4_WAKEUP:
             hci_transport_h4_ehcill_handle_ehcill_command_sent();
             break;
@@ -387,7 +387,7 @@ static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, i
             log_info("eHILL: send next packet, state EHCILL_STATE_W2_SEND_SLEEP_ACK");
             return 0;
         default:
-            break;    
+            break;
     }
 #endif
 
@@ -478,7 +478,7 @@ static void hci_transport_h4_ehcill_emit_sleep_state(int sleep_active){
     event[0] = HCI_EVENT_TRANSPORT_SLEEP_MODE;
     event[1] = sizeof(event) - 2;
     event[2] = sleep_active;
-    hci_transport_h4_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));        
+    hci_transport_h4_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
 }
 
 static void hci_transport_h4_ehcill_wakeup_handler(void){
@@ -581,7 +581,7 @@ static void hci_transport_h4_ehcill_trigger_wakeup(void){
 static void hci_transport_h4_ehcill_schedule_ehcill_command(uint8_t command){
 #ifdef ENABLE_LOG_EHCILL
     log_info("eHCILL: schedule eHCILL command %02x", command);
-#endif                
+#endif
     ehcill_command_to_send = command;
     switch (tx_state){
         case TX_IDLE:
@@ -615,7 +615,7 @@ static void hci_transport_h4_ehcill_handle_command(uint8_t action){
                     break;
             }
             break;
-            
+
         case EHCILL_STATE_W2_SEND_SLEEP_ACK:
             switch(action){
                 case EHCILL_WAKE_UP_IND:
@@ -629,7 +629,7 @@ static void hci_transport_h4_ehcill_handle_command(uint8_t action){
 #endif
                     hci_transport_h4_ehcill_schedule_ehcill_command(EHCILL_WAKE_UP_ACK);
                     break;
-                    
+
                 default:
                     break;
             }
@@ -654,12 +654,12 @@ static void hci_transport_h4_ehcill_handle_command(uint8_t action){
 #endif
                     hci_transport_h4_ehcill_schedule_ehcill_command(EHCILL_WAKE_UP_ACK);
                     break;
-                    
+
                 default:
                     break;
             }
             break;
-            
+
         case EHCILL_STATE_W4_WAKEUP_IND_OR_ACK:
             switch(action){
                 case EHCILL_WAKE_UP_IND:

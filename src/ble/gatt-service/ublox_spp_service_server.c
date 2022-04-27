@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -61,17 +61,17 @@
 
 typedef struct {
     hci_con_handle_t con_handle;
-    
-    // characteristic: FIFO 
+
+    // characteristic: FIFO
     uint16_t fifo_value_handle;
     uint8_t  data[20];
-    
+
     // characteristic descriptor: Client Characteristic Configuration
     uint16_t fifo_client_configuration_descriptor_handle;
     uint16_t fifo_client_configuration_descriptor_value; // none, notify or indicate;
     btstack_context_callback_registration_t fifo_callback;
 
-    // characteristic: Flow control/credits 
+    // characteristic: Flow control/credits
     uint16_t credits_value_handle;
     uint16_t incoming_credits;
     uint16_t outgoing_credits;
@@ -80,7 +80,7 @@ typedef struct {
     // characteristic descriptor: Client Characteristic Configuration
     uint16_t credits_client_configuration_descriptor_handle;
     uint16_t credits_client_configuration_descriptor_value;
-    
+
     btstack_context_callback_registration_t credits_callback;
 
     btstack_packet_handler_t client_packet_handler;
@@ -124,7 +124,7 @@ static uint16_t ublox_spp_service_read_callback(hci_con_handle_t con_handle, uin
     UNUSED(offset);
     UNUSED(buffer_size);
     ublox_spp_service_t * instance = ublox_get_instance_for_con_handle(con_handle);
-    if (!instance) return 0; 
+    if (!instance) return 0;
 
     if (attribute_handle == instance->fifo_client_configuration_descriptor_handle){
         if (buffer != NULL){
@@ -147,7 +147,7 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
     UNUSED(transaction_mode);
     UNUSED(offset);
     ublox_spp_service_t * instance = ublox_get_instance_for_con_handle(con_handle);
-    if (!instance) return 0; 
+    if (!instance) return 0;
 
     if (attribute_handle == instance->fifo_value_handle){
         instance->client_packet_handler(RFCOMM_DATA_PACKET, (uint16_t) con_handle, &buffer[0], buffer_size);
@@ -176,7 +176,7 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
         log_info("received outgoing credits, total %d", instance->outgoing_credits);
         // Provide credits
         att_server_request_to_send_notification(&instance->credits_callback, instance->con_handle);
-        
+
         // handle user request
         if (instance->request){
             btstack_context_callback_registration_t * request = instance->request;
@@ -193,7 +193,7 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
         log_info("ublox spp service Credits control: %d", instance->credits_client_configuration_descriptor_value);
         ublox_spp_service_init_credits(instance);
     }
-    
+
     return 0;
 }
 
@@ -239,12 +239,12 @@ void ublox_spp_service_server_init(btstack_packet_handler_t packet_handler){
     // Credits
     instance->credits_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid128(start_handle, end_handle, ublox_spp_credits_uuid128);
     instance->credits_client_configuration_descriptor_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid128(start_handle, end_handle, ublox_spp_credits_uuid128);
-    
+
     log_info("FIFO        value handle 0x%02x", instance->fifo_value_handle);
     log_info("FIFO CCC    value handle 0x%02x", instance->fifo_client_configuration_descriptor_handle);
     log_info("Credits     value handle 0x%02x", instance->credits_value_handle);
     log_info("Credits CCC value handle 0x%02x", instance->credits_client_configuration_descriptor_handle);
-    
+
     // register service with ATT Server
     ublox_spp_service.start_handle   = start_handle;
     ublox_spp_service.end_handle     = end_handle;
@@ -253,7 +253,7 @@ void ublox_spp_service_server_init(btstack_packet_handler_t packet_handler){
     att_server_register_service_handler(&ublox_spp_service);
 }
 
-/** 
+/**
  * @brief Queue send request. When called, one packet can be send via ublox_spp_service_send below
  * @param request
  * @param con_handle
@@ -282,4 +282,3 @@ int ublox_spp_service_server_send(hci_con_handle_t con_handle, const uint8_t * d
     }
     return att_server_notify(con_handle, instance->fifo_value_handle, &data[0], size);
 }
-

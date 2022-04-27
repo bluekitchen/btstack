@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -60,7 +60,7 @@ static void generic_server_send_message(uint16_t src, uint16_t dest, uint16_t ne
     mesh_access_send_unacknowledged_pdu(pdu);
 }
 
-// Transition 
+// Transition
 static int16_t add_and_clip_int16(int16_t current_value, int32_t increment){
     int32_t value = current_value + increment;
     if (value < -32768){
@@ -155,14 +155,14 @@ static mesh_pdu_t * mesh_generic_level_status_message(mesh_model_t *generic_leve
 static void generic_level_handle_set_target_level_message(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_generic_level_state_t * generic_level_server_state = (mesh_generic_level_state_t *)mesh_model->model_data;
     btstack_assert(generic_level_server_state != NULL);
-    
+
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     int16_t level_value = (int16_t) mesh_access_parser_get_uint16(&parser);
-    // The TID field is a transaction identifier indicating whether the message is 
+    // The TID field is a transaction identifier indicating whether the message is
     // a new message or a retransmission of a previously sent message
     uint8_t tid = mesh_access_parser_get_uint8(&parser);
-    
+
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
     if (mesh_access_parser_available(&parser) == 2){
@@ -179,7 +179,7 @@ static void generic_level_handle_set_target_level_message(mesh_model_t *mesh_mod
             break;
         default:
             mesh_access_transitions_init_transaction(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu));
-    
+
             generic_level_server_state->transition_data.initial_value = generic_level_server_state->transition_data.current_value;
             generic_level_server_state->transition_data.target_value = level_value;
 
@@ -188,7 +188,7 @@ static void generic_level_handle_set_target_level_message(mesh_model_t *mesh_mod
             mesh_access_state_changed(mesh_model);
             break;
     }
-   
+
 }
 
 static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -210,9 +210,9 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
         transition_time_gdtt = mesh_access_parser_get_uint8(&parser);
         delay_time_gdtt = mesh_access_parser_get_uint8(&parser);
     }
-            
+
     mesh_transition_t * base_transition = generic_level_server_get_base_transition(mesh_model);
-    
+
     switch (mesh_access_transitions_transaction_status(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu))){
         case MESH_TRANSACTION_STATUS_DIFFERENT_DST_OR_SRC:
             // abort transaction
@@ -250,11 +250,11 @@ static void generic_level_handle_set_move_message(mesh_model_t *mesh_model, mesh
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     int32_t delta_value = (int32_t) mesh_access_parser_get_uint16(&parser);
-    
-    // The TID field is a transaction identifier indicating whether the message is 
+
+    // The TID field is a transaction identifier indicating whether the message is
     // a new message or a retransmission of a previously sent message
     uint8_t tid = mesh_access_parser_get_uint8(&parser);
-    
+
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
     if (mesh_access_parser_available(&parser) == 2){
@@ -265,9 +265,9 @@ static void generic_level_handle_set_move_message(mesh_model_t *mesh_model, mesh
         // transition speed is delta / num steps, without num steps, and without a default transition time, we cannot do this
         return;
     }
-    
+
     mesh_transition_t * base_transition = generic_level_server_get_base_transition(mesh_model);
-    
+
     switch (mesh_access_transitions_transaction_status(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu))){
         case MESH_TRANSACTION_STATUS_RETRANSMISSION:
             // ignore retransmission

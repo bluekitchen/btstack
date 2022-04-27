@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -67,7 +67,7 @@ static btstack_slip_encoder_state_t encoder_state;
 static const uint8_t * encoder_data;
 static uint16_t  encoder_len;
 
-// decoder 
+// decoder
 static btstack_slip_decoder_state_t decoder_state;
 static uint8_t * decoder_buffer;
 static uint16_t  decoder_max_size;
@@ -97,8 +97,8 @@ int  btstack_slip_encoder_has_data(void){
 	return encoder_len > 0u;
 }
 
-/** 
- * @brief Get next byte from encoder 
+/**
+ * @brief Get next byte from encoder
  * @return Next bytes from encoder
  */
 uint8_t btstack_slip_encoder_get_byte(void){
@@ -194,8 +194,8 @@ void btstack_slip_decoder_process(uint8_t input){
                 default:
                     btstack_slip_decoder_store_byte(input);
                     decoder_state = SLIP_DECODER_ACTIVE;
-                    break; 
-            }                   
+                    break;
+            }
             break;
         case SLIP_DECODER_X_DB:
             switch(input){

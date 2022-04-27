@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "device_information_service_server.c"
 
 /**
- * Implementation of the Device Information Service Server 
+ * Implementation of the Device Information Service Server
  *
  * To use with your application, add '#import <device_information_sevice.gatt' to your .gatt file
  * and call all functions below. All strings and blobs need to stay valid after calling the functions.
@@ -156,7 +156,7 @@ void device_information_service_server_set_manufacturer_name(const char * manufa
  * @param model_number
  */
 void device_information_service_server_set_model_number(const char * model_number){
-	set_string(MODEL_NUMBER, model_number);	
+	set_string(MODEL_NUMBER, model_number);
 }
 
 /**
@@ -164,7 +164,7 @@ void device_information_service_server_set_model_number(const char * model_numbe
  * @param serial_number
  */
 void device_information_service_server_set_serial_number(const char * serial_number){
-	set_string(SERIAL_NUMBER, serial_number);	
+	set_string(SERIAL_NUMBER, serial_number);
 }
 
 /**
@@ -172,7 +172,7 @@ void device_information_service_server_set_serial_number(const char * serial_num
  * @param hardware_revision
  */
 void device_information_service_server_set_hardware_revision(const char * hardware_revision){
-	set_string(HARDWARE_REVISION, hardware_revision);	
+	set_string(HARDWARE_REVISION, hardware_revision);
 }
 
 /**
@@ -180,7 +180,7 @@ void device_information_service_server_set_hardware_revision(const char * hardwa
  * @param firmware_revision
  */
 void device_information_service_server_set_firmware_revision(const char * firmware_revision){
-	set_string(FIRMWARE_REVISION, firmware_revision);	
+	set_string(FIRMWARE_REVISION, firmware_revision);
 }
 
 /**
@@ -188,7 +188,7 @@ void device_information_service_server_set_firmware_revision(const char * firmwa
  * @param software_revision
  */
 void device_information_service_server_set_software_revision(const char * software_revision){
-	set_string(SOFTWARE_REVISION, software_revision);	
+	set_string(SOFTWARE_REVISION, software_revision);
 }
 
 /**

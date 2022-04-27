@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Bond Management Service Server
- * 
+ *
  */
 
 #ifndef BOND_MANAGEMENT_SERVICE_SERVER_H
@@ -50,11 +50,11 @@ extern "C" {
 #endif
 
 /**
- * @text The Bond Management service server defines how a peer Bluetooth device can manage the storage of bond information, 
+ * @text The Bond Management service server defines how a peer Bluetooth device can manage the storage of bond information,
  * especially the deletion of it, on the Bluetooth device supporting this service.
  *
  * To use with your application, add `#import <bond_management_service.gatt>` to your .gatt file.
- * After adding it to your .gatt file, you call *bond_management_service_server_init(supported_features)*. The input parameter "supported_features" 
+ * After adding it to your .gatt file, you call *bond_management_service_server_init(supported_features)*. The input parameter "supported_features"
  * is a bitmap, which defines how the bond information will be deleted, see BMF_DELETE_* flags below.
  */
 
@@ -113,4 +113,3 @@ void bond_management_service_server_set_authorisation_string(const char * author
 #endif
 
 #endif
-

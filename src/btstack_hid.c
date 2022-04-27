@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -138,4 +138,3 @@ const uint8_t * btstack_hid_get_boot_descriptor_data(void){
 uint16_t btstack_hid_get_boot_descriptor_len(void){
     return sizeof(btstack_hid_descriptor_boot_mode);
 }
-

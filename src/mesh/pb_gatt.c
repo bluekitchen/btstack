@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -93,7 +93,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             pos++;
             if (msg_type != MESH_MSG_TYPE_PROVISIONING_PDU) return;
             if (!pb_gatt_packet_handler) return;
-            
+
             pdu_segment_len = size - pos;
 
             if (sizeof(sar_buffer.reassembly_buffer) - reassembly_offset < pdu_segment_len) {
@@ -106,7 +106,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 log_info("Remote uses larger MTU, enable long PDUs");
                 pb_gatt_mtu = att_server_get_mtu(channel);
             }
-            
+
             switch (msg_sar_field){
                 case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
                     memset(sar_buffer.reassembly_buffer, 0, sizeof(sar_buffer.reassembly_buffer));
@@ -124,12 +124,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                  packet + pos, pdu_segment_len);
                     reassembly_offset += pdu_segment_len;
                     // send to provisioning device
-                    pb_gatt_packet_handler(PROVISIONING_DATA_PACKET, 0, sar_buffer.reassembly_buffer, reassembly_offset); 
+                    pb_gatt_packet_handler(PROVISIONING_DATA_PACKET, 0, sar_buffer.reassembly_buffer, reassembly_offset);
                     reassembly_offset = 0;
-                    break; 
+                    break;
                 case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
                     // send to provisioning device
-                    pb_gatt_packet_handler(PROVISIONING_DATA_PACKET, 0, packet+pos, pdu_segment_len); 
+                    pb_gatt_packet_handler(PROVISIONING_DATA_PACKET, 0, packet+pos, pdu_segment_len);
                     break;
                 default:
                     btstack_assert(false);
@@ -139,16 +139,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
         case HCI_EVENT_PACKET:
             if (hci_event_packet_get_type(packet) != HCI_EVENT_MESH_META) break;
-            
+
             switch (hci_event_mesh_meta_get_subevent_code(packet)){
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                     // Forward link open/close
                     pb_gatt_mtu = ATT_DEFAULT_MTU;
                     pb_gatt_packet_handler(HCI_EVENT_PACKET, 0, packet, size);
-                    break; 
+                    break;
                 case MESH_SUBEVENT_CAN_SEND_NOW:
-                    con_handle = little_endian_read_16(packet, 3); 
+                    con_handle = little_endian_read_16(packet, 3);
                     if (con_handle == HCI_CON_HANDLE_INVALID) return;
 
                     sar_buffer.segmentation_buffer[0] = (segmentation_state << 6) | MESH_MSG_TYPE_PROVISIONING_PDU;
@@ -159,7 +159,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     segmentation_offset += pdu_segment_len;
 
                     mesh_provisioning_service_server_send_proxy_pdu(con_handle, sar_buffer.segmentation_buffer, pdu_segment_len + 1);
-                    
+
                     switch (segmentation_state){
                         case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
                         case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
@@ -183,7 +183,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
             }
             break;
-            
+
         default:
             break;
     }
@@ -200,7 +200,7 @@ void pb_gatt_init(void){
 }
 
 /**
- * Register listener for Provisioning PDUs 
+ * Register listener for Provisioning PDUs
  */
 void pb_gatt_register_packet_handler(btstack_packet_handler_t _packet_handler){
     pb_gatt_packet_handler = _packet_handler;
@@ -213,7 +213,7 @@ void pb_gatt_register_packet_handler(btstack_packet_handler_t _packet_handler){
  * @param pdu_size
  */
 void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t size){
-    if (!pdu || size <= 0) return; 
+    if (!pdu || size <= 0) return;
     if (con_handle == HCI_CON_HANDLE_INVALID) return;
     // store pdu, request to send
     proxy_pdu = pdu;

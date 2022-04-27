@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -50,9 +50,9 @@ extern "C" {
 #endif
 
 #define SBC_FS 120          /* SBC Frame Size */
-#define SBC_N 512           /* 32ms - Window Length for pattern matching */ 
+#define SBC_N 512           /* 32ms - Window Length for pattern matching */
 #define SBC_M 64            /* 4ms - Template for matching */
-#define SBC_LHIST (SBC_N+SBC_FS-1)  /* Length of history buffer required */ 
+#define SBC_LHIST (SBC_N+SBC_FS-1)  /* Length of history buffer required */
 #define SBC_RT 36           /* SBC Reconvergence Time (samples) */
 #define SBC_OLAL 16         /* OverLap-Add Length (samples) */
 
@@ -71,7 +71,7 @@ typedef struct sbc_plc_state {
 
 // All int16 audio samples are in host endiness
 void btstack_sbc_plc_init(btstack_sbc_plc_state_t *plc_state);
-void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out); 
+void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out);
 void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in, int16_t *out);
 uint8_t * btstack_sbc_plc_zero_signal_frame(void);
 void btstack_sbc_dump_statistics(btstack_sbc_plc_state_t * state);

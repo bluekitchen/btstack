@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -196,7 +196,7 @@ static void sdp_client_query_rfcomm_handle_service_class_list_data(uint32_t attr
 
 static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_t attribute_value_length, uint32_t data_offset, uint8_t data){
     UNUSED(attribute_value_length);
-    
+
     // init state on first byte
     if (data_offset == 0){
         de_state_init(&sdp_client_rfcomm_de_header_state);
@@ -204,24 +204,24 @@ static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_
     }
 
     switch(protocol_descriptor_list_state){
-        
+
         case GET_PROTOCOL_LIST_LENGTH:
             if (!de_state_size(data, &sdp_client_rfcomm_de_header_state)) break;
 
             protocol_descriptor_list_state = GET_PROTOCOL_LENGTH;
             break;
-        
+
         case GET_PROTOCOL_LENGTH:
             // check size
             if (!de_state_size(data, &sdp_client_rfcomm_de_header_state)) break;
-            
+
             // cache protocol info
             sdp_client_rfcomm_protocol_offset = sdp_client_rfcomm_de_header_state.de_offset;
             sdp_client_rfcomm_protocol_size   = sdp_client_rfcomm_de_header_state.de_size;
 
             protocol_descriptor_list_state = GET_PROTOCOL_ID_HEADER_LENGTH;
             break;
-        
+
        case GET_PROTOCOL_ID_HEADER_LENGTH:
             sdp_client_rfcomm_protocol_offset++;
             if (!de_state_size(data, &sdp_client_rfcomm_de_header_state)) break;
@@ -229,9 +229,9 @@ static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_
             sdp_client_rfcomm_protocol_id = 0;
             sdp_client_rfcomm_protocol_id_bytes_to_read = sdp_client_rfcomm_de_header_state.de_size;
             protocol_descriptor_list_state = GET_PROTOCOL_ID;
-            
+
             break;
-        
+
         case GET_PROTOCOL_ID:
             sdp_client_rfcomm_protocol_offset++;
 
@@ -248,7 +248,7 @@ static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_
             protocol_descriptor_list_state = GET_PROTOCOL_VALUE_LENGTH;
             sdp_client_rfcomm_protocol_value_bytes_received = 0;
             break;
-        
+
         case GET_PROTOCOL_VALUE_LENGTH:
             sdp_client_rfcomm_protocol_offset++;
 
@@ -258,7 +258,7 @@ static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_
             protocol_descriptor_list_state = GET_PROTOCOL_VALUE;
             sdp_client_rfcomm_channel_nr = 0;
             break;
-        
+
         case GET_PROTOCOL_VALUE:
             sdp_client_rfcomm_protocol_offset++;
             sdp_client_rfcomm_protocol_value_bytes_received++;
@@ -310,7 +310,7 @@ static void sdp_client_query_rfcomm_handle_service_name_data(uint32_t attribute_
         if (name_pos >= name_len){
             sdp_client_rfcomm_service_name[name_pos] = 0;
             sdp_client_rfcomm_service_name_len = name_pos;
-        } 
+        }
 
         // terminate if buffer full
         if (name_pos == SDP_SERVICE_NAME_LEN){

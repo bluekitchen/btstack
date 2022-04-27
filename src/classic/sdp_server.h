@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -51,7 +51,7 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-    
+
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t   item;
@@ -66,7 +66,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
 
 /* API_START */
 
-/** 
+/**
  * @brief Set up SDP Server.
  */
 void sdp_init(void);
@@ -80,7 +80,7 @@ void sdp_init(void);
  */
 uint8_t sdp_register_service(const uint8_t * record);
 
-/** 
+/**
  * @brief Unregister service record internally.
  */
 void sdp_unregister_service(uint32_t service_record_handle);

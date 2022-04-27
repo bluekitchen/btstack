@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -55,7 +55,7 @@ extern "C" {
 /* API_START */
 
 /**
- * @brief Create A2DP Source service record. 
+ * @brief Create A2DP Source service record.
  * @param service
  * @param service_record_handle
  * @param supported_features 16-bit bitmap, see AVDTP_SOURCE_SF_* values in avdtp.h
@@ -72,13 +72,13 @@ void a2dp_source_init(void);
 /**
  * @brief Create a stream endpoint of type SOURCE, and register media codec by specifying its capabilities and the default configuration.
  * @param media_type    			See avdtp_media_type_t values in avdtp.h (audio, video or multimedia).
- * @param media_codec_type 			See avdtp_media_codec_type_t values in avdtp.h 
+ * @param media_codec_type 			See avdtp_media_codec_type_t values in avdtp.h
  * @param codec_capabilities        Media codec capabilities as defined in A2DP spec, section 4 - Audio Codec Interoperability Requirements.
  * @param codec_capabilities_len	Media codec capabilities length.
  * @param codec_configuration 		Default media codec configuration.
- * @param codec_configuration_len	Media codec configuration length. 
+ * @param codec_configuration_len	Media codec configuration length.
  *
- * @return local_stream_endpoint 				
+ * @return local_stream_endpoint
  */
 avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type,
                                                              const uint8_t *codec_capabilities, uint16_t codec_capabilities_len,
@@ -91,7 +91,7 @@ avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t 
 void a2dp_source_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
 
 /**
- * @brief Register callback for the A2DP Source client. It will receive following subevents of HCI_EVENT_A2DP_META HCI event type: 
+ * @brief Register callback for the A2DP Source client. It will receive following subevents of HCI_EVENT_A2DP_META HCI event type:
  * - A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:			Indicates that the next media packet can be sent.
  *
  * - A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED             Received when signaling connection with a remote is established.
@@ -140,7 +140,7 @@ uint8_t a2dp_source_start_stream(uint16_t a2dp_cid, uint8_t local_seid);
 uint8_t a2dp_source_pause_stream(uint16_t a2dp_cid, uint8_t local_seid);
 
 /**
- * @brief Release stream and disconnect from remote. 
+ * @brief Release stream and disconnect from remote.
  * @param a2dp_cid 			A2DP channel identifier.
  */
 uint8_t a2dp_source_disconnect(uint16_t a2dp_cid);

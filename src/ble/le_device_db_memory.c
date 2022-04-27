@@ -30,13 +30,13 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 #define BTSTACK_FILE__ "le_device_db_memory.c"
- 
+
 #include "ble/le_device_db.h"
 
 #include "ble/core.h"
@@ -132,7 +132,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     (void)memcpy(le_devices[index].addr, addr, 6);
     (void)memcpy(le_devices[index].irk, irk, 16);
 #ifdef ENABLE_LE_SIGNED_WRITE
-    le_devices[index].remote_counter = 0; 
+    le_devices[index].remote_counter = 0;
 #endif
     return index;
 }
@@ -164,7 +164,7 @@ void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm
         index, device->ediv, device->key_size, device->authenticated, device->authorized, device->secure_connection);
     if (ediv) *ediv = device->ediv;
     if (rand) (void)memcpy(rand, device->rand, 8);
-    if (ltk)  (void)memcpy(ltk, device->ltk, 16);    
+    if (ltk)  (void)memcpy(ltk, device->ltk, 16);
     if (key_size) *key_size = device->key_size;
     if (authenticated) *authenticated = device->authenticated;
     if (authorized) *authorized = device->authorized;
@@ -243,4 +243,3 @@ void le_device_db_dump(void){
 }
 
 #endif
-

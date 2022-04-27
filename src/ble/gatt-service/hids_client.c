@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -78,10 +78,10 @@ static char * hid_characteristic_name(uint16_t uuid){
 
         case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_KEYBOARD_INPUT_REPORT:
             return "BOOT_KEYBOARD_INPUT_REPORT";
-        
+
         case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_MOUSE_INPUT_REPORT:
             return "BOOT_MOUSE_INPUT_REPORT";
-        
+
         case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_KEYBOARD_OUTPUT_REPORT:
             return "BOOT_KEYBOARD_OUTPUT_REPORT";
 
@@ -93,7 +93,7 @@ static char * hid_characteristic_name(uint16_t uuid){
 
         case ORG_BLUETOOTH_CHARACTERISTIC_HID_INFORMATION:
             return "HID_INFORMATION";
-        
+
         case ORG_BLUETOOTH_CHARACTERISTIC_HID_CONTROL_POINT:
             return "HID_CONTROL_POINT";
         default:
@@ -103,7 +103,7 @@ static char * hid_characteristic_name(uint16_t uuid){
 #endif
 
 static hids_client_t * hids_get_client_for_con_handle(hci_con_handle_t con_handle){
-    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &clients);
     while (btstack_linked_list_iterator_has_next(&it)){
         hids_client_t * client = (hids_client_t *)btstack_linked_list_iterator_next(&it);
@@ -114,7 +114,7 @@ static hids_client_t * hids_get_client_for_con_handle(hci_con_handle_t con_handl
 }
 
 static hids_client_t * hids_get_client_for_cid(uint16_t hids_cid){
-    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &clients);
     while (btstack_linked_list_iterator_has_next(&it)){
         hids_client_t * client = (hids_client_t *)btstack_linked_list_iterator_next(&it);
@@ -131,8 +131,8 @@ static uint16_t hids_client_descriptor_storage_get_available_space(void){
     // assumes all descriptors are back to back
     uint16_t free_space = hids_client_descriptor_storage_len;
     uint8_t i;
-    
-    btstack_linked_list_iterator_t it;    
+
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &clients);
     while (btstack_linked_list_iterator_has_next(&it)){
         hids_client_t * client = (hids_client_t *)btstack_linked_list_iterator_next(&it);
@@ -167,10 +167,10 @@ static void hids_client_descriptor_storage_delete(hids_client_t * client){
         client->services[service_index].hid_descriptor_offset = 0;
     }
 
-    memmove(&hids_client_descriptor_storage[client->services[0].hid_descriptor_offset], 
+    memmove(&hids_client_descriptor_storage[client->services[0].hid_descriptor_offset],
             &hids_client_descriptor_storage[next_offset],
             hids_client_descriptor_storage_len - next_offset);
-    
+
     uint8_t i;
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &clients);
@@ -250,7 +250,7 @@ static bool external_report_index_for_uuid_exists(hids_client_t * client, uint16
 
 static uint8_t find_report_index_for_report_id_and_report_type(hids_client_t * client, uint8_t report_id, hid_report_type_t report_type){
     uint8_t i;
-    
+
     for (i = 0; i < client->num_reports; i++){
         hids_client_report_t report = client->reports[i];
         hid_protocol_mode_t  protocol_mode = client->services[report.service_index].protocol_mode;
@@ -273,10 +273,10 @@ static uint8_t find_report_index_for_report_id_and_report_type(hids_client_t * c
 }
 
 static uint8_t hids_client_add_characteristic(hids_client_t * client, gatt_client_characteristic_t * characteristic, uint8_t report_id, hid_report_type_t report_type, bool boot_report){
-    
+
     uint8_t report_index = find_external_report_index_for_value_handle(client, characteristic->value_handle);
     if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
-        return report_index; 
+        return report_index;
     }
     report_index = client->num_reports;
 
@@ -286,9 +286,9 @@ static uint8_t hids_client_add_characteristic(hids_client_t * client, gatt_clien
         client->reports[report_index].properties = characteristic->properties;
 
         client->reports[report_index].service_index = client->service_index;
-        client->reports[report_index].report_id = report_id; 
-        client->reports[report_index].report_type = report_type; 
-        client->reports[report_index].boot_report = boot_report; 
+        client->reports[report_index].report_id = report_id;
+        client->reports[report_index].report_type = report_type;
+        client->reports[report_index].boot_report = boot_report;
 
         log_info("add index %d, id %d, type %d, value handle 0x%02x, properties 0x%02x", report_index, report_id, report_type, characteristic->value_handle, characteristic->properties);
         client->num_reports++;
@@ -316,7 +316,7 @@ static uint8_t hids_client_add_external_report(hids_client_t * client, gatt_clie
 }
 
 static uint8_t hids_client_get_next_active_report_map_index(hids_client_t * client){
-    uint8_t i;    
+    uint8_t i;
     for (i = client->service_index; i < client->num_instances; i++){
         if (client->services[i].report_map_value_handle != 0){
             return i;
@@ -358,13 +358,13 @@ static bool hids_client_report_map_uuid_query_init(hids_client_t * client){
     client->report_index = 0;
     if (client->num_external_reports > 0){
         client->state = HIDS_CLIENT_STATE_W2_REPORT_MAP_READ_EXTERNAL_REPORT_REFERENCE_UUID;
-        return true;    
+        return true;
     }
     return false;
 }
 
 static uint8_t hids_client_get_next_report_index(hids_client_t * client){
-    uint8_t i;    
+    uint8_t i;
     uint8_t index = HIDS_CLIENT_INVALID_REPORT_INDEX;
 
     for (i = client->report_index; i < client->num_reports && (index == HIDS_CLIENT_INVALID_REPORT_INDEX); i++){
@@ -401,7 +401,7 @@ static bool hids_client_report_query_init(hids_client_t * client){
 }
 
 static uint8_t hids_client_get_next_notification_report_index(hids_client_t * client){
-    uint8_t i;    
+    uint8_t i;
     uint8_t index = HIDS_CLIENT_INVALID_REPORT_INDEX;
 
     for (i = client->report_index; i < client->num_reports && (index == HIDS_CLIENT_INVALID_REPORT_INDEX); i++){
@@ -419,7 +419,7 @@ static uint8_t hids_client_get_next_notification_report_index(hids_client_t * cl
         }
         if (report.report_type == HID_REPORT_TYPE_INPUT){
             index = i;
-        } 
+        }
     }
     client->report_index = index;
     return index;
@@ -478,7 +478,7 @@ static hids_client_t * hids_create_client(hci_con_handle_t con_handle, uint16_t 
     client->state = HIDS_CLIENT_STATE_IDLE;
     client->cid = cid;
     client->con_handle = con_handle;
-    
+
     btstack_linked_list_add(&clients, (btstack_linked_item_t *) client);
     return client;
 }
@@ -492,7 +492,7 @@ static void hids_finalize_client(hids_client_t * client){
 
     hids_client_descriptor_storage_delete(client);
     btstack_linked_list_remove(&clients, (btstack_linked_item_t *) client);
-    btstack_memory_hids_client_free(client); 
+    btstack_memory_hids_client_free(client);
 }
 
 
@@ -554,7 +554,7 @@ static void hids_client_emit_hid_information_event(hids_client_t * client, const
     pos += 3;
     event[pos++] = (value[3] & 0x02) >> 1;
     event[pos++] = value[3] & 0x01;
-    
+
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -571,7 +571,7 @@ static void hids_client_emit_protocol_mode_event(hids_client_t * client, const u
     event[pos++] = client->service_index;
     event[pos++] = value[0];
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}      
+}
 
 static void handle_notification_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(packet_type);
@@ -595,12 +595,12 @@ static void handle_notification_event(uint8_t packet_type, uint16_t channel, uin
 static void handle_report_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(packet_type);
     UNUSED(channel);
-    
+
     if (hci_event_packet_get_type(packet) != GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT) return;
-    
+
     hids_client_t * client = hids_get_client_for_con_handle(gatt_event_characteristic_value_query_result_get_handle(packet));
     btstack_assert(client != NULL);
-    
+
     if (client->state != HIDS_CLIENT_W4_GET_REPORT_RESULT){
         return;
     }
@@ -610,7 +610,7 @@ static void handle_report_event(uint8_t packet_type, uint16_t channel, uint8_t *
     if (report_index == HIDS_CLIENT_INVALID_REPORT_INDEX){
         return;
     }
-    
+
     uint8_t * in_place_event = &packet[-2];
     hids_client_setup_report_event(client, report_index, in_place_event, gatt_event_characteristic_value_query_result_get_value_length(packet));
     (*client->client_handler)(HCI_EVENT_GATTSERVICE_META, client->cid, in_place_event, size + 2);
@@ -627,24 +627,24 @@ static void hids_run_for_client(hids_client_t * client){
             printf("\n\nQuery Services:\n");
 #endif
             client->state = HIDS_CLIENT_STATE_W4_SERVICE_RESULT;
-            
+
             // result in GATT_EVENT_SERVICE_QUERY_RESULT
             att_status = gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, client->con_handle, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE);
             UNUSED(att_status);
             break;
-        
+
         case HIDS_CLIENT_STATE_W2_QUERY_CHARACTERISTIC:
 #ifdef ENABLE_TESTING_SUPPORT
             printf("\n\nQuery Characteristics of service %d:\n", client->service_index);
 #endif
             client->state = HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT;
-            
+
             service.start_group_handle = client->services[client->service_index].start_handle;
             service.end_group_handle = client->services[client->service_index].end_handle;
 
             // result in GATT_EVENT_CHARACTERISTIC_QUERY_RESULT
             att_status = gatt_client_discover_characteristics_for_service(&handle_gatt_client_event, client->con_handle, &service);
-            
+
             UNUSED(att_status);
             break;
 
@@ -676,20 +676,20 @@ static void hids_run_for_client(hids_client_t * client){
         case HIDS_CLIENT_STATE_W2_REPORT_MAP_READ_EXTERNAL_REPORT_REFERENCE_UUID:
 #ifdef ENABLE_TESTING_SUPPORT
             printf("\nRead external chr UUID (Handle 0x%04X) Characteristic Descriptors, service index %d:\n", client->external_reports[client->report_index].value_handle, client->service_index);
-#endif       
+#endif
             client->state = HIDS_CLIENT_STATE_W4_REPORT_MAP_EXTERNAL_REPORT_REFERENCE_UUID;
-            
+
             // result in GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT
-            att_status = gatt_client_read_characteristic_descriptor_using_descriptor_handle(&handle_gatt_client_event, client->con_handle, client->external_reports[client->report_index].value_handle);  
+            att_status = gatt_client_read_characteristic_descriptor_using_descriptor_handle(&handle_gatt_client_event, client->con_handle, client->external_reports[client->report_index].value_handle);
             UNUSED(att_status);
             break;
 
         case HIDS_CLIENT_STATE_W2_DISCOVER_EXTERNAL_REPORT_CHARACTERISTIC:
  #ifdef ENABLE_TESTING_SUPPORT
             printf("\nDiscover External Report Characteristic:\n");
-#endif       
+#endif
             client->state = HIDS_CLIENT_STATE_W4_EXTERNAL_REPORT_CHARACTERISTIC_RESULT;
-            
+
             service.start_group_handle = 0x0001;
             service.end_group_handle = 0xffff;
 
@@ -700,14 +700,14 @@ static void hids_run_for_client(hids_client_t * client){
 
         case HIDS_CLIENT_STATE_W2_FIND_REPORT:
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("\nQuery Report Characteristic Descriptors [%d, %d, 0x%04X]:\n", 
+            printf("\nQuery Report Characteristic Descriptors [%d, %d, 0x%04X]:\n",
                 client->report_index,
                 client->reports[client->report_index].service_index,
                 client->reports[client->report_index].value_handle);
 #endif
             client->state = HIDS_CLIENT_STATE_W4_REPORT_FOUND;
             client->handle = 0;
-            
+
             characteristic.value_handle = client->reports[client->report_index].value_handle;
             characteristic.end_handle = client->reports[client->report_index].end_handle;
             characteristic.properties = client->reports[client->report_index].properties;
@@ -721,11 +721,11 @@ static void hids_run_for_client(hids_client_t * client){
             client->state = HIDS_CLIENT_STATE_W4_REPORT_ID_AND_TYPE;
 
             // result in GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT
-            att_status = gatt_client_read_characteristic_descriptor_using_descriptor_handle(&handle_gatt_client_event, client->con_handle, client->handle);  
-            client->handle = 0;  
+            att_status = gatt_client_read_characteristic_descriptor_using_descriptor_handle(&handle_gatt_client_event, client->con_handle, client->handle);
+            client->handle = 0;
             UNUSED(att_status);
             break;
-        
+
         case HIDS_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS:
 #ifdef ENABLE_TESTING_SUPPORT
             if (client->value > 0){
@@ -733,7 +733,7 @@ static void hids_run_for_client(hids_client_t * client){
             } else {
                 printf("    Notification configuration disable ");
             }
-            printf("[%d, %d, 0x%04X]:\n", 
+            printf("[%d, %d, 0x%04X]:\n",
                 client->report_index,
                 client->reports[client->report_index].service_index, client->reports[client->report_index].value_handle);
 #endif
@@ -743,16 +743,16 @@ static void hids_run_for_client(hids_client_t * client){
             characteristic.value_handle = client->reports[client->report_index].value_handle;
             characteristic.end_handle = client->reports[client->report_index].end_handle;
             characteristic.properties = client->reports[client->report_index].properties;
-            
+
             // end of write marked in GATT_EVENT_QUERY_COMPLETE
 
             att_status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, client->con_handle, &characteristic, client->value);
-            
+
             if (att_status == ERROR_CODE_SUCCESS){
                 switch(client->value){
                     case GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION:
                         gatt_client_listen_for_characteristic_value_updates(
-                            &client->reports[client->report_index].notification_listener, 
+                            &client->reports[client->report_index].notification_listener,
                             &handle_notification_event, client->con_handle, &characteristic);
                         break;
                     default:
@@ -770,7 +770,7 @@ static void hids_run_for_client(hids_client_t * client){
 
         case HIDS_CLIENT_STATE_W2_ENABLE_INPUT_REPORTS:
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("    Notification enable [%d, %d, 0x%04X]:\n", 
+            printf("    Notification enable [%d, %d, 0x%04X]:\n",
                 client->report_index,
                 client->reports[client->report_index].service_index, client->reports[client->report_index].value_handle);
 #endif
@@ -779,13 +779,13 @@ static void hids_run_for_client(hids_client_t * client){
             characteristic.value_handle = client->reports[client->report_index].value_handle;
             characteristic.end_handle = client->reports[client->report_index].end_handle;
             characteristic.properties = client->reports[client->report_index].properties;
-            
+
             // end of write marked in GATT_EVENT_QUERY_COMPLETE
             att_status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, client->con_handle, &characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
-            
+
             if (att_status == ERROR_CODE_SUCCESS){
                 gatt_client_listen_for_characteristic_value_updates(
-                    &client->reports[client->report_index].notification_listener, 
+                    &client->reports[client->report_index].notification_listener,
                     &handle_notification_event, client->con_handle, &characteristic);
             } else {
                 if (hids_client_report_next_notification_report_index(client)){
@@ -800,7 +800,7 @@ static void hids_run_for_client(hids_client_t * client){
 
         case HIDS_CLIENT_W2_SEND_WRITE_REPORT:
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("    Write report [%d, %d, 0x%04X]:\n", 
+            printf("    Write report [%d, %d, 0x%04X]:\n",
                 client->report_index,
                 client->reports[client->report_index].service_index, client->reports[client->report_index].value_handle);
 #endif
@@ -809,15 +809,15 @@ static void hids_run_for_client(hids_client_t * client){
 
             // see GATT_EVENT_QUERY_COMPLETE for end of write
             att_status = gatt_client_write_value_of_characteristic(
-                &handle_report_event, client->con_handle, 
-                client->reports[client->report_index].value_handle, 
+                &handle_report_event, client->con_handle,
+                client->reports[client->report_index].value_handle,
                 client->report_len, (uint8_t *)client->report);
             UNUSED(att_status);
             break;
 
         case HIDS_CLIENT_W2_SEND_GET_REPORT:
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("    Get report [index %d, ID %d, Service %d, handle 0x%04X]:\n", 
+            printf("    Get report [index %d, ID %d, Service %d, handle 0x%04X]:\n",
                 client->report_index,
                 client->reports[client->report_index].report_id,
                 client->reports[client->report_index].service_index, client->reports[client->report_index].value_handle);
@@ -827,10 +827,10 @@ static void hids_run_for_client(hids_client_t * client){
             // result in GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
             att_status = gatt_client_read_value_of_characteristic_using_value_handle(
                 &handle_report_event,
-                client->con_handle, 
+                client->con_handle,
                 client->reports[client->report_index].value_handle);
             UNUSED(att_status);
-            break;        
+            break;
 
 #ifdef ENABLE_TESTING_SUPPORT
         case HIDS_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION:
@@ -839,9 +839,9 @@ static void hids_run_for_client(hids_client_t * client){
             // result in GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
             att_status = gatt_client_read_value_of_characteristic_using_value_handle(
                 &handle_gatt_client_event,
-                client->con_handle, 
+                client->con_handle,
                 client->reports[client->report_index].ccc_handle);
-    
+
             break;
 #endif
         case HIDS_CLIENT_W2_READ_VALUE_OF_CHARACTERISTIC:
@@ -850,7 +850,7 @@ static void hids_run_for_client(hids_client_t * client){
             // result in GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
             att_status = gatt_client_read_value_of_characteristic_using_value_handle(
                 &handle_gatt_client_event,
-                client->con_handle, 
+                client->con_handle,
                 client->handle);
             break;
 
@@ -866,7 +866,7 @@ static void hids_run_for_client(hids_client_t * client){
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
-    UNUSED(channel);     
+    UNUSED(channel);
     UNUSED(size);
 
     hids_client_t * client = NULL;
@@ -909,7 +909,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client = hids_get_client_for_con_handle(gatt_event_characteristic_query_result_get_handle(packet));
             btstack_assert(client != NULL);
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
-            
+
             report_index = HIDS_CLIENT_INVALID_REPORT_INDEX;
             if (client->state == HIDS_CLIENT_STATE_W4_EXTERNAL_REPORT_CHARACTERISTIC_RESULT){
                 if (!external_report_index_for_uuid_exists(client, characteristic.uuid16)){
@@ -925,11 +925,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_KEYBOARD_INPUT_REPORT:
                     report_index = hids_client_add_characteristic(client, &characteristic, HID_BOOT_MODE_KEYBOARD_ID, HID_REPORT_TYPE_INPUT, true);
                     break;
-                
+
                 case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_MOUSE_INPUT_REPORT:
                     report_index = hids_client_add_characteristic(client, &characteristic, HID_BOOT_MODE_MOUSE_ID, HID_REPORT_TYPE_INPUT, true);
                     break;
-                
+
                 case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_KEYBOARD_OUTPUT_REPORT:
                     report_index = hids_client_add_characteristic(client, &characteristic, HID_BOOT_MODE_KEYBOARD_ID, HID_REPORT_TYPE_OUTPUT, true);
                     break;
@@ -938,7 +938,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     report_index = hids_client_add_characteristic(client, &characteristic, HID_REPORT_MODE_REPORT_ID, HID_REPORT_TYPE_RESERVED, false);
                     break;
 
-                case ORG_BLUETOOTH_CHARACTERISTIC_REPORT_MAP:                        
+                case ORG_BLUETOOTH_CHARACTERISTIC_REPORT_MAP:
                     client->services[client->service_index].report_map_value_handle = characteristic.value_handle;
                     client->services[client->service_index].report_map_end_handle = characteristic.end_handle;
                     break;
@@ -946,7 +946,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case ORG_BLUETOOTH_CHARACTERISTIC_HID_INFORMATION:
                     client->services[client->service_index].hid_information_value_handle = characteristic.value_handle;
                     break;
-                
+
                 case ORG_BLUETOOTH_CHARACTERISTIC_HID_CONTROL_POINT:
                     client->services[client->service_index].control_point_value_handle = characteristic.value_handle;
                     break;
@@ -959,16 +959,16 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             }
 
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("HID Characteristic %s:  \n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X, service %d", 
+            printf("HID Characteristic %s:  \n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X, service %d",
                 hid_characteristic_name(characteristic.uuid16),
-                characteristic.start_handle, 
-                characteristic.properties, 
+                characteristic.start_handle,
+                characteristic.properties,
                 characteristic.value_handle, characteristic.uuid16,
                 client->service_index);
 
             if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
                 printf(", report index 0x%02X", report_index);
-            } 
+            }
             printf("\n");
 #endif
             break;
@@ -977,7 +977,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             // Map Report characteristic value == HID Descriptor
             client = hids_get_client_for_con_handle(gatt_event_long_characteristic_value_query_result_get_handle(packet));
             btstack_assert(client != NULL);
-            
+
             value = gatt_event_long_characteristic_value_query_result_get_value(packet);
             value_len = gatt_event_long_characteristic_value_query_result_get_value_length(packet);
 
@@ -998,16 +998,16 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client = hids_get_client_for_con_handle(gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
             btstack_assert(client != NULL);
             gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &characteristic_descriptor);
-            
+
             switch (client->state) {
                 case HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTORS_RESULT:
                     // setup for descriptor value query
                     if (characteristic_descriptor.uuid16 == ORG_BLUETOOTH_DESCRIPTOR_EXTERNAL_REPORT_REFERENCE){
                         report_index = hids_client_add_external_report(client, &characteristic_descriptor);
-                        
+
 #ifdef ENABLE_TESTING_SUPPORT
                         if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
-                            printf("    External Report Reference Characteristic Descriptor: Handle 0x%04X, UUID 0x%04X, service %d, report index 0x%02X\n", 
+                            printf("    External Report Reference Characteristic Descriptor: Handle 0x%04X, UUID 0x%04X, service %d, report index 0x%02X\n",
                                 characteristic_descriptor.handle,
                                 characteristic_descriptor.uuid16,
                                 client->service_index, report_index);
@@ -1020,16 +1020,16 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (characteristic_descriptor.uuid16 == ORG_BLUETOOTH_DESCRIPTOR_REPORT_REFERENCE){
                         client->handle = characteristic_descriptor.handle;
 #ifdef ENABLE_TESTING_SUPPORT
-                        printf("    Report Characteristic Report Reference Characteristic Descriptor:  Handle 0x%04X, UUID 0x%04X\n", 
+                        printf("    Report Characteristic Report Reference Characteristic Descriptor:  Handle 0x%04X, UUID 0x%04X\n",
                             characteristic_descriptor.handle,
                             characteristic_descriptor.uuid16);
-#endif 
+#endif
                     }
-                    
+
 #ifdef ENABLE_TESTING_SUPPORT
                     if (characteristic_descriptor.uuid16 == ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION){
                         client->reports[client->report_index].ccc_handle = characteristic_descriptor.handle;
-                        printf("    Report Client Characteristic Configuration Descriptor: Handle 0x%04X, UUID 0x%04X\n", 
+                        printf("    Report Client Characteristic Configuration Descriptor: Handle 0x%04X, UUID 0x%04X\n",
                             characteristic_descriptor.handle,
                             characteristic_descriptor.uuid16);
                     }
@@ -1047,7 +1047,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
             value = gatt_event_characteristic_value_query_result_get_value(packet);
             value_len = gatt_event_characteristic_value_query_result_get_value_length(packet);
-            
+
 
             switch (client->state){
 #ifdef ENABLE_TESTING_SUPPORT
@@ -1055,29 +1055,29 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     printf("    Received CCC value: ");
                     printf_hexdump(value,  value_len);
                     break;
-#endif  
+#endif
                 case HIDS_CLIENT_W4_VALUE_OF_CHARACTERISTIC_RESULT:{
                     uint16_t value_handle = gatt_event_characteristic_value_query_result_get_value_handle(packet);
                     if (value_handle == client->services[client->service_index].hid_information_value_handle){
                         hids_client_emit_hid_information_event(client, value, value_len);
-                        break;    
+                        break;
                     }
                     if (value_handle == client->services[client->service_index].protocol_mode_value_handle){
                         hids_client_emit_protocol_mode_event(client, value, value_len);
-                        break;    
+                        break;
                     }
                     break;
                 }
                 default:
                     break;
             }
-            
+
             break;
 
         case GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
             client = hids_get_client_for_con_handle(gatt_event_characteristic_descriptor_query_result_get_handle(packet));
             btstack_assert(client != NULL);
-            
+
             if (gatt_event_characteristic_descriptor_query_result_get_descriptor_length(packet) != 2){
                 break;
             }
@@ -1085,31 +1085,31 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             characteristic_descriptor_value = gatt_event_characteristic_descriptor_query_result_get_descriptor(packet);
             switch (client->state) {
                 case HIDS_CLIENT_STATE_W4_REPORT_MAP_EXTERNAL_REPORT_REFERENCE_UUID:
-                    // get external report characteristic uuid 
+                    // get external report characteristic uuid
                     report_index = find_external_report_index_for_value_handle(client, gatt_event_characteristic_descriptor_query_result_get_descriptor_handle(packet));
                     if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
                         client->external_reports[report_index].external_report_reference_uuid = little_endian_read_16(characteristic_descriptor_value, 0);
-#ifdef ENABLE_TESTING_SUPPORT         
-                        printf("    Update external_report_reference_uuid of report index 0x%02X, service index 0x%02X, UUID 0x%02X\n", 
+#ifdef ENABLE_TESTING_SUPPORT
+                        printf("    Update external_report_reference_uuid of report index 0x%02X, service index 0x%02X, UUID 0x%02X\n",
                             report_index, client->service_index, client->external_reports[report_index].external_report_reference_uuid);
-#endif               
+#endif
                     }
                     break;
 
                 case HIDS_CLIENT_STATE_W4_REPORT_ID_AND_TYPE:
-                    
+
                     if (client->report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
                         client->reports[client->report_index].report_id = characteristic_descriptor_value[0];
                         client->reports[client->report_index].report_type = (hid_report_type_t)characteristic_descriptor_value[1];
-    #ifdef ENABLE_TESTING_SUPPORT         
-                        printf("    Update report ID and type [%d, %d] of report index 0x%02X, service index 0x%02X\n", 
+    #ifdef ENABLE_TESTING_SUPPORT
+                        printf("    Update report ID and type [%d, %d] of report index 0x%02X, service index 0x%02X\n",
                             client->reports[client->report_index].report_id,
-                            client->reports[client->report_index].report_type, 
+                            client->reports[client->report_index].report_type,
                             client->report_index, client->service_index);
     #endif
                     }
                     break;
-                
+
                 default:
                     break;
             }
@@ -1122,13 +1122,13 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             switch (client->state){
                 case HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE:
                     att_status = gatt_client_write_value_of_characteristic_without_response(
-                        client->con_handle, 
+                        client->con_handle,
                         client->services[client->service_index].protocol_mode_value_handle, 1, (uint8_t *)&client->required_protocol_mode);
 
 #ifdef ENABLE_TESTING_SUPPORT
                     printf("\n\nSet report mode %d of service %d, status 0x%02x", client->required_protocol_mode, client->service_index, att_status);
-#endif            
-                    
+#endif
+
                     if (att_status == ATT_ERROR_SUCCESS){
                         client->services[client->service_index].protocol_mode = client->required_protocol_mode;
                         if ((client->service_index + 1) < client->num_instances){
@@ -1137,12 +1137,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                             break;
                         }
                     }
-                    
+
                     // read UUIDS for external characteristics
                     if (hids_client_report_map_uuid_query_init(client)){
                         hids_run_for_client(client);
                         break;
-                    }   
+                    }
 
                     // discover characteristic descriptor for all Report characteristics,
                     // then read value of characteristic descriptor to get Report ID
@@ -1150,9 +1150,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         hids_run_for_client(client);
                         break;
                     }
-                    
-                    client->state = HIDS_CLIENT_STATE_CONNECTED;            
-                    hids_emit_connection_established(client, ERROR_CODE_SUCCESS); 
+
+                    client->state = HIDS_CLIENT_STATE_CONNECTED;
+                    hids_emit_connection_established(client, ERROR_CODE_SUCCESS);
                     break;
 
                 case HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE:
@@ -1166,40 +1166,40 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 default:
                     break;
             }
-            
+
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
             client = hids_get_client_for_con_handle(gatt_event_query_complete_get_handle(packet));
             btstack_assert(client != NULL);
-            
+
             att_status = gatt_event_query_complete_get_att_status(packet);
-            
+
             switch (client->state){
                 case HIDS_CLIENT_STATE_W4_SERVICE_RESULT:
                     if (att_status != ATT_ERROR_SUCCESS){
-                        hids_emit_connection_established(client, att_status);  
+                        hids_emit_connection_established(client, att_status);
                         hids_finalize_client(client);
-                        return;  
+                        return;
                     }
 
                     if (client->num_instances == 0){
-                        hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
+                        hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                         hids_finalize_client(client);
-                        return;   
+                        return;
                     }
 
                     client->service_index = 0;
                     client->state = HIDS_CLIENT_STATE_W2_QUERY_CHARACTERISTIC;
                     break;
-                
+
                 case HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
                     if (att_status != ATT_ERROR_SUCCESS){
-                        hids_emit_connection_established(client, att_status);  
+                        hids_emit_connection_established(client, att_status);
                         hids_finalize_client(client);
-                        return;  
+                        return;
                     }
-                    
+
                     if ((client->service_index + 1) < client->num_instances){
                         // discover characteristics of next service
                         client->service_index++;
@@ -1208,18 +1208,18 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     }
 
                     btstack_assert(client->required_protocol_mode != HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT);
-                            
+
                     switch (client->required_protocol_mode){
                         case HID_PROTOCOL_MODE_REPORT:
                             for (i = 0; i < client->num_instances; i++){
                                 client->services[i].protocol_mode = HID_PROTOCOL_MODE_REPORT;
                             }
-                            // 1. we need to get HID Descriptor and 
+                            // 1. we need to get HID Descriptor and
                             // 2. get external Report characteristics if referenced from Report Map
                             if (hids_client_report_map_query_init(client)){
                                 break;
                             }
-                            hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
+                            hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                             hids_finalize_client(client);
                             return;
 
@@ -1235,9 +1235,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 // HID descriptor found
                 case HIDS_CLIENT_STATE_W4_REPORT_MAP_HID_DESCRIPTOR:
                     if (att_status != ATT_ERROR_SUCCESS){
-                        hids_emit_connection_established(client, att_status);  
+                        hids_emit_connection_established(client, att_status);
                         hids_finalize_client(client);
-                        return;  
+                        return;
                     }
                     client->state = HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS;
                     break;
@@ -1248,11 +1248,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (hids_client_report_query_next_report_map(client)){
                         break;
                     }
-                    
+
                     // read UUIDS for external characteristics
                     if (hids_client_report_map_uuid_query_init(client)){
                         break;
-                    }   
+                    }
 
                     // discover characteristic descriptor for all Report characteristics,
                     // then read value of characteristic descriptor to get Report ID
@@ -1260,7 +1260,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         break;
                     }
 
-                    hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
+                    hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                     hids_finalize_client(client);
                     return;
 
@@ -1270,7 +1270,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         break;
                     }
 
-                    // update external characteristics with correct value handle and end handle 
+                    // update external characteristics with correct value handle and end handle
                     client->state = HIDS_CLIENT_STATE_W2_DISCOVER_EXTERNAL_REPORT_CHARACTERISTIC;
                     break;
 
@@ -1281,7 +1281,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         break;
                     }
 
-                    hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
+                    hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                     hids_finalize_client(client);
                     return;
 
@@ -1326,12 +1326,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     client->state = HIDS_CLIENT_STATE_CONNECTED;
                     break;
 
-#ifdef ENABLE_TESTING_SUPPORT       
+#ifdef ENABLE_TESTING_SUPPORT
                 case HIDS_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT:
                     client->state = HIDS_CLIENT_W2_SEND_GET_REPORT;
                     break;
 #endif
-                
+
                 case HIDS_CLIENT_W4_VALUE_OF_CHARACTERISTIC_RESULT:
                 case HIDS_CLIENT_W4_WRITE_REPORT_DONE:
                     client->state = HIDS_CLIENT_STATE_CONNECTED;
@@ -1354,7 +1354,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
 uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, hid_protocol_mode_t protocol_mode, uint16_t * hids_cid){
     btstack_assert(packet_handler != NULL);
-    
+
     hids_client_t * client = hids_get_client_for_con_handle(con_handle);
     if (client != NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -1371,7 +1371,7 @@ uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_
     }
 
     client->required_protocol_mode = protocol_mode;
-    client->client_handler = packet_handler; 
+    client->client_handler = packet_handler;
     client->state = HIDS_CLIENT_STATE_W2_QUERY_SERVICE;
 
     hids_run_for_client(client);
@@ -1397,7 +1397,7 @@ uint8_t hids_client_send_write_report(uint16_t hids_cid, uint8_t report_id, hid_
     if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    
+
     uint8_t report_index = find_report_index_for_report_id_and_report_type(client, report_id, report_type);
 
     if (report_index == HIDS_CLIENT_INVALID_REPORT_INDEX){
@@ -1429,7 +1429,7 @@ uint8_t hids_client_send_get_report(uint16_t hids_cid, uint8_t report_id, hid_re
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -1456,7 +1456,7 @@ uint8_t hids_client_get_hid_information(uint16_t hids_cid, uint8_t service_index
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -1478,7 +1478,7 @@ uint8_t hids_client_get_protocol_mode(uint16_t hids_cid, uint8_t service_index){
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -1500,7 +1500,7 @@ uint8_t hids_client_send_set_protocol_mode(uint16_t hids_cid, uint8_t service_in
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -1512,7 +1512,7 @@ uint8_t hids_client_send_set_protocol_mode(uint16_t hids_cid, uint8_t service_in
     client->service_index = service_index;
     client->handle = client->services[client->service_index].protocol_mode_value_handle;
     client->value = (uint8_t)protocol_mode;
-    
+
     client->state = HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE;
     hids_run_for_client(client);
     return ERROR_CODE_SUCCESS;
@@ -1524,7 +1524,7 @@ static uint8_t hids_client_send_control_point_cmd(uint16_t hids_cid, uint8_t ser
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -1536,7 +1536,7 @@ static uint8_t hids_client_send_control_point_cmd(uint16_t hids_cid, uint8_t ser
     client->service_index = service_index;
     client->handle = client->services[client->service_index].control_point_value_handle;
     client->value = value;
-    
+
     client->state = HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE;
     hids_run_for_client(client);
     return ERROR_CODE_SUCCESS;
@@ -1555,7 +1555,7 @@ uint8_t hids_client_enable_notifications(uint16_t hids_cid){
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -1573,7 +1573,7 @@ uint8_t hids_client_disable_notifications(uint16_t hids_cid){
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }

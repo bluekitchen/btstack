@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -59,7 +59,7 @@ extern "C" {
 void avrcp_browsing_target_init(void);
 
 /**
- * @brief Register callback for the AVRCP Browsing Controller client. 
+ * @brief Register callback for the AVRCP Browsing Controller client.
  * @param callback
  */
 void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t callback);

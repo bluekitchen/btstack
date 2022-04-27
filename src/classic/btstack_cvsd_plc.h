@@ -30,13 +30,13 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
- * CVSD Packet Loss Concealment 
+ * CVSD Packet Loss Concealment
  *
  */
 
@@ -53,9 +53,9 @@ extern "C" {
 #define BTSTACK_CVSD_PLC_SAMPLE_FORMAT int16_t
 
 #define CVSD_FS 60           /* CVSD Frame Size */
-#define CVSD_N 256           /* Window Length for pattern matching */ 
+#define CVSD_N 256           /* Window Length for pattern matching */
 #define CVSD_M 32            /* Template for matching */
-#define CVSD_LHIST (CVSD_N+CVSD_FS-1)  /* Length of history buffer required */ 
+#define CVSD_LHIST (CVSD_N+CVSD_FS-1)  /* Length of history buffer required */
 #define CVSD_RT 18            /*  Reconvergence Time (samples) */
 #define CVSD_OLAL 8         /*  OverLap-Add Length (samples) */
 
@@ -78,7 +78,7 @@ typedef struct cvsd_plc_state {
 
 // All int16 audio samples are in host endiness
 void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state);
-void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, int16_t *out); 
+void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, int16_t *out);
 void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, int16_t *in, int16_t *out);
 void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, bool bad_frame, int16_t * in, uint16_t num_samples, int16_t * out);
 void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state);

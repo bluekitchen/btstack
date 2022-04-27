@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -47,7 +47,7 @@
 #include "btstack_util.h"
 #include "classic/core.h"
 #include "classic/sdp_util.h"
- 
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -69,7 +69,7 @@ const char * const type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOO
 
 static uint8_t des_service_search_pattern_uuid16[]  = {0x35, 0x03, 0x19, 0x00, 0x00};
 static uint8_t des_service_search_pattern_uuid128[] = {
-    0x35, 0x11, 0x1c, 
+    0x35, 0x11, 0x1c,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
@@ -113,11 +113,11 @@ uint32_t de_get_data_size(const uint8_t * header){
             if (de_type == DE_NIL) return 0;
             return 1 << de_size;
     }
-    return result;    
+    return result;
 }
 
 int de_get_len(const uint8_t *header){
-    return de_get_header_size(header) + de_get_data_size(header); 
+    return de_get_header_size(header) + de_get_data_size(header);
 }
 
 // returns data element length if data element fits in size
@@ -179,11 +179,11 @@ const uint8_t * de_get_string(const uint8_t * element){
 
 // functions to create record
 static void de_store_descriptor(uint8_t * header, de_type_t type, de_size_t size){
-    header[0] = (type << 3) | size; 
+    header[0] = (type << 3) | size;
 }
 
 void de_store_descriptor_with_len(uint8_t * header, de_type_t type, de_size_t size, uint32_t len){
-    header[0] = (type << 3) | size; 
+    header[0] = (type << 3) | size;
     switch (size){
         case DE_SIZE_VAR_8:
             header[1] = len;
@@ -224,7 +224,7 @@ void de_pop_sequence(uint8_t * parent, uint8_t * child){
 void de_add_number(uint8_t *seq, de_type_t type, de_size_t size, uint32_t value){
     int data_size   = big_endian_read_16(seq,1);
     int element_size = 1;   // e.g. for DE_TYPE_NIL
-    de_store_descriptor(seq+3+data_size, type, size); 
+    de_store_descriptor(seq+3+data_size, type, size);
     switch (size){
         case DE_SIZE_8:
             if (type != DE_NIL){
@@ -251,11 +251,11 @@ void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
     int data_size   = big_endian_read_16(seq,1);
     if (size > 0xff) {
         // use 16-bit lengh information (3 byte header)
-        de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_16, size); 
+        de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_16, size);
         data_size += 3;
     } else {
         // use 8-bit lengh information (2 byte header)
-        de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_8, size); 
+        de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_8, size);
         data_size += 2;
     }
     if (size > 0){
@@ -267,7 +267,7 @@ void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
 
 void de_add_uuid128(uint8_t * seq, uint8_t * uuid){
     int data_size   = big_endian_read_16(seq,1);
-    de_store_descriptor(seq+3+data_size, DE_UUID, DE_SIZE_128); 
+    de_store_descriptor(seq+3+data_size, DE_UUID, DE_SIZE_128);
     (void)memcpy(seq + 4 + data_size, uuid, 16);
     big_endian_store_16(seq, 1, data_size+1+16);
 }
@@ -317,7 +317,7 @@ static void de_traverse_sequence(uint8_t * element, de_traversal_callback_t hand
     while (pos < end_pos){
         de_type_t elemType = de_get_element_type(element + pos);
         de_size_t elemSize = de_get_size_type(element + pos);
-        uint8_t done = (*handler)(element + pos, elemType, elemSize, context); 
+        uint8_t done = (*handler)(element + pos, elemType, elemSize, context);
         if (done) break;
         pos += de_get_len(element + pos);
     }
@@ -339,13 +339,13 @@ static void sdp_attribute_list_traverse_sequence(uint8_t * element, sdp_attribut
         if (pos >= end_pos) break; // array out of bounds
         de_type_t valueType = de_get_element_type(element + pos);
         de_size_t valueSize = de_get_size_type(element + pos);
-        uint8_t done = (*handler)(attribute_id, element + pos, valueType, valueSize, context); 
+        uint8_t done = (*handler)(attribute_id, element + pos, valueType, valueSize, context);
         if (done) break;
         pos += de_get_len(element + pos);
     }
 }
 
-// MARK: AttributeID in AttributeIDList 
+// MARK: AttributeID in AttributeIDList
 // attribute ID in AttributeIDList
 // context { result, attributeID }
 struct sdp_context_attributeID_search {
@@ -403,7 +403,7 @@ static int sdp_traversal_append_attributes(uint16_t attributeID, uint8_t * attri
         int attribute_len = de_get_len(attributeValue);
         if ((3 + data_size + (3 + attribute_len)) <= context->maxBytes) {
             // copy Attribute
-            de_add_number(context->buffer, DE_UINT, DE_SIZE_16, attributeID);   
+            de_add_number(context->buffer, DE_UINT, DE_SIZE_16, attributeID);
             data_size += 3; // 3 bytes
             (void)memcpy(context->buffer + 3 + data_size, attributeValue,
                          attribute_len);
@@ -471,21 +471,21 @@ static int sdp_traversal_filter_attributes(uint16_t attributeID, uint8_t * attri
         uint8_t idBuffer[3];
         de_store_descriptor(idBuffer, DE_UINT,  DE_SIZE_16);
         big_endian_store_16(idBuffer,1,attributeID);
-        
+
         int ok = spd_append_range(context, 3, idBuffer);
         if (!ok) {
             context->complete = 0;
             return 1;
         }
     }
-    
+
     // handle Attribute Value
     int attribute_len = de_get_len(attributeValue);
     if (context->startOffset >= attribute_len) {
         context->startOffset -= attribute_len;
         return 0;
     }
-    
+
     int ok = spd_append_range(context, attribute_len, attributeValue);
     if (!ok) {
         context->complete = 0;
@@ -586,7 +586,7 @@ static int sdp_traversal_set_attribute_for_id(uint16_t attributeID, uint8_t * at
                 // Might want to support STRINGS to, copy upto original length
             default:
                 break;
-        }        
+        }
         return 1;
     }
     return 0;
@@ -629,7 +629,7 @@ int sdp_record_contains_UUID128(uint8_t *record, uint8_t *uuid128){
     de_traverse_sequence(record, sdp_traversal_contains_UUID128, &context);
     return context.result;
 }
-    
+
 // MARK: ServiceRecord matches SearchServicePattern
 // if UUID in searchServicePattern is not found in record => false
 // context { result, record }
@@ -641,7 +641,7 @@ struct sdp_context_match_pattern {
 int sdp_traversal_match_pattern(uint8_t * element, de_type_t de_type, de_size_t de_size, void *my_context){
     UNUSED(de_type);
     UNUSED(de_size);
-    
+
     struct sdp_context_match_pattern * context = (struct sdp_context_match_pattern *) my_context;
     uint8_t normalizedUUID[16];
     uint8_t uuidOK = de_get_normalized_uuid(normalizedUUID, element);
@@ -733,4 +733,3 @@ uint8_t* sdp_service_search_pattern_for_uuid128(const uint8_t * uuid128){
     (void)memcpy(&des_service_search_pattern_uuid128[3], uuid128, 16);
     return (uint8_t*)des_service_search_pattern_uuid128;
 }
-

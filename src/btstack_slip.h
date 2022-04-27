@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -68,8 +68,8 @@ void btstack_slip_encoder_start(const uint8_t * data, uint16_t len);
  */
 int  btstack_slip_encoder_has_data(void);
 
-/** 
- * @brief Get next byte from encoder 
+/**
+ * @brief Get next byte from encoder
  * @return Next bytes from encoder
  */
 uint8_t btstack_slip_encoder_get_byte(void);

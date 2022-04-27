@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -99,7 +99,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             if (!can_send_now_pending){
                 for (i = 0u; i < ATT_MAX; i++){
                     if ((subscriptions[i].packet_handler != NULL) && subscriptions[i].waiting_for_can_send){
-                        can_send_now_pending = true;        
+                        can_send_now_pending = true;
                         // note: con_handle is not used, so we can pass in anything
                         l2cap_request_can_send_fix_channel_now_event(0, L2CAP_CID_ATTRIBUTE_PROTOCOL);
                         break;
@@ -146,7 +146,7 @@ int att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
     return l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
-/** 
+/**
  * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible for client
  * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
@@ -155,12 +155,12 @@ int att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
 void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle){
     subscriptions[ATT_CLIENT].waiting_for_can_send = true;
     if (!can_send_now_pending){
-        can_send_now_pending = true;        
+        can_send_now_pending = true;
         l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     }
 }
 
-/** 
+/**
  * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible for server
  * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
@@ -169,7 +169,7 @@ void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle)
 void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle){
     subscriptions[ATT_SERVER].waiting_for_can_send = true;
     if (!can_send_now_pending){
-        can_send_now_pending = true;        
+        can_send_now_pending = true;
         l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     }
 }

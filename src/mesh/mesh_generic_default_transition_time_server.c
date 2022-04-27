@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -141,5 +141,3 @@ uint8_t mesh_generic_default_transition_time_server_get(mesh_model_t *generic_de
     mesh_generic_default_transition_time_state_t * generic_default_transition_time_server_state = (mesh_generic_default_transition_time_state_t *)generic_default_transition_time_server_model->model_data;
     return generic_default_transition_time_server_state->value;
 }
-
-

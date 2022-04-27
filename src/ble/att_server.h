@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -65,7 +65,7 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
  * @brief register packet handler for ATT server events:
  *        - ATT_EVENT_CAN_SEND_NOW
  *        - ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE
- *        - ATT_EVENT_MTU_EXCHANGE_COMPLETE 
+ *        - ATT_EVENT_MTU_EXCHANGE_COMPLETE
  * @param handler
  */
 void att_server_register_packet_handler(btstack_packet_handler_t handler);

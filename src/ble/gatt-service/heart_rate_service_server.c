@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -61,7 +61,7 @@ typedef enum {
 typedef struct {
     hci_con_handle_t con_handle;
 
-    // characteristic: Heart Rate Mesurement 
+    // characteristic: Heart Rate Mesurement
     uint16_t measurement_value_handle;
     uint16_t measurement_bpm;
     uint8_t  energy_expended_supported;
@@ -76,10 +76,10 @@ typedef struct {
     uint16_t measurement_client_configuration_descriptor_notify;
     btstack_context_callback_registration_t measurement_callback;
 
-    // characteristic: Body Sensor Location 
+    // characteristic: Body Sensor Location
     uint16_t sensor_location_value_handle;
     heart_rate_service_body_sensor_location_t sensor_location;
-    
+
     // characteristic: Heart Rate Control Point
     uint16_t control_point_value_handle;
 } heart_rate_t;
@@ -92,14 +92,14 @@ static uint16_t heart_rate_service_read_callback(hci_con_handle_t con_handle, ui
     UNUSED(attribute_handle);
     UNUSED(offset);
     UNUSED(buffer_size);
-    
+
     if (attribute_handle == heart_rate.measurement_client_configuration_descriptor_handle){
         if (buffer && (buffer_size >= 2u)){
             little_endian_store_16(buffer, 0, heart_rate.measurement_client_configuration_descriptor_notify);
-        } 
+        }
         return 2;
     }
-    
+
     if (attribute_handle == heart_rate.sensor_location_value_handle){
         if (buffer && (buffer_size >= 1u)){
             buffer[0] = heart_rate.sensor_location;
@@ -113,7 +113,7 @@ static int heart_rate_service_write_callback(hci_con_handle_t con_handle, uint16
     UNUSED(transaction_mode);
     UNUSED(offset);
     UNUSED(buffer_size);
-    
+
     if (attribute_handle == heart_rate.measurement_client_configuration_descriptor_handle){
         if (buffer_size < 2u){
             return ATT_ERROR_INVALID_OFFSET;
@@ -122,7 +122,7 @@ static int heart_rate_service_write_callback(hci_con_handle_t con_handle, uint16
         heart_rate.con_handle = con_handle;
         return 0;
     }
-    
+
     if (attribute_handle == heart_rate.control_point_value_handle){
         uint16_t cmd = little_endian_read_16(buffer, 0);
         switch (cmd){
@@ -159,7 +159,7 @@ void heart_rate_service_server_init(heart_rate_service_body_sensor_location_t lo
     instance->sensor_location_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BODY_SENSOR_LOCATION);
     // get Hear Rate Control Point characteristic value handle and client configuration handle
     instance->control_point_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_HEART_RATE_CONTROL_POINT);
-    
+
     log_info("Measurement     value handle 0x%02x", instance->measurement_value_handle);
     log_info("Client Config   value handle 0x%02x", instance->measurement_client_configuration_descriptor_handle);
     log_info("Sensor location value handle 0x%02x", instance->sensor_location_value_handle);
@@ -169,7 +169,7 @@ void heart_rate_service_server_init(heart_rate_service_body_sensor_location_t lo
     heart_rate_service.end_handle     = end_handle;
     heart_rate_service.read_callback  = &heart_rate_service_read_callback;
     heart_rate_service.write_callback = &heart_rate_service_write_callback;
-    
+
     att_server_register_service_handler(&heart_rate_service);
 }
 
@@ -212,7 +212,7 @@ static void heart_rate_service_can_send_now(void * context){
         instance->measurement_callback.callback = &heart_rate_service_can_send_now;
         instance->measurement_callback.context  = (void*) instance;
         att_server_register_can_send_now_callback(&instance->measurement_callback, instance->con_handle);
-    } 
+    }
 }
 
 void heart_rate_service_add_energy_expended(uint16_t energy_expended_kJ){
@@ -225,7 +225,7 @@ void heart_rate_service_add_energy_expended(uint16_t energy_expended_kJ){
     }
 }
 
-void heart_rate_service_server_update_heart_rate_values(uint16_t heart_rate_bpm, 
+void heart_rate_service_server_update_heart_rate_values(uint16_t heart_rate_bpm,
     heart_rate_service_sensor_contact_status_t sensor_contact, int rr_interval_count, uint16_t * rr_intervals){
     heart_rate_t * instance = &heart_rate;
 

@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Scan Parameters Service Server
- * 
+ *
  */
 
 #ifndef SCAN_PARAMETERS_H
@@ -62,11 +62,11 @@ extern "C" {
 
 /**
  * @brief Init Scan Parameters Service Server with ATT DB
- * @param packet_handler 
+ * @param packet_handler
  */
 void scan_parameters_service_server_init(btstack_packet_handler_t packet_handler);
 
-/** 
+/**
  * @brief Request scan parameters from Scan Parameters Client.
  */
 void scan_parameters_service_server_request_scan_parameters(void);
@@ -78,4 +78,3 @@ void scan_parameters_service_server_request_scan_parameters(void);
 #endif
 
 #endif
-

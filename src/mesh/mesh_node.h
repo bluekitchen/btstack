@@ -110,7 +110,7 @@ typedef struct {
     uint16_t count;      // Number of Heartbeat messages to be sent
     uint16_t period_s;   // Period for sending Heartbeat messages in seconds
     uint16_t features;   // Bit field indicating features that trigger Heartbeat messages when changed
-    uint16_t netkey_index; 
+    uint16_t netkey_index;
     uint8_t  ttl;        // TTL to be used when sending Heartbeat messages
 } mesh_heartbeat_publication_state_t;
 
@@ -159,13 +159,13 @@ typedef struct {
 typedef struct mesh_element {
     // linked list item
     btstack_linked_item_t item;
-    
+
     // element index
     uint16_t element_index;
 
     // LOC
     uint16_t loc;
-    
+
     // models
     btstack_linked_list_t models;
     uint16_t models_count_sig;

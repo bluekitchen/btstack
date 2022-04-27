@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -80,7 +80,7 @@ static const char * main_tags[] = {
     "Reserved",
     "Reserved"
 };
-static const char * global_tags[] = { 
+static const char * global_tags[] = {
     "Usage Page",
     "Logical Minimum",
     "Logical Maximum",
@@ -134,7 +134,7 @@ static void hid_pretty_print_item(btstack_hid_parser_t * parser, hid_descriptor_
         default:
             item_tag_table = NULL;
             break;
-    } 
+    }
     const char * item_tag_name = "Invalid";
     if (item_tag_table){
         item_tag_name = item_tag_table[item->item_tag];
@@ -429,7 +429,7 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
     int report_size = 0;
     int report_count = 0;
     int current_report_id = 0;
-    
+
     while (hid_descriptor_len){
         int valid_report_type = 0;
         hid_descriptor_item_t item;
@@ -452,7 +452,7 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
                         break;
                 }
                 break;
-            case Main:  
+            case Main:
                 if (current_report_id != report_id) break;
                 switch ((MainItemTag)item.item_tag){
                     case Input:

@@ -30,13 +30,13 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
- * @title GOEP Client 
+ * @title GOEP Client
  *
  * Communicate with remote OBEX server - General Object Exchange
  *
@@ -48,7 +48,7 @@
 #if defined __cplusplus
 extern "C" {
 #endif
- 
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -66,7 +66,7 @@ void goep_client_init(void);
 
 /*
  * @brief Create GOEP connection to a GEOP server with specified UUID on a remote deivce.
- * @param handler 
+ * @param handler
  * @param addr
  * @param uuid
  * @param out_cid to use for further commands
@@ -74,14 +74,14 @@ void goep_client_init(void);
 */
 uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid);
 
-/** 
+/**
  * @brief Disconnects GOEP connection with given identifier.
  * @param goep_cid
  * @return status
  */
 uint8_t goep_client_disconnect(uint16_t goep_cid);
 
-/** 
+/**
  * @brief Request emission of GOEP_SUBEVENT_CAN_SEND_NOW as soon as possible
  * @note GOEP_SUBEVENT_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
@@ -99,7 +99,7 @@ uint8_t goep_client_get_request_opcode(uint16_t goep_cid);
 /**
  * @brief Get PBAP Supported Features found in SDP record during connect
  */
-uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid); 
+uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid);
 
 /**
  * @brief Check if GOEP 2.0 or higher features can be used
@@ -223,7 +223,7 @@ void goep_client_header_add_count(uint16_t goep_cid, uint32_t count);
 /**
  * @brief Add application parameters header to current request
  * @param goep_cid
- * @param data 
+ * @param data
  * @param lenght of application parameters
  */
 void goep_client_header_add_application_parameters(uint16_t goep_cid, const uint8_t * data, uint16_t length);
@@ -240,14 +240,14 @@ void goep_client_header_add_challenge_response(uint16_t goep_cid, const uint8_t 
  * @brief Add body
  * @param goep_cid
  * @param data
- * @param lenght 
+ * @param lenght
  */
 void goep_client_body_add_static(uint16_t goep_cid, const uint8_t * data, uint32_t length);
 
 /**
  * @brief Execute prepared request
  * @param goep_cid
- * @param daa 
+ * @param daa
  */
 int goep_client_execute(uint16_t goep_cid);
 
@@ -264,4 +264,3 @@ void goep_client_deinit(void);
 }
 #endif
 #endif
-

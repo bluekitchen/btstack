@@ -46,7 +46,7 @@ static int btstack_tlv_none_get_tag(void * context, uint32_t tag, uint8_t * buff
 }
 
 /**
- * Store Tag 
+ * Store Tag
  * @param tag
  * @param data
  * @param data_size
@@ -74,4 +74,3 @@ static const btstack_tlv_t btstack_tlv_none = {
 const btstack_tlv_t * btstack_tlv_none_init_instance(void){
 	return &btstack_tlv_none;
 }
-

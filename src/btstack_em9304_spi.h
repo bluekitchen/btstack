@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -99,21 +99,21 @@ typedef struct {
      * @brief Transmit and Receive bytes via SPI
      * @param tx_data buffer to transmit
      * @param rx_data buffer to receive into
-     * @param len 
+     * @param len
      */
     void (*transceive)(const uint8_t * tx_data, uint8_t * rx_data, uint16_t len);
 
     /**
      * @brief Transmit bytes via SPI
      * @param tx_data buffer to transmit
-     * @param len 
+     * @param len
      */
     void (*transmit)(const uint8_t * tx_data, uint16_t len);
 
     /**
      * @brief Receive bytes via SPI
      * @param rx_data buffer to receive into
-     * @param len 
+     * @param len
      */
     void (*receive)(uint8_t * rx_data, uint16_t len);
 

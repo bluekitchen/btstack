@@ -30,13 +30,13 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 #define BTSTACK_FILE__ "obex_message_builder.c"
- 
+
 #include "btstack_config.h"
 
 #include <stdint.h>
@@ -81,11 +81,11 @@ uint8_t obex_message_builder_header_add_variable(uint8_t * buffer, uint16_t buff
     uint8_t header[3];
     header[0] = header_type;
     big_endian_store_16(header, 1, sizeof(header) + header_data_length);
-    
+
     uint8_t status = obex_message_builder_packet_append(buffer, buffer_len, &header[0], sizeof(header));
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    return obex_message_builder_packet_append(buffer, buffer_len, header_data, header_data_length);        
+    return obex_message_builder_packet_append(buffer, buffer_len, header_data, header_data_length);
 }
 
 static uint8_t obex_message_builder_header_add_connection_id(uint8_t * buffer, uint16_t buffer_len, uint32_t obex_connection_id){
@@ -174,7 +174,7 @@ uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t b
     big_endian_store_16(buffer, pos, header_len);
     pos += 2;
     int i;
-    // @note name[len] == 0 
+    // @note name[len] == 0
     for (i = 0 ; i < name_len ; i++){
         buffer[pos++] = 0;
         buffer[pos++] = *name++;

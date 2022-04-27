@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -46,7 +46,7 @@
 #if defined __cplusplus
 extern "C" {
 #endif
- 
+
 #include <stdint.h>
 #include <string.h>
 
@@ -54,9 +54,9 @@ extern "C" {
 
 //------------------------------------------------------------------------------------------------------------
 // obex_message_builder.h
-// 
-// Functions to incrementaly construct an OBEX message. The current length of the message is stored at 
-// offset 1 in the buffer. All functions return status code ERROR_CODE_MEMORY_CAPACITY_EXCEEDED id the 
+//
+// Functions to incrementaly construct an OBEX message. The current length of the message is stored at
+// offset 1 in the buffer. All functions return status code ERROR_CODE_MEMORY_CAPACITY_EXCEEDED id the
 // buffer is too small.
 
 /* API_START */
@@ -208,7 +208,7 @@ uint8_t obex_message_builder_header_add_count(uint8_t * buffer, uint16_t buffer_
  * @brief Add application parameters header to current request
  * @param buffer
  * @param buffer_len
- * @param data 
+ * @param data
  * @param lenght of application parameters
  * @return status
  */
@@ -229,7 +229,7 @@ uint8_t obex_message_builder_header_add_challenge_response(uint8_t * buffer, uin
  * @param buffer
  * @param buffer_len
  * @param data
- * @param lenght 
+ * @param lenght
  * @return status
  */
 uint8_t obex_message_builder_body_add_static(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length);
@@ -242,4 +242,3 @@ uint8_t obex_message_builder_body_add_static(uint8_t * buffer, uint16_t buffer_l
 }
 #endif
 #endif
-

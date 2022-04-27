@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -184,7 +184,7 @@ static void em9304_engine_receive_buffer_ready(void){
 }
 
 static void em9304_engine_start_next_transaction(void){
-    
+
     switch (em9304_spi_engine_state){
         case SPI_EM9304_READY_FOR_TX:
         case SPI_EM9304_READY_FOR_TX_AND_RX:
@@ -192,7 +192,7 @@ static void em9304_engine_start_next_transaction(void){
             break;
         default:
             return;
-    }   
+    }
 
     if (btstack_em9304_spi->get_ready() && em9304_engine_space_in_rx_buffer()) {
         em9304_spi_engine_start_rx_transaction();
@@ -363,7 +363,7 @@ static void em9304_engine_get_bytes(uint8_t * buffer, uint16_t num_bytes){
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined. Please update hci.h
 #endif
 
-static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
+static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 typedef enum {
     H4_W4_PACKET_TYPE,
@@ -378,7 +378,7 @@ typedef enum {
 } TX_STATE;
 
 // write state
-static TX_STATE tx_state;         
+static TX_STATE tx_state;
 
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
@@ -443,7 +443,7 @@ static void hci_transport_em9304_spi_block_read(void){
                     break;
             }
             break;
-            
+
         case H4_W4_EVENT_HEADER:
             hci_transport_em9304_spi_bytes_to_read = hci_packet[2];
             // check Event length
@@ -458,7 +458,7 @@ static void hci_transport_em9304_spi_block_read(void){
             }
             hci_transport_em9304_h4_state = H4_W4_PAYLOAD;
             break;
-            
+
         case H4_W4_ACL_HEADER:
             hci_transport_em9304_spi_bytes_to_read = little_endian_read_16( hci_packet, 3);
             // check ACL length
@@ -473,7 +473,7 @@ static void hci_transport_em9304_spi_block_read(void){
             }
             hci_transport_em9304_h4_state = H4_W4_PAYLOAD;
             break;
-            
+
         case H4_W4_PAYLOAD:
             hci_transport_em9304_spi_packet_complete();
             break;

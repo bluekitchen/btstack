@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -102,7 +102,7 @@ typedef enum {
 void avrcp_browsing_controller_init(void);
 
 /**
- * @brief Register callback for the AVRCP Browsing Controller client. 
+ * @brief Register callback for the AVRCP Browsing Controller client.
  * @param callback
  */
 void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t callback);
@@ -112,7 +112,7 @@ void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t 
  * @param avrcp_browsing_cid
  * @param start_item
  * @param end_item
- * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs. 
+ * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs.
  **/
 uint8_t avrcp_browsing_controller_get_media_players(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap);
 
@@ -121,7 +121,7 @@ uint8_t avrcp_browsing_controller_get_media_players(uint16_t avrcp_browsing_cid,
  * @param avrcp_browsing_cid
  * @param start_item
  * @param end_item
- * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs. 
+ * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs.
  **/
 uint8_t avrcp_browsing_controller_browse_file_system(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap);
 
@@ -130,7 +130,7 @@ uint8_t avrcp_browsing_controller_browse_file_system(uint16_t avrcp_browsing_cid
  * @param avrcp_browsing_cid
  * @param start_item
  * @param end_item
- * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs. 
+ * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs.
  **/
 uint8_t avrcp_browsing_controller_browse_media(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap);
 
@@ -139,28 +139,28 @@ uint8_t avrcp_browsing_controller_browse_media(uint16_t avrcp_browsing_cid, uint
  * @param avrcp_browsing_cid
  * @param start_item
  * @param end_item
- * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs. 
+ * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs.
  **/
 uint8_t avrcp_browsing_controller_browse_now_playing_list(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap);
 
-/** 
+/**
  * @brief Set browsed player. Calling this command is required prior to browsing the player's file system. Some players may support browsing only when set as the Addressed Player.
  * @param avrcp_browsing_cid
  * @param browsed_player_id
  */
 uint8_t avrcp_browsing_controller_set_browsed_player(uint16_t avrcp_browsing_cid, uint16_t browsed_player_id);
 
-/** 
+/**
  * @brief Get total num attributes
  * @param avrcp_browsing_cid
- * @param scope 
+ * @param scope
  */
 uint8_t avrcp_browsing_controller_get_total_nr_items_for_scope(uint16_t avrcp_browsing_cid, avrcp_browsing_scope_t scope);
 
 /**
  * @brief Navigate one level up or down in thhe virtual filesystem. Requires that s browsed player is set.
  * @param avrcp_browsing_cid
- * @param direction     0-folder up, 1-folder down    
+ * @param direction     0-folder up, 1-folder down
  * @param folder_uid    8 bytes long
  **/
 uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8_t direction, uint8_t * folder_uid);
@@ -169,9 +169,9 @@ uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid,
 
 
 /**
- * @brief Retrives metadata information (title, artist, album, ...) about a media element with given uid. 
+ * @brief Retrives metadata information (title, artist, album, ...) about a media element with given uid.
  * @param avrcp_browsing_cid
- * @param uid 			 media element uid 
+ * @param uid 			 media element uid
  * @param uid_counter    Used to detect change to the media database on target device. A TG device that supports the UID Counter shall update the value of the counter on each change to the media database.
  * @param attr_bitmap    0x00000000 - retrieve all, chek avrcp_media_attribute_id_t in avrcp.h for detailed bit position description.
  * @param scope          check avrcp_browsing_scope_t in avrcp.h
@@ -183,7 +183,7 @@ uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_b
  * @param avrcp_browsing_cid
  * @param search_str_len
  * @param search_str
- * @return status 
+ * @return status
  **/
 uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t search_str_len, char * search_str);
 

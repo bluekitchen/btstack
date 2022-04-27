@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -139,7 +139,7 @@ static btstack_packet_handler_t provisioning_device_packet_handler;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static int provisioned;
 
-// Mandatory Confiuration Server 
+// Mandatory Confiuration Server
 static mesh_model_t                 mesh_configuration_server_model;
 static mesh_configuration_server_model_context_t mesh_configuration_server_model_context;
 
@@ -281,7 +281,7 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     // start advertising with node id after provisioning
                     mesh_proxy_set_advertising_with_node_id(provisioning_data.network_key->netkey_index, MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING);
 #endif
-                    
+
                     provisioned = 1;
                     break;
                 default:
@@ -300,7 +300,7 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    
+
     if (packet_type != HCI_EVENT_PACKET) return;
 
     switch (hci_event_packet_get_type(packet)) {
@@ -312,7 +312,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             // startup from static provisioning data stored in TLV
             provisioned = mesh_node_startup_from_tlv();
             break;
-        
+
 #ifdef ENABLE_MESH_PROXY_SERVER
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             // enable PB_GATT
@@ -322,7 +322,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 mesh_proxy_start_advertising_with_network_id();
             }
             break;
-            
+
         case HCI_EVENT_LE_META:
             if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             // disable PB_GATT
@@ -398,7 +398,7 @@ void mesh_load_virtual_addresses(void){
         uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dst);
         int virtual_address_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
         if (virtual_address_len == 0) continue;
-        
+
         mesh_virtual_address_t * virtual_address = btstack_memory_mesh_virtual_address_get();
         if (virtual_address == NULL) return;
 
@@ -629,7 +629,7 @@ void mesh_load_network_keys(void){
         uint32_t tag = mesh_network_key_tag_for_internal_index(internal_index);
         int netkey_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
         if (netkey_len != sizeof(mesh_persistent_net_key_t)) continue;
-        
+
         mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
         if (network_key == NULL) return;
 
@@ -663,7 +663,7 @@ void mesh_load_network_keys(void){
 
 void mesh_delete_network_keys(void){
     printf("Delete Network Keys\n");
-    
+
     uint16_t internal_index;
     for (internal_index = 0; internal_index < MAX_NR_MESH_NETWORK_KEYS; internal_index++){
         mesh_delete_network_key(internal_index);
@@ -703,7 +703,7 @@ void mesh_load_app_keys(void){
         uint32_t tag = mesh_transport_key_tag_for_internal_index(internal_index);
         int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
         if (app_key_len == 0) continue;
-        
+
         mesh_transport_key_t * key = btstack_memory_mesh_transport_key_get();
         if (key == NULL) return;
 
@@ -725,7 +725,7 @@ void mesh_load_app_keys(void){
 
 void mesh_delete_app_keys(void){
     printf("Delete App Keys\n");
-    
+
     uint16_t internal_index;
     for (internal_index = 0; internal_index < MAX_NR_MESH_TRANSPORT_KEYS; internal_index++){
         mesh_delete_app_key(internal_index);
@@ -1000,7 +1000,7 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
             // " At the point of transition, the node shall reset the sequence number to 0x000000."
             mesh_sequence_number_set(0);
             mesh_iv_update_completed();
-            // store updated iv index 
+            // store updated iv index
             mesh_persist_iv_index_and_sequence_number();
         }
     }
@@ -1080,7 +1080,7 @@ static void mesh_access_setup_with_provisiong_data_random(void * arg){
 }
 
 static int mesh_node_startup_from_tlv(void){
-    
+
     mesh_persistent_provisioning_data_t persistent_provisioning_data;
     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
 
@@ -1098,7 +1098,7 @@ static int mesh_node_startup_from_tlv(void){
         provisioning_data.flags = persistent_provisioning_data.flags;
         provisioning_data.network_key = NULL;
         printf("Provisioning Data: Flags %x, unicast_address %04x\n", persistent_provisioning_data.flags, provisioning_data.unicast_address);
-        
+
         // try load iv index and sequence number
         uint32_t iv_index        = 0;
         uint32_t sequence_number = 0;
@@ -1163,7 +1163,7 @@ static int mesh_node_startup_from_tlv(void){
         }
 
     }
-    
+
     return prov_data_valid;
 }
 
@@ -1171,7 +1171,7 @@ static void mesh_control_message_handler(mesh_transport_callback_type_t callback
     UNUSED(callback_type);
     UNUSED(status);
 
-    // get opcode 
+    // get opcode
     uint8_t opcode = mesh_pdu_control_opcode(pdu);
     printf("MESH Control Message, Opcode: 0x%02x + ", opcode);
     printf_hexdump(mesh_pdu_data(pdu), mesh_pdu_len(pdu));
@@ -1199,7 +1199,7 @@ static void mesh_node_setup_default_models(void){
     // configure Config Server
     mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
     mesh_configuration_server_model.model_data       = &mesh_configuration_server_model_context;
-    mesh_configuration_server_model.operations       = mesh_configuration_server_get_operations();    
+    mesh_configuration_server_model.operations       = mesh_configuration_server_get_operations();
     mesh_element_add_model(mesh_node_get_primary_element(), &mesh_configuration_server_model);
 
     // Config Health Server

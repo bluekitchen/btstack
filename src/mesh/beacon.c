@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -106,7 +106,7 @@ static void beacon_timer_handler(btstack_timer_source_t * ts){
     btstack_run_loop_set_timer(ts, UNPROVISIONED_BEACON_INTERVAL_MS);
     btstack_run_loop_add_timer(ts);
     beacon_timer_active = 1;
-    
+
     // setup beacon
     mesh_beacon_len = UNPROVISIONED_BEACON_LEN;
     mesh_beacon_data[0] = BEACON_TYPE_UNPROVISIONED_DEVICE;
@@ -146,7 +146,7 @@ static uint8_t mesh_secure_network_beacon_get_flags(mesh_subnet_t * mesh_subnet)
         mesh_flags |= 2;
     }
 
-    return mesh_flags;    
+    return mesh_flags;
 }
 
 static void mesh_secure_network_beacon_setup(mesh_subnet_t * mesh_subnet){
@@ -164,7 +164,7 @@ static void mesh_secure_network_beacon_setup(mesh_subnet_t * mesh_subnet){
 static void mesh_secure_network_beacon_update_interval(mesh_subnet_t * subnet){
     uint32_t min_observation_period_ms = 2 * subnet->beacon_interval_ms;
     uint32_t actual_observation_period = btstack_time_delta(btstack_run_loop_get_time_ms(), subnet->beacon_observation_start_ms);
-    
+
     // The Observation Period in seconds should typically be double the typical Beacon Interval.
     if (actual_observation_period < min_observation_period_ms) return;
 
@@ -242,7 +242,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
                     gatt_bearer_request_can_send_now_for_beacon();
                     break;
                 }
-#endif 
+#endif
                 subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_GATT_SENT;
 
                 /* fall through */
@@ -265,7 +265,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
         btstack_run_loop_remove_timer(&beacon_timer);
         beacon_timer_active = 0;
     }
-    
+
     // setup next run
     if (next_timeout_ms == 0) return;
 
@@ -293,7 +293,7 @@ static void beacon_handle_secure_beacon_auth_value_calculated(void * arg){
 
 static void beacon_handle_secure_beacon(uint8_t * packet, uint16_t size){
     if (size != SECURE_NETWORK_BEACON_LEN) return;
-    
+
     // lookup subnet and netkey by network id
     uint8_t * beacon_network_id = &packet[2];
     mesh_subnet_iterator_t it;
@@ -332,7 +332,7 @@ static void beacon_handle_secure_beacon(uint8_t * packet, uint16_t size){
 
     btstack_crypto_aes128_cmac_message(&mesh_secure_network_beacon_cmac_request, network_key->beacon_key, 13,
         &mesh_secure_network_beacon_validate_buffer[1], mesh_secure_network_beacon_auth_value, &beacon_handle_secure_beacon_auth_value_calculated, subnet);
-}                    
+}
 
 static void beacon_handle_beacon_packet(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     log_info("beacon type %u", packet[0]);
@@ -404,7 +404,7 @@ static void beacon_gatt_handle_mesh_event(uint8_t mesh_subevent){
         mesh_subnet_t * subnet = mesh_subnet_iterator_get_next(&it);
         switch (subnet->beacon_state){
             case MESH_SECURE_NETWORK_BEACON_W2_SEND_GATT:
-                // skip send on MESH_SUBEVENT_PROXY_DISCONNECTED 
+                // skip send on MESH_SUBEVENT_PROXY_DISCONNECTED
                 if (mesh_subevent == MESH_SUBEVENT_CAN_SEND_NOW){
                     gatt_bearer_send_beacon(mesh_beacon_data, mesh_beacon_len);
                 }
@@ -457,7 +457,7 @@ void beacon_init(void){
 #ifdef ENABLE_MESH_ADV_BEARER
     adv_bearer_register_for_beacon(&beacon_adv_packet_handler);
 #endif
-#ifdef ENABLE_MESH_GATT_BEARER    
+#ifdef ENABLE_MESH_GATT_BEARER
     gatt_bearer_con_handle = HCI_CON_HANDLE_INVALID;
     gatt_bearer_register_for_beacon(&beacon_gatt_packet_handler);
 #endif
@@ -496,9 +496,9 @@ void beacon_secure_network_start(mesh_subnet_t * mesh_subnet){
     mesh_subnet->beacon_observation_start_ms = btstack_run_loop_get_time_ms();
     mesh_subnet->beacon_observation_counter = 0;
     if (mesh_foundation_beacon_get()){
-        mesh_subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_AUTH_VALUE;        
+        mesh_subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_AUTH_VALUE;
     } else {
-        mesh_subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_GATT_SENT;        
+        mesh_subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_GATT_SENT;
     }
 
     // start sending

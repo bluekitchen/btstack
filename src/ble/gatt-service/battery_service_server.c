@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "battery_service_server.c"
 
 /**
- * Implementation of the GATT Battery Service Server 
+ * Implementation of the GATT Battery Service Server
  * To use with your application, add '#import <battery_service.gatt' to your .gatt file
  */
 

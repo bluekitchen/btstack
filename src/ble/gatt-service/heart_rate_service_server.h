@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Heart Rate Service Server
- * 
+ *
  */
 
 #ifndef HEART_RATE_SERVICE_SERVER_H
@@ -51,8 +51,8 @@ extern "C" {
 
 /**
  * @text The heart rate service server provides heart rate measurements via notifications.
- * 
- * Each notification reports the heart rate measurement in beats per minute, and if enabled, 
+ *
+ * Each notification reports the heart rate measurement in beats per minute, and if enabled,
  * the total energy expended in kilo Joules, as well as RR-intervals in 1/1024 seconds resolution.
  *
  * The Energy Expended field represents the accumulated energy expended
@@ -60,7 +60,7 @@ extern "C" {
  * kilo Joules is reached, it will remain at this value, until a reset command
  * from the client is received.
  *
- * The RR-Interval represents the time between two consecutive R waves in 
+ * The RR-Interval represents the time between two consecutive R waves in
  * an Electrocardiogram (ECG) waveform. If needed, the RR-Intervals are sent in
  * multiple notifications.
  *
@@ -68,11 +68,11 @@ extern "C" {
  * After adding it to your .gatt file, you call *heart_rate_server_init(body_sensor_location, energy_expended_supported)*
  * with the intended sensor location, and a flag indicating if energy expanded is supported.
  *
- * If heart rate measurement changes, you can call 
- * *heart_rate_service_server_update_heart_rate_values(heart_rate_bpm, service_sensor_contact_status, rr_interval_count, rr_intervals)*. 
+ * If heart rate measurement changes, you can call
+ * *heart_rate_service_server_update_heart_rate_values(heart_rate_bpm, service_sensor_contact_status, rr_interval_count, rr_intervals)*.
  * This function will trigger sending Notifications if the client enables them.
- * 
- * If energy expanded is supported, you can call *heart_rate_service_add_energy_expended(energy_expended_kJ)* 
+ *
+ * If energy expanded is supported, you can call *heart_rate_service_add_energy_expended(energy_expended_kJ)*
  * with the newly expanded energy. The accumulated energy expended value
  * will be emitted with the next heart rate measurement.
  */
@@ -115,11 +115,11 @@ void heart_rate_service_add_energy_expended(uint16_t energy_expended_kJ);
  * @brief Update heart rate (unit: beats per minute)
  * @note triggers notifications if subscribed
  * @param heart_rate_bpm 		beats per minute
- * @param contact    
- * @param rr_interval_count 
+ * @param contact
+ * @param rr_interval_count
  * @param rr_intervals      resolution in 1/1024 seconds
  */
-void heart_rate_service_server_update_heart_rate_values(uint16_t heart_rate_bpm, 
+void heart_rate_service_server_update_heart_rate_values(uint16_t heart_rate_bpm,
 	heart_rate_service_sensor_contact_status_t contact, int rr_interval_count, uint16_t * rr_intervals);
 
 /* API_END */
@@ -129,4 +129,3 @@ void heart_rate_service_server_update_heart_rate_values(uint16_t heart_rate_bpm,
 #endif
 
 #endif
-

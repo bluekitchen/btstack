@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Cycling Power Service Server
- * 
+ *
  */
 
 #ifndef CYCLING_POWER_SERVICE_SERVER_H
@@ -50,11 +50,11 @@ extern "C" {
 #endif
 
 /**
- * @text The Cycling Power Service allows to query device's power- and 
- * force-related data and optionally speed- and cadence-related data for 
+ * @text The Cycling Power Service allows to query device's power- and
+ * force-related data and optionally speed- and cadence-related data for
  * use in sports and fitness applications.
  *
- * To use with your application, add `#import <cycling_power_service.gatt>` 
+ * To use with your application, add `#import <cycling_power_service.gatt>`
  * to your .gatt file.
  */
 
@@ -110,7 +110,7 @@ typedef enum {
 
 typedef enum {
     CP_VECTOR_FLAG_CRANK_REVOLUTION_DATA_PRESENT = 0,
-    CP_VECTOR_FLAG_FIRST_CRANK_MEASUREMENT_ANGLE_PRESENT, 
+    CP_VECTOR_FLAG_FIRST_CRANK_MEASUREMENT_ANGLE_PRESENT,
     CP_VECTOR_FLAG_INSTANTANEOUS_FORCE_MAGNITUDE_ARRAY_PRESENT,
     CP_VECTOR_FLAG_INSTANTANEOUS_TORQUE_MAGNITUDE_ARRAY_PRESENT,
     CP_VECTOR_FLAG_INSTANTANEOUS_MEASUREMENT_DIRECTION = 4, // 2 bit
@@ -164,7 +164,7 @@ typedef enum {
 } cycling_power_feature_flag_t;
 
 typedef enum {
-    CP_CALIBRATION_STATUS_INCORRECT_CALIBRATION_POSITION = 0x01,  
+    CP_CALIBRATION_STATUS_INCORRECT_CALIBRATION_POSITION = 0x01,
     CP_CALIBRATION_STATUS_MANUFACTURER_SPECIFIC_ERROR_FOLLOWS = 0xFF
 } cycling_power_calibration_status_t;
 
@@ -172,8 +172,8 @@ typedef enum {
 /**
  * @brief Init Server with ATT DB
  */
-void cycling_power_service_server_init(uint32_t feature_flags, 
-    cycling_power_pedal_power_balance_reference_t reference, cycling_power_torque_source_t torque_source, 
+void cycling_power_service_server_init(uint32_t feature_flags,
+    cycling_power_pedal_power_balance_reference_t reference, cycling_power_torque_source_t torque_source,
     cycling_power_sensor_location_t * supported_sensor_locations, uint16_t num_supported_sensor_locations,
     cycling_power_sensor_location_t current_sensor_location);
 /**
@@ -182,13 +182,13 @@ void cycling_power_service_server_init(uint32_t feature_flags,
  */
 void cycling_power_service_server_update_values(void);
 
-void cycling_power_server_enhanced_calibration_done(cycling_power_sensor_measurement_context_t measurement_type,  
-                uint16_t calibrated_value, uint16_t manufacturer_company_id, 
+void cycling_power_server_enhanced_calibration_done(cycling_power_sensor_measurement_context_t measurement_type,
+                uint16_t calibrated_value, uint16_t manufacturer_company_id,
                 uint8_t num_manufacturer_specific_data, uint8_t * manufacturer_specific_data);
 
 int cycling_power_get_measurement_adv(uint16_t adv_interval, uint8_t * value, uint16_t max_value_size);
 /**
- * @brief Register callback for the calibration. 
+ * @brief Register callback for the calibration.
  * @param callback
  */
 void cycling_power_service_server_packet_handler(btstack_packet_handler_t callback);
@@ -198,18 +198,18 @@ void  cycling_power_server_calibration_done(cycling_power_sensor_measurement_con
 int  cycling_power_service_server_set_factory_calibration_date(gatt_date_time_t date);
 void cycling_power_service_server_set_sampling_rate(uint8_t sampling_rate_hz);
 
-void cycling_power_service_server_add_torque(int16_t torque_m); 
-void cycling_power_service_server_add_wheel_revolution(int32_t wheel_revolution, uint16_t wheel_event_time_s); 
-void cycling_power_service_server_add_crank_revolution(uint16_t crank_revolution, uint16_t crank_event_time_s); 
-void cycling_power_service_add_energy(uint16_t energy_kJ); 
+void cycling_power_service_server_add_torque(int16_t torque_m);
+void cycling_power_service_server_add_wheel_revolution(int32_t wheel_revolution, uint16_t wheel_event_time_s);
+void cycling_power_service_server_add_crank_revolution(uint16_t crank_revolution, uint16_t crank_event_time_s);
+void cycling_power_service_add_energy(uint16_t energy_kJ);
 
 void cycling_power_service_server_set_instantaneous_power(int16_t instantaneous_power_watt);
 void cycling_power_service_server_set_pedal_power_balance(uint8_t pedal_power_balance_percentage);
-void cycling_power_service_server_set_force_magnitude(int16_t min_force_magnitude_newton, int16_t max_force_magnitude_newton); 
-void cycling_power_service_server_set_torque_magnitude(int16_t min_torque_magnitude_newton, int16_t max_torque_magnitude_newton); 
-void cycling_power_service_server_set_angle(uint16_t min_angle_deg, uint16_t max_angle_deg); 
-void cycling_power_service_server_set_top_dead_spot_angle(uint16_t top_dead_spot_angle_deg); 
-void cycling_power_service_server_set_bottom_dead_spot_angle(uint16_t bottom_dead_spot_angle_deg); 
+void cycling_power_service_server_set_force_magnitude(int16_t min_force_magnitude_newton, int16_t max_force_magnitude_newton);
+void cycling_power_service_server_set_torque_magnitude(int16_t min_torque_magnitude_newton, int16_t max_torque_magnitude_newton);
+void cycling_power_service_server_set_angle(uint16_t min_angle_deg, uint16_t max_angle_deg);
+void cycling_power_service_server_set_top_dead_spot_angle(uint16_t top_dead_spot_angle_deg);
+void cycling_power_service_server_set_bottom_dead_spot_angle(uint16_t bottom_dead_spot_angle_deg);
 void cycling_power_service_server_set_force_magnitude_values(int force_magnitude_count, int16_t * force_magnitude_newton_array);
 void cycling_power_service_server_set_torque_magnitude_values(int torque_magnitude_count, int16_t * torque_magnitude_newton_array);
 void cycling_power_service_server_set_instantaneous_measurement_direction(cycling_power_instantaneous_measurement_direction_t direction);
@@ -225,4 +225,3 @@ uint8_t  cycling_power_service_vector_flags(void);
 #endif
 
 #endif
-

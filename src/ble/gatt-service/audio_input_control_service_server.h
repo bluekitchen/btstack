@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Audio Input Control Service Server
- * 
+ *
  */
 
 #ifndef AUDIO_INPUT_CONTROL_SERVICE_SERVER_H
@@ -50,10 +50,10 @@ extern "C" {
 #endif
 
 /**
- * @text The Audio Input Control Service allows to query your device's audio input settings such as a Bluetooth 
- * audio stream, microphone, etc. 
- * 
- * To use with your application, add `#import <audio_input_control_service.gatt>` to your .gatt file. 
+ * @text The Audio Input Control Service allows to query your device's audio input settings such as a Bluetooth
+ * audio stream, microphone, etc.
+ *
+ * To use with your application, add `#import <audio_input_control_service.gatt>` to your .gatt file.
  *
  */
 #define AICS_MAX_NUM_SERVICES 5
@@ -151,10 +151,10 @@ typedef struct {
 
     // ORG_BLUETOOTH_CHARACTERISTIC_GAIN_SETTINGS_ATTRIBUTE
     uint16_t gain_settings_properties_value_handle;
-    
+
     // ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_TYPE
     uint16_t audio_input_type_value_handle;
-    
+
     // ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATUS
     uint16_t audio_input_status_value_handle;
     aics_audio_input_status_t audio_input_status;
@@ -173,7 +173,7 @@ typedef struct {
     uint16_t audio_input_description_client_configuration_handle;
     uint16_t audio_input_description_client_configuration;
     btstack_context_callback_registration_t audio_input_description_callback;
-    
+
 } audio_input_control_service_server_t;
 
 
@@ -212,4 +212,3 @@ void audio_input_control_service_server_set_audio_input_description(audio_input_
 #endif
 
 #endif
-

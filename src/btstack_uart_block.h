@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -38,7 +38,7 @@
 /**
  * @title UART Block
  *
- * Compatibility layer for ports that use btstack_uart_block_t 
+ * Compatibility layer for ports that use btstack_uart_block_t
  *
  */
 

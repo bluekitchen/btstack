@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -80,7 +80,7 @@ static uint16_t nordic_spp_service_read_callback(hci_con_handle_t con_handle, ui
 	UNUSED(con_handle);
 	UNUSED(offset);
 	UNUSED(buffer_size);
-	
+
 	if (attribute_handle == nordic_spp_tx_client_configuration_handle){
 		if (buffer != NULL){
 			little_endian_store_16(buffer, 0, nordic_spp_tx_client_configuration_value);
@@ -94,7 +94,7 @@ static int nordic_spp_service_write_callback(hci_con_handle_t con_handle, uint16
 	UNUSED(transaction_mode);
 	UNUSED(offset);
 	UNUSED(buffer_size);
-	
+
 	if (attribute_handle == nordic_spp_rx_value_handle){
         (*client_packet_handler)(RFCOMM_DATA_PACKET, (uint16_t) con_handle, buffer, buffer_size);
 	}
@@ -135,7 +135,7 @@ void nordic_spp_service_server_init(btstack_packet_handler_t packet_handler){
 	log_info("nordic_spp_rx_value_handle 					0x%02x", nordic_spp_rx_value_handle);
 	log_info("nordic_spp_tx_value_handle 					0x%02x", nordic_spp_tx_value_handle);
 	log_info("nordic_spp_tx_client_configuration_handle 	0x%02x", nordic_spp_tx_client_configuration_handle);
-	
+
 	// register service with ATT Server
 	nordic_spp_service.start_handle   = start_handle;
 	nordic_spp_service.end_handle     = end_handle;
@@ -144,7 +144,7 @@ void nordic_spp_service_server_init(btstack_packet_handler_t packet_handler){
 	att_server_register_service_handler(&nordic_spp_service);
 }
 
-/** 
+/**
  * @brief Queue send request. When called, one packet can be send via nordic_spp_service_send below
  * @param request
  * @param con_handle
@@ -162,4 +162,3 @@ void nordic_spp_service_server_request_can_send_now(btstack_context_callback_reg
 int nordic_spp_service_server_send(hci_con_handle_t con_handle, const uint8_t * data, uint16_t size){
 	return att_server_notify(con_handle, nordic_spp_tx_value_handle, data, size);
 }
-

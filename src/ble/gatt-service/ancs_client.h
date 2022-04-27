@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title ANCS Client
- * 
+ *
  */
 
 #ifndef ANCS_CLIENT_H
@@ -45,13 +45,13 @@
 
 #include <stdint.h>
 #include "btstack_defines.h"
-    
+
 #if defined __cplusplus
 extern "C" {
 #endif
 
 /**
- * @text The ANCS Client implements Notification Consumer (NC) of the [Apple Notification Center Service (ANCS)](https://developer.apple.com/library/archive/documentation/CoreBluetooth/Reference/AppleNotificationCenterServiceSpecification/Introduction/Introduction.html). 
+ * @text The ANCS Client implements Notification Consumer (NC) of the [Apple Notification Center Service (ANCS)](https://developer.apple.com/library/archive/documentation/CoreBluetooth/Reference/AppleNotificationCenterServiceSpecification/Introduction/Introduction.html).
  */
 
 /* API_START */

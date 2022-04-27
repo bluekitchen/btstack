@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -665,7 +665,7 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
         }
     }
 
-    // report status    
+    // report status
     config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, new_netkey_index);
     mesh_access_message_processed(pdu);
 }
@@ -682,7 +682,7 @@ static void config_netkey_update_derived(void * arg){
     // update subnet - Key Refresh Phase 1
     subnet->key_refresh = MESH_KEY_REFRESH_FIRST_PHASE;
 
-    // report status    
+    // report status
     config_netkey_status(mesh_node_get_configuration_server(), mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, subnet->netkey_index);
     mesh_access_message_processed(access_pdu_in_process);
 }
@@ -727,7 +727,7 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     (void)memcpy(new_network_key->net_key, new_netkey, 16);
 
     // store in subnet (not active yet)
-    subnet->new_key = new_network_key;    
+    subnet->new_key = new_network_key;
 
     // derive other keys
     access_pdu_in_process = pdu;
@@ -897,7 +897,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     uint16_t internal_index = mesh_transport_key_get_free_index();
     if (internal_index > 0){
         app_key = btstack_memory_mesh_transport_key_get();
-    }    
+    }
     if (app_key == NULL) {
         config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES);
         mesh_access_message_processed(pdu);
@@ -970,7 +970,7 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     uint16_t internal_index = mesh_transport_key_get_free_index();
     if (internal_index > 0){
         new_app_key = btstack_memory_mesh_transport_key_get();
-    }    
+    }
     if (new_app_key == NULL) {
         config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES);
         mesh_access_message_processed(pdu);
@@ -1096,7 +1096,7 @@ static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t
 static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    
+
     uint16_t element_address  = mesh_access_parser_get_uint16(&parser);
     uint16_t address          = mesh_access_parser_get_uint16(&parser);
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
@@ -1113,7 +1113,7 @@ static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh
         } else {
             status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
         }
-    }   
+    }
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
     mesh_access_message_processed(pdu);
@@ -1194,8 +1194,8 @@ static void config_model_subscription_overwrite_handler(mesh_model_t *mesh_model
             mesh_model_store_subscriptions(target_model);
         } else {
             status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
-        } 
-    }   
+        }
+    }
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
     mesh_access_message_processed(pdu);
@@ -1281,7 +1281,7 @@ static void config_model_subscription_delete_handler(mesh_model_t *mesh_model, m
         } else {
             status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
         }
-    }   
+    }
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
     mesh_access_message_processed(pdu);
@@ -1305,7 +1305,7 @@ static void config_model_subscription_virtual_address_delete_handler(mesh_model_
         mesh_model_delete_subscription(target_model, virtual_address->pseudo_dst);
         mesh_model_store_subscriptions(target_model);
         mesh_virtual_address_decrease_refcount(virtual_address);
-     }   
+     }
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address,address, model_identifier);
     mesh_access_message_processed(pdu);
@@ -1325,7 +1325,7 @@ static void config_model_subscription_delete_all_handler(mesh_model_t *mesh_mode
         mesh_subcription_decrease_virtual_address_ref_count(target_model);
         mesh_model_delete_all_subscriptions(target_model);
         mesh_model_store_subscriptions(target_model);
-    }   
+    }
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, MESH_ADDRESS_UNSASSIGNED, model_identifier);
     mesh_access_message_processed(pdu);
@@ -1365,7 +1365,7 @@ static void config_model_app_list(mesh_model_t * config_server_model, uint16_t n
     } else {
         mesh_access_message_add_uint32(&builder, model_identifier);
     }
-    
+
     // add list of appkey indexes
     if (mesh_model){
         uint16_t i;
@@ -1592,7 +1592,7 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
             mesh_virtual_address_t * current_virtual_address = mesh_virtual_address_for_pseudo_dst(configuration_server_publication_model.address);
             mesh_virtual_address_decrease_refcount(current_virtual_address);
         }
-        
+
         // restart publication
         config_model_publication_changed(target_model, &configuration_server_publication_model);
     }
@@ -1640,7 +1640,7 @@ static void config_model_publication_virtual_address_set_hash(void *arg){
     mesh_access_message_processed(access_pdu_in_process);
 }
 
-static void 
+static void
 config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
                                                      mesh_pdu_t * pdu) {
 
@@ -1677,7 +1677,7 @@ config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
             status = MESH_FOUNDATION_STATUS_CANNOT_SET;
         }
      }
-     
+
      // Check AppKey
      if (status == MESH_FOUNDATION_STATUS_SUCCESS){
          // check if appkey already exists
@@ -1733,10 +1733,10 @@ config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
 static void config_heartbeat_publication_emit(mesh_heartbeat_publication_t * mesh_heartbeat_publication){
 
     printf("CONFIG_SERVER_HEARTBEAT: Emit (dest %04x, count %u, period %u ms)\n",
-        mesh_heartbeat_publication->destination, 
-        mesh_heartbeat_publication->count, 
+        mesh_heartbeat_publication->destination,
+        mesh_heartbeat_publication->count,
         mesh_heartbeat_publication->period_ms);
-    
+
     // active features
     mesh_heartbeat_publication->active_features = mesh_foundation_get_features();
 
@@ -1821,7 +1821,7 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
 
     mesh_heartbeat_publication_t requested_publication;
     memset(&requested_publication, 0, sizeof(requested_publication));
-    
+
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1872,12 +1872,12 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     mesh_access_message_processed(pdu);
 
     if (status != MESH_FOUNDATION_STATUS_SUCCESS) return;
-    
+
     // check if heartbeats should be disabled
     if (mesh_heartbeat_publication->destination == MESH_ADDRESS_UNSASSIGNED || mesh_heartbeat_publication->period_log == 0) {
         return;
     }
-    
+
     // initial heartbeat after 2000 ms
     btstack_run_loop_set_timer_handler(&mesh_heartbeat_publication->timer, config_heartbeat_publication_timeout_handler);
     btstack_run_loop_set_timer_context(&mesh_heartbeat_publication->timer, mesh_heartbeat_publication);
@@ -1931,15 +1931,15 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
     requested_subscription.destination = mesh_access_parser_get_uint16(&parser);
     //  Period for sending Heartbeat messages
     requested_subscription.period_log = mesh_access_parser_get_uint8(&parser);
-    
+
 
     // Hearbeat Subscription Soure must be unassigned or a unicast address
-    int source_address_valid = 
-         (requested_subscription.source == MESH_ADDRESS_UNSASSIGNED)    || 
+    int source_address_valid =
+         (requested_subscription.source == MESH_ADDRESS_UNSASSIGNED)    ||
          (mesh_network_address_unicast(requested_subscription.source));
 
     // Heartbeat Subscription Destination must be unassigned, unicast (== our primary address), or a group address)
-    int destination_address_valid = 
+    int destination_address_valid =
          (requested_subscription.destination == MESH_ADDRESS_UNSASSIGNED)  ||
          (mesh_network_address_unicast(requested_subscription.destination) && requested_subscription.destination == mesh_node_get_primary_element_address()) ||
          (mesh_network_address_group(requested_subscription.destination));
@@ -1954,15 +1954,15 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
     printf("MESH config_heartbeat_subscription_set, source %x destination %x, period = %u s => enabled %u \n", requested_subscription.source,
             requested_subscription.destination, mesh_heartbeat_pwr2(requested_subscription.period_log), subscription_enabled);
 
-    // ignore messages 
+    // ignore messages
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
     if (requested_subscription.period_log > 0x11u){
         status = MESH_FOUNDATION_STATUS_CANNOT_SET;
-    } else if ((requested_subscription.destination != MESH_ADDRESS_UNSASSIGNED)  && 
+    } else if ((requested_subscription.destination != MESH_ADDRESS_UNSASSIGNED)  &&
                !mesh_network_address_unicast(requested_subscription.destination) &&
                !mesh_network_address_group(requested_subscription.destination)){
         status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
-    } 
+    }
 
     if (status != MESH_FOUNDATION_STATUS_SUCCESS){
         config_heartbeat_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, &requested_subscription);
@@ -1987,9 +1987,9 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
         //  If the Source or the Destination field is set to the unassigned address, or the PeriodLog field is set to 0x00, [then]
         //  - the processing of received Heartbeat messages shall be disabled,
         //  - the Heartbeat Subscription Source state shall be set to the unassigned address,
-        //  - the Heartbeat Subscription Destination state shall be set to the unassigned address, 
+        //  - the Heartbeat Subscription Destination state shall be set to the unassigned address,
         //  - the Heartbeat Subscription MinHops state shall be unchanged,
-        //  - the Heartbeat Subscription MaxHops state shall be unchanged, 
+        //  - the Heartbeat Subscription MaxHops state shall be unchanged,
         //  - and the Heartbeat Subscription Count state shall be unchanged."
         // If period_log == 0, then set src + dest to unassigned. If src or dest are unsigned, get triggers status mit count_log == 0
         mesh_heartbeat_subscription->source          = MESH_ADDRESS_UNSASSIGNED;
@@ -2049,7 +2049,7 @@ static void config_key_refresh_phase_status(mesh_model_t *mesh_model, uint16_t n
         netkey_index,
         key_refresh_state);
     if (!transport_pdu) return;
-    
+
     // send as segmented access pdu
     config_server_send_message(netkey_index_dest, dest, (mesh_pdu_t *) transport_pdu);
 }
@@ -2062,7 +2062,7 @@ static void config_key_refresh_phase_get_handler(mesh_model_t *mesh_model, mesh_
 
     uint8_t status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
     mesh_key_refresh_state_t key_refresh_state = MESH_KEY_REFRESH_NOT_ACTIVE;
-    
+
     if (subnet != NULL){
         status = MESH_FOUNDATION_STATUS_SUCCESS;
         key_refresh_state = subnet->key_refresh;
@@ -2080,10 +2080,10 @@ static void config_key_refresh_phase_set_handler(mesh_model_t *mesh_model, mesh_
     mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
 
     uint8_t status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
-    
+
     if (subnet != NULL){
         status = MESH_FOUNDATION_STATUS_SUCCESS;
-        
+
         switch (key_refresh_phase_transition){
             case 0x02:
                 switch (subnet->key_refresh){
@@ -2158,7 +2158,7 @@ static void config_low_power_node_poll_timeout_get_handler(mesh_model_t *mesh_mo
     mesh_access_message_processed(pdu);
 }
 
-static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint8_t status, uint16_t netkey_index, 
+static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint8_t status, uint16_t netkey_index,
     mesh_node_identity_state_t node_identity_state){
     UNUSED(mesh_model);
 
@@ -2169,7 +2169,7 @@ static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netke
         netkey_index,
         node_identity_state);
     if (!transport_pdu) return;
-    
+
     // send as segmented access pdu
     config_server_send_message(netkey_index_dest, dest, (mesh_pdu_t *) transport_pdu);
 }
@@ -2212,7 +2212,7 @@ static void config_node_identity_set_handler(mesh_model_t *mesh_model, mesh_pdu_
 #endif
 
     config_node_identity_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, node_identity_state);
-    
+
     mesh_access_message_processed(pdu);
 }
 

@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Microphone Control Service Server
- * 
+ *
  */
 
 #ifndef MICROPHONE_CONTROL_SERVICE_SERVER_H
@@ -55,8 +55,8 @@ extern "C" {
 /**
  * @text The Microphone Control Service enables a device to expose the mute control and state of one or more microphones.
  * Only server can disable and enable mute. Currently one one client supported.
- * 
- * To use with your application, add `#import <microphone_control_service.gatt>` to your .gatt file. 
+ *
+ * To use with your application, add `#import <microphone_control_service.gatt>` to your .gatt file.
  */
 
 /* API_START */
@@ -110,4 +110,3 @@ uint8_t microphone_control_service_server_set_audio_input_status_for_aics(uint8_
 #endif
 
 #endif
-

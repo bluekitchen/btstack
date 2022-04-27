@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Cycling Speed and Cadence Service Server
- * 
+ *
  */
 
 #ifndef CYCLING_SPEED_AND_CADENCE_SERVICE_SERVER_H
@@ -50,12 +50,12 @@ extern "C" {
 #endif
 
 /**
- * @text The Cycling Speed and Cadence Service allows to query 
- * device's speed- and cadence-related data for use in sports and 
+ * @text The Cycling Speed and Cadence Service allows to query
+ * device's speed- and cadence-related data for use in sports and
  * fitness applications.
  *
- * To use with your application, add `#import <cycling_speed_and_cadence_service.gatt>` 
- * to your .gatt file. 
+ * To use with your application, add `#import <cycling_speed_and_cadence_service.gatt>`
+ * to your .gatt file.
  */
 
 /* API_START */
@@ -99,7 +99,7 @@ typedef enum {
 /**
  * @brief Init Server with ATT DB
  */
-void cycling_speed_and_cadence_service_server_init(uint32_t supported_sensor_locations, 
+void cycling_speed_and_cadence_service_server_init(uint32_t supported_sensor_locations,
 	uint8_t multiple_sensor_locations_supported, uint8_t wheel_revolution_data_supported, uint8_t crank_revolution_data_supported);
 
 /**
@@ -115,4 +115,3 @@ void cycling_speed_and_cadence_service_server_update_values(int32_t wheel_revolu
 #endif
 
 #endif
-

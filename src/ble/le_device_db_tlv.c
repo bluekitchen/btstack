@@ -30,13 +30,13 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 #define BTSTACK_FILE__ "le_device_db_tlv.c"
- 
+
 #include "ble/le_device_db.h"
 #include "ble/le_device_db_tlv.h"
 
@@ -85,7 +85,7 @@ typedef struct le_device_db_entry_t {
 } le_device_db_entry_t;
 
 
-#ifndef NVM_NUM_DEVICE_DB_ENTRIES 
+#ifndef NVM_NUM_DEVICE_DB_ENTRIES
 #error "NVM_NUM_DEVICE_DB_ENTRIES not defined, please define in btstack_config.h"
 #endif
 
@@ -182,9 +182,9 @@ int le_device_db_max_count(void){
 void le_device_db_remove(int index){
     btstack_assert(index >= 0);
     btstack_assert(index < le_device_db_max_count());
-    
+
     // check if entry exists
-    if (entry_map[index] == 0u) return; 
+    if (entry_map[index] == 0u) return;
 
 	// delete entry in TLV
 	le_device_db_tlv_delete(index);
@@ -258,7 +258,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     (void)memcpy(entry.irk, irk, 16);
     entry.seq_nr = highest_seq_nr + 1u;
  #ifdef ENABLE_LE_SIGNED_WRITE
-    entry.remote_counter = 0; 
+    entry.remote_counter = 0;
 #endif
 
     // store

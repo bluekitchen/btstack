@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -100,9 +100,9 @@ uint8_t mesh_generic_on_off_client_get(mesh_model_t *mesh_model, uint16_t dest, 
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t mesh_generic_on_off_client_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_on_off_client_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
-    
+
     mesh_upper_transport_pdu_t *  transport_pdu;
     if (transition_time_gdtt != 0) {
         transport_pdu = mesh_access_setup_message(&mesh_generic_on_off_set_with_transition, on_off_value, transaction_id, transition_time_gdtt, delay_time_gdtt);
@@ -115,7 +115,7 @@ uint8_t mesh_generic_on_off_client_set(mesh_model_t * mesh_model, uint16_t dest,
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t mesh_generic_on_off_client_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_on_off_client_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
     mesh_upper_transport_pdu_t *  transport_pdu;
     if (transition_time_gdtt != 0) {
@@ -145,7 +145,7 @@ static void generic_on_off_status_handler(mesh_model_t *mesh_model, mesh_pdu_t *
 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    
+
     uint8_t present_value = mesh_access_parser_get_uint8(&parser);
     uint8_t target_value = 0;
     uint8_t remaining_time_gdtt = 0;
@@ -161,12 +161,12 @@ static void generic_on_off_status_handler(mesh_model_t *mesh_model, mesh_pdu_t *
     little_endian_store_16(event, pos, mesh_pdu_src(pdu));
     pos += 2;
     event[pos++] = ERROR_CODE_SUCCESS;
-    
+
     event[pos++] = present_value;
     event[pos++] = target_value;
     little_endian_store_32(event, pos, (uint32_t) mesh_access_time_gdtt2ms(remaining_time_gdtt));
     pos += 4;
-    
+
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     mesh_access_message_processed(pdu);
 }

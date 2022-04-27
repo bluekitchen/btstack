@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -42,7 +42,7 @@
 
 #ifndef RFCOMM_H
 #define RFCOMM_H
- 
+
 #include "btstack_util.h"
 
 #include <stdint.h>
@@ -53,7 +53,7 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-    
+
 #define UNLIMITED_INCOMING_CREDITS 0xff
 
 #define RFCOMM_TEST_DATA_MAX_LEN 4
@@ -129,23 +129,23 @@ typedef struct rfcomm_rpn_data {
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
-	
+
     // packet handler
     btstack_packet_handler_t packet_handler;
 
     // server channel
     uint8_t server_channel;
-    
+
     // incoming max frame size
     uint16_t max_frame_size;
 
     // use incoming flow control
     uint8_t incoming_flow_control;
-    
+
     // initial incoming credits
     uint8_t incoming_initial_credits;
-    
-    
+
+
 } rfcomm_service_t;
 
 // info regarding multiplexer
@@ -153,29 +153,29 @@ typedef struct {
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
-    
+
     btstack_timer_source_t   timer;
     int              timer_active;
-    
-	RFCOMM_MULTIPLEXER_STATE state;	
-    
+
+	RFCOMM_MULTIPLEXER_STATE state;
+
     uint16_t  l2cap_cid;
-    
+
     uint8_t   fcon; // only send if fcon & 1, send rsp if fcon & 0x80
 
 	bd_addr_t remote_addr;
     hci_con_handle_t con_handle;
-    
+
 	uint8_t   outgoing;
-    
+
     // hack to deal with authentication failure only observed by remote side
     uint8_t at_least_one_connection;
-    
+
     uint16_t max_frame_size;
-    
+
     // send DM for DLCI != 0
     uint8_t send_dm_for_dlci;
-    
+
     // non supported command, 0 if not set
     uint8_t nsc_command;
 
@@ -193,7 +193,7 @@ typedef struct {
 
     // linked list - assert: first field
     btstack_linked_item_t    item;
-	
+
     // packet handler
     btstack_packet_handler_t packet_handler;
 
@@ -202,40 +202,40 @@ typedef struct {
 
 	// muliplexer for this channel
     rfcomm_multiplexer_t *multiplexer;
-	
+
     // RFCOMM Channel ID
     uint16_t rfcomm_cid;
-        
-    // 
-    uint8_t  dlci; 
-    
+
+    //
+    uint8_t  dlci;
+
     // credits for outgoing traffic
     uint8_t credits_outgoing;
-    
+
     // number of packets remote will be granted
     uint8_t new_credits_incoming;
 
     // credits for incoming traffic
     uint8_t credits_incoming;
-    
+
     // use incoming flow control
     uint8_t incoming_flow_control;
-    
+
     // channel state
     RFCOMM_CHANNEL_STATE state;
-    
+
     // state variables/flags
     uint32_t state_var;
-    
+
     // priority set by incoming side in PN
     uint8_t pn_priority;
-    
+
 	// negotiated frame size
     uint16_t max_frame_size;
-	
+
     // local rpn data
     rfcomm_rpn_data_t local_rpn_data;
-    
+
     // remote rpn data
     rfcomm_rpn_data_t remote_rpn_data;
 
@@ -255,7 +255,7 @@ typedef struct {
 
     //
     uint8_t   waiting_for_can_send_now;
-        
+
 } rfcomm_channel_t;
 
 // struct used in ERTM callback
@@ -276,18 +276,18 @@ typedef struct {
 
 /* API_START */
 
-/** 
+/**
  * @brief Set up RFCOMM.
  */
 void rfcomm_init(void);
 
-/** 
+/**
  * @brief Set security level required for incoming connections, need to be called before registering services.
  * @deprecated use gap_set_security_level instead
  */
 void rfcomm_set_required_security_level(gap_security_level_t security_level);
 
-/* 
+/*
  * @brief Create RFCOMM connection to a given server channel on a remote deivce.
  * This channel will automatically provide enough credits to the remote side.
  * @param addr
@@ -297,7 +297,7 @@ void rfcomm_set_required_security_level(gap_security_level_t security_level);
  */
 uint8_t rfcomm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint16_t * out_cid);
 
-/* 
+/*
  * @brief Create RFCOMM connection to a given server channel on a remote deivce.
  * This channel will use explicit credit management. During channel establishment, an initial  amount of credits is provided.
  * @param addr
@@ -308,64 +308,64 @@ uint8_t rfcomm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t
  */
 uint8_t rfcomm_create_channel_with_initial_credits(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint8_t initial_credits, uint16_t * out_cid);
 
-/** 
+/**
  * @brief Disconnects RFCOMM channel with given identifier.
  * @return status
  */
 uint8_t rfcomm_disconnect(uint16_t rfcomm_cid);
 
-/** 
+/**
  * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler.
  * This channel provides credits automatically to the remote side -> no flow control
  * @param packet handler for all channels of this service
- * @param channel 
+ * @param channel
  * @param max_frame_size
  * @return status ERROR_CODE_SUCCESS if successful, otherwise L2CAP_SERVICE_ALREADY_REGISTERED or BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t rfcomm_register_service(btstack_packet_handler_t packet_handler, uint8_t channel, uint16_t max_frame_size);
 
-/** 
- * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler. 
+/**
+ * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler.
  * This channel will use explicit credit management. During channel establishment, an initial amount of credits is provided.
  * @param packet handler for all channels of this service
- * @param channel 
+ * @param channel
  * @param max_frame_size
  * @param initial_credits
  * @return status ERROR_CODE_SUCCESS if successful, otherwise L2CAP_SERVICE_ALREADY_REGISTERED or BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t rfcomm_register_service_with_initial_credits(btstack_packet_handler_t packet_handler, uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits);
 
-/** 
+/**
  * @brief Unregister RFCOMM service.
  */
 void rfcomm_unregister_service(uint8_t service_channel);
 
-/** 
+/**
  * @brief Accepts incoming RFCOMM connection.
  * @return status
  */
 uint8_t rfcomm_accept_connection(uint16_t rfcomm_cid);
 
-/** 
+/**
  * @brief Deny incoming RFCOMM connection.
  * @return status
  */
 uint8_t rfcomm_decline_connection(uint16_t rfcomm_cid);
 
-/** 
+/**
  * @brief Grant more incoming credits to the remote side for the given RFCOMM channel identifier.
  * @return status
  */
 uint8_t rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits);
 
-/** 
- * @brief Checks if RFCOMM can send packet. 
+/**
+ * @brief Checks if RFCOMM can send packet.
  * @param rfcomm_cid
  * @result true if can send now
  */
 bool rfcomm_can_send_packet_now(uint16_t rfcomm_cid);
 
-/** 
+/**
  * @brief Request emission of RFCOMM_EVENT_CAN_SEND_NOW as soon as possible
  * @note RFCOMM_EVENT_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
@@ -374,14 +374,14 @@ bool rfcomm_can_send_packet_now(uint16_t rfcomm_cid);
  */
 uint8_t rfcomm_request_can_send_now_event(uint16_t rfcomm_cid);
 
-/** 
+/**
  * @brief Sends RFCOMM data packet to the RFCOMM channel with given identifier.
  * @param rfcomm_cid
  * @return status
  */
 uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len);
 
-/** 
+/**
  * @brief Sends Local Line Status, see LINE_STATUS_..
  * @param rfcomm_cid
  * @param line_status
@@ -389,7 +389,7 @@ uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len);
  */
 uint8_t rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status);
 
-/** 
+/**
  * @brief Send local modem status. see MODEM_STAUS_..
  * @param rfcomm_cid
  * @param modem_status
@@ -397,8 +397,8 @@ uint8_t rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status);
  */
 uint8_t rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status);
 
-/** 
- * @brief Configure remote port 
+/**
+ * @brief Configure remote port
  * @param rfcomm_cid
  * @param baud_rate
  * @param data_bits
@@ -409,21 +409,21 @@ uint8_t rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status);
  */
 uint8_t rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rpn_data_bits_t data_bits, rpn_stop_bits_t stop_bits, rpn_parity_t parity, uint8_t flow_control);
 
-/** 
- * @brief Query remote port 
+/**
+ * @brief Query remote port
  * @param rfcomm_cid
  * @return status
  */
 uint8_t rfcomm_query_port_configuration(uint16_t rfcomm_cid);
 
-/** 
+/**
  * @brief Query max frame size
  * @param rfcomm_cid
  * @return max frame size
  */
 uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
 
-/** 
+/**
  * @brief Reserve packet buffer to allow to create RFCOMM packet in place
  * @return true on success
  *

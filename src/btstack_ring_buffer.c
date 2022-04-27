@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -75,12 +75,12 @@ int btstack_ring_buffer_empty(btstack_ring_buffer_t * ring_buffer){
     return btstack_ring_buffer_bytes_available(ring_buffer) == 0u;
 }
 
-// 
+//
 uint32_t btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer){
     return ring_buffer->size - btstack_ring_buffer_bytes_available(ring_buffer);
 }
 
-// add byte block to ring buffer, 
+// add byte block to ring buffer,
 int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length){
     if (btstack_ring_buffer_bytes_free(ring_buffer) < data_length){
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
@@ -116,7 +116,7 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
         ring_buffer->full = 1;
     }
     return ERROR_CODE_SUCCESS;
-} 
+}
 
 // fetch data_length bytes from ring buffer
 void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length, uint32_t * number_of_bytes_read){
@@ -151,5 +151,4 @@ void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
 
     // clear full flag
     ring_buffer->full = 0;
-} 
-
+}

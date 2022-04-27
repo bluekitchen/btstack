@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -77,7 +77,7 @@ typedef enum {
     HID_HANDSHAKE_PARAM_TYPE_ERR_UNKNOWN = 0x0E,       // Device could not identify the error condition.
     HID_HANDSHAKE_PARAM_TYPE_ERR_FATAL = 0x0F,         // Restart is essential to resume functionality
     // BTstack custom error codes
-    HID_HANDSHAKE_PARAM_TYPE_ERR_DISCONNECT            
+    HID_HANDSHAKE_PARAM_TYPE_ERR_DISCONNECT
 } hid_handshake_param_type_t;
 
 typedef enum {
@@ -90,7 +90,7 @@ typedef enum {
 } hid_control_param_t;
 
 typedef enum {
-    HID_PROTOCOL_MODE_BOOT = 0,   
+    HID_PROTOCOL_MODE_BOOT = 0,
     HID_PROTOCOL_MODE_REPORT,
 
     // the following item is only used for API calls in hid_host.h: hid_host_connect, hid_host_accept_connection

@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -59,7 +59,7 @@ static void db_set_local_bd_addr(bd_addr_t bd_addr){
     (void)bd_addr;
 }
 
-static void db_close(void){ 
+static void db_close(void){
 }
 
 static btstack_link_key_db_memory_entry_t * get_item(btstack_linked_list_t list, bd_addr_t bd_addr) {
@@ -75,9 +75,9 @@ static btstack_link_key_db_memory_entry_t * get_item(btstack_linked_list_t list,
 
 static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type) {
     btstack_link_key_db_memory_entry_t * item = get_item(db_mem_link_keys, bd_addr);
-    
+
     if (!item) return 0;
-    
+
     (void)memcpy(link_key, item->link_key, LINK_KEY_LEN);
     if (link_key_type) {
         *link_key_type = item->link_key_type;
@@ -90,9 +90,9 @@ static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t 
 
 static void delete_link_key(bd_addr_t bd_addr){
     btstack_link_key_db_memory_entry_t * item = get_item(db_mem_link_keys, bd_addr);
-    
+
     if (!item) return;
-    
+
     btstack_linked_list_remove(&db_mem_link_keys, (btstack_linked_item_t *) item);
     btstack_memory_btstack_link_key_db_memory_entry_free((btstack_link_key_db_memory_entry_t*)item);
 }
@@ -118,9 +118,9 @@ static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t
             btstack_linked_list_remove(&db_mem_link_keys, (btstack_linked_item_t*) record);
         }
     }
-        
+
     if (!record) return;
-    
+
     (void)memcpy(record->bd_addr, bd_addr, sizeof(bd_addr_t));
     (void)memcpy(record->link_key, link_key, LINK_KEY_LEN);
     record->link_key_type = link_key_type;
@@ -166,5 +166,3 @@ const btstack_link_key_db_t btstack_link_key_db_memory = {
 const btstack_link_key_db_t * btstack_link_key_db_memory_instance(void){
     return &btstack_link_key_db_memory;
 }
-
-

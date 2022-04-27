@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -40,7 +40,7 @@
 
 // *****************************************************************************
 //
-// AVRCP Media Item Iterator 
+// AVRCP Media Item Iterator
 //
 // *****************************************************************************
 
@@ -85,4 +85,3 @@ uint16_t avrcp_media_item_iterator_get_attr_value_len(const avrcp_media_item_con
 const uint8_t * avrcp_media_item_iterator_get_attr_value(const avrcp_media_item_context_t * context){
     return &context->data[context->offset + 8];
 }
-

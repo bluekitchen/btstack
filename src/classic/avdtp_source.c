@@ -31,7 +31,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -156,7 +156,7 @@ uint8_t avdtp_source_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t
 
 void avdtp_source_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
-    
+
     avdtp_register_source_packet_handler(callback);
 }
 
@@ -265,7 +265,7 @@ uint8_t avdtp_source_stream_send_media_packet(uint16_t avdtp_cid, uint8_t local_
 
 void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avdtp_cid, uint8_t local_seid){
     UNUSED(avdtp_cid);
-    
+
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!stream_endpoint) {
         log_error("AVDTP source: no stream_endpoint with seid %d", local_seid);
@@ -277,16 +277,16 @@ void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avdtp_cid, uint8
 
 int avdtp_max_media_payload_size(uint16_t avdtp_cid, uint8_t local_seid){
     UNUSED(avdtp_cid);
-    
+
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!stream_endpoint) {
         log_error("A2DP source: no stream_endpoint with seid %d", local_seid);
         return 0;
     }
-    
+
     if (stream_endpoint->l2cap_media_cid == 0){
         log_error("A2DP source: no media connection for seid %d", local_seid);
         return 0;
-    }  
+    }
     return l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid) - AVDTP_MEDIA_PAYLOAD_HEADER_SIZE;
 }

@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -92,12 +92,12 @@ typedef enum {
     StringIndex,
     StringMinimum,
     StringMaximum,
-    Delimiter 
+    Delimiter
 } LocalItemTag;
 
 typedef struct  {
-    int32_t  item_value;    
-    uint16_t item_size; 
+    int32_t  item_value;
+    uint16_t item_size;
     uint8_t  item_type;
     uint8_t  item_tag;
     uint8_t  data_size;
@@ -136,7 +136,7 @@ typedef struct {
     // usage generator
     uint32_t        usage_minimum;
     uint32_t        usage_maximum;
-    uint16_t        available_usages;    
+    uint16_t        available_usages;
     uint8_t         required_usages;
     uint8_t         active_record;
     uint8_t         have_usage_min;
@@ -145,7 +145,7 @@ typedef struct {
     // global
     int32_t         global_logical_minimum;
     int32_t         global_logical_maximum;
-    uint16_t        global_usage_page; 
+    uint16_t        global_usage_page;
     uint8_t         global_report_size;
     uint8_t         global_report_count;
     uint8_t         global_report_id;
@@ -155,7 +155,7 @@ typedef struct {
 
 /**
  * @brief Initialize HID Parser.
- * @param parser state 
+ * @param parser state
  * @param hid_descriptor
  * @param hid_descriptor_len
  * @param hid_report_type

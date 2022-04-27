@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -73,7 +73,7 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-     
+
 // packet buffer sizes
 #define HCI_CMD_HEADER_SIZE          3
 #define HCI_ACL_HEADER_SIZE          4
@@ -103,7 +103,7 @@ extern "C" {
 #endif
 
 #define HCI_ACL_BUFFER_SIZE        (HCI_ACL_HEADER_SIZE   + HCI_ACL_PAYLOAD_SIZE)
-    
+
 // size of hci incoming buffer, big enough for event or acl packet without H4 packet type
 #ifdef HCI_INCOMING_PACKET_BUFFER_SIZE
     #if HCI_INCOMING_PACKET_BUFFER_SIZE < HCI_ACL_BUFFER_SIZE
@@ -160,7 +160,7 @@ extern "C" {
 #endif
 #endif
 
-// 
+//
 #define IS_COMMAND(packet, command) ( little_endian_read_16(packet,0) == command.opcode )
 
 // check if command complete event for given command
@@ -182,7 +182,7 @@ extern "C" {
 
 /**
  * LE connection parameter update state
- */ 
+ */
 
 typedef enum {
     CON_PARAMETER_UPDATE_NONE,
@@ -229,7 +229,7 @@ typedef enum {
 #define GAP_CONNECTION_TASK_READ_RSSI                     0x0004u
 
 /**
- * Connection State 
+ * Connection State
  */
 typedef enum {
     SEND_CREATE_CONNECTION = 0,
@@ -300,7 +300,7 @@ typedef enum {
 
     // Phase 2: Authenticating and Encrypting
 
-    // get random number for use as TK Passkey if we show it 
+    // get random number for use as TK Passkey if we show it
     SM_PH2_GET_RANDOM_TK,
     SM_PH2_W4_RANDOM_TK,
 
@@ -374,8 +374,8 @@ typedef enum {
     SM_SC_W2_CMAC_FOR_CONFIRMATION,
     SM_SC_W4_CMAC_FOR_CONFIRMATION,
     SM_SC_SEND_CONFIRMATION,
-    SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION,    
-    SM_SC_W4_CMAC_FOR_CHECK_CONFIRMATION,    
+    SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION,
+    SM_SC_W4_CMAC_FOR_CHECK_CONFIRMATION,
     SM_SC_W4_CONFIRMATION,
     SM_SC_SEND_PAIRING_RANDOM,
     SM_SC_W4_PAIRING_RANDOM,
@@ -481,7 +481,7 @@ typedef struct {
     uint8_t                 ir_lookup_active;
     uint8_t                 pairing_active;
 
-    uint16_t                value_indication_handle;    
+    uint16_t                value_indication_handle;
     btstack_timer_source_t  value_indication_timer;
 
     btstack_linked_list_t   notification_requests;
@@ -517,10 +517,10 @@ typedef struct {
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
-    
+
     // remote side
     bd_addr_t address;
-    
+
     // module handle
     hci_con_handle_t con_handle;
 
@@ -532,7 +532,7 @@ typedef struct {
 
     // connection state
     CONNECTION_STATE state;
-    
+
     // bonding
     uint32_t bonding_flags;
     uint8_t  bonding_status;
@@ -542,7 +542,7 @@ typedef struct {
 
     // requested security level
     gap_security_level_t requested_security_level;
-    
+
     // link key and its type
     link_key_t      link_key;
     link_key_type_t link_key_type;
@@ -611,7 +611,7 @@ typedef struct {
     uint8_t  acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 4 + HCI_ACL_BUFFER_SIZE];
     uint16_t acl_recombination_pos;
     uint16_t acl_recombination_length;
-    
+
 
     // number packets sent to controller
     uint8_t num_packets_sent;
@@ -664,7 +664,7 @@ typedef struct {
 } hci_connection_t;
 
 
-/** 
+/**
  * HCI Inititizlization State Machine
  */
 typedef enum hci_init_state{
@@ -834,7 +834,7 @@ typedef struct {
     btstack_linked_item_t  item;
     bd_addr_t      address;
     bd_addr_type_t address_type;
-    uint8_t        state;   
+    uint8_t        state;
 } whitelist_entry_t;
 
 #define MAX_NUM_RESOLVING_LIST_ENTRIES 64
@@ -854,7 +854,7 @@ typedef struct {
     // transport component with configuration
     const hci_transport_t * hci_transport;
     const void            * config;
-    
+
     // chipset driver
     const btstack_chipset_t * chipset;
 
@@ -928,7 +928,7 @@ typedef struct {
     uint32_t            inquiry_lap;      // GAP_IAC_GENERAL_INQUIRY or GAP_IAC_LIMITED_INQUIRY
     uint16_t            inquiry_scan_interval;
     uint16_t            inquiry_scan_window;
-    
+
     bool                gap_secure_connections_only_mode;
 #endif
 
@@ -939,7 +939,7 @@ typedef struct {
     uint16_t  acl_fragmentation_pos;
     uint16_t  acl_fragmentation_total_size;
     uint8_t   acl_fragmentation_tx_active;
-     
+
     /* host to controller flow control */
     uint8_t  num_cmd_packets;
     uint8_t  acl_packets_total_num;
@@ -969,8 +969,8 @@ typedef struct {
 
     // usable packet types given acl_data_packet_length and HCI_ACL_BUFFER_SIZE
     uint16_t packet_types;
-    
-    
+
+
     /* hci state machine */
     HCI_STATE      state;
     hci_substate_t substate;
@@ -1002,7 +1002,7 @@ typedef struct {
         const uint8_t * gap_pairing_pin;
         uint32_t     gap_pairing_passkey;
     } gap_pairing_input;
-    
+
     uint16_t  sco_voice_setting;
     uint16_t  sco_voice_setting_active;
 
@@ -1094,7 +1094,7 @@ typedef struct {
 #endif
 
     // custom BD ADDR
-    bd_addr_t custom_bd_addr; 
+    bd_addr_t custom_bd_addr;
     uint8_t   custom_bd_addr_set;
 
 #ifdef ENABLE_CLASSIC
@@ -1126,7 +1126,7 @@ typedef struct {
 
 /* API_START */
 
-    
+
 // HCI init and configuration
 
 
@@ -1205,7 +1205,7 @@ void hci_close(void);
 
 
 /**
- * @brief Add event packet handler. 
+ * @brief Add event packet handler.
  */
 void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler);
 
@@ -1227,7 +1227,7 @@ void hci_register_sco_packet_handler(btstack_packet_handler_t handler);
 
 // Sending HCI Commands
 
-/** 
+/**
  * @brief Check if CMD packet can be sent to controller
  * @return true if command can be sent
  */
@@ -1416,7 +1416,7 @@ bool hci_remote_esco_supported(hci_con_handle_t con_handle);
  */
 void hci_emit_state(void);
 
-/** 
+/**
  * Send complete CMD packet. Called by daemon and hci_send_cmd_va_arg
  * @return status
  */
@@ -1444,11 +1444,11 @@ int hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle);
  *
  * @note internal use. use gap_advertisements_set_params from gap.h instead.
  */
-void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type, 
+void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
     uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
 
-/** 
- * 
+/**
+ *
  * @note internal use. use gap_random_address_set_mode from gap.h instead.
  */
 void hci_le_set_own_address_type(uint8_t own_address_type);
@@ -1486,7 +1486,7 @@ void hci_halting_defer(void);
 
 // Only for PTS testing
 
-/** 
+/**
  * Disable automatic L2CAP disconnect if no L2CAP connection is established
  */
 void hci_disable_l2cap_timeout_check(void);

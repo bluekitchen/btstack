@@ -30,13 +30,13 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 #define BTSTACK_FILE__ "obex_iterator.c"
- 
+
 #include "btstack_config.h"
 
 #include <stdint.h>
@@ -172,7 +172,7 @@ void obex_dump_packet(uint8_t request_opcode, uint8_t * packet, uint16_t size){
     printf("OBEX Opcode: 0x%02x\n", request_opcode);
     int header_offset = (request_opcode == OBEX_OPCODE_CONNECT) ? 7 : 3;
     printf("OBEX Header: ");
-    printf_hexdump(packet, header_offset);    
+    printf_hexdump(packet, header_offset);
     for (obex_iterator_init_with_response_packet(&it, request_opcode, packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
         uint8_t hi = obex_iterator_get_hi(&it);
         printf("HI: %x - ", hi);

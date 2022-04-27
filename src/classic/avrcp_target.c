@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -80,13 +80,13 @@ avrcp_target_emit_operation(btstack_packet_handler_t callback, uint16_t avrcp_ci
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVRCP_SUBEVENT_OPERATION; 
+    event[pos++] = AVRCP_SUBEVENT_OPERATION;
     little_endian_store_16(event, pos, avrcp_cid);
     pos += 2;
     event[pos++] = operation_id;
     event[pos++] = button_pressed ? 1 : 0;
-    event[pos++] = operands_length; 
-    event[pos++] = operand; 
+    event[pos++] = operands_length;
+    event[pos++] = operand;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -112,7 +112,7 @@ static void avrcp_target_emit_respond_vendor_dependent_query(btstack_packet_hand
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = subevent_id; 
+    event[pos++] = subevent_id;
     little_endian_store_16(event, pos, avrcp_cid);
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -153,7 +153,7 @@ static uint16_t avrcp_now_playing_info_attr_id_value_len(avrcp_connection_t * co
 
 static uint16_t avrcp_now_playing_info_value_len_with_headers(avrcp_connection_t * connection){
     uint16_t playing_info_len = 0;
-    
+
     uint8_t i;
     for ( i = (uint8_t)AVRCP_MEDIA_ATTR_ALL + 1; i < (uint8_t) AVRCP_MEDIA_ATTR_RESERVED; i++){
         avrcp_media_attribute_id_t attr_id = (avrcp_media_attribute_id_t) i;
@@ -211,7 +211,7 @@ static uint8_t * avrcp_get_next_value_fragment_for_attribute_id(avrcp_connection
 // TODO Review
 static uint16_t avrcp_store_avctp_now_playing_info_fragment(avrcp_connection_t * connection, uint16_t packet_size, uint8_t * packet){
     uint16_t num_free_bytes = packet_size;
-    
+
     uint16_t bytes_stored = 0;
 
     while ((num_free_bytes > 0) && (connection->next_attr_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS)){
@@ -330,7 +330,7 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                         case AVRCP_PDU_ID_GET_CAPABILITIES:
                             // capability ID
                             packet[pos++] = connection->data[0];
-                            // num_capabilities 
+                            // num_capabilities
                             packet[pos++] = connection->data[1];
 
                             switch ((avrcp_capability_id_t) connection->data[0]) {
@@ -430,9 +430,9 @@ static void avctp_send_reject_cmd_wrong_pid(avrcp_connection_t * connection){
     l2cap_send_prepared(connection->l2cap_signaling_cid, 3);
 }
 
-static void avrcp_target_custom_command_data_init(avrcp_connection_t * connection, 
-    avrcp_command_opcode_t opcode, avrcp_command_type_t command_type, 
-    avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, 
+static void avrcp_target_custom_command_data_init(avrcp_connection_t * connection,
+    avrcp_command_opcode_t opcode, avrcp_command_type_t command_type,
+    avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id,
     avrcp_pdu_id_t pdu_id, uint32_t company_id){
 
     connection->command_opcode = opcode;
@@ -452,7 +452,7 @@ static void avrcp_target_vendor_dependent_response_data_init(avrcp_connection_t 
     connection->subunit_type   = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id     = AVRCP_SUBUNIT_ID;
     connection->company_id     = BT_SIG_COMPANY_ID;
-   
+
     connection->command_type = command_type;
     connection->pdu_id = pdu_id;
     connection->data = connection->message_body;
@@ -463,9 +463,9 @@ static void avrcp_target_vendor_dependent_response_data_init(avrcp_connection_t 
 
 static void avrcp_target_pass_through_command_data_init(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_operation_id_t opid){
     connection->command_opcode = AVRCP_CMD_OPCODE_PASS_THROUGH;
-    connection->subunit_type   = AVRCP_SUBUNIT_TYPE_PANEL; 
+    connection->subunit_type   = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id     = AVRCP_SUBUNIT_ID;
-    
+
     connection->command_type = command_type;
     connection->company_id = 0;
     connection->pdu_id = AVRCP_PDU_ID_UNDEFINED;
@@ -503,7 +503,7 @@ static uint8_t avrcp_target_response_vendor_dependent_not_implemented(avrcp_conn
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_NOT_IMPLEMENTED, pdu_id);
     connection->data_len = 1;
     connection->data[0] = event_id;
-    
+
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -518,7 +518,7 @@ static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t
     if (value && (value_len > 0)){
         (void)memcpy(connection->data + 1, value, value_len);
     }
-    
+
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -531,7 +531,7 @@ static uint8_t avrcp_target_response_addressed_player_changed_interim(avrcp_conn
     connection->data[0] = event_id;
     big_endian_store_16(connection->data, 1, connection->target_addressed_player_id);
     big_endian_store_16(connection->data, 3, connection->target_uid_counter);
-    
+
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -540,7 +540,7 @@ static uint8_t avrcp_target_response_addressed_player_changed_interim(avrcp_conn
 static uint8_t avrcp_target_pass_through_response(uint16_t avrcp_cid, avrcp_command_type_t ctype, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     avrcp_target_pass_through_command_data_init(connection, ctype, opid);
 
@@ -548,7 +548,7 @@ static uint8_t avrcp_target_pass_through_response(uint16_t avrcp_cid, avrcp_comm
         connection->data_len = 1;
         connection->message_body[0] = operand;
     }
-    
+
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -569,7 +569,7 @@ uint8_t avrcp_target_operation_not_implemented(uint16_t avrcp_cid, avrcp_operati
 uint8_t avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     connection->target_unit_type = unit_type;
     connection->company_id = company_id;
@@ -579,7 +579,7 @@ uint8_t avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit
 uint8_t avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, const uint8_t * subunit_info_data, uint16_t subunit_info_data_size){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     connection->target_subunit_info_type = subunit_type;
     connection->target_subunit_info_data = subunit_info_data;
@@ -596,7 +596,7 @@ static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
                                           AVRCP_CMD_OPCODE_UNIT_INFO, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE,
                                           AVRCP_SUBUNIT_TYPE_UNIT, AVRCP_SUBUNIT_ID_IGNORE, AVRCP_PDU_ID_UNDEFINED,
                                           connection->company_id);
-    
+
     uint8_t unit = 0;
     connection->data = connection->message_body;
     connection->data_len = 5;
@@ -648,11 +648,11 @@ static uint8_t avrcp_target_response_vendor_dependent_supported_events(avrcp_con
         }
         num_events++;
     }
-    
+
     connection->data[0] = AVRCP_CAPABILITY_ID_EVENT;
     connection->data[1] = num_events;
     connection->data_len = 2 + num_events;
-    
+
     // fill the data later directly to the L2CAP outgoing buffer
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -667,7 +667,7 @@ static uint8_t avrcp_target_response_vendor_dependent_supported_companies(avrcp_
         connection->target_supported_companies_num = 1;
         connection->target_supported_companies = default_companies;
     }
-    
+
     connection->data[1] = connection->target_supported_companies_num;
     connection->data_len = 2 + connection->data[1] * 3;
 
@@ -681,7 +681,7 @@ static uint8_t avrcp_target_response_vendor_dependent_supported_companies(avrcp_
 uint8_t avrcp_target_support_event(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
     if ((event_id < (uint8_t)AVRCP_NOTIFICATION_EVENT_FIRST_INDEX) || (event_id > (uint8_t)AVRCP_NOTIFICATION_EVENT_LAST_INDEX)){
@@ -695,7 +695,7 @@ uint8_t avrcp_target_support_event(uint16_t avrcp_cid, avrcp_notification_event_
 uint8_t avrcp_target_support_companies(uint16_t avrcp_cid, uint8_t num_companies, const uint32_t *companies){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
     connection->target_supported_companies_num = num_companies;
@@ -707,7 +707,7 @@ uint8_t avrcp_target_support_companies(uint16_t avrcp_cid, uint8_t num_companies
 uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_playback_status_t play_status){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED){
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -730,22 +730,22 @@ static uint8_t avrcp_target_store_media_attr(avrcp_connection_t * connection, av
     connection->target_now_playing_info[index].value = (uint8_t*)value;
     connection->target_now_playing_info[index].len   = strlen(value);
     return ERROR_CODE_SUCCESS;
-}   
+}
 
 uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_status_t playback_status){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->target_playback_status == playback_status){
         return ERROR_CODE_SUCCESS;
-    } 
+    }
 
     connection->target_playback_status = playback_status;
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED)) {
         connection->target_playback_status_changed = true;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-    } 
+    }
     return ERROR_CODE_SUCCESS;
 }
 
@@ -780,7 +780,7 @@ uint8_t avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_
     }
     if (!current_track){
         return ERROR_CODE_COMMAND_DISALLOWED;
-    } 
+    }
 
     (void)memcpy(connection->target_track_id, current_track->track_id, 8);
     connection->target_song_length_ms = current_track->song_length_ms;
@@ -799,7 +799,7 @@ uint8_t avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_
 uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED)) {
         connection->target_playing_content_changed = true;
@@ -811,7 +811,7 @@ uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid){
 uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t player_id, uint16_t uid_counter){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
     if (connection->target_addressed_player_id == player_id){
@@ -831,25 +831,25 @@ uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t playe
 uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->target_battery_status == battery_status){
         return ERROR_CODE_SUCCESS;
-    } 
+    }
 
     connection->target_battery_status = battery_status;
-    
+
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED)) {
         connection->target_battery_status_changed = true;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-    } 
+    }
     return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avrcp_target_adjust_absolute_volume(uint16_t avrcp_cid, uint8_t absolute_volume){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
     connection->target_absolute_volume = absolute_volume;
@@ -859,18 +859,18 @@ uint8_t avrcp_target_adjust_absolute_volume(uint16_t avrcp_cid, uint8_t absolute
 uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t absolute_volume){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->target_absolute_volume == absolute_volume){
         return ERROR_CODE_SUCCESS;
     }
-    
+
     connection->target_absolute_volume = absolute_volume;
 
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED )) {
         connection->target_notify_absolute_volume_changed = true;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-    } 
+    }
     return ERROR_CODE_SUCCESS;
 }
 
@@ -898,16 +898,16 @@ static bool avcrp_operation_id_is_valid(avrcp_operation_id_t operation_id){
 
     if (operation_id < AVRCP_OPERATION_ID_SKIP) return false;
     if (operation_id == AVRCP_OPERATION_ID_SKIP) return true;
-    
+
     if (operation_id < AVRCP_OPERATION_ID_POWER) return false;
     if (operation_id < AVRCP_OPERATION_ID_RESERVED_4) return true;
-    
+
     if (operation_id < AVRCP_OPERATION_ID_ANGLE) return false;
     if (operation_id < AVRCP_OPERATION_ID_RESERVED_5) return true;
-    
+
     if (operation_id < AVRCP_OPERATION_ID_F1) return false;
     if (operation_id < AVRCP_OPERATION_ID_RESERVED_6) return true;
-    
+
     return false;
 }
 
@@ -996,7 +996,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
     // avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (packet[4] >> 3);
     // avrcp_subunit_id_t   subunit_id   = (avrcp_subunit_id_t) (packet[4] & 0x07);
-    
+
     avrcp_command_opcode_t opcode = (avrcp_command_opcode_t) avrcp_cmd_opcode(packet,size);
 
     int pos = 6;
@@ -1014,7 +1014,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             break;
         case AVRCP_CMD_OPCODE_SUBUNIT_INFO:
             if ((size - pos) < 3) return;
-            // page: packet[pos] >> 4, 
+            // page: packet[pos] >> 4,
             offset =  4 * (packet[pos]>>4);
             // extension code (fixed 7) = packet[pos] & 0x0F
             // 4 bytes paga data, all 0xFF
@@ -1032,7 +1032,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
             if (avcrp_operation_id_is_valid(operation_id)){
                 bool button_pressed = (packet[6] & 0x80) == 0;
-            
+
                 avrcp_target_operation_accepted(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
                 avrcp_target_emit_operation(avrcp_target_context.avrcp_callback, connection->avrcp_cid,
                                                 operation_id, button_pressed, packet[7], operand);
@@ -1040,7 +1040,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 avrcp_target_operation_not_implemented(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
             }
             break;
-    
+
 
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
 
@@ -1168,7 +1168,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
                     event_mask = (1 << event_id);
                     connection->notifications_enabled |= event_mask;
-                            
+
                     switch (event_id){
                         case AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED:
                             if (connection->target_track_selected){
@@ -1180,7 +1180,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED:
                             avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, (const uint8_t *)&connection->target_playback_status, 1);
                             break;
-                        case AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED: 
+                        case AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED:
                             avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, NULL, 0);
                             break;
                         case AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED:
@@ -1282,7 +1282,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             if (hci_event_packet_get_type(packet) != L2CAP_EVENT_CAN_SEND_NOW){
                 return;
             }
-    
+
             connection = avrcp_get_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, channel);
             if (connection == NULL){
                 return;
@@ -1340,21 +1340,21 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                 avrcp_target_notification_init(connection, notification_id, &playback_status, 1);
                 break;
             }
-            
+
             if (connection->target_playing_content_changed){
                 connection->target_playing_content_changed = false;
                 notification_id = AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED;
                 avrcp_target_notification_init(connection, notification_id, NULL, 0);
                 break;
             }
-            
+
             if (connection->target_battery_status_changed){
                 connection->target_battery_status_changed = false;
                 notification_id = AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED;
                 avrcp_target_notification_init(connection, notification_id, (uint8_t *)&connection->target_battery_status, 1);
                 break;
             }
-            
+
             if (connection->target_notify_absolute_volume_changed){
                 connection->target_notify_absolute_volume_changed = false;
                 notification_id = AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED;
@@ -1374,7 +1374,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 
         default:
             return;
-    }   
+    }
 
     avrcp_send_response_with_avctp_fragmentation(connection);
     avrcp_target_reset_notification(connection, notification_id);
@@ -1400,5 +1400,3 @@ void avrcp_target_register_set_addressed_player_handler(bool (*callback)(uint16_
     btstack_assert(callback != NULL);
     avrcp_target_context.set_addressed_player_callback = callback;
 }
-
-

@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Mesh Provisioning Service Server
- * 
+ *
  */
 
 #ifndef __MESH_PROVISIONING_SERVICE_SERVER_H
@@ -66,8 +66,8 @@ void mesh_provisioning_service_server_init(void);
 
 /**
  * @brief Send a Proxy PDU message containing Provisioning PDU from a Provisioning Server to a Provisioning Client.
- * @param con_handle 
- * @param proxy_pdu 
+ * @param con_handle
+ * @param proxy_pdu
  * @param proxy_pdu_size max lenght MESH_PROV_MAX_PROXY_PDU
  */
 void mesh_provisioning_service_server_send_proxy_pdu(uint16_t con_handle, const uint8_t * proxy_pdu, uint16_t proxy_pdu_size);
@@ -91,4 +91,3 @@ void mesh_provisioning_service_server_request_can_send_now(hci_con_handle_t con_
 #endif
 
 #endif
-

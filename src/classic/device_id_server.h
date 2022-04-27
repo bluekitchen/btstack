@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Device ID Server
- * 
+ *
  * Create Device ID SDP Records.
  *
  */
@@ -46,7 +46,7 @@
 #define DEVICE_ID_SERVER_H
 
 #include <stdint.h>
- 
+
 #if defined __cplusplus
 extern "C" {
 #endif

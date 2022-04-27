@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -59,13 +59,13 @@ typedef struct {
 } hfp_phone_number_t;
 
 /**
- * @brief Create HFP Audio Gateway (AG) SDP service record. 
+ * @brief Create HFP Audio Gateway (AG) SDP service record.
  * @param service
  * @param rfcomm_channel_nr
  * @param name
  * @param ability_to_reject_call
  * @param suported_features 32-bit bitmap, see HFP_AGSF_* values in hfp.h
- * @param wide_band_speech supported 
+ * @param wide_band_speech supported
  */
 void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech);
 
@@ -76,7 +76,7 @@ void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
 void hfp_ag_init(uint16_t rfcomm_channel_nr);
 
 /**
- * @brief Set codecs. 
+ * @brief Set codecs.
  * @param codecs_nr
  * @param codecs
  */
@@ -89,21 +89,21 @@ void hfp_ag_init_codecs(int codecs_nr, const uint8_t * codecs);
 void hfp_ag_init_supported_features(uint32_t supported_features);
 
 /**
- * @brief Set AG indicators. 
+ * @brief Set AG indicators.
  * @param indicators_nr
  * @param indicators
  */
 void hfp_ag_init_ag_indicators(int ag_indicators_nr, const hfp_ag_indicator_t * ag_indicators);
 
 /**
- * @brief Set HF indicators. 
+ * @brief Set HF indicators.
  * @param indicators_nr
  * @param indicators
  */
 void hfp_ag_init_hf_indicators(int hf_indicators_nr, const hfp_generic_status_indicator_t * hf_indicators);
 
 /**
- * @brief Set Call Hold services. 
+ * @brief Set Call Hold services.
  * @param indicators_nr
  * @param indicators
  */
@@ -111,7 +111,7 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
 
 
 /**
- * @brief Register callback for the HFP Audio Gateway (AG) client. 
+ * @brief Register callback for the HFP Audio Gateway (AG) client.
  * @param callback
  */
 void hfp_ag_register_packet_handler(btstack_packet_handler_t callback);
@@ -129,7 +129,7 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
 /**
  * @brief Establish RFCOMM connection, and perform service level connection agreement:
  * - exchange of supported features
- * - report Audio Gateway (AG) indicators and their status 
+ * - report Audio Gateway (AG) indicators and their status
  * - enable indicator status update in the AG
  * - accept the information about available codecs in the Hands-Free (HF), if sent
  * - report own information describing the call hold and multiparty services, if possible
@@ -140,13 +140,13 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
  * @param  bd_addr of HF
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *                  - ERROR_CODE_COMMAND_DISALLOWED if connection already exists or connection in wrong state, or
- *                  - BTSTACK_MEMORY_ALLOC_FAILED 
+ *                  - BTSTACK_MEMORY_ALLOC_FAILED
  *
  */
 uint8_t hfp_ag_establish_service_level_connection(bd_addr_t bd_addr);
 
 /**
- * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 
+ * @brief Release the RFCOMM channel and the audio connection between the HF and the AG.
  * If the audio connection exists, it will be released.
  * The status of releasing the SLC connection is reported via
  * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED.
@@ -168,14 +168,14 @@ uint8_t hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle);
 /**
  * @brief Release audio connection.
  * The status of releasing the Audio connection is reported via HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE.
- * 
+ *
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
  */
 uint8_t hfp_ag_release_audio_connection(hci_con_handle_t acl_handle);
 
 /**
- * @brief Put the current call on hold, if it exists, and accept incoming call. 
+ * @brief Put the current call on hold, if it exists, and accept incoming call.
  */
 void hfp_ag_answer_incoming_call(void);
 
@@ -205,7 +205,7 @@ void hfp_ag_accept_held_incoming_call(void);
 void hfp_ag_reject_held_incoming_call(void);
 
 /*
- * @brief Set microphone gain. 
+ * @brief Set microphone gain.
  *
  * @param acl_handle
  * @param gain Valid range: [0,15]
@@ -247,9 +247,9 @@ void hfp_ag_clear_last_dialed_number(void);
 void hfp_ag_set_last_dialed_number(const char * number);
 
 /*
- * @brief Notify the HF that an incoming call is waiting 
+ * @brief Notify the HF that an incoming call is waiting
  * during an ongoing call. The notification will be sent only if the HF has
- * has previously enabled the "Call Waiting notification" in the AG. 
+ * has previously enabled the "Call Waiting notification" in the AG.
  *
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
@@ -261,7 +261,7 @@ uint8_t hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle);
 // Voice Recognition
 
 /*
- * @brief Activate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED event with status ERROR_CODE_SUCCESS 
+ * @brief Activate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED event with status ERROR_CODE_SUCCESS
  * if successful. Prerequisite is established SLC.
  *
  * @param acl_handle
@@ -272,7 +272,7 @@ uint8_t hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle);
 uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle);
 
 /*
- * @brief Deactivate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED event with status ERROR_CODE_SUCCESS 
+ * @brief Deactivate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED event with status ERROR_CODE_SUCCESS
  * if successful. Prerequisite is established SLC.
  *
  * @param acl_handle
@@ -283,7 +283,7 @@ uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle);
 uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle);
 
 /*
- * @brief Notify HF that sound will be played and HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND event with status ERROR_CODE_SUCCESS 
+ * @brief Notify HF that sound will be played and HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND event with status ERROR_CODE_SUCCESS
  * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED.
  *
  * @param acl_handle
@@ -295,7 +295,7 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle);
 uint8_t hfp_ag_enhanced_voice_recognition_report_sending_audio(hci_con_handle_t acl_handle);
 
 /*
- * @brief Notify HF that AG is ready for input and emit HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT event with status ERROR_CODE_SUCCESS 
+ * @brief Notify HF that AG is ready for input and emit HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT event with status ERROR_CODE_SUCCESS
  * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED.
  *
  * @param acl_handle
@@ -307,7 +307,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_report_sending_audio(hci_con_handle_t 
 uint8_t hfp_ag_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_t acl_handle);
 
 /*
- * @brief Notify that AG is processing input and emit HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT event with status ERROR_CODE_SUCCESS 
+ * @brief Notify that AG is processing input and emit HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT event with status ERROR_CODE_SUCCESS
  * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED.
  *
  * @param acl_handle
@@ -319,13 +319,13 @@ uint8_t hfp_ag_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_
 uint8_t hfp_ag_enhanced_voice_recognition_report_processing_input(hci_con_handle_t acl_handle);
 
 /*
- * @brief Send enhanced audio recognition message and HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT event with status ERROR_CODE_SUCCESS 
+ * @brief Send enhanced audio recognition message and HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT event with status ERROR_CODE_SUCCESS
  * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED.
  *
  * @param acl_handle
  * @param activate
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
- *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, 
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist,
                 - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the message size exceeds the HFP_MAX_VR_TEXT_SIZE, or the command does not fit into a single packet frame,
  *              - ERROR_CODE_COMMAND_DISALLOWED if HF and AG do not support features: HFP_(HF/AG)SF_ENHANCED_VOICE_RECOGNITION_STATUS and HFP_(HF/AG)SF_VOICE_RECOGNITION_TEXT
  */
@@ -394,8 +394,8 @@ void hfp_ag_outgoing_call_established(void);
 void hfp_ag_call_dropped(void);
 
 /*
- * @brief Set network registration status.  
- * @param status 0 - not registered, 1 - registered 
+ * @brief Set network registration status.
+ * @param status 0 - not registered, 1 - registered
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
  *              - ERROR_CODE_COMMAND_DISALLOWED if invalid registration status
@@ -423,7 +423,7 @@ uint8_t hfp_ag_set_signal_strength(int signal_strength);
 uint8_t hfp_ag_set_roaming_status(int roaming_status);
 
 /*
- * @brief Set subcriber number information, e.g. the phone number 
+ * @brief Set subcriber number information, e.g. the phone number
  * @param numbers
  * @param numbers_count
  */
@@ -432,28 +432,28 @@ void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int n
 /*
  * @brief Called by cellular unit after a DTMF code was transmitted, so that the next one can be emitted.
  *
- * @param acl_handle 
+ * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
  */
 uint8_t hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle);
 
 /**
  * @brief Report Extended Audio Gateway Error result codes in the AG.
- * Whenever there is an error relating to the functionality of the AG as a 
+ * Whenever there is an error relating to the functionality of the AG as a
  * result of AT command, the AG shall send +CME ERROR:
  * - +CME ERROR: 0  - AG failure
- * - +CME ERROR: 1  - no connection to phone 
- * - +CME ERROR: 3  - operation not allowed 
- * - +CME ERROR: 4  - operation not supported 
- * - +CME ERROR: 5  - PH-SIM PIN required 
- * - +CME ERROR: 10 - SIM not inserted 
- * - +CME ERROR: 11 - SIM PIN required 
- * - +CME ERROR: 12 - SIM PUK required 
+ * - +CME ERROR: 1  - no connection to phone
+ * - +CME ERROR: 3  - operation not allowed
+ * - +CME ERROR: 4  - operation not supported
+ * - +CME ERROR: 5  - PH-SIM PIN required
+ * - +CME ERROR: 10 - SIM not inserted
+ * - +CME ERROR: 11 - SIM PIN required
+ * - +CME ERROR: 12 - SIM PUK required
  * - +CME ERROR: 13 - SIM failure
  * - +CME ERROR: 14 - SIM busy
- * - +CME ERROR: 16 - incorrect password 
- * - +CME ERROR: 17 - SIM PIN2 required 
- * - +CME ERROR: 18 - SIM PUK2 required 
+ * - +CME ERROR: 16 - incorrect password
+ * - +CME ERROR: 17 - SIM PIN2 required
+ * - +CME ERROR: 18 - SIM PUK2 required
  * - +CME ERROR: 20 - memory full
  * - +CME ERROR: 21 - invalid index
  * - +CME ERROR: 23 - memory failure

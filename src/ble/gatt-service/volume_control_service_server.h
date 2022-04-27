@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Volume Control Service Server
- * 
+ *
  */
 
 #ifndef VOLUME_CONTROL_SERVICE_SERVER_H
@@ -72,12 +72,12 @@ typedef enum {
 
 /**
  * @text The Volume Control Service (VCS) enables a device to expose the controls and state of its audio volume.
- * 
- * To use with your application, add `#import <volume_control_service.gatt>` to your .gatt file. 
- * After adding it to your .gatt file, you call *volume_control_service_server_init()* 
- * 
+ *
+ * To use with your application, add `#import <volume_control_service.gatt>` to your .gatt file.
+ * After adding it to your .gatt file, you call *volume_control_service_server_init()*
+ *
  * VCS may include zero or more instances of VOCS and zero or more instances of AICS
- * 
+ *
  */
 
 /* API_START */
@@ -93,7 +93,7 @@ typedef enum {
  * @param vocs_info
  */
 void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
-    uint8_t aics_info_num, aics_info_t * aics_info, 
+    uint8_t aics_info_num, aics_info_t * aics_info,
     uint8_t vocs_info_num, vocs_info_t * vocs_info);
 
 /**
@@ -112,7 +112,7 @@ void volume_control_service_server_set_volume_state(uint8_t volume_setting, vcs_
 
 /**
  * @brief Set volume change step.
- * @param volume_change_step    
+ * @param volume_change_step
  */
 void volume_control_service_server_set_volume_change_step(uint8_t volume_change_step);
 
@@ -173,4 +173,3 @@ uint8_t volume_control_service_server_set_audio_output_description_for_vocs(uint
 #endif
 
 #endif
-

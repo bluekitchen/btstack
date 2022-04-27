@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -121,7 +121,7 @@ bool  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_it
     for (it = (btstack_linked_item_t *) list; it->next != NULL; it = it->next) {
         counter++;
     }
-    return counter; 
+    return counter;
 }
 
 // get first element

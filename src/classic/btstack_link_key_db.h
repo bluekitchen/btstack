@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Link Key DB
- * 
+ *
  * Interface to provide link key storage.
  *
  */
@@ -75,7 +75,7 @@ typedef struct {
      * @brief Close the Link Key DB
      */
     void (*close)(void);
-    
+
     // get/set/delete link key
 
     /**
@@ -101,7 +101,7 @@ typedef struct {
      */
     void (*delete_link_key)(bd_addr_t bd_addr);
 
-    // iterator: it's allowed to delete 
+    // iterator: it's allowed to delete
 
     /**
      * @brief Setup iterator

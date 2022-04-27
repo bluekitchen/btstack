@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -51,7 +51,7 @@ extern "C" {
 
 typedef struct btstack_ring_buffer {
     uint8_t  * storage;
-    uint32_t size;    
+    uint32_t size;
     uint32_t last_read_index;
     uint32_t last_written_index;
     uint8_t  full;
@@ -101,7 +101,7 @@ uint32_t btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer);
  * @param data_length
  * @return 0 if ok, ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if not enough space in buffer
  */
-int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length); 
+int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length);
 
 /**
  * Read from ring buffer
@@ -110,7 +110,7 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
  * @param length to read
  * @param number_of_bytes_read
  */
-void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * buffer, uint32_t length, uint32_t * number_of_bytes_read); 
+void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * buffer, uint32_t length, uint32_t * number_of_bytes_read);
 
 /* API_END */
 

@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -58,7 +58,7 @@
 static btstack_linked_list_t vocs_services;
 
 static volume_offset_control_service_server_t * vocs_find_service_for_attribute_handle(uint16_t attribute_handle){
-    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &vocs_services);
     while (btstack_linked_list_iterator_has_next(&it)){
         volume_offset_control_service_server_t * item = (volume_offset_control_service_server_t*) btstack_linked_list_iterator_next(&it);
@@ -90,16 +90,16 @@ static uint16_t vocs_read_callback(hci_con_handle_t con_handle, uint16_t attribu
     if (attribute_handle == vocs->audio_output_description_value_handle){
         return att_read_callback_handle_blob((uint8_t *)vocs->info->audio_output_description, strlen(vocs->info->audio_output_description), offset, buffer, buffer_size);
     }
-    
-    
+
+
     if (attribute_handle == vocs->volume_offset_state_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(vocs->volume_offset_state_client_configuration, offset, buffer, buffer_size);
     }
-    
+
     if (attribute_handle == vocs->audio_location_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(vocs->audio_location_client_configuration, offset, buffer, buffer_size);
     }
-    
+
     if (attribute_handle == vocs->audio_output_description_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(vocs->audio_output_description_client_configuration, offset, buffer, buffer_size);
     }
@@ -182,7 +182,7 @@ static bool vocs_set_audio_location(volume_offset_control_service_server_t * voc
 
 static void vocs_emit_volume_offset(volume_offset_control_service_server_t * vocs){
     btstack_assert(vocs->info->packet_handler != NULL);
-    
+
     uint8_t event[8];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -198,7 +198,7 @@ static void vocs_emit_volume_offset(volume_offset_control_service_server_t * voc
 
 static void vocs_emit_audio_location(volume_offset_control_service_server_t * vocs){
     btstack_assert(vocs->info->packet_handler != NULL);
-    
+
     uint8_t event[10];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -214,7 +214,7 @@ static void vocs_emit_audio_location(volume_offset_control_service_server_t * vo
 
 static void vocs_emit_audio_output_description(volume_offset_control_service_server_t * vocs){
     btstack_assert(vocs->info->packet_handler != NULL);
-    
+
     uint8_t event[7 + VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -235,7 +235,7 @@ static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
     UNUSED(con_handle);
     UNUSED(transaction_mode);
     UNUSED(offset);
-    
+
     volume_offset_control_service_server_t * vocs = vocs_find_service_for_attribute_handle(attribute_handle);
     if (vocs == NULL){
         return 0;
@@ -299,12 +299,12 @@ static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
         vocs->volume_offset_state_client_configuration = little_endian_read_16(buffer, 0);
         vocs_set_con_handle(vocs, con_handle, vocs->volume_offset_state_client_configuration);
     }
-    
+
     if (attribute_handle == vocs->audio_location_client_configuration_handle){
         vocs->audio_location_client_configuration = little_endian_read_16(buffer, 0);
         vocs_set_con_handle(vocs, con_handle, vocs->audio_location_client_configuration);
     }
-    
+
     if (attribute_handle == vocs->audio_output_description_client_configuration_handle){
         vocs->audio_output_description_client_configuration = little_endian_read_16(buffer, 0);
         vocs_set_con_handle(vocs, con_handle, vocs->audio_output_description_client_configuration);
@@ -358,7 +358,7 @@ void volume_offset_control_service_server_init(volume_offset_control_service_ser
     vocs->audio_location_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(vocs->start_handle, vocs->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_LOCATION);
 
     vocs->volume_offset_control_point_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(vocs->start_handle, vocs->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_OFFSET_CONTROL_POINT);
-    
+
     vocs->audio_output_description_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(vocs->start_handle, vocs->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_OUTPUT_DESCRIPTION);
     vocs->audio_output_description_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(vocs->start_handle, vocs->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_OUTPUT_DESCRIPTION);
 
@@ -366,7 +366,7 @@ void volume_offset_control_service_server_init(volume_offset_control_service_ser
     printf("VOCS[%d] 0x%02x - 0x%02x \n", vocs->index, vocs->start_handle, vocs->end_handle);
     printf("    volume_offset_state            0x%02x \n", vocs->volume_offset_state_value_handle);
     printf("    volume_offset_state CCC        0x%02x \n", vocs->volume_offset_state_client_configuration_handle);
-    
+
     printf("    audio_location                 0x%02x \n", vocs->audio_location_value_handle);
     printf("    audio_location CCC             0x%02x \n", vocs->audio_location_client_configuration_handle);
 

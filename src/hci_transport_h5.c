@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -183,7 +183,7 @@ static uint16_t crc16_ccitt_update (uint16_t crc, uint8_t ch){
 static uint16_t btstack_reverse_bits_16(uint16_t value){
     int reverse = 0;
     int i;
-    for (i = 0; i < 16; i++) { 
+    for (i = 0; i < 16; i++) {
         reverse = reverse << 1;
         reverse |= value & 1;
         value = value >> 1;
@@ -416,7 +416,7 @@ static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer){
         case LINK_UNINITIALIZED:
             hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC;
             hci_transport_link_set_timer(LINK_PERIOD_MS);
-            break;            
+            break;
         case LINK_INITIALIZED:
             hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG;
             hci_transport_link_set_timer(LINK_PERIOD_MS);
@@ -446,7 +446,7 @@ static void hci_transport_link_init(void){
     link_state = LINK_UNINITIALIZED;
     link_peer_asleep = 0;
     link_peer_supports_data_integrity_check = 0;
- 
+
     // get started
     hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC;
     hci_transport_link_set_timer(LINK_PERIOD_MS);
@@ -454,7 +454,7 @@ static void hci_transport_link_init(void){
 }
 
 static int hci_transport_link_inc_seq_nr(int seq_nr){
-    return (seq_nr + 1) & 0x07;    
+    return (seq_nr + 1) & 0x07;
 }
 
 static int hci_transport_link_have_outgoing_packet(void){
@@ -476,13 +476,13 @@ static void hci_transport_h5_emit_sleep_state(int sleep_active){
     static int last_state = 0;
     if (sleep_active == last_state) return;
     last_state = sleep_active;
-    
+
     log_info("emit_sleep_state: %u", sleep_active);
     uint8_t event[3];
     event[0] = HCI_EVENT_TRANSPORT_SLEEP_MODE;
     event[1] = sizeof(event) - 2;
     event[2] = sleep_active;
-    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));        
+    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
 }
 
 static void hci_transport_h5_process_frame(uint16_t frame_size){
@@ -581,7 +581,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                 link_state = LINK_ACTIVE;
                 btstack_run_loop_remove_timer(&link_timer);
                 log_info("link activated");
-                // 
+                //
                 link_seq_nr = 0;
                 link_ack_nr = 0;
                 // notify upper stack that it can start
@@ -617,7 +617,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                     uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
                     packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
                 }
-            } 
+            }
 
             switch (link_packet_type){
                 case LINK_CONTROL_PACKET_TYPE:
@@ -772,9 +772,9 @@ static int hci_transport_h5_open(void){
     int res = btstack_uart->open();
     if (res){
         return res;
-    }        
-    
-    // 
+    }
+
+    //
     if (hci_transport_bcsp_mode){
         log_info("enable even parity for BCSP mode");
         btstack_uart->set_parity(BTSTACK_UART_PARITY_EVEN);
@@ -854,7 +854,7 @@ static int hci_transport_h5_set_baudrate(uint32_t baudrate){
         hci_transport_link_actions |= HCI_TRANSPORT_LINK_SET_BAUDRATE;
         link_new_baudrate = baudrate;
         hci_transport_link_run();
-        return 0;        
+        return 0;
     }
 
     int res = btstack_uart->set_baudrate(baudrate);
@@ -873,7 +873,7 @@ static void hci_transport_h5_reset_link(void){
 
     // init slip parser state machine
     hci_transport_slip_init();
-    
+
     // init link management - already starts syncing
     hci_transport_link_init();
 }
@@ -888,7 +888,7 @@ static const hci_transport_t hci_transport_h5 = {
     /* int    (*send_packet)(...); */                               &hci_transport_h5_send_packet,
     /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_h5_set_baudrate,
     /* void   (*reset_link)(void); */                               &hci_transport_h5_reset_link,
-    /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL, 
+    /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL,
 };
 
 // configure and return h5 singleton

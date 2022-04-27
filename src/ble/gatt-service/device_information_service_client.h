@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Device Information Service Client
- * 
+ *
  */
 
 #ifndef DEVICE_INFORMATION_SERVICE_CLIENT_H
@@ -52,41 +52,41 @@
 extern "C" {
 #endif
 
-/** 
+/**
  * @text The Device Information Service Client retrieves the following information from a remote device:
  * - manufacturer name
- * - model number     
- * - serial number    
+ * - model number
+ * - serial number
  * - hardware revision
  * - firmware revision
  * - software revision
- * - system ID        
+ * - system ID
  * - IEEE regulatory certification
- * - PNP ID  
+ * - PNP ID
  */
 
 /* API_START */
 
 /**
- * @brief Initialize Device Information Service. 
+ * @brief Initialize Device Information Service.
  */
 void device_information_service_client_init(void);
 
 /**
- * @brief Query Device Information Service. The client will query the remote service and emit events: 
+ * @brief Query Device Information Service. The client will query the remote service and emit events:
  *
  * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MANUFACTURER_NAME
- * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MODEL_NUMBER     
- * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SERIAL_NUMBER    
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MODEL_NUMBER
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SERIAL_NUMBER
  * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_HARDWARE_REVISION
  * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_FIRMWARE_REVISION
  * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SOFTWARE_REVISION
- * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID        
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID
  * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION
- * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID  
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID
  *
  * Event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_DONE is received when all queries are done, of if service was not found.
- * The status field of this event indicated ATT errors (see bluetooth.h). 
+ * The status field of this event indicated ATT errors (see bluetooth.h).
  *
  * @param con_handle
  * @param packet_handler
@@ -96,7 +96,7 @@ uint8_t device_information_service_client_query(hci_con_handle_t con_handle, bts
 
 
 /**
- * @brief De-initialize Device Information Service. 
+ * @brief De-initialize Device Information Service.
  */
 void device_information_service_client_deinit(void);
 

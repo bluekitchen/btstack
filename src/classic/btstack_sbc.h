@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -129,7 +129,7 @@ int btstack_sbc_decoder_sample_rate(btstack_sbc_decoder_state_t * state);
 /**
  * @brief Init SBC encoder
  * @param state
- * @param mode 
+ * @param mode
  * @param blocks
  * @param subbands
  * @param allocation_method
@@ -137,8 +137,8 @@ int btstack_sbc_decoder_sample_rate(btstack_sbc_decoder_state_t * state);
  * @param bitpool
  * @param channel_mode
  */
-void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
-                        int blocks, int subbands, btstack_sbc_allocation_method_t allocation_method, 
+void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode,
+                        int blocks, int subbands, btstack_sbc_allocation_method_t allocation_method,
                         int sample_rate, int bitpool, btstack_sbc_channel_mode_t channel_mode);
 
 /**

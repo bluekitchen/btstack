@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -39,7 +39,7 @@
 
 // *****************************************************************************
 //
-// SBC decoder based on Bluedroid library 
+// SBC decoder based on Bluedroid library
 //
 // *****************************************************************************
 
@@ -308,7 +308,7 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
                 }
                 break;
             default:
-                // Anything else went wrong. 
+                // Anything else went wrong.
                 // Skip a few bytes and try again.
                 bytes_processed = 1;
                 log_info("SBC decode: unknown status %d", status);
@@ -443,7 +443,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
             } else {
                 state->bad_frames_nr++;
             }
-#ifdef LOG_FRAME_STATUS 
+#ifdef LOG_FRAME_STATUS
             if (zero_seq_found){
                 printf("%d : ZERO FRAME\n", decoder_state->h2_sequence_nr);
             } else {

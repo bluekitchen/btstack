@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -39,7 +39,7 @@
  * @title General Utility Functions
  *
  */
- 
+
 #ifndef BTSTACK_UTIL_H
 #define BTSTACK_UTIL_H
 
@@ -54,7 +54,7 @@ extern "C" {
 #include "bluetooth.h"
 #include "btstack_defines.h"
 #include "btstack_linked_list.h"
-	
+
 // hack: compilation with the android ndk causes an error as there's a reverse_64 macro
 #ifdef reverse_64
 #undef reverse_64
@@ -67,7 +67,7 @@ extern "C" {
  * @brief The device name type
  */
 #define DEVICE_NAME_LEN 248
-typedef uint8_t device_name_t[DEVICE_NAME_LEN+1]; 
+typedef uint8_t device_name_t[DEVICE_NAME_LEN+1];
 
 /* API_START */
 
@@ -93,7 +93,7 @@ uint32_t btstack_max(uint32_t a, uint32_t b);
  */
 int32_t btstack_time_delta(uint32_t time_a, uint32_t time_b);
 
-/** 
+/**
  * @brief Read 16/24/32 bit little endian value from buffer
  * @param buffer
  * @param position in buffer
@@ -103,7 +103,7 @@ uint16_t little_endian_read_16(const uint8_t * buffer, int position);
 uint32_t little_endian_read_24(const uint8_t * buffer, int position);
 uint32_t little_endian_read_32(const uint8_t * buffer, int position);
 
-/** 
+/**
  * @brief Write 16/32 bit little endian value into buffer
  * @param buffer
  * @param position in buffer
@@ -113,7 +113,7 @@ void little_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value)
 void little_endian_store_24(uint8_t * buffer, uint16_t position, uint32_t value);
 void little_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value);
 
-/** 
+/**
  * @brief Read 16/24/32 bit big endian value from buffer
  * @param buffer
  * @param position in buffer
@@ -123,7 +123,7 @@ uint32_t big_endian_read_16(const uint8_t * buffer, int position);
 uint32_t big_endian_read_24(const uint8_t * buffer, int position);
 uint32_t big_endian_read_32(const uint8_t * buffer, int position);
 
-/** 
+/**
  * @brief Write 16/32 bit big endian value into buffer
  * @param buffer
  * @param position in buffer
@@ -141,7 +141,7 @@ static inline uint16_t btstack_flip_16(uint16_t value){
     return (uint16_t)((value & 0xffu) << 8) | (value >> 8);
 }
 
-/** 
+/**
  * @brief Check for big endian system
  * @return 1 if on big endian
  */
@@ -150,7 +150,7 @@ static inline int btstack_is_big_endian(void){
 	return (int) *(uint8_t*) &sample;
 }
 
-/** 
+/**
  * @brief Check for little endian system
  * @return 1 if on little endian
  */
@@ -181,7 +181,7 @@ void reverse_256(const uint8_t * src, uint8_t * dest);
 
 void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest);
 
-/** 
+/**
  * @brief ASCII character for 4-bit nibble
  * @return character
  */
@@ -243,7 +243,7 @@ char * bd_addr_to_str(const bd_addr_t addr);
  */
 void btstack_replace_bd_addr_placeholder(uint8_t * buffer, uint16_t size, const bd_addr_t address);
 
-/** 
+/**
  * @brief Parse Bluetooth address
  * @param address_string
  * @param buffer for parsed address
@@ -266,7 +266,7 @@ void uuid_add_bluetooth_prefix(uint8_t * uuid128, uint32_t short_uuid);
 int  uuid_has_bluetooth_prefix(const uint8_t * uuid128);
 
 /**
- * @brief Parse unsigned number 
+ * @brief Parse unsigned number
  * @param str to parse
  * @return value
  */
@@ -296,7 +296,7 @@ int count_set_bits_uint32(uint32_t x);
 uint8_t btstack_crc8_check(uint8_t * data, uint16_t len, uint8_t check_sum);
 
 /**
- * @brief Calculate CRC8 using ETSI TS 101 369 V6.3.0. 
+ * @brief Calculate CRC8 using ETSI TS 101 369 V6.3.0.
  * @note Only used by RFCOMM
  * @param data
  * @param len
@@ -324,5 +324,5 @@ void btstack_strcpy(char * dst, uint16_t dst_size, const char * src);
 #if defined __cplusplus
 }
 #endif
-		
+
 #endif // BTSTACK_UTIL_H

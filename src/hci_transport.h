@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -54,13 +54,13 @@
 extern "C" {
 #endif
 
-    
+
 /* API_START */
 
 /* HCI packet types */
 typedef struct {
     /**
-     * transport name 
+     * transport name
      */
     const char * name;
 
@@ -125,13 +125,13 @@ typedef struct {
     hci_transport_config_type_t type; // == HCI_TRANSPORT_CONFIG_UART
     uint32_t   baudrate_init; // initial baud rate
     uint32_t   baudrate_main; // = 0: same as initial baudrate
-    int        flowcontrol;   // 
+    int        flowcontrol;   //
     const char *device_name;
     int        parity;        // see btstack_uart.h BTSTACK_UART_PARITY
 } hci_transport_config_uart_t;
 
 /* API_END */
-    
+
 #if defined __cplusplus
 }
 #endif

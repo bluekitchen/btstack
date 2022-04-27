@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -165,7 +165,7 @@ static void link_key_db_tlv_iterator_done(btstack_link_key_iterator_t * it){
 
 static const btstack_link_key_db_t btstack_link_key_db_static = {
     link_key_db_init,
-    link_key_db_set_local_bd_addr,	
+    link_key_db_set_local_bd_addr,
     link_key_db_close,
     link_key_db_get_link_key,
     link_key_db_put_link_key,

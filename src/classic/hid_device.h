@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -64,7 +64,7 @@ typedef struct {
     uint8_t         hid_reconnect_initiate;
     bool            hid_normally_connectable;
     bool            hid_boot_device;
-    uint16_t        hid_ssr_host_max_latency; 
+    uint16_t        hid_ssr_host_max_latency;
     uint16_t        hid_ssr_host_min_timeout;
     uint16_t        hid_supervision_timeout;
     const uint8_t * hid_descriptor;
@@ -73,9 +73,9 @@ typedef struct {
 } hid_sdp_record_t;
 
 /**
- * @brief Create HID Device SDP service record. 
+ * @brief Create HID Device SDP service record.
  * @param service Empty buffer in which a new service record will be stored.
- * @param have_remote_audio_control 
+ * @param have_remote_audio_control
  * @param service
  * @param service_record_handle
  * @param params
@@ -83,7 +83,7 @@ typedef struct {
 void hid_create_sdp_record(uint8_t * service, uint32_t service_record_handle, const hid_sdp_record_t * params);
 
 /**
- * @brief Set up HID Device 
+ * @brief Set up HID Device
  * @param boot_protocol_mode_supported
  * @param hid_descriptor_len
  * @param hid_descriptor
@@ -91,25 +91,25 @@ void hid_create_sdp_record(uint8_t * service, uint32_t service_record_handle, co
 void hid_device_init(bool boot_protocol_mode_supported, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
 
 /**
- * @brief Register callback for the HID Device client. 
+ * @brief Register callback for the HID Device client.
  * @param callback
  */
 void hid_device_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
- * @brief Register get report callback for the HID Device client. 
+ * @brief Register get report callback for the HID Device client.
  * @param callback
  */
 void hid_device_register_report_request_callback(int (*callback)(uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, int * out_report_size, uint8_t * out_report));
 
 /**
- * @brief Register set report callback for the HID Device client. 
+ * @brief Register set report callback for the HID Device client.
  * @param callback
  */
 void hid_device_register_set_report_callback(void (*callback)(uint16_t hid_cid, hid_report_type_t report_type, int report_size, uint8_t * report));
 
 /**
- * @brief Register callback to receive report data for the HID Device client. 
+ * @brief Register callback to receive report data for the HID Device client.
  * @param callback
  */
 void hid_device_register_report_data_callback(void (*callback)(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, int report_size, uint8_t * report));

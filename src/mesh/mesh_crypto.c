@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -85,7 +85,7 @@ static void mesh_k2_callback_d(void * arg){
     // collect result
     (void)memcpy(&mesh_k2_result[17], mesh_k2_t2, 16);
     //
-    (*mesh_k2_callback)(mesh_k2_arg);        
+    (*mesh_k2_callback)(mesh_k2_arg);
 }
 static void mesh_k2_callback_c(void * arg){
     btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;
@@ -127,7 +127,7 @@ void mesh_k2(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t 
 
 
 // mesh k3 - might get moved to btstack_crypto and all vars go into btstack_crypto_mesh_k3_t struct
-static const uint8_t   mesh_k3_tag[5] = { 'i', 'd', '6', '4', 0x01}; 
+static const uint8_t   mesh_k3_tag[5] = { 'i', 'd', '6', '4', 0x01};
 static uint8_t         mesh_k3_temp[16];
 static uint8_t         mesh_k3_result128[16];
 static void (*         mesh_k3_callback)(void * arg);
@@ -141,7 +141,7 @@ static const uint8_t mesh_salt_smk3[] = { 0x00, 0x36, 0x44, 0x35, 0x03, 0xf1, 0x
 static void mesh_k3_result128_calculated(void * arg){
     UNUSED(arg);
     (void)memcpy(mesh_k3_result, &mesh_k3_result128[8], 8);
-    (*mesh_k3_callback)(mesh_k3_arg);        
+    (*mesh_k3_callback)(mesh_k3_arg);
 }
 static void mesh_k3_temp_callback(void * arg){
     btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;
@@ -161,7 +161,7 @@ void mesh_k3(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t 
 // k4T     921cb4f908cc5932e1d7b059fc163ce6
 // k4 CMAC(id6|0x01) 5f79cf09bbdab560e7f1ee404fd341a6
 // AID 26
-static const uint8_t   mesh_k4_tag[4] = { 'i', 'd', '6', 0x01}; 
+static const uint8_t   mesh_k4_tag[4] = { 'i', 'd', '6', 0x01};
 static uint8_t         mesh_k4_temp[16];
 static uint8_t         mesh_k4_result128[16];
 static void (*         mesh_k4_callback)(void * arg);
@@ -272,4 +272,3 @@ void mesh_network_key_derive(btstack_crypto_aes128_cmac_t * request, mesh_networ
 void mesh_transport_key_calc_aid(btstack_crypto_aes128_cmac_t * request, mesh_transport_key_t * app_key, void (* callback)(void * arg), void * callback_arg){
     mesh_k4(request, app_key->key, &app_key->aid, callback, callback_arg);
 }
-

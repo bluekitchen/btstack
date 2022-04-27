@@ -30,11 +30,11 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
- 
+
 /**
  * @title Device Database
  *
@@ -50,10 +50,10 @@
 extern "C" {
 #endif
 
-/** 
+/**
 
 	Note: LE Device DB for pure LE Peripherals is not required if only LE Legacy Pairing without signed writes is used
-	
+
 	Per bonded device:
 	- it stores the Identity Resolving Key (IRK) and its address to resolve private addresses
     - it stores the LTK + EDIV, RAND. EDIV + RAND allows a LE Peripheral to reconstruct the LTK
@@ -112,7 +112,7 @@ void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk)
 /**
  * @brief set remote encryption info
  * @brief index
- * @brief ediv 
+ * @brief ediv
  * @brief rand
  * @brief ltk
  * @brief key size
@@ -125,7 +125,7 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
 /**
  * @brief get remote encryption info
  * @brief index
- * @brief ediv 
+ * @brief ediv
  * @brief rand
  * @brief ltk
  * @brief key size

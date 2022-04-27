@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -142,7 +142,7 @@ static void provisioning_attention_timer_set(void){
         btstack_run_loop_add_timer(&prov_attention_timer);
     }
 }
-#endif 
+#endif
 
 static void provisioning_emit_output_oob_event(uint16_t the_pb_adv_cid, uint32_t number){
     if (!prov_packet_handler) return;
@@ -340,13 +340,13 @@ static void provisioning_handle_link_opened(uint16_t the_pb_adv_cid){
 }
 
 static void provisioning_handle_capabilities(uint16_t the_pb_adv_cid, const uint8_t * packet_data, uint16_t packet_len){
-    
+
     if (packet_len != 11) return;
 
     // collect confirmation_inputs
     (void)memcpy(&prov_confirmation_inputs[1], packet_data, packet_len);
 
-    provisioner_state = PROVISIONER_W4_AUTH_CONFIGURATION; 
+    provisioner_state = PROVISIONER_W4_AUTH_CONFIGURATION;
 
     // notify client and wait for auth method selection
     uint8_t event[16] = { HCI_EVENT_MESH_META, 3, MESH_SUBEVENT_PB_PROV_CAPABILITIES};
@@ -452,7 +452,7 @@ static void provisioning_public_key_exchange_complete(void){
     switch (prov_start_authentication_method){
         case 0x00:
             provisioning_handle_auth_value_ready();
-            break;        
+            break;
         case 0x01:
             (void)memcpy(&auth_value[16 - prov_static_oob_len],
                          prov_static_oob_data, prov_static_oob_len);
@@ -508,8 +508,8 @@ static void provisioning_handle_public_key(uint16_t the_pb_adv_cid, const uint8_
     // validate public key
     if (packet_len != sizeof(remote_ec_q) || btstack_crypto_ecc_p256_validate_public_key(packet_data) != 0){
         printf("Public Key invalid, abort provisioning\n");
-        
-        // disconnect provisioning link 
+
+        // disconnect provisioning link
         pb_adv_close_link(the_pb_adv_cid, 0x02);    // reason: fail
         provisioning_timer_stop();
         return;
@@ -542,7 +542,7 @@ static void provisioning_handle_confirmation(uint16_t the_pb_adv_cid, const uint
     UNUSED(packet_data);
     UNUSED(packet_len);
 
-    // 
+    //
     if (prov_emit_output_oob_active){
         prov_emit_output_oob_active = 0;
         provisioning_emit_event(MESH_SUBEVENT_PB_PROV_STOP_EMIT_OUTPUT_OOB, 1);
@@ -612,7 +612,7 @@ static void provisioning_handle_session_key_calculated(void * arg){
 
 static void provisioning_handle_provisioning_salt_calculated(void * arg){
     UNUSED(arg);
-    
+
     // ProvisioningSalt
     printf("ProvisioningSalt:   ");
     printf_hexdump(provisioning_salt, sizeof(provisioning_salt));
@@ -647,7 +647,7 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
     switch (packet_type){
         case HCI_EVENT_PACKET:
             if (hci_event_packet_get_type(packet) != HCI_EVENT_MESH_META)  break;
-            
+
             switch (hci_event_mesh_meta_get_subevent_code(packet)){
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
                     if (provisioner_state != PROVISIONER_W4_LINK_OPENED) break;
@@ -665,7 +665,7 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
                 case MESH_SUBEVENT_PB_TRANSPORT_PDU_SENT:
                     printf("Outgoing packet acked\n");
                     prov_waiting_for_outgoing_complete = 0;
-                    break;                    
+                    break;
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                     printf("Link close, reset state\n");
                     provisioning_done();
@@ -715,7 +715,7 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
                 default:
                     printf("TODO: handle provisioning state %x\n", provisioner_state);
                     break;
-            }            
+            }
             break;
         default:
             break;
@@ -815,4 +815,3 @@ void provisioning_provisioner_input_oob_complete_alphanumeric(uint16_t the_pb_ad
     (void)memcpy(auth_value, input_oob_data, input_oob_len);
     provisioning_handle_auth_value_ready();
 }
-

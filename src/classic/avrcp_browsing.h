@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -64,7 +64,7 @@ void avrcp_browsing_request_can_send_now(avrcp_browsing_connection_t * connectio
 void avrcp_browsing_init(void);
 
 /**
- * @brief Register callback for the AVRCP Browsing Controller client. 
+ * @brief Register callback for the AVRCP Browsing Controller client.
  * @param callback
  */
 void avrcp_browsing_register_packet_handler(btstack_packet_handler_t callback);
@@ -76,7 +76,7 @@ void avrcp_browsing_register_packet_handler(btstack_packet_handler_t callback);
  * @param   ertm_buffer_size
  * @param   ertm_config
  * @param   avrcp_browsing_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
- * @return status     
+ * @return status
  */
 uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid);
 

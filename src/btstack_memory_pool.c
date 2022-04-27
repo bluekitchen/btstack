@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -59,7 +59,7 @@ void btstack_memory_pool_create(btstack_memory_pool_t *pool, void * storage, int
     node_t *free_blocks = (node_t*) pool;
     char   *mem_ptr = (char *) storage;
     int i;
-    
+
     // create singly linked list of all available blocks
     free_blocks->next = NULL;
     for (i = 0 ; i < count ; i++){
@@ -70,13 +70,13 @@ void btstack_memory_pool_create(btstack_memory_pool_t *pool, void * storage, int
 
 void * btstack_memory_pool_get(btstack_memory_pool_t *pool){
     node_t *free_blocks = (node_t*) pool;
-    
+
     if (!free_blocks->next) return NULL;
-    
+
     // remove first
     node_t *node      = free_blocks->next;
     free_blocks->next = node->next;
-    
+
     return (void*) node;
 }
 

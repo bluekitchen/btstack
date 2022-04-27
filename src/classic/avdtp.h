@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -38,11 +38,11 @@
 /**
  * Audio/Video Distribution Transport Protocol (AVDTP)
  *
- * This protocol defines A/V stream negotiation, establishment, and transmission 
- * procedures. Also specified are the message formats that are exchanged between 
+ * This protocol defines A/V stream negotiation, establishment, and transmission
+ * procedures. Also specified are the message formats that are exchanged between
  * such devices to transport their A/V streams in A/V distribution applications.
  *
- * Media packets are unidirectional, they travel downstream from AVDTP Source to AVDTP Sink. 
+ * Media packets are unidirectional, they travel downstream from AVDTP Source to AVDTP Sink.
  */
 
 #ifndef AVDTP_H
@@ -138,12 +138,12 @@ typedef enum {
 typedef enum {
     AVDTP_AUDIO = 0,
     AVDTP_VIDEO,
-    AVDTP_MULTIMEDIA 
+    AVDTP_MULTIMEDIA
 } avdtp_media_type_t;
 
 typedef enum {
     AVDTP_CODEC_SBC             = 0x00,
-    AVDTP_CODEC_MPEG_1_2_AUDIO  = 0x01, 
+    AVDTP_CODEC_MPEG_1_2_AUDIO  = 0x01,
     AVDTP_CODEC_MPEG_2_4_AAC    = 0x02,
     AVDTP_CODEC_ATRAC_FAMILY    = 0x04,
     AVDTP_CODEC_NON_A2DP        = 0xFF
@@ -181,11 +181,11 @@ typedef struct {
     uint8_t recovery_type;                  // 0x01 = RFC2733
     uint8_t maximum_recovery_window_size;   // 0x01 to 0x18, for a Transport Packet
     uint8_t maximum_number_media_packets;   // 0x01 to 0x18, The maximum number of media packets a specific parity code covers
-} avdtp_recovery_capabilities_t;            
+} avdtp_recovery_capabilities_t;
 
 typedef struct {
-    avdtp_media_type_t       media_type;                     
-    avdtp_media_codec_type_t media_codec_type; 
+    avdtp_media_type_t       media_type;
+    avdtp_media_codec_type_t media_codec_type;
     uint16_t  media_codec_information_len;
     uint8_t * media_codec_information;
 } adtvp_media_codec_capabilities_t;
@@ -209,7 +209,7 @@ typedef struct{
     uint8_t transport_identifiers_num;
     uint8_t transport_session_identifiers[3];   // byte1, upper 5bits, 0x01 to 0x1E
     // Request/indicate value for TCID for a media, reporting, or transport session
-    uint8_t tcid[3];         // byte2 0x01 to 0x1E 
+    uint8_t tcid[3];         // byte2 0x01 to 0x1E
 } avdtp_multiplexing_mode_capabilities_t;
 
 typedef struct{
@@ -354,8 +354,8 @@ typedef enum {
     AVDTP_STREAM_ENDPOINT_W4_ACCEPT_OPEN_STREAM,
     AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED,
 
-    AVDTP_STREAM_ENDPOINT_OPENED, 
-    AVDTP_STREAM_ENDPOINT_STREAMING, 
+    AVDTP_STREAM_ENDPOINT_OPENED,
+    AVDTP_STREAM_ENDPOINT_STREAMING,
 
     AVDTP_STREAM_ENDPOINT_CLOSING,
     AVDTP_STREAM_ENDPOINT_ABORTING,
@@ -367,7 +367,7 @@ typedef enum {
     AVDTP_INITIATOR_W2_SET_CONFIGURATION,
     AVDTP_INITIATOR_W2_SUSPEND_STREAM_WITH_SEID,
     AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID,
-    
+
     AVDTP_INITIATOR_W2_OPEN_STREAM,
 
     AVDTP_INITIATOR_W2_STREAMING_ABORT,
@@ -473,15 +473,15 @@ typedef enum {
     A2DP_GET_CAPABILITIES,
     A2DP_W2_GET_ALL_CAPABILITIES, //5
     A2DP_DISCOVERY_DONE,
-    A2DP_SET_CONFIGURATION,      
+    A2DP_SET_CONFIGURATION,
     A2DP_W4_GET_CONFIGURATION,
     A2DP_W4_SET_CONFIGURATION,
     A2DP_CONFIGURED,
     A2DP_W2_SUSPEND_STREAM_WITH_SEID, //10
     A2DP_W2_RECONFIGURE_WITH_SEID,
-    A2DP_W2_OPEN_STREAM_WITH_SEID,   
+    A2DP_W2_OPEN_STREAM_WITH_SEID,
     A2DP_W4_OPEN_STREAM_WITH_SEID,
-    A2DP_W2_START_STREAM_WITH_SEID,  
+    A2DP_W2_START_STREAM_WITH_SEID,
     A2DP_W2_ABORT_STREAM_WITH_SEID,   //15
     A2DP_W2_STOP_STREAM_WITH_SEID,
     A2DP_STREAMING_OPENED
@@ -491,10 +491,10 @@ typedef enum {
 typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
-    
+
     uint16_t avdtp_cid;
     hci_con_handle_t con_handle;
-    
+
     // SDP results
     uint16_t avdtp_l2cap_psm;
     uint16_t avdtp_version;
@@ -503,7 +503,7 @@ typedef struct {
 
     uint16_t l2cap_signaling_cid;
     uint16_t l2cap_mtu;
-    
+
     avdtp_connection_state_t state;
     avdtp_acceptor_connection_state_t  acceptor_connection_state;
     avdtp_initiator_connection_state_t initiator_connection_state;
@@ -521,7 +521,7 @@ typedef struct {
 
     uint16_t delay_ms;
 
-    // for repeating the set_configuration 
+    // for repeating the set_configuration
     void * active_stream_endpoint;
 
     uint8_t initiator_transaction_label;
@@ -558,7 +558,7 @@ typedef struct {
 
 typedef struct avdtp_stream_endpoint {
     btstack_linked_item_t    item;
-    
+
     // original capabilities configured via avdtp_register_x_category
     avdtp_sep_t sep;
 
@@ -578,13 +578,13 @@ typedef struct avdtp_stream_endpoint {
     a2dp_state_t a2dp_state;
     // active connection
     avdtp_connection_t * connection;
-    
+
     // currently active remote seid
     avdtp_capabilities_t remote_capabilities;
     uint16_t remote_capabilities_bitmap;
-    
+
     uint16_t remote_configuration_bitmap;
-    avdtp_capabilities_t remote_configuration;  
+    avdtp_capabilities_t remote_configuration;
 
     // temporary codec config used by A2DP Source
     uint8_t set_config_remote_seid;
@@ -592,7 +592,7 @@ typedef struct avdtp_stream_endpoint {
     uint8_t media_codec_info[8];
 
     // preferred SBC codec settings
-    uint32_t preferred_sampling_frequency; 
+    uint32_t preferred_sampling_frequency;
     uint8_t  preferred_channel_mode;
 
     // register request for media L2cap connection release

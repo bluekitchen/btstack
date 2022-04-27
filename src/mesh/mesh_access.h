@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -65,12 +65,12 @@ typedef enum {
 } mesh_default_transition_step_resolution_t;
 
 typedef enum {
-    MODEL_STATE_UPDATE_REASON_SET = 0x00u, 
-    MODEL_STATE_UPDATE_REASON_TRANSITION_START, 
+    MODEL_STATE_UPDATE_REASON_SET = 0x00u,
+    MODEL_STATE_UPDATE_REASON_TRANSITION_START,
     MODEL_STATE_UPDATE_REASON_TRANSITION_ACTIVE,
-    MODEL_STATE_UPDATE_REASON_TRANSITION_END, 
-    MODEL_STATE_UPDATE_REASON_TRANSITION_ABORT, 
-    // MODEL_STATE_UPDATE_REASON_BOUND_STATE, 
+    MODEL_STATE_UPDATE_REASON_TRANSITION_END,
+    MODEL_STATE_UPDATE_REASON_TRANSITION_ABORT,
+    // MODEL_STATE_UPDATE_REASON_BOUND_STATE,
     MODEL_STATE_UPDATE_REASON_APPLICATION_CHANGE
  } model_state_update_reason_t;
 
@@ -133,10 +133,10 @@ typedef struct mesh_transition {
 
     mesh_transition_state_t state;
 
-    uint8_t  transaction_identifier; 
+    uint8_t  transaction_identifier;
     uint32_t transaction_timestamp_ms;
     uint16_t src_address;
-    uint16_t dst_address; 
+    uint16_t dst_address;
 
     uint8_t num_steps;
     mesh_default_transition_step_resolution_t step_resolution;
@@ -144,7 +144,7 @@ typedef struct mesh_transition {
 
     // to send events and/or publish changes
     mesh_model_t * mesh_model;
-        
+
     // to execute transition
     void (* transition_callback)(struct mesh_transition * transition, model_state_update_reason_t event);
 } mesh_transition_t;

@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -58,12 +58,12 @@ typedef enum {
     // used for eHCILL
     BTSTACK_UART_SLEEP_RTS_HIGH_WAKE_ON_CTS_PULSE,
     // used for H5 and for eHCILL without support for wake on CTS pulse
-    BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE, 
+    BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE,
 
 } btstack_uart_sleep_mode_t;
 
 
-typedef enum { 
+typedef enum {
     BTSTACK_UART_SLEEP_MASK_RTS_HIGH_WAKE_ON_CTS_PULSE  = 1 << BTSTACK_UART_SLEEP_RTS_HIGH_WAKE_ON_CTS_PULSE,
     BTSTACK_UART_SLEEP_MASK_RTS_LOW_WAKE_ON_RX_EDGE     = 1 << BTSTACK_UART_SLEEP_RTS_LOW_WAKE_ON_RX_EDGE
 } btstack_uart_sleep_mode_mask_t;
@@ -148,7 +148,7 @@ typedef struct {
      */
     void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode);
 
-    /** 
+    /**
      * set wakeup handler - needed to notify hci transport of wakeup requests by Bluetooth controller
      * Called upon CTS pulse or RX data. See sleep modes.
      */

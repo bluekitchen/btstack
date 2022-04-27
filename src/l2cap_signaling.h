@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -66,7 +66,7 @@ typedef enum {
     INFORMATION_RESPONSE,
     /* 0x0c - 0x11 used for AMP */
     CONNECTION_PARAMETER_UPDATE_REQUEST = 0x12,
-    CONNECTION_PARAMETER_UPDATE_RESPONSE, 
+    CONNECTION_PARAMETER_UPDATE_RESPONSE,
     LE_CREDIT_BASED_CONNECTION_REQUEST,
     LE_CREDIT_BASED_CONNECTION_RESPONSE,
     L2CAP_FLOW_CONTROL_CREDIT_INDICATION,
@@ -76,7 +76,7 @@ typedef enum {
     L2CAP_CREDIT_BASED_RECONFIGURE_RESPONSE,
 #ifdef UNIT_TEST
     COMMAND_WITH_INVALID_FORMAT,
-#endif     
+#endif
     // internal to BTstack
     SM_PAIRING_FAILED = 0x1E,
     COMMAND_REJECT_LE = 0x1F

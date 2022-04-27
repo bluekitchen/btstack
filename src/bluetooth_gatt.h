@@ -68,14 +68,14 @@
 #define ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL                                                                     0x1843 // Audio Input Control
 #define ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE                                                            0x184E // Audio Stream Control Service
 #define ORG_BLUETOOTH_SERVICE_BASIC_AUDIO_ANNOUNCEMENT_SERVICE                                                        0x1851 // Basic Audio Announcement Service
-#define ORG_BLUETOOTH_SERVICE_BINARY_SENSOR                                                                           0x183B // Binary Sensor 
+#define ORG_BLUETOOTH_SERVICE_BINARY_SENSOR                                                                           0x183B // Binary Sensor
 #define ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE                                                    0x1852 // Broadcast Audio Announcement Service
 #define ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE                                                            0x184F // Broadcast Audio Scan Service
 #define ORG_BLUETOOTH_SERVICE_CONSTANT_TONE_EXTENSION                                                                 0x184A // Constant Tone Extension
 #define ORG_BLUETOOTH_SERVICE_COORDINATED_SET_IDENTIFICATION_SERVICE                                                  0x1846 // Coordinated Set Identification Service
 #define ORG_BLUETOOTH_SERVICE_DEVICE_TIME                                                                             0x1847 // Device Time
 #define ORG_BLUETOOTH_SERVICE_EMERGENCY_CONFIGURATION                                                                 0x183C // Emergency Configuration
-#define ORG_BLUETOOTH_SERVICE_GENERIC_MEDIA_CONTROL_SERVICE                                                           0x1849 // Generic Media Control Service 
+#define ORG_BLUETOOTH_SERVICE_GENERIC_MEDIA_CONTROL_SERVICE                                                           0x1849 // Generic Media Control Service
 #define ORG_BLUETOOTH_SERVICE_GENERIC_TELEPHONE_BEARER_SERVICE                                                        0x184C // Generic Telephone Bearer Service
 #define ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE                                                                   0x1848 // Media Control Service
 #define ORG_BLUETOOTH_SERVICE_MICROPHONE_CONTROL                                                                      0x184D // Microphone Control
@@ -372,14 +372,14 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_SIZE_CHARACTERISTIC                                                              0x2B85 // Size Characteristic
 #define ORG_BLUETOOTH_CHARACTERISTIC_LOCK_CHARACTERISTIC                                                              0x2B86 // Lock Characteristic
 #define ORG_BLUETOOTH_CHARACTERISTIC_RANK_CHARACTERISTIC                                                              0x2B87 // Rank Characteristic
-#define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME_FEATURE_                                                             0x2B8E // Device Time Feature 
-#define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME_PARAMETERS_                                                          0x2B8F // Device Time Parameters 
+#define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME_FEATURE_                                                             0x2B8E // Device Time Feature
+#define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME_PARAMETERS_                                                          0x2B8F // Device Time Parameters
 #define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME                                                                      0x2B90 // Device Time
-#define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME_CONTROL_POINT_                                                       0x2B91 // Device Time Control Point 
-#define ORG_BLUETOOTH_CHARACTERISTIC_TIME_CHANGE_LOG_DATA_                                                            0x2B92 // Time Change Log Data 
+#define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME_CONTROL_POINT_                                                       0x2B91 // Device Time Control Point
+#define ORG_BLUETOOTH_CHARACTERISTIC_TIME_CHANGE_LOG_DATA_                                                            0x2B92 // Time Change Log Data
 #define ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME                                                                0x2B93 // Media Player Name
-#define ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_OBJECT_ID_                                                     0x2B94 // Media Player Icon Object ID 
-#define ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL_                                                           0x2B95 // Media Player Icon URL 
+#define ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_OBJECT_ID_                                                     0x2B94 // Media Player Icon Object ID
+#define ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL_                                                           0x2B95 // Media Player Icon URL
 #define ORG_BLUETOOTH_CHARACTERISTIC_TRACK_CHANGED                                                                    0x2B96 // Track Changed
 #define ORG_BLUETOOTH_CHARACTERISTIC_TRACK_TITLE                                                                      0x2B97 // Track Title
 #define ORG_BLUETOOTH_CHARACTERISTIC_TRACK_DURATION                                                                   0x2B98 // Track Duration
@@ -457,10 +457,10 @@
 #define ORG_BLUETOOTH_DESCRIPTOR_VALID_RANGE                                                                          0x2906 // Valid Range
 #define ORG_BLUETOOTH_DESCRIPTOR_VALUE_TRIGGER_SETTING                                                                0x290A // Value Trigger Setting
 // START(manualy added, missing on Bluetooth Website
-#define ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_IN                                                        0x2ADB // 
-#define ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_OUT                                                       0x2ADC // 
-#define ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROXY_DATA_IN                                                               0x2ADD // 
-#define ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROXY_DATA_OUT                                                              0x2ADE // 
+#define ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_IN                                                        0x2ADB //
+#define ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_OUT                                                       0x2ADC //
+#define ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROXY_DATA_IN                                                               0x2ADD //
+#define ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROXY_DATA_OUT                                                              0x2ADE //
 // END(manualy added, missing on Bluetooth Website
 
 #endif

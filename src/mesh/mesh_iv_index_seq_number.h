@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -69,7 +69,7 @@ void mesh_trigger_iv_update(void);
  */
 void mesh_iv_update_completed(void);
 
-/** 
+/**
  * @brief IV Index was recovered
  * @param iv_update_active
  * @param iv_index

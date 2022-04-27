@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -52,7 +52,7 @@ extern "C" {
 #endif
 
 #include "btstack_config.h"
-    
+
 // Core
 #include "hci.h"
 #include "l2cap.h"
@@ -197,4 +197,3 @@ void   btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet);
 #endif
 
 #endif // BTSTACK_MEMORY_H
-

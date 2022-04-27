@@ -69,7 +69,7 @@
 
 //
 // ECC Configuration
-// 
+//
 
 // backwards-compatitility ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS -> ENABLE_MICRO_ECC_P256
 #if defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS) && !defined(ENABLE_MICRO_ECC_P256)
@@ -193,7 +193,7 @@ static uint8_t btstack_crypto_cmac_get_byte(btstack_crypto_aes128_cmac_t * btsta
     if (btstack_crypto_cmac->btstack_crypto.operation == BTSTACK_CRYPTO_CMAC_GENERATOR){
         return (*btstack_crypto_cmac->data.get_byte_callback)(pos);
     } else {
-        return btstack_crypto_cmac->data.message[pos]; 
+        return btstack_crypto_cmac->data.message[pos];
     }
 }
 
@@ -209,7 +209,7 @@ static void btstack_crypto_cmac_calc_subkeys(sm_key_t k0, sm_key_t k1, sm_key_t 
     btstack_crypto_cmac_shift_left_by_one_bit_inplace(16, k2);
     if (k1[0] & 0x80){
         k2[15] ^= 0x87;
-    } 
+    }
 }
 
 static void btstack_crypto_cmac_calc(btstack_crypto_aes128_cmac_t * btstack_crypto_cmac) {
@@ -515,7 +515,7 @@ static int sm_generate_f_rng_mbedtls(void * context, unsigned char * buffer, siz
 static void btstack_crypto_ecc_p256_generate_key_software(void){
 
     btstack_crypto_ecc_p256_random_offset = 0;
-    
+
     // generate EC key
 #ifdef USE_MICRO_ECC_P256
 
@@ -1082,7 +1082,7 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
     btstack_crypto_ecc_p256_t * btstack_crypto_ec_p192;
 #endif
 #endif
-    
+
     if (packet_type != HCI_EVENT_PACKET)  return;
 
     switch (hci_event_packet_get_type(packet)){
@@ -1147,10 +1147,10 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
                     hci_subevent_le_generate_dhkey_complete_get_dhkey(packet, btstack_crypto_ec_p192->dhkey);
                     // done
                     btstack_linked_list_pop(&btstack_crypto_operations);
-                    (*btstack_crypto_ec_p192->btstack_crypto.context_callback.callback)(btstack_crypto_ec_p192->btstack_crypto.context_callback.context);                    
+                    (*btstack_crypto_ec_p192->btstack_crypto.context_callback.callback)(btstack_crypto_ec_p192->btstack_crypto.context_callback.context);
                     break;
                 default:
-                    break;                
+                    break;
             }
             break;
 #endif
@@ -1160,7 +1160,7 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
     }
 
     // try processing
-	btstack_crypto_run();    
+	btstack_crypto_run();
 }
 
 void btstack_crypto_init(void){

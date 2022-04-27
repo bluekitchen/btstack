@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -65,7 +65,7 @@ typedef enum {
 
 
 /* API_START */
-    
+
 // OFFSETS FOR LOCALIZED ATTRIBUTES - BLUETOOTH_ATTRIBUTE_LANGUAGE_BASE_ATTRIBUTE_ID_LIST
 #define SDP_Offset_ServiceName        0x0000
 #define SDP_Offset_ServiceDescription 0x0001
@@ -141,7 +141,7 @@ uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t at
 uint8_t   sdp_set_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID, uint32_t value);
 int       sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceSearchPattern);
 int       spd_get_filtered_size(uint8_t *record, uint8_t *attributeIDList);
-int       sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint16_t *usedBytes, uint8_t *buffer);  
+int       sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint16_t *usedBytes, uint8_t *buffer);
 int       sdp_attribute_list_constains_id(uint8_t *attributeIDList, uint16_t attributeID);
 int       sdp_traversal_match_pattern(uint8_t * element, de_type_t attributeType, de_size_t size, void *my_context);
 

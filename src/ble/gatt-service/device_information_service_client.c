@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -96,7 +96,7 @@ static void device_information_service_emit_pnp_id(device_information_service_cl
 static const struct device_information_characteristic {
     uint16_t uuid;
     uint8_t  subevent;
-    void (*handle_value)(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);    
+    void (*handle_value)(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);
 } device_information_characteristics[] = {
     {ORG_BLUETOOTH_CHARACTERISTIC_MANUFACTURER_NAME_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MANUFACTURER_NAME, device_information_service_emit_string_value},
     {ORG_BLUETOOTH_CHARACTERISTIC_MODEL_NUMBER_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MODEL_NUMBER, device_information_service_emit_string_value},
@@ -148,10 +148,10 @@ static char * device_information_characteristic_name(uint16_t uuid){
 
         case ORG_BLUETOOTH_CHARACTERISTIC_MODEL_NUMBER_STRING:
             return "MODEL_NUMBER_STRING";
-        
+
         case ORG_BLUETOOTH_CHARACTERISTIC_SERIAL_NUMBER_STRING:
             return "SERIAL_NUMBER_STRING";
-        
+
         case ORG_BLUETOOTH_CHARACTERISTIC_HARDWARE_REVISION_STRING:
             return "HARDWARE_REVISION_STRING";
 
@@ -166,7 +166,7 @@ static char * device_information_characteristic_name(uint16_t uuid){
 
         case ORG_BLUETOOTH_CHARACTERISTIC_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST:
             return "IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST";
-        
+
         case ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID:
             return "PNP_ID";
         default:
@@ -181,7 +181,7 @@ static device_information_service_client_t * device_information_service_client_g
 static device_information_service_client_t * device_information_service_get_client_for_con_handle(hci_con_handle_t con_handle){
     if (device_information_service_client.con_handle == con_handle){
         return &device_information_service_client;
-    } 
+    }
     return NULL;
 }
 
@@ -214,9 +214,9 @@ static void device_information_service_emit_query_done_and_finalize_client(devic
 static void device_information_service_emit_string_value(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len){
     uint8_t event[6 + DEVICE_INFORMATION_MAX_STRING_LEN + 1];
     int pos = 0;
-    
+
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
-    pos++; 
+    pos++;
     event[pos++] = subevent;
     little_endian_store_16(event, pos, client->con_handle);
     pos += 2;
@@ -244,7 +244,7 @@ static void device_information_service_emit_system_id(device_information_service
     event[pos++] = att_status;
     memcpy(event+pos, value, 8);
     pos += 8;
-    
+
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
@@ -261,7 +261,7 @@ static void device_information_service_emit_certification_data_list(device_infor
     event[pos++] = att_status;
     memcpy(event + pos, value, 4);
     pos += 4;
-    
+
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
@@ -293,11 +293,11 @@ static void device_information_service_run_for_client(device_information_service
             // TODO handle status
             UNUSED(att_status);
             break;
-#ifdef ENABLE_TESTING_SUPPORT   
+#ifdef ENABLE_TESTING_SUPPORT
         case DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
             client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT;
             gatt_client_discover_characteristics_for_handle_range_by_uuid16(
-                &handle_gatt_client_event, 
+                &handle_gatt_client_event,
                 client->con_handle, client->start_handle, client->end_handle,
                 device_information_characteristics[client->characteristic_index].uuid);
             break;
@@ -305,18 +305,18 @@ static void device_information_service_run_for_client(device_information_service
 
         case DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_READ_VALUE_OF_CHARACTERISTIC:
             client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE;
- 
-#ifdef ENABLE_TESTING_SUPPORT  
+
+#ifdef ENABLE_TESTING_SUPPORT
             att_status = gatt_client_read_value_of_characteristic_using_value_handle(
-                handle_gatt_client_event, 
-                client->con_handle, 
+                handle_gatt_client_event,
+                client->con_handle,
                 device_information_characteristic_handles[client->characteristic_index].value_handle);
-#else            
+#else
             att_status = gatt_client_read_value_of_characteristics_by_uuid16(
-                handle_gatt_client_event, 
-                client->con_handle, client->start_handle, client->end_handle, 
+                handle_gatt_client_event,
+                client->con_handle, client->start_handle, client->end_handle,
                 device_information_characteristics[client->characteristic_index].uuid);
-#endif 
+#endif
             // TODO handle status
             UNUSED(att_status);
             break;
@@ -327,9 +327,9 @@ static void device_information_service_run_for_client(device_information_service
 }
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(packet_type); 
-    UNUSED(channel);     
-    UNUSED(size);        
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
 
     uint8_t att_status;
     device_information_service_client_t * client = NULL;
@@ -340,7 +340,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 #endif
 
     switch(hci_event_packet_get_type(packet)){
-        
+
         case GATT_EVENT_SERVICE_QUERY_RESULT:
             client = device_information_service_get_client_for_con_handle(gatt_event_service_query_result_get_handle(packet));
             btstack_assert(client != NULL);
@@ -365,10 +365,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
 
             device_information_service_update_handle_for_uuid(characteristic.uuid16, characteristic.value_handle);
-            printf("Device Information Characteristic %s:  \n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X\n", 
+            printf("Device Information Characteristic %s:  \n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X\n",
                 device_information_characteristic_name(characteristic.uuid16),
-                characteristic.start_handle, 
-                characteristic.properties, 
+                characteristic.start_handle,
+                characteristic.properties,
                 characteristic.value_handle, characteristic.uuid16);
             break;
 #endif
@@ -378,56 +378,56 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
 
             (device_information_characteristics[client->characteristic_index].handle_value(
-                client, device_information_characteristics[client->characteristic_index].subevent, 
+                client, device_information_characteristics[client->characteristic_index].subevent,
                 ATT_ERROR_SUCCESS,
-                gatt_event_characteristic_value_query_result_get_value(packet), 
+                gatt_event_characteristic_value_query_result_get_value(packet),
                 gatt_event_characteristic_value_query_result_get_value_length(packet)));
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
             client = device_information_service_get_client_for_con_handle(gatt_event_query_complete_get_handle(packet));
             btstack_assert(client != NULL);
-            
+
             att_status = gatt_event_query_complete_get_att_status(packet);
             switch (client->state){
                 case DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
                     if (att_status != ATT_ERROR_SUCCESS){
-                        device_information_service_emit_query_done_and_finalize_client(client, att_status);  
-                        return;  
+                        device_information_service_emit_query_done_and_finalize_client(client, att_status);
+                        return;
                     }
 
                     if (client->num_instances != 1){
-                        device_information_service_emit_query_done_and_finalize_client(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
-                        return;   
+                        device_information_service_emit_query_done_and_finalize_client(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
+                        return;
                     }
                     client->characteristic_index = 0;
 
-#ifdef ENABLE_TESTING_SUPPORT   
+#ifdef ENABLE_TESTING_SUPPORT
                     client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
-#else 
+#else
                     client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_READ_VALUE_OF_CHARACTERISTIC;
 #endif
                     break;
- 
-#ifdef ENABLE_TESTING_SUPPORT   
+
+#ifdef ENABLE_TESTING_SUPPORT
                     case DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
                         // check if there is another characteristic to query
                         if ((client->characteristic_index + 1) < num_information_fields){
                             client->characteristic_index++;
                             client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
                             break;
-                        } 
+                        }
                         client->characteristic_index = 0;
                         client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_READ_VALUE_OF_CHARACTERISTIC;
                         break;
-#endif                
+#endif
                 case DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE:
                     // check if there is another characteristic to query
                     if ((client->characteristic_index + 1) < num_information_fields){
                         client->characteristic_index++;
                         client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_READ_VALUE_OF_CHARACTERISTIC;
                         break;
-                    } 
+                    }
                     // we are done with quering all characteristics
                     device_information_service_emit_query_done_and_finalize_client(client, ERROR_CODE_SUCCESS);
                     return;
@@ -443,7 +443,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     if (client != NULL){
         device_information_service_run_for_client(client);
     }
- 
+
 }
 
 uint8_t device_information_service_client_query(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler){
@@ -452,12 +452,12 @@ uint8_t device_information_service_client_query(hci_con_handle_t con_handle, bts
 
     if (client != NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
-    } 
+    }
 
     client = device_information_service_client_get_client();
-    
+
     client->con_handle = con_handle;
-    client->client_handler = packet_handler; 
+    client->client_handler = packet_handler;
     client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
 
     device_information_service_run_for_client(client);

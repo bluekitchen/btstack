@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -79,7 +79,7 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
             "2",     // 0x1a l2cap credit-based reconfigure response: result
 #ifdef UNIT_TEST
             "M",     // invalid format for unit testing
-#endif           
+#endif
     };
 
     btstack_assert(0 < cmd);
@@ -90,7 +90,7 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
     const char *format = l2cap_signaling_commands_format[cmd-1u];
     btstack_assert(format != NULL);
 
-    // 0 - Connection handle : PB=pb : BC=00 
+    // 0 - Connection handle : PB=pb : BC=00
     little_endian_store_16(acl_buffer, 0u, handle | (pb_flags << 12u) | (0u << 14u));
     // 6 - L2CAP channel = 1
     little_endian_store_16(acl_buffer, 6, cid);
@@ -98,7 +98,7 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
     acl_buffer[8] = cmd;
     // 9 - id (!= 0 sequentially)
     acl_buffer[9] = identifier;
-    
+
     // 12 - L2CAP signaling parameters
     uint16_t pos = 12;
     uint16_t word;
@@ -133,16 +133,16 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
         format++;
     };
     va_end(argptr);
-    
+
     // Fill in various length fields: it's the number of bytes following for ACL length and l2cap parameter length
-    // - the l2cap payload length is counted after the following channel id (only payload) 
-    
+    // - the l2cap payload length is counted after the following channel id (only payload)
+
     // 2 - ACL length
     little_endian_store_16(acl_buffer, 2u,  pos - 4u);
     // 4 - L2CAP packet length
     little_endian_store_16(acl_buffer, 4u,  pos - 6u - 2u);
     // 10 - L2CAP signaling parameter length
     little_endian_store_16(acl_buffer, 10u, pos - 12u);
-    
+
     return pos;
 }

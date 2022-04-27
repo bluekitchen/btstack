@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -84,7 +84,7 @@ static void mesh_server_transition_handler(mesh_transition_t * base_transition, 
         default:
             break;
     }
-    
+
     // notify app
     mesh_model_t * generic_on_off_server_model = transition->base_transition.mesh_model;
     mesh_access_emit_state_update_bool(generic_on_off_server_model->model_packet_handler,
@@ -122,7 +122,7 @@ static mesh_pdu_t * mesh_generic_on_off_status_message(mesh_model_t *generic_on_
 
     mesh_generic_on_off_state_t * state = (mesh_generic_on_off_state_t *) generic_on_off_server_model->model_data;
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = NULL; 
+    mesh_upper_transport_pdu_t * transport_pdu = NULL;
     if (state->transition_data.base_transition.num_steps > 0) {
         uint8_t remaining_time = (((uint8_t)state->transition_data.base_transition.step_resolution) << 6) | (state->transition_data.base_transition.num_steps);
         transport_pdu = mesh_access_setup_message(&mesh_generic_on_off_status_transition, state->transition_data.current_value,
@@ -152,14 +152,14 @@ static bool generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
 
     // check for valid value
     if (on_off_value > 1) return false;
-    
-    // The TID field is a transaction identifier indicating whether the message is 
+
+    // The TID field is a transaction identifier indicating whether the message is
     // a new message or a retransmission of a previously sent message
     mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
     uint8_t tid = mesh_access_parser_get_uint8(&parser);
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
-            
+
     mesh_transition_t * base_transition = generic_on_off_server_get_base_transition(mesh_model);
     switch (mesh_access_transitions_transaction_status(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu))){
         case MESH_TRANSACTION_STATUS_RETRANSMISSION:
@@ -168,12 +168,12 @@ static bool generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
         default:
             mesh_access_transitions_init_transaction(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu));
             generic_on_off_server_state->transition_data.target_value = on_off_value;
-            
+
             if (mesh_access_parser_available(&parser) == 2){
-                //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
+                //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits)
                 transition_time_gdtt = mesh_access_parser_get_uint8(&parser);
                 delay_time_gdtt = mesh_access_parser_get_uint8(&parser);
-            } 
+            }
             mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model, transition_time_gdtt, delay_time_gdtt);
             mesh_access_state_changed(mesh_model);
             break;
@@ -212,7 +212,7 @@ const mesh_operation_t * mesh_generic_on_off_server_get_operations(void){
 void mesh_generic_on_off_server_set(mesh_model_t * mesh_model, uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt){
     mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
     generic_on_off_server_state->transition_data.target_value = on_off_value;
-    
+
     mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model, transition_time_gdtt, delay_time_gdtt);
     mesh_access_state_changed(mesh_model);
 }
@@ -228,4 +228,3 @@ void mesh_generic_on_off_server_set_publication_model(mesh_model_t *generic_on_o
     publication_model->publish_state_fn = &mesh_generic_on_off_status_message;
     generic_on_off_server_model->publication_model = publication_model;
 }
-

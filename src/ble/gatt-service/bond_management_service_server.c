@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -84,11 +84,11 @@ static void bond_management_delete_bonding_information_classic(hci_connection_t 
             }
         } else {
             if (delete_all_bonding_but_active){
-                gap_drop_link_key_for_bd_addr(entry_address); 
+                gap_drop_link_key_for_bd_addr(entry_address);
             }
         }
     }
-    gap_link_key_iterator_done(&it); 
+    gap_link_key_iterator_done(&it);
 
 }
 #endif
@@ -104,11 +104,11 @@ static void bond_management_delete_bonding_information_le(hci_connection_t * con
         int entry_address_type = (int) BD_ADDR_TYPE_UNKNOWN;
         le_device_db_info(i, &entry_address_type, entry_address, NULL);
         // skip unused entries
-        
+
         if (entry_address_type == (int) BD_ADDR_TYPE_UNKNOWN) continue;
-        
+
         if ((entry_address_type == (int) device_address_type) && (memcmp(entry_address, connection->address, 6) == 0)){
-            if (delete_own_bonding){   
+            if (delete_own_bonding){
                 gap_delete_bonding((bd_addr_type_t)entry_address_type, entry_address);
             }
         } else {
@@ -124,11 +124,11 @@ static uint16_t bond_management_service_read_callback(hci_con_handle_t con_handl
     UNUSED(attribute_handle);
     UNUSED(offset);
     UNUSED(buffer_size);
-    
+
     if (attribute_handle == bm_supported_features_value_handle){
 
 #if 0
-    
+
         // According to BMS Spec, 3.2.1 Bond Management Feature Characteristic Behavior, only relevant bits should be sent
         uint16_t relevant_octets = 0;
 
@@ -149,7 +149,7 @@ static uint16_t bond_management_service_read_callback(hci_con_handle_t con_handl
         if (buffer != NULL){
             little_endian_store_24(feature_buffer, 0, bm_supported_features);
             (void) memcpy(buffer, feature_buffer, relevant_octets);
-        } 
+        }
         return relevant_octets;
     }
 
@@ -162,10 +162,10 @@ static int bond_management_service_write_callback(hci_con_handle_t con_handle, u
     UNUSED(transaction_mode);
     UNUSED(offset);
     UNUSED(buffer_size);
-    
+
     if (transaction_mode != ATT_TRANSACTION_MODE_NONE){
         return 0;
-    } 
+    }
 
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     btstack_assert(connection != NULL);
@@ -184,14 +184,14 @@ static int bond_management_service_write_callback(hci_con_handle_t con_handle, u
         if (authorisation_code_size > 511){
             return BOND_MANAGEMENT_OPERATION_FAILED;
         }
-        
+
         uint32_t requested_feature_mask_without_auth = 1UL << (2*(remote_cmd-1));
         uint32_t requested_feature_mask_with_auth    = 1UL << (2*(remote_cmd-1) + 1);
         bool locally_supported_with_auth    = (bm_supported_features & requested_feature_mask_with_auth) != 0;
         bool locally_supported_without_auth = (bm_supported_features & requested_feature_mask_without_auth) != 0;
 
         bool remote_auth_provided = authorisation_code_size > 0;
-        
+
         // log_info("cmd 0x%02X, features 0x%03X, auth_provided %d, LA %d, LW %d", remote_cmd, bm_supported_features, remote_auth_provided?1:0, locally_supported_with_auth?1:0, locally_supported_without_auth?1:0);
         if (remote_auth_provided){
             if (locally_supported_with_auth){
@@ -214,7 +214,7 @@ static int bond_management_service_write_callback(hci_con_handle_t con_handle, u
                 } else {
                     return BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED;
                 }
-            } 
+            }
         }
 
         switch (remote_cmd){
@@ -271,7 +271,7 @@ void bond_management_service_server_init(uint32_t supported_features){
     bm_control_point_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BOND_MANAGEMENT_CONTROL_POINT);
     bm_supported_features_value_handle       = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BOND_MANAGEMENT_FEATURE);
     bm_supported_features = supported_features;
-    
+
     log_info("Control Point value handle 0x%02x", bm_control_point_value_handle);
     log_info("Feature       value handle 0x%02x", bm_supported_features_value_handle);
     // register service with ATT Server
@@ -279,7 +279,7 @@ void bond_management_service_server_init(uint32_t supported_features){
     bond_management_service.end_handle     = end_handle;
     bond_management_service.read_callback  = &bond_management_service_read_callback;
     bond_management_service.write_callback = &bond_management_service_write_callback;
-    
+
     att_server_register_service_handler(&bond_management_service);
 }
 

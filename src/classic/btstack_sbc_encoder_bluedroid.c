@@ -30,16 +30,16 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 #define BTSTACK_FILE__ "btstack_sbc_encoder_bluedroid.c"
- 
+
 // *****************************************************************************
 //
-// SBC encoder based on Bluedroid library 
+// SBC encoder based on Bluedroid library
 //
 // *****************************************************************************
 
@@ -72,14 +72,14 @@ static btstack_sbc_encoder_state_t * sbc_encoder_state_singleton = NULL;
 static bludroid_encoder_state_t bd_encoder_state;
 
 
-void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
-                        int blocks, int subbands, btstack_sbc_allocation_method_t allocation_method, 
+void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode,
+                        int blocks, int subbands, btstack_sbc_allocation_method_t allocation_method,
                         int sample_rate, int bitpool, btstack_sbc_channel_mode_t channel_mode){
 
     if (sbc_encoder_state_singleton && (sbc_encoder_state_singleton != state) ){
         log_error("SBC encoder: different sbc decoder state is allready registered");
-    } 
-    
+    }
+
     sbc_encoder_state_singleton = state;
 
     if (!sbc_encoder_state_singleton){
@@ -90,10 +90,10 @@ void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_m
 
     switch (sbc_encoder_state_singleton->mode){
         case SBC_MODE_STANDARD:
-            bd_encoder_state.context.s16NumOfBlocks = blocks;                          
-            bd_encoder_state.context.s16NumOfSubBands = subbands;                       
-            bd_encoder_state.context.s16AllocationMethod = (uint8_t)allocation_method;                     
-            bd_encoder_state.context.s16BitPool = bitpool;  
+            bd_encoder_state.context.s16NumOfBlocks = blocks;
+            bd_encoder_state.context.s16NumOfSubBands = subbands;
+            bd_encoder_state.context.s16AllocationMethod = (uint8_t)allocation_method;
+            bd_encoder_state.context.s16BitPool = bitpool;
             bd_encoder_state.context.mSBCEnabled = 0;
             bd_encoder_state.context.s16ChannelMode = (uint8_t)channel_mode;
             bd_encoder_state.context.s16NumOfChannels = 2;
@@ -123,7 +123,7 @@ void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_m
             break;
     }
     bd_encoder_state.context.pu8Packet = bd_encoder_state.sbc_packet;
-    
+
     sbc_encoder_state_singleton->encoder_state = &bd_encoder_state;
     SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singleton->encoder_state)->context;
     SBC_Encoder_Init(context);

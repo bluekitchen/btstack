@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -484,7 +484,7 @@ static void mesh_upper_transport_validate_access_message_ccm(void * arg){
     uint8_t transmic_len = ((incoming_access_decrypted->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 8 : 4;
     uint8_t * upper_transport_pdu     = incoming_access_decrypted->data;
     uint8_t   upper_transport_pdu_len = incoming_access_decrypted->len - transmic_len;
- 
+
     mesh_print_hex("Decrypted PDU", upper_transport_pdu, upper_transport_pdu_len);
 
     // store TransMIC
@@ -743,7 +743,7 @@ static void mesh_upper_transport_send_access(mesh_upper_transport_pdu_t * upper_
     uint16_t payload_len = mesh_upper_pdu_flatten(upper_pdu, incoming_pdu_singleton.access.data, sizeof(incoming_pdu_singleton.access.data));
     btstack_assert(payload_len == upper_pdu->len);
     UNUSED(payload_len);
-    
+
     // Dump PDU
     printf("[+] Upper transport, send upper (un)segmented Access PDU - dest %04x, seq %06x\n", upper_pdu->dst, upper_pdu->seq);
     mesh_print_hex("Access Payload", incoming_pdu_singleton.access.data, upper_pdu->len);

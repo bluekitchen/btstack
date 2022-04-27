@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -45,14 +45,14 @@
 
 #include <stdint.h>
 #include "bluetooth.h"
- 
+
 #if defined __cplusplus
 extern "C" {
 #endif
 
 /* API_START */
 
-/** 
+/**
  * @brief Creates SDP record forG ATT service in provided empty buffer.
  * @note Make sure the buffer is big enough.
  *

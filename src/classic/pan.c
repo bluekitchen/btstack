@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -94,14 +94,14 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 			de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_BNEP);  // l2cap psm
 		}
 		de_pop_sequence(attribute, l2cpProtocol);
-		
+
 		uint8_t* bnep = de_push_sequence(attribute);
 		{
 			de_add_number(bnep,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_BNEP);
 			de_add_number(bnep,  DE_UINT, DE_SIZE_16, 0x0100);  // version
 
 			uint8_t * net_packet_type_list = de_push_sequence(bnep);
-			{		
+			{
 				if (network_packet_types){
 					while (*network_packet_types){
 						de_add_number(net_packet_type_list,  DE_UINT, DE_SIZE_16, *network_packet_types++);
@@ -142,7 +142,7 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 	{
 		uint8_t *sppProfile = de_push_sequence(attribute);
 		{
-			de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, service_uuid); 
+			de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, service_uuid);
 			de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0100); // Verision 1.0
 		}
 		de_pop_sequence(attribute, sppProfile);

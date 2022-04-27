@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -85,26 +85,26 @@ static adv_bearer_connectable_advertisement_data_item_t connectable_advertisemen
 
 static const uint8_t adv_data_with_node_id_template[] = {
     // Flags general discoverable, BR/EDR not supported
-    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06,
     // 16-bit Service UUIDs
     0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8,
     // Service Data
-    0x14, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8, 
+    0x14, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8,
           // MESH_IDENTIFICATION_NODE_IDENTIFY_TYPE
-          MESH_IDENTIFICATION_NODE_IDENTIFY_TYPE, 
+          MESH_IDENTIFICATION_NODE_IDENTIFY_TYPE,
           // Hash - 8 bytes
           // Random - 8 bytes
 };
 
 static const uint8_t adv_data_with_network_id_template[] = {
     // Flags general discoverable, BR/EDR not supported
-    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06,
     // 16-bit Service UUIDs
     0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8,
     // Service Data
-    0x0C, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8, 
+    0x0C, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8,
           // MESH_IDENTIFICATION_NETWORK_ID_TYPE
-          MESH_IDENTIFICATION_NETWORK_ID_TYPE 
+          MESH_IDENTIFICATION_NETWORK_ID_TYPE
 };
 
 #ifdef ENABLE_MESH_PB_GATT
@@ -112,11 +112,11 @@ static const uint8_t adv_data_with_network_id_template[] = {
 // Mesh Provisioning
 static const uint8_t adv_data_unprovisioned_template[] = {
     // Flags general discoverable, BR/EDR not supported
-    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06,
     // 16-bit Service UUIDs
     0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING >> 8,
     // Service Data (22)
-    0x15, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING >> 8, 
+    0x15, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING >> 8,
           // UUID - 16 bytes
           // OOB information - 2 bytes
 };
@@ -191,7 +191,7 @@ static void mesh_proxy_node_id_handle_get_aes128(void * arg){
     (void)memcpy(&mesh_subnet->advertisement_with_node_id.adv_data[20],
                  mesh_proxy_node_id_random_value, 8);
     mesh_subnet->advertisement_with_node_id.adv_length = 28;
-    
+
     // setup advertisements
     adv_bearer_advertisements_add_item(&mesh_subnet->advertisement_with_node_id);
     adv_bearer_advertisements_enable(1);
@@ -287,8 +287,8 @@ static void mesh_proxy_start_advertising_with_node_id_next_subnet(void){
 void mesh_proxy_start_advertising_with_node_id(void){
     mesh_proxy_node_id_all_subnets = 1;
     adv_bearer_advertisements_enable(1);
-    
-    // start advertising on first subnet that is not already advertising with node id    
+
+    // start advertising on first subnet that is not already advertising with node id
     mesh_proxy_start_advertising_with_node_id_next_subnet();
 }
 
@@ -310,7 +310,7 @@ void mesh_proxy_start_advertising_with_network_id(void){
     adv_bearer_advertisements_enable(1);
 }
 
-void mesh_proxy_stop_advertising_with_network_id(void){  
+void mesh_proxy_stop_advertising_with_network_id(void){
     mesh_subnet_iterator_t it;
     mesh_subnet_iterator_init(&it);
     while (mesh_subnet_iterator_has_more(&it)){
@@ -368,14 +368,14 @@ static void proxy_configuration_message_handler(mesh_network_callback_type_t cal
                             btstack_memory_mesh_network_pdu_free(received_network_pdu);
                             return;
                     }
-                    
+
                     uint8_t  ctl          = 1;
                     uint8_t  ttl          = 0;
                     uint16_t src          = primary_element_address;
                     uint16_t dest         = 0; // unassigned address
                     uint32_t seq          = mesh_sequence_number_next();
                     uint8_t  nid          = mesh_network_nid(received_network_pdu);
-                    uint16_t netkey_index = received_network_pdu->netkey_index; 
+                    uint16_t netkey_index = received_network_pdu->netkey_index;
                     printf("netkey index 0x%02x\n", netkey_index);
 
                     network_pdu = btstack_memory_mesh_network_pdu_get();
@@ -386,7 +386,7 @@ static void proxy_configuration_message_handler(mesh_network_callback_type_t cal
 
                     mesh_network_setup_pdu(network_pdu, netkey_index, nid, ctl, ttl, seq, src, dest, data, sizeof(data));
                     mesh_network_encrypt_proxy_configuration_message(network_pdu);
-                    
+
                     // received_network_pdu is processed
                     btstack_memory_mesh_network_pdu_free(received_network_pdu);
                     break;
@@ -400,7 +400,7 @@ static void proxy_configuration_message_handler(mesh_network_callback_type_t cal
         case MESH_NETWORK_CAN_SEND_NOW:
             printf("MESH_SUBEVENT_CAN_SEND_NOW mesh_netework_gatt_bearer_handle_proxy_configuration len %d\n", encrypted_proxy_configuration_ready_to_send->len);
             printf_hexdump(encrypted_proxy_configuration_ready_to_send->data, encrypted_proxy_configuration_ready_to_send->len);
-            gatt_bearer_send_mesh_proxy_configuration(encrypted_proxy_configuration_ready_to_send->data, encrypted_proxy_configuration_ready_to_send->len); 
+            gatt_bearer_send_mesh_proxy_configuration(encrypted_proxy_configuration_ready_to_send->data, encrypted_proxy_configuration_ready_to_send->len);
             break;
         case MESH_NETWORK_PDU_SENT:
             // printf("test MESH_PROXY_PDU_SENT\n");
@@ -421,4 +421,3 @@ void mesh_proxy_init(uint16_t primary_unicast_address){
     mesh_network_set_proxy_message_handler(proxy_configuration_message_handler);
 }
 #endif
-

@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Microphone Control Service Client
- * 
+ *
  */
 
 #ifndef MICROPHONE_CONTROL_SERVICE_CLIENT_H
@@ -53,8 +53,8 @@
 extern "C" {
 #endif
 
-/** 
- * @text The Microphone Control Service Client connects to the Microphone Control Services of a remote device 
+/**
+ * @text The Microphone Control Service Client connects to the Microphone Control Services of a remote device
  * and it can query or set mute value if mute value on the remote side is enabled. The Mute updates are received via notifications.
  */
 
@@ -87,7 +87,7 @@ typedef struct {
     // service
     uint16_t start_handle;
     uint16_t end_handle;
-    
+
     // characteristic
     uint16_t properties;
     uint16_t value_handle;
@@ -95,19 +95,19 @@ typedef struct {
 #ifdef ENABLE_TESTING_SUPPORT
     uint16_t ccc_handle;
 #endif
-    
+
     gatt_client_notification_t notification_listener;
 } microphone_service_t;
 
 
 typedef struct {
     btstack_linked_item_t item;
-    
+
     hci_con_handle_t  con_handle;
     uint16_t          cid;
     microphone_service_client_state_t  state;
     btstack_packet_handler_t client_handler;
- 
+
     // microphone_service_t service;
     // service
     uint16_t start_handle;
@@ -120,7 +120,7 @@ typedef struct {
 #ifdef ENABLE_TESTING_SUPPORT
     uint16_t ccc_handle;
 #endif
-    
+
     bool need_polling;
     uint16_t num_instances;
     uint8_t  requested_mute;
@@ -130,25 +130,25 @@ typedef struct {
 
 /* API_START */
 
-    
+
 /**
- * @brief Initialize Microphone Control Service. 
+ * @brief Initialize Microphone Control Service.
  */
 void microphone_control_service_client_init(void);
 
 /**
- * @brief Connect to Microphone Control Services of remote device. The client will automatically register for notifications. 
+ * @brief Connect to Microphone Control Services of remote device. The client will automatically register for notifications.
  * The mute state is received via GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE event.
- * The mute state can be 0 - off, 1 - on, 2 - disabeled and it is valid if the ATTT status is equal to ATT_ERROR_SUCCESS, 
+ * The mute state can be 0 - off, 1 - on, 2 - disabeled and it is valid if the ATTT status is equal to ATT_ERROR_SUCCESS,
  * see ATT errors (see bluetooth.h) for other values.
- *   
+ *
  * Event GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
- * GATT_CLIENT_IN_WRONG_STATE, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no microphone control service is found, or ATT errors (see bluetooth.h). 
+ * GATT_CLIENT_IN_WRONG_STATE, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no microphone control service is found, or ATT errors (see bluetooth.h).
  *
  * @param con_handle
  * @param packet_handler
  * @param mics_cid
- * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED 
+ * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, uint16_t * mics_cid);
 
@@ -160,7 +160,7 @@ uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle, b
 uint8_t microphone_control_service_client_read_mute_state(uint16_t mics_cid);
 
 /**
- * @brief Turn on mute. 
+ * @brief Turn on mute.
  * @param mics_cid
  * @return status
  */
@@ -181,7 +181,7 @@ uint8_t microphone_control_service_client_mute_turn_off(uint16_t mics_cid);
 uint8_t microphone_control_service_client_disconnect(uint16_t mics_cid);
 
 /**
- * @brief De-initialize Microphone Control Service. 
+ * @brief De-initialize Microphone Control Service.
  */
 void microphone_control_service_client_deinit(void);
 

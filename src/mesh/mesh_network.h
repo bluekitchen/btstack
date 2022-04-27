@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -89,7 +89,7 @@ typedef struct mesh_pdu {
 
 } mesh_pdu_t;
 
-// 
+//
 #define MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION 1
 #define MESH_NETWORK_PDU_FLAGS_GATT_BEARER         2
 #define MESH_NETWORK_PDU_FLAGS_RELAY               4
@@ -274,13 +274,13 @@ typedef struct {
  */
 void mesh_network_init(void);
 
-/** 
+/**
  * @brief Set higher layer Network PDU handler
  * @param packet_handler
  */
 void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu));
 
-/** 
+/**
  * @brief Set higher layer Proxy PDU handler
  * @param packet_handler
  */
@@ -329,7 +329,7 @@ void mesh_network_setup_pdu_header(mesh_network_pdu_t * network_pdu, uint16_t ne
  * @param ctl
  * @param src
  * @param dst
- * @return 1 if valid, 
+ * @return 1 if valid,
  */
 int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst);
 

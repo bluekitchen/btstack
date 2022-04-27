@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -1795,7 +1795,7 @@ void btstack_memory_init(void){
     // assert that there is no unexpected padding for combined buffer
     btstack_assert(sizeof(test_buffer_t) == sizeof(btstack_memory_buffer_t) + sizeof(void *));
 #endif
-  
+
 #if MAX_NR_HCI_CONNECTIONS > 0
     btstack_memory_pool_create(&hci_connection_pool, hci_connection_storage, MAX_NR_HCI_CONNECTIONS, sizeof(hci_connection_t));
 #endif

@@ -170,7 +170,7 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
         log_info("Read protocol mode");
         return att_read_callback_handle_byte(instance->hid_protocol_mode, offset, buffer, buffer_size);
     }
-    
+
     if (att_handle == instance->hid_report_map_handle){
         log_info("Read report map");
         return att_read_callback_handle_blob(instance->hid_descriptor, instance->hid_descriptor_size, offset, buffer, buffer_size);
@@ -187,19 +187,19 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
     if (att_handle == instance->hid_report_input_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(instance->hid_report_input_client_configuration_value, offset, buffer, buffer_size);
     }
-    
+
     if (att_handle == instance->hid_report_output_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(instance->hid_report_output_client_configuration_value, offset, buffer, buffer_size);
     }
-    
+
     if (att_handle == instance->hid_report_feature_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(instance->hid_report_feature_client_configuration_value, offset, buffer, buffer_size);
     }
-    
+
     if (att_handle == instance->hid_control_point_value_handle){
         if (buffer && (buffer_size >= 1u)){
             buffer[0] = instance->hid_control_point_suspend;
-        } 
+        }
         return 1;
     }
     return 0;
@@ -250,7 +250,7 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
         log_info("Set protocol mode: %u", instance->hid_protocol_mode);
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_PROTOCOL_MODE, con_handle, instance->hid_protocol_mode);
     }
-    
+
     if (att_handle == instance->hid_control_point_value_handle){
         if (buffer_size < 1u){
             return ATT_ERROR_INVALID_OFFSET;
@@ -260,7 +260,7 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
         log_info("Set suspend tp: %u", instance->hid_control_point_suspend );
         if (instance->hid_control_point_suspend == 0u){
             hids_device_emit_event(HIDS_SUBEVENT_SUSPEND, con_handle);
-        } else if (instance->hid_control_point_suspend == 1u){ 
+        } else if (instance->hid_control_point_suspend == 1u){
             hids_device_emit_event(HIDS_SUBEVENT_EXIT_SUSPEND, con_handle);
         }
     }
@@ -314,7 +314,7 @@ void hids_device_init(uint8_t country_code, const uint8_t * descriptor, uint16_t
     instance->hid_report_feature_client_configuration_handle      = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(instance->hid_report_output_client_configuration_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
 
     instance->hid_control_point_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_HID_CONTROL_POINT);
-    
+
     log_info("hid_report_map_handle                               0x%02x", instance->hid_report_map_handle);
     log_info("hid_protocol_mode_value_handle                      0x%02x", instance->hid_protocol_mode_value_handle);
     log_info("hid_boot_mouse_input_value_handle                   0x%02x", instance->hid_boot_mouse_input_value_handle);

@@ -30,13 +30,13 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 #define BTSTACK_FILE__ "hfp_msbc.c"
- 
+
 // *****************************************************************************
 //
 // HFP mSBC encoder wrapper
@@ -120,5 +120,3 @@ int hfp_msbc_num_bytes_in_stream(void){
 int hfp_msbc_num_audio_samples_per_frame(void){
     return btstack_sbc_encoder_num_audio_frames();
 }
-
-

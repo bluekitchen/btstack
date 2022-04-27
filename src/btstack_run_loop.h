@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -59,7 +59,7 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-	
+
 /**
  * Callback types for run loop data sources
  */
@@ -78,7 +78,7 @@ typedef struct btstack_data_source {
 	    // file descriptor for posix systems
 	    int  fd;
     	// handle on windows
-    	void * handle;	
+    	void * handle;
     } source;
 
     // callback to call for enabled callback types
@@ -90,11 +90,11 @@ typedef struct btstack_data_source {
 } btstack_data_source_t;
 
 typedef struct btstack_timer_source {
-    btstack_linked_item_t item; 
+    btstack_linked_item_t item;
     // timeout in system ticks (HAVE_EMBEDDED_TICK) or milliseconds (HAVE_EMBEDDED_TIME_MS)
     uint32_t timeout;
     // will be called when timer fired
-    void  (*process)(struct btstack_timer_source *ts); 
+    void  (*process)(struct btstack_timer_source *ts);
     void * context;
 } btstack_timer_source_t;
 
@@ -208,8 +208,8 @@ void btstack_run_loop_base_execute_callbacks(void);
 
 /**
  * @brief Init main run loop. Must be called before any other run loop call.
- *  
- * Use btstack_run_loop_$(btstack_run_loop_TYPE)_get_instance() from btstack_run_loop_$(btstack_run_loop_TYPE).h to get instance 
+ *
+ * Use btstack_run_loop_$(btstack_run_loop_TYPE)_get_instance() from btstack_run_loop_$(btstack_run_loop_TYPE).h to get instance
  */
 void btstack_run_loop_init(const btstack_run_loop_t * run_loop);
 
@@ -236,7 +236,7 @@ void * btstack_run_loop_get_timer_context(btstack_timer_source_t * timer);
 /**
  * @brief Add timer source.
  */
-void btstack_run_loop_add_timer(btstack_timer_source_t * timer); 
+void btstack_run_loop_add_timer(btstack_timer_source_t * timer);
 
 /**
  * @brief Remove timer source.
@@ -261,7 +261,7 @@ void btstack_run_loop_timer_dump(void);
 void btstack_run_loop_set_data_source_handler(btstack_data_source_t * data_source, void (*process)(btstack_data_source_t * _data_source, btstack_data_source_callback_type_t callback_type));
 
 /**
- * @brief Set data source file descriptor. 
+ * @brief Set data source file descriptor.
  * @param data_source
  * @param fd file descriptor
  * @note No effect if port doensn't have file descriptors
@@ -269,13 +269,13 @@ void btstack_run_loop_set_data_source_handler(btstack_data_source_t * data_sourc
 void btstack_run_loop_set_data_source_fd(btstack_data_source_t * data_source, int fd);
 
 /**
- * @brief Get data source file descriptor. 
+ * @brief Get data source file descriptor.
  * @param data_source
  */
 int btstack_run_loop_get_data_source_fd(btstack_data_source_t * data_source);
 
 /**
- * @brief Set data source file descriptor. 
+ * @brief Set data source file descriptor.
  * @param data_source
  * @param handle
  * @note No effect if port doensn't have file descriptors
@@ -283,7 +283,7 @@ int btstack_run_loop_get_data_source_fd(btstack_data_source_t * data_source);
 void btstack_run_loop_set_data_source_handle(btstack_data_source_t * data_source, void * handle);
 
 /**
- * @brief Get data source file descriptor. 
+ * @brief Get data source file descriptor.
  * @param data_source
  */
 void * btstack_run_loop_get_data_source_handle(btstack_data_source_t * data_source);

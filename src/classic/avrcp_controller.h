@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -65,7 +65,7 @@ typedef enum {
 } avrcp_controller_supported_feature_t;
 
 /**
- * @brief AVRCP Controller service record. 
+ * @brief AVRCP Controller service record.
  * @param service
  * @param service_record_handle
  * @param supported_features 16-bit bitmap, see AVRCP_FEATURE_MASK_* in avrcp.h
@@ -80,7 +80,7 @@ void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_reco
 void avrcp_controller_init(void);
 
 /**
- * @brief Register callback for the AVRCP Controller client. 
+ * @brief Register callback for the AVRCP Controller client.
  * @param callback
  */
 void avrcp_controller_register_packet_handler(btstack_packet_handler_t callback);
@@ -183,8 +183,8 @@ uint8_t avrcp_controller_press_and_hold_rewind(uint16_t avrcp_cid);
  * @param avrcp_cid
  * @return status
  */
-uint8_t avrcp_controller_forward(uint16_t avrcp_cid); 
-uint8_t avrcp_controller_press_and_hold_forward(uint16_t avrcp_cid); 
+uint8_t avrcp_controller_forward(uint16_t avrcp_cid);
+uint8_t avrcp_controller_press_and_hold_forward(uint16_t avrcp_cid);
 
 /**
  * @brief Backward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
@@ -317,14 +317,14 @@ uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, 
  **/
 uint8_t avrcp_controller_add_item_from_scope_to_now_playing_list(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope);
 
-/** 
- * @brief Set addressed player.  
+/**
+ * @brief Set addressed player.
  * @param avrcp_cid
  * @param addressed_player_id
  */
 uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addressed_player_id);
 
-/** 
+/**
  * @brief Send custom command
  * @param avrcp_cid
  * @param command_type
@@ -335,10 +335,10 @@ uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addre
  * @param data
  * @param data_len
  */
-uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid, 
-    avrcp_command_type_t command_type, 
-    avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, 
-    avrcp_pdu_id_t pdu_id, uint32_t company_id, 
+uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid,
+    avrcp_command_type_t command_type,
+    avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id,
+    avrcp_pdu_id_t pdu_id, uint32_t company_id,
     const uint8_t * data, uint16_t data_len);
 
 /**

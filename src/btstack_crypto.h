@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -68,7 +68,7 @@ typedef enum {
 
 typedef struct {
 	btstack_context_callback_registration_t context_callback;
-	btstack_crypto_operation_t              operation;	
+	btstack_crypto_operation_t              operation;
 } btstack_crypto_t;
 
 typedef struct {
@@ -131,12 +131,12 @@ typedef struct {
 	uint8_t         aad_remainder_len;
 } btstack_crypto_ccm_t;
 
-/** 
+/**
  * Initialize crypto functions
  */
 void btstack_crypto_init(void);
 
-/** 
+/**
  * Generate random data
  * @param request
  * @param buffer for output
@@ -147,7 +147,7 @@ void btstack_crypto_init(void);
  */
 void btstack_crypto_random_generate(btstack_crypto_random_t * request, uint8_t * buffer, uint16_t size, void (* callback)(void * arg), void * callback_arg);
 
-/** 
+/**
  * Encrypt plaintext using AES128
  * @param request
  * @param key (16 bytes)
@@ -195,7 +195,7 @@ void btstack_crypto_aes128_cmac_zero(btstack_crypto_aes128_cmac_t * request, uin
 
 /**
  * Generate Elliptic Curve Public/Private Key Pair (FIPS P-256)
- * @note BTstack uses a single ECC key pair per reset. 
+ * @note BTstack uses a single ECC key pair per reset.
  * @note If LE Controller is used for ECC, private key cannot be read or managed
  * @param request
  * @param public_key (64 bytes)
@@ -221,7 +221,7 @@ void btstack_crypto_ecc_p256_calculate_dhkey(btstack_crypto_ecc_p256_t * request
  */
 int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key);
 
-/** 
+/**
  * Initialize Counter with CBC-MAC for Bluetooth Mesh (L=2)
  * @param request
  * @param nonce
@@ -232,14 +232,14 @@ int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key);
  */
 void btstack_crypto_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key, const uint8_t * nonce, uint16_t message_len, uint16_t additional_authenticated_data_len, uint8_t auth_len);
 
-/** 
+/**
  * Get authentication value after encrypt or decrypt operation
  * @param request
  * @param authentication_value
  */
 void btstack_crypto_ccm_get_authentication_value(btstack_crypto_ccm_t * request, uint8_t * authentication_value);
 
-/** 
+/**
  * Digest Additional Authentication Data - can be called multipled times up to total additional_authenticated_data_len specified in btstack_crypto_ccm_init
  * @param request
  * @param additional_authenticated_data
@@ -272,7 +272,7 @@ void btstack_crypto_ccm_encrypt_block(btstack_crypto_ccm_t * request, uint16_t l
 void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t len, const uint8_t * ciphertext, uint8_t * plaintext, void (* callback)(void * arg), void * callback_arg);
 
 #if defined(ENABLE_SOFTWARE_AES128) || defined (HAVE_AES128)
-/** 
+/**
  * Encrypt plaintext using AES128
  * @note Prototype for custom AES128 implementation
  * @param key (16 bytes)

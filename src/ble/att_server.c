@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -149,7 +149,7 @@ static bool att_server_can_send_packet(hci_connection_t * hci_connection){
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
     btstack_packet_handler_t packet_handler = att_server_packet_handler_for_handle(attribute_handle);
     if (!packet_handler) return;
-    
+
     uint8_t event[7];
     int pos = 0;
     event[pos++] = ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE;
@@ -248,7 +248,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
 
     UNUSED(channel); // ok: there is no channel
     UNUSED(size);    // ok: handling own l2cap events
-    
+
     att_server_t * att_server;
     att_connection_t * att_connection;
     hci_con_handle_t con_handle;
@@ -259,13 +259,13 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
 #endif
 
     switch (packet_type) {
-            
+
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
-                
+
 #ifdef ENABLE_GATT_OVER_CLASSIC
                 case L2CAP_EVENT_INCOMING_CONNECTION:
-                    l2cap_event_incoming_connection_get_address(packet, address); 
+                    l2cap_event_incoming_connection_get_address(packet, address);
                     l2cap_accept_connection(channel);
                     log_info("Accept incoming connection from %s", bd_addr_to_str(address));
                     break;
@@ -349,8 +349,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     }
                     break;
 
-                case HCI_EVENT_ENCRYPTION_CHANGE: 
-                case HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE: 
+                case HCI_EVENT_ENCRYPTION_CHANGE:
+                case HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE:
                 	// check handle
                     con_handle = little_endian_read_16(packet, 3);
                     hci_connection = hci_connection_for_handle(con_handle);
@@ -368,7 +368,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                         // restore CCC values when encrypted for LE Connections
                         if (hci_event_encryption_change_get_encryption_enabled(packet)){
                             att_server_persistent_ccc_restore(hci_connection);
-                        } 
+                        }
                     }
                     att_run_for_context(hci_connection);
                     break;
@@ -395,7 +395,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     // notify all - old
                     att_emit_event_to_all(packet, size);
                     break;
-                    
+
                 // Identity Resolving
                 case SM_EVENT_IDENTITY_RESOLVING_STARTED:
                     con_handle = sm_event_identity_resolving_started_get_handle(packet);
@@ -502,7 +502,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
 
 #ifdef ENABLE_LE_SIGNED_WRITE
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
-    
+
     hci_connection_t * hci_connection = hci_connection_for_state(ATT_SERVER_W4_SIGNED_WRITE_VALIDATION);
     if (!hci_connection) return;
     att_server_t * att_server = &hci_connection->att_server;
@@ -638,7 +638,7 @@ static void att_run_for_context(hci_connection_t * hci_connection){
                     log_info("ATT Signed Write, sm_cmac engine not ready. Abort");
                     att_server->state = ATT_SERVER_IDLE;
                     return;
-                }  
+                }
                 if (att_server->request_size < (3 + 12)) {
                     log_info("ATT Signed Write, request to short. Abort.");
                     att_server->state = ATT_SERVER_IDLE;
@@ -672,7 +672,7 @@ static void att_run_for_context(hci_connection_t * hci_connection){
                 uint16_t attribute_handle = little_endian_read_16(att_server->request_buffer, 1);
                 sm_cmac_signed_write_start(csrk, att_server->request_buffer[0], attribute_handle, att_server->request_size - 15, &att_server->request_buffer[3], counter_packet, att_signed_write_handle_cmac_result);
                 return;
-            } 
+            }
 #endif
             // move on
             att_server->state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
@@ -681,7 +681,7 @@ static void att_run_for_context(hci_connection_t * hci_connection){
 
         default:
             break;
-    }   
+    }
 }
 
 static bool att_server_data_ready_for_phase(att_server_t * att_server,  att_server_run_phase_t phase){
@@ -810,7 +810,7 @@ static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t
     if ((opcode == ATT_HANDLE_VALUE_CONFIRMATION) && (att_server->value_indication_handle != 0u)){
         btstack_run_loop_remove_timer(&att_server->value_indication_timer);
         uint16_t att_handle = att_server->value_indication_handle;
-        att_server->value_indication_handle = 0u;    
+        att_server->value_indication_handle = 0u;
         att_handle_value_indication_notify_client(0u, att_connection->con_handle, att_handle);
         att_server_request_can_send_now(hci_connection);
         return;
@@ -884,7 +884,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 
             att_server_handle_att_pdu(hci_connection, packet, size);
             break;
-            
+
         default:
             break;
     }
@@ -1015,7 +1015,7 @@ static void att_server_persistent_ccc_clear(hci_connection_t * hci_connection){
         // delete entry
         log_info("CCC Index %u: Delete", index);
         tlv_impl->delete_tag(tlv_context, tag);
-    }  
+    }
 }
 
 static void att_server_persistent_ccc_restore(hci_connection_t * hci_connection){
@@ -1180,7 +1180,7 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
 }
 
 void att_server_register_packet_handler(btstack_packet_handler_t handler){
-    att_client_packet_handler = handler;    
+    att_client_packet_handler = handler;
 }
 
 

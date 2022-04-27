@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -86,11 +86,11 @@
  *   ]: end of arrayed param sequence
  */
 uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr){
-    
+
     hci_cmd_buffer[0] = cmd->opcode & 0xffu;
     hci_cmd_buffer[1] = cmd->opcode >> 8;
     uint16_t pos = 3;
-    
+
     const char *format = cmd->format;
     uint16_t word;
     uint32_t longword;
@@ -289,7 +289,7 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
 }
 
 /**
- *  Link Control Commands 
+ *  Link Control Commands
  */
 
 /**
@@ -337,7 +337,7 @@ const hci_cmd_t hci_create_connection = {
 };
 
 /**
- * @param handle 
+ * @param handle
  * @param reason (0x05, 0x13-0x15, 0x1a, 0x29, see Errors Codes in BT Spec Part D)
  */
 const hci_cmd_t hci_disconnect = {
@@ -467,7 +467,7 @@ const hci_cmd_t hci_read_remote_version_information = {
     HCI_OPCODE_HCI_READ_REMOTE_VERSION_INFORMATION, "H"
 };
 
-/** 
+/**
  * @param handle
  * @param transmit_bandwidth 8000(64kbps)
  * @param receive_bandwidth  8000(64kbps)
@@ -644,7 +644,7 @@ const hci_cmd_t hci_remote_oob_extended_data_request_reply = {
 };
 
 /**
- *  Link Policy Commands 
+ *  Link Policy Commands
  */
 
 /**
@@ -768,7 +768,7 @@ const hci_cmd_t hci_flow_specification = {
 
 
 /**
- *  Controller & Baseband Commands 
+ *  Controller & Baseband Commands
  */
 
 
@@ -831,7 +831,7 @@ const hci_cmd_t hci_read_local_name = {
 };
 
 /**
- */ 
+ */
 const hci_cmd_t hci_read_page_timeout = {
     HCI_OPCODE_HCI_READ_PAGE_TIMEOUT, ""
 };
@@ -851,7 +851,7 @@ const hci_cmd_t hci_write_scan_enable = {
 };
 
 /**
- */ 
+ */
 const hci_cmd_t hci_read_page_scan_activity = {
     HCI_OPCODE_HCI_READ_PAGE_SCAN_ACTIVITY, ""
 };
@@ -859,13 +859,13 @@ const hci_cmd_t hci_read_page_scan_activity = {
 /**
  * @param page_scan_interval (* 0.625 ms)
  * @param page_scan_window (* 0.625 ms, must be <= page_scan_interval)
- */ 
+ */
 const hci_cmd_t hci_write_page_scan_activity = {
     HCI_OPCODE_HCI_WRITE_PAGE_SCAN_ACTIVITY, "22"
 };
 
 /**
- */ 
+ */
 const hci_cmd_t hci_read_inquiry_scan_activity = {
     HCI_OPCODE_HCI_READ_INQUIRY_SCAN_ACTIVITY, ""
 };
@@ -873,7 +873,7 @@ const hci_cmd_t hci_read_inquiry_scan_activity = {
 /**
  * @param inquiry_scan_interval (* 0.625 ms)
  * @param inquiry_scan_window (* 0.625 ms, must be <= inquiry_scan_interval)
- */ 
+ */
 const hci_cmd_t hci_write_inquiry_scan_activity = {
     HCI_OPCODE_HCI_WRITE_INQUIRY_SCAN_ACTIVITY, "22"
 };
@@ -900,7 +900,7 @@ const hci_cmd_t hci_write_class_of_device = {
     HCI_OPCODE_HCI_WRITE_CLASS_OF_DEVICE, "3"
 };
 
-/** 
+/**
  */
 const hci_cmd_t hci_read_num_broadcast_retransmissions = {
     HCI_OPCODE_HCI_READ_NUM_BROADCAST_RETRANSMISSIONS, ""
@@ -1386,7 +1386,7 @@ const hci_cmd_t hci_le_connection_update = {
 };
 
 /**
- * @param channel_map_lower_32bits 
+ * @param channel_map_lower_32bits
  * @param channel_map_higher_5bits
  */
 const hci_cmd_t hci_le_set_host_channel_classification = {
@@ -1412,7 +1412,7 @@ const hci_cmd_t hci_le_read_remote_used_features = {
 
 /**
  * @param key ((128) for AES-128)
- * @param plain_text (128) 
+ * @param plain_text (128)
  */
 const hci_cmd_t hci_le_encrypt = {
     HCI_OPCODE_HCI_LE_ENCRYPT, "PP"
@@ -2435,7 +2435,7 @@ const hci_cmd_t hci_bcm_write_i2spcm_interface_param = {
 
 /**
  * @brief Activates selected Sleep Mode
- * @param sleep_mode: 0=no sleep, 1=UART, 2=UART with Messaging, 3=USB, 4=H4IBSS, USB with Host Wake, 6=SDIO, 7=UART CS-N, 8=SPI, 9=H5, 10=H4DS, 12=UART with BREAK 
+ * @param sleep_mode: 0=no sleep, 1=UART, 2=UART with Messaging, 3=USB, 4=H4IBSS, USB with Host Wake, 6=SDIO, 7=UART CS-N, 8=SPI, 9=H5, 10=H4DS, 12=UART with BREAK
  * @param idle_threshold_host (modes 1,2,5,7) time until considered idle, unit roughly 300 ms
  * @param idle_threshold_controller (modes 1-7,9) time until considered idle, unit roughly 300 ms
  * @param bt_wake_active_mode (modes 1,2,7) 0 = BT_WAKE line is active high, 1 = BT_WAKE is active low
@@ -2455,7 +2455,7 @@ const hci_cmd_t hci_bcm_set_sleep_mode = {
 /**
  * @brief Set TX Power Table
  * @param is_le 0=classic, 1=LE
- * @param chip_max_tx_pwr_db chip level max TX power in dBM 
+ * @param chip_max_tx_pwr_db chip level max TX power in dBM
  */
 const hci_cmd_t hci_bcm_write_tx_power_table = {
     HCI_OPCODE_HCI_BCM_WRITE_TX_POWER_TABLE, "11"
@@ -2480,8 +2480,8 @@ const hci_cmd_t hci_ti_drpb_tester_con_rx = {
  *
  *
  * @brief This command tests the RF transceiver in continuous transmission mode.
- *        The transmitter is activated by configuring the transmission parameters such as pattern, 
- *        modulation, and frequency. 
+ *        The transmitter is activated by configuring the transmission parameters such as pattern,
+ *        modulation, and frequency.
  * @see   processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_DRPb_Tester_Con_TX.280xFD84.29
  * @param modulation
  * @param test_pattern
@@ -2495,7 +2495,7 @@ const hci_cmd_t hci_ti_drpb_tester_con_tx = {
 };
 
 /**
- * @brief This command starts sending/receiving packets using packet transmission parameters such as 
+ * @brief This command starts sending/receiving packets using packet transmission parameters such as
  *        frequency channel, packet type, and packet length. It is used for Packet TX/RX.
  * @see   processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_DRPb_Tester_Packet_TX_RX_.280xFD85.29
  * @param frequency_mode

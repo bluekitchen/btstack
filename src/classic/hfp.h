@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -53,7 +53,7 @@ extern "C" {
 // period AG will send RING messages
 #define HFP_RING_PERIOD_MS 2000
 
-/* HF Supported Features: 
+/* HF Supported Features:
 0: EC and/or NR function
 1: Three-way calling
 2: CLI presentation capability
@@ -69,11 +69,11 @@ extern "C" {
 #define HFP_HFSF_EC_NR_FUNCTION                          0
 #define HFP_HFSF_THREE_WAY_CALLING                       1
 #define HFP_HFSF_CLI_PRESENTATION_CAPABILITY             2
-#define HFP_HFSF_VOICE_RECOGNITION_FUNCTION              3 
+#define HFP_HFSF_VOICE_RECOGNITION_FUNCTION              3
 #define HFP_HFSF_REMOTE_VOLUME_CONTROL                   4
-#define HFP_HFSF_ENHANCED_CALL_STATUS                    5  
-#define HFP_HFSF_ENHANCED_CALL_CONTROL                   6 
-#define HFP_HFSF_CODEC_NEGOTIATION                       7  
+#define HFP_HFSF_ENHANCED_CALL_STATUS                    5
+#define HFP_HFSF_ENHANCED_CALL_CONTROL                   6
+#define HFP_HFSF_CODEC_NEGOTIATION                       7
 #define HFP_HFSF_HF_INDICATORS                           8
 #define HFP_HFSF_ESCO_S4                                 9
 #define HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS      10
@@ -119,14 +119,14 @@ extern "C" {
 
 #define HFP_MAX_INDICATOR_DESC_SIZE             20
 #define HFP_MAX_VR_TEXT_SIZE                   100
-#define HFP_VR_TEXT_HEADER_SIZE                 27      // bytes needed for sending +BVRA message including quotes but excluding string length: 
+#define HFP_VR_TEXT_HEADER_SIZE                 27      // bytes needed for sending +BVRA message including quotes but excluding string length:
                                                         // \r\n+BVRA: <vrect>,<vrecstate>,<textID>,<textType>,<textOperation>,"<string>"\r\n
 
-#define HFP_MAX_NETWORK_OPERATOR_NAME_SIZE 17   
+#define HFP_MAX_NETWORK_OPERATOR_NAME_SIZE 17
 
 #define HFP_HF_INDICATOR_UUID_ENHANCED_SAFETY   0x0001  // 0 - disabled, 1 - enabled
 #define HFP_HF_INDICATOR_UUID_BATTERY_LEVEL     0X0002  // 0-100 remaining level of battery
-    
+
 #define HFP_SUPPORTED_FEATURES "+BRSF"
 #define HFP_AVAILABLE_CODECS "+BAC"
 #define HFP_INDICATOR "+CIND"
@@ -162,7 +162,7 @@ extern "C" {
 #define HFP_ERROR "ERROR"
 #define HFP_RING "RING"
 
-// Codecs 
+// Codecs
 #define HFP_CODEC_CVSD 0x01
 #define HFP_CODEC_MSBC 0x02
 
@@ -182,7 +182,7 @@ typedef enum {
     HFP_CMD_AVAILABLE_CODECS,
     HFP_CMD_RETRIEVE_AG_INDICATORS_GENERIC,
     HFP_CMD_RETRIEVE_AG_INDICATORS,
-    HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS, 
+    HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS,
     HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE,                 // 10
     HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
@@ -202,14 +202,14 @@ typedef enum {
     HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP,
     HFP_CMD_AG_SEND_COMMON_CODEC,
     HFP_CMD_AG_SUGGESTED_CODEC,
-    HFP_CMD_HF_CONFIRMED_CODEC,                             
+    HFP_CMD_HF_CONFIRMED_CODEC,
     HFP_CMD_CALL_ANSWERED,                                  // 30
     HFP_CMD_CALL_HOLD,
     HFP_CMD_HANG_UP_CALL,
     HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING,
     HFP_CMD_CALL_PHONE_NUMBER,
-    HFP_CMD_REDIAL_LAST_NUMBER,                             // 35            
-    HFP_CMD_TURN_OFF_EC_AND_NR,     
+    HFP_CMD_REDIAL_LAST_NUMBER,                             // 35
+    HFP_CMD_TURN_OFF_EC_AND_NR,
     HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION,                  // 37
     HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION,
     HFP_CMD_HF_REQUEST_PHONE_NUMBER,
@@ -224,13 +224,13 @@ typedef enum {
     HFP_CMD_RESPONSE_AND_HOLD_STATUS,
     HFP_CMD_HF_INDICATOR_STATUS
 } hfp_command_t;
- 
+
 
 typedef enum {
-    HFP_CME_ERROR_AG_FAILURE = 0, 
+    HFP_CME_ERROR_AG_FAILURE = 0,
     HFP_CME_ERROR_NO_CONNECTION_TO_PHONE,
     HFP_CME_ERROR_2,
-    HFP_CME_ERROR_OPERATION_NOT_ALLOWED, 
+    HFP_CME_ERROR_OPERATION_NOT_ALLOWED,
     HFP_CME_ERROR_OPERATION_NOT_SUPPORTED,
     HFP_CME_ERROR_PH_SIM_PIN_REQUIRED,
     HFP_CME_ERROR_6,
@@ -243,7 +243,7 @@ typedef enum {
     HFP_CME_ERROR_SIM_FAILURE,
     HFP_CME_ERROR_SIM_BUSY,
     HFP_CME_ERROR_15,
-    HFP_CME_ERROR_INCORRECT_PASSWORD, 
+    HFP_CME_ERROR_INCORRECT_PASSWORD,
     HFP_CME_ERROR_SIM_PIN2_REQUIRED,
     HFP_CME_ERROR_SIM_PUK2_REQUIRED,
     HFP_CME_ERROR_19,
@@ -267,8 +267,8 @@ typedef enum {
     HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT
 } hfp_call_status_t;
 
-typedef enum {  
-    HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS = 0, 
+typedef enum {
+    HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS = 0,
     HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS,
     HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE,
     HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE
@@ -277,7 +277,7 @@ typedef enum {
 typedef enum {
     HFP_CALLHELD_STATUS_NO_CALLS_HELD = 0,
     HFP_CALLHELD_STATUS_CALL_ON_HOLD_OR_SWAPPED,
-    HFP_CALLHELD_STATUS_CALL_ON_HOLD_AND_NO_ACTIVE_CALLS 
+    HFP_CALLHELD_STATUS_CALL_ON_HOLD_AND_NO_ACTIVE_CALLS
 } hfp_callheld_status_t;
 
 
@@ -345,41 +345,41 @@ typedef enum {
     HFP_W2_SEND_SDP_QUERY,
     HFP_W4_SDP_QUERY_COMPLETE,
     HFP_W4_RFCOMM_CONNECTED,
-    
+
     HFP_EXCHANGE_SUPPORTED_FEATURES,   // 5
-    HFP_W4_EXCHANGE_SUPPORTED_FEATURES, 
-    
+    HFP_W4_EXCHANGE_SUPPORTED_FEATURES,
+
     HFP_NOTIFY_ON_CODECS,
     HFP_W4_NOTIFY_ON_CODECS,
-    
-    HFP_RETRIEVE_INDICATORS, 
+
+    HFP_RETRIEVE_INDICATORS,
     HFP_W4_RETRIEVE_INDICATORS,        // 10
-    
-    HFP_RETRIEVE_INDICATORS_STATUS, 
+
+    HFP_RETRIEVE_INDICATORS_STATUS,
     HFP_W4_RETRIEVE_INDICATORS_STATUS,
-    
+
     HFP_ENABLE_INDICATORS_STATUS_UPDATE,
     HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE,
-    
+
     HFP_RETRIEVE_CAN_HOLD_CALL,        // 15
-    HFP_W4_RETRIEVE_CAN_HOLD_CALL, 
-    
+    HFP_W4_RETRIEVE_CAN_HOLD_CALL,
+
     HFP_LIST_GENERIC_STATUS_INDICATORS,
     HFP_W4_LIST_GENERIC_STATUS_INDICATORS,
-    
+
     HFP_RETRIEVE_GENERIC_STATUS_INDICATORS,
     HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS,  //20
-    
-    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS, 
+
+    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
     HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
-    
+
     HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED,  //23
-    
+
     HFP_W2_CONNECT_SCO,
     HFP_W4_SCO_CONNECTED,
-    
-    HFP_AUDIO_CONNECTION_ESTABLISHED, 
-    
+
+    HFP_AUDIO_CONNECTION_ESTABLISHED,
+
 
     HFP_W2_DISCONNECT_SCO,
     HFP_W4_SCO_DISCONNECTED,
@@ -387,8 +387,8 @@ typedef enum {
     HFP_W4_WBS_SHUTDOWN,
 
     HFP_W2_DISCONNECT_RFCOMM,
-    HFP_W4_RFCOMM_DISCONNECTED, 
-    HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART, 
+    HFP_W4_RFCOMM_DISCONNECTED,
+    HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART,
     HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hfp_state_t;
 
@@ -399,11 +399,11 @@ typedef enum {
 
     HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF,
     HFP_VRA_W4_VOICE_RECOGNITION_OFF,
-    
+
     HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED,
     HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED,
     HFP_VRA_VOICE_RECOGNITION_ACTIVATED,
-    
+
     HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO,
     HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO,
     HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO,
@@ -534,10 +534,10 @@ typedef struct{
     char name[HFP_MAX_NETWORK_OPERATOR_NAME_SIZE]; // enabled
 } hfp_network_opearator_t;
 
-    
+
 typedef struct hfp_connection {
     btstack_linked_item_t    item;
-    
+
     // local role: HF or AG
     hfp_role_t local_role;
 
@@ -547,12 +547,12 @@ typedef struct hfp_connection {
     uint16_t rfcomm_channel_nr;
     uint16_t rfcomm_cid;
     uint16_t rfcomm_mtu;
-    
+
     hfp_state_machine_t state_machine;
     hfp_call_state_t call_state;
     hfp_state_t state;
     hfp_codecs_state_t codecs_state;
-    
+
     // needed for reestablishing connection - service uuid of the remote
     uint16_t service_uuid;
 
@@ -565,7 +565,7 @@ typedef struct hfp_connection {
     bool     parser_quoted;
     uint8_t  line_buffer[HFP_MAX_VR_TEXT_SIZE];
     int      line_size;
-    
+
     uint32_t remote_supported_features;
 
     uint16_t remote_codecs_nr;
@@ -578,14 +578,14 @@ typedef struct hfp_connection {
 
     uint16_t remote_call_services_index;
     hfp_call_service_t remote_call_services[HFP_MAX_NUM_CALL_SERVICES];
-    
+
     // TODO: use bitmap.
     uint16_t generic_status_indicators_nr;
     uint32_t generic_status_update_bitmap;
     hfp_generic_status_indicator_t generic_status_indicators[HFP_MAX_NUM_INDICATORS];
 
     hfp_network_opearator_t network_operator;
-    
+
     // Retrieved during service level connection establishment, not used yet
     uint8_t  negotiated_codec;
 
@@ -600,8 +600,8 @@ typedef struct hfp_connection {
     bool found_equal_sign;
     uint8_t ignore_value;
 
-    uint8_t change_status_update_for_individual_ag_indicators; 
-    uint8_t operator_name_changed;      
+    uint8_t change_status_update_for_individual_ag_indicators;
+    uint8_t operator_name_changed;
 
     uint8_t enable_extended_audio_gateway_error_report;
     uint8_t extended_audio_gateway_error_value;
@@ -618,8 +618,8 @@ typedef struct hfp_connection {
     uint8_t accept_sco; // 1 = SCO, 2 = eSCO
 
     uint8_t establish_audio_connection;
-    uint8_t release_audio_connection; 
-    uint8_t release_slc_connection; 
+    uint8_t release_audio_connection;
+    uint8_t release_slc_connection;
 
     uint8_t microphone_gain;
     uint8_t send_microphone_gain;
@@ -631,7 +631,7 @@ typedef struct hfp_connection {
     uint8_t send_ag_status_indicators;
     uint8_t send_ag_indicators_segment;
     uint8_t send_response_and_hold_status;  // 0 - don't send. BRTH:0 == 1, ..
-    
+
     bool emit_vra_enabled_after_audio_established;
     // AG only
     uint8_t change_in_band_ring_tone_setting;
@@ -670,7 +670,7 @@ typedef struct hfp_connection {
     bool    hf_send_supported_codecs;
 
     int memory_id;
-    
+
     uint8_t hf_send_clip_enable;
     uint8_t hf_send_chup;
     uint8_t hf_send_chld_0;
@@ -680,7 +680,7 @@ typedef struct hfp_connection {
     uint8_t hf_send_chld_4;
     uint8_t hf_send_chld_x;
     uint8_t hf_send_chld_x_index;
-    char    hf_send_dtmf_code; 
+    char    hf_send_dtmf_code;
     uint8_t hf_send_binp;
     uint8_t hf_send_clcc;
     uint8_t hf_send_rrh;
@@ -689,7 +689,7 @@ typedef struct hfp_connection {
 
     uint8_t hf_activate_call_waiting_notification;
     uint8_t hf_deactivate_call_waiting_notification;
-    
+
     uint8_t hf_activate_calling_line_notification;
     uint8_t hf_deactivate_calling_line_notification;
     uint8_t hf_deactivate_echo_canceling_and_noise_reduction;
@@ -715,7 +715,7 @@ typedef struct hfp_connection {
     uint8_t call_index;
     // also used for CLCC, CCWA, CLIP if set
     uint8_t bnip_type;       // 0 == not set
-    char    bnip_number[25]; // 
+    char    bnip_number[25]; //
 
 #ifdef ENABLE_CC256X_ASSISTED_HFP
     bool cc256x_send_write_codec_config;
@@ -792,7 +792,7 @@ void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);
  * @param local_role
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *                  - ERROR_CODE_COMMAND_DISALLOWED if connection already exists, or
- *                  - BTSTACK_MEMORY_ALLOC_FAILED 
+ *                  - BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role);
 

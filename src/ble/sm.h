@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Security Manager
- * 
+ *
  */
 
 #ifndef SM_H
@@ -86,7 +86,7 @@ void sm_set_ir(sm_key_t ir);
 void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_data));
 
 /**
- * @brief Add event packet handler. 
+ * @brief Add event packet handler.
  * @param callback_handler
  */
 void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler);
@@ -99,7 +99,7 @@ void sm_remove_event_handler(btstack_packet_callback_registration_t * callback_h
 
 /**
  * @brief Limit the STK generation methods. Bonding is stopped if the resulting one isn't in the list
- * @param OR combination of SM_STK_GENERATION_METHOD_ 
+ * @param OR combination of SM_STK_GENERATION_METHOD_
  */
 void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_methods);
 
@@ -134,7 +134,7 @@ void sm_set_secure_connections_only_mode(bool enable);
  */
 void sm_set_request_security(int enable);
 
-/** 
+/**
  * @brief Trigger Security Request
  * @deprecated please use sm_request_pairing instead
  */
@@ -147,13 +147,13 @@ void sm_send_security_request(hci_con_handle_t con_handle);
 void sm_bonding_decline(hci_con_handle_t con_handle);
 
 /**
- * @brief Confirm Just Works bonding 
+ * @brief Confirm Just Works bonding
  * @param con_handle
  */
 void sm_just_works_confirm(hci_con_handle_t con_handle);
 
 /**
- * @brief Confirm value from SM_EVENT_NUMERIC_COMPARISON_REQUEST for Numeric Comparison bonding 
+ * @brief Confirm value from SM_EVENT_NUMERIC_COMPARISON_REQUEST for Numeric Comparison bonding
  * @param con_handle
  */
 void sm_numeric_comparison_confirm(hci_con_handle_t con_handle);
@@ -198,9 +198,9 @@ int sm_cmac_ready(void);
 
 /**
  * @brief Support for signed writes, used by att_server.
- * @note Message is in little endian to allows passing in ATT PDU without flipping. 
+ * @note Message is in little endian to allows passing in ATT PDU without flipping.
  * @note signing data: [opcode, attribute_handle, message, sign_counter]
- * @note calculated hash in done_callback is big endian and has 16 byte. 
+ * @note calculated hash in done_callback is big endian and has 16 byte.
  * @param key
  * @param opcde
  * @param attribute_handle
@@ -236,14 +236,14 @@ int sm_le_device_index(hci_con_handle_t con_handle);
 
 /**
  * @brief Use fixec passkey for Legacy and SC instead of generating a random number
- * @note Can be used to improve security over Just Works if no keyboard or displary are present and 
+ * @note Can be used to improve security over Just Works if no keyboard or displary are present and
  *       individual random passkey can be printed on the device during production
  * @param passkey
  */
 void sm_use_fixed_passkey_in_display_role(uint32_t passkey);
 
 /**
- * @brief Allow connection re-encryption in Peripheral (Responder) role for LE Legacy Pairing 
+ * @brief Allow connection re-encryption in Peripheral (Responder) role for LE Legacy Pairing
  *       without entry for Central device stored in LE Device DB
  * @note BTstack in Peripheral Role (Responder) supports LE Legacy Pairing without a persistent LE Device DB as
  *       the LTK is reconstructed from a local secret IRK and EDIV + Random stored on Central (Initiator) device

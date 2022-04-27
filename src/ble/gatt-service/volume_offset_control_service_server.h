@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Volume Offset Control Service Server
- * 
+ *
  */
 
 #ifndef VOLUME_OFFSET_CONTROL_SERVICE_SERVER_H
@@ -50,10 +50,10 @@ extern "C" {
 #endif
 
 /**
- * @text The Volume Offset Control Service allows to query your device's volume offset settings such as a Bluetooth 
- * audio stream, microphone, etc. 
- * 
- * To use with your application, add `#import <volume_offset_control_service.gatt>` to your .gatt file. 
+ * @text The Volume Offset Control Service allows to query your device's volume offset settings such as a Bluetooth
+ * audio stream, microphone, etc.
+ *
+ * To use with your application, add `#import <volume_offset_control_service.gatt>` to your .gatt file.
  *
  */
 #define VOCS_MAX_NUM_SERVICES 5
@@ -134,7 +134,7 @@ typedef struct {
 
     // ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_LOCATION
     uint16_t audio_location_value_handle;
-   
+
     uint16_t audio_location_client_configuration_handle;
     uint16_t audio_location_client_configuration;
     btstack_context_callback_registration_t audio_location_callback;
@@ -161,7 +161,7 @@ void volume_offset_control_service_server_init(volume_offset_control_service_ser
 /**
  * @brief Set volume offset of the VOCS service. If successful, all registered clients will be notified of change.
  * @param vocs service
- * @param volume_offset 
+ * @param volume_offset
  * @return status ERROR_CODE_SUCCESS if successful
  */
 uint8_t volume_offset_control_service_server_set_volume_offset(volume_offset_control_service_server_t * vocs, int16_t volume_offset);
@@ -189,4 +189,3 @@ void volume_offset_control_service_server_set_audio_output_description(volume_of
 #endif
 
 #endif
-

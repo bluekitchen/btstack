@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -40,7 +40,7 @@
 
 // *****************************************************************************
 //
-// Advertising Data Parser 
+// Advertising Data Parser
 //
 // *****************************************************************************
 
@@ -71,7 +71,7 @@ bool ad_iterator_has_more(const ad_context_t * context){
     if (chunk_len == 0u){
         return false;
     }
-    
+
     // assert complete chunk fits into buffer
     if ((context->offset + 1u + chunk_len) > context->length) {
         return false;
@@ -104,10 +104,10 @@ bool ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t u
         uint8_t data_type    = ad_iterator_get_data_type(&context);
         uint8_t data_len     = ad_iterator_get_data_len(&context);
         const uint8_t * data = ad_iterator_get_data(&context);
-        
+
         uint8_t i;
         uint8_t ad_uuid128[16], uuid128_bt[16];
-                
+
         switch (data_type){
             case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
             case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
@@ -130,7 +130,7 @@ bool ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t u
                 break;
             default:
                 break;
-        }  
+        }
         ad_iterator_next(&context);
     }
     return false;
@@ -146,7 +146,7 @@ bool ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uin
         uint8_t data_type = ad_iterator_get_data_type(&context);
         uint8_t data_len  = ad_iterator_get_data_len(&context);
         const uint8_t * data = ad_iterator_get_data(&context);
-        
+
         uint8_t i;
         uint8_t ad_uuid128[16];
 
@@ -156,7 +156,7 @@ bool ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uin
                 for (i = 0u; (i+2u) <= data_len; i += 2u){
                     uint16_t uuid16 = little_endian_read_16(data, (int) i);
                     uuid_add_bluetooth_prefix(ad_uuid128, uuid16);
-                    
+
                     if (memcmp(ad_uuid128, uuid128_le, 16) == 0) {
                         return true;
                     }
@@ -173,9 +173,8 @@ bool ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uin
                 break;
             default:
                 break;
-        }  
+        }
         ad_iterator_next(&context);
     }
     return false;
 }
-

@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -53,8 +53,8 @@
 static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t * connection){
-    int pos = 0; 
-    
+    int pos = 0;
+
     // l2cap_reserve_packet_buffer();
     // uint8_t * packet = l2cap_get_outgoing_buffer();
     uint8_t packet[300];
@@ -66,7 +66,7 @@ static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
     (void)memcpy(packet + pos, connection->cmd_operands,
                  connection->cmd_operands_length);
-    
+
     pos += connection->cmd_operands_length;
     connection->wait_to_send = false;
     // return l2cap_send_prepared(connection->l2cap_browsing_cid, pos);
@@ -157,9 +157,9 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                     browsing_connection->num_packets = 1;
                     if (avctp_packet_type == AVCTP_START_PACKET){
                         browsing_connection->num_packets = packet[pos++];
-                    } 
+                    }
                     browsing_connection->pdu_id = packet[pos++];
-                   
+
                     switch(browsing_connection->pdu_id){
                         case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
                             browsing_connection->scope = packet[pos++];
@@ -203,7 +203,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
             }
             break;
         }
-        
+
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
                 case L2CAP_EVENT_CAN_SEND_NOW:
@@ -242,7 +242,7 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     if (!connection){
         log_info("Could not find a browsing connection.");
@@ -256,11 +256,11 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_GET_FOLDER_ITEMS;
     big_endian_store_16(connection->cmd_operands, pos, attr_list_size);
     pos += 2;
-    
+
     connection->cmd_operands[pos++] = AVRCP_STATUS_SUCCESS;
     big_endian_store_16(connection->cmd_operands, pos, uid_counter);
     pos += 2;
-    
+
     // TODO: fragmentation
     if (attr_list_size >  sizeof(connection->cmd_operands)){
         connection->attr_list = attr_list;
@@ -283,18 +283,18 @@ uint8_t avrcp_browsing_target_send_accept_set_browsed_player(uint16_t avrcp_brow
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     if (!connection){
         log_info("Could not find a browsing connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (connection->state != AVCTP_CONNECTION_OPENED) {
         log_info("Browsing connection wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    
+
     connection->browsed_player_id = browsed_player_id;
 
     uint16_t pos = 0;
@@ -313,7 +313,7 @@ uint8_t avrcp_browsing_target_send_accept_set_browsed_player(uint16_t avrcp_brow
         log_info(" todo: list too big, invoke fragmentation");
         return 1;
     }
-    
+
     (void)memcpy(&connection->cmd_operands[pos], response, response_size);
     pos += response_size;
     connection->cmd_operands_length = pos;
@@ -329,23 +329,23 @@ uint8_t avrcp_browsing_target_send_reject_set_browsed_player(uint16_t avrcp_brow
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     if (!connection){
         log_info("Could not find a browsing connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (connection->state != AVCTP_CONNECTION_OPENED) {
         log_info("Browsing connection wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    
+
     int pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_SET_BROWSED_PLAYER;
     big_endian_store_16(connection->cmd_operands, pos, 1);
     connection->cmd_operands[pos++] = status;
-    connection->cmd_operands_length = pos;    
+    connection->cmd_operands_length = pos;
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
@@ -358,13 +358,13 @@ uint8_t avrcp_browsing_target_send_get_total_num_items_response(uint16_t avrcp_b
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     if (!connection){
         log_info("Could not find a browsing connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (connection->state != AVCTP_CONNECTION_OPENED) {
         log_info("Browsing connection wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -378,11 +378,10 @@ uint8_t avrcp_browsing_target_send_get_total_num_items_response(uint16_t avrcp_b
     big_endian_store_16(connection->cmd_operands, pos, uid_counter);
     pos += 2;
     big_endian_store_32(connection->cmd_operands, pos, total_num_items);
-    pos += 4; 
-    connection->cmd_operands_length = pos;    
+    pos += 4;
+    connection->cmd_operands_length = pos;
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
-

@@ -30,13 +30,13 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 #define BTSTACK_FILE__ "hsp_hs.c"
- 
+
 // *****************************************************************************
 //
 // HSP Headset
@@ -82,19 +82,19 @@ typedef enum {
     HSP_W2_SEND_SDP_QUERY,
     HSP_W4_SDP_QUERY_COMPLETE,
     HSP_W4_RFCOMM_CONNECTED,
-    
+
     HSP_RFCOMM_CONNECTION_ESTABLISHED,
-    
+
     HSP_W2_CONNECT_SCO,
     HSP_W4_SCO_CONNECTED,
-    
-    HSP_AUDIO_CONNECTION_ESTABLISHED, 
-    
+
+    HSP_AUDIO_CONNECTION_ESTABLISHED,
+
     HSP_W2_DISCONNECT_SCO,
-    HSP_W4_SCO_DISCONNECTED, 
+    HSP_W4_SCO_DISCONNECTED,
 
     HSP_W2_DISCONNECT_RFCOMM,
-    HSP_W4_RFCOMM_DISCONNECTED,  
+    HSP_W4_RFCOMM_DISCONNECTED,
     HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hsp_state_t;
 
@@ -247,7 +247,7 @@ void hsp_hs_create_sdp_record(uint8_t * service,  uint32_t service_record_handle
             de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
         }
         de_pop_sequence(attribute, l2cpProtocol);
-        
+
         uint8_t* rfcomm = de_push_sequence(attribute);
         {
             de_add_number(rfcomm,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_RFCOMM);  // rfcomm_service
@@ -271,7 +271,7 @@ void hsp_hs_create_sdp_record(uint8_t * service,  uint32_t service_record_handle
     {
         uint8_t *hsp_profile = de_push_sequence(attribute);
         {
-            de_add_number(hsp_profile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_HEADSET); 
+            de_add_number(hsp_profile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_HEADSET);
             de_add_number(hsp_profile,  DE_UINT, DE_SIZE_16, 0x0102); // Verision 1.2
         }
         de_pop_sequence(attribute, hsp_profile);
@@ -285,7 +285,7 @@ void hsp_hs_create_sdp_record(uint8_t * service,  uint32_t service_record_handle
     } else {
         de_add_data(service, DE_STRING, strlen(hsp_hs_default_service_name), (uint8_t *) hsp_hs_default_service_name);
     }
-    
+
     // Remote audio volume control
     de_add_number(service, DE_UINT, DE_SIZE_16, 0x030C);
     de_add_number(service, DE_BOOL, DE_SIZE_8, have_remote_audio_control);
@@ -331,7 +331,7 @@ void hsp_hs_deinit(void){
 static void hsp_hs_handle_start_sdp_client_query(void * context){
     UNUSED(context);
     if (hsp_state != HSP_W2_SEND_SDP_QUERY) return;
-    
+
     hsp_state = HSP_W4_SDP_QUERY_COMPLETE;
     log_info("Start SDP query %s, 0x%02x", bd_addr_to_str(hsp_hs_remote), BLUETOOTH_SERVICE_CLASS_HEADSET_AUDIO_GATEWAY_AG);
     sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid(&handle_query_rfcomm_event, hsp_hs_remote, BLUETOOTH_SERVICE_CLASS_HEADSET_AUDIO_GATEWAY_AG);
@@ -390,7 +390,7 @@ void hsp_hs_release_audio_connection(void){
 void hsp_hs_set_microphone_gain(uint8_t gain){
     if (gain >15) {
         log_info("Gain must be in interval [0..15], it is given %d", gain);
-        return; 
+        return;
     }
     hsp_hs_microphone_gain = gain;
     hsp_run();
@@ -400,12 +400,12 @@ void hsp_hs_set_microphone_gain(uint8_t gain){
 void hsp_hs_set_speaker_gain(uint8_t gain){
     if (gain >15) {
         log_info("Gain must be in interval [0..15], it is given %d", gain);
-        return; 
+        return;
     }
     hsp_hs_speaker_gain = gain;
     hsp_run();
-}  
-    
+}
+
 static void hsp_run_handle_state(void){
     switch (hsp_state){
         case HSP_AUDIO_CONNECTION_ESTABLISHED:
@@ -473,7 +473,7 @@ static void hsp_run(void){
         packet_types ^= 0x03c0;
 
         uint16_t sco_voice_setting = hci_get_sco_voice_setting();
-        
+
         log_info("HFP: sending hci_accept_connection_request, sco_voice_setting %02x", sco_voice_setting);
         hci_send_cmd(&hci_accept_synchronous_connection, hsp_hs_remote, 8000, 8000, 0xffff, sco_voice_setting, 0xff, packet_types);
         return;
@@ -500,7 +500,7 @@ static void hsp_run(void){
         hsp_hs_send_str_over_rfcomm(hsp_hs_rfcomm_cid, HSP_HS_AT_CKPD);
         return;
     }
-    
+
     if (hsp_hs_send_button_press_triggered){
         if (!rfcomm_can_send_packet_now(hsp_hs_rfcomm_cid)) {
             rfcomm_request_can_send_now_event(hsp_hs_rfcomm_cid);
@@ -540,7 +540,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         } else if (strncmp((char *)packet, HSP_MICROPHONE_GAIN, strlen(HSP_MICROPHONE_GAIN)) == 0){
             uint8_t gain = (uint8_t)btstack_atoi((char*)&packet[strlen(HSP_MICROPHONE_GAIN)]);
             emit_event_with_value(HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED, gain);
-        
+
         } else if (strncmp((char *)packet, HSP_SPEAKER_GAIN, strlen(HSP_SPEAKER_GAIN)) == 0){
             uint8_t gain = (uint8_t)btstack_atoi((char*)&packet[strlen(HSP_SPEAKER_GAIN)]);
             emit_event_with_value(HSP_SUBEVENT_SPEAKER_GAIN_CHANGED, gain);
@@ -588,8 +588,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;
                 default:
-                    break;                    
-            }            
+                    break;
+            }
             break;
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
@@ -625,14 +625,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     log_error("(e)SCO reserved link_type 0x%2x", link_type);
                     break;
             }
-            log_info("sco_handle 0x%2x, address %s, transmission_interval %u slots, retransmission_interval %u slots, " 
+            log_info("sco_handle 0x%2x, address %s, transmission_interval %u slots, retransmission_interval %u slots, "
                  " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)", hsp_hs_sco_handle,
                      bd_addr_to_str(event_addr), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length,
                      hci_event_synchronous_connection_complete_get_air_mode(packet));
 
             hsp_state = HSP_AUDIO_CONNECTION_ESTABLISHED;
             emit_event_audio_connected(status, hsp_hs_sco_handle);
-            break;                
+            break;
         }
 
         case RFCOMM_EVENT_INCOMING_CONNECTION:
@@ -669,7 +669,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case RFCOMM_EVENT_CAN_SEND_NOW:
             hsp_run();
             break;
-        
+
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             handle = hci_event_disconnection_complete_get_connection_handle(packet);
             if (handle == hsp_hs_sco_handle){
@@ -678,7 +678,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
                 emit_event_audio_disconnected(sco_handle);
                 break;
-            } 
+            }
             break;
 
         case RFCOMM_EVENT_CHANNEL_CLOSED:

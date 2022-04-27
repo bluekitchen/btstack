@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -38,7 +38,7 @@
 /**
  * @title AVDTP Sink
  *
- * Audio/Video Distribution Transport Protocol (AVDTP) Sink is a device that accepts streamed media data.  
+ * Audio/Video Distribution Transport Protocol (AVDTP) Sink is a device that accepts streamed media data.
  *
  */
 
@@ -80,7 +80,7 @@ void avdtp_sink_register_media_codec_category(uint8_t seid, avdtp_media_type_t m
 void avdtp_sink_register_content_protection_category(uint8_t seid, uint16_t cp_type, const uint8_t * cp_type_value, uint8_t cp_type_value_len);
 
 /**
- * @brief Register callback for the AVDTP Sink client. 
+ * @brief Register callback for the AVDTP Sink client.
  * @param callback
  */
 void avdtp_sink_register_packet_handler(btstack_packet_handler_t callback);
@@ -94,7 +94,7 @@ uint8_t avdtp_sink_connect(bd_addr_t bd_addr, uint16_t * avdtp_cid);
 
 void avdtp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size));
 /**
- * @brief Disconnect from device with connection handle. 
+ * @brief Disconnect from device with connection handle.
  * @param avdtp_cid
  */
 uint8_t avdtp_sink_disconnect(uint16_t avdtp_cid);

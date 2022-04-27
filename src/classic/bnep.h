@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -46,11 +46,11 @@
 
 #ifndef BNEP_H
 #define BNEP_H
- 
+
 #include "btstack_util.h"
 #include "btstack_run_loop.h"
 #include "gap.h"
- 
+
 #include <stdint.h>
 
 #if defined __cplusplus
@@ -111,7 +111,7 @@ typedef struct {
 
     BNEP_CHANNEL_STATE_VAR state_var;     // State flag variable. Needed for asynchronous packet sending
 
-    uint16_t           max_frame_size;    // incomming max. frame size   
+    uint16_t           max_frame_size;    // incomming max. frame size
     void              *connection;        // client connection
     bd_addr_t          local_addr;        // locale drvice address
 	bd_addr_t          remote_addr;       // remote device address
@@ -129,10 +129,10 @@ typedef struct {
 
     bnep_net_filter_t *net_filter_out;                              // outgoint network protocol filter, must be statically allocated in the application
     uint16_t           net_filter_out_count;
-    
+
     bnep_multi_filter_t  multicast_filter[MAX_BNEP_MULTICAST_FILTER]; // multicast address filter, define fixed size for now
     uint16_t             multicast_filter_count;
-    
+
     bnep_multi_filter_t *multicast_filter_out;                        // outgoing multicast address filter, must be statically allocated in the application
     uint16_t             multicast_filter_out_count;
 
@@ -152,7 +152,7 @@ typedef struct {
     btstack_linked_item_t    item;           // linked list - assert: first field
     uint16_t         service_uuid;   // Service class: PANU, NAP, GN
     uint16_t         max_frame_size; // incomming max. frame size
-    
+
     // internal connection
     btstack_packet_handler_t packet_handler;
 } bnep_service_t;
@@ -172,7 +172,7 @@ void bnep_init(void);
  */
 int bnep_can_send_packet_now(uint16_t bnep_cid);
 
-/** 
+/**
  * @brief Request emission of BNEP_CAN_SEND_NOW as soon as possible
  * @note BNEP_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
@@ -202,17 +202,17 @@ int bnep_set_multicast_filter(uint16_t bnep_cid, bnep_multi_filter_t *filter, ui
 void bnep_set_required_security_level(gap_security_level_t security_level);
 
 /**
- * @brief Creates BNEP connection (channel) to a given server on a remote device with baseband address. A new baseband connection will be initiated if necessary. 
+ * @brief Creates BNEP connection (channel) to a given server on a remote device with baseband address. A new baseband connection will be initiated if necessary.
  */
 int bnep_connect(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src, uint16_t uuid_dest);
 
 /**
- * @brief Disconnects BNEP channel with given identifier. 
+ * @brief Disconnects BNEP channel with given identifier.
  */
 void bnep_disconnect(bd_addr_t addr);
 
 /**
- * @brief Registers BNEP service, set a maximum frame size and assigns a packet handler. On embedded systems, use NULL for connection parameter. 
+ * @brief Registers BNEP service, set a maximum frame size and assigns a packet handler. On embedded systems, use NULL for connection parameter.
  */
 uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t service_uuid, uint16_t max_frame_size);
 

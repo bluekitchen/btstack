@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -133,7 +133,7 @@ static void gatt_bearer_start_sending(hci_con_handle_t con_handle){
                  &proxy_pdu[segmentation_offset], pdu_segment_len);
     segmentation_offset += pdu_segment_len;
     mesh_proxy_service_server_send_proxy_pdu(con_handle, sar_buffer.segmentation_buffer, pdu_segment_len + 1);
-    
+
     switch (segmentation_state){
         case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
         case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
@@ -159,7 +159,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(channel);
     UNUSED(size);
     mesh_msg_sar_field_t msg_sar_field;
-    
+
     uint16_t pdu_segment_len;
     uint16_t pos;
     hci_con_handle_t con_handle;
@@ -180,7 +180,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if (!client_callbacks[msg_type]){
                         log_error("client callback not defined");
                         return;
-                    } 
+                    }
                     break;
                 default:
                     log_info("gatt bearer: message type %d not supported", msg_type);
@@ -223,9 +223,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 default:
                     break;
             }
-            
+
             send_to_mesh_network = (msg_sar_field == MESH_MSG_SAR_FIELD_COMPLETE_MSG) || (msg_sar_field == MESH_MSG_SAR_FIELD_LAST_SEGMENT);
-                    
+
             if (!send_to_mesh_network) break;
             switch (msg_type){
                 case MESH_MSG_TYPE_NETWORK_PDU:
@@ -240,9 +240,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     log_info("gatt bearer: message type %d not supported", msg_type);
                     return;
             }
-            
+
             break;
- 
+
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 case HCI_EVENT_MESH_META:
@@ -257,7 +257,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             gatt_bearer_emit_event_for_all(packet, size);
                             break;
                         case MESH_SUBEVENT_CAN_SEND_NOW:
-                            con_handle = little_endian_read_16(packet, 3); 
+                            con_handle = little_endian_read_16(packet, 3);
                             if (con_handle == HCI_CON_HANDLE_INVALID) return;
 
                             if (!outgoing_ready){
@@ -306,7 +306,7 @@ void gatt_bearer_request_can_send_now_for_mesh_proxy_configuration(void){
 }
 
 static void gatt_bearer_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t size){
-    if (!pdu || size <= 0) return; 
+    if (!pdu || size <= 0) return;
     if (con_handle == HCI_CON_HANDLE_INVALID) return;
     // store pdu, request to send
     proxy_pdu = pdu;
@@ -337,4 +337,3 @@ void gatt_bearer_send_mesh_proxy_configuration(const uint8_t * data, uint16_t da
     msg_type = MESH_MSG_TYPE_PROXY_CONFIGURATION;
     gatt_bearer_send_pdu(gatt_bearer_con_handle, data, data_len);
 }
-

@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -94,7 +94,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 void ancs_client_register_callback(btstack_packet_handler_t handler){
-    client_handler = handler; 
+    client_handler = handler;
 }
 
 static void notify_client_text(int event_type){
@@ -342,7 +342,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             }
             return;
 
-        case HCI_EVENT_ENCRYPTION_CHANGE: 
+        case HCI_EVENT_ENCRYPTION_CHANGE:
             if (gc_handle != little_endian_read_16(packet, 3)) return;
             connection_encrypted = packet[5];
             log_info("Encryption state change: %u", connection_encrypted);
@@ -354,7 +354,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             tc_state = TC_W4_SERVICE_RESULT;
             gatt_client_discover_primary_services_by_uuid128(ancs_client_handle_gatt_client_event, gc_handle, ancs_service_uuid);
             return;
-            
+
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (hci_event_disconnection_complete_get_connection_handle(packet) != gc_handle) break;
             if (tc_state == TC_SUBSCRIBED){

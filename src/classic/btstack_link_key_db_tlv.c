@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -82,7 +82,7 @@ static void btstack_link_key_db_tlv_set_bd_addr(bd_addr_t bd_addr){
     (void)bd_addr;
 }
 
-static void btstack_link_key_db_tlv_close(void){ 
+static void btstack_link_key_db_tlv_close(void){
 }
 
 static int btstack_link_key_db_tlv_get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type) {
@@ -166,7 +166,7 @@ static void btstack_link_key_db_tlv_put_link_key(bd_addr_t bd_addr, link_key_t l
     log_info("store with tag %x", (unsigned int) tag_to_use);
 
     link_key_nvm_t entry;
-    
+
     (void)memcpy(entry.bd_addr, bd_addr, 6);
     (void)memcpy(entry.link_key, link_key, 16);
     entry.link_key_type = link_key_type;
@@ -222,5 +222,3 @@ const btstack_link_key_db_t * btstack_link_key_db_tlv_get_instance(const btstack
     self->btstack_tlv_context = btstack_tlv_context;
     return &btstack_link_key_db_tlv;
 }
-
-

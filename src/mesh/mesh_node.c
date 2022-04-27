@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -67,7 +67,7 @@ void mesh_node_primary_element_address_set(uint16_t unicast_address){
 }
 
 uint16_t mesh_node_get_primary_element_address(void){
-    return primary_element_address; 
+    return primary_element_address;
 }
 
 void mesh_node_init(void){

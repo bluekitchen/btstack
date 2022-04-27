@@ -30,13 +30,13 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 #define BTSTACK_FILE__ "goep_client.c"
- 
+
 #include "btstack_config.h"
 
 #include <stdint.h>
@@ -132,7 +132,7 @@ static inline void goep_client_emit_connected_event(goep_client_t * context, uin
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("goep_client_emit_connected_event size %u", pos);
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
-}   
+}
 
 static inline void goep_client_emit_connection_closed_event(goep_client_t * context){
     uint8_t event[5];
@@ -145,7 +145,7 @@ static inline void goep_client_emit_connection_closed_event(goep_client_t * cont
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("goep_client_emit_connection_closed_event size %u", pos);
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
-}   
+}
 
 static inline void goep_client_emit_can_send_now_event(goep_client_t * context){
     uint8_t event[5];
@@ -158,7 +158,7 @@ static inline void goep_client_emit_can_send_now_event(goep_client_t * context){
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("goep_client_emit_can_send_now_event size %u", pos);
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
-}   
+}
 
 static void goep_client_handle_connection_opened(goep_client_t * context, uint8_t status, uint16_t mtu){
     if (status) {
@@ -448,7 +448,7 @@ void goep_client_request_create_connect(uint16_t goep_cid, uint8_t obex_version_
 
     // workaround: limit OBEX packet len to L2CAP/RFCOMM MTU to avoid handling of fragemented packets
     maximum_obex_packet_length = btstack_min(maximum_obex_packet_length, context->bearer_mtu);
-    
+
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_request_create_connect(buffer, buffer_len, obex_version_number, flags, maximum_obex_packet_length);
@@ -507,7 +507,7 @@ void goep_client_request_create_disconnect(uint16_t goep_cid){
 void goep_client_header_add_byte(uint16_t goep_cid, uint8_t header_type, uint8_t value){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    
+
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_header_add_byte(buffer, buffer_len, header_type, value);
@@ -516,7 +516,7 @@ void goep_client_header_add_byte(uint16_t goep_cid, uint8_t header_type, uint8_t
 void goep_client_header_add_word(uint16_t goep_cid, uint8_t header_type, uint32_t value){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    
+
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_header_add_word(buffer, buffer_len, header_type, value);
@@ -525,7 +525,7 @@ void goep_client_header_add_word(uint16_t goep_cid, uint8_t header_type, uint32_
 void goep_client_header_add_variable(uint16_t goep_cid, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    
+
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_header_add_variable(buffer, buffer_len, header_type, header_data, header_data_length);
@@ -534,7 +534,7 @@ void goep_client_header_add_variable(uint16_t goep_cid, uint8_t header_type, con
 void goep_client_header_add_srm_enable(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    
+
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_header_add_srm_enable(buffer, buffer_len);
@@ -543,7 +543,7 @@ void goep_client_header_add_srm_enable(uint16_t goep_cid){
 void goep_client_header_add_target(uint16_t goep_cid, const uint8_t * target, uint16_t length){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    
+
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_header_add_target(buffer, buffer_len, target, length);
@@ -552,7 +552,7 @@ void goep_client_header_add_target(uint16_t goep_cid, const uint8_t * target, ui
 void goep_client_header_add_application_parameters(uint16_t goep_cid, const uint8_t * data, uint16_t length){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    
+
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_header_add_application_parameters(buffer, buffer_len, data, length);
@@ -561,7 +561,7 @@ void goep_client_header_add_application_parameters(uint16_t goep_cid, const uint
 void goep_client_header_add_challenge_response(uint16_t goep_cid, const uint8_t * data, uint16_t length){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    
+
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_header_add_challenge_response(buffer, buffer_len, data, length);
@@ -570,7 +570,7 @@ void goep_client_header_add_challenge_response(uint16_t goep_cid, const uint8_t 
 void goep_client_body_add_static(uint16_t goep_cid, const uint8_t * data, uint32_t length){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    
+
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_body_add_static(buffer, buffer_len, data, length);
@@ -579,7 +579,7 @@ void goep_client_body_add_static(uint16_t goep_cid, const uint8_t * data, uint32
 void goep_client_header_add_name(uint16_t goep_cid, const char * name){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    
+
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_header_add_name(buffer, buffer_len, name);
@@ -597,7 +597,7 @@ void goep_client_header_add_name_prefix(uint16_t goep_cid, const char * name, ui
 void goep_client_header_add_type(uint16_t goep_cid, const char * type){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    
+
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_header_add_type(buffer, buffer_len, type);
@@ -614,4 +614,3 @@ int goep_client_execute(uint16_t goep_cid){
         return rfcomm_send_prepared(context->bearer_cid, pos);
     }
 }
-

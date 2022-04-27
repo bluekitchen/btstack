@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -120,9 +120,9 @@ static btstack_timer_source_t pb_adv_link_timer;
 
 // incoming message
 static uint8_t  pb_adv_msg_in_transaction_nr_prev;
-static uint16_t pb_adv_msg_in_len;   // 
+static uint16_t pb_adv_msg_in_len;   //
 static uint8_t  pb_adv_msg_in_fcs;
-static uint8_t  pb_adv_msg_in_last_segment; 
+static uint8_t  pb_adv_msg_in_last_segment;
 static uint8_t  pb_adv_msg_in_segments_missing; // bitfield for segmentes 1-n
 static uint8_t  pb_adv_msg_in_transaction_nr;
 static uint8_t  pb_adv_msg_in_send_ack;
@@ -204,7 +204,7 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
                 case LINK_STATE_W4_OPEN:
                     pb_adv_link_id = link_id;
                     pb_adv_provisioner_role = 0;
-                    pb_adv_msg_in_transaction_nr = 0xff;  // first transaction nr will be 0x00 
+                    pb_adv_msg_in_transaction_nr = 0xff;  // first transaction nr will be 0x00
                     pb_adv_msg_in_transaction_nr_prev = 0xff;
                     log_info("link open, id %08x", pb_adv_link_id);
                     printf("PB-ADV: Link Open %08x\n", pb_adv_link_id);
@@ -396,7 +396,7 @@ static void pb_adv_outgoing_transaction_complete(uint8_t status){
 }
 
 static void pb_adv_handle_transaction_ack(uint8_t transaction_nr, const uint8_t * pdu, uint16_t size){
-    UNUSED(pdu);    
+    UNUSED(pdu);
     UNUSED(size);
     if (transaction_nr == pb_adv_msg_out_transaction_nr){
         printf("PB-ADV: %02x ACK received\n", transaction_nr);
@@ -416,7 +416,7 @@ static void pb_adv_timer_handler(btstack_timer_source_t * ts){
     UNUSED(ts);
     pb_adv_random_delay_active = 0;
     if (!pb_adv_packet_to_send()) return;
-    adv_bearer_request_can_send_now_for_provisioning_pdu();  
+    adv_bearer_request_can_send_now_for_provisioning_pdu();
 }
 
 static void pb_adv_run(void){
@@ -534,11 +534,11 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         adv_bearer_send_provisioning_pdu(buffer, sizeof(buffer));
                         pb_adv_link_close_countdown--;
                         if (pb_adv_link_close_countdown) {
-                            adv_bearer_request_can_send_now_for_provisioning_pdu();  
+                            adv_bearer_request_can_send_now_for_provisioning_pdu();
                         } else {
                             link_state = LINK_STATE_W4_OPEN;
                         }
-                        break;                        
+                        break;
                     }
                     if (link_state == LINK_STATE_W2_SEND_ACK){
                         link_state = LINK_STATE_OPEN;
@@ -679,7 +679,7 @@ void pb_adv_close_link(uint16_t pb_transport_cid, uint8_t reason){
 #ifdef ENABLE_MESH_PROVISIONER
 uint16_t pb_adv_create_link(const uint8_t * device_uuid){
     if (link_state != LINK_STATE_W4_OPEN) return 0;
-    
+
     pb_adv_peer_device_uuid = device_uuid;
     pb_adv_provisioner_role = 1;
     pb_adv_provisioner_open_countdown = PB_ADV_LINK_OPEN_RETRIES;
@@ -697,4 +697,3 @@ uint16_t pb_adv_create_link(const uint8_t * device_uuid){
     return pb_adv_cid;
 }
 #endif
-

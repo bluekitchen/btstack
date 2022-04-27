@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -159,12 +159,12 @@ static void pb_send_pdu(uint16_t transport_cid, const uint8_t * buffer, uint16_t
     switch (pb_type){
 #ifdef ENABLE_MESH_ADV_BEARER
         case MESH_PB_TYPE_ADV:
-            pb_adv_send_pdu(transport_cid, buffer, buffer_size);    
+            pb_adv_send_pdu(transport_cid, buffer, buffer_size);
             break;
 #endif
 #ifdef ENABLE_MESH_GATT_BEARER
         case MESH_PB_TYPE_GATT:
-            pb_gatt_send_pdu(transport_cid, buffer, buffer_size);    
+            pb_gatt_send_pdu(transport_cid, buffer, buffer_size);
             break;
 #endif
         default:
@@ -176,12 +176,12 @@ static void pb_close_link(uint16_t transport_cid, uint8_t reason){
     switch (pb_type){
 #ifdef ENABLE_MESH_ADV_BEARER
         case MESH_PB_TYPE_ADV:
-            pb_adv_close_link(transport_cid, reason);    
+            pb_adv_close_link(transport_cid, reason);
             break;
 #endif
 #ifdef ENABLE_MESH_GATT_BEARER
         case MESH_PB_TYPE_GATT:
-            pb_gatt_close_link(transport_cid, reason);    
+            pb_gatt_close_link(transport_cid, reason);
             break;
 #endif
         default:
@@ -234,14 +234,14 @@ static void provisioning_timer_stop(void){
 
 // Outgoing Provisioning PDUs
 static void provisioning_send_provisioning_error(void){
-    // setup response 
+    // setup response
     prov_buffer_out[0] = MESH_PROV_FAILED;
     prov_buffer_out[1] = prov_error_code;
     pb_send_pdu(pb_transport_cid, prov_buffer_out, 2);
 }
 
 static void provisioning_send_capabilites(void){
-    // setup response 
+    // setup response
     prov_buffer_out[0] = MESH_PROV_CAPABILITIES;
 
     /* Number of Elements supported */
@@ -254,16 +254,16 @@ static void provisioning_send_capabilites(void){
     prov_buffer_out[4] = prov_public_key_oob_available;
 
     /* Static OOB Type - Static OOB information available */
-    prov_buffer_out[5] = prov_static_oob_available; 
+    prov_buffer_out[5] = prov_static_oob_available;
 
     /* Output OOB Size - max of 8 */
-    prov_buffer_out[6] = prov_output_oob_size; 
+    prov_buffer_out[6] = prov_output_oob_size;
 
     /* Output OOB Action */
     big_endian_store_16(prov_buffer_out, 7, prov_output_oob_actions);
 
     /* Input OOB Size - max of 8*/
-    prov_buffer_out[9] = prov_input_oob_size; 
+    prov_buffer_out[9] = prov_input_oob_size;
 
     /* Input OOB Action */
     big_endian_store_16(prov_buffer_out, 10, prov_input_oob_actions);
@@ -273,11 +273,11 @@ static void provisioning_send_capabilites(void){
 
     // send
 
-    pb_send_pdu(pb_transport_cid, prov_buffer_out, 12);    
+    pb_send_pdu(pb_transport_cid, prov_buffer_out, 12);
 }
 
 static void provisioning_send_public_key(void){
-    // setup response 
+    // setup response
     prov_buffer_out[0] = MESH_PROV_PUB_KEY;
     (void)memcpy(&prov_buffer_out[1], prov_ec_q, 64);
 
@@ -289,14 +289,14 @@ static void provisioning_send_public_key(void){
 }
 
 static void provisioning_send_input_complete(void){
-    // setup response 
+    // setup response
     prov_buffer_out[0] = MESH_PROV_INPUT_COMPLETE;
 
     // send
     pb_send_pdu(pb_transport_cid, prov_buffer_out, 17);
 }
 static void provisioning_send_confirm(void){
-    // setup response 
+    // setup response
     prov_buffer_out[0] = MESH_PROV_CONFIRM;
     (void)memcpy(&prov_buffer_out[1], confirmation_device, 16);
 
@@ -305,7 +305,7 @@ static void provisioning_send_confirm(void){
 }
 
 static void provisioning_send_random(void){
-    // setup response 
+    // setup response
     prov_buffer_out[0] = MESH_PROV_RANDOM;
     (void)memcpy(&prov_buffer_out[1], random_device, 16);
 
@@ -314,7 +314,7 @@ static void provisioning_send_random(void){
 }
 
 static void provisioning_send_complete(void){
-    // setup response 
+    // setup response
     prov_buffer_out[0] = MESH_PROV_COMPLETE;
 
     // send pdu
@@ -332,7 +332,7 @@ static void provisioning_done(void){
     }
     if (prov_attention_timer_timeout){
         prov_attention_timer_timeout = 0;
-        provisioning_emit_attention_timer_event(1, 0);        
+        provisioning_emit_attention_timer_event(1, 0);
     }
     device_state = DEVICE_W4_INVITE;
 
@@ -362,7 +362,7 @@ static void provisioning_public_key_exchange_complete(void){
     switch (prov_authentication_method){
         case 0x00:
             device_state = DEVICE_W4_CONFIRM;
-            break;        
+            break;
         case 0x01:
             (void)memcpy(&auth_value[16 - prov_static_oob_len],
                          prov_static_oob_data, prov_static_oob_len);
@@ -623,7 +623,7 @@ static void provisioning_handle_confirmation(uint8_t *packet, uint16_t size){
     UNUSED(size);
     UNUSED(packet);
 
-    // 
+    //
     if (prov_emit_output_oob_active){
         prov_emit_output_oob_active = 0;
         provisioning_emit_event(1, MESH_SUBEVENT_PB_PROV_STOP_EMIT_OUTPUT_OOB);
@@ -668,7 +668,7 @@ static void provisioning_handle_random_session_key_calculated(void * arg){
 static void provisioning_handle_random_s1_calculated(void * arg){
 
     UNUSED(arg);
-    
+
     // ProvisioningSalt
     printf("ProvisioningSalt:   ");
     printf_hexdump(provisioning_salt, sizeof(provisioning_salt));
@@ -752,7 +752,7 @@ static void provisioning_handle_data(uint8_t *packet, uint16_t size){
 static void provisioning_handle_unexpected_pdu(uint8_t *packet, uint16_t size){
     UNUSED(size);
     printf("Unexpected PDU #%u in state #%u\n", packet[0], (int) device_state);
-    provisioning_handle_provisioning_error(0x03);    
+    provisioning_handle_provisioning_error(0x03);
 }
 
 static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -762,7 +762,7 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
 
     switch (packet_type){
         case HCI_EVENT_PACKET:
-        
+
             if (hci_event_packet_get_type(packet) != HCI_EVENT_MESH_META)  break;
 
             switch (hci_event_mesh_meta_get_subevent_code(packet)){
@@ -779,7 +779,7 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
                         pb_close_link(1, 0);
                         provisioning_done();
                     }
-                    break;                    
+                    break;
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                     printf("Link close, reset state\n");
                     pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
@@ -830,7 +830,7 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
                 default:
                     break;
             }
-            break;     
+            break;
         default:
             break;
     }
@@ -861,9 +861,9 @@ void provisioning_device_init(void){
     pb_gatt_init();
     pb_gatt_register_packet_handler(&provisioning_handle_pdu);
 #endif
-    
+
     pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
-    
+
     // init provisioning state and generate ecc key
     provisioning_done();
 }

@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -58,7 +58,7 @@
 static btstack_linked_list_t aics_services;
 
 static audio_input_control_service_server_t * aics_find_service_for_attribute_handle(uint16_t attribute_handle){
-    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &aics_services);
     while (btstack_linked_list_iterator_has_next(&it)){
         audio_input_control_service_server_t * item = (audio_input_control_service_server_t*) btstack_linked_list_iterator_next(&it);
@@ -106,16 +106,16 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
     if (attribute_handle == aics->audio_input_description_value_handle){
         return att_read_callback_handle_blob((uint8_t *)aics->info->audio_input_description, aics->audio_input_description_len, offset, buffer, buffer_size);
     }
-    
-    
+
+
     if (attribute_handle == aics->audio_input_state_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(aics->audio_input_state_client_configuration, offset, buffer, buffer_size);
     }
-    
+
     if (attribute_handle == aics->audio_input_status_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(aics->audio_input_status_client_configuration, offset, buffer, buffer_size);
     }
-    
+
     if (attribute_handle == aics->audio_input_description_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(aics->audio_input_description_client_configuration, offset, buffer, buffer_size);
     }
@@ -125,7 +125,7 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
 
 static void aics_emit_mute_mode(audio_input_control_service_server_t * aics){
     btstack_assert(aics->info->packet_handler != NULL);
-    
+
     uint8_t event[7];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -140,7 +140,7 @@ static void aics_emit_mute_mode(audio_input_control_service_server_t * aics){
 
 static void aics_emit_gain_mode(audio_input_control_service_server_t * aics){
     btstack_assert(aics->info->packet_handler != NULL);
-    
+
     uint8_t event[7];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -155,7 +155,7 @@ static void aics_emit_gain_mode(audio_input_control_service_server_t * aics){
 
 static void aics_emit_gain(audio_input_control_service_server_t * aics){
     btstack_assert(aics->info->packet_handler != NULL);
-    
+
     uint8_t event[7];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -170,7 +170,7 @@ static void aics_emit_gain(audio_input_control_service_server_t * aics){
 
 static void aics_emit_audio_input_description(audio_input_control_service_server_t * aics){
     btstack_assert(aics->info->packet_handler != NULL);
-    
+
     uint8_t event[7 + AICS_MAX_AUDIO_INPUT_DESCRIPTION_LENGTH];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -203,7 +203,7 @@ static void audio_input_control_service_can_send_now(void * context){
 
     if ((aics->scheduled_tasks & AICS_TASK_SEND_AUDIO_INPUT_STATE) != 0){
         aics->scheduled_tasks &= ~AICS_TASK_SEND_AUDIO_INPUT_STATE;
-        
+
         uint8_t value[4];
         value[0] = (uint8_t)aics->info->audio_input_state.gain_setting_db;
         value[1] = aics->info->audio_input_state.mute_mode;
@@ -259,7 +259,7 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
     UNUSED(con_handle);
     UNUSED(transaction_mode);
     UNUSED(offset);
-    
+
     audio_input_control_service_server_t * aics = aics_find_service_for_attribute_handle(attribute_handle);
     if (aics == NULL){
         return 0;
@@ -285,7 +285,7 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 if (buffer_size != 3){
                     return AICS_ERROR_CODE_VALUE_OUT_OF_RANGE;
                 }
-                
+
                 if (!audio_input_control_service_server_set_gain(aics, (int8_t)buffer[2])) {
                     return AICS_ERROR_CODE_VALUE_OUT_OF_RANGE;
                 }
@@ -369,12 +369,12 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
         aics->audio_input_state_client_configuration = little_endian_read_16(buffer, 0);
         aics_set_con_handle(aics, con_handle, aics->audio_input_state_client_configuration);
     }
-    
+
     if (attribute_handle == aics->audio_input_status_client_configuration_handle){
         aics->audio_input_status_client_configuration = little_endian_read_16(buffer, 0);
         aics_set_con_handle(aics, con_handle, aics->audio_input_status_client_configuration);
     }
-    
+
     if (attribute_handle == aics->audio_input_description_client_configuration_handle){
         aics->audio_input_description_client_configuration = little_endian_read_16(buffer, 0);
         aics_set_con_handle(aics, con_handle, aics->audio_input_description_client_configuration);
@@ -424,14 +424,14 @@ void audio_input_control_service_server_init(audio_input_control_service_server_
     aics->audio_input_state_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATE);
 
     aics->gain_settings_properties_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_GAIN_SETTINGS_ATTRIBUTE);
-    
+
     aics->audio_input_type_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_TYPE);
-    
+
     aics->audio_input_status_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATUS);
     aics->audio_input_status_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATUS);
 
     aics->audio_input_control_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_CONTROL_POINT);
-    
+
     aics->audio_input_description_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION);
     aics->audio_input_description_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(aics->start_handle, aics->end_handle, ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION);
 
@@ -462,7 +462,7 @@ void audio_input_control_service_server_init(audio_input_control_service_server_
 
 uint8_t audio_input_control_service_server_set_audio_input_state(audio_input_control_service_server_t * aics, aics_audio_input_state_t * audio_input_state){
     btstack_assert(aics != NULL);
-    
+
     bool valid_range = audio_input_control_service_server_set_gain(aics, audio_input_state->gain_setting_db);
     if (!valid_range){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
@@ -488,5 +488,3 @@ void audio_input_control_service_server_set_audio_input_description(audio_input_
     aics->audio_input_description_len = strlen(aics->info->audio_input_description);
     audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION);
 }
-
-

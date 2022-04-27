@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -55,7 +55,7 @@ extern "C"
 #endif
 
 #define PROVISIONING_PROTOCOL_TIMEOUT_MS  60000
-#define MESH_PROV_MAX_PROXY_PDU              66 
+#define MESH_PROV_MAX_PROXY_PDU              66
 #define MESH_PB_TRANSPORT_INVALID_CID    0xFFFF
 
 // Provisioning Bearer Control
@@ -124,7 +124,7 @@ typedef enum {
 
 typedef enum {
     MESH_IDENTIFICATION_NETWORK_ID_TYPE = 0,
-    MESH_IDENTIFICATION_NODE_IDENTIFY_TYPE 
+    MESH_IDENTIFICATION_NODE_IDENTIFY_TYPE
 } mesh_identification_type_t;
 
 typedef struct {

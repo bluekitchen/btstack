@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -90,7 +90,7 @@ typedef enum {
  */
 #define LINK_KEY_LEN 16
 #define LINK_KEY_STR_LEN (LINK_KEY_LEN*2)
-typedef uint8_t link_key_t[LINK_KEY_LEN]; 
+typedef uint8_t link_key_t[LINK_KEY_LEN];
 
 /**
  * @brief link key type
@@ -154,7 +154,7 @@ typedef enum {
 } hci_service_type_t;
 
 /**
- * HCI Transport 
+ * HCI Transport
  */
 
 /**
@@ -165,7 +165,7 @@ typedef enum {
 #define HCI_SCO_DATA_PACKET     0x03
 #define HCI_EVENT_PACKET        0x04
 
-/** 
+/**
  * HCI Layer
  */
 
@@ -174,7 +174,7 @@ typedef enum {
 //
 
 /* ENUM_START: BLUETOOTH_ERROR_CODE */
-#define ERROR_CODE_SUCCESS                                 0x00 
+#define ERROR_CODE_SUCCESS                                 0x00
 #define ERROR_CODE_UNKNOWN_HCI_COMMAND                     0x01
 #define ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER           0x02
 #define ERROR_CODE_HARDWARE_FAILURE                        0x03
@@ -188,18 +188,18 @@ typedef enum {
 #define ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS           0x0B
 #define ERROR_CODE_COMMAND_DISALLOWED                      0x0C
 #define ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES 0x0D
-#define ERROR_CODE_CONNECTION_REJECTED_DUE_TO_SECURITY_REASONS  0x0E 
-#define ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR 0x0F 
+#define ERROR_CODE_CONNECTION_REJECTED_DUE_TO_SECURITY_REASONS  0x0E
+#define ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR 0x0F
 #define ERROR_CODE_CONNECTION_ACCEPT_TIMEOUT_EXCEEDED      0x10
-#define ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE  0x11 
-#define ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS          0x12 
+#define ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE  0x11
+#define ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS          0x12
 #define ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION       0x13
-#define ERROR_CODE_REMOTE_DEVICE_TERMINATED_CONNECTION_DUE_TO_LOW_RESOURCES 0x14 
+#define ERROR_CODE_REMOTE_DEVICE_TERMINATED_CONNECTION_DUE_TO_LOW_RESOURCES 0x14
 #define ERROR_CODE_REMOTE_DEVICE_TERMINATED_CONNECTION_DUE_TO_POWER_OFF     0x15
 #define ERROR_CODE_CONNECTION_TERMINATED_BY_LOCAL_HOST     0x16
 #define ERROR_CODE_REPEATED_ATTEMPTS                       0x17
 #define ERROR_CODE_PAIRING_NOT_ALLOWED                     0x18
-#define ERROR_CODE_UNKNOWN_LMP_PDU                         0x19                  
+#define ERROR_CODE_UNKNOWN_LMP_PDU                         0x19
 #define ERROR_CODE_UNSUPPORTED_REMOTE_FEATURE_UNSUPPORTED_LMP_FEATURE 0x1A
 #define ERROR_CODE_SCO_OFFSET_REJECTED                     0x1B
 #define ERROR_CODE_SCO_INTERVAL_REJECTED                   0x1C
@@ -286,7 +286,7 @@ typedef enum {
 #define SDP_HANDLE_INVALID                                 0x83
 #define SDP_QUERY_BUSY                                     0x84
 
-#define ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS            0x90 
+#define ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS            0x90
 #define ATT_HANDLE_VALUE_INDICATION_TIMEOUT                0x91
 #define ATT_HANDLE_VALUE_INDICATION_DISCONNECT             0x92
 
@@ -296,7 +296,7 @@ typedef enum {
 #define GATT_CLIENT_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS 0x96
 #define GATT_CLIENT_VALUE_TOO_LONG                         0x97
 #define GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED 0x98
-#define GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED   0x99 
+#define GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED   0x99
 
 #define BNEP_SERVICE_ALREADY_REGISTERED                    0xA0
 #define BNEP_CHANNEL_NOT_CONNECTED                         0xA1
@@ -361,7 +361,7 @@ typedef enum {
 #define HCI_ACL_3DH3_SIZE          552
 #define HCI_ACL_2DH5_SIZE          679
 #define HCI_ACL_3DH5_SIZE         1021
-       
+
 #define LE_ADVERTISING_DATA_SIZE    31
 #define LE_EXTENDED_ADVERTISING_MAX_HANDLE 0xEFu
 #define LE_EXTENDED_ADVERTISING_MAX_CHUNK_LEN 251
@@ -412,7 +412,7 @@ typedef enum {
 
 
 /**
- * SSP Authentication Requirements, see IO Capability Request Reply Commmand 
+ * SSP Authentication Requirements, see IO Capability Request Reply Commmand
  */
 
 // Numeric comparison with automatic accept allowed.
@@ -447,7 +447,7 @@ typedef enum {
 
 
 
-/** 
+/**
  * L2CAP Layer
  */
 
@@ -456,11 +456,11 @@ typedef enum {
 // minimum signaling MTU
 #define L2CAP_MINIMAL_MTU 48
 #define L2CAP_DEFAULT_MTU 672
-    
+
 // Minimum/default MTU
 #define L2CAP_LE_DEFAULT_MTU  23
 
-// L2CAP Fixed Channel IDs    
+// L2CAP Fixed Channel IDs
 #define L2CAP_CID_SIGNALING                        0x0001
 #define L2CAP_CID_CONNECTIONLESS_CHANNEL           0x0002
 #define L2CAP_CID_ATTRIBUTE_PROTOCOL               0x0004
@@ -578,7 +578,7 @@ typedef enum rpn_data_bits {
 
 typedef enum rpn_stop_bits {
     RPN_STOP_BITS_1_0 = 0,
-    RPN_STOP_BITS_1_5 
+    RPN_STOP_BITS_1_5
 } rpn_stop_bits_t;
 
 typedef enum rpn_parity {
@@ -586,7 +586,7 @@ typedef enum rpn_parity {
     RPN_PARITY_ODD   = 1,
     RPN_PARITY_EVEN  = 3,
     RPN_PARITY_MARK  = 5,
-    RPN_PARITY_SPACE = 7, 
+    RPN_PARITY_SPACE = 7,
 } rpn_parity_t;
 
 #define RPN_FLOW_CONTROL_XONXOFF_ON_INPUT  0x01
@@ -599,7 +599,7 @@ typedef enum rpn_parity {
 #define RPN_PARAM_MASK_0_BAUD             0x01
 #define RPN_PARAM_MASK_0_DATA_BITS        0x02
 #define RPN_PARAM_MASK_0_STOP_BITS        0x04
-#define RPN_PARAM_MASK_0_PARITY           0x08       
+#define RPN_PARAM_MASK_0_PARITY           0x08
 #define RPN_PARAM_MASK_0_PARITY_TYPE      0x10
 #define RPN_PARAM_MASK_0_XON_CHAR         0x20
 #define RPN_PARAM_MASK_0_XOFF_CHAR        0x40
@@ -609,7 +609,7 @@ typedef enum rpn_parity {
 #define RPN_PARAM_MASK_1_XONOFF_ON_INPUT  0x01
 #define RPN_PARAM_MASK_1_XONOFF_ON_OUTPUT 0x02
 #define RPN_PARAM_MASK_1_RTR_ON_INPUT     0x04
-#define RPN_PARAM_MASK_1_RTR_ON_OUTPUT    0x08       
+#define RPN_PARAM_MASK_1_RTR_ON_OUTPUT    0x08
 #define RPN_PARAM_MASK_1_RTC_ON_INPUT     0x10
 #define RPN_PARAM_MASK_1_RTC_ON_OUTPUT    0x20
 #define RPN_PARAM_MASK_1_RESERVED_0       0x40
@@ -626,7 +626,7 @@ typedef enum rpn_parity {
 #ifndef ETHERTYPE_VLAN
 #define ETHERTYPE_VLAN                                  0x8100 /* IEEE 802.1Q VLAN tag */
 #endif
-    
+
 #define BNEP_MTU_MIN                                    1691
 
 
@@ -781,7 +781,7 @@ typedef enum {
 } gatt_microphone_control_mute_t;
 
 /**
- * SM - LE Security Manager 
+ * SM - LE Security Manager
  */
 // Bluetooth Spec definitions
 typedef enum {

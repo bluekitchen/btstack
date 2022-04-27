@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -65,7 +65,7 @@ static void health_server_send_message(uint16_t src, uint16_t dest, uint16_t net
 
 static mesh_health_fault_t * mesh_health_server_fault_for_company_id(mesh_model_t *mesh_model, uint16_t company_id){
     mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
-    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &state->faults);
     while (btstack_linked_list_iterator_has_next(&it)){
         mesh_health_fault_t * fault = (mesh_health_fault_t *) btstack_linked_list_iterator_next(&it);
@@ -192,7 +192,7 @@ static void health_fault_test_process_message(mesh_model_t *mesh_model, mesh_pdu
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint8_t  test_id    = mesh_access_parser_get_uint8(&parser);
     uint16_t company_id = mesh_access_parser_get_uint16(&parser);
-    
+
     uint16_t dest = mesh_pdu_src(pdu);
     uint16_t netkey_index = mesh_pdu_netkey_index(pdu);
     uint16_t appkey_index = mesh_pdu_appkey_index(pdu);
@@ -216,7 +216,7 @@ static void health_fault_test_process_message(mesh_model_t *mesh_model, mesh_pdu
     event[pos++] = HCI_EVENT_MESH_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = MESH_SUBEVENT_HEALTH_PERFORM_TEST;
-    
+
     little_endian_store_16(event, pos, dest);
     pos += 2;
     little_endian_store_16(event, pos, netkey_index);
@@ -225,8 +225,8 @@ static void health_fault_test_process_message(mesh_model_t *mesh_model, mesh_pdu
     pos += 2;
     little_endian_store_16(event, pos, company_id);
     pos += 2;
-    
-    event[pos++] = test_id; 
+
+    event[pos++] = test_id;
     event[pos++] = acknowledged;
 
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
@@ -262,7 +262,7 @@ static void process_message_period_set(mesh_model_t *mesh_model, mesh_pdu_t * pd
 
 static void health_period_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     process_message_period_set(mesh_model, pdu);
-    
+
     mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) health_period_status(mesh_model);
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
@@ -286,9 +286,9 @@ static void process_message_attention_set(mesh_model_t *mesh_model, mesh_pdu_t *
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint8_t timer_s = mesh_access_parser_get_uint8(&parser);
     mesh_attention_timer_set(timer_s);
-    
+
     if (mesh_model->model_packet_handler == NULL) return;
-    
+
     uint8_t event[4];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
@@ -296,7 +296,7 @@ static void process_message_attention_set(mesh_model_t *mesh_model, mesh_pdu_t *
     pos++;
     event[pos++] = MESH_SUBEVENT_HEALTH_ATTENTION_TIMER_CHANGED;
     // element index
-    event[pos++] = mesh_model->element->element_index; 
+    event[pos++] = mesh_model->element->element_index;
     // element index
     event[1] = pos - 2;
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
@@ -304,7 +304,7 @@ static void process_message_attention_set(mesh_model_t *mesh_model, mesh_pdu_t *
 
 static void health_attention_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     process_message_attention_set(mesh_model, pdu);
-    
+
     mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) health_attention_status();
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
@@ -431,7 +431,7 @@ void mesh_health_server_set_publication_model(mesh_model_t * mesh_model, mesh_pu
 void mesh_health_server_report_test_done(uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id, bool acknowledged){
     mesh_model_t * mesh_model = mesh_node_get_health_server();
     if (mesh_model == NULL) return;
-    
+
     mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
     fault->test_id = test_id;
 

@@ -61,7 +61,7 @@ typedef struct {
 	int (*get_tag)(void * context, uint32_t tag, uint8_t * buffer, uint32_t buffer_size);
 
 	/**
-	 * Store Tag 
+	 * Store Tag
 	 * @param context
 	 * @param tag
 	 * @param data
@@ -80,7 +80,7 @@ typedef struct {
 
 } btstack_tlv_t;
 
-/** 
+/**
  * @brief Make TLV implementation available to BTstack components via Singleton
  * @note Usually called by port after BD_ADDR was retrieved from Bluetooth Controller
  * @param tlv_impl

@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "microphone_control_service_server.c"
 
 /**
- * Implementation of the GATT Battery Service Server 
+ * Implementation of the GATT Battery Service Server
  * To use with your application, add '#import <microphone_control.gatt' to your .gatt file
  */
 
@@ -104,7 +104,7 @@ static int microphone_control_service_write_callback(hci_con_handle_t con_handle
 	if (attribute_handle == mc_mute_state_handle){
 		if (buffer_size != 1){
 			return ATT_ERROR_VALUE_NOT_ALLOWED;
-		} 
+		}
 		gatt_microphone_control_mute_t mute_state = (gatt_microphone_control_mute_t)buffer[0];
 		switch (mute_state){
 			case GATT_MICROPHONE_CONTROL_MUTE_OFF:
@@ -124,10 +124,10 @@ static int microphone_control_service_write_callback(hci_con_handle_t con_handle
 	if (attribute_handle == mc_mute_state_handle_client_configuration){
 		if (buffer_size != 2){
 			return ATT_ERROR_VALUE_NOT_ALLOWED;
-		} 
+		}
 		mc_mute_state_client_configuration = little_endian_read_16(buffer, 0);
 		mc_mute_state_client_configuration_connection = con_handle;
-		// TODO store client in a list 
+		// TODO store client in a list
 	}
 	return 0;
 }
@@ -166,7 +166,7 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
     	uint16_t included_service_start_handle;
     	uint16_t included_service_end_handle;
 
-		bool aics_service_found = gatt_server_get_included_service_with_uuid16(aics_start_handle, aics_end_handle, 
+		bool aics_service_found = gatt_server_get_included_service_with_uuid16(aics_start_handle, aics_end_handle,
 			ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL, &included_service_handle, &included_service_start_handle, &included_service_end_handle);
 
 		if (!aics_service_found){
@@ -178,16 +178,16 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 		service->start_handle = included_service_start_handle;
 		service->end_handle = included_service_end_handle;
 		service->index = aics_services_num;
-		
+
 		service->info = &aics_info[aics_services_num];
 		service->audio_input_description_len = strlen(aics_info->audio_input_description);
 
 		audio_input_control_service_server_init(service);
-    	
+
 		aics_start_handle = included_service_handle + 1;
 		aics_services_num++;
 	}
-	
+
 	// register service with ATT Server
 	microphone_control.start_handle   = start_handle;
 	microphone_control.end_handle     = end_handle;
@@ -208,7 +208,7 @@ void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t m
 	mc_mute_state = mute_state;
 	// TODO extend send to all clients that registered for notify,
     // Current: notification is sent to the last one that enabled notification
-	
+
 	if (mc_mute_state_client_configuration != 0){
 		mc_mute_callback.callback = &microphone_control_service_can_send_now;
 		mc_mute_callback.context  = (void*) (uintptr_t) mc_mute_state_client_configuration_connection;

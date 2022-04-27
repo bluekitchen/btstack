@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -58,7 +58,7 @@ typedef struct {
     uint16_t data_in_client_value_handle;
     uint8_t  data_in_proxy_pdu[MESH_PROV_MAX_PROXY_PDU];
     uint8_t  link_open;
-    
+
     // Mesh Provisioning Data Out
     uint16_t data_out_client_value_handle;
     uint8_t  data_out_proxy_pdu[MESH_PROV_MAX_PROXY_PDU];
@@ -105,7 +105,7 @@ static uint16_t mesh_provisioning_service_read_callback(hci_con_handle_t con_han
     UNUSED(attribute_handle);
     UNUSED(offset);
     UNUSED(buffer_size);
-    
+
     mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
     if (!instance){
         log_error("mesh_provisioning_service_read_callback: instance is null");
@@ -125,7 +125,7 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
     UNUSED(transaction_mode);
     UNUSED(offset);
     UNUSED(buffer_size);
-    
+
     mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
     if (!instance){
         log_error("mesh_provisioning_service_write_callback: instance is null");
@@ -144,8 +144,8 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
                 break;
             default:
                 log_info("data_in_client_value_handle not written, wrong msg_type %d", msg_type);
-                return ATT_ERROR_REQUEST_NOT_SUPPORTED; 
-        }  
+                return ATT_ERROR_REQUEST_NOT_SUPPORTED;
+        }
         return 0;
     }
 
@@ -203,17 +203,17 @@ void mesh_provisioning_service_server_init(void){
     instance->data_in_client_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_IN);
     instance->data_out_client_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_OUT);
     instance->data_out_client_configuration_descriptor_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_OUT);
-    
+
     log_info("DataIn     value handle 0x%02x", instance->data_in_client_value_handle);
     log_info("DataOut    value handle 0x%02x", instance->data_out_client_value_handle);
     log_info("DataOut CC value handle 0x%02x", instance->data_out_client_configuration_descriptor_handle);
-    
+
     mesh_provisioning_service.start_handle   = start_handle;
     mesh_provisioning_service.end_handle     = end_handle;
     mesh_provisioning_service.read_callback  = &mesh_provisioning_service_read_callback;
     mesh_provisioning_service.write_callback = &mesh_provisioning_service_write_callback;
     mesh_provisioning_service.packet_handler = &mesh_provisioning_service_server_packet_handler;
-    
+
     att_server_register_service_handler(&mesh_provisioning_service);
 }
 
@@ -223,7 +223,7 @@ void mesh_provisioning_service_server_send_proxy_pdu(uint16_t con_handle, const 
         log_error("mesh_provisioning_service_server_data_out_can_send_now: instance is null");
         return;
     }
-    att_server_notify(instance->con_handle, instance->data_out_client_value_handle, proxy_pdu, proxy_pdu_size); 
+    att_server_notify(instance->con_handle, instance->data_out_client_value_handle, proxy_pdu, proxy_pdu_size);
 }
 
 static void mesh_provisioning_service_can_send_now(void * context){

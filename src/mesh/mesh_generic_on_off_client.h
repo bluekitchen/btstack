@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -65,9 +65,9 @@ void mesh_generic_on_off_client_register_packet_handler(mesh_model_t *mesh_model
  * @param transition_time_gdtt
  * @param delay_time_gdtt
  * @param transaction_id
- * @return status    0 if successful 
+ * @return status    0 if successful
  */
- uint8_t mesh_generic_on_off_client_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+ uint8_t mesh_generic_on_off_client_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id);
 
 /**
@@ -80,9 +80,9 @@ void mesh_generic_on_off_client_register_packet_handler(mesh_model_t *mesh_model
  * @param transition_time_gdtt
  * @param delay_time_gdtt
  * @param transaction_id
- * @return status    0 if successful 
+ * @return status    0 if successful
  */
-uint8_t mesh_generic_on_off_client_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_on_off_client_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id);
 
 /**
@@ -91,7 +91,7 @@ uint8_t mesh_generic_on_off_client_set_unacknowledged(mesh_model_t * mesh_model,
  * @param dest
  * @param netkey_index
  * @param appkey_index
- * @return status    0 if successful 
+ * @return status    0 if successful
  */
 uint8_t mesh_generic_on_off_client_get(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
 
@@ -100,7 +100,7 @@ uint8_t mesh_generic_on_off_client_get(mesh_model_t *mesh_model, uint16_t dest, 
  * @param mesh_model
  * @param on_off_value
  * @param transaction_id
- * @return status    0 if successful 
+ * @return status    0 if successful
  */
 uint8_t mesh_generic_on_off_client_publish(mesh_model_t * mesh_model, uint8_t on_off_value, uint8_t transaction_id);
 

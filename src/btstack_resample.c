@@ -55,7 +55,7 @@ void btstack_resample_set_factor(btstack_resample_t * context, uint32_t src_step
 uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * input_buffer, uint32_t num_frames, int16_t * output_buffer){
     uint16_t dest_frames = 0;
     uint16_t dest_samples = 0;
-    // samples between last sample of previous block and first sample in current block 
+    // samples between last sample of previous block and first sample in current block
     while (context->src_pos >= 0xffff0000){
         const uint16_t t = context->src_pos & 0xffffu;
         int i;

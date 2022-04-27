@@ -30,20 +30,20 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Scan Parameters Service Client
- * 
+ *
  */
 
-/** 
- * @text The Scan Parameters Service Client allows to store its 
- * LE scan parameters on a remote device such that the remote device 
- * can utilize this information to optimize power consumption and/or 
+/**
+ * @text The Scan Parameters Service Client allows to store its
+ * LE scan parameters on a remote device such that the remote device
+ * can utilize this information to optimize power consumption and/or
  * reconnection latency.
  */
 
@@ -66,13 +66,13 @@ typedef enum {
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC,
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
-#ifdef ENABLE_TESTING_SUPPORT   
+#ifdef ENABLE_TESTING_SUPPORT
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_CCC,
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CCC,
 #endif
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS,
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_NOTIFICATIONS_CONFIGURED,
-    
+
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_CONNECTED
 } scan_parameters_service_client_state_t;
 
@@ -104,7 +104,7 @@ typedef struct {
 /* API_START */
 
 /**
- * @brief Initialize Scan Parameters Service. 
+ * @brief Initialize Scan Parameters Service.
  */
 void scan_parameters_service_client_init(void);
 
@@ -116,10 +116,10 @@ void scan_parameters_service_client_init(void);
 void scan_parameters_service_client_set(uint16_t scan_interval, uint16_t scan_window);
 
 /**
- * @brief Connect to Scan Parameters Service of remote device. 
+ * @brief Connect to Scan Parameters Service of remote device.
  *
- * The GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED event completes the request. 
- * Its status is set to ERROR_CODE_SUCCESS if remote service and SCAN_INTERVAL_WINDOW characteristic are found. 
+ * The GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED event completes the request.
+ * Its status is set to ERROR_CODE_SUCCESS if remote service and SCAN_INTERVAL_WINDOW characteristic are found.
  * Other status codes of this event:
  * - GATT_CLIENT_IN_WRONG_STATE: client in wrong state
  * - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE: service or characteristic not found
@@ -144,11 +144,11 @@ uint8_t scan_parameters_service_client_enable_notifications(uint16_t scan_parame
  * @param scan_parameters_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if client with con_handle is not found
  */
-uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_cid); 
+uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_cid);
 
 
 /**
- * @brief De-initialize Scan Parameters Service. 
+ * @brief De-initialize Scan Parameters Service.
  */
 void scan_parameters_service_client_deinit(void);
 

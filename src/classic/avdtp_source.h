@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -136,7 +136,7 @@ void avdtp_source_register_packet_handler(btstack_packet_handler_t callback);
 uint8_t avdtp_source_connect(bd_addr_t bd_addr, uint16_t * avdtp_cid);
 
 /**
- * @brief Disconnect from device with connection handle. 
+ * @brief Disconnect from device with connection handle.
  * @param avdtp_cid
  * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER
  */
@@ -211,14 +211,14 @@ uint8_t avdtp_source_abort_stream(uint16_t avdtp_cid, uint8_t local_seid);
 /**
  * @brief Start stream
  * @param local_seid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED 
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
 uint8_t avdtp_source_stop_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
 /**
  * @brief Suspend stream
  * @param local_seid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED 
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
 uint8_t avdtp_source_suspend(uint16_t avdtp_cid, uint8_t local_seid);
 

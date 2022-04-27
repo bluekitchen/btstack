@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -315,4 +315,3 @@ void btstack_run_loop_init(const btstack_run_loop_t * run_loop){
 void btstack_run_loop_deinit(void){
     the_run_loop = NULL;
 }
-

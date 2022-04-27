@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title HID Service Client
- * 
+ *
  */
 
 #ifndef HIDS_CLIENT_H
@@ -54,7 +54,7 @@
 extern "C" {
 #endif
 
-/** 
+/**
  * @text The HID Service Client is used on the HID Host to receive reports and other HID data.
  */
 
@@ -67,23 +67,23 @@ extern "C" {
 
 typedef enum {
     HIDS_CLIENT_STATE_IDLE,
-    
+
     // get all HID services
     HIDS_CLIENT_STATE_W2_QUERY_SERVICE,
     HIDS_CLIENT_STATE_W4_SERVICE_RESULT,
-    
+
     // for each service, discover all characteristics
     HIDS_CLIENT_STATE_W2_QUERY_CHARACTERISTIC,
     HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
 
     // called if BOOT mode
     HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE,
-    
+
     // for each REPORT_MAP characteristic, read HID Descriptor (Report Map Characteristic Value)
     HIDS_CLIENT_STATE_W2_READ_REPORT_MAP_HID_DESCRIPTOR,
     HIDS_CLIENT_STATE_W4_REPORT_MAP_HID_DESCRIPTOR,
-    
-    // for REPORT_MAP characteristic, discover descriptor 
+
+    // for REPORT_MAP characteristic, discover descriptor
     HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS,
     HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTORS_RESULT,
 
@@ -99,10 +99,10 @@ typedef enum {
     HIDS_CLIENT_STATE_W2_FIND_REPORT,
     HIDS_CLIENT_STATE_W4_REPORT_FOUND,
 
-    // then read value of Report characteristic descriptor to get report ID and type  
+    // then read value of Report characteristic descriptor to get report ID and type
     HIDS_CLIENT_STATE_W2_READ_REPORT_ID_AND_TYPE,
     HIDS_CLIENT_STATE_W4_REPORT_ID_AND_TYPE,
-    
+
     HIDS_CLIENT_STATE_W2_ENABLE_INPUT_REPORTS,
     HIDS_CLIENT_STATE_W4_INPUT_REPORTS_ENABLED,
 
@@ -116,7 +116,7 @@ typedef enum {
 
     HIDS_CLIENT_W2_READ_VALUE_OF_CHARACTERISTIC,
     HIDS_CLIENT_W4_VALUE_OF_CHARACTERISTIC_RESULT,
-    
+
     HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE,
 
     HIDS_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS,
@@ -137,14 +137,14 @@ typedef struct {
     uint16_t value_handle;
     uint16_t end_handle;
     uint16_t properties;
-    
-    // UUID of external Report characteristic, stored in Report Map descriptor EXTERNAL_REPORT_REFERENCE 
+
+    // UUID of external Report characteristic, stored in Report Map descriptor EXTERNAL_REPORT_REFERENCE
     uint16_t external_report_reference_uuid;
 
 #ifdef ENABLE_TESTING_SUPPORT
     uint16_t ccc_handle;
 #endif
-    
+
     // service mapping
     uint8_t service_index;
     uint8_t report_id;
@@ -170,17 +170,17 @@ typedef struct {
     uint16_t hid_descriptor_offset;
     uint16_t hid_descriptor_len;
     uint16_t hid_descriptor_max_len;
-    uint8_t  hid_descriptor_status;     // ERROR_CODE_SUCCESS if descriptor available, 
-                                        // ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if not, and 
+    uint8_t  hid_descriptor_status;     // ERROR_CODE_SUCCESS if descriptor available,
+                                        // ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if not, and
                                         // ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if descriptor is larger then the available space
 } hid_service_t;
 
 typedef struct {
     btstack_linked_item_t item;
-    
+
     hci_con_handle_t  con_handle;
     uint16_t          cid;
-    
+
     hid_service_client_state_t state;
     btstack_packet_handler_t   client_handler;
 
@@ -219,9 +219,9 @@ void hids_client_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_
 
 /* @brief Connect to HID Services of remote device. Event GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED will be emitted
  * after all remote HID services and characteristics are found, and notifications for all input reports are enabled.
- * Status code can be ERROR_CODE_SUCCES if at least one HID service is found, otherwise either ATT errors or 
+ * Status code can be ERROR_CODE_SUCCES if at least one HID service is found, otherwise either ATT errors or
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no service or report map or report are found.
- * It also contains the number of individual HIDS Services. 
+ * It also contains the number of individual HIDS Services.
  *
  * @param con_handle
  * @param packet_handler
@@ -240,8 +240,8 @@ uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_
  * @param report_type
  * @param report
  * @param report_len
- * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, 
- * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state, 
+ * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER,
+ * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state,
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found, or
  * ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if report length exceeds MTU.
  */
@@ -253,8 +253,8 @@ uint8_t hids_client_send_write_report(uint16_t hids_cid, uint8_t report_id, hid_
  * @param hids_cid
  * @param report_id
  * @param report_type
- * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, 
- * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state, 
+ * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER,
+ * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state,
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found, or
  * ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if report length exceeds MTU.
  */
@@ -265,7 +265,7 @@ uint8_t hids_client_send_get_report(uint16_t hids_cid, uint8_t report_id, hid_re
  *
  * @param hids_cid
  * @param service_index
- * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, 
+ * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER,
  * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state, or
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found.
  */
@@ -276,7 +276,7 @@ uint8_t hids_client_get_hid_information(uint16_t hids_cid, uint8_t service_index
  *
  * @param hids_cid
  * @param service_index
- * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, 
+ * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER,
  * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state, or
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found.
  */
@@ -288,7 +288,7 @@ uint8_t hids_client_get_protocol_mode(uint16_t hids_cid, uint8_t service_index);
  * @param hids_cid
  * @param service_index
  * @param protocol_mode
- * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, 
+ * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER,
  * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state, or
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found.
  */
@@ -299,7 +299,7 @@ uint8_t hids_client_send_set_protocol_mode(uint16_t hids_cid, uint8_t service_in
  *
  * @param hids_cid
  * @param service_index
- * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, 
+ * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER,
  * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state, or
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found.
  */
@@ -310,7 +310,7 @@ uint8_t hids_client_send_suspend(uint16_t hids_cid, uint8_t service_index);
  *
  * @param hids_cid
  * @param service_index
- * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, 
+ * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER,
  * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state, or
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found.
  */
@@ -359,7 +359,7 @@ const uint8_t * hids_client_descriptor_storage_get_descriptor_data(uint16_t hids
 uint16_t hids_client_descriptor_storage_get_descriptor_len(uint16_t hids_cid, uint8_t service_index);
 
 /**
- * @brief De-initialize HID Service Client. 
+ * @brief De-initialize HID Service Client.
  *
  */
 void hids_client_deinit(void);

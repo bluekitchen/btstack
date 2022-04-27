@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -79,7 +79,7 @@ void gatt_create_sdp_record(uint8_t *service, uint32_t service_record_handle, ui
             de_add_number(l2cap_protocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_ATT);
         }
         de_pop_sequence(attribute, l2cap_protocol);
-        
+
         uint8_t* att_protocol = de_push_sequence(attribute);
         {
             de_add_number(att_protocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_ATT);

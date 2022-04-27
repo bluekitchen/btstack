@@ -31,7 +31,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -112,7 +112,7 @@ void a2dp_source_create_sdp_record(uint8_t * service, uint32_t service_record_ha
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
     attribute = de_push_sequence(service);
     {
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_AUDIO_SOURCE); 
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_AUDIO_SOURCE);
     }
     de_pop_sequence(service, attribute);
 
@@ -123,10 +123,10 @@ void a2dp_source_create_sdp_record(uint8_t * service, uint32_t service_record_ha
         uint8_t* l2cpProtocol = de_push_sequence(attribute);
         {
             de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVDTP);  
+            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVDTP);
         }
         de_pop_sequence(attribute, l2cpProtocol);
-        
+
         uint8_t* avProtocol = de_push_sequence(attribute);
         {
             de_add_number(avProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVDTP);  // avProtocol_service
@@ -150,8 +150,8 @@ void a2dp_source_create_sdp_record(uint8_t * service, uint32_t service_record_ha
     {
         uint8_t *a2dProfile = de_push_sequence(attribute);
         {
-            de_add_number(a2dProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_ADVANCED_AUDIO_DISTRIBUTION); 
-            de_add_number(a2dProfile,  DE_UINT, DE_SIZE_16, 0x0103); 
+            de_add_number(a2dProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_ADVANCED_AUDIO_DISTRIBUTION);
+            de_add_number(a2dProfile,  DE_UINT, DE_SIZE_16, 0x0103);
         }
         de_pop_sequence(attribute, a2dProfile);
     }
@@ -592,10 +592,10 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION);
             break;
 
-        case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
+        case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW);
             break;
-        
+
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
             cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);
@@ -611,7 +611,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 break;
             }
 
-            log_info("A2DP source streaming connection established --- avdtp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x", cid, 
+            log_info("A2DP source streaming connection established --- avdtp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x", cid,
                 avdtp_subevent_streaming_connection_established_get_local_seid(packet),
                 avdtp_subevent_streaming_connection_established_get_remote_seid(packet));
             connection->a2dp_source_state = A2DP_STREAMING_OPENED;
@@ -633,7 +633,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 			}
 
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
-            
+
             log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), connection->a2dp_source_state, cid);
 
             switch (connection->a2dp_source_state){
@@ -1101,4 +1101,3 @@ void a2dp_source_register_media_config_validator(uint8_t (*callback)(const avdtp
     a2dp_source_media_config_validator = callback;
     avdtp_source_register_media_config_validator(&a2dp_source_media_config_validator_callback);
 }
-

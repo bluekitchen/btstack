@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -52,7 +52,7 @@ extern "C"
 #endif
 
 /**
- * @brief Init Provisioning in Provisioner Role 
+ * @brief Init Provisioning in Provisioner Role
  */
 void provisioning_provisioner_init(void);
 
@@ -107,7 +107,7 @@ void provisioning_provisioner_input_oob_complete_numeric(uint16_t pb_adv_cid, ui
  * @brief Input OOB Complete Alphanumeric
  * @param pv_adv_cid
  * @Param input_oob_data string
- * @Param input_oob_len 
+ * @Param input_oob_len
  */
 void provisioning_provisioner_input_oob_complete_alphanumeric(uint16_t pb_adv_cid, const uint8_t * input_oob_data, uint16_t input_oob_len);
 

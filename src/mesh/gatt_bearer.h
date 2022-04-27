@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -68,12 +68,12 @@ void gatt_bearer_request_can_send_now_for_mesh_proxy_configuration(void);
 
 /**
  * Send particular message type: Mesh Message, Mesh Beacon, proxy configuration
- * @param data to send 
+ * @param data to send
  * @param data_len max 29 bytes
  */
-void gatt_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size); 
-void gatt_bearer_send_beacon(const uint8_t * beacon_update, uint16_t size); 
-void gatt_bearer_send_mesh_proxy_configuration(const uint8_t * proxy_configuration, uint16_t size); 
+void gatt_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size);
+void gatt_bearer_send_beacon(const uint8_t * beacon_update, uint16_t size);
+void gatt_bearer_send_mesh_proxy_configuration(const uint8_t * proxy_configuration, uint16_t size);
 
 #if defined __cplusplus
 }

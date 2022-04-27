@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -90,14 +90,14 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
 		log_debug("using stream endpoint %p for local seid %u", stream_endpoint, connection->initiator_local_seid);
 
         sep.seid = connection->initiator_remote_seid;
-        
+
         if (stream_endpoint->initiator_config_state != AVDTP_INITIATOR_W4_ANSWER) {
             log_error("initiator_config_state is in wrong state %d, expected %d", stream_endpoint->initiator_config_state, AVDTP_INITIATOR_W4_ANSWER);
             return;
         }
         stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
     }
-    
+
     switch (connection->initiator_signaling_packet.message_type){
         case AVDTP_RESPONSE_ACCEPT_MSG:
             switch (connection->initiator_signaling_packet.signal_identifier){
@@ -107,12 +107,12 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         // status = BAD_HEADER_FORMAT;
                         break;
                     }
-                    
+
                     if (size == 3){
                         log_info("ERROR code %02x", packet[offset]);
                         break;
                     }
-                    
+
                     int i;
                     for (i = offset; i < size; i += 2){
                         sep.seid = packet[i] >> 2;
@@ -130,7 +130,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     avdtp_signaling_emit_sep_done(connection->avdtp_cid);
                     break;
                 }
-                
+
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, connection->initiator_signaling_packet.signal_identifier, &sep.capabilities, packet+offset, size-offset);
@@ -138,7 +138,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
 													  connection->initiator_remote_seid, &sep.capabilities,
 													  sep.registered_service_categories);
                     break;
-                
+
                 case AVDTP_SI_RECONFIGURE:
                     if (!stream_endpoint){
                         log_error("AVDTP_SI_RECONFIGURE: stream endpoint is null");
@@ -169,7 +169,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     sep.configured_service_categories = stream_endpoint->remote_configuration_bitmap;
                     sep.configuration = stream_endpoint->remote_configuration;
                     sep.in_use = 1;
-                    
+
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
                     stream_endpoint->sep.in_use = 1;
                     stream_endpoint->remote_sep = sep;
@@ -433,10 +433,10 @@ void avdtp_initiator_stream_config_subsm_handle_can_send_now_signaling(avdtp_con
             connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
             connection->initiator_transaction_label = avdtp_get_next_transaction_label();
             avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_START, connection->initiator_transaction_label, connection->initiator_remote_seid);
-            return;            
-        } 
+            return;
+        }
     }
-    
+
     if (stream_endpoint->close_stream){
         stream_endpoint->close_stream = 0;
         switch (stream_endpoint->state){
@@ -447,12 +447,12 @@ void avdtp_initiator_stream_config_subsm_handle_can_send_now_signaling(avdtp_con
                 connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
                 connection->initiator_transaction_label = avdtp_get_next_transaction_label();
                 avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_CLOSE, connection->initiator_transaction_label, connection->initiator_remote_seid);
-                return;   
+                return;
             default:
-                break;         
+                break;
         }
     }
-    
+
     if (stream_endpoint->abort_stream){
         stream_endpoint->abort_stream = 0;
         switch (stream_endpoint->state){
@@ -470,7 +470,7 @@ void avdtp_initiator_stream_config_subsm_handle_can_send_now_signaling(avdtp_con
                 break;
         }
     }
-    
+
     if (stream_endpoint->suspend_stream){
         stream_endpoint->suspend_stream = 0;
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
@@ -482,7 +482,7 @@ void avdtp_initiator_stream_config_subsm_handle_can_send_now_signaling(avdtp_con
             return;
         }
     }
-    
+
 }
 
 void avdtp_initiator_stream_config_subsm_handle_can_send_now_stream_endpoint(avdtp_stream_endpoint_t *  stream_endpoint) {

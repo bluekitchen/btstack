@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -92,20 +92,20 @@ uint8_t mesh_generic_default_transition_time_client_get(mesh_model_t *mesh_model
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t mesh_generic_default_transition_time_client_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_default_transition_time_client_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     uint8_t transition_time_gdtt){
-    
+
     mesh_upper_transport_pdu_t *  transport_pdu;
-    
+
     transport_pdu = mesh_access_setup_message(&mesh_generic_default_transition_time_set, transition_time_gdtt);
-    
+
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     generic_client_send_message_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_GENERIC_DEFAULT_TRANSITION_TIME_STATUS);
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t mesh_generic_default_transition_time_client_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_default_transition_time_client_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     uint8_t transition_time_gdtt){
     mesh_upper_transport_pdu_t *  transport_pdu;
     transport_pdu = mesh_access_setup_message(&mesh_generic_default_transition_time_set_unacknowledged, transition_time_gdtt);
@@ -134,7 +134,7 @@ static void generic_default_transition_time_status_handler(mesh_model_t *mesh_mo
     pos += 2;
     event[pos++] = ERROR_CODE_SUCCESS;
     event[pos++] = transition_time_gdtt;
-    
+
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     mesh_access_message_processed(pdu);
 }

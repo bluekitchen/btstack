@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -38,7 +38,7 @@
 /**
  * @title L2CAP
  *
- * Logical Link Control and Adaption Protocol 
+ * Logical Link Control and Adaption Protocol
  *
  */
 
@@ -53,12 +53,12 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-    
+
 // check L2CAP MTU
 #ifdef ENABLE_CLASSIC
 #if (L2CAP_HEADER_SIZE + L2CAP_MINIMAL_MTU) > HCI_ACL_PAYLOAD_SIZE
 #error "HCI_ACL_PAYLOAD_SIZE too small for minimal L2CAP MTU of 48 bytes"
-#endif    
+#endif
 #endif
 #ifdef ENABLE_BLE
 #if (L2CAP_HEADER_SIZE + L2CAP_LE_DEFAULT_MTU) > HCI_ACL_PAYLOAD_SIZE
@@ -86,7 +86,7 @@ typedef enum {
     L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST,
     L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_INSUFFICIENT_SECURITY,
     L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE,
-    L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT,   
+    L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT,
     L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST,
     L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE,
     L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST,
@@ -154,8 +154,8 @@ typedef struct {
 } l2cap_ertm_tx_packet_state_t;
 
 typedef struct {
-    // If not mandatory, the use of ERTM can be decided by the remote 
-    uint8_t  ertm_mandatory; 
+    // If not mandatory, the use of ERTM can be decided by the remote
+    uint8_t  ertm_mandatory;
 
     // Number of retransmissions that L2CAP is allowed to try before accepting that a packet and the channel is lost.
     uint8_t  max_transmit;
@@ -186,7 +186,7 @@ typedef struct {
 typedef struct l2cap_fixed_channel {
     // linked list - assert: first field
     btstack_linked_item_t    item;
-    
+
     // channel type
     l2cap_channel_type_t channel_type;
 
@@ -206,7 +206,7 @@ typedef struct l2cap_fixed_channel {
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
-    
+
     // channel type
     l2cap_channel_type_t channel_type;
 
@@ -232,19 +232,19 @@ typedef struct {
 
     bd_addr_t address;
     bd_addr_type_t address_type;
-    
+
     uint8_t   remote_sig_id;    // used by other side, needed for delayed response
     uint8_t   local_sig_id;     // own signaling identifier
-    
+
     uint16_t  remote_cid;
-    
+
     uint16_t  local_mtu;
     uint16_t  remote_mtu;
 
     uint16_t  flush_timeout;    // default 0xffff
 
     uint16_t  psm;
-    
+
     gap_security_level_t required_security_level;
 
     uint8_t   reason; // used in decline internal
@@ -273,7 +273,7 @@ typedef struct {
 
     // credits for outgoing traffic
     uint16_t credits_outgoing;
-    
+
     // number of packets remote will be granted
     uint16_t new_credits_incoming;
 
@@ -292,7 +292,7 @@ typedef struct {
 
     // l2cap channel mode: basic or enhanced retransmission mode
     l2cap_channel_mode_t mode;
-    
+
     // local mps = size of rx/tx buffers
     uint16_t local_mps;
 
@@ -313,7 +313,7 @@ typedef struct {
 
     uint8_t local_max_transmit;
     uint8_t remote_max_transmit;
-    
+
     // if ertm is not mandatory, allow fallback to L2CAP Basic Mode - flag
     uint8_t ertm_mandatory;
 
@@ -399,20 +399,20 @@ typedef struct {
     // sender: num_tx_buffers of size local_mps
     uint8_t * tx_packets_data;
 
-#endif    
+#endif
 } l2cap_channel_t;
 
 // info regarding potential connections
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
-    
+
     // service id
     uint16_t  psm;
-    
+
     // max local mtu for basic mode, min remote mtu for enhanced credit-based flow-control mode
     uint16_t mtu;
-    
+
     // internal connection
     btstack_packet_handler_t packet_handler;
 
@@ -447,7 +447,7 @@ bool l2cap_can_send_prepared_packet_now(uint16_t local_cid);
 /* API_START */
 
 //
-// PSM numbers from https://www.bluetooth.com/specifications/assigned-numbers/logical-link-control 
+// PSM numbers from https://www.bluetooth.com/specifications/assigned-numbers/logical-link-control
 //
 #define PSM_SDP           BLUETOOTH_PROTOCOL_SDP
 #define PSM_RFCOMM        BLUETOOTH_PROTOCOL_RFCOMM
@@ -458,7 +458,7 @@ bool l2cap_can_send_prepared_packet_now(uint16_t local_cid);
 #define PSM_ATT           0x1f
 #define PSM_IPSP          0x23
 
-/** 
+/**
  * @brief Set up L2CAP and register L2CAP with HCI layer.
  */
 void l2cap_init(void);
@@ -473,12 +473,12 @@ void l2cap_add_event_handler(btstack_packet_callback_registration_t * callback_h
  */
 void l2cap_remove_event_handler(btstack_packet_callback_registration_t * callback_handler);
 
-/** 
+/**
  * @brief Get max MTU for Classic connections based on btstack configuration
  */
 uint16_t l2cap_max_mtu(void);
 
-/** 
+/**
  * @brief Get max MTU for LE connections based on btstack configuration
  */
 uint16_t l2cap_max_le_mtu(void);
@@ -488,7 +488,7 @@ uint16_t l2cap_max_le_mtu(void);
 */
 void l2cap_set_max_le_mtu(uint16_t max_mtu);
 
-/** 
+/**
  * @brief Creates L2CAP channel to the PSM of a remote device with baseband address. A new baseband connection will be initiated if necessary.
  * @param packet_handler
  * @param address
@@ -499,19 +499,19 @@ void l2cap_set_max_le_mtu(uint16_t max_mtu);
  */
 uint8_t l2cap_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid);
 
-/** 
- * @brief Disconnects L2CAP channel with given identifier. 
+/**
+ * @brief Disconnects L2CAP channel with given identifier.
  * @param local_cid
  * @return status ERROR_CODE_SUCCESS if successful or L2CAP_LOCAL_CID_DOES_NOT_EXIST
  */
 uint8_t l2cap_disconnect(uint16_t local_cid);
 
-/** 
- * @brief Queries the maximal transfer unit (MTU) for L2CAP channel with given identifier. 
+/**
+ * @brief Queries the maximal transfer unit (MTU) for L2CAP channel with given identifier.
  */
 uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 
-/** 
+/**
  * @brief Sends L2CAP data packet to the channel with given identifier.
  * @note For channel in credit-based flow control mode, data needs to stay valid until .. event
  * @param local_cid
@@ -521,8 +521,8 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
  */
 uint8_t l2cap_send(uint16_t local_cid, const uint8_t *data, uint16_t len);
 
-/** 
- * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler. 
+/**
+ * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler.
  * @param packet_handler
  * @param psm
  * @param mtu
@@ -531,28 +531,28 @@ uint8_t l2cap_send(uint16_t local_cid, const uint8_t *data, uint16_t len);
  */
 uint8_t l2cap_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
 
-/** 
+/**
  * @brief Unregisters L2CAP service with given PSM.
  */
 uint8_t l2cap_unregister_service(uint16_t psm);
 
-/** 
+/**
  * @brief Accepts incoming L2CAP connection.
  */
 void l2cap_accept_connection(uint16_t local_cid);
 
-/** 
+/**
  * @brief Deny incoming L2CAP connection.
  */
 void l2cap_decline_connection(uint16_t local_cid);
 
-/** 
+/**
  * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module
  * @return true if packet can be sent
  */
 bool l2cap_can_send_packet_now(uint16_t local_cid);
 
-/** 
+/**
  * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible
  * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
@@ -561,26 +561,26 @@ bool l2cap_can_send_packet_now(uint16_t local_cid);
  */
 uint8_t l2cap_request_can_send_now_event(uint16_t local_cid);
 
-/** 
+/**
  * @brief Reserve outgoing buffer
  * @note Only for L2CAP Basic Mode Channels
  * @return true on success
  */
 bool l2cap_reserve_packet_buffer(void);
 
-/** 
+/**
  * @brief Get outgoing buffer and prepare data.
  * @note Only for L2CAP Basic Mode Channels
  */
 uint8_t *l2cap_get_outgoing_buffer(void);
 
-/** 
+/**
  * @brief Send L2CAP packet prepared in outgoing buffer to channel
  * @note Only for L2CAP Basic Mode Channels
  */
 uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len);
 
-/** 
+/**
  * @brief Release outgoing buffer (only needed if l2cap_send_prepared is not called)
  * @note Only for L2CAP Basic Mode Channels
  */
@@ -669,7 +669,7 @@ uint8_t l2cap_cbm_unregister_service(uint16_t psm);
 
 uint8_t l2cap_cbm_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits);
 
-/** 
+/**
  * @brief Deecline connection in LE Credit-Based Flow-Control Mode
  * @param local_cid             L2CAP Channel Identifier
  * @param result                result, see L2CAP_CBM_CONNECTION_RESULT_SUCCESS in bluetooth.h

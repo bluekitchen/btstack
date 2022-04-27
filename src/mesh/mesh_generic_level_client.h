@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -65,9 +65,9 @@ void mesh_generic_level_client_register_packet_handler(mesh_model_t *mesh_model,
  * @param  transition_time_gdtt
  * @param  delay_time_gdtt
  * @param  transaction_id
- * @return status    0 if successful 
+ * @return status    0 if successful
  */
-uint8_t mesh_generic_level_client_level_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_level_client_level_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id);
 
 /**
@@ -82,7 +82,7 @@ uint8_t mesh_generic_level_client_level_set(mesh_model_t * mesh_model, uint16_t 
  * @param  transaction_id
  * @return transaction_id    if transaction_id == 0, it is invalid
  */
-uint8_t mesh_generic_level_client_level_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_level_client_level_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id);
 
 /**
@@ -91,7 +91,7 @@ uint8_t mesh_generic_level_client_level_set_unacknowledged(mesh_model_t * mesh_m
  * @param  dest
  * @param  netkey_index
  * @param  appkey_index
- * @return status    0 if successful 
+ * @return status    0 if successful
  */
 uint8_t mesh_generic_level_client_level_get(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
 
@@ -100,7 +100,7 @@ uint8_t mesh_generic_level_client_level_get(mesh_model_t *mesh_model, uint16_t d
  * @param  mesh_model
  * @param  level_value
  * @param  transaction_id
- * @return status    0 if successful 
+ * @return status    0 if successful
  */
 uint8_t mesh_generic_level_client_publish_level(mesh_model_t * mesh_model, int16_t level_value, uint8_t transaction_id);
 
@@ -114,9 +114,9 @@ uint8_t mesh_generic_level_client_publish_level(mesh_model_t * mesh_model, int16
  * @param  transition_time_gdtt
  * @param  delay_time_gdtt
  * @param  transaction_id
- * @return status    0 if successful 
+ * @return status    0 if successful
  */
-uint8_t mesh_generic_level_client_delta_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_level_client_delta_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id);
 
 /**
@@ -131,7 +131,7 @@ uint8_t mesh_generic_level_client_delta_set(mesh_model_t * mesh_model, uint16_t 
  * @param  transaction_id
  * @return transaction_id    if transaction_id == 0, it is invalid
  */
-uint8_t mesh_generic_level_client_delta_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_level_client_delta_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id);
 
 /**
@@ -144,9 +144,9 @@ uint8_t mesh_generic_level_client_delta_set_unacknowledged(mesh_model_t * mesh_m
  * @param  transition_time_gdtt
  * @param  delay_time_gdtt
  * @param  transaction_id
- * @return status    0 if successful 
+ * @return status    0 if successful
  */
-uint8_t mesh_generic_level_client_move_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_level_client_move_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id);
 
 /**
@@ -161,7 +161,7 @@ uint8_t mesh_generic_level_client_move_set(mesh_model_t * mesh_model, uint16_t d
  * @param  transaction_id
  * @return transaction_id    if transaction_id == 0, it is invalid
  */
-uint8_t mesh_generic_level_client_move_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_level_client_move_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index,
     int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id);
 
 #ifdef __cplusplus

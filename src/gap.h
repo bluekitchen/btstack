@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -79,7 +79,7 @@ typedef enum {
 	// Encryption required
 	// 128-bit equivalent strength for link and encryption keys required (P-192 is not enough)
 	// User interaction acceptable
-	LEVEL_4,	
+	LEVEL_4,
 } gap_security_level_t;
 
 
@@ -100,7 +100,7 @@ typedef enum {
 typedef enum {
 	GAP_SECURITY_NONE,
 	GAP_SECURITY_ENCRYPTED,		// SSP: JUST WORKS
-	GAP_SECURITY_AUTHENTICATED, // SSP: numeric comparison, passkey, OOB 
+	GAP_SECURITY_AUTHENTICATED, // SSP: numeric comparison, passkey, OOB
 	// GAP_SECURITY_AUTHORIZED
 } gap_security_state;
 
@@ -283,7 +283,7 @@ void gap_enable_link_watchdog(uint16_t timeout_ms);
  */
 void gap_set_bondable_mode(int enabled);
 
-/**  
+/**
  * @brief Get bondable mode.
  * @return 1 if bondable
  */
@@ -442,7 +442,7 @@ void gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t sca
 void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
 
 /**
- * @brief Start LE Scan 
+ * @brief Start LE Scan
  */
 void gap_start_scan(void);
 
@@ -468,7 +468,7 @@ gap_random_address_type_t gap_random_address_get_mode(void);
  */
  void gap_random_address_set_update_period(int period_ms);
 
-/** 
+/**
  * @brief Sets a fixed random address for advertising
  * @param addr
  * @note Sets random address mode to type off
@@ -498,13 +498,13 @@ void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * adve
 void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
 	uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
 
-/** 
+/**
  * @brief Enable/Disable Advertisements. OFF by default.
  * @param enabled
  */
 void gap_advertisements_enable(int enabled);
 
-/** 
+/**
  * @brief Set Scan Response Data
  *
  * @note For scan response data, scannable undirected advertising (ADV_SCAN_IND) need to be used
@@ -643,7 +643,7 @@ uint8_t gap_extended_advertising_remove(uint8_t advertising_handle);
  * @param min_ce_length (unit: 0.625ms), default: 10 ms
  * @param max_ce_length (unit: 0.625ms), default: 30 ms
  */
-void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_scan_window, 
+void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_scan_window,
     uint16_t conn_interval_min, uint16_t conn_interval_max, uint16_t conn_latency,
     uint16_t supervision_timeout, uint16_t min_ce_length, uint16_t max_ce_length);
 
@@ -778,7 +778,7 @@ uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx
 /**
  * @brief Get connection interval
  * @param con_handle
- * @return connection interval, otherwise 0 if error 
+ * @return connection interval, otherwise 0 if error
  */
 uint16_t gap_le_connection_interval(hci_con_handle_t con_handle);
 
@@ -851,7 +851,7 @@ void gap_drop_link_key_for_bd_addr(bd_addr_t addr);
  */
 void gap_delete_all_link_keys(void);
 
-/** 
+/**
  * @brief Store link key for remote device with baseband address
  * @param addr
  * @param link_key

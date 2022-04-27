@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -38,7 +38,7 @@
 /**
  * @title Debug Messages
  *
- * Allow to funnel debug and error messages. 
+ * Allow to funnel debug and error messages.
  *
  */
 
@@ -125,7 +125,7 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 
 /* API_START */
 
-/** 
+/**
  * @brief Log Security Manager key via log_info
  * @param name
  * @param key to log
@@ -140,7 +140,7 @@ void log_info_key(const char * name, sm_key_t key);
 void log_info_hexdump(const void *data, int size);
 
 /**
- * @brief Hexdump via log_debug 
+ * @brief Hexdump via log_debug
  * @param data
  * @param size
  */

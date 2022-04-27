@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -239,7 +239,7 @@ static void adv_bearer_run(void){
 
     if (hci_get_state() != HCI_STATE_WORKING) return;
     if (adv_timer_active) return;
-    
+
     uint32_t now = btstack_run_loop_get_time_ms();
     switch (adv_bearer_state){
         case STATE_IDLE:
@@ -251,7 +251,7 @@ static void adv_bearer_run(void){
                         log_debug("Next adv: %u", gap_adv_next_ms);
                     } else {
                         // queue again
-                        btstack_linked_list_add_tail(&gap_connectable_advertisements, (void*) item);                        
+                        btstack_linked_list_add_tail(&gap_connectable_advertisements, (void*) item);
                         // time to advertise again
                         log_debug("Start GAP ADV, %p", item);
                         gap_advertisements_set_params(ADVERTISING_INTERVAL_CONNECTABLE_MIN, ADVERTISING_INTERVAL_CONNECTABLE_MIN, gap_adv_type, gap_direct_address_typ, gap_direct_address, gap_channel_map, gap_filter_policy);
@@ -313,7 +313,7 @@ void adv_bearer_init(void){
     hci_event_callback_registration.callback = &adv_bearer_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
     // idle
-    adv_bearer_state = STATE_IDLE; 
+    adv_bearer_state = STATE_IDLE;
     memset(null_addr, 0, 6);
 }
 
@@ -387,10 +387,10 @@ void adv_bearer_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int
     gap_adv_int_max        = btstack_max(adv_int_max, 2 * ADVERTISING_INTERVAL_CONNECTABLE_MIN);
     gap_adv_int_ms         = gap_adv_int_min * 625 / 1000;
     gap_adv_type           = adv_type;
-    gap_direct_address_typ = direct_address_typ; 
+    gap_direct_address_typ = direct_address_typ;
     (void)memcpy(gap_direct_address, &direct_address, 6);
-    gap_channel_map        = channel_map; 
-    gap_filter_policy      = filter_policy; 
+    gap_channel_map        = channel_map;
+    gap_filter_policy      = filter_policy;
 
     log_info("GAP Adv interval %u ms", gap_adv_int_ms);
 }

@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Device Information Service Server
- * 
+ *
  */
 
 #ifndef DEVICE_INFORMATION_SERVICE_SERVER_H
@@ -52,10 +52,10 @@ extern "C" {
 /* API_START */
 
 /**
- * @text Th eDevice Information Service allows to query manufacturer and/or 
+ * @text Th eDevice Information Service allows to query manufacturer and/or
  * vendor information about a device.
- * 
- * To use with your application, add `#import <device_information_service.gatt>` to your .gatt file. 
+ *
+ * To use with your application, add `#import <device_information_service.gatt>` to your .gatt file.
  *
  * *Note*: instead of calling all setters, you can create a local copy of the .gatt file and remove
  * all Characteristics that are not relevant for your application and define all fixed values in the .gatt file.
@@ -134,4 +134,3 @@ void device_information_service_server_set_pnp_id(uint8_t vendor_source_id, uint
 #endif
 
 #endif
-

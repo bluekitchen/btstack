@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -57,7 +57,7 @@ extern "C" {
 
 #define AVRCP_BROWSING_ITEM_HEADER_LEN 3
 #define AVRCP_BROWSING_MAX_NUM_ATTR_IDS 8
-    
+
 #define AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE 512
 
 #define AVRCP_MAX_COMMAND_PARAMETER_LENGTH 11
@@ -83,7 +83,7 @@ typedef enum {
     AVRCP_STATUS_INVALID_PARAMETER,             // Sent if the TG received a PDU with a parameter ID that it did not understand, or, if there is only one parameter ID in the PDU.
     AVRCP_STATUS_SPECIFIED_PARAMETER_NOT_FOUND, // sent if the parameter ID is understood, but content is wrong or corrupted.
     AVRCP_STATUS_INTERNAL_ERROR,                // sent if there are error conditions not covered by a more specific error code.
-    AVRCP_STATUS_SUCCESS,                       // sent if the operation was successful. 
+    AVRCP_STATUS_SUCCESS,                       // sent if the operation was successful.
     AVRCP_STATUS_UID_CHANGED,                   // sent if the UIDs on the device have changed.
     AVRCP_STATUS_RESERVED_6,
     AVRCP_STATUS_INVALID_DIRECTION,             // The Direction parameter is invalid. Valid for command: Change Path
@@ -122,7 +122,7 @@ typedef enum {
 
 typedef enum {
     AVRCP_COMMAND_FRAME = 0,
-    AVRCP_RESPONSE_FRAME    
+    AVRCP_RESPONSE_FRAME
 } avrcp_frame_type_t;
 
 
@@ -165,7 +165,7 @@ typedef enum {
     AVRCP_PDU_ID_SEARCH = 0x80,
     AVRCP_PDU_ID_ADD_TO_NOW_PLAYING = 0x90,
     AVRCP_PDU_ID_GENERAL_REJECT = 0xA0,
-    
+
     AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
 
@@ -293,9 +293,9 @@ typedef enum {
     AVRCP_OPERATION_ID_PAGE_UP = 0x37,
     AVRCP_OPERATION_ID_PAGE_DOWN = 0x38,
     AVRCP_OPERATION_ID_RESERVED_3 = 0x39,
-    
+
     AVRCP_OPERATION_ID_SKIP = 0x3C,
-    
+
     AVRCP_OPERATION_ID_POWER = 0x40,
     AVRCP_OPERATION_ID_VOLUME_UP = 0x41,
     AVRCP_OPERATION_ID_VOLUME_DOWN = 0x42,
@@ -432,7 +432,7 @@ typedef enum{
 } avrcp_remote_capabilities_state_t;
 
 
-// BROWSING 
+// BROWSING
 typedef struct {
     uint16_t l2cap_browsing_cid;
 
@@ -467,16 +467,16 @@ typedef struct {
     // change_path
     uint8_t  change_path;
     uint8_t  direction;
-    
+
     // search str
     uint16_t search_str_len;
     uint8_t  search_str[20];
     uint8_t  search;
-    
+
     // get_item_attributes
     uint8_t  get_total_nr_items;
     avrcp_browsing_scope_t get_total_nr_items_scope;
-    
+
     avrcp_pdu_id_t pdu_id;
     uint8_t browsing_status;
     uint16_t num_items;
@@ -507,7 +507,7 @@ typedef struct {
 
 typedef struct {
     btstack_linked_item_t    item;
-    
+
     avrcp_role_t role;
     bd_addr_t remote_addr;
     uint16_t avrcp_l2cap_psm;
@@ -515,7 +515,7 @@ typedef struct {
     uint16_t l2cap_mtu;
     uint16_t avrcp_cid;
     hci_con_handle_t con_handle;
-    
+
     bool incoming_declined;
 
     uint16_t avrcp_browsing_cid;
@@ -528,7 +528,7 @@ typedef struct {
     bool wait_to_send;
 
 
-    // transaction id 
+    // transaction id
     uint8_t transaction_id_counter;
 
     btstack_timer_source_t retry_timer;
@@ -655,7 +655,7 @@ typedef struct {
 
     btstack_packet_handler_t browsing_avrcp_callback;
     btstack_packet_handler_t browsing_packet_handler;
-} avrcp_context_t; 
+} avrcp_context_t;
 
 
 const char * avrcp_subunit2str(uint16_t index);
@@ -707,7 +707,7 @@ void    avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t 
 void avrcp_init(void);
 
 /**
- * @brief Register callback for the AVRCP Controller client. 
+ * @brief Register callback for the AVRCP Controller client.
  * @param callback
  */
 void avrcp_register_packet_handler(btstack_packet_handler_t callback);
@@ -716,7 +716,7 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback);
  * @brief   Connect to AVRCP service on a remote device, emits AVRCP_SUBEVENT_CONNECTION_ESTABLISHED with status
  * @param   remote_addr
  * @param   avrcp_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
- * @return status     
+ * @return status
  */
 uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid);
 

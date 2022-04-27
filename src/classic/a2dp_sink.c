@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -72,7 +72,7 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
     attribute = de_push_sequence(service);
     {
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_AUDIO_SINK); 
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_AUDIO_SINK);
     }
     de_pop_sequence(service, attribute);
 
@@ -83,10 +83,10 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
         uint8_t* l2cpProtocol = de_push_sequence(attribute);
         {
             de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVDTP);  
+            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVDTP);
         }
         de_pop_sequence(attribute, l2cpProtocol);
-        
+
         uint8_t* avProtocol = de_push_sequence(attribute);
         {
             de_add_number(avProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVDTP);  // avProtocol_service
@@ -110,8 +110,8 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     {
         uint8_t *a2dProfile = de_push_sequence(attribute);
         {
-            de_add_number(a2dProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_ADVANCED_AUDIO_DISTRIBUTION); 
-            de_add_number(a2dProfile,  DE_UINT, DE_SIZE_16, 0x0103); 
+            de_add_number(a2dProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_ADVANCED_AUDIO_DISTRIBUTION);
+            de_add_number(a2dProfile,  DE_UINT, DE_SIZE_16, 0x0103);
         }
         de_pop_sequence(attribute, a2dProfile);
     }
@@ -155,7 +155,7 @@ void a2dp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8
         log_error("a2dp_sink_register_media_handler called with NULL callback");
         return;
     }
-    avdtp_sink_register_media_handler(callback);   
+    avdtp_sink_register_media_handler(callback);
 }
 
 void a2dp_sink_init(void){
@@ -179,7 +179,7 @@ avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t me
         return NULL;
     }
     avdtp_sink_register_media_transport_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
-    avdtp_sink_register_media_codec_category(avdtp_stream_endpoint_seid(local_stream_endpoint), media_type, media_codec_type, 
+    avdtp_sink_register_media_codec_category(avdtp_stream_endpoint_seid(local_stream_endpoint), media_type, media_codec_type,
         codec_capabilities, codec_capabilities_len);
 	avdtp_sink_register_delay_reporting_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
 
@@ -298,8 +298,8 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
                 break;
             }
 
-            log_info("A2DP streaming connection established --- avdtp_cid 0x%02x, local seid %d, remote seid %d", a2dp_sink_cid, 
-                avdtp_subevent_streaming_connection_established_get_local_seid(packet), 
+            log_info("A2DP streaming connection established --- avdtp_cid 0x%02x, local seid %d, remote seid %d", a2dp_sink_cid,
+                avdtp_subevent_streaming_connection_established_get_local_seid(packet),
                 avdtp_subevent_streaming_connection_established_get_remote_seid(packet));
 
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
@@ -332,7 +332,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
                     break;
             }
             break;
-        
+
         case AVDTP_SUBEVENT_SIGNALING_REJECT:
             if (a2dp_sink_stream_endpoint_configured == false) break;
             if (a2dp_sink_cid != avdtp_subevent_signaling_reject_get_avdtp_cid(packet)) break;
@@ -355,7 +355,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
 
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_RELEASED);
             break;
-        
+
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
             cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);

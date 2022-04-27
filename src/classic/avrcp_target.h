@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -64,7 +64,7 @@ typedef enum {
 } avrcp_target_supported_feature_t;
 
 /**
- * @brief AVRCP Target service record. 
+ * @brief AVRCP Target service record.
  * @param service
  * @param service_record_handle
  * @param supported_features 16-bit bitmap, see AVRCP_FEATURE_MASK_* in avrcp.h
@@ -79,7 +79,7 @@ void    avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_recor
 void    avrcp_target_init(void);
 
 /**
- * @brief Register callback for the AVRCP Target client. 
+ * @brief Register callback for the AVRCP Target client.
  * @param callback
  */
 void    avrcp_target_register_packet_handler(btstack_packet_handler_t callback);
@@ -92,7 +92,7 @@ void    avrcp_target_register_packet_handler(btstack_packet_handler_t callback);
 void avrcp_target_register_set_addressed_player_handler(bool (*callback)(uint16_t player_id));
 
 /**
- * @brief Register a list of Company IDs supported by target. 
+ * @brief Register a list of Company IDs supported by target.
  * @param avrcp_cid
  * @param num_companies
  * @param companies
@@ -103,8 +103,8 @@ uint8_t avrcp_target_support_companies(uint16_t avrcp_cid, uint8_t num_companies
 /**
  * @brief Register event ID supported by target.
  * @param avrcp_cid
- * @param event_id 
- * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE for unsupported event id, otherwise ERROR_CODE_SUCCESS, 
+ * @param event_id
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE for unsupported event id, otherwise ERROR_CODE_SUCCESS,
  */
 uint8_t avrcp_target_support_event(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
 
@@ -116,7 +116,7 @@ uint8_t avrcp_target_support_event(uint16_t avrcp_cid, avrcp_notification_event_
  * @param song_position_ms
  * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
-uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_playback_status_t status); 
+uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_playback_status_t status);
 
 /**
  * @brief Set Now Playing Info that is send to Controller if notifications are enabled
@@ -179,8 +179,8 @@ uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t playe
 uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
 
 /**
- * @brief Overwrite the absolute volume requested by controller with the actual absolute volume. 
- * This function can only be called on AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED event, which indicates a set absolute volume request by controller. 
+ * @brief Overwrite the absolute volume requested by controller with the actual absolute volume.
+ * This function can only be called on AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED event, which indicates a set absolute volume request by controller.
  * If the absolute volume requested by controller does not match the granularity of volume control the TG provides, you can use this function to adjust the actual value.
  *
  * @param avrcp_cid
@@ -191,7 +191,7 @@ uint8_t avrcp_target_adjust_absolute_volume(uint16_t avrcp_cid, uint8_t absolute
 
 
 /**
- * @brief Set Absolute Volume and send notification if enabled 
+ * @brief Set Absolute Volume and send notification if enabled
  * @param avrcp_cid
  * @param absolute_volume
  * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS

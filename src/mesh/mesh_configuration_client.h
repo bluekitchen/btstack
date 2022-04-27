@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -68,7 +68,7 @@ typedef struct {
 } mesh_composite_data_iterator_t;
 
 typedef struct {
-    uint16_t publish_address_unicast;       
+    uint16_t publish_address_unicast;
     uint8_t  publish_address_virtual[16];
     uint16_t appkey_index;
     uint8_t  credential_flag;
@@ -91,12 +91,12 @@ void mesh_composition_data_iterator_init(mesh_composite_data_iterator_t * iterat
 /**
  * @brief Check if there is another element description in the list
  * @param iterator
- * @return has_next_element  
+ * @return has_next_element
  */
 bool mesh_composition_data_iterator_has_next_element(mesh_composite_data_iterator_t * iterator);
 
 /**
- * @brief Select the next element 
+ * @brief Select the next element
  * @param iterator
  */
 void mesh_composition_data_iterator_next_element(mesh_composite_data_iterator_t * iterator);
@@ -104,14 +104,14 @@ void mesh_composition_data_iterator_next_element(mesh_composite_data_iterator_t 
 /**
  * @brief Get the element location descriptor for the current element
  * @param iterator
- * @return loc 
+ * @return loc
  */
 uint16_t mesh_composition_data_iterator_element_loc(mesh_composite_data_iterator_t * iterator);
 
 /**
  * @brief Check if there is another SIG model in current element
  * @param iterator
- * @return has_next_sig_model  
+ * @return has_next_sig_model
  */
 bool mesh_composition_data_iterator_has_next_sig_model(mesh_composite_data_iterator_t * iterator);
 
@@ -124,7 +124,7 @@ void mesh_composition_data_iterator_next_sig_model(mesh_composite_data_iterator_
 /**
  * @brief Get the SIG model ID for the current SIG model of the current element
  * @param iterator
- * @return loc 
+ * @return loc
  */
 uint16_t mesh_composition_data_iterator_sig_model_id(mesh_composite_data_iterator_t * iterator);
 
@@ -132,7 +132,7 @@ uint16_t mesh_composition_data_iterator_sig_model_id(mesh_composite_data_iterato
 /**
  * @brief Check if there is another vendor model in current element
  * @param iterator
- * @return has_next_vendor_model  
+ * @return has_next_vendor_model
  */
 bool mesh_composition_data_iterator_has_next_vendor_model(mesh_composite_data_iterator_t * iterator);
 
@@ -145,7 +145,7 @@ void mesh_composition_data_iterator_next_vendor_model(mesh_composite_data_iterat
 /**
  * @brief Get the Vendor model ID for the current vendor model of the current element
  * @param iterator
- * @return loc 
+ * @return loc
  */
 uint32_t mesh_composition_data_iterator_vendor_model_id(mesh_composite_data_iterator_t * iterator);
 
@@ -326,7 +326,7 @@ uint8_t mesh_configuration_client_send_model_publication_get(mesh_model_t * mesh
  * @param netkey_index
  * @param appkey_index
  * @param model_id
- * @param publication_config  
+ * @param publication_config
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
 uint8_t mesh_configuration_client_send_model_publication_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_id, mesh_publication_model_config_t * publication_config);
@@ -338,7 +338,7 @@ uint8_t mesh_configuration_client_send_model_publication_set(mesh_model_t * mesh
  * @param netkey_index
  * @param appkey_index
  * @param model_id
- * @param publication_config  
+ * @param publication_config
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
 uint8_t mesh_configuration_client_send_model_publication_virtual_address_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_id, mesh_publication_model_config_t * publication_config);
@@ -370,7 +370,7 @@ uint8_t mesh_configuration_client_send_model_subscription_delete(mesh_model_t * 
 uint8_t mesh_configuration_client_send_model_subscription_virtual_address_delete(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t * address, uint32_t model_id);
 
 /**
- * @brief Discard the Subscription List and add an address to the cleared Subscription List of a model 
+ * @brief Discard the Subscription List and add an address to the cleared Subscription List of a model
  * @param mesh_model
  * @param dest         element_address
  * @param netkey_index
@@ -522,7 +522,7 @@ uint8_t mesh_configuration_client_send_node_identity_get(mesh_model_t * mesh_mod
  * @param node_identity_state
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
-uint8_t mesh_configuration_client_send_node_identity_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t netk_index, mesh_node_identity_state_t node_identity_state); 
+uint8_t mesh_configuration_client_send_node_identity_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t netk_index, mesh_node_identity_state_t node_identity_state);
 
 /**
  * @brief Bind an AppKey to a model.
@@ -546,7 +546,7 @@ uint8_t mesh_configuration_client_send_model_app_bind_get(mesh_model_t * mesh_mo
  * @param model_identifier
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
-uint8_t mesh_configuration_client_send_model_app_unbind_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t appk_index, uint32_t model_identifier); 
+uint8_t mesh_configuration_client_send_model_app_unbind_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t appk_index, uint32_t model_identifier);
 
 /**
  * @brief Report of all AppKeys bound to the Model.
@@ -557,7 +557,7 @@ uint8_t mesh_configuration_client_send_model_app_unbind_set(mesh_model_t * mesh_
  * @param model_identifier
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
-uint8_t mesh_configuration_client_send_model_app_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_identifier); 
+uint8_t mesh_configuration_client_send_model_app_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_identifier);
 
 /**
  * @brief Reset a node (other than a Provisioner) and remove it from the network.
