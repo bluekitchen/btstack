@@ -756,7 +756,7 @@ static void btstack_crypto_ccm_calc_xn(btstack_crypto_ccm_t * btstack_crypto_ccm
     printf_hexdump(plaintext, 16);
 #endif
     uint8_t i;
-    uint8_t bytes_to_decrypt = btstack_crypto_ccm->block_len;
+    uint16_t bytes_to_decrypt = btstack_crypto_ccm->block_len;
     // use explicit min implementation as c-stat worried about out-of-bounds-reads
     if (bytes_to_decrypt > 16u) {
         bytes_to_decrypt = 16;
