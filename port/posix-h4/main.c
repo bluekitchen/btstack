@@ -236,8 +236,8 @@ static void local_version_information_handler(uint8_t * packet){
 
 int main(int argc, const char * argv[]){
 
-	/// GET STARTED with BTstack ///
-	btstack_memory_init();
+    /// GET STARTED with BTstack ///
+    btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 
     // log into file using HCI_DUMP_PACKETLOGGER format
@@ -263,8 +263,8 @@ int main(int argc, const char * argv[]){
 
     // init HCI
     const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
-	const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
-	hci_init(transport, (void*) &config);
+    const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
+    hci_init(transport, (void*) &config);
 
 #ifdef HAVE_PORTAUDIO
     btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
