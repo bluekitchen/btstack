@@ -59,6 +59,17 @@ if (APTX_FOUND)
     add_compile_definitions(HAVE_APTX)
 endif()
 
+# lc3plus
+pkg_check_modules(LC3PLUS LC3plus)
+if(LC3PLUS_FOUND)
+	message("HAVE_LC3PLUS")
+	include_directories(${LC3PLUS_INCLUDE_DIRS})
+	link_directories(${LC3PLUS_LIBRARY_DIRS})
+	link_libraries(${LC3PLUS_LIBRARIES})
+	add_definitions(${LC3PLUS_CFLAGS})
+	add_compile_definitions(HAVE_LC3PLUS)
+endif()
+
 # enable optional features
 add_compile_definitions(ENABLE_TESTING_SUPPORT ENABLE_LE_SIGNED_WRITE)
 
@@ -78,10 +89,12 @@ include_directories(../../3rd-party/lwip/core/src/include)
 include_directories(../../3rd-party/lwip/dhcp-server)
 include_directories(../../3rd-party/rijndael)
 include_directories(../../3rd-party/yxml)
+include_directories(../../3rd-party/lc3-google/include)
 include_directories(../../3rd-party/tinydir)
 include_directories(../../src)
 include_directories(../../example)
 include_directories(../../chipset/zephyr)
+include_directories(../../chipset/realtek)
 include_directories(../../platform/posix)
 include_directories(../../platform/embedded)
 include_directories(../../platform/lwip)
@@ -101,6 +114,7 @@ file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
 file(GLOB SOURCES_LIBUSB    "../../port/libusb/*.c" "../../platform/libusb/*.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
+file(GLOB SOURCES_REALTEK   "../../chipset/realtek/*.c")
 
 set(LWIP_CORE_SRC 
 	../../3rd-party/lwip/core/src/core/def.c
@@ -165,6 +179,7 @@ set(SOURCES
 	${SOURCES_UECC}
 	${SOURCES_HXCMOD}
 	${SOURCES_ZEPHYR}
+    ${SOURCES_REALTEK}
 )
 list(SORT SOURCES)
 
