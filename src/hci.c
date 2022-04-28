@@ -2440,8 +2440,8 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                 hci_stack->acl_data_packet_length = btstack_min(acl_len, HCI_ACL_PAYLOAD_SIZE);
                 hci_stack->sco_data_packet_length = btstack_min(sco_len, HCI_ACL_PAYLOAD_SIZE);
 
-                hci_stack->acl_packets_total_num = little_endian_read_16(packet, 9);
-                hci_stack->sco_packets_total_num = little_endian_read_16(packet, 11);
+                hci_stack->acl_packets_total_num = (uint8_t) little_endian_read_16(packet, 9);
+                hci_stack->sco_packets_total_num = (uint8_t) little_endian_read_16(packet, 11);
 
                 log_info("hci_read_buffer_size: ACL size module %u -> used %u, count %u / SCO size %u, count %u",
                          acl_len, hci_stack->acl_data_packet_length, hci_stack->acl_packets_total_num,
