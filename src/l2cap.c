@@ -2604,12 +2604,12 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
             return hci_can_send_acl_packet_now(channel->con_handle) != 0;
         case L2CAP_CHANNEL_TYPE_CONNECTIONLESS:
             if (!channel->waiting_for_can_send_now) return false;
-            return hci_can_send_acl_packet_now(channel->con_handle) != 0;
+            return hci_can_send_acl_classic_packet_now() != 0;
 #endif
 #ifdef ENABLE_BLE
         case L2CAP_CHANNEL_TYPE_FIXED:
             if (!channel->waiting_for_can_send_now) return false;
-            return hci_can_send_acl_packet_now(channel->con_handle) != 0;
+            return hci_can_send_acl_le_packet_now() != 0;
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
         case L2CAP_CHANNEL_TYPE_CHANNEL_CBM:
             if (channel->state != L2CAP_STATE_OPEN) return false;
