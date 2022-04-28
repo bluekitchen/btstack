@@ -193,7 +193,7 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
             case 'J': //  8 bit variable length indicator for 'V'
                 word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
                 var_len = word & 0xffu;
-                hci_cmd_buffer[pos++] = var_len;
+                hci_cmd_buffer[pos++] = (uint8_t) var_len;
                 break;
             case 'V':
                 btstack_assert(var_len != INVALID_VAR_LEN);
