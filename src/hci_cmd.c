@@ -162,7 +162,7 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 break;
             case 'N': { // UTF-8 string, null terminated
                 ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
-                uint16_t len = strlen((const char*) ptr);
+                uint16_t len = (uint16_t) strlen((const char*) ptr);
                 if (len > 248u) {
                     len = 248;
                 }
