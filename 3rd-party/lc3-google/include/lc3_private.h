@@ -103,7 +103,8 @@ struct lc3_encoder {
     lc3_ltpf_analysis_t ltpf;
     lc3_spec_analysis_t spec;
 
-    float *xs, *xf, s[0];
+    // BK: s[0] -> s[1] to avoid compiler warning for zero sized warning
+    float *xs, *xf, s[1];
 };
 
 #define LC3_ENCODER_BUFFER_COUNT(dt_us, sr_hz) \
@@ -139,7 +140,8 @@ struct lc3_decoder {
     lc3_ltpf_synthesis_t ltpf;
     lc3_plc_state_t plc;
 
-    float *xs, *xd, *xg, s[0];
+    // BK: s[0] -> s[1] to avoid compiler warning for zero sized warning
+    float *xs, *xd, *xg, s[1];
 };
 
 #define LC3_DECODER_BUFFER_COUNT(dt_us, sr_hz) \
