@@ -5,6 +5,11 @@
 // NULL
 #include "stddef.h"
 
+// suppress MSVC C4244: conversion from uECC_word_t to int
+#ifdef _MSC_VER
+#pragma warning( disable : 4244 )
+#endif
+
 #ifndef uECC_PLATFORM
     #if __AVR__
         #define uECC_PLATFORM uECC_avr
