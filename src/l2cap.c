@@ -1952,7 +1952,7 @@ static void l2cap_run_signaling_response(void) {
 #endif
             case SM_PAIRING_FAILED:
                 buffer[0] = SM_CODE_PAIRING_FAILED;
-                buffer[1] = result;
+                buffer[1] = (uint8_t) result;
                 l2cap_send_connectionless(handle, source_cid, buffer, 2);
                 break;
             default:
@@ -4670,7 +4670,7 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
     switch (channel_id) {
 
         case L2CAP_CID_SIGNALING_LE: {
-            uint16_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1];
+            uint8_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1];
             uint16_t len = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER + 2);
             if ((COMPLETE_L2CAP_HEADER + 4u + len) > size) break;
             int      valid  = l2cap_le_signaling_handler_dispatch(handle, &packet[COMPLETE_L2CAP_HEADER], sig_id);
