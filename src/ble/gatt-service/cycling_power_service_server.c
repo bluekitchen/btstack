@@ -633,15 +633,14 @@ static void cycling_power_service_response_can_send_now(void * context){
                 }
                 
                 if (calibrated_value == CP_CALIBRATION_STATUS_INCORRECT_CALIBRATION_POSITION){
-                     value[pos++] = calibrated_value;
+                     value[pos++] = (uint8_t) calibrated_value;
                      // do not include manufacturer ID and data
                      break;
                 } else if (calibrated_value == CP_CALIBRATION_STATUS_MANUFACTURER_SPECIFIC_ERROR_FOLLOWS){
-                    value[pos++] = calibrated_value;
+                    value[pos++] = (uint8_t) calibrated_value;
                 } else {
                     little_endian_store_16(value, pos, calibrated_value);
                     pos += 2;
-        
                 }
                 
                 if (instance->request_opcode == CP_OPCODE_START_OFFSET_COMPENSATION) break;
@@ -1077,8 +1076,9 @@ void cycling_power_service_server_add_wheel_revolution(int32_t wheel_revolution,
     cycling_power_t * instance = &cycling_power;
     instance->last_wheel_event_time_s = wheel_event_time_s;
     if (wheel_revolution < 0){
-        if (instance->cumulative_wheel_revolutions > -wheel_revolution){
-            instance->cumulative_wheel_revolutions += wheel_revolution;
+        uint32_t wheel_revolution_to_subtract = (uint32_t) (-wheel_revolution);
+        if (instance->cumulative_wheel_revolutions > wheel_revolution_to_subtract){
+            instance->cumulative_wheel_revolutions -= wheel_revolution_to_subtract;
         } else {
             instance->cumulative_wheel_revolutions = 0;
         } 
