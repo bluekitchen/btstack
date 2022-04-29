@@ -223,7 +223,7 @@ int main(int argc, const char * argv[]){
         config.device_name = argv[2];
         second_device = true;
         argc -= 2;
-        memmove(&argv[1], &argv[3], (argc-1) * sizeof(char *));
+        memmove((void *) &argv[1], &argv[3], (argc-1) * sizeof(char *));
     }
     printf("H4 device: %s\n", config.device_name);
 

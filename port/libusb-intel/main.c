@@ -201,7 +201,7 @@ int main(int argc, const char * argv[]){
         }
         printf("\n");
         argc -= 2;
-        memmove(&argv[1], &argv[3], (argc-1) * sizeof(char *));
+        memmove((void *) &argv[1], &argv[3], (argc-1) * sizeof(char *));
     }
 
 	/// GET STARTED with BTstack ///
