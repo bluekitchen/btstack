@@ -60,11 +60,11 @@
 #include "btstack_run_loop_windows.h"
 #include "btstack_stdin.h"
 #include "btstack_stdin_windows.h"
-#include "btstack_tlv_posix.h"
+#include "btstack_tlv_windows.h"
 #include "hal_led.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "hci_dump_posix_fs.h"
+#include "hci_dump_windows_fs.h"
 #include "hci_transport.h"
 #include "hci_transport_h4.h"
 
@@ -87,7 +87,7 @@ static bd_addr_t static_address;
 #define TLV_DB_PATH_POSTFIX ".tlv"
 static char tlv_db_path[100];
 static const btstack_tlv_t * tlv_impl;
-static btstack_tlv_posix_t   tlv_context;
+static btstack_tlv_windows_t   tlv_context;
 static bool shutdown_triggered;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -100,14 +100,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
                     btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str_with_delimiter(static_address, '-'));
                     btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
-                    tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
+                    tlv_impl = btstack_tlv_windows_init_instance(&tlv_context, tlv_db_path);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_BLE
                     le_device_db_tlv_configure(tlv_impl, &tlv_context);
 #endif
                     break;
                 case HCI_STATE_OFF:
-                    btstack_tlv_posix_deinit(&tlv_context);
+                    btstack_tlv_windows_deinit(&tlv_context);
                     if (!shutdown_triggered) break;
                     // reset stdin
                     btstack_stdin_reset();
@@ -150,8 +150,8 @@ int main(int argc, const char * argv[]){
 
     // log into file using HCI_DUMP_PACKETLOGGER format
     const char * pklg_path = "hci_dump.pklg";
-    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
-    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
+    hci_dump_windows_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    const hci_dump_t * hci_dump_impl = hci_dump_windows_fs_get_instance();
     hci_dump_init(hci_dump_impl);
     printf("Packet Log: %s\n", pklg_path);
 
