@@ -80,6 +80,7 @@ static void hci_dump_posix_fs_reset(void){
 
 // provide summary for ISO Data Packets if not supported by fileformat/viewer yet
 static uint16_t hci_dump_iso_summary(uint8_t in,  uint8_t *packet, uint16_t len){
+    UNUSED(len);
     uint16_t conn_handle = little_endian_read_16(packet, 0) & 0xfff;
     uint8_t pb = (packet[1] >> 4) & 3;
     uint8_t ts = (packet[1] >> 6) & 1;
