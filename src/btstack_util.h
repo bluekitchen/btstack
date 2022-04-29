@@ -319,6 +319,15 @@ uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid);
  */
 void btstack_strcpy(char * dst, uint16_t dst_size, const char * src);
 
+/**
+ * @brief Append src string to string in dst buffer with terminating '\0'
+ * @note max total string length will be dst_size-1 characters
+ * @param dst
+ * @param dst_size
+ * @param src
+ */
+void btstack_strcat(char * dst, uint16_t dst_size, const char * src);
+
 /* API_END */
 
 #if defined __cplusplus

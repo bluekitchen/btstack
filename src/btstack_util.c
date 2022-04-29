@@ -499,3 +499,11 @@ void btstack_strcpy(char * dst, uint16_t dst_size, const char * src){
     (void) memcpy(dst, src, bytes_to_copy);
     dst[bytes_to_copy] = 0;
 }
+
+void btstack_strcat(char * dst, uint16_t dst_size, const char * src){
+    uint16_t src_len = (uint16_t) strlen(src);
+    uint16_t dst_len = (uint16_t) strlen(dst);
+    uint16_t bytes_to_copy = btstack_min( src_len, dst_size - dst_len - 1);
+    (void) memcpy( &dst[dst_len], src, bytes_to_copy);
+    dst[dst_len + bytes_to_copy] = 0;
+}
