@@ -103,9 +103,9 @@ static hci_transport_config_uart_t config = {
 
 static void setup_tlv(bd_addr_t addr){
     printf("BTstack up and running on %s.\n", bd_addr_to_str(addr));
-    strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
-    strcat(tlv_db_path, bd_addr_to_str(addr));
-    strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+    btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
+    btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str(addr));
+    btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC

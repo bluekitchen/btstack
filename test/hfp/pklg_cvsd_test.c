@@ -196,8 +196,8 @@ int main (int argc, const char * argv[]){
     btstack_cvsd_plc_octave_set_base_name(filename);
 #endif
 
-    strcpy(pklg_path, filename);
-    strcat(pklg_path, ".pklg");
+    btstack_strcpy(pklg_path, sizeof(pklg_path), filename);
+    btstack_strcat(pklg_path, sizeof(pklg_path), ".pklg");
 
     // in file, no plc
     strcpy(wav_path, filename);

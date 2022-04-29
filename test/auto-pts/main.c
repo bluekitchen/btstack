@@ -120,9 +120,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         memcpy(local_addr, static_address, 6);
                     }
                     printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
-                    strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
-                    strcat(tlv_db_path, bd_addr_to_str(local_addr));
-                    strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+                    btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
+                    btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str(local_addr));
+                    btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
                     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
@@ -211,12 +211,12 @@ int main(int argc, const char * argv[]){
     }
 
     char pklg_path[100];
-    strcpy(pklg_path, "/tmp/hci_dump");
+    btstack_strcpy(pklg_path, sizeof(pklg_path),  "/tmp/hci_dump");
     if (usb_path_len){
-        strcat(pklg_path, "_");
-        strcat(pklg_path, usb_path_string);
+        btstack_strcat(pklg_path, sizeof(pklg_path), "_");
+        btstack_strcat(pklg_path, sizeof(pklg_path), usb_path_string);
     }
-    strcat(pklg_path, ".pklg");
+    btstack_strcat(pklg_path, sizeof(pklg_path), ".pklg");
     printf("Packet Log: %s\n", pklg_path);
     hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
     const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
