@@ -209,7 +209,7 @@ static void chipset_init(const void *config) {
     if (firmware_file_path == NULL || config_file_path == NULL) {
         log_info("firmware or config file path is empty. Using product id 0x%04x!", product_id);
         patch = NULL;
-        for (int i = 0; i < sizeof(fw_patch_table) / sizeof(patch_info); i++) {
+        for (uint16_t i = 0; i < sizeof(fw_patch_table) / sizeof(patch_info); i++) {
             if (fw_patch_table[i].prod_id == product_id) {
                 patch = &fw_patch_table[i];
                 break;
