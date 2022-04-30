@@ -195,7 +195,7 @@ static void hid_handle_input_report(uint8_t service_index, const uint8_t * repor
         if (usage >= sizeof(keytable_us_none)) continue;
 
         // store new keys
-        new_keys[new_keys_count++] = usage;
+        new_keys[new_keys_count++] = (uint8_t) usage;
 
         // check if usage was used last time (and ignore in that case)
         int i;
@@ -230,7 +230,7 @@ static void hid_handle_input_report(uint8_t service_index, const uint8_t * repor
  */
 static bool adv_event_contains_hid_service(const uint8_t * packet){
     const uint8_t * ad_data = gap_event_advertising_report_get_data(packet);
-    uint16_t ad_len = gap_event_advertising_report_get_data_length(packet);
+    uint8_t ad_len = gap_event_advertising_report_get_data_length(packet);
     return ad_data_contains_uuid16(ad_len, ad_data, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE);
 }
 
@@ -530,7 +530,7 @@ int btstack_main(int argc, const char * argv[]){
     /* LISTING_END */
 
     // Disable stdout buffering
-    setbuf(stdout, NULL);
+	setvbuf(stdin, NULL, _IONBF, 0);
 
     app_state = W4_WORKING;
 

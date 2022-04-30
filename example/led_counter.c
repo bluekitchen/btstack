@@ -73,7 +73,7 @@ static void heartbeat_handler(btstack_timer_source_t *ts){
 
     // increment counter
     char lineBuffer[30];
-    sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
+    snprintf(lineBuffer, sizeof(lineBuffer), "BTstack counter %04u\n\r", ++counter);
     puts(lineBuffer);
     
     // toggle LED

@@ -202,7 +202,7 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
     // useless code when ENABLE_ATT_DELAYED_RESPONSE is not defined - but avoids built errors
     if (att_handle == ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE){
         printf("ENABLE_ATT_DELAYED_RESPONSE not defined in btstack_config.h, responding right away");
-        return att_read_callback_handle_blob((const uint8_t *)test_string, strlen(test_string), offset, buffer, buffer_size);
+        return att_read_callback_handle_blob((const uint8_t *)test_string, (uint16_t) strlen(test_string), offset, buffer, buffer_size);
     }
 #endif
 

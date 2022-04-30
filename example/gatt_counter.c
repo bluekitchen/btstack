@@ -172,7 +172,7 @@ static int  counter_string_len;
 
 static void beat(void){
     counter++;
-    counter_string_len = sprintf(counter_string, "BTstack counter %04u", counter);
+    counter_string_len = snprintf(counter_string, sizeof(counter_string), "BTstack counter %04u", counter);
     puts(counter_string);
 }
 
