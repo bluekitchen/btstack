@@ -45,6 +45,11 @@
 #include "btstack_debug.h"
 #include "btstack_util.h"
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#include <windows.h>
+#endif
+
 #ifdef ENABLE_PRINTF_HEXDUMP
 #include <stdio.h>
 #endif
@@ -428,6 +433,46 @@ int count_set_bits_uint32(uint32_t x){
     v = (v & 0x00FF00FF) + ((v >> 8)  & 0x00FF00FFU);
     v = (v & 0x0000FFFF) + ((v >> 16) & 0x0000FFFFU);
     return v;
+}
+
+uint8_t btstack_clz(uint32_t value) {
+#if defined(__GNUC__) || defined (__clang__)
+    // use gcc/clang intrinsic
+    return (uint8_t) __builtin_clz(value);
+#elif defined(_MSC_VER)
+    // use MSVC intrinsic
+    DWORD leading_zero = 0;
+    if (_BitScanReverse( &leading_zero, value )){
+		return (uint8_t)(31 - leading_zero);
+    } else {
+        return 32;
+    }
+#else
+    // divide-and-conquer implementation for 32-bit integers
+    if (x == 0) return 32;
+    uint8_t r = 0;
+    if ((x & 0xffff0000u) == 0) {
+        x <<= 16;
+        r += 16;
+    }
+    if ((x & 0xff000000u) == 0) {
+        x <<= 8;
+        r += 8;
+    }
+    if ((x & 0xf0000000u) == 0) {
+        x <<= 4;
+        r += 4;
+    }
+    if ((x & 0xc0000000u) == 0) {
+        x <<= 2;
+        r += 2;
+    }
+    if ((x & 0x80000000u) == 0) {
+        x <<= 1;
+        r += 1;
+    }
+    return r;
+#endif
 }
 
 /*  
