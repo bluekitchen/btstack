@@ -6052,19 +6052,23 @@ static bool hci_run_general_pending_commands(void){
 static void hci_run(void){
 
     // stack state sub statemachines
-    // halting needs to be called even if we cannot send command packet now
     switch (hci_stack->state) {
         case HCI_STATE_INITIALIZING:
             hci_initializing_run();
-            return;
+            break;
         case HCI_STATE_HALTING:
             hci_halting_run();
-            return;
+            break;
         case HCI_STATE_FALLING_ASLEEP:
             hci_falling_asleep_run();
-            return;
+            break;
         default:
             break;
+    }
+
+    // allow to run after initialization to working transition
+    if (hci_stack->state != HCI_STATE_WORKING){
+        return;
     }
 
     bool done;
