@@ -1960,6 +1960,66 @@ void btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet){
 
 
 #endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+
+// MARK: hci_iso_stream_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_HCI_ISO_STREAMS)
+    #if defined(MAX_NO_HCI_ISO_STREAMS)
+        #error "Deprecated MAX_NO_HCI_ISO_STREAMS defined instead of MAX_NR_HCI_ISO_STREAMS. Please update your btstack_config.h to use MAX_NR_HCI_ISO_STREAMS."
+    #else
+        #define MAX_NR_HCI_ISO_STREAMS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_HCI_ISO_STREAMS
+#if MAX_NR_HCI_ISO_STREAMS > 0
+static hci_iso_stream_t hci_iso_stream_storage[MAX_NR_HCI_ISO_STREAMS];
+static btstack_memory_pool_t hci_iso_stream_pool;
+hci_iso_stream_t * btstack_memory_hci_iso_stream_get(void){
+    void * buffer = btstack_memory_pool_get(&hci_iso_stream_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(hci_iso_stream_t));
+    }
+    return (hci_iso_stream_t *) buffer;
+}
+void btstack_memory_hci_iso_stream_free(hci_iso_stream_t *hci_iso_stream){
+    btstack_memory_pool_free(&hci_iso_stream_pool, hci_iso_stream);
+}
+#else
+hci_iso_stream_t * btstack_memory_hci_iso_stream_get(void){
+    return NULL;
+}
+void btstack_memory_hci_iso_stream_free(hci_iso_stream_t *hci_iso_stream){
+    UNUSED(hci_iso_stream);
+};
+#endif
+#elif defined(HAVE_MALLOC)
+
+typedef struct {
+    btstack_memory_buffer_t tracking;
+    hci_iso_stream_t data;
+} btstack_memory_hci_iso_stream_t;
+
+hci_iso_stream_t * btstack_memory_hci_iso_stream_get(void){
+    btstack_memory_hci_iso_stream_t * buffer = (btstack_memory_hci_iso_stream_t *) malloc(sizeof(btstack_memory_hci_iso_stream_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(btstack_memory_hci_iso_stream_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
+    } else {
+        return NULL;
+    }
+}
+void btstack_memory_hci_iso_stream_free(hci_iso_stream_t *hci_iso_stream){
+    // reconstruct buffer start
+    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) hci_iso_stream)[-1];
+    btstack_memory_tracking_remove(buffer);
+    free(buffer);
+}
+#endif
+
+
+#endif
 
 // init
 void btstack_memory_init(void){
@@ -2082,6 +2142,12 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_MESH_SUBNETS > 0
     btstack_memory_pool_create(&mesh_subnet_pool, mesh_subnet_storage, MAX_NR_MESH_SUBNETS, sizeof(mesh_subnet_t));
+#endif
+
+#endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+#if MAX_NR_HCI_ISO_STREAMS > 0
+    btstack_memory_pool_create(&hci_iso_stream_pool, hci_iso_stream_storage, MAX_NR_HCI_ISO_STREAMS, sizeof(hci_iso_stream_t));
 #endif
 
 #endif

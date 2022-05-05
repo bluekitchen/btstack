@@ -297,6 +297,9 @@ list_of_le_structs = [
 list_of_mesh_structs = [
     ['mesh_network_pdu', 'mesh_segmented_pdu', 'mesh_upper_transport_pdu', 'mesh_network_key', 'mesh_transport_key', 'mesh_virtual_address', 'mesh_subnet']
 ]
+list_of_iso_structs = [
+    ['hci_iso_stream']
+]
 
 def writeln(f, data):
     f.write(data + "\n")
@@ -323,10 +326,11 @@ def add_struct(f, guard, template, structs):
         writeln(f, "#endif")
 
 def add_structs(f, template):
-    add_struct(f, "",               template, list_of_structs)
-    add_struct(f, "ENABLE_CLASSIC", template, list_of_classic_structs)
-    add_struct(f, "ENABLE_BLE",     template, list_of_le_structs)
-    add_struct(f, "ENABLE_MESH",    template, list_of_mesh_structs)
+    add_struct(f, "",                               template, list_of_structs)
+    add_struct(f, "ENABLE_CLASSIC",                 template, list_of_classic_structs)
+    add_struct(f, "ENABLE_BLE",                     template, list_of_le_structs)
+    add_struct(f, "ENABLE_MESH",                    template, list_of_mesh_structs)
+    add_struct(f, "ENABLE_LE_ISOCHRONOUS_STREAMS",  template, list_of_iso_structs)
 
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
 file_name = btstack_root + "/src/btstack_memory"

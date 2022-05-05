@@ -187,6 +187,11 @@ mesh_subnet_t * btstack_memory_mesh_subnet_get(void);
 void   btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet);
 
 #endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+hci_iso_stream_t * btstack_memory_hci_iso_stream_get(void);
+void   btstack_memory_hci_iso_stream_free(hci_iso_stream_t *hci_iso_stream);
+
+#endif
 
 #if defined __cplusplus
 }
