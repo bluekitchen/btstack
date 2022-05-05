@@ -1033,6 +1033,16 @@ void sm_cmac_signed_write_start(const sm_key_t k, uint8_t opcode, hci_con_handle
 }
 #endif
 
+static void sm_trigger_user_response_basic(sm_connection_t * sm_conn, uint8_t event_type){
+    setup->sm_user_response = SM_USER_RESPONSE_PENDING;
+    sm_notify_client_base(event_type, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+}
+
+static void sm_trigger_user_response_passkey(sm_connection_t * sm_conn){
+    sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type,
+                             sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12));
+}
+
 static void sm_trigger_user_response(sm_connection_t * sm_conn){
     // notify client for: JUST WORKS confirm, Numeric comparison confirm, PASSKEY display or input
     setup->sm_user_response = SM_USER_RESPONSE_IDLE;
@@ -1040,31 +1050,26 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
     switch (setup->sm_stk_generation_method){
         case PK_RESP_INPUT:
             if (IS_RESPONDER(sm_conn->sm_role)){
-                setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+                sm_trigger_user_response_basic(sm_conn, SM_EVENT_PASSKEY_INPUT_NUMBER);
             } else {
-                sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12));
+                sm_trigger_user_response_passkey(sm_conn);
             }
             break;
         case PK_INIT_INPUT:
             if (IS_RESPONDER(sm_conn->sm_role)){
-                sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12));
+                sm_trigger_user_response_passkey(sm_conn);
             } else {
-                setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+                sm_trigger_user_response_basic(sm_conn, SM_EVENT_PASSKEY_INPUT_NUMBER);
             }
             break;
         case PK_BOTH_INPUT:
-            setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-            sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+            sm_trigger_user_response_basic(sm_conn, SM_EVENT_PASSKEY_INPUT_NUMBER);
             break;
         case NUMERIC_COMPARISON:
-            setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-            sm_notify_client_passkey(SM_EVENT_NUMERIC_COMPARISON_REQUEST, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12));
+            sm_trigger_user_response_basic(sm_conn, SM_EVENT_NUMERIC_COMPARISON_REQUEST);
             break;
         case JUST_WORKS:
-            setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-            sm_notify_client_base(SM_EVENT_JUST_WORKS_REQUEST, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+            sm_trigger_user_response_basic(sm_conn, SM_EVENT_JUST_WORKS_REQUEST);
             break;
         case OOB:
             // client already provided OOB data, let's skip notification.
