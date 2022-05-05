@@ -68,6 +68,10 @@ void mock_btstack_run_loop_trigger_timer(void){
     (*btstack_timer->process)(btstack_timer);
 }
 
+void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    (void)callback_handler;
+}
+
 // simulate  btstack_memory_battery_service_client_get
 
 static bool mock_btstack_memory_battery_service_client_no_memory;
