@@ -3168,6 +3168,15 @@ static inline uint8_t sm_event_just_works_request_get_addr_type(const uint8_t * 
 static inline void sm_event_just_works_request_get_address(const uint8_t * event, bd_addr_t address){
     reverse_bytes(&event[5], address, 6);
 }
+/**
+ * @brief Get field secure_connection from event SM_EVENT_JUST_WORKS_REQUEST
+ * @param event packet
+ * @return secure_connection
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_just_works_request_get_secure_connection(const uint8_t * event){
+    return event[11];
+}
 #endif
 
 #ifdef ENABLE_BLE
@@ -3199,13 +3208,22 @@ static inline void sm_event_passkey_display_number_get_address(const uint8_t * e
     reverse_bytes(&event[5], address, 6);
 }
 /**
+ * @brief Get field secure_connection from event SM_EVENT_PASSKEY_DISPLAY_NUMBER
+ * @param event packet
+ * @return secure_connection
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_passkey_display_number_get_secure_connection(const uint8_t * event){
+    return event[11];
+}
+/**
  * @brief Get field passkey from event SM_EVENT_PASSKEY_DISPLAY_NUMBER
  * @param event packet
  * @return passkey
  * @note: btstack_type 4
  */
 static inline uint32_t sm_event_passkey_display_number_get_passkey(const uint8_t * event){
-    return little_endian_read_32(event, 11);
+    return little_endian_read_32(event, 12);
 }
 #endif
 
@@ -3267,6 +3285,15 @@ static inline uint8_t sm_event_passkey_input_number_get_addr_type(const uint8_t 
 static inline void sm_event_passkey_input_number_get_address(const uint8_t * event, bd_addr_t address){
     reverse_bytes(&event[5], address, 6);
 }
+/**
+ * @brief Get field secure_connection from event SM_EVENT_PASSKEY_INPUT_NUMBER
+ * @param event packet
+ * @return secure_connection
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_passkey_input_number_get_secure_connection(const uint8_t * event){
+    return event[11];
+}
 #endif
 
 #ifdef ENABLE_BLE
@@ -3298,13 +3325,22 @@ static inline void sm_event_numeric_comparison_request_get_address(const uint8_t
     reverse_bytes(&event[5], address, 6);
 }
 /**
+ * @brief Get field secure_connection from event SM_EVENT_NUMERIC_COMPARISON_REQUEST
+ * @param event packet
+ * @return secure_connection
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_numeric_comparison_request_get_secure_connection(const uint8_t * event){
+    return event[11];
+}
+/**
  * @brief Get field passkey from event SM_EVENT_NUMERIC_COMPARISON_REQUEST
  * @param event packet
  * @return passkey
  * @note: btstack_type 4
  */
 static inline uint32_t sm_event_numeric_comparison_request_get_passkey(const uint8_t * event){
-    return little_endian_read_32(event, 11);
+    return little_endian_read_32(event, 12);
 }
 #endif
 

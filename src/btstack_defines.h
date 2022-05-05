@@ -1558,18 +1558,20 @@ typedef uint8_t sm_key_t[16];
  #define BNEP_EVENT_CAN_SEND_NOW                                 0xC4u
 
  /**
-  * @format H1B
+  * @format H1B1
   * @param handle
   * @param addr_type
   * @param address
+  * @param secure_connection - set to 1 if successful pairing leads to LE Secure Connection
   */
 #define SM_EVENT_JUST_WORKS_REQUEST                              0xC8u
 
  /**
-  * @format H1B4
+  * @format H1B14
   * @param handle
   * @param addr_type
   * @param address
+  * @param secure_connection - set to 1 if successful pairing leads to LE Secure Connection
   * @param passkey
   */
 #define SM_EVENT_PASSKEY_DISPLAY_NUMBER                          0xC9u
@@ -1583,18 +1585,20 @@ typedef uint8_t sm_key_t[16];
 #define SM_EVENT_PASSKEY_DISPLAY_CANCEL                          0xCAu
 
  /**
-  * @format H1B
+  * @format H1B1
   * @param handle
   * @param addr_type
   * @param address
+  * @param secure_connection - set to 1 if successful pairing leads to LE Secure Connection
   */
 #define SM_EVENT_PASSKEY_INPUT_NUMBER                            0xCBu
 
  /**
-  * @format H1B4
+  * @format H1B14
   * @param handle
   * @param addr_type
   * @param address
+  * @param secure_connection - set to 1 if successful pairing leads to LE Secure Connection
   * @param passkey
   */
 #define SM_EVENT_NUMERIC_COMPARISON_REQUEST                      0xCCu

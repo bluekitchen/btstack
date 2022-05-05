@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - A2DP: new a2dp.c contains shared code of Sink and Source roles
 - A2DP Sink: automatically configure stream endpoint for outgoing connections
+- SM: pairing events indicate if pairing will lead to LE Secure Connection
 
 ## Release v1.5.2
 
