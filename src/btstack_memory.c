@@ -866,6 +866,64 @@ void btstack_memory_hid_host_connection_free(hid_host_connection_t *hid_host_con
 
 
 
+// MARK: service_record_item_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_SERVICE_RECORD_ITEMS)
+    #if defined(MAX_NO_SERVICE_RECORD_ITEMS)
+        #error "Deprecated MAX_NO_SERVICE_RECORD_ITEMS defined instead of MAX_NR_SERVICE_RECORD_ITEMS. Please update your btstack_config.h to use MAX_NR_SERVICE_RECORD_ITEMS."
+    #else
+        #define MAX_NR_SERVICE_RECORD_ITEMS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_SERVICE_RECORD_ITEMS
+#if MAX_NR_SERVICE_RECORD_ITEMS > 0
+static service_record_item_t service_record_item_storage[MAX_NR_SERVICE_RECORD_ITEMS];
+static btstack_memory_pool_t service_record_item_pool;
+service_record_item_t * btstack_memory_service_record_item_get(void){
+    void * buffer = btstack_memory_pool_get(&service_record_item_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(service_record_item_t));
+    }
+    return (service_record_item_t *) buffer;
+}
+void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
+    btstack_memory_pool_free(&service_record_item_pool, service_record_item);
+}
+#else
+service_record_item_t * btstack_memory_service_record_item_get(void){
+    return NULL;
+}
+void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
+    UNUSED(service_record_item);
+};
+#endif
+#elif defined(HAVE_MALLOC)
+
+typedef struct {
+    btstack_memory_buffer_t tracking;
+    service_record_item_t data;
+} btstack_memory_service_record_item_t;
+
+service_record_item_t * btstack_memory_service_record_item_get(void){
+    btstack_memory_service_record_item_t * buffer = (btstack_memory_service_record_item_t *) malloc(sizeof(btstack_memory_service_record_item_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(btstack_memory_service_record_item_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
+    } else {
+        return NULL;
+    }
+}
+void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
+    // reconstruct buffer start
+    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) service_record_item)[-1];
+    btstack_memory_tracking_remove(buffer);
+    free(buffer);
+}
+#endif
+
+
+
 // MARK: avdtp_stream_endpoint_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_AVDTP_STREAM_ENDPOINTS)
     #if defined(MAX_NO_AVDTP_STREAM_ENDPOINTS)
@@ -1091,64 +1149,6 @@ avrcp_browsing_connection_t * btstack_memory_avrcp_browsing_connection_get(void)
 void btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *avrcp_browsing_connection){
     // reconstruct buffer start
     btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) avrcp_browsing_connection)[-1];
-    btstack_memory_tracking_remove(buffer);
-    free(buffer);
-}
-#endif
-
-
-
-// MARK: service_record_item_t
-#if !defined(HAVE_MALLOC) && !defined(MAX_NR_SERVICE_RECORD_ITEMS)
-    #if defined(MAX_NO_SERVICE_RECORD_ITEMS)
-        #error "Deprecated MAX_NO_SERVICE_RECORD_ITEMS defined instead of MAX_NR_SERVICE_RECORD_ITEMS. Please update your btstack_config.h to use MAX_NR_SERVICE_RECORD_ITEMS."
-    #else
-        #define MAX_NR_SERVICE_RECORD_ITEMS 0
-    #endif
-#endif
-
-#ifdef MAX_NR_SERVICE_RECORD_ITEMS
-#if MAX_NR_SERVICE_RECORD_ITEMS > 0
-static service_record_item_t service_record_item_storage[MAX_NR_SERVICE_RECORD_ITEMS];
-static btstack_memory_pool_t service_record_item_pool;
-service_record_item_t * btstack_memory_service_record_item_get(void){
-    void * buffer = btstack_memory_pool_get(&service_record_item_pool);
-    if (buffer){
-        memset(buffer, 0, sizeof(service_record_item_t));
-    }
-    return (service_record_item_t *) buffer;
-}
-void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
-    btstack_memory_pool_free(&service_record_item_pool, service_record_item);
-}
-#else
-service_record_item_t * btstack_memory_service_record_item_get(void){
-    return NULL;
-}
-void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
-    UNUSED(service_record_item);
-};
-#endif
-#elif defined(HAVE_MALLOC)
-
-typedef struct {
-    btstack_memory_buffer_t tracking;
-    service_record_item_t data;
-} btstack_memory_service_record_item_t;
-
-service_record_item_t * btstack_memory_service_record_item_get(void){
-    btstack_memory_service_record_item_t * buffer = (btstack_memory_service_record_item_t *) malloc(sizeof(btstack_memory_service_record_item_t));
-    if (buffer){
-        memset(buffer, 0, sizeof(btstack_memory_service_record_item_t));
-        btstack_memory_tracking_add(&buffer->tracking);
-        return &buffer->data;
-    } else {
-        return NULL;
-    }
-}
-void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
-    // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) service_record_item)[-1];
     btstack_memory_tracking_remove(buffer);
     free(buffer);
 }
@@ -2008,6 +2008,9 @@ void btstack_memory_init(void){
 #if MAX_NR_HID_HOST_CONNECTIONS > 0
     btstack_memory_pool_create(&hid_host_connection_pool, hid_host_connection_storage, MAX_NR_HID_HOST_CONNECTIONS, sizeof(hid_host_connection_t));
 #endif
+#if MAX_NR_SERVICE_RECORD_ITEMS > 0
+    btstack_memory_pool_create(&service_record_item_pool, service_record_item_storage, MAX_NR_SERVICE_RECORD_ITEMS, sizeof(service_record_item_t));
+#endif
 #if MAX_NR_AVDTP_STREAM_ENDPOINTS > 0
     btstack_memory_pool_create(&avdtp_stream_endpoint_pool, avdtp_stream_endpoint_storage, MAX_NR_AVDTP_STREAM_ENDPOINTS, sizeof(avdtp_stream_endpoint_t));
 #endif
@@ -2019,9 +2022,6 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_AVRCP_BROWSING_CONNECTIONS > 0
     btstack_memory_pool_create(&avrcp_browsing_connection_pool, avrcp_browsing_connection_storage, MAX_NR_AVRCP_BROWSING_CONNECTIONS, sizeof(avrcp_browsing_connection_t));
-#endif
-#if MAX_NR_SERVICE_RECORD_ITEMS > 0
-    btstack_memory_pool_create(&service_record_item_pool, service_record_item_storage, MAX_NR_SERVICE_RECORD_ITEMS, sizeof(service_record_item_t));
 #endif
 #endif
 #ifdef ENABLE_BLE

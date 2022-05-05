@@ -145,6 +145,10 @@ void   btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection);
 hid_host_connection_t * btstack_memory_hid_host_connection_get(void);
 void   btstack_memory_hid_host_connection_free(hid_host_connection_t *hid_host_connection);
 
+// service_record_item
+service_record_item_t * btstack_memory_service_record_item_get(void);
+void   btstack_memory_service_record_item_free(service_record_item_t *service_record_item);
+
 // avdtp_stream_endpoint
 avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void);
 void   btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint);
@@ -160,10 +164,6 @@ void   btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection
 // avrcp_browsing_connection
 avrcp_browsing_connection_t * btstack_memory_avrcp_browsing_connection_get(void);
 void   btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *avrcp_browsing_connection);
-
-// service_record_item
-service_record_item_t * btstack_memory_service_record_item_get(void);
-void   btstack_memory_service_record_item_free(service_record_item_t *service_record_item);
 
 #endif
 #ifdef ENABLE_BLE
