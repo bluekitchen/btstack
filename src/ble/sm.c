@@ -575,13 +575,6 @@ static void sm_notify_client_base(uint8_t type, hci_con_handle_t con_handle, uin
     sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void sm_notify_client_passkey(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint32_t passkey){
-    uint8_t event[15];
-    sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
-    little_endian_store_32(event, 11, passkey);
-    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 static void sm_notify_client_index(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint16_t index){
     // fetch addr and addr type from db, only called for valid entries
     bd_addr_t identity_address;
@@ -1035,12 +1028,18 @@ void sm_cmac_signed_write_start(const sm_key_t k, uint8_t opcode, hci_con_handle
 
 static void sm_trigger_user_response_basic(sm_connection_t * sm_conn, uint8_t event_type){
     setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-    sm_notify_client_base(event_type, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+    uint8_t event[11];
+    sm_setup_event_base(event, sizeof(event), event_type, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void sm_trigger_user_response_passkey(sm_connection_t * sm_conn){
-    sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type,
-                             sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12));
+    uint8_t event[15];
+    uint32_t passkey = big_endian_read_32(setup->sm_tk, 12);
+    sm_setup_event_base(event, sizeof(event), SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle,
+                        sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+    little_endian_store_32(event, 11, passkey);
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void sm_trigger_user_response(sm_connection_t * sm_conn){
