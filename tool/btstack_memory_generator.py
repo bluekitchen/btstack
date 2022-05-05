@@ -274,19 +274,6 @@ init_template = """#if POOL_COUNT > 0
     btstack_memory_pool_create(&STRUCT_NAME_pool, STRUCT_NAME_storage, POOL_COUNT, sizeof(STRUCT_TYPE));
 #endif"""
 
-def writeln(f, data):
-    f.write(data + "\n")
-
-def replacePlaceholder(template, struct_name):
-    struct_type = struct_name + '_t'
-    if struct_name.endswith('try'):
-        pool_count = "MAX_NR_" + struct_name.upper()[:-3] + "TRIES"
-    else:
-        pool_count = "MAX_NR_" + struct_name.upper() + "S"
-    pool_count_old_no = pool_count.replace("MAX_NR_", "MAX_NO_")
-    snippet = template.replace("STRUCT_TYPE", struct_type).replace("STRUCT_NAME", struct_name).replace("POOL_COUNT_OLD_NO", pool_count_old_no).replace("POOL_COUNT", pool_count)
-    return snippet
-    
 list_of_structs = [
     ["hci_connection"],
     ["l2cap_service", "l2cap_channel"],
@@ -311,6 +298,36 @@ list_of_mesh_structs = [
     ['mesh_network_pdu', 'mesh_segmented_pdu', 'mesh_upper_transport_pdu', 'mesh_network_key', 'mesh_transport_key', 'mesh_virtual_address', 'mesh_subnet']
 ]
 
+def writeln(f, data):
+    f.write(data + "\n")
+
+def replacePlaceholder(template, struct_name):
+    struct_type = struct_name + '_t'
+    if struct_name.endswith('try'):
+        pool_count = "MAX_NR_" + struct_name.upper()[:-3] + "TRIES"
+    else:
+        pool_count = "MAX_NR_" + struct_name.upper() + "S"
+    pool_count_old_no = pool_count.replace("MAX_NR_", "MAX_NO_")
+    snippet = template.replace("STRUCT_TYPE", struct_type).replace("STRUCT_NAME", struct_name).replace("POOL_COUNT_OLD_NO", pool_count_old_no).replace("POOL_COUNT", pool_count)
+    return snippet
+
+def add_struct(f, guard, template, structs):
+    if not guard == "":
+        writeln(f, "#ifdef " + guard)
+    for struct_names in structs:
+        # writeln(f, "// "+ ", ".join(struct_names))
+        for struct_name in struct_names:
+            writeln(f, replacePlaceholder(template, struct_name))
+        writeln(f, "")
+    if not guard == "":
+        writeln(f, "#endif")
+
+def add_structs(f, template):
+    add_struct(f, "",               template, list_of_structs)
+    add_struct(f, "ENABLE_CLASSIC", template, list_of_classic_structs)
+    add_struct(f, "ENABLE_BLE",     template, list_of_le_structs)
+    add_struct(f, "ENABLE_MESH",    template, list_of_mesh_structs)
+
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
 file_name = btstack_root + "/src/btstack_memory"
 print ('Generating %s.[h|c]' % file_name)
@@ -318,30 +335,7 @@ print ('Generating %s.[h|c]' % file_name)
 f = open(file_name+".h", "w")
 writeln(f, copyright)
 writeln(f, hfile_header_begin)
-for struct_names in list_of_structs:
-    writeln(f, "// "+ ", ".join(struct_names))
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(header_template, struct_name))
-    writeln(f, "")
-writeln(f, "#ifdef ENABLE_CLASSIC")
-for struct_names in list_of_classic_structs:
-    writeln(f, "// "+ ", ".join(struct_names))
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(header_template, struct_name))
-    writeln(f, "")
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_BLE")
-for struct_names in list_of_le_structs:
-    writeln(f, "// "+ ", ".join(struct_names))
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(header_template, struct_name))
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_MESH")
-for struct_names in list_of_mesh_structs:
-    writeln(f, "// "+ ", ".join(struct_names))
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(header_template, struct_name))
-writeln(f, "#endif")
+add_structs(f, header_template)
 writeln(f, hfile_header_end)
 f.close();
 
@@ -349,48 +343,10 @@ f.close();
 f = open(file_name+".c", "w")
 writeln(f, copyright)
 writeln(f, cfile_header_begin)
-for struct_names in list_of_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(code_template, struct_name))
-    writeln(f, "")
-writeln(f, "#ifdef ENABLE_CLASSIC")
-for struct_names in list_of_classic_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(code_template, struct_name))
-    writeln(f, "")
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_BLE")
-for struct_names in list_of_le_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(code_template, struct_name))
-    writeln(f, "")
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_MESH")
-for struct_names in list_of_mesh_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(code_template, struct_name))
-    writeln(f, "")
-writeln(f, "#endif")
+add_structs(f, code_template)
 
 f.write(init_header)
-for struct_names in list_of_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(init_template, struct_name))
-writeln(f, "#ifdef ENABLE_CLASSIC")
-for struct_names in list_of_classic_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(init_template, struct_name))
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_BLE")
-for struct_names in list_of_le_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(init_template, struct_name))
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_MESH")
-for struct_names in list_of_mesh_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(init_template, struct_name))
-writeln(f, "#endif")
+add_structs(f, init_template)
 writeln(f, "}")
 f.close();
     
@@ -493,28 +449,11 @@ int main (int argc, const char * argv[]){
 }
 """
 
-file_name = btstack_root + "/test/btstack_memory/btstack_memory_test.c"
+file_name = btstack_root + "/test/btstack_memory/btstack_memory_test.cpp"
 print ('Generating %s' % file_name)
 
 f = open(file_name, "w")
 writeln(f, copyright)
 writeln(f, test_header)
-for struct_names in list_of_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(test_template, struct_name))
-writeln(f, "#ifdef ENABLE_CLASSIC")
-for struct_names in list_of_classic_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(test_template, struct_name))
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_BLE")
-for struct_names in list_of_le_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(test_template, struct_name))
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_MESH")
-for struct_names in list_of_mesh_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(test_template, struct_name))
-writeln(f, "#endif")
+add_structs(f, test_template)
 writeln(f, test_footer)

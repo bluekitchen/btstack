@@ -1971,12 +1971,14 @@ void btstack_memory_init(void){
 #if MAX_NR_HCI_CONNECTIONS > 0
     btstack_memory_pool_create(&hci_connection_pool, hci_connection_storage, MAX_NR_HCI_CONNECTIONS, sizeof(hci_connection_t));
 #endif
+
 #if MAX_NR_L2CAP_SERVICES > 0
     btstack_memory_pool_create(&l2cap_service_pool, l2cap_service_storage, MAX_NR_L2CAP_SERVICES, sizeof(l2cap_service_t));
 #endif
 #if MAX_NR_L2CAP_CHANNELS > 0
     btstack_memory_pool_create(&l2cap_channel_pool, l2cap_channel_storage, MAX_NR_L2CAP_CHANNELS, sizeof(l2cap_channel_t));
 #endif
+
 #ifdef ENABLE_CLASSIC
 #if MAX_NR_RFCOMM_MULTIPLEXERS > 0
     btstack_memory_pool_create(&rfcomm_multiplexer_pool, rfcomm_multiplexer_storage, MAX_NR_RFCOMM_MULTIPLEXERS, sizeof(rfcomm_multiplexer_t));
@@ -1987,42 +1989,53 @@ void btstack_memory_init(void){
 #if MAX_NR_RFCOMM_CHANNELS > 0
     btstack_memory_pool_create(&rfcomm_channel_pool, rfcomm_channel_storage, MAX_NR_RFCOMM_CHANNELS, sizeof(rfcomm_channel_t));
 #endif
+
 #if MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES > 0
     btstack_memory_pool_create(&btstack_link_key_db_memory_entry_pool, btstack_link_key_db_memory_entry_storage, MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES, sizeof(btstack_link_key_db_memory_entry_t));
 #endif
+
 #if MAX_NR_BNEP_SERVICES > 0
     btstack_memory_pool_create(&bnep_service_pool, bnep_service_storage, MAX_NR_BNEP_SERVICES, sizeof(bnep_service_t));
 #endif
 #if MAX_NR_BNEP_CHANNELS > 0
     btstack_memory_pool_create(&bnep_channel_pool, bnep_channel_storage, MAX_NR_BNEP_CHANNELS, sizeof(bnep_channel_t));
 #endif
+
 #if MAX_NR_GOEP_SERVER_SERVICES > 0
     btstack_memory_pool_create(&goep_server_service_pool, goep_server_service_storage, MAX_NR_GOEP_SERVER_SERVICES, sizeof(goep_server_service_t));
 #endif
 #if MAX_NR_GOEP_SERVER_CONNECTIONS > 0
     btstack_memory_pool_create(&goep_server_connection_pool, goep_server_connection_storage, MAX_NR_GOEP_SERVER_CONNECTIONS, sizeof(goep_server_connection_t));
 #endif
+
 #if MAX_NR_HFP_CONNECTIONS > 0
     btstack_memory_pool_create(&hfp_connection_pool, hfp_connection_storage, MAX_NR_HFP_CONNECTIONS, sizeof(hfp_connection_t));
 #endif
+
 #if MAX_NR_HID_HOST_CONNECTIONS > 0
     btstack_memory_pool_create(&hid_host_connection_pool, hid_host_connection_storage, MAX_NR_HID_HOST_CONNECTIONS, sizeof(hid_host_connection_t));
 #endif
+
 #if MAX_NR_SERVICE_RECORD_ITEMS > 0
     btstack_memory_pool_create(&service_record_item_pool, service_record_item_storage, MAX_NR_SERVICE_RECORD_ITEMS, sizeof(service_record_item_t));
 #endif
+
 #if MAX_NR_AVDTP_STREAM_ENDPOINTS > 0
     btstack_memory_pool_create(&avdtp_stream_endpoint_pool, avdtp_stream_endpoint_storage, MAX_NR_AVDTP_STREAM_ENDPOINTS, sizeof(avdtp_stream_endpoint_t));
 #endif
+
 #if MAX_NR_AVDTP_CONNECTIONS > 0
     btstack_memory_pool_create(&avdtp_connection_pool, avdtp_connection_storage, MAX_NR_AVDTP_CONNECTIONS, sizeof(avdtp_connection_t));
 #endif
+
 #if MAX_NR_AVRCP_CONNECTIONS > 0
     btstack_memory_pool_create(&avrcp_connection_pool, avrcp_connection_storage, MAX_NR_AVRCP_CONNECTIONS, sizeof(avrcp_connection_t));
 #endif
+
 #if MAX_NR_AVRCP_BROWSING_CONNECTIONS > 0
     btstack_memory_pool_create(&avrcp_browsing_connection_pool, avrcp_browsing_connection_storage, MAX_NR_AVRCP_BROWSING_CONNECTIONS, sizeof(avrcp_browsing_connection_t));
 #endif
+
 #endif
 #ifdef ENABLE_BLE
 #if MAX_NR_BATTERY_SERVICE_CLIENTS > 0
@@ -2046,6 +2059,7 @@ void btstack_memory_init(void){
 #if MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES > 0
     btstack_memory_pool_create(&periodic_advertiser_list_entry_pool, periodic_advertiser_list_entry_storage, MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES, sizeof(periodic_advertiser_list_entry_t));
 #endif
+
 #endif
 #ifdef ENABLE_MESH
 #if MAX_NR_MESH_NETWORK_PDUS > 0
@@ -2069,5 +2083,6 @@ void btstack_memory_init(void){
 #if MAX_NR_MESH_SUBNETS > 0
     btstack_memory_pool_create(&mesh_subnet_pool, mesh_subnet_storage, MAX_NR_MESH_SUBNETS, sizeof(mesh_subnet_t));
 #endif
+
 #endif
 }

@@ -127,6 +127,7 @@ TEST(btstack_memory, hci_connection_NotEnoughBuffers){
 
 
 
+
 TEST(btstack_memory, l2cap_service_GetAndFree){
     l2cap_service_t * context;
 #ifdef HAVE_MALLOC
@@ -208,6 +209,7 @@ TEST(btstack_memory, l2cap_channel_NotEnoughBuffers){
     context = btstack_memory_l2cap_channel_get();
     CHECK(context == NULL);
 }
+
 
 #ifdef ENABLE_CLASSIC
 
@@ -338,6 +340,7 @@ TEST(btstack_memory, rfcomm_channel_NotEnoughBuffers){
 
 
 
+
 TEST(btstack_memory, btstack_link_key_db_memory_entry_GetAndFree){
     btstack_link_key_db_memory_entry_t * context;
 #ifdef HAVE_MALLOC
@@ -377,6 +380,7 @@ TEST(btstack_memory, btstack_link_key_db_memory_entry_NotEnoughBuffers){
     context = btstack_memory_btstack_link_key_db_memory_entry_get();
     CHECK(context == NULL);
 }
+
 
 
 
@@ -464,6 +468,92 @@ TEST(btstack_memory, bnep_channel_NotEnoughBuffers){
 
 
 
+
+TEST(btstack_memory, goep_server_service_GetAndFree){
+    goep_server_service_t * context;
+#ifdef HAVE_MALLOC
+    context = btstack_memory_goep_server_service_get();
+    CHECK(context != NULL);
+    btstack_memory_goep_server_service_free(context);
+#else
+#ifdef MAX_NR_GOEP_SERVER_SERVICES
+    // single
+    context = btstack_memory_goep_server_service_get();
+    CHECK(context != NULL);
+    btstack_memory_goep_server_service_free(context);
+#else
+    // none
+    context = btstack_memory_goep_server_service_get();
+    CHECK(context == NULL);
+    btstack_memory_goep_server_service_free(context);
+#endif
+#endif
+}
+
+TEST(btstack_memory, goep_server_service_NotEnoughBuffers){
+    goep_server_service_t * context;
+#ifdef HAVE_MALLOC
+    simulate_no_memory = 1;
+#else
+#ifdef MAX_NR_GOEP_SERVER_SERVICES
+    int i;
+    // alloc all static buffers
+    for (i = 0; i < MAX_NR_GOEP_SERVER_SERVICES; i++){
+        context = btstack_memory_goep_server_service_get();
+        CHECK(context != NULL);
+    }
+#endif
+#endif
+    // get one more
+    context = btstack_memory_goep_server_service_get();
+    CHECK(context == NULL);
+}
+
+
+
+TEST(btstack_memory, goep_server_connection_GetAndFree){
+    goep_server_connection_t * context;
+#ifdef HAVE_MALLOC
+    context = btstack_memory_goep_server_connection_get();
+    CHECK(context != NULL);
+    btstack_memory_goep_server_connection_free(context);
+#else
+#ifdef MAX_NR_GOEP_SERVER_CONNECTIONS
+    // single
+    context = btstack_memory_goep_server_connection_get();
+    CHECK(context != NULL);
+    btstack_memory_goep_server_connection_free(context);
+#else
+    // none
+    context = btstack_memory_goep_server_connection_get();
+    CHECK(context == NULL);
+    btstack_memory_goep_server_connection_free(context);
+#endif
+#endif
+}
+
+TEST(btstack_memory, goep_server_connection_NotEnoughBuffers){
+    goep_server_connection_t * context;
+#ifdef HAVE_MALLOC
+    simulate_no_memory = 1;
+#else
+#ifdef MAX_NR_GOEP_SERVER_CONNECTIONS
+    int i;
+    // alloc all static buffers
+    for (i = 0; i < MAX_NR_GOEP_SERVER_CONNECTIONS; i++){
+        context = btstack_memory_goep_server_connection_get();
+        CHECK(context != NULL);
+    }
+#endif
+#endif
+    // get one more
+    context = btstack_memory_goep_server_connection_get();
+    CHECK(context == NULL);
+}
+
+
+
+
 TEST(btstack_memory, hfp_connection_GetAndFree){
     hfp_connection_t * context;
 #ifdef HAVE_MALLOC
@@ -503,6 +593,7 @@ TEST(btstack_memory, hfp_connection_NotEnoughBuffers){
     context = btstack_memory_hfp_connection_get();
     CHECK(context == NULL);
 }
+
 
 
 
@@ -548,6 +639,7 @@ TEST(btstack_memory, hid_host_connection_NotEnoughBuffers){
 
 
 
+
 TEST(btstack_memory, service_record_item_GetAndFree){
     service_record_item_t * context;
 #ifdef HAVE_MALLOC
@@ -587,6 +679,7 @@ TEST(btstack_memory, service_record_item_NotEnoughBuffers){
     context = btstack_memory_service_record_item_get();
     CHECK(context == NULL);
 }
+
 
 
 
@@ -632,6 +725,7 @@ TEST(btstack_memory, avdtp_stream_endpoint_NotEnoughBuffers){
 
 
 
+
 TEST(btstack_memory, avdtp_connection_GetAndFree){
     avdtp_connection_t * context;
 #ifdef HAVE_MALLOC
@@ -671,6 +765,7 @@ TEST(btstack_memory, avdtp_connection_NotEnoughBuffers){
     context = btstack_memory_avdtp_connection_get();
     CHECK(context == NULL);
 }
+
 
 
 
@@ -716,6 +811,7 @@ TEST(btstack_memory, avrcp_connection_NotEnoughBuffers){
 
 
 
+
 TEST(btstack_memory, avrcp_browsing_connection_GetAndFree){
     avrcp_browsing_connection_t * context;
 #ifdef HAVE_MALLOC
@@ -755,6 +851,7 @@ TEST(btstack_memory, avrcp_browsing_connection_NotEnoughBuffers){
     context = btstack_memory_avrcp_browsing_connection_get();
     CHECK(context == NULL);
 }
+
 
 #endif
 #ifdef ENABLE_BLE
@@ -1052,6 +1149,7 @@ TEST(btstack_memory, periodic_advertiser_list_entry_NotEnoughBuffers){
     CHECK(context == NULL);
 }
 
+
 #endif
 #ifdef ENABLE_MESH
 
@@ -1347,6 +1445,52 @@ TEST(btstack_memory, mesh_subnet_NotEnoughBuffers){
     context = btstack_memory_mesh_subnet_get();
     CHECK(context == NULL);
 }
+
+
+#endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+
+
+TEST(btstack_memory, hci_iso_stream_GetAndFree){
+    hci_iso_stream_t * context;
+#ifdef HAVE_MALLOC
+    context = btstack_memory_hci_iso_stream_get();
+    CHECK(context != NULL);
+    btstack_memory_hci_iso_stream_free(context);
+#else
+#ifdef MAX_NR_HCI_ISO_STREAMS
+    // single
+    context = btstack_memory_hci_iso_stream_get();
+    CHECK(context != NULL);
+    btstack_memory_hci_iso_stream_free(context);
+#else
+    // none
+    context = btstack_memory_hci_iso_stream_get();
+    CHECK(context == NULL);
+    btstack_memory_hci_iso_stream_free(context);
+#endif
+#endif
+}
+
+TEST(btstack_memory, hci_iso_stream_NotEnoughBuffers){
+    hci_iso_stream_t * context;
+#ifdef HAVE_MALLOC
+    simulate_no_memory = 1;
+#else
+#ifdef MAX_NR_HCI_ISO_STREAMS
+    int i;
+    // alloc all static buffers
+    for (i = 0; i < MAX_NR_HCI_ISO_STREAMS; i++){
+        context = btstack_memory_hci_iso_stream_get();
+        CHECK(context != NULL);
+    }
+#endif
+#endif
+    // get one more
+    context = btstack_memory_hci_iso_stream_get();
+    CHECK(context == NULL);
+}
+
 
 #endif
 
