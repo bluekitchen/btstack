@@ -1562,7 +1562,7 @@ typedef uint8_t sm_key_t[16];
   * @param handle
   * @param addr_type
   * @param address
-  * @param secure_connection - set to 1 if successful pairing leads to LE Secure Connection
+  * @param secure_connection - set to 1 if LE Secure Connection pairing will be used
   */
 #define SM_EVENT_JUST_WORKS_REQUEST                              0xC8u
 
@@ -1571,7 +1571,7 @@ typedef uint8_t sm_key_t[16];
   * @param handle
   * @param addr_type
   * @param address
-  * @param secure_connection - set to 1 if successful pairing leads to LE Secure Connection
+  * @param secure_connection - set to 1 if LE Secure Connection pairing will be used
   * @param passkey
   */
 #define SM_EVENT_PASSKEY_DISPLAY_NUMBER                          0xC9u
@@ -1589,7 +1589,7 @@ typedef uint8_t sm_key_t[16];
   * @param handle
   * @param addr_type
   * @param address
-  * @param secure_connection - set to 1 if successful pairing leads to LE Secure Connection
+  * @param secure_connection - set to 1 if LE Secure Connection pairing will be used
   */
 #define SM_EVENT_PASSKEY_INPUT_NUMBER                            0xCBu
 
@@ -1598,7 +1598,7 @@ typedef uint8_t sm_key_t[16];
   * @param handle
   * @param addr_type
   * @param address
-  * @param secure_connection - set to 1 if successful pairing leads to LE Secure Connection
+  * @param secure_connection - set to 1 if LE Secure Connection pairing will be used
   * @param passkey
   */
 #define SM_EVENT_NUMERIC_COMPARISON_REQUEST                      0xCCu
