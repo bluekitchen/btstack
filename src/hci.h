@@ -84,6 +84,11 @@ extern "C" {
 #define HCI_EVENT_PAYLOAD_SIZE     255
 #define HCI_CMD_PAYLOAD_SIZE       255
 
+// default for ISO streams: 48_6_2 : 2 x 155
+#ifndef HCI_ISO_PAYLOAD_SIZE
+#define HCI_ISO_PAYLOAD_SIZE 310
+#endif
+
 // Max HCI Command LE payload size:
 // 64 from LE Generate DHKey command
 // 32 from LE Encrypt command
@@ -664,8 +669,30 @@ typedef struct {
 
 } hci_connection_t;
 
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+typedef enum{
+    HCI_ISO_STREAM_STATE_REQUESTED,
+    HCI_ISO_STREAM_STATE_W4_ESTABLISHED,
+    HCI_ISO_STREAM_STATE_ESTABLISHED,
+} hci_iso_stream_state_t;
 
-/** 
+typedef struct {
+    // linked list - assert: first field
+    btstack_linked_item_t    item;
+
+    // peer info
+    hci_con_handle_t con_handle;
+
+    // state
+    hci_iso_stream_state_t state;
+
+    // re-assembly buffer
+    uint16_t reassembly_pos;
+    uint8_t  reassembly_buffer[HCI_ISO_PAYLOAD_SIZE];
+} hci_iso_stream_t;
+#endif
+
+/**
  * HCI Inititizlization State Machine
  */
 typedef enum hci_init_state{
@@ -906,6 +933,9 @@ typedef struct {
     uint16_t  iso_fragmentation_pos;
     uint16_t  iso_fragmentation_total_size;
     bool      iso_fragmentation_tx_active;
+
+    // list of iso streams
+    btstack_linked_list_t iso_streams;
 #endif
 
     // hardware error callback
