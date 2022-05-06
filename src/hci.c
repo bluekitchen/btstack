@@ -223,6 +223,13 @@ static void hci_periodic_advertiser_list_free(void);
 static le_advertising_set_t * hci_advertising_set_for_handle(uint8_t advertising_handle);
 #endif /* ENABLE_LE_EXTENDED_ADVERTISING */
 #endif /* ENABLE_LE_PERIPHERAL */
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+static uint8_t hci_iso_stream_create(hci_con_handle_t cis_handle);
+static void hci_iso_stream_finalize(hci_iso_stream_t * iso_stream);
+static hci_iso_stream_t * hci_iso_stream_for_cis_handle(hci_con_handle_t cis_handle);
+static void hci_iso_stream_requested_finalize(void);
+static void hci_iso_stream_requested_confirm(void);
+#endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
 #endif /* ENABLE_BLE */
 
 // the STACK is here
@@ -2714,6 +2721,17 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             break;
 #endif
 #endif
+#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+        case HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST:
+        case HCI_OPCODE_HCI_LE_CREATE_CIS:
+            status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
+            if (status != ERROR_CODE_SUCCESS){
+                hci_iso_stream_requested_finalize();
+            }
+            break;
+#endif
+#endif
         default:
             break;
     }
@@ -2941,6 +2959,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
     hci_link_type_t link_type;
     bd_addr_t addr;
 #endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    hci_iso_stream_t * iso_stream;
+#endif
 
     // log_info("HCI:EVENT:%02x", hci_event_packet_get_type(packet));
     
@@ -3004,7 +3025,19 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
                 }
             }
-#endif
+#endif /* ENABLE_CLASSIC */
+#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_create_cis) || HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_accept_cis_request)){
+                uint8_t status = hci_event_command_status_get_status(packet);
+                if (status == ERROR_CODE_SUCCESS){
+                    hci_iso_stream_requested_confirm();
+                } else {
+                    hci_iso_stream_requested_finalize();
+                }
+            }
+#endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
+#endif /* ENABLE_BLE */
             break;
 
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
@@ -3507,6 +3540,15 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 }
             }
 
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+            // finalize iso stream if handle matches
+            iso_stream = hci_iso_stream_for_cis_handle(handle);
+            if (iso_stream != NULL){
+                hci_iso_stream_finalize(iso_stream);
+                break;
+            }
+#endif
+
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
 #ifdef ENABLE_CLASSIC
@@ -3650,6 +3692,19 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         conn->le_max_tx_octets = hci_subevent_le_data_length_change_get_max_tx_octets(packet);
                     }
                     break;
+#endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+                case HCI_SUBEVENT_LE_CIS_ESTABLISHED:
+                    handle = hci_subevent_le_cis_established_get_connection_handle(packet);
+                    iso_stream = hci_iso_stream_for_cis_handle(handle);
+                    if (iso_stream){
+                        uint8_t status = hci_subevent_le_cis_established_get_status(packet);
+                        if (status == ERROR_CODE_SUCCESS){
+                            iso_stream->state = HCI_ISO_STREAM_STATE_ESTABLISHED;
+                        } else {
+                            hci_iso_stream_finalize(iso_stream);
+                        }
+                    }
 #endif
                 default:
                     break;
@@ -6209,6 +6264,12 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
 #ifdef ENABLE_LE_CENTRAL
     uint8_t initiator_filter_policy;
 #endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    uint8_t i;
+    uint8_t num_cis;
+    hci_con_handle_t cis_handle;
+    uint8_t status;
+#endif
 
     uint16_t opcode = little_endian_read_16(packet, 0);
     switch (opcode) {
@@ -6313,7 +6374,37 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             hci_stack->le_connecting_state = LE_CONNECTING_CANCEL;
             break;
 #endif
-#endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+#ifdef ENABLE_LE_CENTRAL
+        case HCI_OPCODE_HCI_LE_CREATE_CIS:
+            status = ERROR_CODE_SUCCESS;
+            num_cis = packet[3];
+            // setup hci_iso_streams
+            for (i=0;i<num_cis;i++){
+                cis_handle = (hci_con_handle_t) little_endian_read_16(packet, 4 + (4 * i));
+                status = hci_iso_stream_create(cis_handle);
+                if (status != ERROR_CODE_SUCCESS) {
+                    break;
+                }
+            }
+            // free structs on error
+            if (status != ERROR_CODE_SUCCESS){
+                hci_iso_stream_requested_finalize();
+                return status;
+            }
+            break;
+#endif /* ENABLE_LE_CENTRAL */
+#ifdef ENABLE_LE_PERIPHERAL
+        case HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST:
+            cis_handle = (hci_con_handle_t) little_endian_read_16(packet, 3);
+            status = hci_iso_stream_create(cis_handle);
+            if (status != ERROR_CODE_SUCCESS){
+                return status;
+            }
+            break;
+#endif /* ENABLE_LE_PERIPHERAL */
+#endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
+#endif /* ENABLE_BLE */
         default:
             break;
     }
@@ -8365,7 +8456,59 @@ uint8_t gap_periodic_advertising_terminate_sync(uint16_t sync_handle){
 
 #endif
 #endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+static uint8_t hci_iso_stream_create(hci_con_handle_t cis_handle){
+    hci_iso_stream_t * iso_stream = btstack_memory_hci_iso_stream_get();
+    if (iso_stream == NULL){
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    } else {
+        iso_stream->state = HCI_ISO_STREAM_STATE_REQUESTED;
+        iso_stream->con_handle = cis_handle;
+        btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t*) iso_stream);
+        return ERROR_CODE_SUCCESS;
+    }
+}
+
+static hci_iso_stream_t * hci_iso_stream_for_cis_handle(hci_con_handle_t cis_handle){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+        if ( iso_stream->con_handle == cis_handle ) {
+            return iso_stream;
+        }
+    }
+    return NULL;
+}
+
+static void hci_iso_stream_finalize(hci_iso_stream_t * iso_stream){
+    btstack_linked_list_remove(&hci_stack->iso_streams, (btstack_linked_item_t*) iso_stream);
+    btstack_memory_hci_iso_stream_free(iso_stream);
+}
+
+static void hci_iso_stream_requested_finalize(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+        if ( iso_stream->state == HCI_ISO_STREAM_STATE_REQUESTED ) {
+            btstack_linked_list_iterator_remove(&it);
+            btstack_memory_hci_iso_stream_free(iso_stream);
+        }
+    }
+}
+static void hci_iso_stream_requested_confirm(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+        if ( iso_stream->state == HCI_ISO_STREAM_STATE_REQUESTED ) {
+            iso_stream->state = HCI_ISO_STREAM_STATE_W4_ESTABLISHED;
+        }
+    }
+}
 #endif
+#endif /* ENABLE_BLE */
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 void hci_setup_test_connections_fuzz(void){
