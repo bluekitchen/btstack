@@ -229,6 +229,7 @@ static void hci_iso_stream_finalize(hci_iso_stream_t * iso_stream);
 static hci_iso_stream_t * hci_iso_stream_for_cis_handle(hci_con_handle_t cis_handle);
 static void hci_iso_stream_requested_finalize(void);
 static void hci_iso_stream_requested_confirm(void);
+static void hci_iso_packet_handler(uint8_t * packet, uint16_t size);
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
 #endif /* ENABLE_BLE */
 
@@ -3870,9 +3871,7 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
         case HCI_ISO_DATA_PACKET:
-            if (hci_stack->iso_packet_handler != NULL){
-                (hci_stack->iso_packet_handler)(HCI_ISO_DATA_PACKET, 0, packet, size);
-            }
+            hci_iso_packet_handler(packet, size);
             break;
 #endif
         default:
@@ -8507,6 +8506,85 @@ static void hci_iso_stream_requested_confirm(void){
         }
     }
 }
+
+static bool hci_iso_sdu_complete(uint8_t * packet, uint16_t size){
+    uint8_t  sdu_ts_flag = (packet[1] >> 6) & 1;
+    uint16_t sdu_len_offset = 6 + (sdu_ts_flag * 4);
+    uint16_t sdu_len = little_endian_read_16(packet, sdu_len_offset) & 0x0fff;
+    return (sdu_len_offset + 2 + sdu_len) == size;
+}
+
+static void hci_iso_packet_handler(uint8_t * packet, uint16_t size){
+    if (hci_stack->iso_packet_handler == NULL) {
+        return;
+    }
+    if (size < 4) {
+        return;
+    }
+
+    // parse header
+    uint16_t conn_handle_and_flags = little_endian_read_16(packet, 0);
+    uint16_t iso_data_len = little_endian_read_16(packet, 2);
+    hci_con_handle_t cis_handle = (hci_con_handle_t) (conn_handle_and_flags & 0xfff);
+    hci_iso_stream_t * iso_stream = hci_iso_stream_for_cis_handle(cis_handle);
+    uint8_t pb_flag = (conn_handle_and_flags >> 12) & 3;
+
+    // assert packet is complete
+    if ((iso_data_len + 4u) != size){
+        return;
+    }
+
+    if ((pb_flag & 0x01) == 0){
+        if (pb_flag == 0x02){
+            // The ISO_Data_Load field contains a header and a complete SDU.
+            if (hci_iso_sdu_complete(packet, size)) {
+                (hci_stack->iso_packet_handler)(HCI_ISO_DATA_PACKET, 0, packet, size);
+            }
+        } else {
+            // The ISO_Data_Load field contains a header and the first fragment of a fragmented SDU.
+            if (iso_stream == NULL){
+                return;
+            }
+            if (size > HCI_ISO_PAYLOAD_SIZE){
+                return;
+            }
+            memcpy(iso_stream->reassembly_buffer, packet, size);
+            // fix pb_flag
+            iso_stream->reassembly_buffer[1] = (iso_stream->reassembly_buffer[1] & 0xcf) | 0x20;
+            iso_stream->reassembly_pos = size;
+        }
+    } else {
+        // iso_data_load contains continuation or last fragment of an SDU
+        uint8_t  ts_flag = (conn_handle_and_flags >> 14) & 1;
+        if (ts_flag != 0){
+           return;
+        }
+        // append fragment
+        if (iso_stream == NULL){
+            return;
+        }
+        if (iso_stream->reassembly_pos == 0){
+            return;
+        }
+        if ((iso_stream->reassembly_pos + iso_data_len) > size){
+            // reset reassembly buffer
+            iso_stream->reassembly_pos = 0;
+            return;
+        }
+        memcpy(&iso_stream->reassembly_buffer[iso_stream->reassembly_pos], &packet[4], iso_data_len);
+        iso_stream->reassembly_pos += iso_data_len;
+
+        // deliver if last fragment and SDU complete
+        if (pb_flag == 0x03){
+            if (hci_iso_sdu_complete(iso_stream->reassembly_buffer, iso_stream->reassembly_pos)){
+                (hci_stack->iso_packet_handler)(HCI_ISO_DATA_PACKET, 0, iso_stream->reassembly_buffer, iso_stream->reassembly_pos);
+            }
+            iso_stream->reassembly_pos = 0;
+        }
+    }
+}
+
+
 #endif
 #endif /* ENABLE_BLE */
 
