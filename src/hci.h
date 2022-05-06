@@ -179,6 +179,7 @@ extern "C" {
 // ACL Packet
 #define READ_ACL_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
 #define READ_SCO_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
+#define READ_ISO_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
 #define READ_ACL_FLAGS( buffer )      ( buffer[1] >> 4 )
 #define READ_ACL_LENGTH( buffer )     (little_endian_read_16(buffer, 2))
 
