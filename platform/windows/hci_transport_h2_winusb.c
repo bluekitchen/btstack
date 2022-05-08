@@ -88,20 +88,20 @@ typedef struct _BTSTACK_WINUSB_PIPE_INFORMATION_EX {
   ULONG          MaximumBytesPerInterval;
 } BTSTACK_WINUSB_PIPE_INFORMATION_EX, *BTSTACK_PWINUSB_PIPE_INFORMATION_EX;
 
-typedef WINBOOL (WINAPI * BTstack_WinUsb_QueryPipeEx_t) (
+typedef BOOL (WINAPI * BTstack_WinUsb_QueryPipeEx_t) (
 	WINUSB_INTERFACE_HANDLE 	InterfaceHandle,
 	UCHAR						AlternateInterfaceNumber,
 	UCHAR 						PipeIndex,
 	BTSTACK_PWINUSB_PIPE_INFORMATION_EX PipeInformationEx
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_RegisterIsochBuffer_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_RegisterIsochBuffer_t)(
 	WINUSB_INTERFACE_HANDLE     InterfaceHandle,
 	UCHAR                       PipeID,
 	PVOID                       Buffer,
 	ULONG                       BufferLength,
 	BTSTACK_PWINUSB_ISOCH_BUFFER_HANDLE BufferHandle
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_ReadIsochPipe_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_ReadIsochPipe_t)(
     BTSTACK_PWINUSB_ISOCH_BUFFER_HANDLE BufferHandle,
     ULONG                       Offset,
     ULONG                       Length,
@@ -110,7 +110,7 @@ typedef WINBOOL (WINAPI * BTstack_WinUsb_ReadIsochPipe_t)(
     PUSBD_ISO_PACKET_DESCRIPTOR IsoPacketDescriptors,   // MSDN lists PULONG
     LPOVERLAPPED                Overlapped
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_ReadIsochPipeAsap_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_ReadIsochPipeAsap_t)(
     BTSTACK_PWINUSB_ISOCH_BUFFER_HANDLE BufferHandle,
     ULONG                       Offset,
     ULONG                       Length,
@@ -119,24 +119,24 @@ typedef WINBOOL (WINAPI * BTstack_WinUsb_ReadIsochPipeAsap_t)(
     PUSBD_ISO_PACKET_DESCRIPTOR IsoPacketDescriptors,
  	LPOVERLAPPED                Overlapped
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_WriteIsochPipe_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_WriteIsochPipe_t)(
     BTSTACK_PWINUSB_ISOCH_BUFFER_HANDLE BufferHandle,
     ULONG                       Offset,
     ULONG                       Length,
     PULONG                      FrameNumber,
 	LPOVERLAPPED                Overlapped
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_WriteIsochPipeAsap_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_WriteIsochPipeAsap_t)(
     BTSTACK_PWINUSB_ISOCH_BUFFER_HANDLE BufferHandle,
     ULONG                       Offset,
     ULONG                       Length,
     BOOL                        ContinueStream,
 	LPOVERLAPPED                Overlapped
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_UnregisterIsochBuffer_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_UnregisterIsochBuffer_t)(
 	BTSTACK_PWINUSB_ISOCH_BUFFER_HANDLE BufferHandle
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_GetCurrentFrameNumber_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_GetCurrentFrameNumber_t)(
     WINUSB_INTERFACE_HANDLE     InterfaceHandle,        // MSDN lists 'Device handle returned from CreateFile'
     PULONG                      CurrentFrameNumber,
     LARGE_INTEGER               *TimeStamp
@@ -625,6 +625,9 @@ static void sco_handle_data(uint8_t * buffer, uint16_t size){
                 packet_handler(HCI_SCO_DATA_PACKET, sco_buffer, sco_read_pos);
                 sco_state_machine_init();
                 break;
+			default:
+				btstack_unreachable();
+				break;
         }
     }
 }
