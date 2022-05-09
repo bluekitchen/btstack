@@ -189,7 +189,7 @@ int wav_reader_open(const char * filepath){
     uint8_t buf[40];
     fread(buf, 1, sizeof(buf), wav_reader_file);
 
-    wav_reader_state.num_channels  = little_endian_read_16(buf, 22);
+    wav_reader_state.num_channels  = (uint8_t) little_endian_read_16(buf, 22);
     if ((wav_reader_state.num_channels < 1) || (wav_reader_state.num_channels > 2)) {
         log_error("Unexpected num channels %d", wav_reader_state.num_channels);
         return 1;
@@ -232,11 +232,11 @@ int wav_reader_read_int8(int num_samples, int8_t * data){
     for (i=0; i<num_samples; i++){
         if (wav_reader_bytes_per_sample == 2){
             uint8_t buf[2];
-            bytes_read += fread(buf, 1, sizeof(buf), wav_reader_file);;
+            bytes_read += (uint16_t) fread(buf, 1, sizeof(buf), wav_reader_file);;
             data[i] = buf[1];
         } else {
             uint8_t buf[1];
-            bytes_read += fread(buf, 1, sizeof(buf), wav_reader_file);;
+            bytes_read += (uint16_t) fread(buf, 1, sizeof(buf), wav_reader_file);;
             data[i] = buf[0] + 128;
         }
     }
@@ -255,7 +255,7 @@ int wav_reader_read_int16(int num_samples, int16_t * data){
     int bytes_read = 0;  
     for (i=0; i<num_samples; i++){
         uint8_t buf[2];
-        bytes_read += fread(buf, 1, sizeof(buf), wav_reader_file);;
+        bytes_read += (uint16_t) fread(buf, 1, sizeof(buf), wav_reader_file);;
         data[i] = little_endian_read_16(buf, 0);  
     }
     if (bytes_read == num_samples * wav_reader_bytes_per_sample) {
