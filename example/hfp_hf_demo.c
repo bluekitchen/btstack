@@ -462,16 +462,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(event)){
+                case BTSTACK_EVENT_STATE:
+                    if (btstack_event_state_get_state(event) != HCI_STATE_WORKING) break;
+                    dump_supported_codecs();
+                    break;
+
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
                     sco_demo_send(sco_handle);
                     break;
-
-                case HCI_EVENT_COMMAND_COMPLETE:
-                    if (HCI_EVENT_IS_COMMAND_COMPLETE(event, hci_read_local_supported_features)){
-                        dump_supported_codecs();
-                    }
-                    break;
-
+                    
                 case HCI_EVENT_HFP_META:
                     switch (hci_event_hfp_meta_get_subevent_code(event)) {
                         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
