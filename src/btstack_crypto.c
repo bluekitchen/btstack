@@ -1082,7 +1082,8 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
     btstack_crypto_ecc_p256_t * btstack_crypto_ec_p192;
 #endif
 #endif
-    
+    bool ecdh_operations_supported;
+
     if (packet_type != HCI_EVENT_PACKET)  return;
 
     switch (hci_event_packet_get_type(packet)){
@@ -1094,29 +1095,33 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
             break;
 
         case HCI_EVENT_COMMAND_COMPLETE:
+            switch (hci_event_command_complete_get_command_opcode(packet)){
 #ifndef USE_BTSTACK_AES128
-    	    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_encrypt)){
-                if (!btstack_crypto_wait_for_hci_result) return;
-                btstack_crypto_wait_for_hci_result = 0;
-    	        btstack_crypto_handle_encryption_result(&packet[6]);
-    	    }
+                case HCI_OPCODE_HCI_LE_ENCRYPT:
+                    if (!btstack_crypto_wait_for_hci_result) return;
+                    btstack_crypto_wait_for_hci_result = 0;
+    	            btstack_crypto_handle_encryption_result(&packet[6]);
+                    break;
 #endif
-    	    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_rand)){
-                if (!btstack_crypto_wait_for_hci_result) return;
-                btstack_crypto_wait_for_hci_result = false;
-                btstack_crypto_handle_random_data(&packet[6], 8);
-    	    }
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
-                int ecdh_operations_supported = (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+34u] & 0x06u) == 0x06u;
-                UNUSED(ecdh_operations_supported);
-                log_info("controller supports ECDH operation: %u", ecdh_operations_supported);
+                case HCI_OPCODE_HCI_LE_RAND:
+                    if (!btstack_crypto_wait_for_hci_result) return;
+                    btstack_crypto_wait_for_hci_result = false;
+                    btstack_crypto_handle_random_data(&packet[6], 8);
+                    break;
+                case HCI_OPCODE_HCI_READ_LOCAL_SUPPORTED_COMMANDS:
+                    ecdh_operations_supported = (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+34u] & 0x06u) == 0x06u;
+                    UNUSED(ecdh_operations_supported);
+                    log_info("controller supports ECDH operation: %u", ecdh_operations_supported);
 #ifdef ENABLE_ECC_P256
 #ifndef USE_SOFTWARE_ECC_P256_IMPLEMENTATION
-                // Assert controller supports ECDH operation if we don't implement them ourselves
-                // Please add ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS to btstack_config.h and add 3rd-party/micro-ecc to your port
-                btstack_assert(ecdh_operations_supported != 0);
+                    // Assert controller supports ECDH operation if we don't implement them ourselves
+                    // Please add ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS to btstack_config.h and add 3rd-party/micro-ecc to your port
+                    btstack_assert(ecdh_operations_supported != 0);
 #endif
 #endif
+                    break;
+                default:
+                    break;
             }
             break;
 
