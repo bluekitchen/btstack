@@ -135,13 +135,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		case W4_INQUIRY_MODE_COMPLETE:
 			switch(event){
 				case HCI_EVENT_COMMAND_COMPLETE:
-					if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_inquiry_mode)) {
+					if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_WRITE_INQUIRY_MODE){
 						start_scan();
 						state = ACTIVE;
 					}
 					break;
 				case HCI_EVENT_COMMAND_STATUS:
-					if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_write_inquiry_mode)) {
+					if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_WRITE_INQUIRY_MODE){
 						printf("Ignoring error (0x%x) from hci_write_inquiry_mode.\n", packet[2]);
 						start_scan();
 						state = ACTIVE;
