@@ -2741,75 +2741,73 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 static void handle_command_status_event(uint8_t * packet, uint16_t size) {
     UNUSED(size);
 
-    bd_addr_type_t addr_type;
-    hci_connection_t * conn;
-
     // get num cmd packets - limit to 1 to reduce complexity
     hci_stack->num_cmd_packets = packet[3] ? 1 : 0;
 
-    // check command status to detected failed outgoing connections
-    bool create_connection_cmd = false;
+    // get opcode and command status
+    uint16_t opcode = hci_event_command_status_get_command_opcode(packet);
+
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_LE_CENTRAL) || defined(ENABLE_LE_ISOCHRONOUS_STREAMS)
+    uint8_t status = hci_event_command_status_get_status(packet);
+#endif
+
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_LE_CENTRAL)
+    bd_addr_type_t addr_type;
+#endif
+
+    switch (opcode){
 #ifdef ENABLE_CLASSIC
-    if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_create_connection)){
-        create_connection_cmd = true;
-    }
-    if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_accept_synchronous_connection)){
-        create_connection_cmd = true;
-    }
+        case HCI_OPCODE_HCI_CREATE_CONNECTION:
+        case HCI_OPCODE_HCI_ACCEPT_SYNCHRONOUS_CONNECTION:
 #endif
 #ifdef ENABLE_LE_CENTRAL
-    if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_create_connection)){
-        create_connection_cmd = true;
-    }
+        case HCI_OPCODE_HCI_LE_CREATE_CONNECTION:
 #endif
-    if (create_connection_cmd) {
-        uint8_t status = hci_event_command_status_get_status(packet);
-        addr_type = hci_stack->outgoing_addr_type;
-        conn = hci_connection_for_bd_addr_and_type(hci_stack->outgoing_addr, addr_type);
-        log_info("command status (create connection), status %x, connection %p, addr %s, type %x", status, conn, bd_addr_to_str(hci_stack->outgoing_addr), addr_type);
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_LE_CENTRAL)
+            addr_type = hci_stack->outgoing_addr_type;
 
-        // reset outgoing address info
-        memset(hci_stack->outgoing_addr, 0, 6);
-        hci_stack->outgoing_addr_type = BD_ADDR_TYPE_UNKNOWN;
+            // reset outgoing address info
+            memset(hci_stack->outgoing_addr, 0, 6);
+            hci_stack->outgoing_addr_type = BD_ADDR_TYPE_UNKNOWN;
 
-        // on error
-        if (status != ERROR_CODE_SUCCESS){
+            // on error
+            if (status != ERROR_CODE_SUCCESS){
 #ifdef ENABLE_LE_CENTRAL
-            if (hci_is_le_connection_type(addr_type)){
-                hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
-                hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
-            }
+                if (hci_is_le_connection_type(addr_type)){
+                    hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+                    hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
+                }
 #endif
-            // error => outgoing connection failed
-            if (conn != NULL){
-                hci_handle_connection_failed(conn, status);
-            }
-        }
-    }
-
-#ifdef ENABLE_CLASSIC
-    if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_inquiry)){
-        uint8_t status = hci_event_command_status_get_status(packet);
-        log_info("command status (inquiry), status %x", status);
-        if (status == ERROR_CODE_SUCCESS) {
-            hci_stack->inquiry_state = GAP_INQUIRY_STATE_ACTIVE;
-        } else {
-            hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
-        }
-    }
-#endif /* ENABLE_CLASSIC */
-#ifdef ENABLE_BLE
-#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-    if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_create_cis) || HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_accept_cis_request)){
-                uint8_t status = hci_event_command_status_get_status(packet);
-                if (status == ERROR_CODE_SUCCESS){
-                    hci_iso_stream_requested_confirm();
-                } else {
-                    hci_iso_stream_requested_finalize();
+                // error => outgoing connection failed
+                hci_connection_t * conn = hci_connection_for_bd_addr_and_type(hci_stack->outgoing_addr, addr_type);
+                if (conn != NULL){
+                    hci_handle_connection_failed(conn, status);
                 }
             }
+            break;
+#endif
+#ifdef ENABLE_CLASSIC
+        case HCI_OPCODE_HCI_INQUIRY:
+            if (status == ERROR_CODE_SUCCESS) {
+                hci_stack->inquiry_state = GAP_INQUIRY_STATE_ACTIVE;
+            } else {
+                hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
+            }
+            break;
+#endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+        case HCI_OPCODE_HCI_LE_CREATE_CIS:
+        case HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST:
+            if (status == ERROR_CODE_SUCCESS){
+                hci_iso_stream_requested_confirm();
+            } else {
+                hci_iso_stream_requested_finalize();
+            }
+            break;
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
-#endif /* ENABLE_BLE */
+        default:
+            break;
+    }
 }
 
 #ifdef ENABLE_BLE
