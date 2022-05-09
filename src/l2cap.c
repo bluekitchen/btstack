@@ -2951,7 +2951,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
         case HCI_EVENT_COMMAND_STATUS:
 #ifdef ENABLE_CLASSIC
             // check command status for create connection for errors
-            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_create_connection)){
+            if (hci_event_command_status_get_command_opcode(packet) == HCI_OPCODE_HCI_CREATE_CONNECTION){
                 // cache outgoing address and reset
                 (void)memcpy(address, l2cap_outgoing_classic_addr, 6);
                 memset(l2cap_outgoing_classic_addr, 0, 6);
@@ -2979,7 +2979,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
 
         // handle successful create connection cancel command
         case HCI_EVENT_COMMAND_COMPLETE:
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_create_connection_cancel)) {
+            if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_CREATE_CONNECTION_CANCEL) {
                 if (packet[5] == 0){
                     reverse_bd_addr(&packet[6], address);
                     // CONNECTION TERMINATED BY LOCAL HOST (0X16)
