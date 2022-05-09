@@ -143,19 +143,23 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
-                if (hci_event_command_complete_get_return_parameters(packet)[0]) break;
-                // terminate, name 248 chars
-                packet[6+248] = 0;
-                printf("Local name: %s\n", &packet[6]);
-            }
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
-                local_version_information_handler(packet);
-            }
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_zephyr_read_static_address)){
-                reverse_48(&packet[7], zephyr_static_address);
-                gap_random_address_set(zephyr_static_address);
-                setup_tlv(zephyr_static_address);
+            switch (hci_event_command_complete_get_command_opcode(packet)){
+                case HCI_OPCODE_HCI_READ_BD_ADDR:
+                    if (hci_event_command_complete_get_return_parameters(packet)[0]) break;
+                    // terminate, name 248 chars
+                    packet[6+248] = 0;
+                    printf("Local name: %s\n", &packet[6]);
+                    break;                
+                case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
+                    local_version_information_handler(packet);
+                    break;
+                case HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS:
+                    reverse_48(&packet[7], zephyr_static_address);
+                    gap_random_address_set(zephyr_static_address);
+                    setup_tlv(zephyr_static_address);
+                    break;
+                default:
+                    break;
             }
             break;
         default:
