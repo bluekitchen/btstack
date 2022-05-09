@@ -972,6 +972,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 break;
             }
             avdtp_cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
+            media_tracker.local_seid = avdtp_subevent_streaming_connection_established_get_local_seid(packet);
+            media_tracker.remote_seid = avdtp_subevent_streaming_connection_established_get_remote_seid(packet);
             printf("Streaming connection established, avdtp_cid 0x%02x\n", avdtp_cid);
             break;
 
