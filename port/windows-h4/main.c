@@ -138,7 +138,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
+            if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_LOCAL_NAME){
                 if (hci_event_command_complete_get_return_parameters(packet)[0]) break;
                 // terminate, name 248 chars
                 packet[6+248] = 0;
@@ -147,7 +147,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     btstack_chipset_bcm_set_device_name((const char *)&packet[6]);
                 }
             }
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
+            if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION){
                 local_version_information_handler(packet);
             }
             break;
