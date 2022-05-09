@@ -2738,6 +2738,80 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
     }
 }
 
+static void handle_command_status_event(uint8_t * packet, uint16_t size) {
+    UNUSED(size);
+
+    bd_addr_type_t addr_type;
+    hci_connection_t * conn;
+
+    // get num cmd packets - limit to 1 to reduce complexity
+    hci_stack->num_cmd_packets = packet[3] ? 1 : 0;
+
+    // check command status to detected failed outgoing connections
+    bool create_connection_cmd = false;
+#ifdef ENABLE_CLASSIC
+    if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_create_connection)){
+        create_connection_cmd = true;
+    }
+    if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_accept_synchronous_connection)){
+        create_connection_cmd = true;
+    }
+#endif
+#ifdef ENABLE_LE_CENTRAL
+    if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_create_connection)){
+        create_connection_cmd = true;
+    }
+#endif
+    if (create_connection_cmd) {
+        uint8_t status = hci_event_command_status_get_status(packet);
+        addr_type = hci_stack->outgoing_addr_type;
+        conn = hci_connection_for_bd_addr_and_type(hci_stack->outgoing_addr, addr_type);
+        log_info("command status (create connection), status %x, connection %p, addr %s, type %x", status, conn, bd_addr_to_str(hci_stack->outgoing_addr), addr_type);
+
+        // reset outgoing address info
+        memset(hci_stack->outgoing_addr, 0, 6);
+        hci_stack->outgoing_addr_type = BD_ADDR_TYPE_UNKNOWN;
+
+        // on error
+        if (status != ERROR_CODE_SUCCESS){
+#ifdef ENABLE_LE_CENTRAL
+            if (hci_is_le_connection_type(addr_type)){
+                hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+                hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
+            }
+#endif
+            // error => outgoing connection failed
+            if (conn != NULL){
+                hci_handle_connection_failed(conn, status);
+            }
+        }
+    }
+
+#ifdef ENABLE_CLASSIC
+    if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_inquiry)){
+        uint8_t status = hci_event_command_status_get_status(packet);
+        log_info("command status (inquiry), status %x", status);
+        if (status == ERROR_CODE_SUCCESS) {
+            hci_stack->inquiry_state = GAP_INQUIRY_STATE_ACTIVE;
+        } else {
+            hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
+        }
+    }
+#endif /* ENABLE_CLASSIC */
+#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_create_cis) || HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_accept_cis_request)){
+                uint8_t status = hci_event_command_status_get_status(packet);
+                if (status == ERROR_CODE_SUCCESS){
+                    hci_iso_stream_requested_confirm();
+                } else {
+                    hci_iso_stream_requested_finalize();
+                }
+            }
+#endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
+#endif /* ENABLE_BLE */
+}
+
 #ifdef ENABLE_BLE
 static void event_handle_le_connection_complete(const uint8_t * packet){
 	bd_addr_t addr;
@@ -2954,7 +3028,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
     hci_con_handle_t handle;
     hci_connection_t * conn;
     int i;
-    int create_connection_cmd;
 
 #ifdef ENABLE_CLASSIC
     hci_link_type_t link_type;
@@ -2973,72 +3046,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
             
         case HCI_EVENT_COMMAND_STATUS:
-            // get num cmd packets - limit to 1 to reduce complexity
-            hci_stack->num_cmd_packets = packet[3] ? 1 : 0;
-
-            // check command status to detected failed outgoing connections
-            create_connection_cmd = 0;
-#ifdef ENABLE_CLASSIC
-            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_create_connection)){
-                create_connection_cmd = 1;
-            }
-            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_accept_synchronous_connection)){
-                create_connection_cmd = 1;
-            }
-#endif
-#ifdef ENABLE_LE_CENTRAL
-            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_create_connection)){
-                create_connection_cmd = 1;
-            }
-#endif
-            if (create_connection_cmd) {
-                uint8_t status = hci_event_command_status_get_status(packet);
-                addr_type = hci_stack->outgoing_addr_type;
-                conn = hci_connection_for_bd_addr_and_type(hci_stack->outgoing_addr, addr_type);
-                log_info("command status (create connection), status %x, connection %p, addr %s, type %x", status, conn, bd_addr_to_str(hci_stack->outgoing_addr), addr_type);
-
-                // reset outgoing address info
-                memset(hci_stack->outgoing_addr, 0, 6);
-                hci_stack->outgoing_addr_type = BD_ADDR_TYPE_UNKNOWN;
-
-                // on error
-                if (status != ERROR_CODE_SUCCESS){
-#ifdef ENABLE_LE_CENTRAL
-                    if (hci_is_le_connection_type(addr_type)){
-                        hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
-                        hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
-                    }
-#endif
-                    // error => outgoing connection failed
-                    if (conn != NULL){
-                        hci_handle_connection_failed(conn, status);
-                    }
-                }
-            }
-
-#ifdef ENABLE_CLASSIC
-            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_inquiry)){
-                uint8_t status = hci_event_command_status_get_status(packet);
-                log_info("command status (inquiry), status %x", status);
-                if (status == ERROR_CODE_SUCCESS) {
-                    hci_stack->inquiry_state = GAP_INQUIRY_STATE_ACTIVE;
-                } else {
-                    hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
-                }
-            }
-#endif /* ENABLE_CLASSIC */
-#ifdef ENABLE_BLE
-#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_create_cis) || HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_accept_cis_request)){
-                uint8_t status = hci_event_command_status_get_status(packet);
-                if (status == ERROR_CODE_SUCCESS){
-                    hci_iso_stream_requested_confirm();
-                } else {
-                    hci_iso_stream_requested_finalize();
-                }
-            }
-#endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
-#endif /* ENABLE_BLE */
+            handle_command_status_event(packet, size);
             break;
 
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
