@@ -5264,6 +5264,16 @@ static bool hci_run_general_gap_le(void){
 
     // Phase 2: stop everything that should be off during modifications
 
+
+    // 2.1 Outgoing connection
+#ifdef ENABLE_LE_CENTRAL
+    if (connecting_stop){
+        hci_send_cmd(&hci_le_create_connection_cancel);
+        return true;
+    }
+#endif
+
+    // 2.2 Scanning
 #ifdef ENABLE_LE_CENTRAL
     if (scanning_stop){
         hci_stack->le_scanning_active = false;
@@ -5271,11 +5281,7 @@ static bool hci_run_general_gap_le(void){
         return true;
     }
 
-    if (connecting_stop){
-        hci_send_cmd(&hci_le_create_connection_cancel);
-        return true;
-    }
-
+    // 2.3 Periodic Sync
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     if (hci_stack->le_periodic_terminate_sync_handle != HCI_CON_HANDLE_INVALID){
         uint16_t sync_handle = hci_stack->le_periodic_terminate_sync_handle;
@@ -5293,6 +5299,7 @@ static bool hci_run_general_gap_le(void){
 #endif /* ENABLE_LE_EXTENDED_ADVERTISING */
 #endif /* ENABLE_LE_CENTRAL */
 
+    // 2.4 Advertising: legacy, extended, periodic
 #ifdef ENABLE_LE_PERIPHERAL
     if (advertising_stop){
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
@@ -5327,6 +5334,7 @@ static bool hci_run_general_gap_le(void){
 #endif /* ENABLE_LE_PERIODIC_ADVERTISING */
 #endif /* ENABLE_LE_EXTENDED_ADVERTISING */
 #endif /* ENABLE_LE_PERIPHERAL */
+
 
     // Phase 3: modify
 
