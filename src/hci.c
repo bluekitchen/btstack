@@ -5290,8 +5290,8 @@ static bool hci_run_general_gap_le(void){
         return true;
     }
 #endif /* ENABLE_LE_PERIODIC_ADVERTISING */
-#endif
-#endif
+#endif /* ENABLE_LE_EXTENDED_ADVERTISING */
+#endif /* ENABLE_LE_CENTRAL */
 
 #ifdef ENABLE_LE_PERIPHERAL
     if (advertising_stop){
@@ -5326,7 +5326,7 @@ static bool hci_run_general_gap_le(void){
     }
 #endif /* ENABLE_LE_PERIODIC_ADVERTISING */
 #endif /* ENABLE_LE_EXTENDED_ADVERTISING */
-#endif
+#endif /* ENABLE_LE_PERIPHERAL */
 
     // Phase 3: modify
 
