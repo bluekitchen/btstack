@@ -3023,7 +3023,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
         return;
     }
 
-    bd_addr_type_t addr_type;
     hci_con_handle_t handle;
     hci_connection_t * conn;
     int i;
@@ -3031,6 +3030,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
     hci_link_type_t link_type;
     bd_addr_t addr;
+    bd_addr_type_t addr_type;
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     hci_iso_stream_t * iso_stream;
