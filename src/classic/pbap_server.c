@@ -66,7 +66,7 @@ typedef enum {
     PBAP_SERVER_STATE_W4_OPEN,
     PBAP_SERVER_STATE_W4_CONNECT_OPCODE,
     PBAP_SERVER_STATE_W4_CONNECT_REQUEST,
-    PBAP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR,
+    PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST,
     PBAP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS,
     PBAP_SERVER_STATE_CONNECTED,
     PBAP_SERVER_STATE_W4_REQUEST,
@@ -315,7 +315,7 @@ static void pbap_server_operation_complete(pbap_server_t * pbap_server){
 
 static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
     switch (pbap_server->state){
-        case PBAP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR:
+        case PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST:
             // prepare response
             goep_server_response_create_general(pbap_server->goep_cid, OBEX_RESP_BAD_REQUEST);
             // next state
@@ -536,7 +536,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                 // TODO: check Target
                 if (ok == false){
                     // send bad request response
-                    pbap_server->state = PBAP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR;
+                    pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
                 } else {
                     // send connect response
                     pbap_server->state = PBAP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS;
