@@ -100,6 +100,12 @@ extern "C" {
 #define PBAP_VCARD_SELECTOR_OPERATOR_OR          0
 #define PBAP_VCARD_SELECTOR_OPERATOR_AND         1
 
+// PBAP Format
+typedef enum {
+    PBAP_FORMAT_VCARD_21 = 0,
+    PBAP_FORMAT_VCRAD_30
+} pbap_format_vcard_t;
+
 typedef enum {
     PBAP_OBJECT_TYPE_INVALID = 0,
     PBAP_OBJECT_TYPE_PHONEBOOOK,
