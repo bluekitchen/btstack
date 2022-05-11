@@ -65,6 +65,9 @@ extern "C" {
 // max type header len
 #define PBAP_SERVER_MAX_TYPE_LEN 20
 
+// max search value len
+#define PBAP_SERVER_MAX_SEARCH_VALUE_LEN 32
+
     /* API_START */
 
 // PBAP Supported Features
