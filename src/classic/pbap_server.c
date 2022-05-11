@@ -113,6 +113,7 @@ typedef struct {
     struct {
         char name[PBAP_SERVER_MAX_NAME_LEN];
         char type[PBAP_SERVER_MAX_TYPE_LEN];
+        pbap_object_type_t object_type; // parsed from type string
         obex_app_param_parser_t app_param_parser;
         uint8_t app_param_buffer[4];
         struct {
@@ -579,9 +580,15 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                     case OBEX_OPCODE_GET:
                     case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
                         pbap_server_handle_srm_headers(pbap_server);
-                        // test get request - return 5 empty vcards
-                        dummy_vacrd_counter = 10;
-                        pbap_server->state = PBAP_SERVER_STATE_SEND_CONTINUE_DATA;
+                        pbap_server->headers.object_type = pbap_server_parse_object_type(pbap_server->headers.type);
+                        if (pbap_server->headers.object_type == PBAP_OBJECT_TYPE_INVALID){
+                            // unknown object type
+                            pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
+                        } else {
+                            // test get request - return 5 empty vcards
+                            dummy_vacrd_counter = 10;
+                            pbap_server->state = PBAP_SERVER_STATE_SEND_CONTINUE_DATA;
+                        }
                         goep_server_request_can_send_now(pbap_server->goep_cid);
                         break;
                     case OBEX_OPCODE_SETPATH:
