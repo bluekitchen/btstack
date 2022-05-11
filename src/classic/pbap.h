@@ -100,6 +100,13 @@ extern "C" {
 #define PBAP_VCARD_SELECTOR_OPERATOR_OR          0
 #define PBAP_VCARD_SELECTOR_OPERATOR_AND         1
 
+typedef enum {
+    PBAP_OBJECT_TYPE_INVALID = 0,
+    PBAP_OBJECT_TYPE_PHONEBOOOK,
+    PBAP_OBJECT_TYPE_VCARD_LISTING,
+    PBAP_OBJECT_TYPE_VCARD,
+} pbap_object_type_t;
+
 /* API_END */
 
 #if defined __cplusplus
