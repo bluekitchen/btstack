@@ -115,8 +115,18 @@ typedef struct {
         char type[PBAP_SERVER_MAX_TYPE_LEN];
         pbap_object_type_t object_type; // parsed from type string
         obex_app_param_parser_t app_param_parser;
-        uint8_t app_param_buffer[4];
+        uint8_t app_param_buffer[8];
         struct {
+            char search_value[PBAP_SERVER_MAX_SEARCH_VALUE_LEN];
+            uint32_t property_selector;
+            uint32_t vcard_selector;
+            pbap_format_vcard_t format;
+            uint16_t max_list_count;
+            uint16_t list_start_offset;
+            uint8_t reset_new_missed_calls;
+            uint8_t vcard_selector_operator;
+            uint8_t order;
+            uint8_t search_property;
         } app_params;
     } headers;
 } pbap_server_t;
@@ -432,7 +442,7 @@ static void pbap_server_packet_handler_hci(uint8_t *packet, uint16_t size){
             break;
     }
 }
-static void pbap_server_app_param_callback(void * user_data, uint8_t tag_id, uint8_t total_len, uint8_t data_offset, const uint8_t * data_buffer, uint8_t data_len){
+static void pbap_server_app_param_callback_connect(void * user_data, uint8_t tag_id, uint8_t total_len, uint8_t data_offset, const uint8_t * data_buffer, uint8_t data_len){
     pbap_server_t * pbap_server = (pbap_server_t *) user_data;
     if (tag_id == PBAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES){
         obex_app_param_parser_tag_state_t state = obex_app_param_parser_tag_store(pbap_server->headers.app_param_buffer, sizeof(pbap_server->headers.app_param_buffer), total_len, data_offset, data_buffer, data_len);
@@ -454,11 +464,68 @@ static void pbap_server_parser_callback_connect(void * user_data, uint8_t header
             break;
         case OBEX_HEADER_APPLICATION_PARAMETERS:
             if (data_offset == 0){
-                obex_app_param_parser_init(&pbap_server->headers.app_param_parser, &pbap_server_app_param_callback, total_len, pbap_server);
+                obex_app_param_parser_init(&pbap_server->headers.app_param_parser,
+                                           &pbap_server_app_param_callback_connect, total_len, pbap_server);
             }
             obex_app_param_parser_process_data(&pbap_server->headers.app_param_parser, data_buffer, data_len);
             break;
         default:
+            break;
+    }
+}
+
+static void pbap_server_app_param_callback_get(void * user_data, uint8_t tag_id, uint8_t total_len, uint8_t data_offset, const uint8_t * data_buffer, uint8_t data_len){
+    pbap_server_t * pbap_server = (pbap_server_t *) user_data;
+    obex_app_param_parser_tag_state_t state;
+    switch (tag_id) {
+        case PBAP_APPLICATION_PARAMETER_SEARCH_VALUE:
+            state = obex_app_param_parser_tag_store((uint8_t *) pbap_server->headers.app_params.search_value,
+                                                    sizeof(pbap_server->headers.app_params.search_value), total_len,
+                                                    data_offset, data_buffer, data_len);
+            break;
+        default:
+            state = obex_app_param_parser_tag_store(pbap_server->headers.app_param_buffer,
+                                                    sizeof(pbap_server->headers.app_param_buffer), total_len,
+                                                    data_offset, data_buffer, data_len);
+            if (state == OBEX_APP_PARAM_PARSER_TAG_COMPLETE) {
+                switch (tag_id) {
+                    case PBAP_APPLICATION_PARAMETER_PROPERTY_SELECTOR:
+                        // read lower 32 bit
+                        pbap_server->headers.app_params.property_selector = big_endian_read_32(
+                                pbap_server->headers.app_param_buffer, 4);
+                        break;
+                    case PBAP_APPLICATION_PARAMETER_VCARD_SELECTOR:
+                        // read lower 32 bit
+                        pbap_server->headers.app_params.vcard_selector = big_endian_read_32(
+                                pbap_server->headers.app_param_buffer, 4);
+                        break;
+                    case PBAP_APPLICATION_PARAMETER_FORMAT:
+                        pbap_server->headers.app_params.format = (pbap_format_vcard_t) pbap_server->headers.app_param_buffer[0];
+                        break;
+                    case PBAP_APPLICATION_PARAMETER_MAX_LIST_COUNT:
+                        pbap_server->headers.app_params.max_list_count = big_endian_read_16(
+                                pbap_server->headers.app_param_buffer, 0);
+                        break;
+                    case PBAP_APPLICATION_PARAMETER_LIST_START_OFFSET:
+                        pbap_server->headers.app_params.list_start_offset = big_endian_read_16(
+                                pbap_server->headers.app_param_buffer, 0);
+                        break;
+                    case PBAP_APPLICATION_PARAMETER_RESET_NEW_MISSED_CALLS:
+                        pbap_server->headers.app_params.reset_new_missed_calls = pbap_server->headers.app_param_buffer[0];
+                        break;
+                    case PBAP_APPLICATION_PARAMETER_VCARD_SELECTOR_OPERATOR:
+                        pbap_server->headers.app_params.vcard_selector_operator = pbap_server->headers.app_param_buffer[0];
+                        break;
+                    case PBAP_APPLICATION_PARAMETER_ORDER:
+                        pbap_server->headers.app_params.vcard_selector_operator = pbap_server->headers.app_param_buffer[0];
+                        break;
+                    case PBAP_APPLICATION_PARAMETER_SEARCH_PROPERTY:
+                        pbap_server->headers.app_params.search_property = pbap_server->headers.app_param_buffer[0];
+                        break;
+                    default:
+                        break;
+                }
+            }
             break;
     }
 }
@@ -500,11 +567,20 @@ static void pbap_server_parser_callback_get(void * user_data, uint8_t header_id,
             }
             break;
         case OBEX_HEADER_APPLICATION_PARAMETERS:
-            printf("- todo: parse app params\n");
+            if (data_offset == 0){
+                obex_app_param_parser_init(&pbap_server->headers.app_param_parser,
+                                           &pbap_server_app_param_callback_get, total_len, pbap_server);
+            }
+            obex_app_param_parser_process_data(&pbap_server->headers.app_param_parser, data_buffer, data_len);
             break;
         default:
             break;
     }
+}
+
+static void pbap_server_default_headers(pbap_server_t * pbap_server){
+    memset(&pbap_server->headers, 0, sizeof(pbap_server->headers));
+    pbap_server->headers.app_params.max_list_count = 0xffff;
 }
 
 static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t *packet, uint16_t size){
@@ -520,6 +596,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
             break;
         case PBAP_SERVER_STATE_W4_CONNECT_OPCODE:
             pbap_server->state = PBAP_SERVER_STATE_W4_CONNECT_REQUEST;
+            pbap_server_default_headers(pbap_server);
             obex_parser_init_for_request(&pbap_server->obex_parser, &pbap_server_parser_callback_connect, (void*) pbap_server);
 
             /* fall through */
@@ -547,6 +624,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
             break;
         case PBAP_SERVER_STATE_CONNECTED:
             opcode = packet[0];
+            // default headers
             switch (opcode){
                 case OBEX_OPCODE_GET:
                 case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
