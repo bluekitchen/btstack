@@ -245,6 +245,19 @@ static void pbap_server_emit_set_path_event(pbap_server_t *server, uint8_t flags
     (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
+static pbap_object_type_t pbap_server_parse_object_type(const char * type_string){
+    if (strcmp("x-bt/phonebook", type_string) == 0) {
+        return PBAP_OBJECT_TYPE_PHONEBOOOK;
+    }
+    if (strcmp("x-bt/vcard-listing", type_string) == 0) {
+        return PBAP_OBJECT_TYPE_VCARD_LISTING;
+    }
+    if (strcmp("x-bt/vcard", type_string) == 0) {
+        return PBAP_OBJECT_TYPE_VCARD;
+    }
+    return PBAP_OBJECT_TYPE_INVALID;
+}
+
 static void obex_srm_init(obex_srm_t * obex_srm){
     obex_srm->srm_value = OBEX_SRM_DISABLE;
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
