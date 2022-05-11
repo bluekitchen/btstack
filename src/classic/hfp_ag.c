@@ -2743,8 +2743,7 @@ void hfp_ag_incoming_call(void){
     hfp_ag_call_sm(HFP_AG_INCOMING_CALL, NULL);
 }
 
-void hfp_ag_outgoing_call_initiated(const char * number) {
-    UNUSED(number);
+void hfp_ag_outgoing_call_initiated(void) {
     hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_INITIATED_BY_AG, NULL);
 }
 
