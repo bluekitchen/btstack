@@ -663,6 +663,21 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                             // unknown object type
                             pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
                         } else {
+                            // ResetNewMissedCalls
+                            if (pbap_server->headers.app_params.reset_new_missed_calls == 1){
+                                uint8_t event[5 + PBAP_MAX_NAME_LEN];
+                                uint16_t pos = 0;
+                                uint16_t name_len = strlen(pbap_server->headers.name);
+                                event[pos++] = HCI_EVENT_PBAP_META;
+                                event[pos++] = 1 + 2 + name_len;
+                                event[pos++] = PBAP_SUBEVENT_RESET_MISSED_CALLS;
+                                little_endian_store_16(event, pos, pbap_server->goep_cid);
+                                pos += 2;
+                                // name is zero terminated
+                                memcpy((char *) &event[pos], pbap_server->headers.name, name_len + 1);
+                                pos += name_len + 1;
+                                (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+                            }
                             // test get request - return 5 empty vcards
                             dummy_vacrd_counter = 10;
                             pbap_server->state = PBAP_SERVER_STATE_SEND_CONTINUE_DATA;
