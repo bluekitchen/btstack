@@ -115,10 +115,11 @@ typedef struct {
         char name[PBAP_SERVER_MAX_NAME_LEN];
         char type[PBAP_SERVER_MAX_TYPE_LEN];
         pbap_object_type_t object_type; // parsed from type string
+        uint32_t continuation;
         obex_app_param_parser_t app_param_parser;
         uint8_t app_param_buffer[8];
         struct {
-            char search_value[PBAP_SERVER_MAX_SEARCH_VALUE_LEN];
+            char search_value[PBAP_SERVER_MAX_SEARCH_VALUE_LEN];    // has trailing zero
             uint32_t property_selector;
             uint32_t vcard_selector;
             pbap_format_vcard_t format;
@@ -481,8 +482,10 @@ static void pbap_server_app_param_callback_get(void * user_data, uint8_t tag_id,
     switch (tag_id) {
         case PBAP_APPLICATION_PARAMETER_SEARCH_VALUE:
             state = obex_app_param_parser_tag_store((uint8_t *) pbap_server->headers.app_params.search_value,
-                                                    sizeof(pbap_server->headers.app_params.search_value), total_len,
+                                                    PBAP_SERVER_MAX_SEARCH_VALUE_LEN-1, total_len,
                                                     data_offset, data_buffer, data_len);
+            // assert trailing zero
+            pbap_server->headers.app_params.search_value[PBAP_SERVER_MAX_SEARCH_VALUE_LEN-1] = 0;
             break;
         default:
             state = obex_app_param_parser_tag_store(pbap_server->headers.app_param_buffer,
@@ -581,7 +584,9 @@ static void pbap_server_parser_callback_get(void * user_data, uint8_t header_id,
 
 static void pbap_server_default_headers(pbap_server_t * pbap_server){
     memset(&pbap_server->headers, 0, sizeof(pbap_server->headers));
-    pbap_server->headers.app_params.max_list_count = 0xffff;
+    pbap_server->headers.app_params.max_list_count    = 0xffffU;
+    pbap_server->headers.app_params.vcard_selector    = 0xffffffffUL;
+    pbap_server->headers.app_params.property_selector = 0xffffffffUL;
 }
 
 static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t *packet, uint16_t size){
@@ -705,7 +710,75 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                                     (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
                                 }
                             } else {
-                                // TODO: emit pull ( phonebook, vcard_listing, vcard)
+                                // emit pull ( phonebook, vcard_listing, vcard)
+                                uint8_t event[2 + 20 + PBAP_SERVER_MAX_NAME_LEN + PBAP_SERVER_MAX_SEARCH_VALUE_LEN];
+                                uint16_t pos = 0;
+                                uint16_t name_len = (uint16_t) strlen(pbap_server->headers.name);
+                                uint16_t search_value_len;
+                                event[pos++] = HCI_EVENT_PBAP_META;
+                                switch (pbap_server->headers.object_type){
+                                    case PBAP_OBJECT_TYPE_PHONEBOOOK:
+                                        event[pos++] = 20 + name_len + 1;
+                                        event[pos++] = PBAP_SUBEVENT_PULL_PHONEBOOK;
+                                        little_endian_store_16(event, pos, pbap_server->goep_cid);
+                                        pos += 2;
+                                        little_endian_store_32(event, pos, pbap_server->headers.continuation);
+                                        pos += 4;
+                                        little_endian_store_32(event, pos, pbap_server->headers.app_params.property_selector);
+                                        pos += 4;
+                                        event[pos++] = pbap_server->headers.app_params.format;
+                                        little_endian_store_16(event, pos, pbap_server->headers.app_params.max_list_count);
+                                        pos += 2;
+                                        little_endian_store_16(event, pos, pbap_server->headers.app_params.list_start_offset);
+                                        pos += 2;
+                                        little_endian_store_32(event, pos, pbap_server->headers.app_params.vcard_selector);
+                                        pos += 4;
+                                        event[pos++] = pbap_server->headers.app_params.vcard_selector_operator;
+                                        // name is zero terminated
+                                        memcpy(&event[pos], pbap_server->headers.name, name_len + 1);
+                                        pos += name_len + 1;
+                                        break;
+                                    case PBAP_OBJECT_TYPE_VCARD_LISTING:
+                                        search_value_len = (uint16_t) strlen(pbap_server->headers.app_params.search_value);
+                                        event[pos++] = 20 + name_len + 1 + search_value_len + 1;
+                                        event[pos++] = PBAP_SUBEVENT_PULL_VCARD_ENTRY;
+                                        little_endian_store_16(event, pos, pbap_server->goep_cid);
+                                        pos += 2;
+                                        little_endian_store_32(event, pos, pbap_server->headers.continuation);
+                                        pos += 4;
+                                        event[pos++] = pbap_server->headers.app_params.order;
+                                        little_endian_store_16(event, pos, pbap_server->headers.app_params.max_list_count);
+                                        pos += 2;
+                                        little_endian_store_16(event, pos, pbap_server->headers.app_params.list_start_offset);
+                                        pos += 2;
+                                        little_endian_store_32(event, pos, pbap_server->headers.app_params.vcard_selector);
+                                        pos += 4;
+                                        event[pos++] = pbap_server->headers.app_params.vcard_selector_operator;
+                                        pos += 4;
+                                        event[pos++] = pbap_server->headers.app_params.search_property;
+                                        // search_value is zero terminated
+                                        event[pos++] = search_value_len;
+                                        memcpy(&event[pos], (const uint8_t *) pbap_server->headers.app_params.search_value, search_value_len + 1);
+                                        pos += name_len + 1;
+                                        // name is zero terminated
+                                        memcpy(&event[pos], pbap_server->headers.name, name_len + 1);
+                                        pos += name_len + 1;
+                                        break;
+                                    case PBAP_OBJECT_TYPE_VCARD:
+                                        event[pos++] = 8 + name_len + 1;
+                                        event[pos++] = PBAP_SUBEVENT_PULL_VCARD_ENTRY;
+                                        little_endian_store_16(event, pos, pbap_server->goep_cid);
+                                        pos += 2;
+                                        little_endian_store_32(event, pos, pbap_server->headers.app_params.property_selector);
+                                        pos += 4;
+                                        event[pos++] = pbap_server->headers.app_params.format;
+                                        break;
+                                    default:
+                                        btstack_unreachable();
+                                        break;
+                                }
+                                pbap_server->state = PBAP_SERVER_STATE_W4_USER_DATA;
+                                (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
                             }
                         }
                         break;
