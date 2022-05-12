@@ -70,6 +70,7 @@ typedef enum {
     PBAP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS,
     PBAP_SERVER_STATE_CONNECTED,
     PBAP_SERVER_STATE_W4_REQUEST,
+    PBAP_SERVER_STATE_W4_USER_DATA,
     PBAP_SERVER_STATE_W4_GET_OPCODE,
     PBAP_SERVER_STATE_W4_GET_REQUEST,
     PBAP_SERVER_STATE_W4_PUT_OPCODE,
@@ -662,6 +663,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                         if (pbap_server->headers.object_type == PBAP_OBJECT_TYPE_INVALID){
                             // unknown object type
                             pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
+                            goep_server_request_can_send_now(pbap_server->goep_cid);
                         } else {
                             // ResetNewMissedCalls
                             if (pbap_server->headers.app_params.reset_new_missed_calls == 1){
@@ -678,11 +680,34 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                                 pos += name_len + 1;
                                 (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
                             }
-                            // test get request - return 5 empty vcards
-                            dummy_vacrd_counter = 10;
-                            pbap_server->state = PBAP_SERVER_STATE_SEND_CONTINUE_DATA;
+                            // MaxListCount == 0 -> query size
+                            if (pbap_server->headers.app_params.max_list_count == 0){
+                                // not valid for vCard request
+                                if (pbap_server->headers.object_type == PBAP_OBJECT_TYPE_VCARD){
+                                    pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
+                                    goep_server_request_can_send_now(pbap_server->goep_cid);
+                                } else {
+                                    pbap_server->state = PBAP_SERVER_STATE_W4_USER_DATA;
+                                    uint8_t event[10 + PBAP_MAX_NAME_LEN];
+                                    uint16_t pos = 0;
+                                    uint16_t name_len = strlen(pbap_server->headers.name);
+                                    event[pos++] = HCI_EVENT_PBAP_META;
+                                    event[pos++] = 1 + 2 + name_len;
+                                    event[pos++] = PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE;
+                                    little_endian_store_16(event, pos, pbap_server->goep_cid);
+                                    pos += 2;
+                                    little_endian_store_32(event, pos, pbap_server->headers.app_params.vcard_selector);
+                                    pos += 4;
+                                    event[pos++] = pbap_server->headers.app_params.vcard_selector_operator;
+                                    // name is zero terminated
+                                    memcpy((char *) &event[pos], pbap_server->headers.name, name_len + 1);
+                                    pos += name_len + 1;
+                                    (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+                                }
+                            } else {
+                                // TODO: emit pull ( phonebook, vcard_listing, vcard)
+                            }
                         }
-                        goep_server_request_can_send_now(pbap_server->goep_cid);
                         break;
                     case OBEX_OPCODE_SETPATH:
                         pbap_server->state = PBAP_SERVER_STATE_W4_SET_PATH_RESPONSE;
