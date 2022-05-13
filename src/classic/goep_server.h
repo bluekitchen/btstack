@@ -178,6 +178,13 @@ uint8_t goep_server_header_add_who(uint16_t goep_cid, const uint8_t * who);
 uint8_t goep_server_header_add_end_of_body(uint16_t goep_cid, const uint8_t * end_of_body, uint16_t length);
 
 /**
+ * @brief Add SRM ENABLE header to current response
+ * @param goep_cid
+ * @return
+ */
+uint8_t goep_server_header_add_srm_enable(uint16_t goep_cid);
+
+/**
  * @brief Execute prepared request
  * @param goep_cid
  * @return status
