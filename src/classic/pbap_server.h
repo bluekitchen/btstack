@@ -216,7 +216,7 @@ uint8_t pbap_server_send_set_phonebook_result(uint16_t pbap_cid, uint8_t respons
  * @param phonebook_size
  * @return status
  */
-uint8_t pbap_server_send_phonebook_size(uint16_t pbap_cid, uint8_t resopnse_code, uint16_t phonebook_size);
+uint8_t pbap_server_send_phonebook_size(uint16_t pbap_cid, uint8_t response_code, uint16_t phonebook_size);
 
 /**
  * @brief Send response to PBAP_SUBEVENT_PULL_X including optional headers, X in: PHONEBOOK, VCARD_LISTING, VCARD_ENTRY
