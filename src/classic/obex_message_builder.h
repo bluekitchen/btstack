@@ -100,6 +100,15 @@ uint8_t obex_message_builder_response_create_connect(uint8_t * buffer, uint16_t 
  uint8_t obex_message_builder_response_create_general(uint8_t * buffer, uint16_t buffer_len, uint8_t response_code);
 
 /**
+ * @brief Update response code
+ * @param buffer
+ * @param buffer_len
+ * @param response_code
+ * @return status
+ */
+uint8_t obex_message_builder_response_update_code(uint8_t * buffer, uint16_t buffer_len, uint8_t response_code);
+
+/**
  * @brief Start Disconnect request
  * @param buffer
  * @param buffer_len
