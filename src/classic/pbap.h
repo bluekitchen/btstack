@@ -113,6 +113,11 @@ typedef enum {
     PBAP_OBJECT_TYPE_VCARD,
 } pbap_object_type_t;
 
+// lengths
+#define PBAP_DATABASE_IDENTIFIER_LEN 16
+#define PBAP_FOLDER_VERSION_LEN 16
+
+
 /* API_END */
 
 #if defined __cplusplus
