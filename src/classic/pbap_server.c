@@ -62,6 +62,13 @@
 #include "classic/pbap.h"
 #include "classic/pbap_server.h"
 
+// max app params for vcard listing and phonebook response:
+// - NewMissedCalls
+// - DatabaseIdentifier
+// - PrimaryFolderVersion,
+// - SecondaryFolderVersion
+#define PBAP_SERVER_MAX_APP_PARAMS_LEN ((4*2) + 2 + PBAP_DATABASE_IDENTIFIER_LEN + (2*PBAP_FOLDER_VERSION_LEN))
+
 typedef enum {
     PBAP_SERVER_STATE_W4_OPEN,
     PBAP_SERVER_STATE_W4_CONNECT_OPCODE,
@@ -333,13 +340,42 @@ static void pbap_server_add_srm_headers(pbap_server_t *pbap_server){
     }
 }
 
-static uint16_t pbap_server_application_params_add_phonebook_size(uint8_t * application_parameters, uint16_t phonebook_size){
+static uint16_t pbap_server_application_params_add_uint16(uint8_t * application_parameters, uint8_t type, uint16_t value){
     uint16_t pos = 0;
-    application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE;
+    application_parameters[pos++] = type;
     application_parameters[pos++] = 2;
-    big_endian_store_16(application_parameters, 2, phonebook_size);
+    big_endian_store_16(application_parameters, 2, value);
     pos += 2;
     return pos;
+}
+
+static uint16_t pbap_server_application_params_add_uint128(uint8_t * application_parameters, uint8_t type, const uint8_t * value){
+    uint16_t pos = 0;
+    application_parameters[pos++] = type;
+    application_parameters[pos++] = 16;
+    memcpy(&application_parameters[pos], value, 16);
+    pos += 16;
+    return pos;
+}
+
+static uint16_t pbap_server_application_params_add_phonebook_size(uint8_t * application_parameters, uint16_t phonebook_size){
+    return pbap_server_application_params_add_uint16(application_parameters, PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE, phonebook_size);
+}
+
+static uint16_t pbap_server_application_params_add_new_missed_calls(uint8_t * application_parameters, uint16_t new_missed_calls){
+    return pbap_server_application_params_add_uint16(application_parameters, PBAP_APPLICATION_PARAMETER_NEW_MISSED_CALLS, new_missed_calls);
+}
+
+static uint16_t pbap_server_application_params_add_primary_folder_version(uint8_t * application_parameters, const uint8_t * primary_folder_version){
+    return pbap_server_application_params_add_uint128(application_parameters, PBAP_APPLICATION_PARAMETER_PRIMARY_VERSION_COUNTER, primary_folder_version);
+}
+
+static uint16_t pbap_server_application_params_add_secondary_folder_version(uint8_t * application_parameters, const uint8_t * secondary_folder_version){
+    return pbap_server_application_params_add_uint128(application_parameters, PBAP_APPLICATION_PARAMETER_SECONDARY_VERSION_COUNTER, secondary_folder_version);
+}
+
+static uint16_t pbap_server_application_params_add_database_identifier(uint8_t * application_parameters, const uint8_t * database_identifier){
+    return pbap_server_application_params_add_uint128(application_parameters, PBAP_APPLICATION_PARAMETER_DATABASE_IDENTIFIER, database_identifier);
 }
 
 static void pbap_server_add_application_parameters(const pbap_server_t * pbap_server, uint8_t * application_parameters, uint16_t len){
@@ -366,12 +402,7 @@ static void pbap_server_operation_complete(pbap_server_t * pbap_server){
 }
 
 static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
-    // max app params for vcard listing and phonebook response:
-    // - NewMissedCalls
-    // - DatabaseIdentifier
-    // - PrimaryFolderVersion,
-    // - SecondaryFolderVersion
-    uint8_t app_params[(4*2) + 2 + PBAP_DATABASE_IDENTIFIER_LEN + (2*PBAP_FOLDER_VERSION_LEN)];
+    uint8_t app_params[PBAP_SERVER_MAX_APP_PARAMS_LEN];
     uint16_t app_params_pos = 0;
     switch (pbap_server->state){
         case PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST:
@@ -1013,5 +1044,43 @@ uint8_t pbap_server_send_phonebook_size(uint16_t pbap_cid, uint8_t response_code
         return goep_server_request_can_send_now(pbap_server->goep_cid);
     } else {
         return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+}
+
+void pbap_server_build_response(pbap_server_t * pbap_server){
+    if (pbap_server->response.code == 0){
+        // set interim response code
+        pbap_server->response.code = OBEX_RESP_SUCCESS;
+        goep_server_response_create_general(pbap_server->goep_cid,  pbap_server->response.code);
+        pbap_server_add_srm_headers(pbap_server);
+        // Application Params
+        uint8_t app_params[PBAP_SERVER_MAX_APP_PARAMS_LEN];
+        uint16_t app_params_pos = 0;
+        if (pbap_server->response.new_missed_calls_set){
+            pbap_server_application_params_add_new_missed_calls(app_params, pbap_server->response.new_missed_calls);
+        }
+        if (pbap_server->response.primary_folder_version_set){
+            pbap_server_application_params_add_primary_folder_version(app_params, pbap_server->response.primary_folder_version);
+        }
+        if (pbap_server->response.secondary_folder_version_set){
+            pbap_server_application_params_add_secondary_folder_version(app_params, pbap_server->response.secondary_folder_version);
+        }
+        if (pbap_server->response.database_identifier_set){
+            pbap_server_application_params_add_database_identifier(app_params, pbap_server->response.database_identifier);
+        }
+        pbap_server_add_application_parameters(pbap_server, app_params, app_params_pos);
+    }
+}
+
+uint16_t pbap_server_get_max_body_size(uint16_t pbap_cid){
+    pbap_server_t * pbap_server = pbap_server_for_pbap_cid(pbap_cid);
+    if (pbap_server == NULL){
+        return 0;
+    }
+    if (pbap_server_valid_header_for_request(pbap_server)){
+        pbap_server_build_response(pbap_server);
+        return goep_server_response_get_max_body_size(pbap_server->goep_cid);
+    }  else {
+        return 0;
     }
 }
