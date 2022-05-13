@@ -407,11 +407,11 @@ static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
     switch (pbap_server->state){
         case PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST:
             // prepare response
-            goep_server_response_create_general(pbap_server->goep_cid, OBEX_RESP_BAD_REQUEST);
+            goep_server_response_create_general(pbap_server->goep_cid);
             // next state
             pbap_server->state = PBAP_SERVER_STATE_W4_CONNECT_OPCODE;
             // send packet
-            goep_server_execute(pbap_server->goep_cid);
+            goep_server_execute(pbap_server->goep_cid, OBEX_RESP_BAD_REQUEST);
             break;
         case PBAP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS:
             // prepare response
@@ -420,20 +420,20 @@ static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
             // next state
             pbap_server_operation_complete(pbap_server);
             // send packet
-            goep_server_execute(pbap_server->goep_cid);
+            goep_server_execute(pbap_server->goep_cid, OBEX_RESP_SUCCESS);
             break;
         case PBAP_SERVER_STATE_SEND_EMPTY_RESPONSE:
             // prepare response
-            goep_server_response_create_general(pbap_server->goep_cid, OBEX_RESP_SUCCESS);
+            goep_server_response_create_general(pbap_server->goep_cid);
             goep_server_header_add_end_of_body(pbap_server->goep_cid, NULL, 0);
             // next state
             pbap_server_operation_complete(pbap_server);
             // send packet
-            goep_server_execute(pbap_server->goep_cid);
+            goep_server_execute(pbap_server->goep_cid, OBEX_RESP_SUCCESS);
             break;
         case PBAP_SERVER_STATE_SEND_CONTINUE_DATA:
             // prepare response
-            goep_server_response_create_general(pbap_server->goep_cid, OBEX_RESP_CONTINUE);
+            goep_server_response_create_general(pbap_server->goep_cid);
             pbap_server_add_srm_headers(pbap_server);
             goep_server_header_add_end_of_body(pbap_server->goep_cid, (const uint8_t*) dummy_vcard, sizeof(dummy_vcard));
             printf("Send Continue Data: SRM State %u, card counter %u\n", pbap_server->srm_state, dummy_vacrd_counter);
@@ -442,7 +442,7 @@ static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
                 pbap_server->state = PBAP_SERVER_STATE_W4_GET_OPCODE;
             }
             // send packet
-            goep_server_execute(pbap_server->goep_cid);
+            goep_server_execute(pbap_server->goep_cid, OBEX_RESP_CONTINUE);
             if (pbap_server->srm_state == SRM_ENABLED){
                 if (dummy_vacrd_counter > 0){
                     dummy_vacrd_counter--;
@@ -454,16 +454,16 @@ static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
             break;
         case PBAP_SERVER_STATE_SEND_FINAL_DATA:
             // prepare response
-            goep_server_response_create_general(pbap_server->goep_cid, OBEX_RESP_SUCCESS);
+            goep_server_response_create_general(pbap_server->goep_cid);
             goep_server_header_add_end_of_body(pbap_server->goep_cid, (const uint8_t*) dummy_vcard, sizeof(dummy_vcard));
             // next state
             pbap_server_operation_complete(pbap_server);
             // send packet
-            goep_server_execute(pbap_server->goep_cid);
+            goep_server_execute(pbap_server->goep_cid, OBEX_RESP_SUCCESS);
             break;
         case PBAP_SERVER_STATE_SEND_RESPONSE:
             // prepare response
-            goep_server_response_create_general(pbap_server->goep_cid, pbap_server->response.code);
+            goep_server_response_create_general(pbap_server->goep_cid);
             if (pbap_server->response.phonebook_size_set){
                 app_params_pos = pbap_server_application_params_add_phonebook_size(app_params, 0);
             }
@@ -471,7 +471,7 @@ static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
             // next state
             pbap_server_operation_complete(pbap_server);
             // send packet
-            goep_server_execute(pbap_server->goep_cid);
+            goep_server_execute(pbap_server->goep_cid, pbap_server->response.code);
             break;
         default:
             break;
@@ -1052,7 +1052,7 @@ void pbap_server_build_response(pbap_server_t * pbap_server){
     if (pbap_server->response.code == 0){
         // set interim response code
         pbap_server->response.code = OBEX_RESP_SUCCESS;
-        goep_server_response_create_general(pbap_server->goep_cid,  pbap_server->response.code);
+        goep_server_response_create_general(pbap_server->goep_cid);
         pbap_server_add_srm_headers(pbap_server);
         // Application Params
         uint8_t app_params[PBAP_SERVER_MAX_APP_PARAMS_LEN];
