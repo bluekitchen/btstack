@@ -226,7 +226,7 @@ uint8_t pbap_server_send_phonebook_size(uint16_t pbap_cid, uint8_t response_code
  * @param body
  * @return max body size or zero if connection invalid
  */
-uint16_t pbap_server_send_pull_response(uint16_t pbap_size, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t * body);
+uint16_t pbap_server_send_pull_response(uint16_t pbap_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t * body);
 
 /**
  * @brief De-Init PBAP Client
