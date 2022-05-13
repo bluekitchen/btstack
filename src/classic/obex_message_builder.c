@@ -47,9 +47,9 @@
 #include "classic/obex.h"
 #include "classic/obex_message_builder.h"
 
-static uint8_t obex_message_builder_packet_init(uint8_t * buffer, uint16_t buffer_len, uint8_t opcode){
+static uint8_t obex_message_builder_packet_init(uint8_t * buffer, uint16_t buffer_len, uint8_t opcode_or_response_code){
     if (buffer_len < 3) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
-    buffer[0] = opcode;
+    buffer[0] = opcode_or_response_code;
     big_endian_store_16(buffer, 1, 3);
     return ERROR_CODE_SUCCESS;
 }
@@ -124,8 +124,8 @@ uint8_t obex_message_builder_response_create_connect(uint8_t * buffer, uint16_t 
     return obex_message_builder_header_add_connection_id(buffer, buffer_len, obex_connection_id);
 }
 
-uint8_t obex_message_builder_response_create_general(uint8_t * buffer, uint16_t buffer_len, uint8_t opcode){
-    return obex_message_builder_packet_init(buffer, buffer_len, opcode);
+uint8_t obex_message_builder_response_create_general(uint8_t * buffer, uint16_t buffer_len, uint8_t response_code){
+    return obex_message_builder_packet_init(buffer, buffer_len, response_code);
 }
 
 uint8_t obex_message_builder_request_create_get(uint8_t * buffer, uint16_t buffer_len, uint32_t obex_connection_id){
