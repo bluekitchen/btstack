@@ -51,6 +51,7 @@
 #include "btstack_event.h"
 
 #include "classic/goep_server.h"
+#include "classic/obex.h"
 #include "classic/obex_message_builder.h"
 
 #ifdef ENABLE_GOEP_L2CAP
@@ -590,7 +591,7 @@ uint8_t goep_server_response_create_connect(uint16_t goep_cid, uint8_t obex_vers
     return obex_message_builder_response_create_connect(buffer, buffer_len, obex_version_number, flags, maximum_obex_packet_length, (uint32_t) goep_cid);
 }
 
-uint8_t goep_server_response_create_general(uint16_t goep_cid, uint8_t opcode){
+uint8_t goep_server_response_create_general(uint16_t goep_cid){
     goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
     if (connection == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -598,7 +599,7 @@ uint8_t goep_server_response_create_general(uint16_t goep_cid, uint8_t opcode){
     goep_server_packet_init(connection);
     uint8_t * buffer = goep_server_get_outgoing_buffer(connection);
     uint16_t buffer_len = goep_server_get_outgoing_buffer_len(connection);
-    return obex_message_builder_response_create_general(buffer, buffer_len, opcode);
+    return obex_message_builder_response_create_general(buffer, buffer_len, OBEX_RESP_SUCCESS);
 }
 
 uint16_t goep_server_response_get_max_body_size(uint16_t goep_cid){
@@ -656,13 +657,15 @@ uint8_t goep_server_header_add_application_parameters(uint16_t goep_cid, const u
     return obex_message_builder_header_add_application_parameters(buffer, buffer_len, data, length);
 }
 
-uint8_t goep_server_execute(uint16_t goep_cid){
+uint8_t goep_server_execute(uint16_t goep_cid, uint8_t response_code){
     goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
     if (connection == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
     uint8_t * buffer = goep_server_get_outgoing_buffer(connection);
+    // set reponse code
+    buffer[0] = response_code;
     uint16_t pos = big_endian_read_16(buffer, 1);
     switch (connection->type) {
 #ifdef ENABLE_GOEP_L2CAP
