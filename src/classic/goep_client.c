@@ -607,6 +607,16 @@ void goep_client_header_add_type(uint16_t goep_cid, const char * type){
     obex_message_builder_header_add_type(buffer, buffer_len, type);
 }
 
+uint16_t goep_server_response_get_max_body_size(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    uint16_t pos = big_endian_read_16(buffer, 1);
+    return buffer_len - pos;
+}
+
 int goep_client_execute(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
