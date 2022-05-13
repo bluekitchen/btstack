@@ -164,6 +164,43 @@ uint8_t pbap_server_connect( bd_addr_t addr, uint16_t * out_cid);
  */
 uint8_t pbap_server_disconnect(uint16_t pbap_cid);
 
+/** @brief Set NewMissedCalls header for next response
+ * @param pbap_cid
+ * @param new_missed_calls
+ * @return status
+ */
+uint8_t pbap_server_set_new_missed_calls(uint16_t pbap_cid, uint16_t new_missed_calls);
+
+/** @brief Set PrimaryFolderVersion header for next response
+ * @param pbap_cid
+ * @param primary_folder_version
+ * @return status
+ */
+uint8_t pbap_server_set_primary_folder_version(uint16_t pbap_cid, const uint8_t * primary_folder_version);
+
+/** @brief Set SecondaryFolderVersion header for next response
+ * @param pbap_cid
+ * @param secondary_folder_version
+ * @return status
+ */
+uint8_t pbap_server_set_secondary_folder_version(uint16_t pbap_cid, const uint8_t * secondary_folder_version);
+
+/** @brief Set SecondaryFolderVersion header for next response
+ * @param pbap_cid
+ * @param database_identifier
+ * @return status
+ */
+uint8_t pbap_server_set_database_identifier(uint16_t pbap_cid, const uint8_t * database_identifier);
+
+/**
+ * @brief Get max body size for current response, given already set headers
+ * @param pbap_cid
+ * @param response_code, see obex.h
+ * @param phonebook_size
+ * @return max body size or zero if connection invalid
+ */
+uint16_t pbap_server_get_max_body_size(uint16_t pbap_size);
+
 /**
  * @bbrief Respond to PBAP_SUBEVENT_SET_PHONE_BOOK_X, with X in: ROOT, DOWN, UP
  * @param pbap_cid
@@ -171,6 +208,26 @@ uint8_t pbap_server_disconnect(uint16_t pbap_cid);
  * @return status
  */
 uint8_t pbap_server_send_set_phonebook_result(uint16_t pbap_cid, uint8_t response_code);
+
+/**
+ * @brief Send Phonebook size as response to PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE
+ * @param pbap_cid
+ * @param response_code, see obex.h
+ * @param phonebook_size
+ * @return status
+ */
+uint8_t pbap_server_send_phonebook_size(uint16_t pbap_cid, uint8_t resopnse_code, uint16_t phonebook_size);
+
+/**
+ * @brief Send response to PBAP_SUBEVENT_PULL_X including optional headers, X in: PHONEBOOK, VCARD_LISTING, VCARD_ENTRY
+ * @param pbap_cid
+ * @param response_code, see obex.h
+ * @param continuation - 0 if request complete, returned in next pull event
+ * @param body_len
+ * @param body
+ * @return max body size or zero if connection invalid
+ */
+uint16_t pbap_server_send_pull_response(uint16_t pbap_size, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t * body);
 
 /**
  * @brief De-Init PBAP Client

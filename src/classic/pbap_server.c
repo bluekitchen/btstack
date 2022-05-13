@@ -133,6 +133,14 @@ typedef struct {
     // response
     struct {
         uint8_t code;
+        bool new_missed_calls_set;
+        bool database_identifier_set;
+        bool primary_folder_version_set;
+        bool secondary_folder_version_set;
+        uint16_t new_missed_calls;
+        uint8_t database_identifier[PBAP_DATABASE_IDENTIFIER_LEN];
+        uint8_t primary_folder_version[PBAP_FOLDER_VERSION_LEN];
+        uint8_t secondary_folder_version[PBAP_FOLDER_VERSION_LEN];
     } response;
 } pbap_server_t;
 
@@ -890,3 +898,72 @@ uint8_t pbap_disconnect(uint16_t pbap_cid){
     return ERROR_CODE_SUCCESS;
 }
 
+// note: common code for next four setters
+static bool pbap_server_valid_header_for_request(pbap_server_t * pbap_server){
+    if (pbap_server->state != PBAP_SERVER_STATE_W4_USER_DATA) {
+        return false;
+    }
+    switch (pbap_server->request.object_type){
+        case PBAP_OBJECT_TYPE_PHONEBOOOK:
+        case PBAP_OBJECT_TYPE_VCARD_LISTING:
+            return true;
+        default:
+            return false;
+    }
+
+}
+uint8_t pbap_server_set_new_missed_calls(uint16_t pbap_cid, uint16_t new_missed_calls){
+    pbap_server_t * pbap_server = pbap_server_for_pbap_cid(pbap_cid);
+    if (pbap_server == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (pbap_server_valid_header_for_request(pbap_server)){
+        pbap_server->response.new_missed_calls = new_missed_calls;
+        pbap_server->response.new_missed_calls_set = true;
+        return ERROR_CODE_SUCCESS;
+    } else {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+}
+
+uint8_t pbap_server_set_primary_folder_version(uint16_t pbap_cid, const uint8_t * primary_folder_version){
+    pbap_server_t * pbap_server = pbap_server_for_pbap_cid(pbap_cid);
+    if (pbap_server == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (pbap_server_valid_header_for_request(pbap_server)){
+        (void) memcpy(pbap_server->response.primary_folder_version, primary_folder_version, PBAP_FOLDER_VERSION_LEN);
+        pbap_server->response.primary_folder_version_set = true;
+        return ERROR_CODE_SUCCESS;
+    } else {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+}
+
+uint8_t pbap_server_set_secondary_folder_version(uint16_t pbap_cid, const uint8_t * secondary_folder_version){
+    pbap_server_t * pbap_server = pbap_server_for_pbap_cid(pbap_cid);
+    if (pbap_server == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (pbap_server_valid_header_for_request(pbap_server)){
+        (void) memcpy(pbap_server->response.secondary_folder_version, secondary_folder_version, PBAP_FOLDER_VERSION_LEN);
+        pbap_server->response.secondary_folder_version_set = true;
+        return ERROR_CODE_SUCCESS;
+    } else {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+}
+
+uint8_t pbap_server_set_database_identifier(uint16_t pbap_cid, const uint8_t * database_identifier){
+    pbap_server_t * pbap_server = pbap_server_for_pbap_cid(pbap_cid);
+    if (pbap_server == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (pbap_server_valid_header_for_request(pbap_server)){
+        (void) memcpy(pbap_server->response.database_identifier, database_identifier, PBAP_FOLDER_VERSION_LEN);
+        pbap_server->response.database_identifier_set = true;
+        return ERROR_CODE_SUCCESS;
+    } else {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+};
