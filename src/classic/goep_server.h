@@ -184,6 +184,16 @@ uint8_t goep_server_header_add_end_of_body(uint16_t goep_cid, const uint8_t * en
  */
 uint8_t goep_server_header_add_srm_enable(uint16_t goep_cid);
 
+
+/**
+ * @brief Add application parameters header to current request
+ * @param goep_cid
+ * @param data
+ * @param length
+ * @return
+ */
+uint8_t goep_server_header_add_application_parameters(uint16_t goep_cid, const uint8_t * data, uint16_t length);
+
 /**
  * @brief Execute prepared request
  * @param goep_cid
