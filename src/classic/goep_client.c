@@ -607,7 +607,7 @@ void goep_client_header_add_type(uint16_t goep_cid, const char * type){
     obex_message_builder_header_add_type(buffer, buffer_len, type);
 }
 
-uint16_t goep_server_response_get_max_body_size(uint16_t goep_cid){
+uint16_t goep_client_request_get_max_body_size(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
 
