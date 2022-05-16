@@ -752,7 +752,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                                 event[pos++] = HCI_EVENT_PBAP_META;
                                 event[pos++] = 1 + 2 + name_len;
                                 event[pos++] = PBAP_SUBEVENT_RESET_MISSED_CALLS;
-                                little_endian_store_16(event, pos, pbap_server->goep_cid);
+                                little_endian_store_16(event, pos, pbap_server->pbap_cid);
                                 pos += 2;
                                 // name is zero terminated
                                 memcpy((char *) &event[pos], pbap_server->request.name, name_len + 1);
@@ -773,7 +773,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                                     event[pos++] = HCI_EVENT_PBAP_META;
                                     event[pos++] = 1 + 2 + name_len;
                                     event[pos++] = PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE;
-                                    little_endian_store_16(event, pos, pbap_server->goep_cid);
+                                    little_endian_store_16(event, pos, pbap_server->pbap_cid);
                                     pos += 2;
                                     little_endian_store_32(event, pos, pbap_server->request.app_params.vcard_selector);
                                     pos += 4;
@@ -794,7 +794,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                                     case PBAP_OBJECT_TYPE_PHONEBOOOK:
                                         event[pos++] = 20 + name_len + 1;
                                         event[pos++] = PBAP_SUBEVENT_PULL_PHONEBOOK;
-                                        little_endian_store_16(event, pos, pbap_server->goep_cid);
+                                        little_endian_store_16(event, pos, pbap_server->pbap_cid);
                                         pos += 2;
                                         little_endian_store_32(event, pos, pbap_server->request.continuation);
                                         pos += 4;
@@ -816,7 +816,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                                         search_value_len = (uint16_t) strlen(pbap_server->request.app_params.search_value);
                                         event[pos++] = 20 + name_len + 1 + search_value_len + 1;
                                         event[pos++] = PBAP_SUBEVENT_PULL_VCARD_ENTRY;
-                                        little_endian_store_16(event, pos, pbap_server->goep_cid);
+                                        little_endian_store_16(event, pos, pbap_server->pbap_cid);
                                         pos += 2;
                                         little_endian_store_32(event, pos, pbap_server->request.continuation);
                                         pos += 4;
@@ -841,7 +841,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                                     case PBAP_OBJECT_TYPE_VCARD:
                                         event[pos++] = 8 + name_len + 1;
                                         event[pos++] = PBAP_SUBEVENT_PULL_VCARD_ENTRY;
-                                        little_endian_store_16(event, pos, pbap_server->goep_cid);
+                                        little_endian_store_16(event, pos, pbap_server->pbap_cid);
                                         pos += 2;
                                         little_endian_store_32(event, pos, pbap_server->request.app_params.property_selector);
                                         pos += 4;
