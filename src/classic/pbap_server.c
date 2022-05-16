@@ -251,11 +251,11 @@ void pbap_server_create_sdp_record(uint8_t *service, uint32_t service_record_han
 
     // 0x0314 "Supported Repositories"
     de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SUPPORTED_REPOSITORIES);
-    de_add_number(service, DE_UINT, DE_SIZE_16, l2cap_psm);
+    de_add_number(service, DE_UINT, DE_SIZE_16, supported_repositories);
 
     // 0x0317 "PBAP Supported Features"
     de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES);
-    de_add_number(service, DE_UINT, DE_SIZE_16, l2cap_psm);
+    de_add_number(service, DE_UINT, DE_SIZE_16, pbap_supported_features);
 }
 
 static void pbap_server_emit_set_path_event(pbap_server_t *server, uint8_t flags, const char * name) {
