@@ -87,6 +87,7 @@ typedef enum {
     PBAP_SERVER_STATE_SEND_EMPTY_RESPONSE,
     PBAP_SERVER_STATE_SEND_CONTINUE_DATA,
     PBAP_SERVER_STATE_SEND_FINAL_DATA,
+    PBAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE,
 } pbap_server_state_t;
 
 typedef struct {
@@ -175,6 +176,11 @@ static pbap_server_t * pbap_server_for_goep_cid(uint16_t goep_cid){
 
 static pbap_server_t * pbap_server_for_pbap_cid(uint16_t pbap_cid){
     return (pbap_cid == pbap_server_singleton.pbap_cid) ? &pbap_server_singleton : NULL;
+}
+
+static void pbap_server_finalize_connection(pbap_server_t * pbap_server){
+    // minimal
+    pbap_server->state = PBAP_SERVER_STATE_W4_OPEN;
 }
 
 void pbap_server_create_sdp_record(uint8_t *service, uint32_t service_record_handle, uint8_t rfcomm_channel_nr,
@@ -473,6 +479,30 @@ static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
             // send packet
             goep_server_execute(pbap_server->goep_cid, pbap_server->response.code);
             break;
+        case PBAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE:
+        {
+            // cache data
+            uint16_t pbap_cid = pbap_server->pbap_cid;
+            uint16_t goep_cid = pbap_server->goep_cid;
+
+            // finalize connection
+            pbap_server_finalize_connection(pbap_server);
+
+            // respond to request
+            goep_server_response_create_general(goep_cid);
+            goep_server_execute(goep_cid, OBEX_RESP_SUCCESS);
+
+            // emit event
+            uint8_t event[2+3];
+            uint16_t pos = 0;
+            event[pos++] = HCI_EVENT_PBAP_META;
+            event[pos++] = 0;
+            event[pos++] = PBAP_SUBEVENT_CONNECTION_CLOSED;
+            little_endian_store_16(event, pos, pbap_cid);
+            pos += 2;
+            (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+            break;
+        }
         default:
             break;
     }
@@ -861,7 +891,8 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                         pbap_server_emit_set_path_event(pbap_server, op_info.flags, &pbap_server->request.name[0]);
                         break;
                     case OBEX_OPCODE_DISCONNECT:
-                        // todo: emit disconnect
+                        pbap_server->state = PBAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE;
+                        goep_server_request_can_send_now(pbap_server->goep_cid);
                         break;
                     case OBEX_OPCODE_ACTION:
                     case (OBEX_OPCODE_ACTION | OBEX_OPCODE_FINAL_BIT_MASK):
