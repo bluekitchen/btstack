@@ -898,8 +898,8 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                     case (OBEX_OPCODE_ACTION | OBEX_OPCODE_FINAL_BIT_MASK):
                     case OBEX_OPCODE_SESSION:
                     default:
-                        pbap_server->response.code = OBEX_RESP_BAD_REQUEST;
-                        pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
+                        // send bad request response
+                        pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
                         goep_server_request_can_send_now(pbap_server->goep_cid);
                         break;
                 }
