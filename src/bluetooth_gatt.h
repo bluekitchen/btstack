@@ -373,13 +373,13 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_LOCK_CHARACTERISTIC                                                              0x2B86 // Lock Characteristic
 #define ORG_BLUETOOTH_CHARACTERISTIC_RANK_CHARACTERISTIC                                                              0x2B87 // Rank Characteristic
 #define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME_FEATURE_                                                             0x2B8E // Device Time Feature 
-#define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME_PARAMETERS_                                                          0x2B8F // Device Time Parameters 
+#define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME_PARAMETERS                                                           0x2B8F // Device Time Parameters 
 #define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME                                                                      0x2B90 // Device Time
-#define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME_CONTROL_POINT_                                                       0x2B91 // Device Time Control Point 
-#define ORG_BLUETOOTH_CHARACTERISTIC_TIME_CHANGE_LOG_DATA_                                                            0x2B92 // Time Change Log Data 
+#define ORG_BLUETOOTH_CHARACTERISTIC_DEVICE_TIME_CONTROL_POINT                                                        0x2B91 // Device Time Control Point 
+#define ORG_BLUETOOTH_CHARACTERISTIC_TIME_CHANGE_LOG_DATA                                                             0x2B92 // Time Change Log Data 
 #define ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME                                                                0x2B93 // Media Player Name
-#define ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_OBJECT_ID_                                                     0x2B94 // Media Player Icon Object ID 
-#define ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL_                                                           0x2B95 // Media Player Icon URL 
+#define ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_OBJECT_ID                                                      0x2B94 // Media Player Icon Object ID 
+#define ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL                                                            0x2B95 // Media Player Icon URL 
 #define ORG_BLUETOOTH_CHARACTERISTIC_TRACK_CHANGED                                                                    0x2B96 // Track Changed
 #define ORG_BLUETOOTH_CHARACTERISTIC_TRACK_TITLE                                                                      0x2B97 // Track Title
 #define ORG_BLUETOOTH_CHARACTERISTIC_TRACK_DURATION                                                                   0x2B98 // Track Duration
