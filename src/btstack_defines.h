@@ -269,6 +269,11 @@ typedef uint8_t sm_key_t[16];
 // Events from host controller to host
 
 /**
+ * @brief Custom NOP Event - used for internal testing
+ */
+#define HCI_EVENT_NOP                                      0x00u
+
+/**
  * @format 1
  * @param status
  */
