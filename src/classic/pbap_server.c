@@ -420,13 +420,14 @@ static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
             // prepare response
             goep_server_response_create_general(pbap_server->goep_cid);
             if (pbap_server->response.phonebook_size_set){
-                app_params_pos = pbap_server_application_params_add_phonebook_size(app_params, 0);
+                app_params_pos = pbap_server_application_params_add_phonebook_size(app_params, pbap_server->response.phonebook_size);
             }
             pbap_server_add_application_parameters(pbap_server, app_params, app_params_pos);
             // next state
+            response_code = pbap_server->response.code;
             pbap_server_operation_complete(pbap_server);
             // send packet
-            goep_server_execute(pbap_server->goep_cid, pbap_server->response.code);
+            goep_server_execute(pbap_server->goep_cid, response_code);
             break;
         case PBAP_SERVER_STATE_SEND_PREPARED_RESPONSE:
             // next state
@@ -1022,23 +1023,6 @@ uint8_t pbap_server_set_database_identifier(uint16_t pbap_cid, const uint8_t * d
     }
 };
 
-uint8_t pbap_server_send_phonebook_size(uint16_t pbap_cid, uint8_t response_code, uint16_t phonebook_size){
-    pbap_server_t * pbap_server = pbap_server_for_pbap_cid(pbap_cid);
-    if (pbap_server == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    // phonebook size valid for PHONEBOOK and VCARD_LIST query
-    if (pbap_server_valid_header_for_request(pbap_server)){
-        pbap_server->response.phonebook_size = phonebook_size;
-        pbap_server->response.phonebook_size_set = true;
-        pbap_server->response.code = response_code;
-        pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
-        return goep_server_request_can_send_now(pbap_server->goep_cid);
-    } else {
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-}
-
 void pbap_server_build_response(pbap_server_t * pbap_server){
     if (pbap_server->response.code == 0){
         // set interim response code
@@ -1048,21 +1032,25 @@ void pbap_server_build_response(pbap_server_t * pbap_server){
         // Application Params
         uint8_t app_params[PBAP_SERVER_MAX_APP_PARAMS_LEN];
         uint16_t app_params_pos = 0;
+        if (pbap_server->response.phonebook_size_set){
+            pbap_server->response.phonebook_size_set = false;
+            app_params_pos += pbap_server_application_params_add_phonebook_size(&app_params[app_params_pos], pbap_server->response.phonebook_size);
+        }
         if (pbap_server->response.new_missed_calls_set){
             pbap_server->response.new_missed_calls_set = false;
-            pbap_server_application_params_add_new_missed_calls(app_params, pbap_server->response.new_missed_calls);
+            app_params_pos += pbap_server_application_params_add_new_missed_calls(&app_params[app_params_pos], pbap_server->response.new_missed_calls);
         }
         if (pbap_server->response.primary_folder_version_set){
             pbap_server->response.primary_folder_version_set = false;
-            pbap_server_application_params_add_primary_folder_version(app_params, pbap_server->response.primary_folder_version);
+            app_params_pos += pbap_server_application_params_add_primary_folder_version(&app_params[app_params_pos], pbap_server->response.primary_folder_version);
         }
         if (pbap_server->response.secondary_folder_version_set){
             pbap_server->response.secondary_folder_version_set = false;
-            pbap_server_application_params_add_secondary_folder_version(app_params, pbap_server->response.secondary_folder_version);
+            app_params_pos += pbap_server_application_params_add_secondary_folder_version(&app_params[app_params_pos], pbap_server->response.secondary_folder_version);
         }
         if (pbap_server->response.database_identifier_set){
             pbap_server->response.database_identifier_set = false;
-            pbap_server_application_params_add_database_identifier(app_params, pbap_server->response.database_identifier);
+            app_params_pos += pbap_server_application_params_add_database_identifier(&app_params[app_params_pos], pbap_server->response.database_identifier);
         }
         pbap_server_add_application_parameters(pbap_server, app_params, app_params_pos);
     }
@@ -1078,6 +1066,24 @@ uint16_t pbap_server_get_max_body_size(uint16_t pbap_cid){
         return goep_server_response_get_max_body_size(pbap_server->goep_cid);
     }  else {
         return 0;
+    }
+}
+
+uint8_t pbap_server_send_phonebook_size(uint16_t pbap_cid, uint8_t response_code, uint16_t phonebook_size){
+    pbap_server_t * pbap_server = pbap_server_for_pbap_cid(pbap_cid);
+    if (pbap_server == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    // phonebook size valid for PHONEBOOK and VCARD_LIST query
+    if (pbap_server_valid_header_for_request(pbap_server)){
+        pbap_server->response.phonebook_size = phonebook_size;
+        pbap_server->response.phonebook_size_set = true;
+        pbap_server_build_response(pbap_server);
+        pbap_server->response.code = response_code;
+        pbap_server->state = PBAP_SERVER_STATE_SEND_PREPARED_RESPONSE;
+        return goep_server_request_can_send_now(pbap_server->goep_cid);
+    } else {
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
 }
 
