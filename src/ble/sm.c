@@ -3066,8 +3066,13 @@ static void sm_run(void){
 #endif
 
             case SM_PH3_DISTRIBUTE_KEYS:
+                // send next key
                 if (setup->sm_key_distribution_send_set != 0){
                     sm_run_distribute_keys(connection);
+                }
+
+                // more to send?
+                if (setup->sm_key_distribution_send_set != 0){
                     return;
                 }
 
