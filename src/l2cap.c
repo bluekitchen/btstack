@@ -2945,6 +2945,9 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
         case HCI_EVENT_TRANSPORT_PACKET_SENT:
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
         case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
+#ifdef ENABLE_TESTING_SUPPORT
+        case HCI_EVENT_NOP:
+#endif
             l2cap_call_notify_channel_in_run = true;
             break;
 
