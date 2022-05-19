@@ -884,18 +884,20 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
                 obex_parser_operation_info_t op_info;
                 obex_parser_get_operation_info(&pbap_server->obex_parser, &op_info);
-                bool ok = true;
-                // TODO: check opcode
-                if ((op_info.opcode & 0x7f) != OBEX_OPCODE_GET){
-                    ok = false;
-                }
-                // TODO: check Target
-                if (ok == false) {
-                    // send bad request response
-                    pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
-                    goep_server_request_can_send_now(pbap_server->goep_cid);
-                } else {
-                    pbap_server_handle_get_request(pbap_server);
+                switch((op_info.opcode & 0x7f)){
+                    case OBEX_OPCODE_GET:
+                        pbap_server_handle_get_request(pbap_server);
+                        break;
+                    case (OBEX_OPCODE_ABORT & 0x7f):
+                        pbap_server->response.code = OBEX_RESP_SUCCESS;
+                        pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
+                        goep_server_request_can_send_now(pbap_server->goep_cid);
+                        break;
+                    default:
+                        // send bad request response
+                        pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
+                        goep_server_request_can_send_now(pbap_server->goep_cid);
+                        break;
                 }
             }
             break;
