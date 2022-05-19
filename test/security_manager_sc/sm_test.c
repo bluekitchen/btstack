@@ -203,7 +203,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     UNUSED(channel);
     UNUSED(size);
 
-    int status;
     char message[30];
 
     switch(state){
@@ -240,7 +239,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     } 
                     state = TC_W4_SUBSCRIBED;
                     printf("Configure counter for notify.\n");
-                    status = gatt_client_write_client_characteristic_configuration(handle_gatt_client_event, connection_handle, &le_counter_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    gatt_client_write_client_characteristic_configuration(handle_gatt_client_event, connection_handle, &le_counter_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
                     break;
                 default:
                     break;
