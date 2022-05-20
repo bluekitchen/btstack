@@ -5694,7 +5694,7 @@ static bool hci_run_general_gap_le(void){
             if (entry->state & LE_PERIODIC_ADVERTISER_LIST_ENTRY_ADD_TO_CONTROLLER){
                 entry->state &= ~LE_PERIODIC_ADVERTISER_LIST_ENTRY_ADD_TO_CONTROLLER;
                 entry->state |= LE_PERIODIC_ADVERTISER_LIST_ENTRY_ON_CONTROLLER;
-                hci_send_cmd(&hci_le_add_device_to_periodic_advertiser_list, entry->address_type, entry->address);
+                hci_send_cmd(&hci_le_add_device_to_periodic_advertiser_list, entry->address_type, entry->address, entry->sid);
                 return true;
             }
             if ((entry->state & LE_PERIODIC_ADVERTISER_LIST_ENTRY_ON_CONTROLLER) == 0){
