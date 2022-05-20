@@ -434,7 +434,8 @@ typedef enum {
 typedef enum {
     AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE = 0,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS,
-    AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_SDP_QUERY_THEN_GET_ALL_CAPABILITIES,
+    AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_SDP_QUERY_THEN_GET_ALL_CAPABILITIES_FROM_REMOTE_SINK,
+    AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_SDP_QUERY_THEN_GET_ALL_CAPABILITIES_FROM_REMOTE_SOURCE,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SDP_QUERY_COMPLETE_THEN_GET_ALL_CAPABILITIES,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES,
@@ -541,12 +542,16 @@ typedef struct {
     bool incoming_declined;
     btstack_timer_source_t retry_timer;
 
+    // A2DP SOURCE
     bool         a2dp_source_discover_seps;
     bool         a2dp_source_outgoing_active;
     bool         a2dp_source_have_config;
     bool         a2dp_source_stream_endpoint_configured;
     a2dp_state_t a2dp_source_state;
     struct avdtp_stream_endpoint * a2dp_source_local_stream_endpoint;
+
+    // A2DP SINK
+    bool         a2dp_sink_outgoing_active;
 
 } avdtp_connection_t;
 
@@ -647,7 +652,7 @@ uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
 uint8_t avdtp_discover_stream_endpoints(uint16_t avdtp_cid);
 uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid);
-uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid);
+uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_role_t role);
 uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid);
 uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);

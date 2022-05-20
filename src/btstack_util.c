@@ -329,17 +329,21 @@ char * uuid128_to_str(const uint8_t * uuid){
 }
 
 static char bd_addr_to_str_buffer[6*3];  // 12:45:78:01:34:67\0
-char * bd_addr_to_str(const bd_addr_t addr){
+char * bd_addr_to_str_with_delimiter(const bd_addr_t addr, char delimiter){
     char * p = bd_addr_to_str_buffer;
     int i;
     for (i = 0; i < 6 ; i++) {
         uint8_t byte = addr[i];
         *p++ = char_for_high_nibble(byte);
         *p++ = char_for_low_nibble(byte);
-        *p++ = ':';
+        *p++ = delimiter;
     }
     *--p = 0;
     return (char *) bd_addr_to_str_buffer;
+}
+
+char * bd_addr_to_str(const bd_addr_t addr){
+    return bd_addr_to_str_with_delimiter(addr, ':');
 }
 
 void btstack_replace_bd_addr_placeholder(uint8_t * buffer, uint16_t size, const bd_addr_t address){
@@ -488,4 +492,10 @@ uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid){
         next_cid = current_cid + 1;
     }
     return next_cid;
+}
+
+void btstack_strcpy(char * dst, uint16_t dst_size, const char * src){
+    uint16_t bytes_to_copy = btstack_min( dst_size - 1, strlen(src));
+    (void) memcpy(dst, src, bytes_to_copy);
+    dst[dst_size-1] = 0;
 }

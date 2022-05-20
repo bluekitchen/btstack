@@ -325,6 +325,9 @@ def create_event(event_name, format, args):
 
 def event_supported(event_name):
     parts = event_name.split('_')
+    # skip gap subevents
+    if event_name.startswith("GAP_SUBEVENT"):
+        return False
     return parts[0] in ['ATT', 'BTSTACK', 'DAEMON', 'L2CAP', 'RFCOMM', 'SDP', 'GATT', 'GAP', 'HCI', 'SM', 'BNEP']
         
 def class_name_for_event(event_name):

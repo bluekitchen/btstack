@@ -434,6 +434,9 @@ static void handle_l2cap_media_data_packet_aptx(uint8_t *packet, uint16_t size) 
         decode_buf16[i] = (decode_buf8[i * 3 + 2] << 8) | decode_buf8[i * 3 + 1];
     }
     playback_queue_audio(decode_buf16, written/(3 * aptx_configuration.num_channels), aptx_configuration.num_channels);
+#else
+    UNUSED(packet);
+    UNUSED(size);
 #endif
 }
 
@@ -451,6 +454,9 @@ static void handle_l2cap_media_data_packet_aptxhd(uint8_t *packet, uint16_t size
         decode_buf16[i] = (decode_buf8[i * 3 + 2] << 8) | decode_buf8[i * 3 + 1];
     }
     playback_queue_audio(decode_buf16, written/(3 * aptxhd_configuration.num_channels), aptxhd_configuration.num_channels);
+#else
+    UNUSED(packet);
+    UNUSED(size);
 #endif
 }
 
@@ -466,7 +472,9 @@ static void handle_l2cap_media_data_packet_ldac(uint8_t *packet, uint16_t size) 
         ldacDecode(&ldac_handle, packet+pos, decode_buf16, &used);
         playback_queue_audio(decode_buf16, ldac_handle.frame.frameSamples, ldac_configuration.num_channels);
         pos += used;
-    }
+#else
+    UNUSED(packet);
+    UNUSED(size);
 #endif
 }
 
@@ -542,21 +550,22 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
 }
 
 static uint32_t get_vendor_id(const uint8_t *codec_info) {
-    uint32_t vendor_id = 0;
-    vendor_id |= codec_info[0];
-    vendor_id |= codec_info[1] << 8;
-    vendor_id |= codec_info[2] << 16;
-    vendor_id |= codec_info[3] << 24;
-    return vendor_id;
+    uint32_t vid = 0;
+    vid |= codec_info[0];
+    vid |= codec_info[1] << 8;
+    vid |= codec_info[2] << 16;
+    vid |= codec_info[3] << 24;
+    return vid;
 }
 
 static uint16_t get_codec_id(const uint8_t *codec_info) {
-    uint16_t codec_id = 0;
-    codec_id |= codec_info[4];
-    codec_id |= codec_info[5] << 8;
-    return codec_id;
+    uint16_t cid = 0;
+    cid |= codec_info[4];
+    cid |= codec_info[5] << 8;
+    return cid;
 }
 
+#if HAVE_APTX
 static int convert_aptx_sampling_frequency(uint8_t frequency_bitmap) {
     switch (frequency_bitmap) {
     case 1 << 4:
@@ -586,7 +595,9 @@ static int convert_aptx_num_channels(uint8_t channel_mode) {
         return 0;
     }
 }
+#endif
 
+#ifdef HAVE_LDAC_DECODER
 static int convert_ldac_sampling_frequency(uint8_t frequency_bitmap) {
     switch (frequency_bitmap) {
     case 1 << 0:
@@ -619,7 +630,7 @@ static int convert_ldac_num_channels(uint8_t channel_mode) {
         return 0;
     }
 }
-
+#endif
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -938,6 +949,7 @@ static uint8_t media_aac_codec_capabilities[] = {
 
 static uint8_t media_aac_codec_configuration[6];
 
+#ifdef HAVE_APTX
 static uint8_t media_aptx_codec_capabilities[] = {
         0x4F, 0x0, 0x0, 0x0,
         0x1, 0,
@@ -953,7 +965,9 @@ static uint8_t media_aptxhd_codec_capabilities[] = {
         0, 0, 0, 0
 };
 static uint8_t media_aptxhd_codec_configuration[11];
+#endif
 
+#ifdef HAVE_LDAC_DECODER
 static uint8_t media_ldac_codec_capabilities[] = {
         0x2D, 0x1, 0x0, 0x0,
         0xAA, 0,
@@ -961,6 +975,7 @@ static uint8_t media_ldac_codec_capabilities[] = {
         0x7
 };
 static uint8_t media_ldac_codec_configuration[8];
+#endif
 
 static void show_usage(void){
     bd_addr_t      iut_address;

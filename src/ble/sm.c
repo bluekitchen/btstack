@@ -194,9 +194,12 @@ static uint8_t sm_max_encryption_key_size;
 static uint8_t sm_min_encryption_key_size;
 static uint8_t sm_auth_req = 0;
 static uint8_t sm_io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
-static uint8_t sm_slave_request_security;
 static uint32_t sm_fixed_passkey_in_display_role;
 static bool sm_reconstruct_ltk_without_le_device_db_entry;
+
+#ifdef ENABLE_LE_PERIPHERAL
+static uint8_t sm_slave_request_security;
+#endif
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static bool sm_sc_only_mode;
@@ -386,6 +389,7 @@ static uint16_t sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
 // stores oob data in provided 16 byte buffer if not null
 static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data) = NULL;
 static int (*sm_get_sc_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random);
+static bool (*sm_get_ltk_callback)(hci_con_handle_t con_handle, uint8_t addres_type, bd_addr_t addr, uint8_t * ltk);
 
 static void sm_run(void);
 static void sm_done_for_handle(hci_con_handle_t con_handle);
@@ -2579,10 +2583,11 @@ static void sm_run(void){
 
         int key_distribution_flags;
         UNUSED(key_distribution_flags);
-		int err;
-		UNUSED(err);
+#ifdef ENABLE_LE_PERIPHERAL
+        int err;
         bool have_ltk;
         uint8_t ltk[16];
+#endif
 
         log_info("sm_run: state %u", connection->sm_engine_state);
         if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) {
@@ -3011,6 +3016,10 @@ static void sm_run(void){
                 return;
             }
             case SM_RESPONDER_PH4_SEND_LTK_REPLY: {
+                // allow to override LTK
+                if (sm_get_ltk_callback != NULL){
+                    (void)(*sm_get_ltk_callback)(connection->sm_handle, connection->sm_peer_addr_type, connection->sm_peer_address, setup->sm_ltk);
+                }
                 sm_key_t ltk_flipped;
                 reverse_128(setup->sm_ltk, ltk_flipped);
                 connection->sm_engine_state = SM_PH4_W4_CONNECTION_ENCRYPTED;
@@ -3720,7 +3729,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_cid = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
 
                             // track our addr used for this connection and set state
-#ifdef ENABLE_LE_CENTRAL
+#ifdef ENABLE_LE_PERIPHERAL
                             if (hci_subevent_le_connection_complete_get_role(packet) != 0){
                                 // responder - use own address from advertisements
                                 gap_le_get_own_advertisements_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
@@ -4638,6 +4647,10 @@ void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t address
 
 void sm_register_sc_oob_data_callback( int (*get_sc_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random)){
     sm_get_sc_oob_data = get_sc_oob_data_callback;
+}
+
+void sm_register_ltk_callback( bool (*get_ltk_callback)(hci_con_handle_t con_handle, uint8_t address_type, bd_addr_t addr, uint8_t * ltk)){
+    sm_get_ltk_callback = get_ltk_callback;
 }
 
 void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){

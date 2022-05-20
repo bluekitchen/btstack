@@ -55,7 +55,7 @@ uint16_t att_server_get_mtu(hci_con_handle_t con_handle){
     return ATT_DEFAULT_MTU;
 }
 
-int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
+uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
     UNUSED(con_handle);
     UNUSED(attribute_handle);
     UNUSED(value);
@@ -64,7 +64,7 @@ int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, 
     return ERROR_CODE_SUCCESS;
 }
 
-int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
+uint8_t att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
     UNUSED(con_handle);
     UNUSED(attribute_handle);
     UNUSED(value);
@@ -73,7 +73,7 @@ int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, co
     return ERROR_CODE_SUCCESS;
 }
 
-int att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+uint8_t att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
     UNUSED(callback_registration);
     UNUSED(con_handle);
     mock_callback_registration = callback_registration;
@@ -81,8 +81,8 @@ int att_server_register_can_send_now_callback(btstack_context_callback_registrat
     mock().actualCall("att_server_register_can_send_now_callback");
     return ERROR_CODE_SUCCESS;
 }
-    
-int att_server_request_to_send_notification(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+
+uint8_t att_server_request_to_send_notification(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
     UNUSED(callback_registration);
     UNUSED(con_handle);
     mock().actualCall("att_server_request_to_send_notification");

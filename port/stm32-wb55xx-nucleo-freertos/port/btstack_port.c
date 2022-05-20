@@ -207,7 +207,7 @@ void shci_cmd_resp_wait(uint32_t timeout){
 }
 void shci_notify_asynch_evt(void* pdata){
     UNUSED(pdata);
-    btstack_run_loop_freertos_trigger_from_isr();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 void ipcc_reset(void)
@@ -294,7 +294,7 @@ static void sys_evt_received(void *pdata)
         if (little_endian_read_16(shciEvt->evt.payload, 0) == SHCI_SUB_EVT_CODE_READY) {
             if (cpu2_state == CPU2_STATE_WAIT_FOR_STARTED){
                 cpu2_state = CPU2_STATE_W2_INIT_BLE;
-                btstack_run_loop_freertos_trigger_from_isr();
+                btstack_run_loop_poll_data_sources_from_irq();
                 portYIELD_FROM_ISR(pdTRUE);
             }
         }
@@ -305,7 +305,7 @@ static void ble_acl_acknowledged(void)
 {
     hci_acl_can_send_now = 1;
 
-    btstack_run_loop_freertos_trigger_from_isr();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 
@@ -322,7 +322,7 @@ static void ble_evt_received(TL_EvtPacket_t *hcievt)
 
     xQueueSendFromISR(hciEvtQueue, (void*)&hcievt, &yield);
 
-    btstack_run_loop_freertos_trigger_from_isr();
+    btstack_run_loop_poll_data_sources_from_irq();
 
     portYIELD_FROM_ISR(yield);
 }
@@ -583,15 +583,24 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
+
 extern int btstack_main(int argc, const char * argv[]);
 void port_thread(void* args){
 
-    // enable packet logger
+// uncomment to enable packet logger
+// #define ENABLE_HCI_DUMP
+
+    // config packet logger
 #ifdef ENABLE_HCI_DUMP
 #ifdef ENABLE_SEGGER_RTT
-    // hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
+    // Disable sleep modes as shown here:
+    // https://github.com/STMicroelectronics/STM32CubeWB/blob/master/Projects/P-NUCLEO-WB55.Nucleo/Applications/BLE/BLE_HeartRate/Core/Src/app_debug.c#L180
+    HAL_DBGMCU_EnableDBGSleepMode();
+    HAL_DBGMCU_EnableDBGStopMode();
+    // with this, RTT works in Skip mode but in Block mode
+    hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
 #else
-    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
+    hci_dump_init(hci_dump_embedded_stdout_get_instance());
 #endif
 #endif
 

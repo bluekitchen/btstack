@@ -28,6 +28,7 @@ COMMON = \
 	btstack_util.c              \
 	cycling_power_service_server.c \
 	cycling_speed_and_cadence_service_server.c \
+	audio_input_control_service_server.c \
 	device_information_service_server.c \
 	hci_dump.c                  \
 	heart_rate_service_server.c \

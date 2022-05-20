@@ -83,6 +83,7 @@ AVRCP += \
 	avrcp_browsing_controller.c \
 
 SRC_BLE_GATT_SERVICE_FILES += \
+	audio_input_control_service_server.c \
 	microphone_control_service_server.c \
 	volume_control_service_server.c \
 	

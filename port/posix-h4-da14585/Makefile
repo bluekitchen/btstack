@@ -2,7 +2,7 @@
 BTSTACK_ROOT ?= ../..
 
 CORE += \
-	btstack_chipset_da14581.c \
+	btstack_chipset_da145xx.c \
 	btstack_run_loop_posix.c \
 	btstack_tlv_posix.c \
 	btstack_uart_posix.c \
@@ -21,7 +21,7 @@ include ${BTSTACK_ROOT}/example/Makefile.inc
 
 CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/platform/posix \
-	-I$(BTSTACK_ROOT)/chipset/da14581 \
+	-I$(BTSTACK_ROOT)/chipset/da145xx \
 	-I$(BTSTACK_ROOT)/platform/embedded \
 	-I${BTSTACK_ROOT}/3rd-party/tinydir
 
@@ -29,7 +29,7 @@ CFLAGS  += -g -Wall -Werror \
 LDFLAGS += -lpthread
 
 VPATH += ${BTSTACK_ROOT}/platform/posix
-VPATH += ${BTSTACK_ROOT}/chipset/da14581
+VPATH += ${BTSTACK_ROOT}/chipset/da145xx
 
 EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_LE_ONLY}
 

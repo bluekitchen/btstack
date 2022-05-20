@@ -758,7 +758,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, uint8_t value);
 void hfp_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype);
 void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value);
-void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
+void hfp_emit_slc_connection_event(hfp_role_t local_role, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
 
 /**
  * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED event

@@ -139,11 +139,13 @@ int de_state_size(uint8_t eventByte, de_state_t *de_state){
         de_state->de_offset = 0;
 
         if (de_state->addon_header_bytes == 0){
-            de_state->de_size = de_get_data_size(&eventByte);
-            if (de_state->de_size == 0) {
-                log_error("  ERROR: ID size is zero");
+            // de_nil has no size
+            de_type_t de_type = (de_type_t) (eventByte >> 3);
+            if (de_type == DE_NIL){
+                return 1;
             }
-            // log_info("Data element payload is %d bytes.", de_state->de_size);
+            // addon_header_bytes == 0 <-> de_size_type in [DE_SIZE_8, ..., DE_SIZE_128]
+            de_state->de_size = 1 << (eventByte & 7);
             return 1;
         }
         de_state->in_state_GET_DE_HEADER_LENGTH = 0;

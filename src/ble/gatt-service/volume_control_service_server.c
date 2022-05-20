@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 BlueKitchen GmbH
+ * Copyright (C) 2021 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -43,6 +43,7 @@
  */
 
 #include "btstack_defines.h"
+#include "btstack_event.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "btstack_util.h"
@@ -50,6 +51,8 @@
 #include "btstack_debug.h"
 
 #include "ble/gatt-service/volume_control_service_server.h"
+#include "ble/gatt-service/audio_input_control_service_server.h"
+#include "ble/gatt-service/volume_offset_control_service_server.h"
 
 #define VCS_CMD_RELATIVE_VOLUME_DOWN                0x00
 #define VCS_CMD_RELATIVE_VOLUME_UP                  0x01
@@ -87,10 +90,18 @@ static uint16_t   vcs_volume_flags_handle;
 static uint16_t   vcs_volume_flags_client_configuration_handle;
 static uint16_t   vcs_volume_flags_client_configuration;
 
-static vcs_flag_t vcs_volume_flags;
+static uint8_t    vcs_volume_flags;
 
 // characteristic: CONTROL_POINT
 static uint16_t   vcs_control_point_value_handle;
+
+static btstack_packet_handler_t vcs_event_callback;
+
+static audio_input_control_service_server_t aics_services[AICS_MAX_NUM_SERVICES];
+static uint8_t aics_services_num;
+
+static volume_offset_control_service_server_t vocs_services[VOCS_MAX_NUM_SERVICES];
+static uint8_t vocs_services_num;
 
 
 static void volume_control_service_update_change_counter(void){
@@ -121,6 +132,36 @@ static void volume_control_service_unmute(void){
     vcs_volume_state_mute = VCS_MUTE_OFF;
 }
 
+static void vcs_emit_volume_state(void){
+    btstack_assert(vcs_event_callback != NULL);
+    
+    uint8_t event[8];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE;
+    little_endian_store_16(event, pos, vcs_con_handle);
+    pos += 2;
+    event[pos++] = vcs_volume_state_volume_setting;
+    event[pos++] = vcs_volume_change_step_size;
+    event[pos++] = (uint8_t)vcs_volume_state_mute;
+    (*vcs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void vcs_emit_volume_flags(void){
+    btstack_assert(vcs_event_callback != NULL);
+    
+    uint8_t event[6];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS;
+    little_endian_store_16(event, pos, vcs_con_handle);
+    pos += 2;
+    event[pos++] = vcs_volume_flags;
+    (*vcs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static uint16_t volume_control_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
 
@@ -133,12 +174,19 @@ static uint16_t volume_control_service_read_callback(hci_con_handle_t con_handle
     }
 
     if (attribute_handle == vcs_volume_flags_handle){
-        return att_read_callback_handle_byte((uint8_t)vcs_volume_flags, offset, buffer, buffer_size);
+        return att_read_callback_handle_byte(vcs_volume_flags, offset, buffer, buffer_size);
+    }
+
+    if (attribute_handle == vcs_volume_state_client_configuration_handle){
+        return att_read_callback_handle_little_endian_16(vcs_volume_state_client_configuration, offset, buffer, buffer_size);
+    }
+    
+    if (attribute_handle == vcs_volume_flags_client_configuration_handle){
+        return att_read_callback_handle_little_endian_16(vcs_volume_flags_client_configuration, offset, buffer, buffer_size);
     }
 
     return 0;
 }
-
 
 static void volume_control_service_can_send_now(void * context){
     UNUSED(context);
@@ -147,8 +195,6 @@ static void volume_control_service_can_send_now(void * context){
     if ((vcs_tasks & VCS_TASK_SEND_VOLUME_SETTING) != 0){
         vcs_tasks &= ~VCS_TASK_SEND_VOLUME_SETTING;
         
-        volume_control_service_update_change_counter();
-
         uint8_t buffer[3];
         buffer[0] = vcs_volume_state_volume_setting;
         buffer[1] = (uint8_t)vcs_volume_state_mute;
@@ -157,9 +203,7 @@ static void volume_control_service_can_send_now(void * context){
 
     } else if ((vcs_tasks & VCS_TASK_SEND_VOLUME_FLAGS) != 0){
         vcs_tasks &= ~VCS_TASK_SEND_VOLUME_FLAGS;
-
-        uint8_t value = (uint8_t)vcs_volume_flags;
-        att_server_notify(vcs_con_handle, vcs_volume_flags_handle, &value, 1);
+        att_server_notify(vcs_con_handle, vcs_volume_flags_handle, &vcs_volume_flags, 1);
     }
 
     if (vcs_tasks != 0){
@@ -168,6 +212,11 @@ static void volume_control_service_can_send_now(void * context){
 }
 
 static void volume_control_service_server_set_callback(uint8_t task){
+    if (vcs_con_handle == HCI_CON_HANDLE_INVALID){
+        vcs_tasks &= ~task;
+        return;
+    }
+
     uint8_t scheduled_tasks = vcs_tasks;
     vcs_tasks |= task;
     if (scheduled_tasks == 0){
@@ -176,11 +225,8 @@ static void volume_control_service_server_set_callback(uint8_t task){
     }   
 }
 
-static void volume_control_service_server_enable_user_set_volume_setting_flag(void){
-    vcs_volume_flags = VCS_FLAG_USER_SET_VOLUME_SETTING;
-    if (vcs_volume_flags_client_configuration != 0){
-        volume_control_service_server_set_callback(VCS_TASK_SEND_VOLUME_FLAGS);
-    }
+static void vcs_set_con_handle(hci_con_handle_t con_handle, uint16_t configuration){
+    vcs_con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
 }
 
 static int volume_control_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
@@ -199,8 +245,8 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
             return VOLUME_CONTROL_INVALID_CHANGE_COUNTER;
         }
 
-        uint8_t    old_volume_setting = vcs_volume_state_volume_setting;
-        vcs_mute_t old_mute = vcs_volume_state_mute;
+        uint8_t    volume_setting = vcs_volume_state_volume_setting;
+        vcs_mute_t mute = vcs_volume_state_mute;
 
         switch (cmd){
             case VCS_CMD_RELATIVE_VOLUME_DOWN:  
@@ -239,37 +285,134 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
             default:
                 return VOLUME_CONTROL_OPCODE_NOT_SUPPORTED;
         }
-        
-        if ((old_volume_setting != vcs_volume_state_volume_setting) || (old_mute != vcs_volume_state_mute)){
-            volume_control_service_update_change_counter();
-        
-            if (vcs_volume_flags == VCS_FLAG_RESET_VOLUME_SETTING){
-                volume_control_service_server_enable_user_set_volume_setting_flag();
-            }
-        }
+        volume_control_service_server_set_volume_state(volume_setting, mute);
+        vcs_emit_volume_state();
+        vcs_emit_volume_flags();
     } 
 
     else if (attribute_handle == vcs_volume_state_client_configuration_handle){
         vcs_volume_state_client_configuration = little_endian_read_16(buffer, 0);
-        vcs_con_handle = con_handle;
+        vcs_set_con_handle(con_handle, vcs_volume_state_client_configuration);
     }
 
     else if (attribute_handle == vcs_volume_flags_client_configuration_handle){
         vcs_volume_flags_client_configuration = little_endian_read_16(buffer, 0);
-        vcs_con_handle = con_handle;
+        vcs_set_con_handle(con_handle, vcs_volume_flags_client_configuration);
     }
 
     return 0;
 }
 
-void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute, uint8_t volume_change_step){
+static void volume_control_service_server_reset_values(void){
+    vcs_volume_flags = 0;
+    vcs_con_handle = HCI_CON_HANDLE_INVALID;
+    vcs_tasks = 0;
+
+    vcs_volume_change_step_size = 1;
+    vcs_volume_state_volume_setting = 0;
+    vcs_volume_state_mute = VCS_MUTE_OFF;
+}
+
+static void vcs_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(packet);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET){
+        return;
+    }
+
+    hci_con_handle_t con_handle;
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            if (vcs_con_handle == con_handle){
+                volume_control_service_server_reset_values();
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+static void volume_control_init_included_aics_services(uint16_t vcs_start_handle, uint16_t vcs_end_handle, uint8_t aics_info_num, aics_info_t * aics_info){
+    uint16_t start_handle = vcs_start_handle + 1;
+    uint16_t end_handle   = vcs_end_handle - 1;
+    aics_services_num = 0;
+
+    // include and enumerate AICS services
+    while ((start_handle < end_handle) && (aics_services_num < aics_info_num)) {
+        uint16_t included_service_handle;
+        uint16_t included_service_start_handle;
+        uint16_t included_service_end_handle;
+
+        bool service_found = gatt_server_get_included_service_with_uuid16(start_handle, end_handle, 
+            ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL, &included_service_handle, &included_service_start_handle, &included_service_end_handle);
+
+        if (!service_found){
+            break;
+        }
+        log_info("Include AICS service 0x%02x-0x%02x", included_service_start_handle, included_service_end_handle);
+
+        audio_input_control_service_server_t * service = &aics_services[aics_services_num];
+        service->start_handle = included_service_start_handle;
+        service->end_handle = included_service_end_handle;
+        service->index = aics_services_num;
+        
+        service->info = &aics_info[aics_services_num];
+        service->audio_input_description_len = strlen(aics_info->audio_input_description);
+
+        audio_input_control_service_server_init(service);
+        
+        start_handle = included_service_handle + 1;
+        aics_services_num++;
+    }
+}
+
+static void volume_control_init_included_vocs_services(uint16_t vcs_start_handle, uint16_t vcs_end_handle, uint8_t vocs_info_num, vocs_info_t * vocs_info){
+    uint16_t start_handle = vcs_start_handle + 1;
+    uint16_t end_handle = vcs_end_handle - 1;
+    vocs_services_num = 0;
+
+    // include and enumerate AICS services
+    while ((start_handle < end_handle) && (vocs_services_num < vocs_info_num)) {
+        uint16_t included_service_handle;
+        uint16_t included_service_start_handle;
+        uint16_t included_service_end_handle;
+
+        bool service_found = gatt_server_get_included_service_with_uuid16(start_handle, end_handle, 
+            ORG_BLUETOOTH_SERVICE_VOLUME_OFFSET_CONTROL,
+            &included_service_handle, &included_service_start_handle, &included_service_end_handle);
+
+        if (!service_found){
+            break;
+        }
+        log_info("Include VOCS service 0x%02x-0x%02x", included_service_start_handle, included_service_end_handle);
+
+        volume_offset_control_service_server_t * service = &vocs_services[vocs_services_num];
+        service->start_handle = included_service_start_handle;
+        service->end_handle = included_service_end_handle;
+        service->index = vocs_services_num;
+        
+        service->info = &vocs_info[vocs_services_num];
+        service->audio_output_description_len = strlen(vocs_info->audio_output_description);
+
+        volume_offset_control_service_server_init(service);
+        
+        start_handle = included_service_handle + 1;
+        vocs_services_num++;
+    }
+}
+
+void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
+    uint8_t aics_info_num, aics_info_t * aics_info, 
+    uint8_t vocs_info_num, vocs_info_t * vocs_info){
+
+    volume_control_service_server_reset_values();
+
     vcs_volume_state_volume_setting = volume_setting;
     vcs_volume_state_mute = mute;
-    vcs_volume_flags = VCS_FLAG_RESET_VOLUME_SETTING;
-    vcs_volume_change_step_size = volume_change_step;
-    
-    vcs_tasks = 0;
-    
+
     // get service handle range
     uint16_t start_handle = 0;
     uint16_t end_handle   = 0xfff;
@@ -286,28 +429,93 @@ void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
     vcs_volume_flags_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_FLAGS);
     vcs_volume_flags_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_FLAGS);
 
+    log_info("Found VCS service 0x%02x-0x%02x", start_handle, end_handle);
+
+    volume_control_init_included_aics_services(start_handle, end_handle, aics_info_num, aics_info);
+    volume_control_init_included_vocs_services(start_handle, end_handle, vocs_info_num, vocs_info);
+
     // register service with ATT Server
     volume_control_service.start_handle   = start_handle;
     volume_control_service.end_handle     = end_handle;
     volume_control_service.read_callback  = &volume_control_service_read_callback;
     volume_control_service.write_callback = &volume_control_service_write_callback;
+    volume_control_service.packet_handler = vcs_packet_handler;
     att_server_register_service_handler(&volume_control_service);
 }
 
+void volume_control_service_server_register_packet_handler(btstack_packet_handler_t callback){
+    btstack_assert(callback != NULL);
+    vcs_event_callback = callback;
+}
+
 void volume_control_service_server_set_volume_state(uint8_t volume_setting, vcs_mute_t mute){
-    uint8_t update_value = false;
+    uint8_t    old_volume_setting = vcs_volume_state_volume_setting;
+    vcs_mute_t old_mute = vcs_volume_state_mute;
 
-    if (vcs_volume_state_volume_setting != volume_setting){
-        vcs_volume_state_volume_setting = volume_setting;
-        update_value = true;
-    }
+    vcs_volume_state_volume_setting = volume_setting;
+    vcs_volume_state_mute = mute;
 
-    if (vcs_volume_state_mute != mute){
-        vcs_volume_state_mute = mute;
-        update_value = true;
-    }
-    
-    if (update_value && (vcs_volume_state_client_configuration != 0)){
+    if ((old_volume_setting != vcs_volume_state_volume_setting) || (old_mute != vcs_volume_state_mute)) {
+        volume_control_service_update_change_counter();
         volume_control_service_server_set_callback(VCS_TASK_SEND_VOLUME_SETTING);
     }
+
+    if (old_volume_setting != vcs_volume_state_volume_setting) {
+        if ((vcs_volume_flags & VCS_VOLUME_FLAGS_SETTING_PERSISTED_MASK) == VCS_VOLUME_FLAGS_SETTING_PERSISTED_RESET){
+            vcs_volume_flags |= VCS_VOLUME_FLAGS_SETTING_PERSISTED_USER_SET;
+            volume_control_service_server_set_callback(VCS_TASK_SEND_VOLUME_FLAGS);
+        }
+    }
+}
+
+void volume_control_service_server_set_volume_change_step(uint8_t volume_change_step){
+    vcs_volume_change_step_size = volume_change_step;
+}
+
+uint8_t volume_control_service_server_set_audio_input_state_for_aics(uint8_t aics_index, aics_audio_input_state_t * audio_input_state){
+    if (aics_index >= aics_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    return audio_input_control_service_server_set_audio_input_state(&aics_services[aics_index], audio_input_state);
+}
+
+uint8_t volume_control_service_server_set_audio_input_description_for_aics(uint8_t aics_index, const char * audio_input_desc){
+    if (aics_index >= aics_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    audio_input_control_service_server_set_audio_input_description(&aics_services[aics_index], audio_input_desc);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t  volume_control_service_server_set_audio_input_status_for_aics(uint8_t aics_index, aics_audio_input_status_t audio_input_status){
+    if (aics_index >= aics_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    audio_input_control_service_server_set_audio_input_status(&aics_services[aics_index], audio_input_status);
+    return ERROR_CODE_SUCCESS;
+}
+
+
+uint8_t volume_control_service_server_set_volume_offset_for_vocs(uint8_t voics_index, int16_t volume_offset){
+    if (voics_index >= vocs_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    volume_offset_control_service_server_set_volume_offset(&vocs_services[voics_index], volume_offset);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t volume_control_service_server_set_audio_location_for_vocs(uint8_t vocs_index, uint32_t audio_location){
+    if (vocs_index >= vocs_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    volume_offset_control_service_server_set_audio_location(&vocs_services[vocs_index], audio_location);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t volume_control_service_server_set_audio_output_description_for_vocs(uint8_t vocs_index, const char * audio_output_desc){
+    if (vocs_index >= vocs_services_num){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    volume_offset_control_service_server_set_audio_output_description(&vocs_services[vocs_index], audio_output_desc);
+    return ERROR_CODE_SUCCESS;
 }

@@ -95,7 +95,9 @@ typedef enum {
     PBAP_W4_GET_CARD_LIST_COMPLETE,
     // - pull vcard entry
     PBAP_W2_GET_CARD_ENTRY,
-    PBAP_W4_GET_CARD_ENTRY_COMPLETE
+    PBAP_W4_GET_CARD_ENTRY_COMPLETE,
+    // abort operation
+    PBAP_W4_ABORT_COMPLETE,
 
 } pbap_state_t;
 
@@ -437,10 +439,19 @@ static void obex_srm_init(obex_srm_t * obex_srm){
     obex_srm->srm_value = OBEX_SRM_DISABLE;
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
 }
+static void pbap_client_yml_append_character(yxml_t * xml_parser, char * buffer, uint16_t buffer_size){
+    // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
+    uint16_t char_len = strlen(xml_parser->data);
+    btstack_assert(char_len <= 4);
+    uint16_t dest_len = strlen(buffer);
+    uint16_t zero_pos = dest_len + char_len;
+    if (zero_pos >= buffer_size) return;
+    memcpy(&buffer[dest_len], xml_parser->data, char_len);
+    buffer[zero_pos] = '\0';
+}
 
 static void pbap_client_process_vcard_list_body(const uint8_t * data, uint16_t data_len){
     while (data_len--) {
-        uint16_t char_len;
         yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
         switch (r) {
             case YXML_ELEMSTART:
@@ -468,21 +479,15 @@ static void pbap_client_process_vcard_list_body(const uint8_t * data, uint16_t d
                 break;
             case YXML_ATTRVAL:
                 if (pbap_client->parser_name_found) {
-                    // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                    char_len = strlen(pbap_client->xml_parser.data);
-                    if ((strlen(pbap_client->parser_name) + char_len + 1) >=
-                        sizeof(pbap_client->parser_name))
-                        break;
-                    strcat(pbap_client->parser_name, pbap_client->xml_parser.data);
+                    pbap_client_yml_append_character(&pbap_client->xml_parser,
+                                                     pbap_client->parser_name,
+                                                     sizeof(pbap_client->parser_name));
                     break;
                 }
                 if (pbap_client->parser_handle_found) {
-                    // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                    char_len = strlen(pbap_client->xml_parser.data);
-                    if ((strlen(pbap_client->parser_handle) + char_len + 1) >=
-                        sizeof(pbap_client->parser_handle))
-                        break;
-                    strcat(pbap_client->parser_handle, pbap_client->xml_parser.data);
+                    pbap_client_yml_append_character(&pbap_client->xml_parser,
+                                                     pbap_client->parser_handle,
+                                                     sizeof(pbap_client->parser_handle));
                     break;
                 }
                 break;
@@ -672,8 +677,15 @@ static void pbap_handle_can_send_now(void){
 
     if (pbap_client->abort_operation){
         pbap_client->abort_operation = 0;
-        pbap_client->state = PBAP_CONNECTED;
+        // prepare request
         goep_client_request_create_abort(pbap_client->goep_cid);
+        // state
+        pbap_client->state = PBAP_W4_ABORT_COMPLETE;
+        // prepare response
+        obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_ABORT, NULL, pbap_client);
+        obex_srm_init(&pbap_client->obex_srm);
+        pbap_client->obex_parser_waiting_for_response = true;
+        // send packet
         goep_client_execute(pbap_client->goep_cid);
         return;
     }
@@ -1017,7 +1029,7 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                         break;
                     case OBEX_RESP_SUCCESS:
                         pbap_client->state = PBAP_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, 0);
+                        pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
                         break;
                     default:
                         log_info("unexpected response 0x%02x", packet[0]);
@@ -1085,7 +1097,7 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                         break;
                     case OBEX_RESP_SUCCESS:
                         pbap_client->state = PBAP_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, 0);
+                        pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
                         break;
                     case OBEX_RESP_NOT_ACCEPTABLE:
                         pbap_client->state = PBAP_CONNECTED;
@@ -1097,6 +1109,10 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
                         break;
                 }
+                break;
+            case PBAP_W4_ABORT_COMPLETE:
+                pbap_client->state = PBAP_CONNECTED;
+                pbap_client_emit_operation_complete_event(pbap_client, OBEX_ABORTED);
                 break;
             default:
                 btstack_unreachable();
@@ -1263,8 +1279,8 @@ uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
 
 uint8_t pbap_abort(uint16_t pbap_cid){
     UNUSED(pbap_cid);
-    if (pbap_client->state < PBAP_CONNECTED){
-        return BTSTACK_BUSY;
+    if ((pbap_client->state < PBAP_CONNECTED) || (pbap_client->abort_operation != 0)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
     log_info("abort current operation, state 0x%02x", pbap_client->state);
     pbap_client->abort_operation = 1;

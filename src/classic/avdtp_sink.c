@@ -156,7 +156,7 @@ uint8_t avdtp_sink_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
 }
 
 uint8_t avdtp_sink_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
-    return avdtp_get_all_capabilities(avdtp_cid, remote_seid);
+    return avdtp_get_all_capabilities(avdtp_cid, remote_seid, AVDTP_ROLE_SINK);
 }
 
 uint8_t avdtp_sink_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid){

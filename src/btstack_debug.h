@@ -54,7 +54,9 @@
 #endif
 
 #ifdef HAVE_ASSERT
+#ifndef btstack_assert
 #include <assert.h>
+#endif
 #endif
 
 // fallback to __FILE__ for untagged files
@@ -63,8 +65,11 @@
 #endif
 
 #ifdef HAVE_ASSERT
+// allow to override btstack_assert in btstack_config.h
+#ifndef btstack_assert
 // map to libc assert
 #define btstack_assert(condition)  assert(condition)
+#endif /* btstack_assert */
 #else /* HAVE_ASSERT */
 #ifdef ENABLE_BTSTACK_ASSERT
 void btstack_assert_failed(const char * file, uint16_t line_nr);
@@ -72,11 +77,11 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 // use btstack macro that calls btstack_assert_failed() - provided by port
 #define btstack_assert(condition)         if (condition) {} else { btstack_assert_failed(BTSTACK_FILE__, __LINE__);  }
 #endif
-#else /* btstack_assert */
+#else /* ENABLE_BTSTACK_ASSERT */
 // asserts off
 #define btstack_assert(condition)         {}
-#endif
-#endif
+#endif /* btstack_assert */
+#endif /* HAVE_ASSERT */
 
 // mark code that should not be reached. Similar to assert, but mapped to NOP for coverage
 #ifdef UNIT_TEST

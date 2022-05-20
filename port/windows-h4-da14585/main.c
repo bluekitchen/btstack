@@ -51,7 +51,7 @@
 #include "btstack_config.h"
 
 #include "ble/le_device_db_tlv.h"
-#include "btstack_chipset_da14581.h"
+#include "btstack_chipset_da145xx.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -102,7 +102,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     gap_local_bd_addr(local_addr);
                     printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
                     strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
-                    strcat(tlv_db_path, bd_addr_to_str(local_addr));
+                    strcat(tlv_db_path, bd_addr_to_str_with_delimiter(local_addr, '-'));
                     strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
                     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
@@ -199,7 +199,7 @@ int main(int argc, const char * argv[]){
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
-    btstack_chipset_da14581_download_firmware(uart_driver, da14581_fw_data, da14581_fw_size, &phase2);
+    btstack_chipset_da145xx_download_firmware(uart_driver, da145xx_fw_data, da145xx_fw_size, &phase2);
 
     // go
     btstack_run_loop_execute();

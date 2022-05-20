@@ -599,7 +599,7 @@ static int att_server_process_validated_request(hci_connection_t * hci_connectio
 }
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
-int att_server_response_ready(hci_con_handle_t con_handle){
+uint8_t att_server_response_ready(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     att_server_t * att_server = &hci_connection->att_server;
@@ -1191,7 +1191,7 @@ int  att_server_can_send_packet_now(hci_con_handle_t con_handle){
     return att_server_can_send_packet(hci_connection);
 }
 
-int att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+uint8_t att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
     return att_server_request_to_send_notification(callback_registration, con_handle);
 }
 
@@ -1201,7 +1201,7 @@ void att_server_request_can_send_now_event(hci_con_handle_t con_handle){
 }
 // end of deprecated
 
-int att_server_request_to_send_notification(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+uint8_t att_server_request_to_send_notification(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     att_server_t * att_server = &hci_connection->att_server;
@@ -1214,7 +1214,7 @@ int att_server_request_to_send_notification(btstack_context_callback_registratio
     }
 }
 
-int att_server_request_to_send_indication(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+uint8_t att_server_request_to_send_indication(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     att_server_t * att_server = &hci_connection->att_server;
@@ -1227,7 +1227,7 @@ int att_server_request_to_send_indication(btstack_context_callback_registration_
     }
 }
 
-int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
+uint8_t att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     att_connection_t * att_connection = &hci_connection->att_connection;
@@ -1246,7 +1246,7 @@ int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, co
 	return l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
 }
 
-int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
+uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     att_server_t * att_server = &hci_connection->att_server;

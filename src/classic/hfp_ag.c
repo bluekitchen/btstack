@@ -91,6 +91,8 @@ static const char hfp_ag_default_service_name[] = "Voice gateway";
 // higher layer callbacks
 static btstack_packet_handler_t hfp_ag_callback;
 
+static bool (*hfp_ag_custom_call_sm_handler)(hfp_ag_call_event_t event);
+
 static btstack_packet_callback_registration_t hfp_ag_hci_event_callback_registration;
 
 static uint16_t hfp_ag_supported_features;
@@ -645,7 +647,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
 
 static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-    hfp_emit_slc_connection_event(hfp_connection, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
+    hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
     
     // if active call exist, set per-hfp_connection state active, too (when audio is on)
     if (hfp_gsm_call_status() == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
@@ -1497,6 +1499,13 @@ static void hfp_ag_handle_reject_outgoing_call(void){
 
 // hfp_connection is used to identify originating HF
 static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_connection){
+
+    // allow to intercept call statemachine events
+    if (hfp_ag_custom_call_sm_handler != NULL){
+        bool handle_event = (*hfp_ag_custom_call_sm_handler)(event);
+        if (!handle_event) return;
+    }
+
     int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
     int callheld_indicator_index = get_ag_indicator_index_for_name("callheld");
     int call_indicator_index = get_ag_indicator_index_for_name("call");
@@ -2601,6 +2610,7 @@ void hfp_ag_deinit(void){
     (void) memset(&hfp_ag_response_and_hold_state, 0, sizeof(hfp_response_and_hold_state_t));
     hfp_ag_subscriber_numbers = NULL;
     (void) memset(&hfp_ag_hci_event_callback_registration, 0, sizeof(btstack_packet_callback_registration_t));
+    hfp_ag_custom_call_sm_handler = NULL;
 }
 
 uint8_t hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
@@ -3147,4 +3157,8 @@ void hfp_ag_register_packet_handler(btstack_packet_handler_t callback){
     
 	hfp_ag_callback = callback;
 	hfp_set_ag_callback(callback);
+}
+
+void hfp_ag_register_custom_call_sm_handler(bool (*handler)(hfp_ag_call_event_t event)){
+    hfp_ag_custom_call_sm_handler = handler;
 }

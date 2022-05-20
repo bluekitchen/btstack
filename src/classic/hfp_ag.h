@@ -483,6 +483,9 @@ void hfp_ag_deinit(void);
 // testing
 hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection);
 
+// @return true to process even as normal, false to cause HFP AG to ignore event
+void hfp_ag_register_custom_call_sm_handler(bool (*handler)(hfp_ag_call_event_t event));
+
 #if defined __cplusplus
 }
 #endif

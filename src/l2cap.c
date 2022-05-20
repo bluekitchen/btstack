@@ -1388,6 +1388,9 @@ static void l2cap_rtx_timeout(btstack_timer_source_t * ts){
     l2cap_free_channel_entry(channel);
 }
 
+static uint8_t l2cap_classic_packet_boundary_flag(void){
+    return (hci_non_flushable_packet_boundary_flag_supported() && (hci_automatic_flush_timeout() == 0)) ? 0x00 : 0x02;
+}
 #endif
 
 #ifdef L2CAP_USES_CHANNELS
@@ -1415,8 +1418,8 @@ static int l2cap_send_general_signaling_packet(hci_con_handle_t handle, uint16_t
     va_start(argptr, identifier);
     uint8_t pb_flags = 0x00;
 #ifdef ENABLE_CLASSIC
-    if ((signaling_cid == L2CAP_CID_SIGNALING) && (!hci_non_flushable_packet_boundary_flag_supported())){
-        pb_flags = 0x02;
+    if (signaling_cid == L2CAP_CID_SIGNALING){
+        pb_flags = l2cap_classic_packet_boundary_flag();
     }
 #endif
 uint8_t result = l2cap_send_signaling_packet(handle, pb_flags, signaling_cid, cmd, identifier, argptr);
@@ -1454,8 +1457,8 @@ static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm){
 static int l2cap_send_classic_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, int identifier, ...){
     va_list argptr;
     va_start(argptr, identifier);
-    uint8_t pb_flags = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
-    uint8_t result = l2cap_send_signaling_packet(handle, pb_flags, L2CAP_CID_SIGNALING, cmd, identifier, argptr);
+    uint8_t pb_flag = l2cap_classic_packet_boundary_flag();
+    uint8_t result = l2cap_send_signaling_packet(handle, pb_flag, L2CAP_CID_SIGNALING, cmd, identifier, argptr);
     va_end(argptr);
     return result;
 }
@@ -1492,7 +1495,7 @@ uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len){
 
     // set non-flushable packet boundary flag if supported on Controller
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-    uint8_t packet_boundary_flag = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+    uint8_t packet_boundary_flag = l2cap_classic_packet_boundary_flag();
     l2cap_setup_header(acl_buffer, channel->con_handle, packet_boundary_flag, channel->remote_cid, len + fcs_size);
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -1906,8 +1909,10 @@ static void l2cap_run_signaling_response(void) {
                             // L2CAP Signaling Channel (bit 1) + Connectionless reception (bit 2)
                             map[0] = (1 << 1) | (1 << 2);
 #if defined(ENABLE_BLE) || defined (ENABLE_EXPLICIT_BR_EDR_SECURITY_MANAGER)
-                            // BR/EDR Security Manager (bit 7)
-                            map[0] |= (1 << 7);
+                            // BR/EDR Security Manager (bit 7) if BR/EDR Secure Connections possible
+                            if (gap_secure_connections_active()){
+                                map[0] |= (1 << 7);
+                            }
 #endif
                             l2cap_send_classic_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0,
                                                             sizeof(map), &map);
@@ -2572,6 +2577,14 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
             l2cap_handle_connection_complete(handle, channel);
         }
     }
+
+#ifdef ENABLE_L2CAP_INFORMATION_REQUESTS_ON_CONNECT
+    // trigger query of extended features and fixed channels right away (instead of later)
+    hci_connection_t * hci_connection = hci_connection_for_handle(handle);
+    btstack_assert(hci_connection != NULL);
+    hci_connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
+#endif
+
     // process
     l2cap_run();
 }

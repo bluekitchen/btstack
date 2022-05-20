@@ -308,6 +308,23 @@ const hci_cmd_t hci_inquiry_cancel = {
 };
 
 /**
+ * @param max_period_length
+ * @param min_period_length
+ * @param lap
+ * @param inquiry_length
+ * @param num_responses
+ */
+const hci_cmd_t hci_periodic_inquiry_mode = {
+    HCI_OPCODE_HCI_PERIODIC_INQUIRY_MODE, "22311"
+};
+
+/**
+ */
+const hci_cmd_t hci_exit_periodic_inquiry_mode = {
+    HCI_OPCODE_HCI_EXIT_PERIODIC_INQUIRY_MODE, ""
+};
+
+/**
  * @param bd_addr
  * @param packet_type
  * @param page_scan_repetition_mode
@@ -756,7 +773,7 @@ const hci_cmd_t hci_flow_specification = {
 
 
 /**
- * @param event_mask_lover_octets
+ * @param event_mask_lower_octets
  * @param event_mask_higher_octets
  */
 const hci_cmd_t hci_set_event_mask = {
@@ -866,6 +883,14 @@ const hci_cmd_t hci_write_inquiry_scan_activity = {
  */
 const hci_cmd_t hci_write_authentication_enable = {
     HCI_OPCODE_HCI_WRITE_AUTHENTICATION_ENABLE, "1"
+};
+
+/**
+ * @param handle
+ * @param timeout, max 0x07FF
+ */
+const hci_cmd_t hci_write_automatic_flush_timeout = {
+        HCI_OPCODE_HCI_WRITE_AUTOMATIC_FLUSH_TIMEOUT, "H2"
 };
 
 /**
@@ -1015,6 +1040,14 @@ const hci_cmd_t hci_write_default_erroneous_data_reporting = {
 };
 
 /**
+ * @param event_mask_page_2_lower_octets
+ * @param event_mask_page_2_higher_octets
+ */
+const hci_cmd_t hci_set_event_mask_2 = {
+        HCI_OPCODE_HCI_SET_EVENT_MASK_2, "44"
+};
+
+/**
  */
 const hci_cmd_t hci_read_le_host_supported = {
     HCI_OPCODE_HCI_READ_LE_HOST_SUPPORTED, ""
@@ -1043,6 +1076,63 @@ const hci_cmd_t hci_write_secure_connections_host_support = {
 const hci_cmd_t hci_read_local_extended_oob_data = {
     HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA, ""
     // return status, C_192, R_192, R_256, C_256
+};
+
+/**
+ */
+const hci_cmd_t hci_read_extended_page_timeout = {
+    HCI_OPCODE_HCI_READ_EXTENDED_PAGE_TIMEOUT, ""
+    // return: status, extender page timeout
+};
+
+/**
+ * @param extended_page_timeout
+ */
+const hci_cmd_t hci_write_extended_page_timeout = {
+    HCI_OPCODE_HCI_WRITE_EXTENDED_PAGE_TIMEOUT, "2"
+    // return: status
+};
+
+/**
+ */
+const hci_cmd_t hci_read_extended_inquiry_length = {
+    HCI_OPCODE_HCI_READ_EXTENDED_INQUIRY_LENGTH, ""
+    // return: status, extended_inquiry_length
+};
+
+/**
+ * @param extended_inquiry_length
+ */
+const hci_cmd_t hci_write_extended_inquiry_length = {
+    HCI_OPCODE_HCI_WRITE_EXTENDED_INQUIRY_LENGTH, "2"
+    // return: status
+};
+
+/**
+ * @param interval
+ */
+const hci_cmd_t hci_set_ecosystem_base_interval = {
+    HCI_OPCODE_HCI_SET_ECOSYSTEM_BASE_INTERVAL, "2"
+    // return: status
+};
+
+/**
+ * @param data_path_direction
+ * @param data_path_id
+ * @param vendor_specific_config_length
+ * @param vendor_specific_config
+ */
+const hci_cmd_t hci_configure_data_path = {
+    HCI_OPCODE_HCI_CONFIGURE_DATA_PATH, "11JV"
+    // return: status
+};
+
+/**
+ * @param min_encryption_key_size
+ */
+const hci_cmd_t hci_set_min_encryption_key_size = {
+    HCI_OPCODE_HCI_SET_MIN_ENCRYPTION_KEY_SIZE, "1"
+    // return: status
 };
 
 
@@ -1640,7 +1730,7 @@ const hci_cmd_t hci_le_set_extended_scan_response_data = {
  */
 
 const hci_cmd_t hci_le_set_extended_advertising_enable = {
-        HCI_OPCODE_HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE, "11[121]"
+        HCI_OPCODE_HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE, "1a[121]"
 };
 
 /**
@@ -1701,19 +1791,13 @@ const hci_cmd_t hci_le_set_periodic_advertising_enable = {
  * @param own_address_type
  * @param scanning_filter_policy
  * @param scanning_phys 0 = LE 1M PHY | 2 = LE Coded PHY
- * @param scan_type
- * @param scan_interval * 0.625, range = 0x0004..0xffff
- * @param scan_window * 0.625, range = 0x0004..0xffff
+ * @param scan_type[i]
+ * @param scan_interval[i] * 0.625, range = 0x0004..0xffff
+ * @param scan_window[i] * 0.625, range = 0x0004..0xffff
  */
 
-// Variants for 1 (1M or Coded) PHY
-const hci_cmd_t hci_le_set_extended_scan_parameters_1 = {
-    HCI_OPCODE_HCI_LE_SET_EXTENDED_SCAN_PARAMETERS, "111122"
-};
-
-// Variants for 2 (1M and Coded) PHY
-const hci_cmd_t hci_le_set_extended_scan_parameters_2 = {
-        HCI_OPCODE_HCI_LE_SET_EXTENDED_SCAN_PARAMETERS, "111122122"
+const hci_cmd_t hci_le_set_extended_scan_parameters = {
+    HCI_OPCODE_HCI_LE_SET_EXTENDED_SCAN_PARAMETERS, "11b[122]"
 };
 
 /**
@@ -1769,7 +1853,7 @@ const hci_cmd_t hci_le_periodic_advertising_create_sync_cancel = {
  * @param sync_handle
  */
 const hci_cmd_t hci_le_periodic_advertising_terminate_sync = {
-    HCI_OPCODE_HCI_LE_PERIODIC_ADVERTISING_TERMINATE_SYNC, ""
+    HCI_OPCODE_HCI_LE_PERIODIC_ADVERTISING_TERMINATE_SYNC, "2"
 };
 
 /**
@@ -2008,8 +2092,8 @@ const hci_cmd_t hci_le_modify_sleep_clock_accuracy = {
 
 /**
  */
-const hci_cmd_t hci_opcode_hci_le_read_buffer_size_v2 = {
-    HCI_OPCODE_HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE_V2, ""
+const hci_cmd_t hci_le_read_buffer_size_v2 = {
+        HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE_V2, ""
 };
 
 /**
@@ -2169,7 +2253,7 @@ const hci_cmd_t hci_le_big_create_sync = {
  * @param big_handle
  */
 const hci_cmd_t hci_le_big_terminate_sync = {
-    HCI_OPCODE_HCI_LE_BIG_TERMINATE_SYNC, ""
+    HCI_OPCODE_HCI_LE_BIG_TERMINATE_SYNC, "1"
 };
 
 /**

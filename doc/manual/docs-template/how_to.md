@@ -93,6 +93,7 @@ ENABLE_LE_PROACTIVE_AUTHENTICATION | Enable automatic encryption for bonded devi
 ENABLE_GATT_CLIENT_PAIRING       | Enable GATT Client to start pairing and retry operation on security error
 ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS | Use [micro-ecc library](https://github.com/kmackay/micro-ecc) for ECC operations
 ENABLE_LE_DATA_LENGTH_EXTENSION  | Enable LE Data Length Extension support
+ENABLE_LE_EXTENDED_ADVERTISING   | Enable extended advertising and scanning
 ENABLE_LE_SIGNED_WRITE           | Enable LE Signed Writes in ATT/GATT
 ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION | Enable address resolution for resolvable private addresses in Controller
 ENABLE_CROSS_TRANSPORT_KEY_DERIVATION | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections
@@ -100,6 +101,7 @@ ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE | Enable Enhanced Retransmission Mode 
 ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE | Enable LE credit-based flow-control mode for L2CAP channels
 ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE | Enable Enhanced credit-based flow-control mode for L2CAP Channels
 ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow Control, see below
+ENABLE_HCI_SERIALIZED_CONTROLLER_OPERATIONS | Serialize Inquiry, Remote Name Request, and Create Connection operations
 ENABLE_ATT_DELAYED_RESPONSE      | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)
 ENABLE_BCM_PCM_WBS               | Enable support for Wide-Band Speech codec in BCM controller, requires ENABLE_SCO_OVER_PCM
 ENABLE_CC256X_ASSISTED_HFP       | Enable support for Assisted HFP mode in CC256x Controller, requires ENABLE_SCO_OVER_PCM

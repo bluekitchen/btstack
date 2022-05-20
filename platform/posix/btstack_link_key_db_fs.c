@@ -67,17 +67,8 @@ static bd_addr_t local_addr;
 // note: sizeof for string literals works at compile time while strlen only works with some optimizations turned on. sizeof includes the  \0
 static char keypath[sizeof(LINK_KEY_PATH) + sizeof(LINK_KEY_PREFIX) + LINK_KEY_STRING_LEN + sizeof(LINK_KEY_FOR) + LINK_KEY_STRING_LEN + sizeof(LINK_KEY_SUFFIX) + 1];
 
-static char bd_addr_to_dash_str_buffer[6*3];  // 12-45-78-01-34-67\0
 static char * bd_addr_to_dash_str(bd_addr_t addr){
-    char * p = bd_addr_to_dash_str_buffer;
-    int i;
-    for (i = 0; i < 6 ; i++) {
-        *p++ = char_for_nibble((addr[i] >> 4) & 0x0F);
-        *p++ = char_for_nibble((addr[i] >> 0) & 0x0F);
-        *p++ = '-';
-    }
-    *--p = 0;
-    return (char *) bd_addr_to_dash_str_buffer;
+    return bd_addr_to_str_with_delimiter(addr, '-');
 }
 
 static char link_key_to_str_buffer[LINK_KEY_STR_LEN+1];  // 11223344556677889900112233445566\0
