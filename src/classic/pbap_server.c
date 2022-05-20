@@ -690,7 +690,7 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
                 uint16_t pos = 0;
                 uint16_t name_len = strlen(pbap_server->request.name);
                 event[pos++] = HCI_EVENT_PBAP_META;
-                event[pos++] = 1 + 2 + name_len;
+                event[pos++] = 1 + 6 + name_len;
                 event[pos++] = PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE;
                 little_endian_store_16(event, pos, pbap_server->pbap_cid);
                 pos += 2;
