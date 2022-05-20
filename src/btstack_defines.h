@@ -3519,7 +3519,7 @@ typedef uint8_t sm_key_t[16];
  * @param vcard_selector_operator
  * @param name
  */
-#define PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE                                 0x0Au
+#define PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE                                 0x0Bu
 
 /**
  * @format 124412241T
@@ -3534,7 +3534,7 @@ typedef uint8_t sm_key_t[16];
  * @param vcard_selector_operator
  * @param name
  */
-#define PBAP_SUBEVENT_PULL_PHONEBOOK                                      0x0Bu
+#define PBAP_SUBEVENT_PULL_PHONEBOOK                                      0x0Cu
 
 /**
  * @format 124122414JVT
@@ -3551,7 +3551,7 @@ typedef uint8_t sm_key_t[16];
  * @param search_value
  * @param name
  */
-#define PBAP_SUBEVENT_PULL_VCARD_LISTING                                   0x0Cu
+#define PBAP_SUBEVENT_PULL_VCARD_LISTING                                   0x0Du
 
 /**
  * @format 1241T
@@ -3561,7 +3561,7 @@ typedef uint8_t sm_key_t[16];
  * @param format
  * @param name
  */
-#define PBAP_SUBEVENT_PULL_VCARD_ENTRY                                     0x0Du
+#define PBAP_SUBEVENT_PULL_VCARD_ENTRY                                     0x0Eu
 
 
 // HID Meta Event Group
