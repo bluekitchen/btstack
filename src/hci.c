@@ -7113,25 +7113,42 @@ static hci_connection_t * gap_get_outgoing_connection(void){
 }
 
 uint8_t gap_connect_cancel(void){
-    hci_connection_t * conn = gap_get_outgoing_connection();
-    if (!conn) return 0;
-    switch (conn->state){
-        case SEND_CREATE_CONNECTION:
-            // skip sending create connection and emit event instead
+    hci_connection_t * conn;
+    switch (hci_stack->le_connecting_request){
+        case LE_CONNECTING_IDLE:
+            break;
+        case LE_CONNECTING_WHITELIST:
             hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
-            hci_emit_le_connection_complete(conn->address_type, conn->address, 0, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
-            btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
-            btstack_memory_hci_connection_free( conn );
-            break;            
-        case SENT_CREATE_CONNECTION:
-            // request to send cancel connection
-            conn->state = SEND_CANCEL_CONNECTION;
             hci_run();
             break;
-        default:
+        case LE_CONNECTING_DIRECT:
+            hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
+            conn = gap_get_outgoing_connection();
+            if (conn == NULL){
+                hci_run();
+            } else {
+                switch (conn->state){
+                    case SEND_CREATE_CONNECTION:
+                        // skip sending create connection and emit event instead
+                        hci_emit_le_connection_complete(conn->address_type, conn->address, 0, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
+                        btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
+                        btstack_memory_hci_connection_free( conn );
+                        break;
+                    case SENT_CREATE_CONNECTION:
+                        // request to send cancel connection
+                        conn->state = SEND_CANCEL_CONNECTION;
+                        hci_run();
+                        break;
+                    default:
+                        break;
+                }
+            }
+            break;
+        case LE_CONNECTING_CANCEL:
+            btstack_unreachable();
             break;
     }
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 /**
