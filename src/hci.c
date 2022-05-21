@@ -7144,7 +7144,7 @@ uint8_t gap_connect_cancel(void){
                 }
             }
             break;
-        case LE_CONNECTING_CANCEL:
+        default:
             btstack_unreachable();
             break;
     }
