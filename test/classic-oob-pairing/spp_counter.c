@@ -62,6 +62,8 @@
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+static uint8_t  rfcomm_channel_nr;
+static uint16_t mtu;
 static uint16_t rfcomm_channel_id;
 static uint8_t  spp_service_buffer[150];
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -178,8 +180,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 /* LISTING_PAUSE */ 
     bd_addr_t event_addr;
-    uint8_t   rfcomm_channel_nr;
-    uint16_t  mtu;
+    //uint8_t   rfcomm_channel_nr;
+    //uint16_t  mtu;
     
     switch (packet_type) {
         case HCI_EVENT_PACKET:

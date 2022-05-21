@@ -93,6 +93,8 @@ static int16_t             * input_buffers[NUM_INPUT_BUFFERS] = { input_buffer_a
 static int                   input_buffer_to_record;
 static int                   input_buffer_to_fill;
 
+static const PaDeviceInfo *outputDeviceInfo;
+static const PaDeviceInfo *inputDeviceInfo;
 
 // timer to fill output ring buffer
 static btstack_timer_source_t  driver_timer_sink;
@@ -227,7 +229,7 @@ static int btstack_audio_portaudio_sink_init(
     theOutputParameters.suggestedLatency = Pa_GetDeviceInfo( theOutputParameters.device )->defaultHighOutputLatency;
     theOutputParameters.hostApiSpecificStreamInfo = NULL;
 
-    const PaDeviceInfo *outputDeviceInfo;
+    //const PaDeviceInfo *outputDeviceInfo;
     outputDeviceInfo = Pa_GetDeviceInfo( theOutputParameters.device );
     log_info("PortAudio: sink device: %s", outputDeviceInfo->name);
 
@@ -293,7 +295,7 @@ static int btstack_audio_portaudio_source_init(
     theInputParameters.suggestedLatency = Pa_GetDeviceInfo( theInputParameters.device )->defaultHighInputLatency;
     theInputParameters.hostApiSpecificStreamInfo = NULL;
 
-    const PaDeviceInfo *inputDeviceInfo;
+    //const PaDeviceInfo *inputDeviceInfo;
     inputDeviceInfo = Pa_GetDeviceInfo( theInputParameters.device );
     log_info("PortAudio: source device: %s", inputDeviceInfo->name);
 
