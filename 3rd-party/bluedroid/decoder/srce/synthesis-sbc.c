@@ -418,7 +418,7 @@ void SynthWindow40_int32_int32_symmetry_with_sum(OI_INT16 *pcm, SBC_BUFFER_T buf
     pa += dec_window_4[20] *  buffer[44];
     pa = SCALE(-pa, 15);
     CLIP_INT16(pa);
-    pcm[0 << strideShift] = (OI_INT16)pa;
+    pcm[(uint32_t)(0 << strideShift)] = (OI_INT16)pa;
 
 
     pa  = dec_window_4[ 1] * buffer[ 1]; pb  = dec_window_4[ 1] * buffer[79];
@@ -433,10 +433,10 @@ void SynthWindow40_int32_int32_symmetry_with_sum(OI_INT16 *pcm, SBC_BUFFER_T buf
     pb += dec_window_4[19] * buffer[35]; pa += dec_window_4[19] * buffer[45];
     pa = SCALE(-pa, 15);
     CLIP_INT16(pa);
-    pcm[1 << strideShift] = (OI_INT16)(pa);
+    pcm[(uint32_t)(1 << strideShift)] = (OI_INT16)(pa);
     pb = SCALE(-pb, 15);
     CLIP_INT16(pb);
-    pcm[3 << strideShift] = (OI_INT16)(pb);
+    pcm[(uint32_t)(3 << strideShift)] = (OI_INT16)(pb);
 
 
     pa  = dec_window_4[2] * (/*buffer[ 2] + */ buffer[78]);  /* buffer[ 2] is always zero */
@@ -446,7 +446,7 @@ void SynthWindow40_int32_int32_symmetry_with_sum(OI_INT16 *pcm, SBC_BUFFER_T buf
     pa += dec_window_4[18] * (/*buffer[34] + */ buffer[46]);  /* buffer[34] is always zero */
     pa = SCALE(-pa, 15);
     CLIP_INT16(pa);
-    pcm[2 << strideShift] = (OI_INT16)(pa);
+    pcm[(uint32_t)(2 << strideShift)] = (OI_INT16)(pa);
 }
 
 
