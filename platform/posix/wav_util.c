@@ -46,6 +46,11 @@
 #include "btstack_util.h"
 #include "btstack_debug.h"
 
+#ifdef _MSC_VER
+// ignore deprecated warning for fopen
+#pragma warning(disable : 4996)
+#endif
+
 /* wav reader state */
 static FILE * wav_reader_file;
 static int wav_reader_bytes_per_sample = 2;
