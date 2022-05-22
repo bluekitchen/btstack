@@ -234,7 +234,7 @@ void EncPacking(SBC_ENC_PARAMS *pstrEncParams)
 
     Temp <<= s32PresentBit;
     *pu8PacketPtr=Temp;
-    pstrEncParams->u16PacketLength=pu8PacketPtr-pstrEncParams->pu8NextPacket+1;
+    pstrEncParams->u16PacketLength= (uint16_t)(pu8PacketPtr-pstrEncParams->pu8NextPacket)+1;
     /*find CRC*/
     pu8PacketPtr = pstrEncParams->pu8NextPacket+1;    /*Initialize the ptr*/
     u8CRC = 0x0F;
