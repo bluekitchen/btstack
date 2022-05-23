@@ -94,8 +94,8 @@ static uint16_t pbap_cid;
 static int sim1_selected;
 
 static void refresh_phonebook_folder_and_path(void){
-    sprintf(phonebook_path, "%s%s.vcf", sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook_name);
-    sprintf(phonebook_folder, "%s%s",   sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook_name);
+    snprintf(phonebook_path, sizeof(phonebook_path),   "%s%s.vcf", sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook_name);
+    snprintf(phonebook_folder, sizeof(phonebook_folder), "%s%s",   sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook_name);
     printf("[-] Phonebook folder '%s'\n", phonebook_folder);
     printf("[-] Phonebook path   '%s'\n", phonebook_path);
 }
