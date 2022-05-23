@@ -3656,36 +3656,44 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 			switch (hci_event_packet_get_type(packet)) {
 
                 case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started
-					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                        log_info("HCI Working!");
-
-                        // setup IR/ER with TLV
-                        btstack_tlv_get_instance(&sm_tlv_impl, &sm_tlv_context);
-                        if (sm_tlv_impl != NULL){
-                            int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16u);
-                            if (key_size == 16){
-                                // ok, let's continue
-                                log_info("ER from TLV");
-                                sm_handle_random_result_er( NULL );
+                    switch (btstack_event_state_get_state(packet)){
+                        case HCI_STATE_WORKING:
+                            log_info("HCI Working!");
+                            // setup IR/ER with TLV
+                            btstack_tlv_get_instance(&sm_tlv_impl, &sm_tlv_context);
+                            if (sm_tlv_impl != NULL){
+                                int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16u);
+                                if (key_size == 16){
+                                    // ok, let's continue
+                                    log_info("ER from TLV");
+                                    sm_handle_random_result_er( NULL );
+                                } else {
+                                    // invalid, generate random one
+                                    sm_persistent_keys_random_active = true;
+                                    btstack_crypto_random_generate(&sm_crypto_random_request, sm_persistent_er, 16, &sm_handle_random_result_er, &sm_persistent_er);
+                                }
                             } else {
-                                // invalid, generate random one
-                                sm_persistent_keys_random_active = true;
-                                btstack_crypto_random_generate(&sm_crypto_random_request, sm_persistent_er, 16, &sm_handle_random_result_er, &sm_persistent_er);
-                            }
-                        } else {
-                            sm_validate_er_ir();
-                            dkg_state = DKG_CALC_IRK;
+                                sm_validate_er_ir();
+                                dkg_state = DKG_CALC_IRK;
 
-                            if (test_use_fixed_local_irk){
-                                log_info_key("IRK", sm_persistent_irk);
-                                dkg_state = DKG_CALC_DHK;
+                                if (test_use_fixed_local_irk){
+                                    log_info_key("IRK", sm_persistent_irk);
+                                    dkg_state = DKG_CALC_DHK;
+                                }
                             }
-                        }
 
-                        // restart random address updates after power cycle
-                        gap_random_address_set_mode(gap_random_adress_type);
-					}
+                            // restart random address updates after power cycle
+                            gap_random_address_set_mode(gap_random_adress_type);
+                            break;
+
+                        case HCI_STATE_OFF:
+                            // stop random address update
+                            gap_random_address_update_stop();
+                            break;
+
+                        default:
+                            break;
+                    }
 					break;
 					
 #ifdef ENABLE_CLASSIC
