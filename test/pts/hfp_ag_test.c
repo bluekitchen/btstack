@@ -330,7 +330,8 @@ static void stdin_process(char cmd){
         case 'M':
             log_info("USER:\'%c\'", cmd);
             printf("Outgoing call inited and connected, ringing\n");
-            hfp_ag_outgoing_call_initiated("1234567");
+            hfp_ag_set_clip(129, "1234567");
+            hfp_ag_outgoing_call_initiated();
             hfp_ag_outgoing_call_established();
             break;
         case 'n':
