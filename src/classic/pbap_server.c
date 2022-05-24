@@ -84,6 +84,7 @@ typedef enum {
     PBAP_SERVER_STATE_SEND_RESPONSE,
     PBAP_SERVER_STATE_SEND_PREPARED_RESPONSE,
     PBAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE,
+    PBAP_SERVER_STATE_ABOUT_TO_SEND,
 } pbap_server_state_t;
 
 typedef struct {
@@ -154,6 +155,8 @@ static pbap_server_t pbap_server_singleton;
 
 // 796135f0-f0c5-11d8-0966- 0800200c9a66
 static const uint8_t pbap_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
+
+static void pbap_server_handle_get_request(pbap_server_t * pbap_server);
 
 static pbap_server_t * pbap_server_for_goep_cid(uint16_t goep_cid){
     // TODO: check goep_cid after incoming connection -> accept/reject is implemented and state has been setup
@@ -434,12 +437,17 @@ static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
             response_code = pbap_server->response.code;
             if (response_code == OBEX_RESP_CONTINUE){
                 pbap_server_reset_response(pbap_server);
-                pbap_server->state = PBAP_SERVER_STATE_W4_GET_OPCODE;
+                // next state
+                pbap_server->state = (pbap_server->srm_state == SRM_ENABLED) ?  PBAP_SERVER_STATE_ABOUT_TO_SEND : PBAP_SERVER_STATE_W4_GET_OPCODE;
             } else {
                 pbap_server_operation_complete(pbap_server);
             }
             // send packet
             goep_server_execute(pbap_server->goep_cid, response_code);
+            // trigger next user response in SRM
+            if (pbap_server->srm_state == SRM_ENABLED){
+                pbap_server_handle_get_request(pbap_server);
+            }
             break;
         case PBAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE:
         {
