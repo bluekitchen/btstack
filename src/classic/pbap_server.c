@@ -734,7 +734,7 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
                 case PBAP_OBJECT_TYPE_VCARD_LISTING:
                     search_value_len = (uint16_t) strlen(pbap_server->request.app_params.search_value);
                     event[pos++] = 20 + name_len + 1 + search_value_len + 1;
-                    event[pos++] = PBAP_SUBEVENT_PULL_VCARD_ENTRY;
+                    event[pos++] = PBAP_SUBEVENT_PULL_VCARD_LISTING;
                     little_endian_store_16(event, pos, pbap_server->pbap_cid);
                     pos += 2;
                     little_endian_store_32(event, pos, pbap_server->request.continuation);
@@ -747,12 +747,11 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
                     little_endian_store_32(event, pos, pbap_server->request.app_params.vcard_selector);
                     pos += 4;
                     event[pos++] = pbap_server->request.app_params.vcard_selector_operator;
-                    pos += 4;
                     event[pos++] = pbap_server->request.app_params.search_property;
                     // search_value is zero terminated
-                    event[pos++] = search_value_len;
+                    event[pos++] = search_value_len + 1;
                     memcpy(&event[pos], (const uint8_t *) pbap_server->request.app_params.search_value, search_value_len + 1);
-                    pos += name_len + 1;
+                    pos += search_value_len + 1;
                     // name is zero terminated
                     memcpy(&event[pos], pbap_server->request.name, name_len + 1);
                     pos += name_len + 1;
