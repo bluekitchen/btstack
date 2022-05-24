@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: fix gap_connect_cancel for gap_connect_with_whitelist
 - L2CAP: Fix accept incoming ERTM connection when Information Request already complete
 - HFP AG: activate all AG indicators upon service level connection establishment
- 
+- HFP_AG: handle call termination in alerting call state
+
 ### Changed
 - A2DP: new a2dp.c contains shared code of Sink and Source roles
 - A2DP Sink: automatically configure stream endpoint for outgoing connections
