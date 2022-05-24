@@ -3482,65 +3482,43 @@ typedef uint8_t sm_key_t[16];
 #define PBAP_SUBEVENT_CARD_RESULT                                          0x06u
 
 /**
- * @format 12
+ * @format 121
  * @param subevent_code
  * @param goep_cid
- */
-#define PBAP_SUBEVENT_SET_PHONEBOOK_ROOT                                  0x07u
-
-/**
- * @format 12
- * @param subevent_code
- * @param goep_cid
- */
-#define PBAP_SUBEVENT_SET_PHONEBOOK_UP                                    0x08u
-
-/**
- * @format 12T
- * @param subevent_code
- * @param goep_cid
- * @param name
- */
-#define PBAP_SUBEVENT_SET_PHONEBOOK_DOWN                                  0x09u
-
-/**
- * @format 12T
- * @param subevent_code
- * @param goep_cid
- * @param name is mch or cch
+ * @param phonebook
  */
 #define PBAP_SUBEVENT_RESET_MISSED_CALLS                                   0x0Au
 
 /**
- * @format 1241T
+ * @format 12411
  * @param subevent_code
  * @param goep_cid
  * @param vcard_selector
  * @param vcard_selector_operator
- * @param name
+ * @param phonebook
  */
 #define PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE                                 0x0Bu
 
 /**
- * @format 124412241T
+ * @format 1244122411
  * @param subevent_code
  * @param goep_cid
- * @param continuation - value provided by caller of pbap_sever_phonebook_send
+ * @param continuation - value provided by caller of pbap_server_send_pull_response
  * @param property_selector
  * @param format
  * @param max_list_count 0xffff for unlimited
  * @param list_start_offset
  * @param vcard_selector
  * @param vcard_selector_operator
- * @param name
+ * @param phonebook
  */
 #define PBAP_SUBEVENT_PULL_PHONEBOOK                                      0x0Cu
 
 /**
- * @format 124122414JVT
+ * @format 124122411JV1
  * @param subevent_code
  * @param goep_cid
- * @param continuation - value provided by caller of pbap_sever_vcard_listing_send
+ * @param continuation - value provided by caller of pbap_server_send_pull_response
  * @param order
  * @param max_list_count 0xffff for unlimited
  * @param list_start_offset
@@ -3549,16 +3527,18 @@ typedef uint8_t sm_key_t[16];
  * @param search_property
  * @param search_value_len
  * @param search_value
- * @param name
+ * @param phonebook
  */
 #define PBAP_SUBEVENT_PULL_VCARD_LISTING                                   0x0Du
 
 /**
- * @format 1241T
+ * @format 124411T
  * @param subevent_code
  * @param goep_cid
+ * @param continuation - value provided by caller of pbap_server_send_pull_response
  * @param property_selector
  * @param format
+ * @param phonebook
  * @param name
  */
 #define PBAP_SUBEVENT_PULL_VCARD_ENTRY                                     0x0Eu

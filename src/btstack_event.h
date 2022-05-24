@@ -11107,45 +11107,6 @@ static inline const uint8_t * pbap_subevent_card_result_get_handle(const uint8_t
 }
 
 /**
- * @brief Get field goep_cid from event PBAP_SUBEVENT_SET_PHONEBOOK_ROOT
- * @param event packet
- * @return goep_cid
- * @note: btstack_type 2
- */
-static inline uint16_t pbap_subevent_set_phonebook_root_get_goep_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-
-/**
- * @brief Get field goep_cid from event PBAP_SUBEVENT_SET_PHONEBOOK_UP
- * @param event packet
- * @return goep_cid
- * @note: btstack_type 2
- */
-static inline uint16_t pbap_subevent_set_phonebook_up_get_goep_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-
-/**
- * @brief Get field goep_cid from event PBAP_SUBEVENT_SET_PHONEBOOK_DOWN
- * @param event packet
- * @return goep_cid
- * @note: btstack_type 2
- */
-static inline uint16_t pbap_subevent_set_phonebook_down_get_goep_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field name from event PBAP_SUBEVENT_SET_PHONEBOOK_DOWN
- * @param event packet
- * @return name
- * @note: btstack_type T
- */
-static inline const char * pbap_subevent_set_phonebook_down_get_name(const uint8_t * event){
-    return (const char *) &event[5];
-}
-
-/**
  * @brief Get field goep_cid from event PBAP_SUBEVENT_RESET_MISSED_CALLS
  * @param event packet
  * @return goep_cid
@@ -11155,13 +11116,13 @@ static inline uint16_t pbap_subevent_reset_missed_calls_get_goep_cid(const uint8
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field name from event PBAP_SUBEVENT_RESET_MISSED_CALLS
+ * @brief Get field phonebook from event PBAP_SUBEVENT_RESET_MISSED_CALLS
  * @param event packet
- * @return name
- * @note: btstack_type T
+ * @return phonebook
+ * @note: btstack_type 1
  */
-static inline const char * pbap_subevent_reset_missed_calls_get_name(const uint8_t * event){
-    return (const char *) &event[5];
+static inline uint8_t pbap_subevent_reset_missed_calls_get_phonebook(const uint8_t * event){
+    return event[5];
 }
 
 /**
@@ -11192,13 +11153,13 @@ static inline uint8_t pbap_subevent_query_phonebook_size_get_vcard_selector_oper
     return event[9];
 }
 /**
- * @brief Get field name from event PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE
+ * @brief Get field phonebook from event PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE
  * @param event packet
- * @return name
- * @note: btstack_type T
+ * @return phonebook
+ * @note: btstack_type 1
  */
-static inline const char * pbap_subevent_query_phonebook_size_get_name(const uint8_t * event){
-    return (const char *) &event[10];
+static inline uint8_t pbap_subevent_query_phonebook_size_get_phonebook(const uint8_t * event){
+    return event[10];
 }
 
 /**
@@ -11274,13 +11235,13 @@ static inline uint8_t pbap_subevent_pull_phonebook_get_vcard_selector_operator(c
     return event[22];
 }
 /**
- * @brief Get field name from event PBAP_SUBEVENT_PULL_PHONEBOOK
+ * @brief Get field phonebook from event PBAP_SUBEVENT_PULL_PHONEBOOK
  * @param event packet
- * @return name
- * @note: btstack_type T
+ * @return phonebook
+ * @note: btstack_type 1
  */
-static inline const char * pbap_subevent_pull_phonebook_get_name(const uint8_t * event){
-    return (const char *) &event[23];
+static inline uint8_t pbap_subevent_pull_phonebook_get_phonebook(const uint8_t * event){
+    return event[23];
 }
 
 /**
@@ -11350,10 +11311,10 @@ static inline uint8_t pbap_subevent_pull_vcard_listing_get_vcard_selector_operat
  * @brief Get field search_property from event PBAP_SUBEVENT_PULL_VCARD_LISTING
  * @param event packet
  * @return search_property
- * @note: btstack_type 4
+ * @note: btstack_type 1
  */
-static inline uint32_t pbap_subevent_pull_vcard_listing_get_search_property(const uint8_t * event){
-    return little_endian_read_32(event, 19);
+static inline uint8_t pbap_subevent_pull_vcard_listing_get_search_property(const uint8_t * event){
+    return event[19];
 }
 /**
  * @brief Get field search_value_len from event PBAP_SUBEVENT_PULL_VCARD_LISTING
@@ -11362,7 +11323,7 @@ static inline uint32_t pbap_subevent_pull_vcard_listing_get_search_property(cons
  * @note: btstack_type J
  */
 static inline uint8_t pbap_subevent_pull_vcard_listing_get_search_value_len(const uint8_t * event){
-    return event[23];
+    return event[20];
 }
 /**
  * @brief Get field search_value from event PBAP_SUBEVENT_PULL_VCARD_LISTING
@@ -11371,16 +11332,16 @@ static inline uint8_t pbap_subevent_pull_vcard_listing_get_search_value_len(cons
  * @note: btstack_type V
  */
 static inline const uint8_t * pbap_subevent_pull_vcard_listing_get_search_value(const uint8_t * event){
-    return &event[24];
+    return &event[21];
 }
 /**
- * @brief Get field name from event PBAP_SUBEVENT_PULL_VCARD_LISTING
+ * @brief Get field phonebook from event PBAP_SUBEVENT_PULL_VCARD_LISTING
  * @param event packet
- * @return name
- * @note: btstack_type T
+ * @return phonebook
+ * @note: btstack_type 1
  */
-static inline const char * pbap_subevent_pull_vcard_listing_get_name(const uint8_t * event){
-    return (const char *) &event[24u + event[23]];
+static inline uint8_t pbap_subevent_pull_vcard_listing_get_phonebook(const uint8_t * event){
+    return event[21u + event[20]];
 }
 
 /**
@@ -11393,13 +11354,22 @@ static inline uint16_t pbap_subevent_pull_vcard_entry_get_goep_cid(const uint8_t
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field continuation from event PBAP_SUBEVENT_PULL_VCARD_ENTRY
+ * @param event packet
+ * @return continuation
+ * @note: btstack_type 4
+ */
+static inline uint32_t pbap_subevent_pull_vcard_entry_get_continuation(const uint8_t * event){
+    return little_endian_read_32(event, 5);
+}
+/**
  * @brief Get field property_selector from event PBAP_SUBEVENT_PULL_VCARD_ENTRY
  * @param event packet
  * @return property_selector
  * @note: btstack_type 4
  */
 static inline uint32_t pbap_subevent_pull_vcard_entry_get_property_selector(const uint8_t * event){
-    return little_endian_read_32(event, 5);
+    return little_endian_read_32(event, 9);
 }
 /**
  * @brief Get field format from event PBAP_SUBEVENT_PULL_VCARD_ENTRY
@@ -11408,7 +11378,16 @@ static inline uint32_t pbap_subevent_pull_vcard_entry_get_property_selector(cons
  * @note: btstack_type 1
  */
 static inline uint8_t pbap_subevent_pull_vcard_entry_get_format(const uint8_t * event){
-    return event[9];
+    return event[13];
+}
+/**
+ * @brief Get field phonebook from event PBAP_SUBEVENT_PULL_VCARD_ENTRY
+ * @param event packet
+ * @return phonebook
+ * @note: btstack_type 1
+ */
+static inline uint8_t pbap_subevent_pull_vcard_entry_get_phonebook(const uint8_t * event){
+    return event[14];
 }
 /**
  * @brief Get field name from event PBAP_SUBEVENT_PULL_VCARD_ENTRY
@@ -11417,7 +11396,7 @@ static inline uint8_t pbap_subevent_pull_vcard_entry_get_format(const uint8_t * 
  * @note: btstack_type T
  */
 static inline const char * pbap_subevent_pull_vcard_entry_get_name(const uint8_t * event){
-    return (const char *) &event[10];
+    return (const char *) &event[15];
 }
 
 /**
