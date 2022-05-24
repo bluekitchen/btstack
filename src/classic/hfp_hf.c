@@ -166,11 +166,11 @@ static void hfp_hf_emit_type_number_alpha(const hfp_connection_t * hfp_connectio
     little_endian_store_16(event, 3, hfp_connection->acl_handle);
     pos += 2;
     event[pos++] = hfp_connection->bnip_type;
-    event[pos++] = bnip_number_len;
+    event[pos++] = bnip_number_len + 1;
     memcpy(&event[7], hfp_connection->bnip_number, bnip_number_len);
     pos += bnip_number_len;
     event[pos++] = 0;
-    event[pos++] = alpha_len;
+    event[pos++] = alpha_len + 1;
     memcpy(&event[pos], hfp_connection->line_buffer, alpha_len);
     pos += alpha_len;
     event[pos++] = 0;
