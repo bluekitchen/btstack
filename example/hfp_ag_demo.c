@@ -158,6 +158,7 @@ static void show_usage(void){
     
     printf("b - establish AUDIO connection          | B - release AUDIO connection\n");
     printf("c - simulate incoming call from 1234567 | C - simulate call from 1234567 dropped\n");
+    printf("P - simulate outgoing call from 1234567 | R - establish outgoing call\n");
     printf("d - report AG failure\n");
     printf("D - delete all link keys\n");
     printf("e - answer call on AG                   | E - terminate call on AG\n");
@@ -218,6 +219,17 @@ static void stdin_process(char cmd){
             printf("Simulate incoming call from 1234567\n");
             hfp_ag_set_clip(129, "1234567");
             hfp_ag_incoming_call();
+            break;
+        case '5':
+            log_info("USER:\'%c\'", cmd);
+            printf("Initiate outgoing call from 1234567\n");
+            hfp_ag_set_clip(129, "1234567");
+            hfp_ag_outgoing_call_initiated();
+            break;
+        case '6':
+            log_info("USER:\'%c\'", cmd);
+            printf("Establish outgoing call\n");
+            hfp_ag_outgoing_call_established();
             break;
         case 'D':
             printf("Deleting all link keys\n");
