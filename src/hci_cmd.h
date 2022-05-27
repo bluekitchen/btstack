@@ -413,7 +413,6 @@ extern const hci_cmd_t hci_set_ecosystem_base_interval;
 extern const hci_cmd_t hci_set_event_mask;
 extern const hci_cmd_t hci_set_event_mask_2;
 extern const hci_cmd_t hci_set_min_encryption_key_size;
-extern const hci_cmd_t hci_set_min_encryption_key_size;
 extern const hci_cmd_t hci_setup_synchronous_connection;
 extern const hci_cmd_t hci_sniff_mode;
 extern const hci_cmd_t hci_sniff_subrating;
