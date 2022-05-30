@@ -1026,13 +1026,14 @@ uint8_t pbap_server_set_database_identifier(uint16_t pbap_cid, const uint8_t * d
     if (pbap_server == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (pbap_server_valid_header_for_request(pbap_server)){
-        (void) memcpy(pbap_server->response.database_identifier, database_identifier, PBAP_FOLDER_VERSION_LEN);
-        pbap_server->response.database_identifier_set = true;
-        return ERROR_CODE_SUCCESS;
-    } else {
+    if (pbap_server->state != PBAP_SERVER_STATE_W4_USER_DATA) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
+    btstack_assert(pbap_server->request.object_type != PBAP_OBJECT_TYPE_INVALID);
+
+    (void) memcpy(pbap_server->response.database_identifier, database_identifier, PBAP_FOLDER_VERSION_LEN);
+    pbap_server->response.database_identifier_set = true;
+    return ERROR_CODE_SUCCESS;
 };
 
 void pbap_server_build_response(pbap_server_t * pbap_server){
