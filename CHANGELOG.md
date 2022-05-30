@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - GAP: support periodic advertising with ENABLE_LE_PERIODIC_ADVERTISING
 - GAP: support periodic inquiry mode with gap_inquiry_periodic_start
+- HFP: try next link setting for SCO connection failure with explicit SCO reject error
 - HFP HF: provide Calling Line Identification alpha field
 - HFP HF: emit HFP_SUBEVENT_TRANSMIT_DTMF_CODES after sending DTMF command
 
