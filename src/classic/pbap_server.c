@@ -772,6 +772,9 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
                     little_endian_store_32(event, pos, pbap_server->request.app_params.property_selector);
                     pos += 4;
                     event[pos++] = pbap_server->request.app_params.format;
+                    // name is zero terminated
+                    memcpy(&event[pos], pbap_server->request.name, name_len + 1);
+                    pos += name_len + 1;
                     break;
                 default:
                     btstack_unreachable();
