@@ -1070,12 +1070,13 @@ uint16_t pbap_server_get_max_body_size(uint16_t pbap_cid){
     if (pbap_server == NULL){
         return 0;
     }
-    if (pbap_server_valid_header_for_request(pbap_server)){
-        pbap_server_build_response(pbap_server);
-        return goep_server_response_get_max_body_size(pbap_server->goep_cid);
-    }  else {
+    if (pbap_server->state != PBAP_SERVER_STATE_W4_USER_DATA) {
         return 0;
     }
+    btstack_assert(pbap_server->request.object_type != PBAP_OBJECT_TYPE_INVALID);
+
+    pbap_server_build_response(pbap_server);
+    return goep_server_response_get_max_body_size(pbap_server->goep_cid);
 }
 
 uint8_t pbap_server_send_phonebook_size(uint16_t pbap_cid, uint8_t response_code, uint16_t phonebook_size){
