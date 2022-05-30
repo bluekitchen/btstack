@@ -3466,6 +3466,7 @@ static void sm_handle_random_result_rau(void * arg){
         default:
             // "The two most significant bits of the address shall be equal to ‘0’""
             sm_random_address[0u] &= 0x3fu;
+            rau_state = RAU_IDLE;
             hci_le_random_address_set(sm_random_address);
             break;
     }
