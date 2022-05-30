@@ -976,8 +976,7 @@ uint8_t a2dp_config_process_set_mpeg_aac(avdtp_role_t role, uint16_t a2dp_cid,  
     }
     a2dp_config_process_t * config_process = a2dp_config_process_for_role(role, connection);
 
-    uint8_t status = a2dp_config_process_config_init(AVDTP_ROLE_SOURCE, connection, local_seid, remote_seid,
-                                                     AVDTP_CODEC_MPEG_2_4_AAC);
+    uint8_t status = a2dp_config_process_config_init(role, connection, local_seid, remote_seid, AVDTP_CODEC_MPEG_2_4_AAC);
     if (status != 0) {
         return status;
     }
@@ -999,8 +998,7 @@ uint8_t a2dp_config_process_set_atrac(avdtp_role_t role, uint16_t a2dp_cid, uint
     }
     a2dp_config_process_t * config_process = a2dp_config_process_for_role(role, connection);
 
-    uint8_t status = a2dp_config_process_config_init(AVDTP_ROLE_SOURCE, connection, local_seid, remote_seid,
-                                                     AVDTP_CODEC_ATRAC_FAMILY);
+    uint8_t status = a2dp_config_process_config_init(role, connection, local_seid, remote_seid, AVDTP_CODEC_ATRAC_FAMILY);
     if (status != 0) {
         return status;
     }
@@ -1024,8 +1022,7 @@ uint8_t a2dp_config_process_set_other(avdtp_role_t role, uint16_t a2dp_cid,  uin
     }
     a2dp_config_process_t * config_process = a2dp_config_process_for_role(role, connection);
 
-    uint8_t status = a2dp_config_process_config_init(AVDTP_ROLE_SOURCE, connection, local_seid, remote_seid,
-                                                     AVDTP_CODEC_NON_A2DP);
+    uint8_t status = a2dp_config_process_config_init(role, connection, local_seid, remote_seid, AVDTP_CODEC_NON_A2DP);
     if (status != 0) {
         return status;
     }

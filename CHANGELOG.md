@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: Fix accept incoming ERTM connection when Information Request already complete
 - HFP AG: activate all AG indicators upon service level connection establishment
 - HFP_AG: handle call termination in alerting call state
+- A2DP Sink: fix config API for AAC, ATRAC, and other codecs
 - SM: address update for non-resolvable private addresses
 
 ### Changed
