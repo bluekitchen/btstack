@@ -70,6 +70,15 @@
 #define PBAP_SERVER_MAX_APP_PARAMS_LEN ((4*2) + 2 + PBAP_DATABASE_IDENTIFIER_LEN + (2*PBAP_FOLDER_VERSION_LEN))
 
 typedef enum {
+    PBAP_SERVER_DIR_ROOT,
+    PBAP_SERVER_DIR_TELECOM,
+    PBAP_SERVER_DIR_TELECOM_PHONEBOOK,
+    PBAP_SERVER_DIR_SIM,
+    PBAP_SERVER_DIR_SIM_TELECOM,
+    PBAP_SERVER_DIR_SIM_TELECOM_PHONEBOOK
+} pbap_server_dir_t;
+
+typedef enum {
     PBAP_SERVER_STATE_W4_OPEN,
     PBAP_SERVER_STATE_W4_CONNECT_OPCODE,
     PBAP_SERVER_STATE_W4_CONNECT_REQUEST,
@@ -111,6 +120,8 @@ typedef struct {
     pbap_server_state_t state;
     obex_parser_t obex_parser;
     uint16_t pbap_supported_features;
+    pbap_server_dir_t pbap_server_dir;
+    pbap_phonebook_t  pbap_phonebook;
     // SRM
     obex_srm_t  obex_srm;
     srm_state_t srm_state;
@@ -152,6 +163,30 @@ typedef struct {
 } pbap_server_t;
 
 static pbap_server_t pbap_server_singleton;
+
+static struct {
+    char * name;
+    pbap_server_dir_t parent_dir;
+    char * path;
+    bool speed_dial;
+    bool date_time;
+    bool missed_calls;
+    bool enhanced_missed_calls;
+    uint16_t num_cards;
+} phonebooks[] = {
+        {"cch",PBAP_SERVER_DIR_TELECOM, "telecom/cch.vcf",      false, true,  false,  true, 1},
+        {"fav",PBAP_SERVER_DIR_TELECOM, "telecom/fav.vcf",      false, true,  false, false,  1},
+        {"ich",PBAP_SERVER_DIR_TELECOM, "telecom/ich.vcf",      false, true,  false, false,  1},
+        {"mch",PBAP_SERVER_DIR_TELECOM, "telecom/mch.vcf",      false, true,  true,  true, 1},
+        {"och",PBAP_SERVER_DIR_TELECOM, "telecom/och.vcf",      false, true,  false, false,  1},
+        {"pb", PBAP_SERVER_DIR_TELECOM,"telecom/pb.vcf",       false, false, false, false,  10},
+        {"spd",PBAP_SERVER_DIR_TELECOM, "telecom/spd.vcf",      true,  false, false, false,  1},
+        {"cch",PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/cch.vcf", false, true,  false,  true, 1},
+        {"ich",PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/ich.vcf", false, true,  false, false,  1},
+        {"mch",PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/mch.vcf", false, true,  true,  true, 1},
+        {"och",PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/och.vcf", false, true,  false, false,  1},
+        {"pb", PBAP_SERVER_DIR_SIM_TELECOM,"SIM1/telecom/pb.vcf",  false, false, false, false,  10}
+};
 
 // 796135f0-f0c5-11d8-0966- 0800200c9a66
 static const uint8_t pbap_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
@@ -272,6 +307,68 @@ static void pbap_server_emit_set_path_event(pbap_server_t *server, uint8_t flags
         pos += name_len + 1;
     }
     (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static int pbap_server_get_phonebook_by_dir_and_name(pbap_server_dir_t parent_dir, const char * name){
+    uint16_t index;
+    for (index = 0 ; index < ( sizeof(phonebooks) / sizeof(phonebooks[0])); index++){
+        if ((parent_dir == phonebooks[index].parent_dir) && (strcmp(name, phonebooks[index].name) == 0)){
+            return (int) index;
+        }
+    }
+    return -1;
+}
+
+static void pbap_server_handle_set_path_request(pbap_server_t *pbap_server, uint8_t flags, const char * name){
+    uint16_t name_len = strlen(name);
+    uint8_t obex_result = OBEX_RESP_SUCCESS;
+    if (name_len == 0){
+        if ((flags & 1) == 1){
+            switch (pbap_server->pbap_server_dir){
+                case PBAP_SERVER_DIR_TELECOM:
+                case PBAP_SERVER_DIR_SIM:
+                    pbap_server->pbap_server_dir = PBAP_SERVER_DIR_ROOT;
+                    break;
+                case PBAP_SERVER_DIR_SIM_TELECOM:
+                    pbap_server->pbap_server_dir = PBAP_SERVER_DIR_SIM;
+                    break;
+                default:
+                    obex_result = OBEX_RESP_NOT_FOUND;
+                    break;
+            }
+        } else {
+            pbap_server->pbap_server_dir = PBAP_SERVER_DIR_ROOT;
+        };
+    } else {
+        // event[pos++] = PBAP_SUBEVENT_SET_PHONEBOOK_DOWN;
+        switch (pbap_server->pbap_server_dir){
+            case PBAP_SERVER_DIR_ROOT:
+                if (strcmp("telecom", name) == 0){
+                    pbap_server->pbap_server_dir = PBAP_SERVER_DIR_TELECOM;
+                } else if (strcmp("SIM1", name) == 0){
+                    pbap_server->pbap_server_dir  = PBAP_SERVER_DIR_SIM;
+                } else {
+                    obex_result = OBEX_RESP_NOT_FOUND;
+                }
+                break;
+            case PBAP_SERVER_DIR_SIM:
+                if (strcmp("telecom", name) == 0){
+                    pbap_server->pbap_server_dir  = PBAP_SERVER_DIR_SIM_TELECOM;
+                } else {
+                    obex_result = OBEX_RESP_NOT_FOUND;
+                }
+                break;
+            default:
+                pbap_server->pbap_phonebook = pbap_server_get_phonebook_by_dir_and_name(pbap_server->pbap_server_dir, name);
+                if (pbap_server->pbap_phonebook < 0){
+                    obex_result = OBEX_RESP_NOT_FOUND;
+                }
+                break;
+        }
+    }
+    pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
+    pbap_server->response.code = obex_result;
+    goep_server_request_can_send_now(pbap_server->goep_cid);
 }
 
 static pbap_object_type_t pbap_server_parse_object_type(const char * type_string){
@@ -415,6 +512,8 @@ static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
             goep_server_response_create_connect(pbap_server->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
             goep_server_header_add_who(pbap_server->goep_cid, pbap_uuid);
             // next state
+            pbap_server->pbap_server_dir = PBAP_SERVER_DIR_ROOT;
+            pbap_server->pbap_phonebook = PBAP_PHONEBOOK_INVALID;
             pbap_server_operation_complete(pbap_server);
             // send packet
             goep_server_execute(pbap_server->goep_cid, OBEX_RESP_SUCCESS);
@@ -863,8 +962,11 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                         pbap_server_handle_get_request(pbap_server);
                         break;
                     case OBEX_OPCODE_SETPATH:
+                        // old
                         pbap_server->state = PBAP_SERVER_STATE_W4_SET_PATH_RESPONSE;
                         pbap_server_emit_set_path_event(pbap_server, op_info.flags, &pbap_server->request.name[0]);
+                        // new
+                        pbap_server_handle_set_path_request(pbap_server, op_info.flags, &pbap_server->request.name[0]);
                         break;
                     case OBEX_OPCODE_DISCONNECT:
                         pbap_server->state = PBAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE;
