@@ -213,17 +213,20 @@ static char short_options[] = "hu:l:";
 
 static struct option long_options[] = {
     {"help",        no_argument,        NULL,   'h'},
+    {"logfile",    required_argument,  NULL,   'l'},
     {"usbpath",    required_argument,  NULL,   'u'},
     {0, 0, 0, 0}
 };
 
 static char *help_options[] = {
     "print (this) help.",
+    "set file to store debug output and HCI trace.",
     "set USB path to Bluetooth Controller.",
 };
 
 static char *option_arg_name[] = {
     "",
+    "LOGFILE",
     "USBPATH",
 };
 
@@ -242,6 +245,7 @@ int main(int argc, const char * argv[]){
     uint8_t usb_path[USB_MAX_PATH_LEN];
     int usb_path_len = 0;
     const char * usb_path_string = NULL;
+    const char * log_file_path = NULL;
 
     // parse command line parameters
     while(true){
@@ -251,7 +255,10 @@ int main(int argc, const char * argv[]){
         }
         switch (c) {
             case 'u':
-                usb_path_string = argv[2];
+                usb_path_string = optarg;
+                break;
+            case 'l':
+                log_file_path = optarg;
                 break;
             case '?':
             case 'h':
@@ -286,17 +293,21 @@ int main(int argc, const char * argv[]){
     }
 
     // log into file using HCI_DUMP_PACKETLOGGER format
-    char pklg_path[100];
-    btstack_strcpy(pklg_path, sizeof(pklg_path),  "/tmp/hci_dump");
-    if (usb_path_len){
-        btstack_strcat(pklg_path, sizeof(pklg_path),  "_");
-        btstack_strcat(pklg_path, sizeof(pklg_path),  usb_path_string);
+    if (log_file_path == NULL){
+        char pklg_path[100];
+        btstack_strcpy(pklg_path, sizeof(pklg_path),  "/tmp/hci_dump");
+        if (usb_path_len){
+            btstack_strcat(pklg_path, sizeof(pklg_path),  "_");
+            btstack_strcat(pklg_path, sizeof(pklg_path),  usb_path_string);
+        }
+        btstack_strcat(pklg_path, sizeof(pklg_path), ".pklg");
+        log_file_path = pklg_path;
     }
-    btstack_strcat(pklg_path, sizeof(pklg_path), ".pklg");
-    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+
+    hci_dump_posix_fs_open(log_file_path, HCI_DUMP_PACKETLOGGER);
     const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
     hci_dump_init(hci_dump_impl);
-    printf("Packet Log: %s\n", pklg_path);
+    printf("Packet Log: %s\n", log_file_path);
 
     // init HCI
 	hci_init(hci_transport_usb_instance(), NULL);
