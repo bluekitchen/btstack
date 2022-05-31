@@ -43,6 +43,7 @@
 //
 // *****************************************************************************
 
+#include <getopt.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -102,7 +103,7 @@ static void local_version_information_handler(uint8_t * packet){
     printf("- HCI Revision   0x%04x\n", hci_revision);
     printf("- LMP Version    0x%04x\n", lmp_version);
     printf("- LMP Subversion 0x%04x\n", lmp_subversion);
-    printf("- Manufacturer 0x%04x\n", manufacturer);
+    printf("- Manufacturer   0x%04x\n", manufacturer);
     switch (manufacturer){
         case BLUETOOTH_COMPANY_ID_THE_LINUX_FOUNDATION:
             printf("- Linux Foundation - assume Zephyr hci_usb firmware running on nRF52xx\n");
@@ -202,9 +203,37 @@ static void trigger_shutdown(void){
 }
 
 static int led_state = 0;
+
 void hal_led_toggle(void){
     led_state = 1 - led_state;
     printf("LED State %u\n", led_state);
+}
+
+static char short_options[] = "hu:l:";
+
+static struct option long_options[] = {
+    {"help",        no_argument,        NULL,   'h'},
+    {"usbpath",    required_argument,  NULL,   'u'},
+    {0, 0, 0, 0}
+};
+
+static char *help_options[] = {
+    "print (this) help.",
+    "set USB path to Bluetooth Controller.",
+};
+
+static char *option_arg_name[] = {
+    "",
+    "USBPATH",
+};
+
+static void usage(const char *name){
+    unsigned int i;
+    printf( "usage:\n\t%s [options]\n", name );
+    printf("valid options:\n");
+    for( i=0; long_options[i].name != 0; i++) {
+        printf("--%-10s| -%c  %-10s\t\t%s\n", long_options[i].name, long_options[i].val, option_arg_name[i], help_options[i] );
+    }
 }
 
 #define USB_MAX_PATH_LEN 7
@@ -213,9 +242,27 @@ int main(int argc, const char * argv[]){
     uint8_t usb_path[USB_MAX_PATH_LEN];
     int usb_path_len = 0;
     const char * usb_path_string = NULL;
-    if (argc >= 3 && strcmp(argv[1], "-u") == 0){
+
+    // parse command line parameters
+    while(true){
+        int c = getopt_long( argc, (char* const *)argv, short_options, long_options, NULL );
+        if (c < 0) {
+            break;
+        }
+        switch (c) {
+            case 'u':
+                usb_path_string = argv[2];
+                break;
+            case '?':
+            case 'h':
+            default:
+                usage(argv[0]);
+                return EXIT_FAILURE;
+        }
+    }
+
+    if (usb_path_string != NULL){
         // parse command line options for "-u 11:22:33"
-        usb_path_string = argv[2];
         printf("Specified USB Path: ");
         while (1){
             char * delimiter;
@@ -228,8 +275,6 @@ int main(int argc, const char * argv[]){
             usb_path_string = delimiter+1;
         }
         printf("\n");
-        argc -= 2;
-        memmove((void *) &argv[1], &argv[3], (argc-1) * sizeof(char *));
     }
 
 	/// GET STARTED with BTstack ///
