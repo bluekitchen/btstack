@@ -76,6 +76,7 @@
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
 static char tlv_db_path[100];
+static bool tlv_reset;
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 static bd_addr_t             local_addr;
@@ -155,10 +156,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (using_static_address){
                         memcpy(local_addr, static_address, 6);
                     }
-                    printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
                     btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
                     btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str_with_delimiter(local_addr, '-'));
                     btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
+                    printf("TLV path: %s", tlv_db_path);
+                    if (tlv_reset){
+                        int rc = unlink(tlv_db_path);
+                        if (rc == 0) {
+                            printf(", reset ok");
+                        } else {
+                            printf(", reset failed with result = %d", rc);
+                        }
+                    }
+                    printf("\n");
                     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
@@ -167,6 +177,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 #ifdef ENABLE_BLE
                     le_device_db_tlv_configure(tlv_impl, &tlv_context);
 #endif
+                    printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
                     break;
                 case HCI_STATE_OFF:
                     btstack_tlv_posix_deinit(&tlv_context);
@@ -209,11 +220,12 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 
-static char short_options[] = "hu:l:";
+static char short_options[] = "hu:l:r";
 
 static struct option long_options[] = {
     {"help",        no_argument,        NULL,   'h'},
     {"logfile",    required_argument,  NULL,   'l'},
+    {"reset-tlv",    no_argument,       NULL,   'r'},
     {"usbpath",    required_argument,  NULL,   'u'},
     {0, 0, 0, 0}
 };
@@ -221,12 +233,14 @@ static struct option long_options[] = {
 static char *help_options[] = {
     "print (this) help.",
     "set file to store debug output and HCI trace.",
+    "reset bonding information stored in TLV.",
     "set USB path to Bluetooth Controller.",
 };
 
 static char *option_arg_name[] = {
     "",
     "LOGFILE",
+    "",
     "USBPATH",
 };
 
@@ -259,6 +273,9 @@ int main(int argc, const char * argv[]){
                 break;
             case 'l':
                 log_file_path = optarg;
+                break;
+            case 'r':
+                tlv_reset = true;
                 break;
             case '?':
             case 'h':
