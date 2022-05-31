@@ -1082,7 +1082,7 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
 }
 
 static bool sm_key_distribution_all_received(void) {
-    log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, bution_expected_set);
+    log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, setup->sm_key_distribution_expected_set);
     return (setup->sm_key_distribution_expected_set & setup->sm_key_distribution_received_set) == setup->sm_key_distribution_expected_set;
 }
 
