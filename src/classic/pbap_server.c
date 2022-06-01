@@ -782,17 +782,14 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
 
     // ResetNewMissedCalls
     if (pbap_server->request.app_params.reset_new_missed_calls == 1){
-        uint8_t event[6 + PBAP_MAX_NAME_LEN];
+        uint8_t event[6];
         uint16_t pos = 0;
         event[pos++] = HCI_EVENT_PBAP_META;
-        event[pos++] = 1 + 2 + name_len;
+        event[pos++] = sizeof(event) - 2;
         event[pos++] = PBAP_SUBEVENT_RESET_MISSED_CALLS;
         little_endian_store_16(event, pos, pbap_server->pbap_cid);
         pos += 2;
         event[pos++] = phonebook;
-        // name is zero terminated
-        memcpy((char *) &event[pos], pbap_server->request.name, name_len + 1);
-        pos += name_len + 1;
         (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     }
 
@@ -804,10 +801,10 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
             goep_server_request_can_send_now(pbap_server->goep_cid);
         } else {
             pbap_server->state = PBAP_SERVER_STATE_W4_USER_DATA;
-            uint8_t event[11 + PBAP_MAX_NAME_LEN];
+            uint8_t event[11];
             uint16_t pos = 0;
             event[pos++] = HCI_EVENT_PBAP_META;
-            event[pos++] = 1 + 6 + name_len;
+            event[pos++] = sizeof(event) - 2;
             event[pos++] = PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE;
             little_endian_store_16(event, pos, pbap_server->pbap_cid);
             pos += 2;
@@ -815,9 +812,6 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
             pos += 4;
             event[pos++] = pbap_server->request.app_params.vcard_selector_operator;
             event[pos++] = phonebook;
-            // name is zero terminated
-            memcpy((char *) &event[pos], pbap_server->request.name, name_len + 1);
-            pos += name_len + 1;
             (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
         }
         return;
@@ -830,7 +824,7 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
     event[pos++] = HCI_EVENT_PBAP_META;
     switch (pbap_server->request.object_type){
         case PBAP_OBJECT_TYPE_PHONEBOOOK:
-            event[pos++] = 21 + name_len + 1;
+            event[pos++] = 22;
             event[pos++] = PBAP_SUBEVENT_PULL_PHONEBOOK;
             little_endian_store_16(event, pos, pbap_server->pbap_cid);
             pos += 2;
@@ -847,13 +841,10 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
             pos += 4;
             event[pos++] = pbap_server->request.app_params.vcard_selector_operator;
             event[pos++] = phonebook;
-            // name is zero terminated
-            memcpy(&event[pos], pbap_server->request.name, name_len + 1);
-            pos += name_len + 1;
             break;
         case PBAP_OBJECT_TYPE_VCARD_LISTING:
             search_value_len = (uint16_t) strlen(pbap_server->request.app_params.search_value);
-            event[pos++] = 21 + name_len + 1 + search_value_len + 1;
+            event[pos++] = 20 + search_value_len + 1;
             event[pos++] = PBAP_SUBEVENT_PULL_VCARD_LISTING;
             little_endian_store_16(event, pos, pbap_server->pbap_cid);
             pos += 2;
@@ -873,15 +864,14 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
             memcpy(&event[pos], (const uint8_t *) pbap_server->request.app_params.search_value, search_value_len + 1);
             pos += search_value_len + 1;
             event[pos++] = phonebook;
-            // name is zero terminated
-            memcpy(&event[pos], pbap_server->request.name, name_len + 1);
-            pos += name_len + 1;
             break;
         case PBAP_OBJECT_TYPE_VCARD:
-            event[pos++] = 9 + name_len + 1;
+            event[pos++] = 13 + name_len + 1;
             event[pos++] = PBAP_SUBEVENT_PULL_VCARD_ENTRY;
             little_endian_store_16(event, pos, pbap_server->pbap_cid);
             pos += 2;
+            little_endian_store_32(event, pos, pbap_server->request.continuation);
+            pos += 4;
             little_endian_store_32(event, pos, pbap_server->request.app_params.property_selector);
             pos += 4;
             event[pos++] = pbap_server->request.app_params.format;
