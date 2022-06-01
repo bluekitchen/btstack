@@ -41,19 +41,13 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <stdio.h>
 
 #include "hci_cmd.h"
 #include "btstack_run_loop.h"
 #include "btstack_debug.h"
-#include "btstack_memory.h"
-#include "hci_dump.h"
 #include "l2cap.h"
 #include "bluetooth_sdp.h"
-#include "classic/sdp_client_rfcomm.h"
 #include "btstack_event.h"
-#include "md5.h"
-#include "yxml.h"
 
 #include "classic/obex.h"
 #include "classic/obex_parser.h"
@@ -72,10 +66,8 @@
 typedef enum {
     PBAP_SERVER_DIR_ROOT,
     PBAP_SERVER_DIR_TELECOM,
-    PBAP_SERVER_DIR_TELECOM_PHONEBOOK,
     PBAP_SERVER_DIR_SIM,
     PBAP_SERVER_DIR_SIM_TELECOM,
-    PBAP_SERVER_DIR_SIM_TELECOM_PHONEBOOK
 } pbap_server_dir_t;
 
 typedef enum {
@@ -371,22 +363,18 @@ static void obex_srm_init(obex_srm_t * obex_srm){
 static void pbap_server_handle_srm_headers(pbap_server_t *pbap_server) {
     const obex_srm_t *obex_srm = &pbap_server->obex_srm;
     // Update SRM state based on SRM headers
-    printf("Process SRM %u / SRMP %u\n", obex_srm->srm_value, obex_srm->srmp_value);
     switch (pbap_server->srm_state) {
         case SRM_DISABLED:
             if (obex_srm->srm_value == OBEX_SRM_ENABLE) {
                 if (obex_srm->srmp_value == OBEX_SRMP_WAIT){
-                    printf("SRM_DISABLED -> SRM_SEND_CONFIRM_WAIT\n");
                     pbap_server->srm_state = SRM_SEND_CONFIRM_WAIT;
                 } else {
-                    printf("SRM_DISABLED -> SRM_SEND_CONFIRM\n");
                     pbap_server->srm_state = SRM_SEND_CONFIRM;
                 }
             }
             break;
         case SRM_ENABLED_WAIT:
             if (obex_srm->srmp_value == OBEX_SRMP_NEXT){
-                printf("SRM_ENABLED_WAIT -> SRM_ENABLED\n");
                 pbap_server->srm_state = SRM_ENABLED;
             }
             break;
@@ -399,12 +387,10 @@ static void pbap_server_add_srm_headers(pbap_server_t *pbap_server){
     switch (pbap_server->srm_state) {
         case SRM_SEND_CONFIRM:
             goep_server_header_add_srm_enable(pbap_server->goep_cid);
-            printf("SRM_SEND_CONFIRM -> SRM_ENABLED\n");
             pbap_server->srm_state = SRM_ENABLED;
             break;
         case SRM_SEND_CONFIRM_WAIT:
             goep_server_header_add_srm_enable(pbap_server->goep_cid);
-            printf("SRM_SEND_CONFIRM_WAIT -> SRM_ENABLED_WAIT\n");
             pbap_server->srm_state = SRM_ENABLED_WAIT;
             break;
         default:
@@ -566,7 +552,6 @@ static void pbap_server_packet_handler_hci(uint8_t *packet, uint16_t size){
             switch (hci_event_goep_meta_get_subevent_code(packet)){
                 case GOEP_SUBEVENT_INCOMING_CONNECTION:
                     // TODO: check if resources available
-                    printf("Accept incoming connection\n");
                     goep_server_accept_connection(goep_subevent_incoming_connection_get_goep_cid(packet));
                     break;
                 case GOEP_SUBEVENT_CONNECTION_OPENED:
@@ -694,9 +679,6 @@ static void pbap_server_app_param_callback_get(void * user_data, uint8_t tag_id,
 }
 
 static void pbap_server_parser_callback_get(void * user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t * data_buffer, uint16_t data_len){
-    printf("GET Header: %02x - len %u - ", header_id, data_len);
-    printf_hexdump(data_buffer, data_len);
-
     pbap_server_t * pbap_server = (pbap_server_t *) user_data;
 
     switch (header_id) {
@@ -719,14 +701,12 @@ static void pbap_server_parser_callback_get(void * user_data, uint8_t header_id,
                     }
                 }
                 pbap_server->request.name[total_len / 2] = 0;
-                printf("- Name: '%s'\n", pbap_server->request.name);
             }
             break;
         case OBEX_HEADER_TYPE:
             if (total_len < PBAP_SERVER_MAX_TYPE_LEN){
                 memcpy(&pbap_server->request.type[data_offset], data_buffer, data_len);
                 pbap_server->request.type[total_len] = 0;
-                printf("- Type: '%s'\n", pbap_server->request.type);
             }
             break;
         case OBEX_HEADER_APPLICATION_PARAMETERS:
@@ -893,8 +873,6 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
     uint8_t opcode;
     obex_parser_object_state_t parser_state;
 
-    printf("GOEP Data: ");
-    printf_hexdump(packet, size);
     switch (pbap_server->state){
         case PBAP_SERVER_STATE_W4_OPEN:
             btstack_unreachable();
