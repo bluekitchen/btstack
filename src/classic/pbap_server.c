@@ -309,14 +309,24 @@ static void pbap_server_emit_set_path_event(pbap_server_t *server, uint8_t flags
     (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static int pbap_server_get_phonebook_by_dir_and_name(pbap_server_dir_t parent_dir, const char * name){
+static pbap_phonebook_t pbap_server_get_phonebook_by_path(const char * path){
+    uint16_t index;
+    for (index = 0 ; index < ( sizeof(phonebooks) / sizeof(phonebooks[0])); index++){
+        if (strcmp(path, phonebooks[index].path) == 0){
+            return PBAP_PHONEBOOK_TELECOM_CCH + index;
+        }
+    }
+    return PBAP_PHONEBOOK_INVALID;
+}
+
+static pbap_phonebook_t pbap_server_get_phonebook_by_dir_and_name(pbap_server_dir_t parent_dir, const char * name){
     uint16_t index;
     for (index = 0 ; index < ( sizeof(phonebooks) / sizeof(phonebooks[0])); index++){
         if ((parent_dir == phonebooks[index].parent_dir) && (strcmp(name, phonebooks[index].name) == 0)){
-            return (int) index;
+            return PBAP_PHONEBOOK_TELECOM_CCH + index;
         }
     }
-    return -1;
+    return PBAP_PHONEBOOK_INVALID;
 }
 
 static void pbap_server_handle_set_path_request(pbap_server_t *pbap_server, uint8_t flags, const char * name){
@@ -765,124 +775,158 @@ static void pbap_server_parser_callback_get(void * user_data, uint8_t header_id,
 static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
     pbap_server_handle_srm_headers(pbap_server);
     pbap_server->request.object_type = pbap_server_parse_object_type(pbap_server->request.type);
-    if (pbap_server->request.object_type == PBAP_OBJECT_TYPE_INVALID){
-        // unknown object type
-        pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
+    pbap_phonebook_t phonebook = PBAP_PHONEBOOK_INVALID;
+    uint16_t name_len = strlen(pbap_server->request.name);
+    switch (pbap_server->request.object_type){
+        case PBAP_OBJECT_TYPE_INVALID:
+            // unknown object type
+            pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
+            pbap_server->response.code = OBEX_RESP_BAD_REQUEST;
+            goep_server_request_can_send_now(pbap_server->goep_cid);
+            return;
+        case PBAP_OBJECT_TYPE_PHONEBOOOK:
+            // lookup phonebook by absolute path
+            phonebook = pbap_server_get_phonebook_by_path(pbap_server->request.name);
+            break;
+        case PBAP_OBJECT_TYPE_VCARD_LISTING:
+            // lookup phonebook by relative name if name given
+            if (name_len == 0){
+                phonebook = pbap_server->pbap_phonebook;
+            } else {
+                phonebook = pbap_server_get_phonebook_by_dir_and_name(pbap_server->pbap_server_dir, pbap_server->request.name);
+            }
+            break;
+        case PBAP_OBJECT_TYPE_VCARD:
+            phonebook = pbap_server->pbap_phonebook;
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+
+    if (phonebook == PBAP_PHONEBOOK_INVALID){
+        pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
+        pbap_server->response.code = OBEX_RESP_NOT_FOUND;
         goep_server_request_can_send_now(pbap_server->goep_cid);
-    } else {
-        // ResetNewMissedCalls
-        if (pbap_server->request.app_params.reset_new_missed_calls == 1){
-            uint8_t event[5 + PBAP_MAX_NAME_LEN];
+        return;
+    }
+
+    // ResetNewMissedCalls
+    if (pbap_server->request.app_params.reset_new_missed_calls == 1){
+        uint8_t event[6 + PBAP_MAX_NAME_LEN];
+        uint16_t pos = 0;
+        event[pos++] = HCI_EVENT_PBAP_META;
+        event[pos++] = 1 + 2 + name_len;
+        event[pos++] = PBAP_SUBEVENT_RESET_MISSED_CALLS;
+        little_endian_store_16(event, pos, pbap_server->pbap_cid);
+        pos += 2;
+        event[pos++] = phonebook;
+        // name is zero terminated
+        memcpy((char *) &event[pos], pbap_server->request.name, name_len + 1);
+        pos += name_len + 1;
+        (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    }
+
+    // MaxListCount == 0 -> query size
+    if (pbap_server->request.app_params.max_list_count == 0){
+        // not valid for vCard request
+        if (pbap_server->request.object_type == PBAP_OBJECT_TYPE_VCARD){
+            pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
+            goep_server_request_can_send_now(pbap_server->goep_cid);
+        } else {
+            pbap_server->state = PBAP_SERVER_STATE_W4_USER_DATA;
+            uint8_t event[11 + PBAP_MAX_NAME_LEN];
             uint16_t pos = 0;
-            uint16_t name_len = strlen(pbap_server->request.name);
             event[pos++] = HCI_EVENT_PBAP_META;
-            event[pos++] = 1 + 2 + name_len;
-            event[pos++] = PBAP_SUBEVENT_RESET_MISSED_CALLS;
+            event[pos++] = 1 + 6 + name_len;
+            event[pos++] = PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE;
             little_endian_store_16(event, pos, pbap_server->pbap_cid);
             pos += 2;
+            little_endian_store_32(event, pos, pbap_server->request.app_params.vcard_selector);
+            pos += 4;
+            event[pos++] = pbap_server->request.app_params.vcard_selector_operator;
+            event[pos++] = phonebook;
             // name is zero terminated
             memcpy((char *) &event[pos], pbap_server->request.name, name_len + 1);
             pos += name_len + 1;
             (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
         }
-        // MaxListCount == 0 -> query size
-        if (pbap_server->request.app_params.max_list_count == 0){
-            // not valid for vCard request
-            if (pbap_server->request.object_type == PBAP_OBJECT_TYPE_VCARD){
-                pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
-                goep_server_request_can_send_now(pbap_server->goep_cid);
-            } else {
-                pbap_server->state = PBAP_SERVER_STATE_W4_USER_DATA;
-                uint8_t event[10 + PBAP_MAX_NAME_LEN];
-                uint16_t pos = 0;
-                uint16_t name_len = strlen(pbap_server->request.name);
-                event[pos++] = HCI_EVENT_PBAP_META;
-                event[pos++] = 1 + 6 + name_len;
-                event[pos++] = PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE;
-                little_endian_store_16(event, pos, pbap_server->pbap_cid);
-                pos += 2;
-                little_endian_store_32(event, pos, pbap_server->request.app_params.vcard_selector);
-                pos += 4;
-                event[pos++] = pbap_server->request.app_params.vcard_selector_operator;
-                // name is zero terminated
-                memcpy((char *) &event[pos], pbap_server->request.name, name_len + 1);
-                pos += name_len + 1;
-                (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
-            }
-        } else {
-            // emit pull ( phonebook, vcard_listing, vcard)
-            uint8_t event[2 + 20 + PBAP_SERVER_MAX_NAME_LEN + PBAP_SERVER_MAX_SEARCH_VALUE_LEN];
-            uint16_t pos = 0;
-            uint16_t name_len = (uint16_t) strlen(pbap_server->request.name);
-            uint16_t search_value_len;
-            event[pos++] = HCI_EVENT_PBAP_META;
-            switch (pbap_server->request.object_type){
-                case PBAP_OBJECT_TYPE_PHONEBOOOK:
-                    event[pos++] = 20 + name_len + 1;
-                    event[pos++] = PBAP_SUBEVENT_PULL_PHONEBOOK;
-                    little_endian_store_16(event, pos, pbap_server->pbap_cid);
-                    pos += 2;
-                    little_endian_store_32(event, pos, pbap_server->request.continuation);
-                    pos += 4;
-                    little_endian_store_32(event, pos, pbap_server->request.app_params.property_selector);
-                    pos += 4;
-                    event[pos++] = pbap_server->request.app_params.format;
-                    little_endian_store_16(event, pos, pbap_server->request.app_params.max_list_count);
-                    pos += 2;
-                    little_endian_store_16(event, pos, pbap_server->request.app_params.list_start_offset);
-                    pos += 2;
-                    little_endian_store_32(event, pos, pbap_server->request.app_params.vcard_selector);
-                    pos += 4;
-                    event[pos++] = pbap_server->request.app_params.vcard_selector_operator;
-                    // name is zero terminated
-                    memcpy(&event[pos], pbap_server->request.name, name_len + 1);
-                    pos += name_len + 1;
-                    break;
-                case PBAP_OBJECT_TYPE_VCARD_LISTING:
-                    search_value_len = (uint16_t) strlen(pbap_server->request.app_params.search_value);
-                    event[pos++] = 20 + name_len + 1 + search_value_len + 1;
-                    event[pos++] = PBAP_SUBEVENT_PULL_VCARD_LISTING;
-                    little_endian_store_16(event, pos, pbap_server->pbap_cid);
-                    pos += 2;
-                    little_endian_store_32(event, pos, pbap_server->request.continuation);
-                    pos += 4;
-                    event[pos++] = pbap_server->request.app_params.order;
-                    little_endian_store_16(event, pos, pbap_server->request.app_params.max_list_count);
-                    pos += 2;
-                    little_endian_store_16(event, pos, pbap_server->request.app_params.list_start_offset);
-                    pos += 2;
-                    little_endian_store_32(event, pos, pbap_server->request.app_params.vcard_selector);
-                    pos += 4;
-                    event[pos++] = pbap_server->request.app_params.vcard_selector_operator;
-                    event[pos++] = pbap_server->request.app_params.search_property;
-                    // search_value is zero terminated
-                    event[pos++] = search_value_len + 1;
-                    memcpy(&event[pos], (const uint8_t *) pbap_server->request.app_params.search_value, search_value_len + 1);
-                    pos += search_value_len + 1;
-                    // name is zero terminated
-                    memcpy(&event[pos], pbap_server->request.name, name_len + 1);
-                    pos += name_len + 1;
-                    break;
-                case PBAP_OBJECT_TYPE_VCARD:
-                    event[pos++] = 8 + name_len + 1;
-                    event[pos++] = PBAP_SUBEVENT_PULL_VCARD_ENTRY;
-                    little_endian_store_16(event, pos, pbap_server->pbap_cid);
-                    pos += 2;
-                    little_endian_store_32(event, pos, pbap_server->request.app_params.property_selector);
-                    pos += 4;
-                    event[pos++] = pbap_server->request.app_params.format;
-                    // name is zero terminated
-                    memcpy(&event[pos], pbap_server->request.name, name_len + 1);
-                    pos += name_len + 1;
-                    break;
-                default:
-                    btstack_unreachable();
-                    break;
-            }
-            pbap_server->state = PBAP_SERVER_STATE_W4_USER_DATA;
-            (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
-        }
+        return;
     }
+
+    // emit pull ( phonebook, vcard_listing, vcard)
+    uint8_t event[2 + 20 + PBAP_SERVER_MAX_NAME_LEN + PBAP_SERVER_MAX_SEARCH_VALUE_LEN];
+    uint16_t pos = 0;
+    uint16_t search_value_len;
+    event[pos++] = HCI_EVENT_PBAP_META;
+    switch (pbap_server->request.object_type){
+        case PBAP_OBJECT_TYPE_PHONEBOOOK:
+            event[pos++] = 21 + name_len + 1;
+            event[pos++] = PBAP_SUBEVENT_PULL_PHONEBOOK;
+            little_endian_store_16(event, pos, pbap_server->pbap_cid);
+            pos += 2;
+            little_endian_store_32(event, pos, pbap_server->request.continuation);
+            pos += 4;
+            little_endian_store_32(event, pos, pbap_server->request.app_params.property_selector);
+            pos += 4;
+            event[pos++] = pbap_server->request.app_params.format;
+            little_endian_store_16(event, pos, pbap_server->request.app_params.max_list_count);
+            pos += 2;
+            little_endian_store_16(event, pos, pbap_server->request.app_params.list_start_offset);
+            pos += 2;
+            little_endian_store_32(event, pos, pbap_server->request.app_params.vcard_selector);
+            pos += 4;
+            event[pos++] = pbap_server->request.app_params.vcard_selector_operator;
+            event[pos++] = phonebook;
+            // name is zero terminated
+            memcpy(&event[pos], pbap_server->request.name, name_len + 1);
+            pos += name_len + 1;
+            break;
+        case PBAP_OBJECT_TYPE_VCARD_LISTING:
+            search_value_len = (uint16_t) strlen(pbap_server->request.app_params.search_value);
+            event[pos++] = 21 + name_len + 1 + search_value_len + 1;
+            event[pos++] = PBAP_SUBEVENT_PULL_VCARD_LISTING;
+            little_endian_store_16(event, pos, pbap_server->pbap_cid);
+            pos += 2;
+            little_endian_store_32(event, pos, pbap_server->request.continuation);
+            pos += 4;
+            event[pos++] = pbap_server->request.app_params.order;
+            little_endian_store_16(event, pos, pbap_server->request.app_params.max_list_count);
+            pos += 2;
+            little_endian_store_16(event, pos, pbap_server->request.app_params.list_start_offset);
+            pos += 2;
+            little_endian_store_32(event, pos, pbap_server->request.app_params.vcard_selector);
+            pos += 4;
+            event[pos++] = pbap_server->request.app_params.vcard_selector_operator;
+            event[pos++] = pbap_server->request.app_params.search_property;
+            // search_value is zero terminated
+            event[pos++] = search_value_len + 1;
+            memcpy(&event[pos], (const uint8_t *) pbap_server->request.app_params.search_value, search_value_len + 1);
+            pos += search_value_len + 1;
+            event[pos++] = phonebook;
+            // name is zero terminated
+            memcpy(&event[pos], pbap_server->request.name, name_len + 1);
+            pos += name_len + 1;
+            break;
+        case PBAP_OBJECT_TYPE_VCARD:
+            event[pos++] = 9 + name_len + 1;
+            event[pos++] = PBAP_SUBEVENT_PULL_VCARD_ENTRY;
+            little_endian_store_16(event, pos, pbap_server->pbap_cid);
+            pos += 2;
+            little_endian_store_32(event, pos, pbap_server->request.app_params.property_selector);
+            pos += 4;
+            event[pos++] = pbap_server->request.app_params.format;
+            event[pos++] = phonebook;
+            // name is zero terminated
+            memcpy(&event[pos], pbap_server->request.name, name_len + 1);
+            pos += name_len + 1;
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+    pbap_server->state = PBAP_SERVER_STATE_W4_USER_DATA;
+    (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t *packet, uint16_t size){
