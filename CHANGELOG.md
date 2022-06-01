@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - GAP: fix gap_connect_cancel for gap_connect_with_whitelist
+- GAP: fix race condition that causes duplicate authenticate request
 - L2CAP: Fix accept incoming ERTM connection when Information Request already complete
 - HFP AG: activate all AG indicators upon service level connection establishment
 - HFP_AG: handle call termination in alerting call state

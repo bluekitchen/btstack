@@ -6961,12 +6961,11 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
         // store request
         connection->requested_security_level = requested_level;
 
-        // request remote features if not already active
-        hci_remote_features_query(con_handle);
-
         // start to authenticate connection
         connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
-        hci_run();
+
+        // request remote features if not already active, also trigger hci_run
+        hci_remote_features_query(con_handle);
     }
 }
 
