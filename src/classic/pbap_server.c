@@ -1207,3 +1207,19 @@ uint16_t pbap_server_send_pull_response(uint16_t pbap_cid, uint8_t response_code
     pbap_server->state = PBAP_SERVER_STATE_SEND_PREPARED_RESPONSE;
     return goep_server_request_can_send_now(pbap_server->goep_cid);
 }
+
+const char * pbap_server_get_phonebook_path(pbap_phonebook_t phonebook){
+    btstack_assert(phonebook >= PBAP_PHONEBOOK_TELECOM_CCH);
+    btstack_assert(phonebook <= PBAP_PHONEBOOK_SIM_TELECOM_PB);
+    return phonebooks[(uint16_t)phonebook].path;
+}
+
+const char * pbap_server_get_phonebook_name(pbap_phonebook_t phonebook){
+    btstack_assert(phonebook >= PBAP_PHONEBOOK_TELECOM_CCH);
+    btstack_assert(phonebook <= PBAP_PHONEBOOK_SIM_TELECOM_PB);
+    return phonebooks[(uint16_t)phonebook].name;
+}
+
+bool pbap_server_is_phonebook_on_sim1(pbap_phonebook_t phonebook){
+    return (phonebook >= PBAP_PHONEBOOK_TELECOM_CCH) && (phonebook <= PBAP_PHONEBOOK_TELECOM_SPD);
+}

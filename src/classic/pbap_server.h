@@ -221,6 +221,24 @@ uint8_t pbap_server_send_phonebook_size(uint16_t pbap_cid, uint8_t response_code
 uint16_t pbap_server_send_pull_response(uint16_t pbap_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t * body);
 
 /**
+ * @brief Get Phonebook Path
+ * @param phonebook
+ */
+const char * pbap_server_get_phonebook_path(pbap_phonebook_t phonebook);
+
+/**
+ * @brief Get Phonebook Name
+ * @param phonebook
+ */
+const char * pbap_server_get_phonebook_name(pbap_phonebook_t phonebook);
+
+/**
+ * @brief Check if Phonebook is stored on SIM1
+ * @param phonebook
+ */
+bool pbap_server_is_phonebook_on_sim1(pbap_phonebook_t phonebook);
+
+/**
  * @brief De-Init PBAP Client
  */
 void pbap_server_deinit(void);
