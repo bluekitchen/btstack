@@ -168,7 +168,7 @@ static struct {
     char * name;
     pbap_server_dir_t parent_dir;
     char * path;
-} phonebooks[] = {
+} pbap_server_phonebooks[] = {
     {"cch",PBAP_SERVER_DIR_TELECOM, "telecom/cch.vcf"},
     {"fav",PBAP_SERVER_DIR_TELECOM, "telecom/fav.vcf"},
     {"ich",PBAP_SERVER_DIR_TELECOM, "telecom/ich.vcf"},
@@ -280,8 +280,8 @@ void pbap_server_create_sdp_record(uint8_t *service, uint32_t service_record_han
 
 static pbap_phonebook_t pbap_server_get_phonebook_by_path(const char * path){
     uint16_t index;
-    for (index = 0 ; index < ( sizeof(phonebooks) / sizeof(phonebooks[0])); index++){
-        if (strcmp(path, phonebooks[index].path) == 0){
+    for (index = 0 ; index < (sizeof(pbap_server_phonebooks) / sizeof(pbap_server_phonebooks[0])); index++){
+        if (strcmp(path, pbap_server_phonebooks[index].path) == 0){
             return PBAP_PHONEBOOK_TELECOM_CCH + index;
         }
     }
@@ -290,8 +290,8 @@ static pbap_phonebook_t pbap_server_get_phonebook_by_path(const char * path){
 
 static pbap_phonebook_t pbap_server_get_phonebook_by_dir_and_name(pbap_server_dir_t parent_dir, const char * name){
     uint16_t index;
-    for (index = 0 ; index < ( sizeof(phonebooks) / sizeof(phonebooks[0])); index++){
-        if ((parent_dir == phonebooks[index].parent_dir) && (strcmp(name, phonebooks[index].name) == 0)){
+    for (index = 0 ; index < (sizeof(pbap_server_phonebooks) / sizeof(pbap_server_phonebooks[0])); index++){
+        if ((parent_dir == pbap_server_phonebooks[index].parent_dir) && (strcmp(name, pbap_server_phonebooks[index].name) == 0)){
             return PBAP_PHONEBOOK_TELECOM_CCH + index;
         }
     }
@@ -1211,13 +1211,13 @@ uint16_t pbap_server_send_pull_response(uint16_t pbap_cid, uint8_t response_code
 const char * pbap_server_get_phonebook_path(pbap_phonebook_t phonebook){
     btstack_assert(phonebook >= PBAP_PHONEBOOK_TELECOM_CCH);
     btstack_assert(phonebook <= PBAP_PHONEBOOK_SIM_TELECOM_PB);
-    return phonebooks[(uint16_t)phonebook].path;
+    return pbap_server_phonebooks[(uint16_t)phonebook].path;
 }
 
 const char * pbap_server_get_phonebook_name(pbap_phonebook_t phonebook){
     btstack_assert(phonebook >= PBAP_PHONEBOOK_TELECOM_CCH);
     btstack_assert(phonebook <= PBAP_PHONEBOOK_SIM_TELECOM_PB);
-    return phonebooks[(uint16_t)phonebook].name;
+    return pbap_server_phonebooks[(uint16_t)phonebook].name;
 }
 
 bool pbap_server_is_phonebook_on_sim1(pbap_phonebook_t phonebook){
