@@ -268,6 +268,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP HF: emit HFP_SUBEVENT_TRANSMIT_DTMF_CODES after sending DTMF command
 - GOEP Server
 - Chipset: support for firmware download and configuration of Realtek Controllers
+- PBAP Server and pbap_server_demo
 
 ### Fixed
 - GAP: fix gap_connect_cancel for gap_connect_with_whitelist
