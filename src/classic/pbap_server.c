@@ -66,8 +66,10 @@
 typedef enum {
     PBAP_SERVER_DIR_ROOT,
     PBAP_SERVER_DIR_TELECOM,
+    PBAP_SERVER_DIR_TELECOM_PHONEBOOK,
     PBAP_SERVER_DIR_SIM,
     PBAP_SERVER_DIR_SIM_TELECOM,
+    PBAP_SERVER_DIR_SIM_TELECOM_PHONEBOOK
 } pbap_server_dir_t;
 
 typedef enum {
@@ -81,7 +83,6 @@ typedef enum {
     PBAP_SERVER_STATE_W4_USER_DATA,
     PBAP_SERVER_STATE_W4_GET_OPCODE,
     PBAP_SERVER_STATE_W4_GET_REQUEST,
-    PBAP_SERVER_STATE_W4_SET_PATH_RESPONSE,
     PBAP_SERVER_STATE_SEND_RESPONSE,
     PBAP_SERVER_STATE_SEND_PREPARED_RESPONSE,
     PBAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE,
@@ -303,6 +304,12 @@ static void pbap_server_handle_set_path_request(pbap_server_t *pbap_server, uint
                 case PBAP_SERVER_DIR_SIM_TELECOM:
                     pbap_server->pbap_server_dir = PBAP_SERVER_DIR_SIM;
                     break;
+                case PBAP_SERVER_DIR_TELECOM_PHONEBOOK:
+                    pbap_server->pbap_server_dir = PBAP_SERVER_DIR_TELECOM;
+                    break;
+                case PBAP_SERVER_DIR_SIM_TELECOM_PHONEBOOK:
+                    pbap_server->pbap_server_dir = PBAP_SERVER_DIR_SIM_TELECOM;
+                    break;
                 default:
                     obex_result = OBEX_RESP_NOT_FOUND;
                     break;
@@ -311,7 +318,6 @@ static void pbap_server_handle_set_path_request(pbap_server_t *pbap_server, uint
             pbap_server->pbap_server_dir = PBAP_SERVER_DIR_ROOT;
         };
     } else {
-        // event[pos++] = PBAP_SUBEVENT_SET_PHONEBOOK_DOWN;
         switch (pbap_server->pbap_server_dir){
             case PBAP_SERVER_DIR_ROOT:
                 if (strcmp("telecom", name) == 0){
@@ -329,11 +335,24 @@ static void pbap_server_handle_set_path_request(pbap_server_t *pbap_server, uint
                     obex_result = OBEX_RESP_NOT_FOUND;
                 }
                 break;
-            default:
+            case PBAP_SERVER_DIR_TELECOM_PHONEBOOK:
                 pbap_server->pbap_phonebook = pbap_server_get_phonebook_by_dir_and_name(pbap_server->pbap_server_dir, name);
                 if (pbap_server->pbap_phonebook < 0){
                     obex_result = OBEX_RESP_NOT_FOUND;
+                } else {
+                    pbap_server->pbap_server_dir  = PBAP_SERVER_DIR_TELECOM_PHONEBOOK;
                 }
+                break;
+            case PBAP_SERVER_DIR_SIM_TELECOM_PHONEBOOK:
+                pbap_server->pbap_phonebook = pbap_server_get_phonebook_by_dir_and_name(pbap_server->pbap_server_dir, name);
+                if (pbap_server->pbap_phonebook < 0){
+                    obex_result = OBEX_RESP_NOT_FOUND;
+                } else {
+                    pbap_server->pbap_server_dir  = PBAP_SERVER_DIR_SIM_TELECOM_PHONEBOOK;
+                }
+                break;
+            default:
+                obex_result = OBEX_RESP_NOT_FOUND;
                 break;
         }
     }
