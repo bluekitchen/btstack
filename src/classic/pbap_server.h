@@ -201,14 +201,6 @@ uint8_t pbap_server_set_database_identifier(uint16_t pbap_cid, const uint8_t * d
 uint16_t pbap_server_get_max_body_size(uint16_t pbap_cid);
 
 /**
- * @bbrief Respond to PBAP_SUBEVENT_SET_PHONE_BOOK_X, with X in: ROOT, DOWN, UP
- * @param pbap_cid
- * @param response_code, see obex.h
- * @return status
- */
-uint8_t pbap_server_send_set_phonebook_result(uint16_t pbap_cid, uint8_t response_code);
-
-/**
  * @brief Send Phonebook size as response to PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE
  * @param pbap_cid
  * @param response_code, see obex.h
