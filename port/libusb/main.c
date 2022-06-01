@@ -311,8 +311,8 @@ int main(int argc, const char * argv[]){
     }
 
     // log into file using HCI_DUMP_PACKETLOGGER format
+    char pklg_path[100];
     if (log_file_path == NULL){
-        char pklg_path[100];
         btstack_strcpy(pklg_path, sizeof(pklg_path),  "/tmp/hci_dump");
         if (usb_path_len){
             btstack_strcat(pklg_path, sizeof(pklg_path),  "_");
