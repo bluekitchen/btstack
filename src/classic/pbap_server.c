@@ -168,24 +168,19 @@ static struct {
     char * name;
     pbap_server_dir_t parent_dir;
     char * path;
-    bool speed_dial;
-    bool date_time;
-    bool missed_calls;
-    bool enhanced_missed_calls;
-    uint16_t num_cards;
 } phonebooks[] = {
-        {"cch",PBAP_SERVER_DIR_TELECOM, "telecom/cch.vcf",      false, true,  false,  true, 1},
-        {"fav",PBAP_SERVER_DIR_TELECOM, "telecom/fav.vcf",      false, true,  false, false,  1},
-        {"ich",PBAP_SERVER_DIR_TELECOM, "telecom/ich.vcf",      false, true,  false, false,  1},
-        {"mch",PBAP_SERVER_DIR_TELECOM, "telecom/mch.vcf",      false, true,  true,  true, 1},
-        {"och",PBAP_SERVER_DIR_TELECOM, "telecom/och.vcf",      false, true,  false, false,  1},
-        {"pb", PBAP_SERVER_DIR_TELECOM,"telecom/pb.vcf",       false, false, false, false,  10},
-        {"spd",PBAP_SERVER_DIR_TELECOM, "telecom/spd.vcf",      true,  false, false, false,  1},
-        {"cch",PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/cch.vcf", false, true,  false,  true, 1},
-        {"ich",PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/ich.vcf", false, true,  false, false,  1},
-        {"mch",PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/mch.vcf", false, true,  true,  true, 1},
-        {"och",PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/och.vcf", false, true,  false, false,  1},
-        {"pb", PBAP_SERVER_DIR_SIM_TELECOM,"SIM1/telecom/pb.vcf",  false, false, false, false,  10}
+    {"cch",PBAP_SERVER_DIR_TELECOM, "telecom/cch.vcf"},
+    {"fav",PBAP_SERVER_DIR_TELECOM, "telecom/fav.vcf"},
+    {"ich",PBAP_SERVER_DIR_TELECOM, "telecom/ich.vcf"},
+    {"mch",PBAP_SERVER_DIR_TELECOM, "telecom/mch.vcf"},
+    {"och",PBAP_SERVER_DIR_TELECOM, "telecom/och.vcf"},
+    {"pb", PBAP_SERVER_DIR_TELECOM, "telecom/pb.vcf"},
+    {"spd",PBAP_SERVER_DIR_TELECOM, "telecom/spd.vcf"},
+    {"cch",PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/cch.vcf"},
+    {"ich",PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/ich.vcf"},
+    {"mch",PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/mch.vcf"},
+    {"och",PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/och.vcf"},
+    {"pb", PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/pb.vcf"}
 };
 
 // 796135f0-f0c5-11d8-0966- 0800200c9a66
