@@ -3117,7 +3117,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
             if (hci_stack->gap_classic_accept_callback != NULL){
                 if ((*hci_stack->gap_classic_accept_callback)(addr, link_type) == 0){
-                    hci_stack->decline_reason = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR;
+                    hci_stack->decline_reason = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_SECURITY_REASONS;
                     bd_addr_copy(hci_stack->decline_addr, addr);
                     break;
                 }

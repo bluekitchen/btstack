@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - A2DP: new a2dp.c contains shared code of Sink and Source roles
 - A2DP Sink: automatically configure stream endpoint for outgoing connections
+- HCI: use ERROR_CODE_CONNECTION_REJECTED_DUE_TO_SECURITY_REASONS to rejected classic connections
 - HFP AG: drop unused number parameter from hfp_ag_outgoing_call_initiated
 - SM: pairing events indicate if LE Secure Connection will be used
 
