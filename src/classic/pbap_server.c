@@ -76,15 +76,15 @@ typedef enum {
     PBAP_SERVER_STATE_W4_OPEN,
     PBAP_SERVER_STATE_W4_CONNECT_OPCODE,
     PBAP_SERVER_STATE_W4_CONNECT_REQUEST,
-    PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST,
+    PBAP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR,
     PBAP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS,
     PBAP_SERVER_STATE_CONNECTED,
     PBAP_SERVER_STATE_W4_REQUEST,
     PBAP_SERVER_STATE_W4_USER_DATA,
     PBAP_SERVER_STATE_W4_GET_OPCODE,
     PBAP_SERVER_STATE_W4_GET_REQUEST,
-    PBAP_SERVER_STATE_SEND_RESPONSE,
-    PBAP_SERVER_STATE_SEND_PREPARED_RESPONSE,
+    PBAP_SERVER_STATE_SEND_INTERNAL_RESPONSE,
+    PBAP_SERVER_STATE_SEND_USER_RESPONSE,
     PBAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE,
     PBAP_SERVER_STATE_ABOUT_TO_SEND,
 } pbap_server_state_t;
@@ -356,7 +356,7 @@ static void pbap_server_handle_set_path_request(pbap_server_t *pbap_server, uint
                 break;
         }
     }
-    pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
+    pbap_server->state = PBAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
     pbap_server->response.code = obex_result;
     goep_server_request_can_send_now(pbap_server->goep_cid);
 }
@@ -479,11 +479,9 @@ static void pbap_server_operation_complete(pbap_server_t * pbap_server){
 }
 
 static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
-    uint8_t app_params[PBAP_SERVER_MAX_APP_PARAMS_LEN];
-    uint16_t app_params_pos = 0;
     uint8_t response_code;
     switch (pbap_server->state){
-        case PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST:
+        case PBAP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR:
             // prepare response
             goep_server_response_create_general(pbap_server->goep_cid);
             // next state
@@ -502,20 +500,16 @@ static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
             // send packet
             goep_server_execute(pbap_server->goep_cid, OBEX_RESP_SUCCESS);
             break;
-        case PBAP_SERVER_STATE_SEND_RESPONSE:
+        case PBAP_SERVER_STATE_SEND_INTERNAL_RESPONSE:
             // prepare response
             goep_server_response_create_general(pbap_server->goep_cid);
-            if (pbap_server->response.phonebook_size_set){
-                app_params_pos = pbap_server_application_params_add_phonebook_size(app_params, pbap_server->response.phonebook_size);
-            }
-            pbap_server_add_application_parameters(pbap_server, app_params, app_params_pos);
             // next state
             response_code = pbap_server->response.code;
             pbap_server_operation_complete(pbap_server);
             // send packet
             goep_server_execute(pbap_server->goep_cid, response_code);
             break;
-        case PBAP_SERVER_STATE_SEND_PREPARED_RESPONSE:
+        case PBAP_SERVER_STATE_SEND_USER_RESPONSE:
             // next state
             response_code = pbap_server->response.code;
             if (response_code == OBEX_RESP_CONTINUE){
@@ -748,7 +742,7 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
     switch (pbap_server->request.object_type){
         case PBAP_OBJECT_TYPE_INVALID:
             // unknown object type
-            pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
+            pbap_server->state = PBAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
             pbap_server->response.code = OBEX_RESP_BAD_REQUEST;
             goep_server_request_can_send_now(pbap_server->goep_cid);
             return;
@@ -773,7 +767,7 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
     }
 
     if (phonebook == PBAP_PHONEBOOK_INVALID){
-        pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
+        pbap_server->state = PBAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
         pbap_server->response.code = OBEX_RESP_NOT_FOUND;
         goep_server_request_can_send_now(pbap_server->goep_cid);
         return;
@@ -796,7 +790,8 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
     if (pbap_server->request.app_params.max_list_count == 0){
         // not valid for vCard request
         if (pbap_server->request.object_type == PBAP_OBJECT_TYPE_VCARD){
-            pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
+            pbap_server->state = PBAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+            pbap_server->response.code = OBEX_RESP_BAD_REQUEST;
             goep_server_request_can_send_now(pbap_server->goep_cid);
         } else {
             pbap_server->state = PBAP_SERVER_STATE_W4_USER_DATA;
@@ -916,7 +911,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                 // TODO: check Target
                 if (ok == false){
                     // send bad request response
-                    pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
+                    pbap_server->state = PBAP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR;
                 } else {
                     // send connect response
                     pbap_server->state = PBAP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS;
@@ -973,7 +968,8 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                     case OBEX_OPCODE_SESSION:
                     default:
                         // send bad request response
-                        pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
+                        pbap_server->state = PBAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+                        pbap_server->response.code = OBEX_RESP_BAD_REQUEST;
                         goep_server_request_can_send_now(pbap_server->goep_cid);
                         break;
                 }
@@ -998,12 +994,13 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                         break;
                     case (OBEX_OPCODE_ABORT & 0x7f):
                         pbap_server->response.code = OBEX_RESP_SUCCESS;
-                        pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
+                        pbap_server->state = PBAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
                         goep_server_request_can_send_now(pbap_server->goep_cid);
                         break;
                     default:
                         // send bad request response
-                        pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE_BAD_REQUEST;
+                        pbap_server->state = PBAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+                        pbap_server->response.code = OBEX_RESP_BAD_REQUEST;
                         goep_server_request_can_send_now(pbap_server->goep_cid);
                         break;
                 }
@@ -1179,7 +1176,7 @@ uint8_t pbap_server_send_phonebook_size(uint16_t pbap_cid, uint8_t response_code
         pbap_server->response.phonebook_size_set = true;
         pbap_server_build_response(pbap_server);
         pbap_server->response.code = response_code;
-        pbap_server->state = PBAP_SERVER_STATE_SEND_PREPARED_RESPONSE;
+        pbap_server->state = PBAP_SERVER_STATE_SEND_USER_RESPONSE;
         return goep_server_request_can_send_now(pbap_server->goep_cid);
     } else {
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -1201,7 +1198,7 @@ uint16_t pbap_server_send_pull_response(uint16_t pbap_cid, uint8_t response_code
     // set final response code
     pbap_server->response.code = response_code;
     pbap_server->request.continuation = continuation;
-    pbap_server->state = PBAP_SERVER_STATE_SEND_PREPARED_RESPONSE;
+    pbap_server->state = PBAP_SERVER_STATE_SEND_USER_RESPONSE;
     return goep_server_request_can_send_now(pbap_server->goep_cid);
 }
 
