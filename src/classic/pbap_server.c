@@ -278,32 +278,6 @@ void pbap_server_create_sdp_record(uint8_t *service, uint32_t service_record_han
     de_add_number(service, DE_UINT, DE_SIZE_16, pbap_supported_features);
 }
 
-static void pbap_server_emit_set_path_event(pbap_server_t *server, uint8_t flags, const char * name) {
-    uint8_t event[5+PBAP_MAX_NAME_LEN];
-    uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_PBAP_META;
-
-    uint16_t name_len = strlen(name);
-    if (name_len == 0){
-        event[pos++] = 1;
-        if ((flags & 1) == 1){
-            event[pos++] = PBAP_SUBEVENT_SET_PHONEBOOK_UP;
-        } else {
-            event[pos++] = PBAP_SUBEVENT_SET_PHONEBOOK_ROOT;
-        };
-        little_endian_store_16(event, pos, server->pbap_cid);
-        pos += 2;
-    } else {
-        event[pos++] = name_len + 1;
-        event[pos++] = PBAP_SUBEVENT_SET_PHONEBOOK_DOWN;
-        little_endian_store_16(event, pos, server->pbap_cid);
-        pos += 2;
-        memcpy(&event[pos], name, name_len+1);
-        pos += name_len + 1;
-    }
-    (*pbap_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
-}
-
 static pbap_phonebook_t pbap_server_get_phonebook_by_path(const char * path){
     uint16_t index;
     for (index = 0 ; index < ( sizeof(phonebooks) / sizeof(phonebooks[0])); index++){
@@ -1001,10 +975,6 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
                         pbap_server_handle_get_request(pbap_server);
                         break;
                     case OBEX_OPCODE_SETPATH:
-                        // old
-                        pbap_server->state = PBAP_SERVER_STATE_W4_SET_PATH_RESPONSE;
-                        pbap_server_emit_set_path_event(pbap_server, op_info.flags, &pbap_server->request.name[0]);
-                        // new
                         pbap_server_handle_set_path_request(pbap_server, op_info.flags, &pbap_server->request.name[0]);
                         break;
                     case OBEX_OPCODE_DISCONNECT:
@@ -1074,19 +1044,6 @@ static void pbap_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
         default:
             break;
     }
-}
-
-uint8_t pbap_server_send_set_phonebook_result(uint16_t pbap_cid, uint8_t response_code){
-    pbap_server_t * pbap_server = pbap_server_for_pbap_cid(pbap_cid);
-    if (pbap_server == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (pbap_server->state != PBAP_SERVER_STATE_W4_SET_PATH_RESPONSE) {
-        ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    pbap_server->response.code = response_code;
-    pbap_server->state = PBAP_SERVER_STATE_SEND_RESPONSE;
-    return goep_server_request_can_send_now(pbap_server->goep_cid);
 }
 
 uint8_t pbap_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, gap_security_level_t security_level){
