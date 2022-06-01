@@ -375,7 +375,7 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 }
 
 static void stdin_process(char c){
-	log_info("stdin: %c (%02x)", c, c);
+	log_info("stdin: %c", c);
     // passkey input
     if (ui_digits_for_passkey && c >= '0' && c <= '9'){
         printf("%c", c);
