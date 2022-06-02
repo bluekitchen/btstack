@@ -179,21 +179,22 @@ static void hfp_hf_emit_type_number_alpha(const hfp_connection_t * hfp_connectio
 
 static void hfp_hf_emit_enhanced_call_status(const hfp_connection_t * hfp_connection){
     if (hfp_hf_callback == NULL) return;
-    uint16_t bnip_number_len = btstack_min(strlen(hfp_connection->bnip_number), sizeof(hfp_connection->bnip_number)-1);
-    uint8_t event[11 + sizeof(hfp_connection->bnip_number)];
+    
+    uint16_t bnip_number_len = strlen((const char *) hfp_connection->bnip_number);
+    uint8_t event[11 + HFP_BNEP_NUM_MAX_SIZE];
     event[0] = HCI_EVENT_HFP_META;
-    event[1] = 10 + bnip_number_len;
+    event[1] = 10 + bnip_number_len + 1;
     event[2] = HFP_SUBEVENT_ENHANCED_CALL_STATUS;
     little_endian_store_16(event, 3, hfp_connection->acl_handle);
-    event[4] = hfp_connection->clcc_idx;
-    event[5] = hfp_connection->clcc_dir;
-    event[6] = hfp_connection->clcc_status;
-    event[7] = hfp_connection->clcc_mode;
-    event[8] = hfp_connection->clcc_mpty;
-    event[9] = hfp_connection->bnip_type;
-    memcpy(&event[10], hfp_connection->bnip_number, bnip_number_len);
-    event[11+bnip_number_len] = 0;
-    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 12+bnip_number_len);
+    event[5] = hfp_connection->clcc_idx;
+    event[6] = hfp_connection->clcc_dir;
+    event[7] = hfp_connection->clcc_status;
+    event[8] = hfp_connection->clcc_mode;
+    event[9] = hfp_connection->clcc_mpty;
+    event[10] = hfp_connection->bnip_type;
+    memcpy(&event[11], hfp_connection->bnip_number, bnip_number_len + 1);
+    
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 11 + bnip_number_len + 1);
 }
 
 static void hfp_emit_ag_indicator_mapping_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
