@@ -3683,6 +3683,13 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 }
                             }
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+                            // trigger ECC key generation
+                            if (ec_key_generation_state == EC_KEY_GENERATION_IDLE){
+                                sm_ec_generate_new_key();
+                            }
+#endif
+
                             // restart random address updates after power cycle
                             gap_random_address_set_mode(gap_random_adress_type);
                             break;
@@ -4763,9 +4770,8 @@ static void sm_state_reset() {
     sm_address_resolution_mode = ADDRESS_RESOLUTION_IDLE;
     sm_address_resolution_general_queue = NULL;
     sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
-
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    sm_ec_generate_new_key();
+    ec_key_generation_state = EC_KEY_GENERATION_IDLE;
 #endif
 }
 
