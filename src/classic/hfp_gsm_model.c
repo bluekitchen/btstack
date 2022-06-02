@@ -496,7 +496,13 @@ void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, con
 
         case HFP_AG_TERMINATE_CALL_BY_AG:
             set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
-            delete_call(current_call_index);
+            if (current_call_index != -1){
+                delete_call(current_call_index);
+                break;
+            }
+            if (initiated_call_index != -1){
+                delete_call(initiated_call_index);
+            }
             break;
 
         case HFP_AG_CALL_DROPPED:
