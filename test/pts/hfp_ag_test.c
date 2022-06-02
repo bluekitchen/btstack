@@ -306,7 +306,6 @@ static void stdin_process(char cmd){
             printf("Outgoing call inited and connected, ringing\n");
             hfp_ag_set_clip(129, "1234567");
             hfp_ag_outgoing_call_initiated();
-            hfp_ag_outgoing_call_established();
             break;
         case 'n':
             printf("Disable Voice Recognition\n");

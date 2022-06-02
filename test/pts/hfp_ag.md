@@ -35,8 +35,8 @@ HFP/AG/ICA/BV-07-I: c, C, A
 HFP/AG/ICA/BV-08-I: a, c
 HFP/AG/ICA/BV-09-I: a, c
 
-HFP/AG/ICR/BV-01-I: a, c, B, A
-HFP/AG/ICR/BV-02-I: a, c, E, B, A
+HFP/AG/ICR/BV-01-I: a, c, A
+HFP/AG/ICR/BV-02-I: a, c, E, A
 
 HFP/AG/TCA/BV-01-I: a, c, A
 HFP/AG/TCA/BV-02-I: a, c, C, A
@@ -174,8 +174,8 @@ HFP/AG/VTA/BV-02-I: a, 1, 3, 2, 5, A
 
 HFP/AG/ATAH/BV-01-I: a, c, B, B, b, C, A
 
-HFP/AG/OCA/BV-01-I: a, M, C, A
+HFP/AG/OCA/BV-01-I: a, M, j, C, A
 
 IOPT/CL/HFP-AG/COD/BV-02-I: rm /tmp/btstack_*.tlv, a, t, D, a, t, D, a, t, D, a, t, D
 
-IOPT/CL/HFP-AG/SFC/BV-13-I: rm /tmp/btstack_*.tlv, a, 
+IOPT/CL/HFP-AG/SFC/BV-13-I: rm /tmp/btstack_*.tlv, a, t
