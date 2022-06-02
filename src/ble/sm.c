@@ -392,7 +392,7 @@ static int (*sm_get_sc_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * 
 static bool (*sm_get_ltk_callback)(hci_con_handle_t con_handle, uint8_t addres_type, bd_addr_t addr, uint8_t * ltk);
 
 static void sm_run(void);
-static void sm_state_reset();
+static void sm_state_reset(void);
 static void sm_done_for_handle(hci_con_handle_t con_handle);
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle);
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
@@ -4761,7 +4761,7 @@ void sm_test_set_pairing_failure(int reason){
 }
 #endif
 
-static void sm_state_reset() {
+static void sm_state_reset(void) {
 #ifdef USE_CMAC_ENGINE
     sm_cmac_active  = 0;
 #endif
