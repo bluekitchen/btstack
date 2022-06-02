@@ -56,33 +56,41 @@
 
 #include <stdint.h>
 
+#ifdef ENABLE_TESTING_SUPPORT
+typedef uint64_t btstack_time_t;
+#define PRIbtstack_time_t PRIu64
+#else
+typedef uint32_t btstack_time_t;
+#define PRIbtstack_time_t PRIu32
+#endif
+
 #if defined __cplusplus
 extern "C" {
 #endif
-	
+
 /**
  * Callback types for run loop data sources
  */
 typedef enum {
-	DATA_SOURCE_CALLBACK_POLL  = 1 << 0,
-	DATA_SOURCE_CALLBACK_READ  = 1 << 1,
-	DATA_SOURCE_CALLBACK_WRITE = 1 << 2,
+    DATA_SOURCE_CALLBACK_POLL  = 1 << 0,
+    DATA_SOURCE_CALLBACK_READ  = 1 << 1,
+    DATA_SOURCE_CALLBACK_WRITE = 1 << 2,
 } btstack_data_source_callback_type_t;
 
 typedef struct btstack_data_source {
-	// linked item
+    // linked item
     btstack_linked_item_t item;
 
     // item to watch in run loop
     union {
-	    // file descriptor for posix systems
-	    int  fd;
-    	// handle on windows
-    	void * handle;	
+        // file descriptor for posix systems
+        int  fd;
+        // handle on windows
+        void * handle;
     } source;
 
     // callback to call for enabled callback types
-    void  (*process)(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type);
+    void (*process)(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type);
 
     // flags storing enabled callback types
     uint16_t flags;
@@ -90,11 +98,11 @@ typedef struct btstack_data_source {
 } btstack_data_source_t;
 
 typedef struct btstack_timer_source {
-    btstack_linked_item_t item; 
+    btstack_linked_item_t item;
     // timeout in system ticks (HAVE_EMBEDDED_TICK) or milliseconds (HAVE_EMBEDDED_TIME_MS)
-    uint32_t timeout;
+    btstack_time_t timeout;
     // will be called when timer fired
-    void  (*process)(struct btstack_timer_source *ts); 
+    void  (*process)(struct btstack_timer_source *ts);
     void * context;
 } btstack_timer_source_t;
 
