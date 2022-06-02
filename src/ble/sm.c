@@ -392,6 +392,7 @@ static int (*sm_get_sc_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * 
 static bool (*sm_get_ltk_callback)(hci_con_handle_t con_handle, uint8_t addres_type, bd_addr_t addr, uint8_t * ltk);
 
 static void sm_run(void);
+static void sm_state_reset();
 static void sm_done_for_handle(hci_con_handle_t con_handle);
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle);
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
@@ -3696,9 +3697,11 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                         case HCI_STATE_OFF:
                         case HCI_STATE_HALTING:
+                            log_info("SM: reset state");
                             // stop random address update
                             gap_random_address_update_stop();
-                            //
+                            // reset state
+                            sm_state_reset();
                             break;
 
                         default:
@@ -4770,6 +4773,7 @@ static void sm_state_reset() {
     sm_address_resolution_mode = ADDRESS_RESOLUTION_IDLE;
     sm_address_resolution_general_queue = NULL;
     sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
+    sm_persistent_keys_random_active = false;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     ec_key_generation_state = EC_KEY_GENERATION_IDLE;
 #endif
