@@ -4682,8 +4682,6 @@ static void hci_halting_run(void) {
 
             btstack_run_loop_remove_timer(&hci_stack->timeout);
 
-            hci_stack->substate = HCI_HALTING_READY_FOR_CLOSE;
-
             // no connections left, wait a bit to assert that btstack_cyrpto isn't waiting for an HCI event
             log_info("HCI_STATE_HALTING: wait 50 ms");
             hci_stack->substate = HCI_HALTING_W4_CLOSE_TIMER;
@@ -8298,17 +8296,6 @@ void gap_set_page_timeout(uint16_t page_timeout){
 }
 
 #endif
-
-void hci_halting_defer(void){
-    if (hci_stack->state != HCI_STATE_HALTING) return;
-    switch (hci_stack->substate){
-        case HCI_HALTING_READY_FOR_CLOSE:
-            hci_stack->substate = HCI_HALTING_DEFER_CLOSE;
-            break;
-        default:
-            break;
-    }
-}
 
 #ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
 void hci_load_le_device_db_entry_into_resolving_list(uint16_t le_device_db_index){

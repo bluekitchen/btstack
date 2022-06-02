@@ -816,8 +816,6 @@ typedef enum hci_init_state{
     HCI_HALTING_LE_ADV_STOP,
     HCI_HALTING_LE_SCAN_STOP,
     HCI_HALTING_DISCONNECT_ALL,
-    HCI_HALTING_READY_FOR_CLOSE,
-    HCI_HALTING_DEFER_CLOSE,
     HCI_HALTING_W4_CLOSE_TIMER,
     HCI_HALTING_CLOSE,
 
@@ -1611,11 +1609,6 @@ uint8_t gap_periodic_advertising_terminate_sync(uint16_t sync_handle);
  * @return manufacturer id
  */
 uint16_t hci_get_manufacturer(void);
-
-/**
- * Defer halt. Used by btstack_crypto to allow current HCI operation to complete
- */
-void hci_halting_defer(void);
 
 // Only for PTS testing
 
