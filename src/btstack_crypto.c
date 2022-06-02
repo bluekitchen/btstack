@@ -125,6 +125,7 @@ typedef enum {
 } btstack_crypto_ecc_p256_key_generation_state_t;
 
 static void btstack_crypto_run(void);
+static void btstack_crypto_state_reset(void);
 
 static const uint8_t zero[16] = { 0 };
 
@@ -1088,10 +1089,15 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
 
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
+            switch(btstack_event_state_get_state(packet)){
+                case HCI_STATE_HALTING:
+                    // as stack is shutting down, reset state
+                    btstack_crypto_state_reset();
+                    break;
+                default:
+                    break;
+            }
             if (btstack_event_state_get_state(packet) != HCI_STATE_HALTING) break;
-            if (!btstack_crypto_wait_for_hci_result) break;
-            // request stack to defer shutdown a bit
-            hci_halting_defer();
             break;
 
         case HCI_EVENT_COMMAND_COMPLETE:
