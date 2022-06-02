@@ -42,7 +42,8 @@
 // minimal setup for HCI code
 //
 // *****************************************************************************
-
+#include <getopt.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,6 +74,7 @@
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
 static char tlv_db_path[100];
+static bool tlv_clear = false;
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 static bd_addr_t             local_addr;
@@ -124,6 +126,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
                     btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str(local_addr));
                     btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
+                    printf("TLV path: %s", tlv_db_path);
+                    if (tlv_clear){
+                        int rc = unlink(tlv_db_path);
+                        if((rc == 0) || ( errno == ENOENT )){
+                            printf(", clear ok\n");
+                        } else {
+                            printf(", clear failed because %s\n", strerror(errno));
+                        }
+                    }
+
                     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
@@ -178,15 +190,137 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 
+#include <string.h>
+static void btstack_log_cmd_line( int argc, const char *args[] )
+{
+    char buf[2048] = "command line:";
+    char *ptr = buf+strlen(buf);
+    size_t len = sizeof(buf);
+    for( int i=0; i<argc; ++i )
+    {
+        int ret = snprintf(ptr, len, " %s", args[i]);
+        // avoid overflow
+        if((ret < 0) || ( (size_t)ret >= len ))
+        {
+            log_error("command line truncated!");
+            break;
+        }
+        // terminate string
+        ptr[ret] = 0;
+        len -= ret;
+        ptr += ret;
+    }
+    log_info("%s", buf);
+
+}
+
+static const char short_options[] = "-hu:l:c";
+
+static const struct option long_options[] = {
+    {"help",       no_argument,        NULL,   'h'},
+    {"logfile",    required_argument,  NULL,   'l'},
+    {"clear-tlv",  no_argument,        NULL,   'c'},
+    {"usbpath",    required_argument,  NULL,   'u'},
+    {0, 0, 0, 0}
+};
+
+static const char *help_options[] = {
+    "print (this) help.",
+    "set file to store debug output and HCI trace.",
+    "clear bonding information stored in TLV.",
+    "set USB path to Bluetooth Controller.",
+};
+
+static const char *option_arg_name[] = {
+    "",
+    "LOGFILE",
+    "",
+    "USBPATH",
+};
+
+static void usage(const char *name){
+    unsigned int i;
+    printf( "usage:\n\t%s [options]\n", name );
+    printf("valid options:\n");
+    for( i=0; long_options[i].name != 0; i++) {
+        printf("--%-10s| -%c  %-10s\t\t%s\n", long_options[i].name, long_options[i].val, option_arg_name[i], help_options[i] );
+    }
+}
+
+static int app_argc = 0;
+static const char *app_argv[100] = { NULL };
+
+static void clear_argv(int idx)
+{
+    app_argv[idx] = NULL;
+}
+static void shift_argv(int idx)
+{
+    for( int i=idx; i<app_argc-1; ++i )
+    {
+        app_argv[i] = app_argv[i+1];
+    }
+    app_argc--;
+}
+static void cleanup_argv()
+{
+    for( int i=0; i<app_argc; )
+    {
+        if( app_argv[i] == NULL )
+            shift_argv( i );
+        else
+            ++i;
+    }
+}
+
 #define USB_MAX_PATH_LEN 7
 int main(int argc, const char * argv[]){
 
     uint8_t usb_path[USB_MAX_PATH_LEN];
     int usb_path_len = 0;
     const char * usb_path_string = NULL;
-    if (argc >= 3 && strcmp(argv[1], "-u") == 0){
+    const char * log_file_path = NULL;
+
+    app_argc = argc;
+    for( int i=0; i<argc; ++i )
+    {
+        app_argv[i] = argv[i];
+    }
+
+    opterr = 0; // disable error message on unknown options
+    // parse command line parameters
+    while(true){
+        int c = getopt_long( argc, (char* const *)argv, short_options, long_options, NULL );
+        if (c < 0) {
+            break;
+        }
+        switch (c) {
+            case 'u':
+                usb_path_string = optarg;
+                clear_argv( optind - 1 );
+                clear_argv( optind - 2 );
+                break;
+            case 'l':
+                log_file_path = optarg;
+                clear_argv( optind - 1 );
+                clear_argv( optind - 2 );
+                break;
+            case 'c':
+                tlv_clear = true;
+                clear_argv( optind - 1 );
+                break;
+            case '?':
+            case 1:
+                break;
+            case 'h':
+            default:
+                usage(argv[0]);
+                return EXIT_FAILURE;
+        }
+    }
+
+    if (usb_path_string != NULL){
         // parse command line options for "-u 11:22:33"
-        usb_path_string = argv[2];
         printf("Specified USB Path: ");
         while (1){
             char * delimiter;
@@ -199,20 +333,20 @@ int main(int argc, const char * argv[]){
             usb_path_string = delimiter+1;
         }
         printf("\n");
-        argc -= 2;
-        memmove((void *) &argv[1], &argv[3], (argc-1) * sizeof(char *));
     }
 
-	/// GET STARTED with BTstack ///
-	btstack_memory_init();
+    // remove used up command line args
+    cleanup_argv();
+
+    /// GET STARTED with BTstack ///
+    btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-	    
+
     if (usb_path_len){
         hci_transport_usb_set_path(usb_path_len, usb_path);
     }
 
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-
     char pklg_path[100];
     btstack_strcpy(pklg_path, sizeof(pklg_path),  "/tmp/hci_dump");
     if (usb_path_len){
@@ -221,13 +355,20 @@ int main(int argc, const char * argv[]){
     }
     btstack_strcat(pklg_path, sizeof(pklg_path), ".pklg");
 
+    // use path from command line if given
+    if( log_file_path != NULL )
+        btstack_strcpy(pklg_path, sizeof(pklg_path), log_file_path );
+
     // log into file using HCI_DUMP_PACKETLOGGER format
     hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
     hci_dump_init(hci_dump_posix_fs_get_instance());
     printf("Packet Log: %s\n", pklg_path);
 
+    // let the log contain the calling parameters
+    btstack_log_cmd_line( app_argc, app_argv );
+
     // init HCI
-	hci_init(hci_transport_usb_instance(), NULL);
+    hci_init(hci_transport_usb_instance(), NULL);
 
 #ifdef HAVE_PORTAUDIO
     btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
@@ -242,10 +383,10 @@ int main(int argc, const char * argv[]){
     signal(SIGINT, sigint_handler);
 
     // setup app
-    btstack_main(argc, argv);
+    btstack_main(app_argc, app_argv);
 
     // go
-    btstack_run_loop_execute();    
+    btstack_run_loop_execute();
 
     return 0;
 }

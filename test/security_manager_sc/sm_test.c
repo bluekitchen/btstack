@@ -72,9 +72,9 @@ void __gcov_reset(void);
 
 const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
-    0x02, 0x01, 0x06, 
+    0x02, 0x01, 0x06,
     // Name
-    0x0d, 0x09, 'S', 'M', ' ', 'P', 'e', 'r', 'i', 'p', 'h', 'e', 'a', 'l' 
+    0x0d, 0x09, 'S', 'M', ' ', 'P', 'e', 'r', 'i', 'p', 'h', 'e', 'a', 'l'
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
@@ -136,7 +136,7 @@ static void  heartbeat_handler(struct btstack_timer_source *ts){
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(ts);
     counter++;
-} 
+}
 
 static int get_oob_data_callback(uint8_t address_type, bd_addr_t addr, uint8_t * oob_data){
     UNUSED(address_type);
@@ -215,8 +215,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (packet[4] != 0){
                         printf("SERVICE_QUERY_RESULT - Error status %x.\n", packet[4]);
                         gap_disconnect(connection_handle);
-                        break;  
-                    } 
+                        break;
+                    }
                     state = TC_W4_CHARACTERISTIC_RESULT;
                     printf("Search for counter characteristic.\n");
                     gatt_client_discover_characteristics_for_service_by_uuid128(handle_gatt_client_event, connection_handle, &le_counter_service, le_counter_characteristic_uuid);
@@ -225,7 +225,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     break;
             }
             break;
-            
+
         case TC_W4_CHARACTERISTIC_RESULT:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
@@ -235,8 +235,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (packet[4] != 0){
                         printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", packet[4]);
                         gap_disconnect(connection_handle);
-                        break;  
-                    } 
+                        break;
+                    }
                     state = TC_W4_SUBSCRIBED;
                     printf("Configure counter for notify.\n");
                     gatt_client_write_client_characteristic_configuration(handle_gatt_client_event, connection_handle, &le_counter_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
@@ -474,7 +474,7 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
     int arg = 1;
-    
+
     while (arg < argc) {
         if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
             arg++;
@@ -528,7 +528,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // set up l2cap_le
     l2cap_init();
-    
+
     // setup le device db
     le_device_db_init();
 
@@ -538,7 +538,7 @@ int btstack_main(int argc, const char * argv[]){
     // setup SM io capabilities & auth req
     sm_init();
     sm_set_io_capabilities(sm_io_capabilities);
-    sm_set_authentication_requirements(sm_auth_req); 
+    sm_set_authentication_requirements(sm_auth_req);
     sm_register_oob_data_callback(get_oob_data_callback);
     sm_register_sc_oob_data_callback(get_sc_oob_data_callback);
 
@@ -550,7 +550,7 @@ int btstack_main(int argc, const char * argv[]){
     sm_add_event_handler(&sm_event_callback_registration);
 
     // setup ATT server
-    att_server_init(profile_data, att_read_callback, att_write_callback);    
+    att_server_init(profile_data, att_read_callback, att_write_callback);
     att_server_register_packet_handler(&att_packet_handler);
 
     btstack_stdin_setup(stdin_process);
@@ -562,7 +562,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
-    
+
     return 0;
 }
 

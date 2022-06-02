@@ -102,7 +102,7 @@ class Node:
         return line
 
     def start_process(self):
-        args = ['build-coverage/sm_test', '-u', self.usb_path]
+        args = ['build-coverage/sm_test', '-u', self.usb_path, '-c']
         if self.peer_addr != None:
             args.append('-a')
             args.append(self.peer_addr)
