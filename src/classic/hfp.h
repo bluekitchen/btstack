@@ -116,7 +116,7 @@ extern "C" {
 #define HFP_MAX_NUM_CALL_SERVICES               20
 #define HFP_CALL_SERVICE_SIZE                    3
 #define HFP_MAX_NUM_CODECS                      10
-
+#define HFP_BNEP_NUM_MAX_SIZE                   25
 #define HFP_MAX_INDICATOR_DESC_SIZE             20
 #define HFP_MAX_VR_TEXT_SIZE                   100
 #define HFP_VR_TEXT_HEADER_SIZE                 27      // bytes needed for sending +BVRA message including quotes but excluding string length: 
@@ -715,7 +715,7 @@ typedef struct hfp_connection {
     uint8_t call_index;
     // also used for CLCC, CCWA, CLIP if set
     uint8_t bnip_type;       // 0 == not set
-    char    bnip_number[25]; //
+    char    bnip_number[HFP_BNEP_NUM_MAX_SIZE]; //
     bool    clip_have_alpha;
 
 #ifdef ENABLE_CC256X_ASSISTED_HFP
