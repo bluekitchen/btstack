@@ -3688,8 +3688,10 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             break;
 
                         case HCI_STATE_OFF:
+                        case HCI_STATE_HALTING:
                             // stop random address update
                             gap_random_address_update_stop();
+                            //
                             break;
 
                         default:
@@ -4749,6 +4751,24 @@ void sm_test_set_pairing_failure(int reason){
 }
 #endif
 
+static void sm_state_reset() {
+#ifdef USE_CMAC_ENGINE
+    sm_cmac_active  = 0;
+#endif
+    dkg_state = DKG_W4_WORKING;
+    rau_state = RAU_IDLE;
+    sm_aes128_state = SM_AES128_IDLE;
+    sm_address_resolution_test = -1;    // no private address to resolve yet
+    sm_address_resolution_ah_calculation_active = 0;
+    sm_address_resolution_mode = ADDRESS_RESOLUTION_IDLE;
+    sm_address_resolution_general_queue = NULL;
+    sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    sm_ec_generate_new_key();
+#endif
+}
+
 void sm_init(void){
 
     if (sm_initialized) return;
@@ -4768,29 +4788,18 @@ void sm_init(void){
     sm_fixed_passkey_in_display_role = 0xffffffffU;
     sm_reconstruct_ltk_without_le_device_db_entry = true;
 
-#ifdef USE_CMAC_ENGINE
-    sm_cmac_active  = 0;
-#endif
-    dkg_state = DKG_W4_WORKING;
-    rau_state = RAU_IDLE;
-    sm_aes128_state = SM_AES128_IDLE;
-    sm_address_resolution_test = -1;    // no private address to resolve yet
-    sm_address_resolution_ah_calculation_active = 0;
-    sm_address_resolution_mode = ADDRESS_RESOLUTION_IDLE;
-    sm_address_resolution_general_queue = NULL;
-
     gap_random_adress_update_period = 15 * 60 * 1000L;
-    sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
 
     test_use_fixed_local_csrk = false;
 
+    // other
     btstack_run_loop_set_timer_handler(&sm_run_timer, &sm_run_timer_handler);
 
     // register for HCI Events from HCI
     hci_event_callback_registration.callback = &sm_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    // 
+    //
     btstack_crypto_init();
 
     // init le_device_db
@@ -4799,9 +4808,8 @@ void sm_init(void){
     // and L2CAP PDUs + L2CAP_EVENT_CAN_SEND_NOW
     l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-    sm_ec_generate_new_key();
-#endif
+    // state
+    sm_state_reset();
 
     sm_initialized = true;
 }
