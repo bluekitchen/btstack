@@ -1122,7 +1122,7 @@ static hfp_command_entry_t hfp_ag_commmand_table[] = {
 static hfp_command_entry_t hfp_hf_commmand_table[] = {
     { "+BCS:",  HFP_CMD_AG_SUGGESTED_CODEC },
     { "+BIND:", HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS },
-    { "+BINP",  HFP_CMD_AG_SENT_PHONE_NUMBER },
+    { "+BINP:", HFP_CMD_AG_SENT_PHONE_NUMBER },
     { "+BRSF:", HFP_CMD_SUPPORTED_FEATURES },
     { "+BSIR:", HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING },
     { "+BTRH:", HFP_CMD_RESPONSE_AND_HOLD_STATUS },
