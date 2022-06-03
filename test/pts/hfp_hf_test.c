@@ -87,7 +87,7 @@ static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint16_t indicators[1] = {0x01};
 static uint8_t  negotiated_codec = HFP_CODEC_CVSD;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-char cmd;
+static char cmd;
 
 static void dump_supported_codecs(void){
     unsigned int i;
@@ -159,7 +159,7 @@ static void show_usage(void){
 }
 
 static void stdin_process(char c){
-    log_info("stdin: %c", cmd);
+    log_info("stdin: %c", c);
 
     cmd = c;    // used in packet handler
 

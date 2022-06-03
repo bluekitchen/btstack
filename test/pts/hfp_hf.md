@@ -18,7 +18,7 @@ HFP/HF/ACS/BV-09-I: b
 HFP/HF/ACS/BV-12-I: f
 HFP/HF/ACS/BI-13-I: f (Secure Connections not enabled, BTstack will reject connection when Link Key with SC available)
 HFP/HF/ACS/BV-15-I: (confirm)
-HFP/HF/ACS/BV-17-I: b (requires Controller with Secure Connection)
+? HFP/HF/ACS/BV-17-I: b (requires Controller with Secure Connection)
 
 HFP/HF/ACR/BV-01-I: B
 HFP/HF/ACR/BV-02-I: (wait)
@@ -27,7 +27,7 @@ HFP/HF/CLI/BV-01-I: L, f
 
 HFP/HF/ICA/BV-01-I: f
 HFP/HF/ICA/BV-02-I: f, F, f
-HFP/HF/ICA/BV-03-I: f
+HFP/HF/ICA/BV-03-I: f (ok if you see RING message)
 HFP/HF/ICA/BV-04-I: f
 HFP/HF/ICA/BV-05-I: f
 HFP/HF/ICA/BV-06-I: (confirm)
@@ -45,9 +45,9 @@ HFP/HF/TDS/BV-01-I: (confirm)
 
 HFP/HF/ATH/BV-03-I: a, b
 HFP/HF/ATH/BV-04-I: f, b
-HFP/HF/ATH/BV-05-I: f
+HFP/HF/ATH/BV-05-I: (confirm)
 HFP/HF/ATH/BV-06-I: f
-HFP/HF/ATH/BV-09-I: restart tool and wait (the test is about HF power off/one)
+HFP/HF/ATH/BV-09-I: (confirm) (the test is about HF power off/one)
 
 HFP/HF/ATA/BV-01-I: f
 HFP/HF/ATA/BV-02-I: f, A
@@ -68,7 +68,7 @@ HFP/HF/TWC/BV-04-I: f, v, V
 HFP/HF/TWC/BV-05-I: f, W, U, I, U, j, U
 HFP/HF/TWC/BV-06-I: f, v, w
 
-HFP/HF/OCM/BV-01-I: (wait)
+HFP/HF/CIT/BV-01-I: (wait)
 
 HFP/HF/ENO/BV-01-I: m, f
 
@@ -92,13 +92,13 @@ HFP/HF/RMV/BV-03-I: f, f
 
 HFP/HF/ECS/BV-01-I: a, X (PTS does not send phone number via CLCC, 1st on hold, 2nd active)
 HFP/HF/ECS/BV-02-I: a, X (PTS does not send phone number via CLCC, 1st on hold, 2nd active)
-HFP/HF/ECS/BV-03-I: a, X 
+HFP/HF/ECS/BV-03-I: f, X 
 
 HFP/HF/ECC/BV-01-I: f, v, y
 HFP/HF/ECC/BV-02-I: f, v, Y, U
 
 HFP/HF/RHH/BV-01-I: a, X
-HFP/HF/RHH/BV-02-I: a, ], X
+HFP/HF/RHH/BV-02-I: ], X
 HFP/HF/RHH/BV-03-I: X
 HFP/HF/RHH/BV-04-I: {, X
 HFP/HF/RHH/BV-05-I: X, X
@@ -107,7 +107,7 @@ HFP/HF/RHH/BV-07-I: X, X
 HFP/HF/RHH/BV-08-I: X, X 
 
 HFP/HF/NUM/BV-01-I: ? (use the `?` command to query caller subscriber number)
-HFP/HF/NUM/BI-02-I: ? (use the `?` command to query caller subscriber number)
+HFP/HF/NUM/BI-01-I: ? (use the `?` command to query caller subscriber number)
 
 HFP/HF/SLC/BV-01-I: a
 HFP/HF/SLC/BV-02-I: (wait)
@@ -145,7 +145,7 @@ HFP/HF/VRR/BV-01-I: R, B, r
 
 HFP/HF/VTA/BV-01-I: R, R
 
-HFP/HF/ATAH/BV-01-I: f, b, B, A
+HFP/HF/ATAH/BV-01-I: f, b, B
 
 HFP/HF/OCA/BV-01-I: (wait)
 
