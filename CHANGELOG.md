@@ -7,32 +7,43 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ---
 
 ## Unreleased
+### Added
+### Fixed
+### Changed
+
+
+## Release v1.5.3
 
 ### Added
 - GAP: support periodic advertising with ENABLE_LE_PERIODIC_ADVERTISING
 - GAP: support periodic inquiry mode with gap_inquiry_periodic_start
-- HFP: try next link setting for SCO connection failure with explicit SCO reject error
 - HFP HF: provide Calling Line Identification alpha field
 - HFP HF: emit HFP_SUBEVENT_TRANSMIT_DTMF_CODES after sending DTMF command
+- GOEP Server
+- Chipset: support for firmware download and configuration of Realtek Controllers
 
 ### Fixed
 - GAP: fix gap_connect_cancel for gap_connect_with_whitelist
 - GAP: fix race condition that causes duplicate authenticate request
+- SM: address update for non-resolvable private addresses
+- SM: reset state on power off transition
 - L2CAP: Fix accept incoming ERTM connection when Information Request already complete
+- A2DP Sink: fix config API for AAC, ATRAC, and other codecs
+- HFP: try next link setting for SCO connection failure after SCO reject errors
 - HFP AG: activate all AG indicators upon service level connection establishment
 - HFP AG: handle call termination in alerting call state
-- HFP HF: report HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED event 
-- A2DP Sink: fix config API for AAC, ATRAC, and other codecs
-- SM: address update for non-resolvable private addresses
+- HFP HF: fix parsing of phone number for voice tag
+- HFP HF: report HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED event
 
 ### Changed
+- HCI: use ERROR_CODE_CONNECTION_REJECTED_DUE_TO_SECURITY_REASONS to rejected classic connections
+- SM: pairing events indicate if LE Secure Connection will be used
 - A2DP: new a2dp.c contains shared code of Sink and Source roles
 - A2DP Sink: automatically configure stream endpoint for outgoing connections
-- HCI: use ERROR_CODE_CONNECTION_REJECTED_DUE_TO_SECURITY_REASONS to rejected classic connections
 - HFP AG: drop unused number parameter from hfp_ag_outgoing_call_initiated
-- SM: pairing events indicate if LE Secure Connection will be used
-
-
+- libusb: command line options to delete TLV and specify log file path
+- Windows: native implementations of btstack_tlv_window, hci_dump_windows_fs, hci_dump_window_stdout
+ 
 ## Release v1.5.2
 
 ### Added
