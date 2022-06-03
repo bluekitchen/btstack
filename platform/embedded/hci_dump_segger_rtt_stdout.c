@@ -140,6 +140,13 @@ static void hci_dump_segger_rtt_stdout_packet(uint8_t packet_type, uint8_t in, u
                 SEGGER_RTT_printf(0, "SCO => ");
             }
             break;
+        case HCI_ISO_DATA_PACKET:
+            if (in) {
+                SEGGER_RTT_printf(0, "ISO <= ");
+            } else {
+                SEGGER_RTT_printf(0, "ISO => ");
+            }
+            break;
         default:
             return;
     }

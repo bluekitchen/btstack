@@ -1,10 +1,8 @@
-CC = g++
-
 # Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -I${BTSTACK_ROOT}/src  -I${BTSTACK_ROOT}/platform/posix
+CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null -I. -I${BTSTACK_ROOT}/src  -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 
 VPATH += ${BTSTACK_ROOT}/src
@@ -46,14 +44,20 @@ build-%/profile.h: profile.gatt | build-%
 build-coverage/%.o: %.c | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
+build-coverage/%.o: %.cpp | build-coverage
+	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
+
 build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
+build-asan/%.o: %.cpp | build-asan
+	${CXX} -c $(CFLAGS_ASAN) $< -o $@
+
 build-coverage/test_le_scan: ${COMMON_OBJ_COVERAGE} build-coverage/test_le_scan.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/test_le_scan: ${COMMON_OBJ_ASAN} build-asan/test_le_scan.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
 	build-asan/test_le_scan

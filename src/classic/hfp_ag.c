@@ -648,7 +648,13 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
 static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
     hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
-    
+
+    // HFP 4.35: "When [...] a new Service Level Connection is established all indicators are activated by default."
+    uint16_t i;
+    for (i=0;i<hfp_connection->ag_indicators_nr;i++){
+        hfp_connection->ag_indicators[i].enabled = 1;
+    }
+
     // if active call exist, set per-hfp_connection state active, too (when audio is on)
     if (hfp_gsm_call_status() == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
         hfp_connection->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE;
@@ -1388,8 +1394,17 @@ static void hfp_ag_trigger_reject_call(void){
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->local_role != HFP_ROLE_AG) continue;
-        if ((connection->call_state != HFP_CALL_INCOMING_RINGING) &&
-            (connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING)) continue;
+
+        switch (connection->call_state){
+            case HFP_CALL_INCOMING_RINGING:
+            case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
+            case HFP_CALL_OUTGOING_RINGING:
+            case HFP_CALL_OUTGOING_INITIATED:
+            case HFP_CALL_OUTGOING_DIALING:
+                break;
+            default:
+                continue;
+        }
         
         connection->call_state = HFP_CALL_IDLE;
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
@@ -1694,19 +1709,14 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_gsm_callsetup_status()){
                         case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
+                        case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE:
+                        case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE:
                             hfp_gsm_handler(HFP_AG_TERMINATE_CALL_BY_HF, 0, 0, NULL);
                             hfp_ag_set_callsetup_indicator();
                             hfp_ag_transfer_callsetup_state();
                             hfp_ag_trigger_reject_call();
                             log_info("HF Rejected Incoming call, AG terminate call");
                             break;
-                        case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE:
-                        case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE:
-                            hfp_gsm_handler(HFP_AG_TERMINATE_CALL_BY_HF, 0, 0, NULL);
-                            hfp_ag_set_callsetup_indicator();
-                            hfp_ag_transfer_callsetup_state();
-                            log_info("AG terminate outgoing call process"); 
-                            break;              
                         default:
                             break;
                     }
@@ -1727,6 +1737,9 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             switch (hfp_gsm_call_status()){
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_gsm_callsetup_status()){
+                        case HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS:
+                        case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE:
+                        case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE:
                         case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
                             hfp_gsm_handler(HFP_AG_TERMINATE_CALL_BY_AG, 0, 0, NULL);
                             hfp_ag_set_callsetup_indicator();
@@ -2064,16 +2077,12 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         return 1;
     }
 
-    // update AG indicators
-    if (hfp_connection->ag_indicators_status_update_bitmap){
-        int i;
+    // update AG indicators only if enabled by AT+CMER=3,0,0,1
+    if ((hfp_connection->enable_status_update_for_ag_indicators == 1) && (hfp_connection->ag_indicators_status_update_bitmap != 0)){
+        uint16_t i;
         for (i=0;i<hfp_connection->ag_indicators_nr;i++){
             if (get_bit(hfp_connection->ag_indicators_status_update_bitmap, i)){
                 hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, i, 0);
-                if (!hfp_connection->enable_status_update_for_ag_indicators) {
-                    log_info("+CMER:3,0,0,0 - not sending update for '%s'", hfp_ag_indicators[i].name);
-                    break;
-                }
                 hfp_ag_send_transfer_ag_indicators_status_cmd(hfp_connection->rfcomm_cid, &hfp_ag_indicators[i]);
                 return 1;
             }
@@ -2741,8 +2750,7 @@ void hfp_ag_incoming_call(void){
     hfp_ag_call_sm(HFP_AG_INCOMING_CALL, NULL);
 }
 
-void hfp_ag_outgoing_call_initiated(const char * number) {
-    UNUSED(number);
+void hfp_ag_outgoing_call_initiated(void) {
     hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_INITIATED_BY_AG, NULL);
 }
 

@@ -125,6 +125,7 @@ typedef enum {
 } btstack_crypto_ecc_p256_key_generation_state_t;
 
 static void btstack_crypto_run(void);
+static void btstack_crypto_state_reset(void);
 
 static const uint8_t zero[16] = { 0 };
 
@@ -756,7 +757,7 @@ static void btstack_crypto_ccm_calc_xn(btstack_crypto_ccm_t * btstack_crypto_ccm
     printf_hexdump(plaintext, 16);
 #endif
     uint8_t i;
-    uint8_t bytes_to_decrypt = btstack_crypto_ccm->block_len;
+    uint16_t bytes_to_decrypt = btstack_crypto_ccm->block_len;
     // use explicit min implementation as c-stat worried about out-of-bounds-reads
     if (bytes_to_decrypt > 16u) {
         bytes_to_decrypt = 16;
@@ -1082,41 +1083,51 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
     btstack_crypto_ecc_p256_t * btstack_crypto_ec_p192;
 #endif
 #endif
-    
+    bool ecdh_operations_supported;
+
     if (packet_type != HCI_EVENT_PACKET)  return;
 
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
+            switch(btstack_event_state_get_state(packet)){
+                case HCI_STATE_HALTING:
+                    // as stack is shutting down, reset state
+                    btstack_crypto_state_reset();
+                    break;
+                default:
+                    break;
+            }
             if (btstack_event_state_get_state(packet) != HCI_STATE_HALTING) break;
-            if (!btstack_crypto_wait_for_hci_result) break;
-            // request stack to defer shutdown a bit
-            hci_halting_defer();
             break;
 
         case HCI_EVENT_COMMAND_COMPLETE:
+            switch (hci_event_command_complete_get_command_opcode(packet)){
 #ifndef USE_BTSTACK_AES128
-    	    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_encrypt)){
-                if (!btstack_crypto_wait_for_hci_result) return;
-                btstack_crypto_wait_for_hci_result = 0;
-    	        btstack_crypto_handle_encryption_result(&packet[6]);
-    	    }
+                case HCI_OPCODE_HCI_LE_ENCRYPT:
+                    if (!btstack_crypto_wait_for_hci_result) return;
+                    btstack_crypto_wait_for_hci_result = 0;
+    	            btstack_crypto_handle_encryption_result(&packet[6]);
+                    break;
 #endif
-    	    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_rand)){
-                if (!btstack_crypto_wait_for_hci_result) return;
-                btstack_crypto_wait_for_hci_result = false;
-                btstack_crypto_handle_random_data(&packet[6], 8);
-    	    }
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
-                int ecdh_operations_supported = (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+34u] & 0x06u) == 0x06u;
-                UNUSED(ecdh_operations_supported);
-                log_info("controller supports ECDH operation: %u", ecdh_operations_supported);
+                case HCI_OPCODE_HCI_LE_RAND:
+                    if (!btstack_crypto_wait_for_hci_result) return;
+                    btstack_crypto_wait_for_hci_result = false;
+                    btstack_crypto_handle_random_data(&packet[6], 8);
+                    break;
+                case HCI_OPCODE_HCI_READ_LOCAL_SUPPORTED_COMMANDS:
+                    ecdh_operations_supported = (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+34u] & 0x06u) == 0x06u;
+                    UNUSED(ecdh_operations_supported);
+                    log_info("controller supports ECDH operation: %u", ecdh_operations_supported);
 #ifdef ENABLE_ECC_P256
 #ifndef USE_SOFTWARE_ECC_P256_IMPLEMENTATION
-                // Assert controller supports ECDH operation if we don't implement them ourselves
-                // Please add ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS to btstack_config.h and add 3rd-party/micro-ecc to your port
-                btstack_assert(ecdh_operations_supported != 0);
+                    // Assert controller supports ECDH operation if we don't implement them ourselves
+                    // Please add ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS to btstack_config.h and add 3rd-party/micro-ecc to your port
+                    btstack_assert(ecdh_operations_supported != 0);
 #endif
 #endif
+                    break;
+                default:
+                    break;
             }
             break;
 
@@ -1161,25 +1172,6 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
 
     // try processing
 	btstack_crypto_run();    
-}
-
-void btstack_crypto_init(void){
-	if (btstack_crypto_initialized) return;
-	btstack_crypto_initialized = true;
-
-	// register with HCI
-    hci_event_callback_registration.callback = &btstack_crypto_event_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-#ifndef USE_BTSTACK_AES128
-    btstack_crypto_cmac_state = CMAC_IDLE;
-#endif
-#ifdef ENABLE_ECC_P256
-    btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_IDLE;
-#endif
-#ifdef USE_MBEDTLS_ECC_P256
-	mbedtls_ecp_group_init(&mbedtls_ec_group);
-	mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
-#endif
 }
 
 void btstack_crypto_random_generate(btstack_crypto_random_t * request, uint8_t * buffer, uint16_t size, void (* callback)(void * arg), void * callback_arg){
@@ -1353,11 +1345,38 @@ void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t l
     btstack_crypto_run();
 }
 
+
+static void btstack_crypto_state_reset() {
+#ifndef USE_BTSTACK_AES128
+    btstack_crypto_cmac_state = CMAC_IDLE;
+#endif
+#ifdef ENABLE_ECC_P256
+    btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_IDLE;
+#endif
+    btstack_crypto_wait_for_hci_result = false;
+    btstack_crypto_operations = NULL;
+}
+
+void btstack_crypto_init(void){
+    if (btstack_crypto_initialized) return;
+    btstack_crypto_initialized = true;
+
+    // register with HCI
+    hci_event_callback_registration.callback = &btstack_crypto_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+#ifdef USE_MBEDTLS_ECC_P256
+    mbedtls_ecp_group_init(&mbedtls_ec_group);
+	mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
+#endif
+
+    // reset state
+    btstack_crypto_state_reset();
+}
+
 // De-Init
 void btstack_crypto_deinit(void) {
     btstack_crypto_initialized = false;
-    btstack_crypto_wait_for_hci_result = false;
-    btstack_crypto_operations = NULL;
 }
 
 // PTS only

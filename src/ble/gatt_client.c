@@ -230,7 +230,7 @@ static uint8_t att_confirmation(uint16_t con_handle){
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_find_information_request(uint16_t request_type, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle){
+static uint8_t att_find_information_request(uint8_t request_type, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle){
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
@@ -241,7 +241,7 @@ static uint8_t att_find_information_request(uint16_t request_type, uint16_t con_
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_find_by_type_value_request(uint16_t request_type, uint16_t attribute_group_type, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * value, uint16_t value_size){
+static uint8_t att_find_by_type_value_request(uint8_t request_type, uint16_t attribute_group_type, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * value, uint16_t value_size){
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     
@@ -255,7 +255,7 @@ static uint8_t att_find_by_type_value_request(uint16_t request_type, uint16_t at
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_read_by_type_or_group_request_for_uuid16(uint16_t request_type, uint16_t uuid16, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle){
+static uint8_t att_read_by_type_or_group_request_for_uuid16(uint8_t request_type, uint16_t uuid16, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle){
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
@@ -267,7 +267,7 @@ static uint8_t att_read_by_type_or_group_request_for_uuid16(uint16_t request_typ
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_read_by_type_or_group_request_for_uuid128(uint16_t request_type, const uint8_t * uuid128, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle){
+static uint8_t att_read_by_type_or_group_request_for_uuid128(uint8_t request_type, const uint8_t * uuid128, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle){
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
@@ -279,7 +279,7 @@ static uint8_t att_read_by_type_or_group_request_for_uuid128(uint16_t request_ty
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_read_request(uint16_t request_type, uint16_t con_handle, uint16_t attribute_handle){
+static uint8_t att_read_request(uint8_t request_type, uint16_t con_handle, uint16_t attribute_handle){
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
@@ -289,7 +289,7 @@ static uint8_t att_read_request(uint16_t request_type, uint16_t con_handle, uint
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_read_blob_request(uint16_t request_type, uint16_t con_handle, uint16_t attribute_handle, uint16_t value_offset){
+static uint8_t att_read_blob_request(uint8_t request_type, uint16_t con_handle, uint16_t attribute_handle, uint16_t value_offset){
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
@@ -329,7 +329,7 @@ static uint8_t att_signed_write_request(uint16_t request_type, uint16_t con_hand
 #endif
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_write_request(uint16_t request_type, uint16_t con_handle, uint16_t attribute_handle, uint16_t value_length, uint8_t * value){
+static uint8_t att_write_request(uint8_t request_type, uint16_t con_handle, uint16_t attribute_handle, uint16_t value_length, uint8_t * value){
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
@@ -340,7 +340,7 @@ static uint8_t att_write_request(uint16_t request_type, uint16_t con_handle, uin
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_execute_write_request(uint16_t request_type, uint16_t con_handle, uint8_t execute_write){
+static uint8_t att_execute_write_request(uint8_t request_type, uint16_t con_handle, uint8_t execute_write){
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
@@ -350,7 +350,7 @@ static uint8_t att_execute_write_request(uint16_t request_type, uint16_t con_han
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_prepare_write_request(uint16_t request_type, uint16_t con_handle, uint16_t attribute_handle, uint16_t value_offset, uint16_t blob_length, uint8_t * value){
+static uint8_t att_prepare_write_request(uint8_t request_type, uint16_t con_handle, uint16_t attribute_handle, uint16_t value_offset, uint16_t blob_length, uint8_t * value){
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
@@ -507,7 +507,7 @@ static void gatt_client_handle_transaction_complete(gatt_client_t * gatt_client)
 
 static void emit_event_new(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
     if (!callback) return;
-    hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
+    hci_dump_packet(HCI_EVENT_PACKET, 1, packet, size);
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 

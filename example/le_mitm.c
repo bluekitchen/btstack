@@ -485,7 +485,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             } else {
                 btstack_assert(size <= MAX_ATT_MTU);
                 pdu->handle = mitm_opposite_handle(handle);
-                pdu->len = size;
+                pdu->len = (uint8_t) size;
                 memcpy(pdu->data, packet, size);
             }
             btstack_linked_list_add_tail(&outgoing_att_pdus, (btstack_linked_item_t *) pdu);

@@ -83,11 +83,12 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
     };
 
     btstack_assert(0 < cmd);
-    static const unsigned int num_l2cap_commands = sizeof(l2cap_signaling_commands_format) / sizeof(const char *);
-    btstack_assert(cmd <= num_l2cap_commands);
+    uint8_t cmd_index = (uint8_t) cmd;
+    static const uint8_t num_l2cap_commands = (uint8_t) (sizeof(l2cap_signaling_commands_format) / sizeof(const char *));
+    btstack_assert(cmd_index <= num_l2cap_commands);
     UNUSED(num_l2cap_commands);
 
-    const char *format = l2cap_signaling_commands_format[cmd-1u];
+    const char *format = l2cap_signaling_commands_format[cmd_index -1u];
     btstack_assert(format != NULL);
 
     // 0 - Connection handle : PB=pb : BC=00 
@@ -95,7 +96,7 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
     // 6 - L2CAP channel = 1
     little_endian_store_16(acl_buffer, 6, cid);
     // 8 - Code
-    acl_buffer[8] = cmd;
+    acl_buffer[8] = cmd_index;
     // 9 - id (!= 0 sequentially)
     acl_buffer[9] = identifier;
     

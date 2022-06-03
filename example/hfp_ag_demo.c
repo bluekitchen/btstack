@@ -158,6 +158,7 @@ static void show_usage(void){
     
     printf("b - establish AUDIO connection          | B - release AUDIO connection\n");
     printf("c - simulate incoming call from 1234567 | C - simulate call from 1234567 dropped\n");
+    printf("P - simulate outgoing call from 1234567 | R - establish outgoing call\n");
     printf("d - report AG failure\n");
     printf("D - delete all link keys\n");
     printf("e - answer call on AG                   | E - terminate call on AG\n");
@@ -218,6 +219,17 @@ static void stdin_process(char cmd){
             printf("Simulate incoming call from 1234567\n");
             hfp_ag_set_clip(129, "1234567");
             hfp_ag_incoming_call();
+            break;
+        case '5':
+            log_info("USER:\'%c\'", cmd);
+            printf("Initiate outgoing call from 1234567\n");
+            hfp_ag_set_clip(129, "1234567");
+            hfp_ag_outgoing_call_initiated();
+            break;
+        case '6':
+            log_info("USER:\'%c\'", cmd);
+            printf("Establish outgoing call\n");
+            hfp_ag_outgoing_call_established();
             break;
         case 'D':
             printf("Deleting all link keys\n");
@@ -463,13 +475,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch(hci_event_packet_get_type(event)){
-#ifndef HAVE_BTSTACK_STDIN
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(event) != HCI_STATE_WORKING) break;
+                    dump_supported_codecs();
+#ifndef HAVE_BTSTACK_STDIN
                     printf("Establish HFP AG service level connection to %s...\n", bd_addr_to_str(device_addr));
                     hfp_ag_establish_service_level_connection(device_addr);
-                    break;
 #endif
+                    break;
                 case GAP_EVENT_INQUIRY_RESULT:
                     gap_event_inquiry_result_get_bd_addr(event, addr);
                     // print info
@@ -493,11 +506,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
                     sco_demo_send(sco_handle); 
                     break; 
-                case HCI_EVENT_COMMAND_COMPLETE:
-                    if (HCI_EVENT_IS_COMMAND_COMPLETE(event, hci_read_local_supported_features)){
-                        dump_supported_codecs();
-                    }
-                    break;
                 default:
                     break;
             }

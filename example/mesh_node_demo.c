@@ -87,7 +87,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(connection_handle);
     if (att_handle == ATT_CHARACTERISTIC_GAP_DEVICE_NAME_01_VALUE_HANDLE){
-        return att_read_callback_handle_blob((const uint8_t *)gap_name_buffer, strlen(gap_name_buffer), offset, buffer, buffer_size);
+        return att_read_callback_handle_blob((const uint8_t *)gap_name_buffer, (uint16_t) strlen(gap_name_buffer), offset, buffer, buffer_size);
     }
     return 0;
 }

@@ -29,6 +29,9 @@ To add an udev rule, please create `/etc/udev/rules.d/btstack.rules` and add thi
 	# Match all devices from CSR
 	SUBSYSTEM=="usb", ATTRS{idVendor}=="0a12", MODE="0666"
 
+	# Match all devices from Realtek
+	SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", MODE="0666"
+
 	# Match Cypress Semiconductor / Broadcom BCM20702A, e.g. DeLOCK Bluetooth 4.0 dongle
 	SUBSYSTEM=="usb", ATTRS{idVendor}=="0a5c", ATTRS{idProduct}=="21e8", MODE="0666"
 
@@ -57,6 +60,15 @@ Note: if you get this error,
 and you didn't start another instance and you didn't assign the USB Controller to a virtual machine,
 macOS uses the plugged-in Bluetooth Controller. Please configure NVRAM as explained and try again after a reboot.
 
+### Broadcom/Cypress/Infineon Controllers
+During startup BTstack queries the Controlle for the Local Name, which is set to the Controller type (e.g. 'BCM20702A).
+The chipset support uses this information to look for a local PatchRAM file of that name and uploads it.
+
+### Realtek Controllers
+During startup, the libusb HCI transport implementations reports the USB Vendor/Product ID, which is then forwarded to the Realtek chipset support.
+The chipset support contains a mapping between USB Product ID and ( Patch, Configuration ) files. If found, these are
+uploaded.
+
 
 ## Running the examples
 
@@ -67,23 +79,42 @@ On start, BTstack will try to find a suitable Bluetooth module. It will also pri
 	$ ./le_counter
 	Packet Log: /tmp/hci_dump.pklg
 	BTstack counter 0001
-	USB Path: 06
-	BTstack up and running on 00:1A:7D:DA:71:13.
+	Packet Log: /tmp/hci_dump_6.pklg
+	USB device 0x0a12/0x0001, path: 06
+    Local version information:
+    - HCI Version    0x0006
+    - HCI Revision   0x22bb
+    - LMP Version    0x0006
+    - LMP Subversion 0x22bb
+    - Manufacturer 0x000a
+	BTstack up and running on 00:1A:7D:DA:71:01.
 
 If you want to run multiple examples at the same time, it helps to fix the path to the used Bluetooth module by passing -u usb-path to the executable.
 
-Example running le_streamer and le_streamer_client in two processes, using Bluetooth dongles at USB path 6 and 4:
+Example running le_streamer and le_streamer_client in two processes, using CSR Bluetooth dongles at USB path 6 and 4:
 
 	./le_streamer -u 6
 	Specified USB Path: 06
 	Packet Log: /tmp/hci_dump_6.pklg
-	USB Path: 06
-	BTstack up and running on 00:1A:7D:DA:71:13.
+	USB device 0x0a12/0x0001, path: 06
+    Local version information:
+    - HCI Version    0x0006
+    - HCI Revision   0x22bb
+    - LMP Version    0x0006
+    - LMP Subversion 0x22bb
+    - Manufacturer 0x000a
+	BTstack up and running on 00:1A:7D:DA:71:01.
 	To start the streaming, please run the le_streamer_client example on other device, or use some GATT Explorer, e.g. LightBlue, BLExplr.
 
 	$ ./le_streamer_client -u 4
 	Specified USB Path: 04
 	Packet Log: /tmp/hci_dump_4.pklg
-	USB Path: 04
-	BTstack up and running on 00:1A:7D:DA:71:13.
+	USB device 0x0a12/0x0001, path: 04
+    Local version information:
+    - HCI Version    0x0006
+    - HCI Revision   0x22bb
+    - LMP Version    0x0006
+    - LMP Subversion 0x22bb
+    - Manufacturer 0x000a
+	BTstack up and running on 00:1A:7D:DA:71:02.
 	Start scanning!

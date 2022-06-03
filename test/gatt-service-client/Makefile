@@ -1,10 +1,8 @@
-CC = g++
-
 # Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -Ibuild-coverage -I../
+CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null -Ibuild-coverage -I../
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
 CFLAGS += -I${BTSTACK_ROOT}/test/mock
@@ -50,26 +48,32 @@ build-%/ancs_client_profile.h: ancs_client_profile.gatt| build-%
 build-coverage/%.o: %.c | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
+build-coverage/%.o: %.cpp | build-coverage
+	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
+
 build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
+build-asan/%.o: %.cpp | build-asan
+	${CXX} -c $(CFLAGS_ASAN) $< -o $@
+
 build-coverage/battery_service_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/battery_service_client_test.o  build-coverage/battery_service_client.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/battery_service_client_test: ${COMMON_OBJ_ASAN} build-asan/battery_service_client_test.o build-asan/battery_service_client.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 build-coverage/ancs_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/ancs_client_test.o build-coverage/ancs_client.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/ancs_client_test: ${COMMON_OBJ_ASAN} build-asan/ancs_client_test.o build-asan/ancs_client.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 build-coverage/device_information_service_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/device_information_service_client_test.o build-coverage/device_information_service_client.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/device_information_service_client_test: ${COMMON_OBJ_ASAN} build-asan/device_information_service_client_test.o build-asan/device_information_service_client.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 
 test: all

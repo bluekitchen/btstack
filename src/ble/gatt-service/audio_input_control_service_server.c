@@ -360,7 +360,7 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
 
     if (attribute_handle == aics->audio_input_description_value_handle){
         btstack_strcpy(aics->info->audio_input_description, AICS_MAX_AUDIO_INPUT_DESCRIPTION_LENGTH, (char *)buffer);
-        aics->audio_input_description_len = strlen(aics->info->audio_input_description);
+        aics->audio_input_description_len = (uint8_t) strlen(aics->info->audio_input_description);
         aics_emit_audio_input_description(aics);
         audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION);
     }
@@ -485,7 +485,7 @@ void audio_input_control_service_server_set_audio_input_status(audio_input_contr
 void audio_input_control_service_server_set_audio_input_description(audio_input_control_service_server_t * aics, const char * audio_input_desc){
     btstack_assert(aics != NULL);
     btstack_strcpy(aics->info->audio_input_description, AICS_MAX_AUDIO_INPUT_DESCRIPTION_LENGTH, (char *)audio_input_desc);
-    aics->audio_input_description_len = strlen(aics->info->audio_input_description);
+    aics->audio_input_description_len = (uint8_t) strlen(aics->info->audio_input_description);
     audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION);
 }
 

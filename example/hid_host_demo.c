@@ -161,7 +161,7 @@ static void hid_host_setup(void){
     hci_add_event_handler(&hci_event_callback_registration);
 
     // Disable stdout buffering
-    setbuf(stdout, NULL);
+    setvbuf(stdin, NULL, _IONBF, 0);
 }
 /* LISTING_END */
 
@@ -215,7 +215,7 @@ static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t re
         if (usage >= sizeof(keytable_us_none)) continue;
 
         // store new keys
-        new_keys[new_keys_count++] = usage;
+        new_keys[new_keys_count++] = (uint8_t) usage;
 
         // check if usage was used last time (and ignore in that case)
         int i;

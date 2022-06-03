@@ -53,7 +53,6 @@
 // SCO Data     0 0 0x83 Isochronous (IN)
 // SCO Data     0 0 0x03 Isochronous (Out)
 
-#include <stdio.h>
 #include <strings.h>
 #include <string.h>
 #include <unistd.h>   /* UNIX standard function definitions */
@@ -166,6 +165,15 @@ static struct libusb_transfer *acl_out_transfer;
 static struct libusb_transfer *event_in_transfer[EVENT_IN_BUFFER_COUNT];
 static struct libusb_transfer *acl_in_transfer[ACL_IN_BUFFER_COUNT];
 
+// known devices
+typedef struct {
+    btstack_linked_item_t next;
+    uint16_t vendor_id;
+    uint16_t product_id;
+} usb_known_device_t;
+
+static btstack_linked_list_t usb_knwon_devices;
+
 #ifdef ENABLE_SCO_OVER_HCI
 
 #ifdef _WIN32
@@ -224,13 +232,29 @@ static int acl_out_addr;
 static int sco_in_addr;
 static int sco_out_addr;
 
-// device path
+// device info
 static int usb_path_len;
 static uint8_t usb_path[USB_MAX_PATH_LEN];
+static uint16_t usb_vendor_id;
+static uint16_t usb_product_id;
 
 // transport interface state
 static int usb_transport_open;
 
+static void hci_transport_h2_libusb_emit_usb_info(void) {
+    uint8_t event[7 + USB_MAX_PATH_LEN];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_TRANSPORT_USB_INFO;
+    event[pos++] = 5 + usb_path_len;
+    little_endian_store_16(event, pos, usb_vendor_id);
+    pos+=2;
+    little_endian_store_16(event, pos, usb_product_id);
+    pos+=2;
+    event[pos++] = usb_path_len;
+    memcpy(&event[pos], usb_path, usb_path_len);
+    pos += usb_path_len;
+    (*packet_handler)(HCI_EVENT_PACKET, event, pos);
+}
 
 #ifdef ENABLE_SCO_OVER_HCI
 static void sco_ring_init(void){
@@ -241,6 +265,15 @@ static int sco_ring_have_space(void){
     return sco_out_transfers_active < SCO_OUT_BUFFER_COUNT;
 }
 #endif
+
+void hci_transport_usb_add_device(uint16_t vendor_id, uint16_t product_id) {
+    usb_known_device_t * device = malloc(sizeof(usb_known_device_t));
+    if (device != NULL) {
+        device->vendor_id = vendor_id;
+        device->product_id = product_id;
+        btstack_linked_list_add(&usb_knwon_devices, (btstack_linked_item_t *) device);
+    }
+}
 
 void hci_transport_usb_set_path(int len, uint8_t * port_numbers){
     if (len > USB_MAX_PATH_LEN || !port_numbers){
@@ -475,8 +508,6 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
             }
             if (!pack->actual_length) continue;
             uint8_t * data = libusb_get_iso_packet_buffer_simple(transfer, i);
-            // printf_hexdump(data, pack->actual_length);
-            // log_info("handle_isochronous_data,size %u/%u", pack->length, pack->actual_length);
             handle_isochronous_data(data, pack->actual_length);
         }
         resubmit = 1;
@@ -669,6 +700,14 @@ static int is_known_bt_device(uint16_t vendor_id, uint16_t product_id){
             return 1;
         }
     }
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &usb_knwon_devices);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        usb_known_device_t * device = (usb_known_device_t *) btstack_linked_list_iterator_next(&it);
+        if (device->vendor_id != vendor_id) continue;
+        if (device->product_id != product_id) continue;
+        return 1;
+    }
     return 0;
 }
 
@@ -707,17 +746,9 @@ static int scan_for_bt_device(libusb_device **devs, int start_index) {
 
 static int prepare_device(libusb_device_handle * aHandle){
 
-    // print device path
-    uint8_t port_numbers[USB_MAX_PATH_LEN];
+    // get device path
     libusb_device * device = libusb_get_device(aHandle);
-    int path_len = libusb_get_port_numbers(device, port_numbers, USB_MAX_PATH_LEN);
-    printf("USB Path: ");
-    int i;
-    for (i=0;i<path_len;i++){
-        if (i) printf("-");
-        printf("%02x", port_numbers[i]);
-    }
-    printf("\n");
+    usb_path_len = libusb_get_port_numbers(device, usb_path, USB_MAX_PATH_LEN);
 
     int r;
     int kernel_driver_detached = 0;
@@ -792,6 +823,14 @@ static int prepare_device(libusb_device_handle * aHandle){
 static libusb_device_handle * try_open_device(libusb_device * device){
     int r;
 
+    r = libusb_get_device_descriptor(device, &desc);
+    if (r < 0) {
+        log_error("libusb_get_device_descriptor failed!");
+        return NULL;
+    }
+    usb_vendor_id = desc.idVendor;
+    usb_product_id = desc.idProduct;
+
     libusb_device_handle * dev_handle;
     r = libusb_open(device, &dev_handle);
 
@@ -819,7 +858,6 @@ static libusb_device_handle * try_open_device(libusb_device * device){
 
 static int usb_sco_start(void){
 
-    printf("usb_sco_start\n");
     log_info("usb_sco_start");
 
     sco_state_machine_init();
@@ -873,8 +911,6 @@ static int usb_sco_start(void){
 
 static void usb_sco_stop(void){
 
-    printf("usb_sco_stop\n");
-
     log_info("usb_sco_stop");
     sco_shutdown = 1;
 
@@ -901,7 +937,7 @@ static void usb_sco_stop(void){
         }
         struct libusb_transfer * next_transfer = (struct libusb_transfer *) transfer->user_data;
         if (drop_transfer) {
-            printf("Drop completed SCO transfer %p\n", transfer);
+            log_info("Drop completed SCO transfer %p", transfer);
             if (prev_transfer == NULL) {
                 // first item
                 handle_packet = (struct libusb_transfer *) next_transfer;
@@ -972,7 +1008,7 @@ static void usb_sco_stop(void){
         return;
     }
 
-    printf("usb_sco_stop done\n");
+    log_info("usb_sco_stop done");
 }
 
 
@@ -1030,6 +1066,9 @@ static int usb_open(void){
         return -1;
     }
 
+    usb_vendor_id = USB_VENDOR_ID;
+    usb_product_id = USB_PRODUCT_ID;
+
 #else
     // Scan system for an appropriate devices
     libusb_device **devs;
@@ -1072,7 +1111,6 @@ static int usb_open(void){
         }
         if (!handle){
             log_error("USB device with given path not found");
-            printf("USB device with given path not found\n");
             return -1;
         }
     } else {
@@ -1203,6 +1241,8 @@ static int usb_open(void){
     }
 
     usb_transport_open = 1;
+
+    hci_transport_h2_libusb_emit_usb_info();
 
     return 0;
 }

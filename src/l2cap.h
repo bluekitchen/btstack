@@ -247,7 +247,7 @@ typedef struct {
     
     gap_security_level_t required_security_level;
 
-    uint8_t   reason; // used in decline internal
+    uint16_t   reason; // used in decline internal
 
     uint8_t   unknown_option; // used for ConfigResponse
 

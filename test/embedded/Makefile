@@ -1,10 +1,8 @@
-CC = g++
-
 # Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
 CFLAGS += -I.
@@ -32,24 +30,8 @@ COMMON = \
     l2cap_signaling.c   \
     hci_cmd.c 			\
     
-# not used yet
-#	btstack_em9304_spi_embedded.c \
-#	btstack_stdin_embedded.c \
-#	btstack_tlv_flash_bank.c \
-#	btstack_uart_block_embedded.c \
-#	hal_flash_bank_memory.c \
-#   btstack_audio.c \
-#   btstack_audio_embedded.c \
-#   btstack_resample.c \
-#   btstack_ring_buffer.c \
-#   btstack_slip.c \
-#   hci_transport_em9304_spi.c \
-#   hci_transport_h4.c \
-#   hci_transport_h5.c \
-
 FREERTOS = \
 	btstack_run_loop_freertos.c \
-#	btstack_uart_block_freertos.c \
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
@@ -71,56 +53,62 @@ build-%:
 build-coverage/%.o: %.c | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
+build-coverage/%.o: %.cpp | build-coverage
+	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
+
 build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
+build-asan/%.o: %.cpp | build-asan
+	${CXX} -c $(CFLAGS_ASAN) $< -o $@
+
 
 build-coverage/embedded_test: ${COMMON_OBJ_COVERAGE} build-coverage/btstack_run_loop_embedded.o build-coverage/embedded_test.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/embedded_test: ${COMMON_OBJ_ASAN} build-asan/embedded_test.o build-asan/btstack_run_loop_embedded.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 
 build-coverage/freertos_test: ${COMMON_OBJ_COVERAGE} ${FREERTOS_OBJS} build-coverage/freertos_test.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/freertos_test: ${COMMON_OBJ_ASAN} ${FREERTOS_OBJS} build-asan/freertos_test.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 
 build-coverage/run_loop_base_test: ${COMMON_OBJ_COVERAGE} build-coverage/run_loop_base_test.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/run_loop_base_test: ${COMMON_OBJ_ASAN} build-asan/run_loop_base_test.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 
 build-coverage/btstack_util_test: ${COMMON_OBJ_COVERAGE} build-coverage/btstack_util_test.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/btstack_util_test: ${COMMON_OBJ_ASAN} build-asan/btstack_util_test.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 
 build-coverage/l2cap_le_signaling_test: ${COMMON_OBJ_COVERAGE} build-coverage/l2cap_le_signaling_test.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/l2cap_le_signaling_test: ${COMMON_OBJ_ASAN} build-asan/l2cap_le_signaling_test.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 
 build-coverage/hci_cmd_test: ${COMMON_OBJ_COVERAGE} build-coverage/hci_cmd_test.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/hci_cmd_test: ${COMMON_OBJ_ASAN} build-asan/hci_cmd_test.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 build-coverage/hci_dump_test: ${COMMON_OBJ_COVERAGE} build-coverage/hci_dump_test.o build-coverage/hci_dump.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/hci_dump_test: ${COMMON_OBJ_ASAN} build-asan/hci_dump_test.o build-asan/hci_dump.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
 	build-asan/embedded_test

@@ -74,7 +74,7 @@ static uint32_t btstack_run_loop_windows_get_time_ms(void){
     SystemTimeToFileTime(&system_time, &file_time);
     now_time.LowPart =  file_time.dwLowDateTime;
     now_time.HighPart = file_time.dwHighDateTime;
-    uint32_t time_ms = (now_time.QuadPart - start_time.QuadPart) / 10000;
+    uint32_t time_ms = (uint32_t)((now_time.QuadPart - start_time.QuadPart) / 10000);
     log_debug("btstack_run_loop_windows_get_time_ms: %u", time_ms);
     return time_ms;
 }
@@ -113,7 +113,7 @@ static void btstack_run_loop_windows_execute(void) {
         }
 
         // wait for timeout or data source to become ready
-        int res;
+        DWORD res;
         if (num_handles){
             // wait for ready Events or timeout
             res = WaitForMultipleObjects(num_handles, &handles[0], 0, timeout_ms);

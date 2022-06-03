@@ -53,7 +53,7 @@ PRIVATE void SynthWindow80_generated(OI_INT16 *pcm, SBC_BUFFER_T const * RESTRIC
     /* 1 - stage 0 */ pcm_b +=(MUL_16S_16S(26479, buffer[ 60]))>> 2;
     /* 1 - stage 0 */ pcm_b +=(MUL_16S_16S(23167, buffer[ 68]))>> 3;
     /* 1 - stage 0 */ pcm_b +=(MUL_16S_16S(8235, buffer[ 76]))>> 3;
-    /* 1 - stage 0 */ pcm_b /= 32768; CLIP_INT16(pcm_b); pcm[0<<strideShift] = (OI_INT16)pcm_b;
+    /* 1 - stage 0 */ pcm_b /= 32768; CLIP_INT16(pcm_b); pcm[(uint32_t)(0<<strideShift)] = (OI_INT16)pcm_b;
     /* 1 - stage 1 */ pcm_a = 0;
     /* 1 - stage 1 */ pcm_b = 0;
     /* 1 - stage 1 */ pcm_a +=(MUL_16S_16S(-3263, buffer[  5]))>> 5;
@@ -76,8 +76,8 @@ PRIVATE void SynthWindow80_generated(OI_INT16 *pcm, SBC_BUFFER_T const * RESTRIC
     /* 1 - stage 1 */ pcm_b +=(MUL_16S_16S(685, buffer[ 69]))<< 1;
     /* 1 - stage 1 */ pcm_a +=(MUL_16S_16S(12419, buffer[ 75]))>> 4;
     /* 1 - stage 1 */ pcm_b +=(MUL_16S_16S(8721, buffer[ 75]))>> 7;
-    /* 1 - stage 1 */ pcm_a /= 32768; CLIP_INT16(pcm_a); pcm[1<<strideShift] = (OI_INT16)pcm_a;
-    /* 1 - stage 1 */ pcm_b /= 32768; CLIP_INT16(pcm_b); pcm[7<<strideShift] = (OI_INT16)pcm_b;
+    /* 1 - stage 1 */ pcm_a /= 32768; CLIP_INT16(pcm_a); pcm[(uint32_t)(1<<strideShift)] = (OI_INT16)pcm_a;
+    /* 1 - stage 1 */ pcm_b /= 32768; CLIP_INT16(pcm_b); pcm[(uint32_t)(7<<strideShift)] = (OI_INT16)pcm_b;
     /* 1 - stage 2 */ pcm_a = 0;
     /* 1 - stage 2 */ pcm_b = 0;
     /* 1 - stage 2 */ pcm_a +=(MUL_16S_16S(-10385, buffer[  6]))>> 6;
@@ -100,8 +100,8 @@ PRIVATE void SynthWindow80_generated(OI_INT16 *pcm, SBC_BUFFER_T const * RESTRIC
     /* 1 - stage 2 */ pcm_b +=(MUL_16S_16S(7543, buffer[ 70]))>> 3;
     /* 1 - stage 2 */ pcm_a +=(MUL_16S_16S(9251, buffer[ 74]))>> 4;
     /* 1 - stage 2 */ pcm_b +=(MUL_16S_16S(8603, buffer[ 74]))>> 6;
-    /* 1 - stage 2 */ pcm_a /= 32768; CLIP_INT16(pcm_a); pcm[2<<strideShift] = (OI_INT16)pcm_a;
-    /* 1 - stage 2 */ pcm_b /= 32768; CLIP_INT16(pcm_b); pcm[6<<strideShift] = (OI_INT16)pcm_b;
+    /* 1 - stage 2 */ pcm_a /= 32768; CLIP_INT16(pcm_a); pcm[(uint32_t)(2<<strideShift)] = (OI_INT16)pcm_a;
+    /* 1 - stage 2 */ pcm_b /= 32768; CLIP_INT16(pcm_b); pcm[(uint32_t)(6<<strideShift)] = (OI_INT16)pcm_b;
     /* 1 - stage 3 */ pcm_a = 0;
     /* 1 - stage 3 */ pcm_b = 0;
     /* 1 - stage 3 */ pcm_a +=(MUL_16S_16S(-16457, buffer[  7]))>> 6;
@@ -124,13 +124,13 @@ PRIVATE void SynthWindow80_generated(OI_INT16 *pcm, SBC_BUFFER_T const * RESTRIC
     /* 1 - stage 3 */ pcm_b +=(MUL_16S_16S(1499, buffer[ 71]))>> 1;
     /* 1 - stage 3 */ pcm_a +=(MUL_16S_16S(26913, buffer[ 73]))>> 6;
     /* 1 - stage 3 */ pcm_b +=(MUL_16S_16S(26189, buffer[ 73]))>> 7;
-    /* 1 - stage 3 */ pcm_a /= 32768; CLIP_INT16(pcm_a); pcm[3<<strideShift] = (OI_INT16)pcm_a;
-    /* 1 - stage 3 */ pcm_b /= 32768; CLIP_INT16(pcm_b); pcm[5<<strideShift] = (OI_INT16)pcm_b;
+    /* 1 - stage 3 */ pcm_a /= 32768; CLIP_INT16(pcm_a); pcm[(uint32_t)(3<<strideShift)] = (OI_INT16)pcm_a;
+    /* 1 - stage 3 */ pcm_b /= 32768; CLIP_INT16(pcm_b); pcm[(uint32_t)(5<<strideShift)] = (OI_INT16)pcm_b;
     /* 1 - stage 4 */ pcm_a = 0;
     /* 1 - stage 4 */ pcm_a +=(MUL_16S_16S(10445, buffer[  8]))>> 4;
     /* 1 - stage 4 */ pcm_a +=(MUL_16S_16S(-5297, buffer[ 24]))<< 1;
     /* 1 - stage 4 */ pcm_a +=(MUL_16S_16S(22299, buffer[ 40]))<< 2;
     /* 1 - stage 4 */ pcm_a +=(MUL_16S_16S(10603, buffer[ 56]));
     /* 1 - stage 4 */ pcm_a +=(MUL_16S_16S(9539, buffer[ 72]))>> 4;
-    /* 1 - stage 4 */ pcm_a /= 32768; CLIP_INT16(pcm_a); pcm[4<<strideShift] = (OI_INT16)pcm_a;
+    /* 1 - stage 4 */ pcm_a /= 32768; CLIP_INT16(pcm_a); pcm[(uint32_t)(4<<strideShift)] = (OI_INT16)pcm_a;
 }

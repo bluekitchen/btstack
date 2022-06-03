@@ -319,6 +319,25 @@ uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid);
  */
 void btstack_strcpy(char * dst, uint16_t dst_size, const char * src);
 
+/**
+ * @brief Append src string to string in dst buffer with terminating '\0'
+ * @note max total string length will be dst_size-1 characters
+ * @param dst
+ * @param dst_size
+ * @param src
+ */
+void btstack_strcat(char * dst, uint16_t dst_size, const char * src);
+
+/**
+ * Returns the number of leading 0-bits in x, starting at the most significant bit position.
+ * If x is 0, the result is undefined.
+ * @note maps to __builtin_clz for gcc and clang
+ * @param value
+ * @return number of leading 0-bits
+ */
+uint8_t btstack_clz(uint32_t value);
+
+
 /* API_END */
 
 #if defined __cplusplus

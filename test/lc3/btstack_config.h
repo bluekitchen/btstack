@@ -10,7 +10,6 @@
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
 #define HAVE_POSIX_TIME
-#define HAVE_LC3_EHIMA
 
 // BTstack features that can be enabled
 #define ENABLE_BLE

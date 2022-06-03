@@ -326,8 +326,9 @@ void cycling_speed_and_cadence_service_server_init(uint32_t supported_sensor_loc
 static void cycling_speed_and_cadence_service_calculate_cumulative_wheel_revolutions(int32_t revolutions_change){
 	cycling_speed_and_cadence_t * instance = &cycling_speed_and_cadence;
 	if (revolutions_change < 0){
-		if (instance->cumulative_wheel_revolutions > -revolutions_change){
-			instance->cumulative_wheel_revolutions += revolutions_change;
+		uint32_t revolutions_to_subtract = (uint32_t)(-revolutions_change);
+		if (instance->cumulative_wheel_revolutions > revolutions_to_subtract){
+			instance->cumulative_wheel_revolutions -= revolutions_to_subtract;
 		} else {
 			instance->cumulative_wheel_revolutions = 0;
 		} 

@@ -487,6 +487,14 @@ typedef enum {
     A2DP_STREAMING_OPENED
 } a2dp_state_t;
 
+typedef struct {
+    bool         discover_seps;
+    bool         outgoing_active;
+    bool         have_config;
+    bool         stream_endpoint_configured;
+    a2dp_state_t state;
+    struct avdtp_stream_endpoint * local_stream_endpoint;
+} a2dp_config_process_t;
 
 typedef struct {
     btstack_linked_item_t    item;
@@ -543,15 +551,10 @@ typedef struct {
     btstack_timer_source_t retry_timer;
 
     // A2DP SOURCE
-    bool         a2dp_source_discover_seps;
-    bool         a2dp_source_outgoing_active;
-    bool         a2dp_source_have_config;
-    bool         a2dp_source_stream_endpoint_configured;
-    a2dp_state_t a2dp_source_state;
-    struct avdtp_stream_endpoint * a2dp_source_local_stream_endpoint;
+    a2dp_config_process_t a2dp_source_config_process;
 
     // A2DP SINK
-    bool         a2dp_sink_outgoing_active;
+    a2dp_config_process_t a2dp_sink_config_process;
 
 } avdtp_connection_t;
 
@@ -618,6 +621,7 @@ btstack_linked_list_t * avdtp_get_stream_endpoints(void);
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid);
 avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec(avdtp_media_codec_type_t codec_type);
 avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec_other(uint32_t vendor_id, uint16_t codec_id);
+avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec_and_type(avdtp_media_codec_type_t codec_type, avdtp_sep_type_t sep_type);
 
 btstack_packet_handler_t avdtp_packet_handler_for_stream_endpoint(const avdtp_stream_endpoint_t *stream_endpoint);
 void avdtp_emit_sink_and_source(uint8_t * packet, uint16_t size);

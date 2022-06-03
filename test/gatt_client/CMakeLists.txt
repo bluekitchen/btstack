@@ -32,7 +32,7 @@ set(SOURCES
 add_library(btstack STATIC ${SOURCES})
 
 # create targets
-foreach(EXAMPLE_FILE le_central.c gatt_client_test.c)
+foreach(EXAMPLE_FILE le_central.cpp gatt_client_test.cpp)
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
 	set (SOURCE_FILES ${EXAMPLE_FILE} mock.c)
 	# profile.h
@@ -42,8 +42,6 @@ foreach(EXAMPLE_FILE le_central.c gatt_client_test.c)
 		ARGS ${CMAKE_SOURCE_DIR}/profile.gatt ${CMAKE_CURRENT_BINARY_DIR}/profile.h
 	)
 	list(APPEND SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/profile.h)
-	# Use C++ Compiler
-	set_source_files_properties(${EXAMPLE_FILE} mock.c PROPERTIES LANGUAGE CXX )
 	add_executable(${EXAMPLE} ${SOURCE_FILES} )
 	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE_FILE)

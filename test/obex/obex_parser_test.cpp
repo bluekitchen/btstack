@@ -137,6 +137,74 @@ TEST(OBEX_PARSER, SetPathResponse){
     parse_response(OBEX_OPCODE_SETPATH);
 }
 
+/** App Param Parser */
+
+static uint8_t  test_tag_id;
+static uint8_t  test_tag_buffer[100];
+static uint16_t test_tag_len;
+
+void app_param_parser_callback(void * user_data, uint8_t tag_id, uint8_t total_len, uint8_t data_offset, const uint8_t * data_buffer, uint8_t data_len){
+    if (obex_app_param_parser_tag_store(test_header_buffer, sizeof(test_header_buffer), total_len, data_offset, data_buffer, data_len) == OBEX_APP_PARAM_PARSER_TAG_COMPLETE){
+        test_tag_len = total_len;
+        test_tag_id  = tag_id;
+    }
+}
+
+TEST_GROUP(APP_PARAM_PARSER){
+        obex_app_param_parser_t parser;
+        void setup(void){
+            test_tag_id = 0;
+            test_tag_len = 0;
+        }
+        void teardown(void){
+        }
+        void parse_app_params(const uint8_t * app_params, uint8_t param_len){
+            obex_app_param_parser_init(&parser, &app_param_parser_callback, param_len, NULL);
+            for (int i = 0; i < param_len - 1;i++){
+                obex_app_param_parser_params_state_t parser_state = obex_app_param_parser_process_data(&parser, &app_params[i], 1);
+                CHECK_EQUAL(OBEX_APP_PARAM_PARSER_PARAMS_STATE_INCOMPLETE, parser_state);
+            }
+            if (param_len > 0){
+                obex_app_param_parser_params_state_t parser_state = obex_app_param_parser_process_data(&parser, &app_params[param_len-1], 1);
+                CHECK_EQUAL(OBEX_APP_PARAM_PARSER_PARAMS_STATE_COMPLETE, parser_state);
+            }
+        }
+};
+TEST(APP_PARAM_PARSER, EmptyParams){
+    parse_app_params(NULL, 0);
+    CHECK_EQUAL(0, test_tag_id);
+    CHECK_EQUAL(0, test_tag_len);
+}
+
+TEST(APP_PARAM_PARSER, SingleParam){
+    uint8_t message[] = { 0x01, 0x02, 0x03, 0x4};
+    parse_app_params(message, sizeof(message));
+    CHECK_EQUAL(1, test_tag_id);
+    CHECK_EQUAL(2, test_tag_len);
+}
+
+TEST(APP_PARAM_PARSER, Overrun){
+    uint8_t message[] = { 0x01, 0x02, 0x03, 0x4};
+    parse_app_params(message, sizeof(message));
+    obex_app_param_parser_params_state_t parser_state = obex_app_param_parser_process_data(&parser, &message[0], 1);
+    CHECK_EQUAL(OBEX_APP_PARAM_PARSER_PARAMS_STATE_OVERRUN, parser_state);
+    CHECK_EQUAL(1, test_tag_id);
+    CHECK_EQUAL(2, test_tag_len);
+}
+
+TEST(APP_PARAM_PARSER, InvalidTagLen){
+    uint8_t message[] = { 0x01, 0x04, 0x03, 0x4};
+    obex_app_param_parser_t parser;
+    obex_app_param_parser_init(&parser, &app_param_parser_callback, sizeof(message), NULL);
+    obex_app_param_parser_params_state_t parser_state;
+    parser_state = obex_app_param_parser_process_data(&parser, &message[0], 1);
+    CHECK_EQUAL(OBEX_APP_PARAM_PARSER_PARAMS_STATE_INCOMPLETE, parser_state);
+    parser_state = obex_app_param_parser_process_data(&parser, &message[1], 1);
+    CHECK_EQUAL(OBEX_APP_PARAM_PARSER_PARAMS_STATE_INVALID, parser_state);
+    CHECK_EQUAL(0, test_tag_id);
+    CHECK_EQUAL(0, test_tag_len);
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

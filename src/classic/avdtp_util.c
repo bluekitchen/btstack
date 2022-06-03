@@ -1395,53 +1395,6 @@ uint8_t avdtp_remote_seid(const avdtp_stream_endpoint_t * stream_endpoint){
     return stream_endpoint->remote_sep.seid;
 }
 
-// helper for A2DP
-
-uint8_t a2dp_subevent_id_for_avdtp_subevent_id(uint8_t subevent){
-    switch (subevent){
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
-            return A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION;
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION:
-            return A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION;
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION:
-            return A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION;
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION:
-            return A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION;
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
-            return A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION;
-        default:
-            btstack_assert(false);
-            return 0;
-    }
-}
-
-void a2dp_replace_subevent_id_and_emit_cmd(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
-    UNUSED(size);
-    btstack_assert(callback != NULL);
-    // cache orig event and subevent id
-    uint8_t orig_event_id    = packet[0];
-    uint8_t orig_subevent_id = packet[2];
-    // execute callback
-    packet[0] = HCI_EVENT_A2DP_META;
-    packet[2] = subevent_id;
-    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
-    // restore id
-    packet[0] = orig_event_id;
-    packet[2] = orig_subevent_id;
-}
-
-void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t subevent_id){
-    uint8_t event[6];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_A2DP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = subevent_id;
-    little_endian_store_16(event, pos, cid);
-    pos += 2;
-    event[pos++] = local_seid;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 // helper to set/get configuration
 void avdtp_config_sbc_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz){
     avdtp_sbc_sampling_frequency_t sampling_frequency;

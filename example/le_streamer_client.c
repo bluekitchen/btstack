@@ -176,8 +176,8 @@ static void streamer(le_streamer_connection_t * context){
 static int advertisement_report_contains_name(const char * name, uint8_t * advertisement_report){
     // get advertisement from report event
     const uint8_t * adv_data = gap_event_advertising_report_get_data(advertisement_report);
-    uint16_t        adv_len  = gap_event_advertising_report_get_data_length(advertisement_report);
-    int             name_len = strlen(name);
+    uint8_t         adv_len  = gap_event_advertising_report_get_data_length(advertisement_report);
+    uint16_t        name_len = (uint8_t) strlen(name);
 
     // iterate over advertisement data
     ad_context_t context;

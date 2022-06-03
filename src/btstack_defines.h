@@ -183,6 +183,9 @@ typedef uint8_t sm_key_t[16];
 // create l2cap channel: param bd_addr(48), psm (16), mtu (16)
 #define L2CAP_CREATE_CHANNEL_MTU                           0x26u
 
+// request can send now event: l2cap_cid
+#define L2CAP_REQUEST_CAN_SEND_NOW                         0x27u
+
 // register SDP Service Record: service record (size)
 #define SDP_REGISTER_SERVICE_RECORD                        0x30u
 
@@ -196,17 +199,19 @@ typedef uint8_t sm_key_t[16];
 #define SDP_CLIENT_QUERY_SERVICES                          0x33u
 
 // RFCOMM "HCI" Commands
-#define RFCOMM_CREATE_CHANNEL       0x40u
-#define RFCOMM_DISCONNECT     0x41u
-#define RFCOMM_REGISTER_SERVICE     0x42u
-#define RFCOMM_UNREGISTER_SERVICE   0x43u
-#define RFCOMM_ACCEPT_CONNECTION    0x44u
-#define RFCOMM_DECLINE_CONNECTION   0x45u
-#define RFCOMM_PERSISTENT_CHANNEL   0x46u
-#define RFCOMM_CREATE_CHANNEL_WITH_CREDITS   0x47u
-#define RFCOMM_REGISTER_SERVICE_WITH_CREDITS 0x48u
-#define RFCOMM_GRANT_CREDITS                 0x49u
-    
+#define RFCOMM_CREATE_CHANNEL                              0x40u
+#define RFCOMM_DISCONNECT                                  0x41u
+#define RFCOMM_REGISTER_SERVICE                            0x42u
+#define RFCOMM_UNREGISTER_SERVICE                          0x43u
+#define RFCOMM_ACCEPT_CONNECTION                           0x44u
+#define RFCOMM_DECLINE_CONNECTION                          0x45u
+#define RFCOMM_CREATE_CHANNEL_WITH_CREDITS                 0x47u
+#define RFCOMM_PERSISTENT_CHANNEL                          0x46u
+#define RFCOMM_REGISTER_SERVICE_WITH_CREDITS               0x48u
+#define RFCOMM_GRANT_CREDITS                               0x49u
+// request can send now event: rfcomm_cid
+#define RFCOMM_REQUEST_CAN_SEND_NOW                        0x4Au
+
 // GAP Classic 0x50u
 #define GAP_DISCONNECT                0x50u
 #define GAP_INQUIRY_START             0x51u
@@ -262,6 +267,11 @@ typedef uint8_t sm_key_t[16];
 // EVENTS
 
 // Events from host controller to host
+
+/**
+ * @brief Custom NOP Event - used for internal testing
+ */
+#define HCI_EVENT_NOP                                      0x00u
 
 /**
  * @format 1
@@ -1041,13 +1051,6 @@ typedef uint8_t sm_key_t[16];
 #define DAEMON_EVENT_L2CAP_SERVICE_REGISTERED              0x75u
 
 /**
- * @format 21
- * @param rfcomm_cid
- * @param credits
- */
-#define DAEMON_EVENT_RFCOMM_CREDITS                        0x84u
-
-/**
  * @format 11
  * @param status
  * @param channel_id
@@ -1078,6 +1081,16 @@ typedef uint8_t sm_key_t[16];
  * @param active
  */
 #define HCI_EVENT_TRANSPORT_SLEEP_MODE                     0x69u
+
+/**
+ * @brief Transport USB Bluetooth Controller info
+ * @format 22JV
+ * @param vendor_id
+ * @param product_id
+ * @param path_len
+ * @param path
+ */
+#define HCI_EVENT_TRANSPORT_USB_INFO                       0x6Au
 
 /**
  * @brief Transport ready 
@@ -1550,18 +1563,20 @@ typedef uint8_t sm_key_t[16];
  #define BNEP_EVENT_CAN_SEND_NOW                                 0xC4u
 
  /**
-  * @format H1B
+  * @format H1B1
   * @param handle
   * @param addr_type
   * @param address
+  * @param secure_connection - set to 1 if LE Secure Connection pairing will be used
   */
 #define SM_EVENT_JUST_WORKS_REQUEST                              0xC8u
 
  /**
-  * @format H1B4
+  * @format H1B14
   * @param handle
   * @param addr_type
   * @param address
+  * @param secure_connection - set to 1 if LE Secure Connection pairing will be used
   * @param passkey
   */
 #define SM_EVENT_PASSKEY_DISPLAY_NUMBER                          0xC9u
@@ -1575,18 +1590,20 @@ typedef uint8_t sm_key_t[16];
 #define SM_EVENT_PASSKEY_DISPLAY_CANCEL                          0xCAu
 
  /**
-  * @format H1B
+  * @format H1B1
   * @param handle
   * @param addr_type
   * @param address
+  * @param secure_connection - set to 1 if LE Secure Connection pairing will be used
   */
 #define SM_EVENT_PASSKEY_INPUT_NUMBER                            0xCBu
 
  /**
-  * @format H1B4
+  * @format H1B14
   * @param handle
   * @param addr_type
   * @param address
+  * @param secure_connection - set to 1 if LE Secure Connection pairing will be used
   * @param passkey
   */
 #define SM_EVENT_NUMERIC_COMPARISON_REQUEST                      0xCCu
@@ -2121,20 +2138,26 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_MICROPHONE_VOLUME                        0x15u
 
 /**
- * @format 1H1T
+ * @format 1H1JVJV
  * @param subevent_code
  * @param acl_handle
  * @param type
+ * @param number_length
  * @param number
+ * @param alpha_length
+ * @param alpha
  */
 #define HFP_SUBEVENT_CALL_WAITING_NOTIFICATION                0x16u
 
 /**
- * @format 1H1T
+ * @format 1H1JVJV
  * @param subevent_code
  * @param acl_handle
  * @param type
+ * @param number_length
  * @param number
+ * @param alpha_length
+ * @param alpha
  */
 #define HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION 0x17u
 
@@ -3369,6 +3392,14 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_BROWSING_SET_BROWSED_PLAYER                            0x36u
 
 
+/**
+ * @format 12BH
+ * @param subevent_code
+ * @param goep_cid
+ * @param address
+ * @param handle
+ */
+#define GOEP_SUBEVENT_INCOMING_CONNECTION                                  0x01u
 
 /**
  * @format 121BH1
@@ -3379,21 +3410,21 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param incoming
  */
-#define GOEP_SUBEVENT_CONNECTION_OPENED                                    0x01u
+#define GOEP_SUBEVENT_CONNECTION_OPENED                                    0x02u
 
 /**
  * @format 12
  * @param subevent_code
  * @param goep_cid
 */
-#define GOEP_SUBEVENT_CONNECTION_CLOSED                                    0x02u
+#define GOEP_SUBEVENT_CONNECTION_CLOSED                                    0x03u
 
 /**
  * @format 12
  * @param subevent_code
  * @param goep_cid
 */
-#define GOEP_SUBEVENT_CAN_SEND_NOW                                         0x03u
+#define GOEP_SUBEVENT_CAN_SEND_NOW                                         0x04u
 
 /**
  * @format 121BH1
@@ -3449,6 +3480,68 @@ typedef uint8_t sm_key_t[16];
  * @param handle 
  */
 #define PBAP_SUBEVENT_CARD_RESULT                                          0x06u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param goep_cid
+ * @param phonebook
+ */
+#define PBAP_SUBEVENT_RESET_MISSED_CALLS                                   0x0Au
+
+/**
+ * @format 12411
+ * @param subevent_code
+ * @param goep_cid
+ * @param vcard_selector
+ * @param vcard_selector_operator
+ * @param phonebook
+ */
+#define PBAP_SUBEVENT_QUERY_PHONEBOOK_SIZE                                 0x0Bu
+
+/**
+ * @format 1244122411
+ * @param subevent_code
+ * @param goep_cid
+ * @param continuation - value provided by caller of pbap_server_send_pull_response
+ * @param property_selector
+ * @param format
+ * @param max_list_count 0xffff for unlimited
+ * @param list_start_offset
+ * @param vcard_selector
+ * @param vcard_selector_operator
+ * @param phonebook
+ */
+#define PBAP_SUBEVENT_PULL_PHONEBOOK                                      0x0Cu
+
+/**
+ * @format 124122411JV1
+ * @param subevent_code
+ * @param goep_cid
+ * @param continuation - value provided by caller of pbap_server_send_pull_response
+ * @param order
+ * @param max_list_count 0xffff for unlimited
+ * @param list_start_offset
+ * @param vcard_selector
+ * @param vcard_selector_operator
+ * @param search_property
+ * @param search_value_len
+ * @param search_value
+ * @param phonebook
+ */
+#define PBAP_SUBEVENT_PULL_VCARD_LISTING                                   0x0Du
+
+/**
+ * @format 124411T
+ * @param subevent_code
+ * @param goep_cid
+ * @param continuation - value provided by caller of pbap_server_send_pull_response
+ * @param property_selector
+ * @param format
+ * @param phonebook
+ * @param name
+ */
+#define PBAP_SUBEVENT_PULL_VCARD_ENTRY                                     0x0Eu
 
 
 // HID Meta Event Group

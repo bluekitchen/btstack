@@ -152,6 +152,12 @@ const hci_cmd_t l2cap_decline_connection_cmd = {
     DAEMON_OPCODE_L2CAP_DECLINE_CONNECTION, "21"
 };
 
+/**
+ * @param l2cap_cid
+ */
+const hci_cmd_t l2cap_request_can_send_now_cmd = {
+    DAEMON_OPCODE_L2CAP_REQUEST_CAN_SEND_NOW, "2"
+};
 
 /**
  * @param service_record
@@ -264,6 +270,13 @@ const hci_cmd_t rfcomm_decline_connection_cmd = {
  */
 const hci_cmd_t rfcomm_persistent_channel_for_service_cmd = {
     DAEMON_OPCODE_RFCOMM_PERSISTENT_CHANNEL_FOR_SERVICE, "N"
+};
+
+/**
+ * @param rfcomm_cid
+ */
+const hci_cmd_t rfcomm_request_can_send_now_cmd = {
+    DAEMON_OPCODE_RFCOMM_REQUEST_CAN_SEND_NOW, "2"
 };
 
 /**

@@ -56,33 +56,41 @@
 
 #include <stdint.h>
 
+#ifdef ENABLE_TESTING_SUPPORT
+typedef uint64_t btstack_time_t;
+#define PRIbtstack_time_t PRIu64
+#else
+typedef uint32_t btstack_time_t;
+#define PRIbtstack_time_t PRIu32
+#endif
+
 #if defined __cplusplus
 extern "C" {
 #endif
-	
+
 /**
  * Callback types for run loop data sources
  */
 typedef enum {
-	DATA_SOURCE_CALLBACK_POLL  = 1 << 0,
-	DATA_SOURCE_CALLBACK_READ  = 1 << 1,
-	DATA_SOURCE_CALLBACK_WRITE = 1 << 2,
+    DATA_SOURCE_CALLBACK_POLL  = 1 << 0,
+    DATA_SOURCE_CALLBACK_READ  = 1 << 1,
+    DATA_SOURCE_CALLBACK_WRITE = 1 << 2,
 } btstack_data_source_callback_type_t;
 
 typedef struct btstack_data_source {
-	// linked item
+    // linked item
     btstack_linked_item_t item;
 
     // item to watch in run loop
     union {
-	    // file descriptor for posix systems
-	    int  fd;
-    	// handle on windows
-    	void * handle;	
+        // file descriptor for posix systems
+        int  fd;
+        // handle on windows
+        void * handle;
     } source;
 
     // callback to call for enabled callback types
-    void  (*process)(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type);
+    void (*process)(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type);
 
     // flags storing enabled callback types
     uint16_t flags;
@@ -90,11 +98,11 @@ typedef struct btstack_data_source {
 } btstack_data_source_t;
 
 typedef struct btstack_timer_source {
-    btstack_linked_item_t item; 
+    btstack_linked_item_t item;
     // timeout in system ticks (HAVE_EMBEDDED_TICK) or milliseconds (HAVE_EMBEDDED_TIME_MS)
-    uint32_t timeout;
+    btstack_time_t timeout;
     // will be called when timer fired
-    void  (*process)(struct btstack_timer_source *ts); 
+    void  (*process)(struct btstack_timer_source *ts);
     void * context;
 } btstack_timer_source_t;
 
@@ -199,7 +207,7 @@ void btstack_run_loop_base_poll_data_sources(void);
 void btstack_run_loop_base_add_callback(btstack_context_callback_registration_t * callback_registration);
 
 /**
- * @bried Procss Callbacks: remove all callback-registrations and call the registered function with its context
+ * @bried Process Callbacks: remove all callback-registrations and call the registered function with its context
  */
 void btstack_run_loop_base_execute_callbacks(void);
 
@@ -330,7 +338,11 @@ void btstack_run_loop_execute(void);
 
 /**
  * @brief Registers callback with run loop and mark main thread as ready
- * @note Callback can only be registered once
+ * @note If callback is already registered, the call will be ignored.
+ *       This function allows to implement, e.g., a quque-based message passing mechanism:
+ *       The external thread puts an item into a queue and call this function to trigger
+ *       processing by the BTstack main thread. If this happens multiple times, it is
+ *       guranteed that the callback will run at least once after the last item was added.
  * @param callback_registration
  */
 void btstack_run_loop_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration);

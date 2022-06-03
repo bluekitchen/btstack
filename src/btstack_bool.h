@@ -65,10 +65,16 @@
 
 #else /* PREDEF_STANDARD_C_1999 */
 
-// backport for pre-c99 compilers
+// backport for pre-c99 compilers or incorrect detection
+#ifndef bool
 #define bool unsigned char
+#endif
+#ifndef false
 #define false 0
+#endif
+#ifndef true
 #define true 1
+#endif
 
 #endif /* PREDEF_STANDARD_C_1999 */
 

@@ -64,9 +64,9 @@ static HANDLE key_processed_handle;
 static void (*stdin_handler)(char c);
 static void (*ctrl_c_handler)(void);
 
-static WINAPI DWORD stdin_reader_thread_process(void * p){
+static DWORD WINAPI stdin_reader_thread_process(void * p){
     while (true){
-        key_read_buffer = getch();
+        key_read_buffer = _getch();
         SignalObjectAndWait(stdin_source.source.handle, key_processed_handle, INFINITE, FALSE);
     }
     return 0;

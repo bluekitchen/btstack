@@ -99,9 +99,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_STATE_WORKING:
                     printf("BTstack up and running as %s\n",  bd_addr_to_str(static_address));
                     // setup TLV
-                    strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
-                    strcat(tlv_db_path, bd_addr_to_str_with_delimiter(static_address, '-'));
-                    strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+                    btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
+                    btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str_with_delimiter(static_address, '-'));
+                    btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
                     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
                     le_device_db_tlv_configure(tlv_impl, &tlv_context);
@@ -163,7 +163,7 @@ int main(int argc, const char * argv[]){
     if (argc >= 3 && strcmp(argv[1], "-u") == 0){
         config.device_name = argv[2];
         argc -= 2;
-        memmove(&argv[1], &argv[3], (argc-1) * sizeof(char *));
+        memmove((void *) &argv[1], &argv[3], (argc-1) * sizeof(char *));
     }
     printf("H4 device: %s\n", config.device_name);
 

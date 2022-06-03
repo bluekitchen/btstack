@@ -911,8 +911,17 @@ void gap_link_key_iterator_done(btstack_link_key_iterator_t * it);
 int gap_inquiry_start(uint8_t duration_in_1280ms_units);
 
 /**
- * @brief Stop GAP Classic Inquiry
- * @brief Stop GAP Classic Inquiry
+ * @brief Start GAP Classic Periodic Inquiry
+ * @param duration in 1.28s units
+ * @param max_period_length between consecutive inquiries in 1.28s units
+ * @param min_period_length between consecutive inquiries in 1.28s units
+ * @return 0 if ok
+ * @events: GAP_EVENT_INQUIRY_RESULT, GAP_EVENT_INQUIRY_COMPLETE
+ */
+uint8_t gap_inquiry_periodic_start(uint8_t duration, uint16_t max_period_length, uint16_t min_period_length);
+
+/**
+ * @brief Stop GAP Classic Inquiry (regular or periodic)
  * @return 0 if ok
  * @events: GAP_EVENT_INQUIRY_COMPLETE
  */

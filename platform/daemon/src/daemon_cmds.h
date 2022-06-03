@@ -70,6 +70,7 @@ typedef enum {
     DAEMON_OPCODE_L2CAP_UNREGISTER_SERVICE = DAEMON_OPCODE(L2CAP_UNREGISTER_SERVICE),
     DAEMON_OPCODE_L2CAP_ACCEPT_CONNECTION = DAEMON_OPCODE(L2CAP_ACCEPT_CONNECTION),
     DAEMON_OPCODE_L2CAP_DECLINE_CONNECTION = DAEMON_OPCODE(L2CAP_DECLINE_CONNECTION),
+    DAEMON_OPCODE_L2CAP_REQUEST_CAN_SEND_NOW = DAEMON_OPCODE(L2CAP_REQUEST_CAN_SEND_NOW),
     DAEMON_OPCODE_SDP_REGISTER_SERVICE_RECORD = DAEMON_OPCODE(SDP_REGISTER_SERVICE_RECORD),
     DAEMON_OPCODE_SDP_UNREGISTER_SERVICE_RECORD = DAEMON_OPCODE(SDP_UNREGISTER_SERVICE_RECORD),
     DAEMON_OPCODE_SDP_CLIENT_QUERY_RFCOMM_SERVICES = DAEMON_OPCODE(SDP_CLIENT_QUERY_RFCOMM_SERVICES),
@@ -84,6 +85,7 @@ typedef enum {
     DAEMON_OPCODE_RFCOMM_ACCEPT_CONNECTION = DAEMON_OPCODE(RFCOMM_ACCEPT_CONNECTION),
     DAEMON_OPCODE_RFCOMM_DECLINE_CONNECTION = DAEMON_OPCODE(RFCOMM_DECLINE_CONNECTION),
     DAEMON_OPCODE_RFCOMM_PERSISTENT_CHANNEL_FOR_SERVICE = DAEMON_OPCODE(RFCOMM_PERSISTENT_CHANNEL),
+    DAEMON_OPCODE_RFCOMM_REQUEST_CAN_SEND_NOW = DAEMON_OPCODE(RFCOMM_REQUEST_CAN_SEND_NOW),
     DAEMON_OPCODE_GAP_DISCONNECT = DAEMON_OPCODE(GAP_DISCONNECT),
     DAEMON_OPCODE_GAP_INQUIRY_START = DAEMON_OPCODE(GAP_INQUIRY_START),
     DAEMON_OPCODE_GAP_INQUIRY_STOP = DAEMON_OPCODE(GAP_INQUIRY_STOP),
@@ -140,6 +142,7 @@ extern const hci_cmd_t l2cap_decline_connection_cmd;
 extern const hci_cmd_t l2cap_disconnect_cmd;
 extern const hci_cmd_t l2cap_register_service_cmd;
 extern const hci_cmd_t l2cap_unregister_service_cmd;
+extern const hci_cmd_t l2cap_request_can_send_now_cmd;
 
 extern const hci_cmd_t sdp_register_service_record_cmd;
 extern const hci_cmd_t sdp_unregister_service_record_cmd;
@@ -165,6 +168,7 @@ extern const hci_cmd_t rfcomm_unregister_service_cmd;
 // request persisten rfcomm channel for service name: serive name (char*) 
 extern const hci_cmd_t rfcomm_persistent_channel_for_service_cmd;
 extern const hci_cmd_t rfcomm_grants_credits_cmd;
+extern const hci_cmd_t rfcomm_request_can_send_now_cmd;
 
 extern const hci_cmd_t gap_delete_all_link_keys_cmd;
 extern const hci_cmd_t gap_disconnect_cmd;

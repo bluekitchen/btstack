@@ -577,6 +577,7 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     hfp_connection->call_waiting_notification_enabled = 0;
     hfp_connection->command = HFP_CMD_NONE;
     hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
+    hfp_connection->clip_have_alpha = false;
     hfp_reset_voice_recognition(hfp_connection);
 }
 
@@ -705,7 +706,7 @@ static void hfp_handle_slc_setup_error(hfp_connection_t * hfp_connection, uint8_
     // cache fields for event
     hfp_role_t local_role = hfp_connection->local_role;
     bd_addr_t remote_addr;
-    (void)memcpy(remote_addr, hfp_connection, 6);
+    (void)memcpy(remote_addr, hfp_connection->remote_addr, 6);
     // finalize connection struct
     hfp_finalize_connection_context(hfp_connection);
     // emit event
@@ -774,9 +775,12 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
 
     log_info("(e)SCO Connection failed 0x%02x", status);
     switch (status){
-        case ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE:
+        case ERROR_CODE_SCO_AIR_MODE_REJECTED:
+        case ERROR_CODE_SCO_INTERVAL_REJECTED:
+        case ERROR_CODE_SCO_OFFSET_REJECTED:
         case ERROR_CODE_UNSPECIFIED_ERROR:
-        case ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES:
+        case ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE:
+        case ERROR_CODE_UNSUPPORTED_REMOTE_FEATURE_UNSUPPORTED_LMP_FEATURE:
             break;
         default:
             return 0;
@@ -1118,7 +1122,7 @@ static hfp_command_entry_t hfp_ag_commmand_table[] = {
 static hfp_command_entry_t hfp_hf_commmand_table[] = {
     { "+BCS:",  HFP_CMD_AG_SUGGESTED_CODEC },
     { "+BIND:", HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS },
-    { "+BINP",  HFP_CMD_AG_SENT_PHONE_NUMBER },
+    { "+BINP:", HFP_CMD_AG_SENT_PHONE_NUMBER },
     { "+BRSF:", HFP_CMD_SUPPORTED_FEATURES },
     { "+BSIR:", HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING },
     { "+BTRH:", HFP_CMD_RESPONSE_AND_HOLD_STATUS },
@@ -1207,7 +1211,7 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 
 static void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
     hfp_connection->line_size = 0;
-    // hfp_connection->line_buffer[0] = 0; 
+    // we don't set the first byte to '\0' to allow access to last argument e.g. in hfp_hf_handle_rfcommand
 }
 
 static void hfp_parser_store_if_token(hfp_connection_t * hfp_connection, uint8_t byte){
@@ -1420,6 +1424,10 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                     hfp_next_indicators_index(hfp_connection);
                     hfp_connection->ag_indicators_nr = hfp_connection->parser_item_index;
                     break;
+                case HFP_CMD_AG_SENT_CLIP_INFORMATION:
+                    // track if last argument exists
+                    hfp_connection->clip_have_alpha = hfp_connection->line_size != 0;
+                    break;
                 default:
                     break;
             }
@@ -1428,8 +1436,6 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
 
             if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS){
                 hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
-            } else {
-                hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
             }
             return true;
 

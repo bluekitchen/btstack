@@ -56,6 +56,7 @@
 #include "hci_dump_posix_fs.h"
 
 #include "btstack_debug.h"
+#include "btstack_util.h"
 #include "hci_cmd.h"
 
 #include <time.h>
@@ -77,13 +78,33 @@ static void hci_dump_posix_fs_reset(void){
     UNUSED(err);
 }
 
+// provide summary for ISO Data Packets if not supported by fileformat/viewer yet
+static uint16_t hci_dump_iso_summary(uint8_t in,  uint8_t *packet, uint16_t len){
+    UNUSED(len);
+    uint16_t conn_handle = little_endian_read_16(packet, 0) & 0xfff;
+    uint8_t pb = (packet[1] >> 4) & 3;
+    uint8_t ts = (packet[1] >> 6) & 1;
+    uint16_t pos = 4;
+    uint32_t time_stamp = 0;
+    if (ts){
+        time_stamp = little_endian_read_32(packet, pos);
+        pos += 4;
+    }
+    uint16_t packet_sequence = little_endian_read_16(packet, pos);
+    pos += 2;
+    uint16_t iso_sdu_len = little_endian_read_16(packet, pos);
+    uint8_t packet_status_flag = packet[pos+1] >> 6;
+    return snprintf(log_message_buffer,sizeof(log_message_buffer), "ISO %s, handle %04x, pb %u, ts 0x%08x, sequence 0x%04x, packet status %u, iso len %u",
+                    in ? "IN" : "OUT", conn_handle, pb, time_stamp, packet_sequence, packet_status_flag, iso_sdu_len);
+}
+
 static void hci_dump_posix_fs_log_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
     if (dump_file < 0) return;
 
     static union {
         uint8_t header_bluez[HCI_DUMP_HEADER_SIZE_BLUEZ];
         uint8_t header_packetlogger[HCI_DUMP_HEADER_SIZE_PACKETLOGGER];
-        uint8_t header_btsnoop[HCI_DUMP_HEADER_SIZE_BTSNOOP];
+        uint8_t header_btsnoop[HCI_DUMP_HEADER_SIZE_BTSNOOP+1];
     } header;
 
     uint32_t tv_sec = 0;
@@ -99,19 +120,33 @@ static void hci_dump_posix_fs_log_packet(uint8_t packet_type, uint8_t in, uint8_
     uint16_t header_len = 0;
     switch (dump_format){
         case HCI_DUMP_BLUEZ:
+            // ISO packets not supported
+            if (packet_type == HCI_ISO_DATA_PACKET){
+                len = hci_dump_iso_summary(in, packet, len);
+                packet_type = LOG_MESSAGE_PACKET;
+                packet = (uint8_t*) log_message_buffer;
+            }
             hci_dump_setup_header_bluez(header.header_bluez, tv_sec, tv_us, packet_type, in, len);
             header_len = HCI_DUMP_HEADER_SIZE_BLUEZ;
             break;
         case HCI_DUMP_PACKETLOGGER:
+            // ISO packets not supported
+            if (packet_type == HCI_ISO_DATA_PACKET){
+                len = hci_dump_iso_summary(in, packet, len);
+                packet_type = LOG_MESSAGE_PACKET;
+                packet = (uint8_t*) log_message_buffer;
+            }
             hci_dump_setup_header_packetlogger(header.header_packetlogger, tv_sec, tv_us, packet_type, in, len);
             header_len = HCI_DUMP_HEADER_SIZE_PACKETLOGGER;
             break;
         case HCI_DUMP_BTSNOOP:
             // log messages not supported
             if (packet_type == LOG_MESSAGE_PACKET) return;
-            ts_usec = ((uint64_t)  curr_time.tv_sec) * 1000000 + curr_time.tv_usec;
-            hci_dump_setup_header_btsnoop(header.header_btsnoop, ts_usec >> 32, ts_usec & 0xFFFFFFFF, 0, packet_type, in, len);
-            header_len = HCI_DUMP_HEADER_SIZE_BTSNOOP;
+            ts_usec = 0xdcddb30f2f8000LLU + 1000000LLU * curr_time.tv_sec + curr_time.tv_usec;
+            // append packet type to pcap header
+            hci_dump_setup_header_btsnoop(header.header_btsnoop, ts_usec >> 32, ts_usec & 0xFFFFFFFF, 0, packet_type, in, len+1);
+            header.header_btsnoop[HCI_DUMP_HEADER_SIZE_BTSNOOP] = packet_type;
+            header_len = HCI_DUMP_HEADER_SIZE_BTSNOOP + 1;
             break;
         default:
             btstack_unreachable();
@@ -153,8 +188,8 @@ int hci_dump_posix_fs_open(const char *filename, hci_dump_format_t format){
             0x62, 0x74, 0x73, 0x6E, 0x6F, 0x6F, 0x70, 0x00,
             // Version: 1
             0x00, 0x00, 0x00, 0x01,
-            // Datalink Type: 1001 - Un-encapsulated HCI
-            0x00, 0x00, 0x03, 0xE9,
+            // Datalink Type: 1002 - H4
+            0x00, 0x00, 0x03, 0xEA,
         };
         ssize_t bytes_written = write(dump_file, &file_header, sizeof(file_header));
         UNUSED(bytes_written);

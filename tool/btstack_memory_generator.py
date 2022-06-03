@@ -73,6 +73,7 @@ extern "C" {
 #include "classic/bnep.h"
 #include "classic/btstack_link_key_db.h"
 #include "classic/btstack_link_key_db_memory.h"
+#include "classic/goep_server.h"
 #include "classic/hfp.h"
 #include "classic/hid_host.h"
 #include "classic/rfcomm.h"
@@ -139,7 +140,7 @@ cfile_header_begin = """
 #include <stdlib.h>
 
 #ifdef ENABLE_MALLOC_TEST
-extern "C" void * test_malloc(size_t size);
+void * test_malloc(size_t size);
 #define malloc test_malloc
 #endif
 
@@ -273,6 +274,33 @@ init_template = """#if POOL_COUNT > 0
     btstack_memory_pool_create(&STRUCT_NAME_pool, STRUCT_NAME_storage, POOL_COUNT, sizeof(STRUCT_TYPE));
 #endif"""
 
+list_of_structs = [
+    ["hci_connection"],
+    ["l2cap_service", "l2cap_channel"],
+]
+list_of_classic_structs = [
+    ["rfcomm_multiplexer", "rfcomm_service", "rfcomm_channel"],
+    ["btstack_link_key_db_memory_entry"],
+    ["bnep_service", "bnep_channel"],
+    ["goep_server_service", "goep_server_connection"],
+    ["hfp_connection"],
+    ["hid_host_connection"],
+    ["service_record_item"],
+    ["avdtp_stream_endpoint"],
+    ["avdtp_connection"],
+    ["avrcp_connection"],
+    ["avrcp_browsing_connection"],   
+]
+list_of_le_structs = [
+    ["battery_service_client", "gatt_client", "hids_client", "scan_parameters_service_client", "sm_lookup_entry", "whitelist_entry", "periodic_advertiser_list_entry"],
+]
+list_of_mesh_structs = [
+    ['mesh_network_pdu', 'mesh_segmented_pdu', 'mesh_upper_transport_pdu', 'mesh_network_key', 'mesh_transport_key', 'mesh_virtual_address', 'mesh_subnet']
+]
+list_of_iso_structs = [
+    ['hci_iso_stream']
+]
+
 def writeln(f, data):
     f.write(data + "\n")
 
@@ -285,29 +313,24 @@ def replacePlaceholder(template, struct_name):
     pool_count_old_no = pool_count.replace("MAX_NR_", "MAX_NO_")
     snippet = template.replace("STRUCT_TYPE", struct_type).replace("STRUCT_NAME", struct_name).replace("POOL_COUNT_OLD_NO", pool_count_old_no).replace("POOL_COUNT", pool_count)
     return snippet
-    
-list_of_structs = [
-    ["hci_connection"],
-    ["l2cap_service", "l2cap_channel"],
-]
-list_of_classic_structs = [
-    ["rfcomm_multiplexer", "rfcomm_service", "rfcomm_channel"],
-    ["btstack_link_key_db_memory_entry"],
-    ["bnep_service", "bnep_channel"],
-    ["hfp_connection"],
-    ["hid_host_connection"],
-    ["service_record_item"],
-    ["avdtp_stream_endpoint"],
-    ["avdtp_connection"],
-    ["avrcp_connection"],
-    ["avrcp_browsing_connection"],   
-]
-list_of_le_structs = [
-    ["battery_service_client", "gatt_client", "hids_client", "scan_parameters_service_client", "sm_lookup_entry", "whitelist_entry"],
-]
-list_of_mesh_structs = [
-    ['mesh_network_pdu', 'mesh_segmented_pdu', 'mesh_upper_transport_pdu', 'mesh_network_key', 'mesh_transport_key', 'mesh_virtual_address', 'mesh_subnet']
-]
+
+def add_struct(f, guard, template, structs):
+    if not guard == "":
+        writeln(f, "#ifdef " + guard)
+    for struct_names in structs:
+        # writeln(f, "// "+ ", ".join(struct_names))
+        for struct_name in struct_names:
+            writeln(f, replacePlaceholder(template, struct_name))
+        writeln(f, "")
+    if not guard == "":
+        writeln(f, "#endif")
+
+def add_structs(f, template):
+    add_struct(f, "",                               template, list_of_structs)
+    add_struct(f, "ENABLE_CLASSIC",                 template, list_of_classic_structs)
+    add_struct(f, "ENABLE_BLE",                     template, list_of_le_structs)
+    add_struct(f, "ENABLE_MESH",                    template, list_of_mesh_structs)
+    add_struct(f, "ENABLE_LE_ISOCHRONOUS_STREAMS",  template, list_of_iso_structs)
 
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
 file_name = btstack_root + "/src/btstack_memory"
@@ -316,30 +339,7 @@ print ('Generating %s.[h|c]' % file_name)
 f = open(file_name+".h", "w")
 writeln(f, copyright)
 writeln(f, hfile_header_begin)
-for struct_names in list_of_structs:
-    writeln(f, "// "+ ", ".join(struct_names))
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(header_template, struct_name))
-    writeln(f, "")
-writeln(f, "#ifdef ENABLE_CLASSIC")
-for struct_names in list_of_classic_structs:
-    writeln(f, "// "+ ", ".join(struct_names))
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(header_template, struct_name))
-    writeln(f, "")
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_BLE")
-for struct_names in list_of_le_structs:
-    writeln(f, "// "+ ", ".join(struct_names))
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(header_template, struct_name))
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_MESH")
-for struct_names in list_of_mesh_structs:
-    writeln(f, "// "+ ", ".join(struct_names))
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(header_template, struct_name))
-writeln(f, "#endif")
+add_structs(f, header_template)
 writeln(f, hfile_header_end)
 f.close();
 
@@ -347,48 +347,10 @@ f.close();
 f = open(file_name+".c", "w")
 writeln(f, copyright)
 writeln(f, cfile_header_begin)
-for struct_names in list_of_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(code_template, struct_name))
-    writeln(f, "")
-writeln(f, "#ifdef ENABLE_CLASSIC")
-for struct_names in list_of_classic_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(code_template, struct_name))
-    writeln(f, "")
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_BLE")
-for struct_names in list_of_le_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(code_template, struct_name))
-    writeln(f, "")
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_MESH")
-for struct_names in list_of_mesh_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(code_template, struct_name))
-    writeln(f, "")
-writeln(f, "#endif")
+add_structs(f, code_template)
 
 f.write(init_header)
-for struct_names in list_of_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(init_template, struct_name))
-writeln(f, "#ifdef ENABLE_CLASSIC")
-for struct_names in list_of_classic_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(init_template, struct_name))
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_BLE")
-for struct_names in list_of_le_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(init_template, struct_name))
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_MESH")
-for struct_names in list_of_mesh_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(init_template, struct_name))
-writeln(f, "#endif")
+add_structs(f, init_template)
 writeln(f, "}")
 f.close();
     
@@ -491,28 +453,11 @@ int main (int argc, const char * argv[]){
 }
 """
 
-file_name = btstack_root + "/test/btstack_memory/btstack_memory_test.c"
+file_name = btstack_root + "/test/btstack_memory/btstack_memory_test.cpp"
 print ('Generating %s' % file_name)
 
 f = open(file_name, "w")
 writeln(f, copyright)
 writeln(f, test_header)
-for struct_names in list_of_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(test_template, struct_name))
-writeln(f, "#ifdef ENABLE_CLASSIC")
-for struct_names in list_of_classic_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(test_template, struct_name))
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_BLE")
-for struct_names in list_of_le_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(test_template, struct_name))
-writeln(f, "#endif")
-writeln(f, "#ifdef ENABLE_MESH")
-for struct_names in list_of_mesh_structs:
-    for struct_name in struct_names:
-        writeln(f, replacePlaceholder(test_template, struct_name))
-writeln(f, "#endif")
+add_structs(f, test_template)
 writeln(f, test_footer)

@@ -60,7 +60,7 @@ typedef struct{
     uint16_t        hid_descriptor_size;
 
     uint16_t        hid_report_map_handle;
-    uint16_t        hid_protocol_mode;
+    uint8_t         hid_protocol_mode;
     uint16_t        hid_protocol_mode_value_handle;
 
     uint16_t        hid_boot_mouse_input_value_handle;
@@ -219,30 +219,30 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
     if (att_handle == instance->hid_boot_mouse_input_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
         instance->hid_boot_mouse_input_client_configuration_value = new_value;
-        hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE, con_handle, new_value);
+        hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE, con_handle, (uint8_t) new_value);
     }
     if (att_handle == instance->hid_boot_keyboard_input_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
         instance->hid_boot_keyboard_input_client_configuration_value = new_value;
-        hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE, con_handle, new_value);
+        hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE, con_handle, (uint8_t) new_value);
     }
     if (att_handle == instance->hid_report_input_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
         instance->hid_report_input_client_configuration_value = new_value;
         log_info("Enable Report Input notifications: %x", new_value);
-        hids_device_emit_event_with_uint8(HIDS_SUBEVENT_INPUT_REPORT_ENABLE, con_handle, new_value);
+        hids_device_emit_event_with_uint8(HIDS_SUBEVENT_INPUT_REPORT_ENABLE, con_handle, (uint8_t) new_value);
     }
     if (att_handle == instance->hid_report_output_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
         instance->hid_report_output_client_configuration_value = new_value;
         log_info("Enable Report Output notifications: %x", new_value);
-        hids_device_emit_event_with_uint8(HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE, con_handle, new_value);
+        hids_device_emit_event_with_uint8(HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE, con_handle, (uint8_t) new_value);
     }
     if (att_handle == instance->hid_report_feature_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
         instance->hid_report_feature_client_configuration_value = new_value;
         log_info("Enable Report Feature notifications: %x", new_value);
-        hids_device_emit_event_with_uint8(HIDS_SUBEVENT_FEATURE_REPORT_ENABLE, con_handle, new_value);
+        hids_device_emit_event_with_uint8(HIDS_SUBEVENT_FEATURE_REPORT_ENABLE, con_handle, (uint8_t) new_value);
     }
 
     if (att_handle == instance->hid_protocol_mode_value_handle){

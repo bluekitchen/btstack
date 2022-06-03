@@ -214,7 +214,7 @@ static void btstack_uart_windows_process_read(btstack_data_source_t *ds, btstack
     if (bytes_read != read_bytes_len){
         log_debug("read: requested read %u but %u were read, try again", (int)  read_bytes_len, (int)  bytes_read);
         read_bytes_data += bytes_read;
-        read_bytes_len  -= bytes_read;
+        read_bytes_len  -= (uint16_t) bytes_read;
         btstack_uart_windows_receive_engine();
         return;
     }
