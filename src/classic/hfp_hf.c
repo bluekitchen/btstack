@@ -239,7 +239,7 @@ static void hfp_emit_network_operator_event(const hfp_connection_t * hfp_connect
 	uint8_t event[7+HFP_MAX_NETWORK_OPERATOR_NAME_SIZE];
 	event[0] = HCI_EVENT_HFP_META;
 	event[1] = sizeof(event) - 2;
-	event[2] = 6 + operator_len;
+    event[2] = HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED;
     little_endian_store_16(event, 3, hfp_connection->acl_handle);
 	event[5] = hfp_connection->network_operator.mode;
 	event[6] = hfp_connection->network_operator.format;

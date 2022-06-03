@@ -20,7 +20,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: fix race condition that causes duplicate authenticate request
 - L2CAP: Fix accept incoming ERTM connection when Information Request already complete
 - HFP AG: activate all AG indicators upon service level connection establishment
-- HFP_AG: handle call termination in alerting call state
+- HFP AG: handle call termination in alerting call state
+- HFP HF: report HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED event 
 - A2DP Sink: fix config API for AAC, ATRAC, and other codecs
 - SM: address update for non-resolvable private addresses
 
