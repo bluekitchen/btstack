@@ -49,6 +49,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
 
 #include "btstack_config.h"
 
@@ -78,6 +79,10 @@ static bool tlv_clear = false;
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 static bd_addr_t             local_addr;
+
+#define MAX_CMD_LINE_ITEMS  100
+static int app_argc = 0;
+static const char *app_argv[MAX_CMD_LINE_ITEMS] = { NULL };
 
 int btstack_main(int argc, const char * argv[]);
 
@@ -171,7 +176,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void sigint_handler(int param){
     UNUSED(param);
 
-    printf("CTRL-C - SIGINT received, shutting down..\n");   
+    printf("CTRL-C - SIGINT received, shutting down..\n");
     log_info("sigint_handler: shutting down");
 
     // reset anyway
@@ -180,7 +185,7 @@ static void sigint_handler(int param){
     // power down
     hci_power_control(HCI_POWER_OFF);
     hci_close();
-    log_info("Good bye, see you.\n");    
+    log_info("Good bye, see you.\n");
     exit(0);
 }
 
@@ -190,7 +195,6 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 
-#include <string.h>
 static void btstack_log_cmd_line( int argc, const char *args[] )
 {
     char buf[2048] = "command line:";
@@ -247,29 +251,25 @@ static void usage(const char *name){
     }
 }
 
-static int app_argc = 0;
-static const char *app_argv[100] = { NULL };
-
-static void clear_argv(int idx)
-{
+static void clear_argv(int idx){
     app_argv[idx] = NULL;
 }
-static void shift_argv(int idx)
-{
+
+static void shift_argv(int idx){
     for( int i=idx; i<app_argc-1; ++i )
     {
         app_argv[i] = app_argv[i+1];
     }
     app_argc--;
 }
-static void cleanup_argv()
-{
-    for( int i=0; i<app_argc; )
-    {
+
+static void cleanup_argv(void){
+    for( int i=0; i<app_argc; ){
         if( app_argv[i] == NULL )
             shift_argv( i );
-        else
+        else{
             ++i;
+        }
     }
 }
 
@@ -281,9 +281,9 @@ int main(int argc, const char * argv[]){
     const char * usb_path_string = NULL;
     const char * log_file_path = NULL;
 
+    btstack_assert( argc < MAX_CMD_LINE_ITEMS );
     app_argc = argc;
-    for( int i=0; i<argc; ++i )
-    {
+    for( int i=0; i<argc; ++i ){
         app_argv[i] = argv[i];
     }
 
@@ -356,8 +356,9 @@ int main(int argc, const char * argv[]){
     btstack_strcat(pklg_path, sizeof(pklg_path), ".pklg");
 
     // use path from command line if given
-    if( log_file_path != NULL )
+    if( log_file_path != NULL ){
         btstack_strcpy(pklg_path, sizeof(pklg_path), log_file_path );
+    }
 
     // log into file using HCI_DUMP_PACKETLOGGER format
     hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);

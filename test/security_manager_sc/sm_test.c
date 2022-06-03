@@ -277,105 +277,105 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 }
 
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-	UNUSED(channel);
-	UNUSED(size);
-	bd_addr_t local_addr;
-	switch (packet_type) {
-		case HCI_EVENT_PACKET:
-			switch (packet[0]) {
-				case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started
-					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-						gap_local_bd_addr(local_addr);
-						printf("BD_ADDR: %s\n", bd_addr_to_str(local_addr));
-						// generate OOB data
-						sm_generate_sc_oob_data(sc_local_oob_generated_callback);
-					}
-					break;
-				case HCI_EVENT_LE_META:
-					switch (hci_event_le_meta_get_subevent_code(packet)) {
-						case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-							connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-							printf("CONNECTED: Connection handle 0x%04x\n", connection_handle);
-							break;
-						default:
-							break;
-					}
-					break;
-				case HCI_EVENT_DISCONNECTION_COMPLETE:
-					if (hci_get_state() != HCI_STATE_WORKING) break;
-					connection_handle = hci_event_disconnection_complete_get_connection_handle(packet);
-					printf("DISCONNECTED: Connection handle 0x%04x\n", connection_handle);
-					break;
-				default:
-					break;
-			}
-	}
-	fflush(stdout);
+    UNUSED(channel);
+    UNUSED(size);
+    bd_addr_t local_addr;
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (packet[0]) {
+                case BTSTACK_EVENT_STATE:
+                    // bt stack activated, get started
+                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
+                        gap_local_bd_addr(local_addr);
+                        printf("BD_ADDR: %s\n", bd_addr_to_str(local_addr));
+                        // generate OOB data
+                        sm_generate_sc_oob_data(sc_local_oob_generated_callback);
+                    }
+                    break;
+                case HCI_EVENT_LE_META:
+                    switch (hci_event_le_meta_get_subevent_code(packet)) {
+                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                            printf("CONNECTED: Connection handle 0x%04x\n", connection_handle);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    if (hci_get_state() != HCI_STATE_WORKING) break;
+                    connection_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+                    printf("DISCONNECTED: Connection handle 0x%04x\n", connection_handle);
+                    break;
+                default:
+                    break;
+            }
+    }
+    fflush(stdout);
 }
 
 static void sm_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-	UNUSED(channel);
-	UNUSED(size);
-	switch (packet_type) {
-		case HCI_EVENT_PACKET:
-			switch (packet[0]) {
-				case SM_EVENT_JUST_WORKS_REQUEST:
-					printf("JUST_WORKS_REQUEST\n");
-					break;
-				case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
-					printf("NUMERIC_COMPARISON_REQUEST\n");
-					break;
-				case SM_EVENT_PASSKEY_INPUT_NUMBER:
-					// display number
-					printf("PASSKEY_INPUT_NUMBER\n");
-					ui_passkey = 0;
-					ui_digits_for_passkey = 6;
-					sm_keypress_notification(connection_handle, SM_KEYPRESS_PASSKEY_ENTRY_STARTED);
-					break;
-				case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
-					// display number
-					printf("PASSKEY_DISPLAY_NUMBER: %06u\n", little_endian_read_32(packet, 11));
-					break;
-				case SM_EVENT_PASSKEY_DISPLAY_CANCEL:
-					break;
-				case SM_EVENT_AUTHORIZATION_REQUEST:
-					break;
-				case SM_EVENT_PAIRING_COMPLETE:
-					printf("\nPAIRING_COMPLETE: %u,%u\n", sm_event_pairing_complete_get_status(packet), sm_event_pairing_complete_get_reason(packet));
-					if (sm_event_pairing_complete_get_status(packet)) break;
-					if (we_are_central){
-						printf("Search for LE Counter service.\n");
-						state = TC_W4_SERVICE_RESULT;
-						gatt_client_discover_primary_services_by_uuid128(handle_gatt_client_event, connection_handle, le_counter_service_uuid);
-					}
-					break;
-				default:
-					break;
-			}
-	}
-	fflush(stdout);
+    UNUSED(channel);
+    UNUSED(size);
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (packet[0]) {
+                case SM_EVENT_JUST_WORKS_REQUEST:
+                    printf("JUST_WORKS_REQUEST\n");
+                    break;
+                case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+                    printf("NUMERIC_COMPARISON_REQUEST\n");
+                    break;
+                case SM_EVENT_PASSKEY_INPUT_NUMBER:
+                    // display number
+                    printf("PASSKEY_INPUT_NUMBER\n");
+                    ui_passkey = 0;
+                    ui_digits_for_passkey = 6;
+                    sm_keypress_notification(connection_handle, SM_KEYPRESS_PASSKEY_ENTRY_STARTED);
+                    break;
+                case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
+                    // display number
+                    printf("PASSKEY_DISPLAY_NUMBER: %06u\n", little_endian_read_32(packet, 11));
+                    break;
+                case SM_EVENT_PASSKEY_DISPLAY_CANCEL:
+                    break;
+                case SM_EVENT_AUTHORIZATION_REQUEST:
+                    break;
+                case SM_EVENT_PAIRING_COMPLETE:
+                    printf("\nPAIRING_COMPLETE: %u,%u\n", sm_event_pairing_complete_get_status(packet), sm_event_pairing_complete_get_reason(packet));
+                    if (sm_event_pairing_complete_get_status(packet)) break;
+                    if (we_are_central){
+                        printf("Search for LE Counter service.\n");
+                        state = TC_W4_SERVICE_RESULT;
+                        gatt_client_discover_primary_services_by_uuid128(handle_gatt_client_event, connection_handle, le_counter_service_uuid);
+                    }
+                    break;
+                default:
+                    break;
+            }
+    }
+    fflush(stdout);
 }
 
 
 static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-	UNUSED(channel);
-	UNUSED(size);
-	switch (packet_type) {
-		case HCI_EVENT_PACKET:
-			switch (packet[0]) {
-				case ATT_EVENT_CAN_SEND_NOW:
-					att_server_notify(connection_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t *) "Pairing Success!", 16);
-					break;
-				default:
-					break;
-			}
-	}
-	fflush(stdout);
+    UNUSED(channel);
+    UNUSED(size);
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (packet[0]) {
+                case ATT_EVENT_CAN_SEND_NOW:
+                    att_server_notify(connection_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t *) "Pairing Success!", 16);
+                    break;
+                default:
+                    break;
+            }
+    }
+    fflush(stdout);
 }
 
 static void stdin_process(char c){
-	log_info("stdin: %c", c);
+    log_info("stdin: %c", c);
     // passkey input
     if (ui_digits_for_passkey && c >= '0' && c <= '9'){
         printf("%c", c);
@@ -456,11 +456,11 @@ static void stdin_process(char c){
             break;
         case 'x':
 #ifdef COVERAGE
-			log_info("Flush gcov");
+            log_info("Flush gcov");
             __gcov_dump();
             __gcov_reset();
 #endif
-			printf("EXIT\n");
+            printf("EXIT\n");
             exit(0);
             break;
         default:
