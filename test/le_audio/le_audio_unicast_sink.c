@@ -258,6 +258,13 @@ static void enter_streaming(void){
     }
 }
 
+static void enter_scanning() {
+    app_state = APP_W4_SOURCE_ADV;
+    gap_set_scan_params(1, 0x30, 0x30, 0);
+    gap_start_scan();
+    printf("Start scan..\n");
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     bd_addr_t event_addr;
@@ -294,6 +301,18 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                 default:
                     break;
+            }
+            break;
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            if (hci_event_disconnection_complete_get_connection_handle(packet) == remote_handle){
+                printf("Disconnected, back to scanning\n");
+                // stop playback
+                const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
+                if (sink != NULL){
+                    sink->stop_stream();
+                }
+
+                enter_scanning();
             }
             break;
         case GAP_EVENT_ADVERTISING_REPORT:
@@ -402,11 +421,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     switch(app_state){
         case APP_SET_HOST_FEATURES:
             hci_send_cmd(&hci_le_set_host_feature, 32, 1);
-
-            app_state = APP_W4_SOURCE_ADV;
-            gap_set_scan_params(1, 0x30, 0x30, 0);
-            gap_start_scan();
-            printf("Start scan..\n");
+            enter_scanning();
             break;
         case APP_CREATE_CIG:
             {
