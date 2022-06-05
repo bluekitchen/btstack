@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- *  Copyright 2021 Google, Inc.
+ *  Copyright 2022 Google LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,24 +24,62 @@
 #define __LC3_COMMON_H
 
 #include <lc3.h>
+#include "fastmath.h"
 
+#include <stdalign.h>
 #include <limits.h>
 #include <string.h>
-#include <math.h>
+
+#ifdef __ARM_ARCH
+#include <arm_acle.h>
+#endif
+
+
+/**
+ * Hot Function attribute
+ * Selectively disable sanitizer
+ */
+
+#ifdef __clang__
+
+#define LC3_HOT \
+    __attribute__((no_sanitize("bounds"))) \
+    __attribute__((no_sanitize("integer")))
+
+#else /* __clang__ */
+
+#define LC3_HOT
+
+#endif /* __clang__ */
 
 
 /**
  * Macros
  * MIN/MAX  Minimum and maximum between 2 values
  * CLIP     Clip a value between low and high limits
- * ABS      Return the absolute value
+ * SATXX    Signed saturation on 'xx' bits
+ * ABS      Return absolute value
  */
 
-#define LC3_MIN(a, b)  ( (a) < (b) ? (a) : (b) )
-#define LC3_MAX(a, b)  ( (a) > (b) ? (a) : (b) )
-#define LC3_CLIP(v, min, max)  LC3_MIN(LC3_MAX(v, min), max)
+#define LC3_MIN(a, b)  ( (a) < (b) ?  (a) : (b) )
+#define LC3_MAX(a, b)  ( (a) > (b) ?  (a) : (b) )
 
-#define LC3_ABS(n)  ( (n) < 0 ? -(n) : (n) )
+#define LC3_CLIP(v, min, max)  LC3_MIN(LC3_MAX(v, min), max)
+#define LC3_SAT16(v)  LC3_CLIP(v, -(1 << 15), (1 << 15) - 1)
+#define LC3_SAT24(v)  LC3_CLIP(v, -(1 << 23), (1 << 23) - 1)
+
+#define LC3_ABS(v)  ( (v) < 0 ? -(v) : (v) )
+
+
+#ifdef __ARM_FEATURE_SAT
+
+#undef  LC3_SAT16
+#define LC3_SAT16(v) __ssat(v, 16)
+
+#undef  LC3_SAT24
+#define LC3_SAT24(v) __ssat(v, 24)
+
+#endif /* __ARM_FEATURE_SAT */
 
 
 /**
@@ -58,7 +96,8 @@
 /**
  * Return number of samples, delayed samples and
  * encoded spectrum coefficients within a frame
- * For decoding, add number of samples of 18 ms history
+ * - For encoding, keep 1.25 ms for temporal window
+ * - For decoding, keep 18 ms of history, aligned on frames, and a frame
  */
 
 #define LC3_NS(dt, sr) \
@@ -67,14 +106,18 @@
 #define LC3_ND(dt, sr) \
     ( (dt) == LC3_DT_7M5 ? 23 * LC3_NS(dt, sr) / 30 \
                          :  5 * LC3_NS(dt, sr) /  8 )
+
 #define LC3_NE(dt, sr) \
     ( 20 * (3 + (dt)) * (1 + (sr)) )
 
 #define LC3_MAX_NE \
     LC3_NE(LC3_DT_10M, LC3_SRATE_48K)
 
-#define LC3_NH(sr) \
-    (18 * LC3_SRATE_KHZ(sr))
+#define LC3_NT(sr_hz) \
+    ( (5 * LC3_SRATE_KHZ(sr)) / 4 )
+
+#define LC3_NH(dt, sr) \
+    ( ((3 - dt) + 1) * LC3_NS(dt, sr) )
 
 
 /**

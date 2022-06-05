@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- *  Copyright 2021 Google, Inc.
+ *  Copyright 2022 Google LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -39,17 +39,17 @@
  *   it can follow a temporary bandwidth increase or reduction.
  *
  * - Unlike classic codecs, the LC3 codecs does not run on fixed amount
- *   of samples as input. It operate only on fixed frame duration, for
- *   any supported samplerates (8 to 48 KHz). Two frame duration are
+ *   of samples as input. It operates only on fixed frame duration, for
+ *   any supported samplerates (8 to 48 KHz). Two frames duration are
  *   available 7.5ms and 10ms.
  *
  *
  * --- About 44.1 KHz samplerate ---
  *
- * The Bluetooth specification oddly add the 44.1 KHz samplerate. Although
- * there is NO SUPPORT in the core algorithm of the codec of 44.1 KHz.
+ * The Bluetooth specification reference the 44.1 KHz samplerate, although
+ * there is no support in the core algorithm of the codec of 44.1 KHz.
  * We can summarize the 44.1 KHz support by "you can put any samplerate
- * around the base defined samplerates". But be concerned by :
+ * around the defined base samplerates". Please mind the following items :
  *
  *   1. The frame size will not be 7.5 ms or 10 ms, but is scaled
  *      by 'supported samplerate' / 'input samplerate'
@@ -68,7 +68,7 @@
  *
  * --- How to encode / decode ---
  *
- * An encoder / decoder context need to be setup. This context keep states
+ * An encoder / decoder context needs to be setup. This context keeps states
  * on the current stream to proceed, and samples that overlapped across
  * frames.
  *
@@ -96,12 +96,17 @@
  *
  * Next, call the `lc3_encode()` encoding procedure, for each frames.
  * To handle multichannel streams (Stereo or more), you can proceed with
- * inerleaved channels PCM stream like this :
+ * interleaved channels PCM stream like this :
  *
  *   | for(int ich = 0; ich < nch: ich++)
  *   |     lc3_encode(encoder[ich], pcm + ich, nch, ...);
  *
  *   with `nch` as the number of channels in the PCM stream
+ *
+ * ---
+ *
+ * Antoine SOULIER, Tempow / Google LLC
+ *
  */
 
 #ifndef __LC3_H
@@ -192,7 +197,7 @@ int lc3_frame_samples(int dt_us, int sr_hz);
 /**
  * Return the size of frames, from bitrate
  * dt_us           Frame duration in us, 7500 or 10000
- * bitrate         Target bitrate in bit per seconds
+ * bitrate         Target bitrate in bit per second
  * return          The floor size in bytes of the frames, -1 on bad parameters
  */
 int lc3_frame_bytes(int dt_us, int bitrate);

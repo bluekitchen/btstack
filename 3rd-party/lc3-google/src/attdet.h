@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- *  Copyright 2021 Google, Inc.
+ *  Copyright 2022 Google LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@
  * return          1: Attack detected  0: Otherwise
  */
 bool lc3_attdet_run(enum lc3_dt dt, enum lc3_srate sr,
-    int nbytes, lc3_attdet_analysis_t *attdet, const float *x);
+    int nbytes, lc3_attdet_analysis_t *attdet, const int16_t *x);
 
 
 #endif /* __LC3_ATTDET_H */

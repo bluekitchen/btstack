@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- *  Copyright 2021 Google, Inc.
+ *  Copyright 2022 Google LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -77,8 +77,6 @@ extern const uint16_t lc3_tns_coeffs_bits[][17];
 /**
  * Long Term Postfilter
  */
-
-extern const float lc3_ltpf_h12k8[240];
 
 extern const float *lc3_ltpf_cnum[LC3_NUM_SRATE][4];
 extern const float *lc3_ltpf_cden[LC3_NUM_SRATE][4];

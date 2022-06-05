@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- *  Copyright 2021 Google, Inc.
+ *  Copyright 2022 Google LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -156,11 +156,15 @@ static void load_s16(
 
     enum lc3_dt dt = encoder->dt;
     enum lc3_srate sr = encoder->sr_pcm;
+
+    int16_t *xt = encoder->xt;
     float *xs = encoder->xs;
     int ns = LC3_NS(dt, sr);
 
-    for (int i = 0; i < ns; i++)
-        xs[i] = pcm[i*stride];
+    for (int i = 0; i < ns; i++) {
+        int16_t in = pcm[i*stride];
+        xt[i] = in, xs[i] = in;
+    }
 }
 
 /**
@@ -175,11 +179,17 @@ static void load_s24(
 
     enum lc3_dt dt = encoder->dt;
     enum lc3_srate sr = encoder->sr_pcm;
+
+    int16_t *xt = encoder->xt;
     float *xs = encoder->xs;
     int ns = LC3_NS(dt, sr);
 
-    for (int i = 0; i < ns; i++)
-        xs[i] = ldexpf(pcm[i*stride], -8);
+    for (int i = 0; i < ns; i++) {
+        int32_t in = pcm[i*stride];
+
+        xt[i] = in >> 8;
+        xs[i] = ldexpf(in, -8);
+    }
 }
 
 /**
@@ -189,30 +199,33 @@ static void load_s24(
  * side, xq        Return frame data
  */
 static void analyze(struct lc3_encoder *encoder,
-    int nbytes, struct side_data *side, int16_t *xq)
+    int nbytes, struct side_data *side, uint16_t *xq)
 {
     enum lc3_dt dt = encoder->dt;
     enum lc3_srate sr = encoder->sr;
     enum lc3_srate sr_pcm = encoder->sr_pcm;
     int ns = LC3_NS(dt, sr_pcm);
-    int nd = LC3_ND(dt, sr_pcm);
+    int nt = LC3_NT(sr_pcm);
 
+    int16_t *xt = encoder->xt;
     float *xs = encoder->xs;
-    float *xf = encoder->xf;
+    float *xd = encoder->xd;
+    float *xf = xs;
 
     /* --- Temporal --- */
 
-    bool att = lc3_attdet_run(dt, sr_pcm, nbytes, &encoder->attdet, xs);
+    bool att = lc3_attdet_run(dt, sr_pcm, nbytes, &encoder->attdet, xt);
 
     side->pitch_present =
-        lc3_ltpf_analyse(dt, sr_pcm, &encoder->ltpf, xs, &side->ltpf);
+        lc3_ltpf_analyse(dt, sr_pcm, &encoder->ltpf, xt, &side->ltpf);
+
+    memmove(xt - nt, xt + (ns-nt), nt * sizeof(*xt));
 
     /* --- Spectral --- */
 
     float e[LC3_NUM_BANDS];
 
-    lc3_mdct_forward(dt, sr_pcm, sr, xs, xf);
-    memmove(xs - nd, xs + ns-nd, nd * sizeof(float));
+    lc3_mdct_forward(dt, sr_pcm, sr, xs, xd, xf);
 
     bool nn_flag = lc3_energy_compute(dt, sr, xf, e);
     if (nn_flag)
@@ -237,12 +250,12 @@ static void analyze(struct lc3_encoder *encoder,
  * buffer          Output bitstream buffer of `nbytes` size
  */
 static void encode(struct lc3_encoder *encoder,
-    const struct side_data *side, int16_t *xq, int nbytes, void *buffer)
+    const struct side_data *side, uint16_t *xq, int nbytes, void *buffer)
 {
     enum lc3_dt dt = encoder->dt;
     enum lc3_srate sr = encoder->sr;
     enum lc3_bandwidth bw = side->bw;
-    float *xf = encoder->xf;
+    float *xf = encoder->xs;
 
     lc3_bits_t bits;
 
@@ -298,13 +311,15 @@ struct lc3_encoder *lc3_setup_encoder(
 
     struct lc3_encoder *encoder = mem;
     int ns = LC3_NS(dt, sr_pcm);
-    int nd = LC3_ND(dt, sr_pcm);
+    int nt = LC3_NT(sr_pcm);
 
     *encoder = (struct lc3_encoder){
         .dt = dt, .sr = sr,
         .sr_pcm = sr_pcm,
-        .xs = encoder->s + nd,
-        .xf = encoder->s + nd+ns,
+
+        .xt = (int16_t *)encoder->s + nt,
+        .xs = encoder->s + (nt+ns)/2,
+        .xd = encoder->s + (nt+ns)/2 + ns,
     };
 
     memset(encoder->s, 0,
@@ -333,7 +348,7 @@ int lc3_encode(struct lc3_encoder *encoder, enum lc3_pcm_format fmt,
     /* --- Processing --- */
 
     struct side_data side;
-    int16_t xq[LC3_NE(encoder->dt, encoder->sr)];
+    uint16_t xq[LC3_NE(encoder->dt, encoder->sr)];
 
     load[fmt](encoder, pcm, stride);
 
@@ -361,12 +376,13 @@ static void store_s16(
 
     enum lc3_dt dt = decoder->dt;
     enum lc3_srate sr = decoder->sr_pcm;
+
     float *xs = decoder->xs;
     int ns = LC3_NS(dt, sr);
 
     for ( ; ns > 0; ns--, xs++, pcm += stride) {
-        int s = *xs >= 0 ? (int)(*xs + 0.5f) : (int)(*xs - 0.5f);
-        *pcm = LC3_CLIP(s, INT16_MIN, INT16_MAX);
+        int32_t s = *xs >= 0 ? (int)(*xs + 0.5f) : (int)(*xs - 0.5f);
+        *pcm = LC3_SAT16(s);
     }
 }
 
@@ -379,18 +395,17 @@ static void store_s24(
     struct lc3_decoder *decoder, void *_pcm, int stride)
 {
     int32_t *pcm = _pcm;
-    const int32_t int24_max =  (1 << 23) - 1;
-    const int32_t int24_min = -(1 << 23);
 
     enum lc3_dt dt = decoder->dt;
     enum lc3_srate sr = decoder->sr_pcm;
+
     float *xs = decoder->xs;
     int ns = LC3_NS(dt, sr);
 
     for ( ; ns > 0; ns--, xs++, pcm += stride) {
         int32_t s = *xs >= 0 ? (int32_t)(ldexpf(*xs, 8) + 0.5f)
                              : (int32_t)(ldexpf(*xs, 8) - 0.5f);
-        *pcm = LC3_CLIP(s, int24_min, int24_max);
+        *pcm = LC3_SAT24(s);
     }
 }
 
@@ -406,6 +421,7 @@ static int decode(struct lc3_decoder *decoder,
 {
     enum lc3_dt dt = decoder->dt;
     enum lc3_srate sr = decoder->sr;
+
     float *xf = decoder->xs;
     int ns = LC3_NS(dt, sr);
     int ne = LC3_NE(dt, sr);
@@ -452,11 +468,11 @@ static void synthesize(struct lc3_decoder *decoder,
     enum lc3_dt dt = decoder->dt;
     enum lc3_srate sr = decoder->sr;
     enum lc3_srate sr_pcm = decoder->sr_pcm;
-    int ns = LC3_NS(dt, sr_pcm);
-    int ne = LC3_NE(dt, sr);
-    int nh = LC3_NH(sr_pcm);
 
     float *xf = decoder->xs;
+    int ns = LC3_NS(dt, sr_pcm);
+    int ne = LC3_NE(dt, sr);
+
     float *xg = decoder->xg;
     float *xd = decoder->xd;
     float *xs = xf;
@@ -481,9 +497,22 @@ static void synthesize(struct lc3_decoder *decoder,
     }
 
     lc3_ltpf_synthesize(dt, sr_pcm, nbytes, &decoder->ltpf,
-        side && side->pitch_present ? &side->ltpf : NULL, xs);
+        side && side->pitch_present ? &side->ltpf : NULL, decoder->xh, xs);
+}
 
-    memmove(xs - nh, xs - nh+ns, nh * sizeof(*xs));
+/**
+ * Update decoder state on decoding completion
+ * decoder         Decoder state
+ */
+static void complete(struct lc3_decoder *decoder)
+{
+    enum lc3_dt dt = decoder->dt;
+    enum lc3_srate sr_pcm = decoder->sr_pcm;
+    int nh = LC3_NH(dt, sr_pcm);
+    int ns = LC3_NS(dt, sr_pcm);
+
+    decoder->xs = decoder->xs - decoder->xh < nh - ns ?
+        decoder->xs + ns : decoder->xh;
 }
 
 /**
@@ -516,16 +545,18 @@ struct lc3_decoder *lc3_setup_decoder(
         return NULL;
 
     struct lc3_decoder *decoder = mem;
-    int nh = LC3_NH(sr_pcm);
+    int nh = LC3_NH(dt, sr_pcm);
     int ns = LC3_NS(dt, sr_pcm);
     int nd = LC3_ND(dt, sr_pcm);
 
     *decoder = (struct lc3_decoder){
         .dt = dt, .sr = sr,
         .sr_pcm = sr_pcm,
-        .xs = decoder->s + nh,
-        .xd = decoder->s + nh+ns,
-        .xg = decoder->s + nh+ns+nd,
+
+        .xh = decoder->s,
+        .xs = decoder->s + nh-ns,
+        .xd = decoder->s + nh,
+        .xg = decoder->s + nh+nd,
     };
 
     lc3_plc_reset(&decoder->plc);
@@ -565,6 +596,8 @@ int lc3_decode(struct lc3_decoder *decoder, const void *in, int nbytes,
     synthesize(decoder, ret ? NULL : &side, nbytes);
 
     store[fmt](decoder, pcm, stride);
+
+    complete(decoder);
 
     return ret;
 }

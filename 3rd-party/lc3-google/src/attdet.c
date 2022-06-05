@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- *  Copyright 2021 Google, Inc.
+ *  Copyright 2022 Google LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
  * Time domain attack detector
  */
 bool lc3_attdet_run(enum lc3_dt dt, enum lc3_srate sr,
-    int nbytes, struct lc3_attdet_analysis *attdet, const float *x)
+    int nbytes, struct lc3_attdet_analysis *attdet, const int16_t *x)
 {
     /* --- Check enabling --- */
 
@@ -40,32 +40,32 @@ bool lc3_attdet_run(enum lc3_dt dt, enum lc3_srate sr,
     /* --- Filtering & Energy calculation --- */
 
     int nblk = 4 - (dt == LC3_DT_7M5);
-    float e[4];
+    int32_t e[4];
 
     for (int i = 0; i < nblk; i++) {
         e[i] = 0;
 
         if (sr == LC3_SRATE_32K) {
-            float xn2 = x[-4] + x[-3];
-            float xn1 = x[-2] + x[-1];
-            float xn, xf;
+            int16_t xn2 = (x[-4] + x[-3]) >> 1;
+            int16_t xn1 = (x[-2] + x[-1]) >> 1;
+            int16_t xn, xf;
 
             for (int j = 0; j < 40; j++, x += 2, xn2 = xn1, xn1 = xn) {
-                xn = x[0] + x[1];
-                xf = 0.375 * xn - 0.5 * xn1 + 0.125 * xn2;
-                e[i] += xf * xf;
+                xn = (x[0] + x[1]) >> 1;
+                xf = (3 * xn - 4 * xn1 + 1 * xn2) >> 3;
+                e[i] += (xf * xf) >> 5;
             }
         }
 
         else {
-            float xn2 = x[-6] + x[-5] + x[-4];
-            float xn1 = x[-3] + x[-2] + x[-1];
-            float xn, xf;
+            int16_t xn2 = (x[-6] + x[-5] + x[-4]) >> 2;
+            int16_t xn1 = (x[-3] + x[-2] + x[-1]) >> 2;
+            int16_t xn, xf;
 
             for (int j = 0; j < 40; j++, x += 3, xn2 = xn1, xn1 = xn) {
-                xn = x[0] + x[1] + x[2];
-                xf = 0.375 * xn - 0.5 * xn1 + 0.125 * xn2;
-                e[i] += xf * xf;
+                xn = (x[0] + x[1] + x[2]) >> 2;
+                xf = (3 * xn - 4 * xn1 + 1 * xn2) >> 3;
+                e[i] += (xf * xf) >> 5;
             }
         }
     }
@@ -75,13 +75,13 @@ bool lc3_attdet_run(enum lc3_dt dt, enum lc3_srate sr,
      * in such way, it will be initialized to 0 */
 
     int p_att = 0;
-    float a[4];
+    int32_t a[4];
 
     for (int i = 0; i < nblk; i++) {
-        a[i] = fmaxf(0.25 * attdet->an1, attdet->en1);
+        a[i] = LC3_MAX(attdet->an1 >> 2, attdet->en1);
         attdet->en1 = e[i], attdet->an1 = a[i];
 
-        if (e[i] > 8.5 * a[i])
+        if ((e[i] >> 3) > a[i] + (a[i] >> 4))
             p_att = i + 1;
     }
 
