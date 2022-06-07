@@ -106,7 +106,7 @@ typedef struct {
     uint16_t sbc_storage_count;
     uint8_t  sbc_ready_to_send;
 
-    uint16_t volume; 
+    uint8_t volume;
 } a2dp_media_sending_context_t;
 
 static  uint8_t media_sbc_codec_capabilities[] = {

@@ -88,20 +88,20 @@ typedef struct _BTSTACK_WINUSB_PIPE_INFORMATION_EX {
   ULONG          MaximumBytesPerInterval;
 } BTSTACK_WINUSB_PIPE_INFORMATION_EX, *BTSTACK_PWINUSB_PIPE_INFORMATION_EX;
 
-typedef WINBOOL (WINAPI * BTstack_WinUsb_QueryPipeEx_t) (
+typedef BOOL (WINAPI * BTstack_WinUsb_QueryPipeEx_t) (
 	WINUSB_INTERFACE_HANDLE 	InterfaceHandle,
 	UCHAR						AlternateInterfaceNumber,
 	UCHAR 						PipeIndex,
 	BTSTACK_PWINUSB_PIPE_INFORMATION_EX PipeInformationEx
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_RegisterIsochBuffer_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_RegisterIsochBuffer_t)(
 	WINUSB_INTERFACE_HANDLE     InterfaceHandle,
 	UCHAR                       PipeID,
 	PVOID                       Buffer,
 	ULONG                       BufferLength,
 	BTSTACK_PWINUSB_ISOCH_BUFFER_HANDLE BufferHandle
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_ReadIsochPipe_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_ReadIsochPipe_t)(
     BTSTACK_PWINUSB_ISOCH_BUFFER_HANDLE BufferHandle,
     ULONG                       Offset,
     ULONG                       Length,
@@ -110,7 +110,7 @@ typedef WINBOOL (WINAPI * BTstack_WinUsb_ReadIsochPipe_t)(
     PUSBD_ISO_PACKET_DESCRIPTOR IsoPacketDescriptors,   // MSDN lists PULONG
     LPOVERLAPPED                Overlapped
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_ReadIsochPipeAsap_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_ReadIsochPipeAsap_t)(
     BTSTACK_PWINUSB_ISOCH_BUFFER_HANDLE BufferHandle,
     ULONG                       Offset,
     ULONG                       Length,
@@ -119,24 +119,24 @@ typedef WINBOOL (WINAPI * BTstack_WinUsb_ReadIsochPipeAsap_t)(
     PUSBD_ISO_PACKET_DESCRIPTOR IsoPacketDescriptors,
  	LPOVERLAPPED                Overlapped
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_WriteIsochPipe_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_WriteIsochPipe_t)(
     BTSTACK_PWINUSB_ISOCH_BUFFER_HANDLE BufferHandle,
     ULONG                       Offset,
     ULONG                       Length,
     PULONG                      FrameNumber,
 	LPOVERLAPPED                Overlapped
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_WriteIsochPipeAsap_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_WriteIsochPipeAsap_t)(
     BTSTACK_PWINUSB_ISOCH_BUFFER_HANDLE BufferHandle,
     ULONG                       Offset,
     ULONG                       Length,
     BOOL                        ContinueStream,
 	LPOVERLAPPED                Overlapped
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_UnregisterIsochBuffer_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_UnregisterIsochBuffer_t)(
 	BTSTACK_PWINUSB_ISOCH_BUFFER_HANDLE BufferHandle
 );
-typedef WINBOOL (WINAPI * BTstack_WinUsb_GetCurrentFrameNumber_t)(
+typedef BOOL (WINAPI * BTstack_WinUsb_GetCurrentFrameNumber_t)(
     WINUSB_INTERFACE_HANDLE     InterfaceHandle,        // MSDN lists 'Device handle returned from CreateFile'
     PULONG                      CurrentFrameNumber,
     LARGE_INTEGER               *TimeStamp
@@ -317,25 +317,55 @@ static const uint16_t known_bluetooth_devices[] = {
 
 static int num_known_devices = sizeof(known_bluetooth_devices) / sizeof(uint16_t) / 2;
 
-static int usb_is_known_bluetooth_device(const char * device_path){
-    int i;
-    for (i=0; i<num_known_devices; i++){
-        // construct pid/vid substring
-        char substring[20];
-        sprintf(substring, "vid_%04x&pid_%04x", known_bluetooth_devices[i*2], known_bluetooth_devices[i*2+1]);
-        const char * pos = strstr(device_path, substring);
-        log_info("check %s in %s -> %p", substring, device_path, pos);
-        if (pos){
-            return 1;
-        }
+// known devices
+typedef struct {
+    btstack_linked_item_t next;
+    uint16_t vendor_id;
+    uint16_t product_id;
+} usb_known_device_t;
+
+static btstack_linked_list_t usb_knwon_devices;
+
+void hci_transport_usb_add_device(uint16_t vendor_id, uint16_t product_id) {
+    usb_known_device_t * device = malloc(sizeof(usb_known_device_t));
+    if (device != NULL) {
+        device->vendor_id = vendor_id;
+        device->product_id = product_id;
+        btstack_linked_list_add(&usb_knwon_devices, (btstack_linked_item_t *) device);
     }
-    return 0;
 }
 
-static int usb_is_vmware_bluetooth_adapter(const char * device_path){
+static bool usb_is_vmware_bluetooth_adapter(const char * device_path){
     // VMware Vendor ID 0e0f
     const char * pos = strstr(device_path, "\\usb#vid_0e0f&pid");
-    return pos ? 1 : 0;
+    return (pos > 0);
+}
+
+static bool usb_device_path_match(const char * device_path, uint16_t vendor_id, uint16_t product_id){
+    // construct pid/vid substring
+    char substring[20];
+    sprintf(substring, "vid_%04x&pid_%04x", vendor_id, product_id);
+    const char * pos = strstr(device_path, substring);
+    log_info("check %s in %s -> %p", substring, device_path, pos);
+    return (pos > 0);
+}
+
+static bool usb_is_known_bluetooth_device(const char * device_path){
+    int i;
+    for (i=0; i<num_known_devices; i++){
+        if (usb_device_path_match( device_path, known_bluetooth_devices[i*2], known_bluetooth_devices[i*2+1])){
+            return true;
+        }
+    }
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &usb_knwon_devices);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        usb_known_device_t * device = (usb_known_device_t *) btstack_linked_list_iterator_next(&it);
+        if (usb_device_path_match( device_path, device->vendor_id, device->product_id)){
+            return true;
+        }
+    }
+    return false;
 }
 
 #ifdef ENABLE_SCO_OVER_HCI
@@ -595,6 +625,9 @@ static void sco_handle_data(uint8_t * buffer, uint16_t size){
                 packet_handler(HCI_SCO_DATA_PACKET, sco_buffer, sco_read_pos);
                 sco_state_machine_init();
                 break;
+			default:
+				btstack_unreachable();
+				break;
         }
     }
 }

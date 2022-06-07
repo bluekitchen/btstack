@@ -57,13 +57,13 @@ PRIVATE OI_STATUS OI_CODEC_SBC_Alloc(OI_CODEC_SBC_COMMON_CONTEXT *common,
     if (filterBufferCount < SBC_CODEC_MIN_FILTER_BUFFERS) {
         return OI_STATUS_OUT_OF_MEMORY;
     }
-    common->filterBufferLen = filterBufferCount * SBC_MAX_BANDS;
+    common->filterBufferLen = (uint32_t) filterBufferCount * SBC_MAX_BANDS;
 
     /* Allocate memory for the subband data */
     common->subdata = (OI_INT32*)codecData;
     codecData += subdataSize;
     OI_ASSERT(codecDataBytes >= subdataSize);
-    codecDataBytes -= subdataSize;
+    codecDataBytes -= (uint32_t) subdataSize;
 
     /* Allocate memory for the synthesis buffers */
     for (i = 0; i < maxChannels; ++i) {
@@ -71,7 +71,7 @@ PRIVATE OI_STATUS OI_CODEC_SBC_Alloc(OI_CODEC_SBC_COMMON_CONTEXT *common,
         common->filterBuffer[i] = (SBC_BUFFER_T*)codecData;
         OI_ASSERT(codecDataBytes >= allocSize);
         codecData += allocSize;
-        codecDataBytes -= allocSize;
+        codecDataBytes -= (uint32_t) allocSize;
     }
 
     return OI_OK;

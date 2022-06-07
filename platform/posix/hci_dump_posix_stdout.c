@@ -95,6 +95,13 @@ static void hci_dump_posix_stdout_packet(uint8_t packet_type, uint8_t in, uint8_
                 printf("SCO => ");
             }
             break;
+        case HCI_ISO_DATA_PACKET:
+            if (in) {
+                printf("ISO <= ");
+            } else {
+                printf("ISO => ");
+            }
+            break;
         case LOG_MESSAGE_PACKET:
             printf("LOG -- %s\n", (char*) packet);
             return;

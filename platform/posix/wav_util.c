@@ -37,19 +37,22 @@
 
 #define BTSTACK_FILE__ "wav_util.c"
 
-#include <stdint.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #include "wav_util.h"
 #include "btstack_util.h"
 #include "btstack_debug.h"
 
+#ifdef _MSC_VER
+// ignore deprecated warning for fopen
+#pragma warning(disable : 4996)
+#endif
+
 /* wav reader state */
-static int wav_reader_fd;
+static FILE * wav_reader_file;
 static int wav_reader_bytes_per_sample = 2;
 static struct {
     uint8_t num_channels;
@@ -76,20 +79,6 @@ static void little_endian_fstore_32(FILE *wav_file, uint32_t value){
     uint8_t buf[4];
     little_endian_store_32(buf, 0, value);
     fwrite(&buf, 1, 4, wav_file);
-}
-
-static ssize_t __read(int fd, void *buf, size_t count){
-    ssize_t len, pos = 0;
-
-    while (count > 0) {
-        len = read(fd, (int8_t * )buf + pos, count);
-        if (len <= 0)
-            return pos;
-
-        count -= len;
-        pos   += len;
-    }
-    return pos;
 }
 
 static void write_wav_header(FILE * wav_file,  int total_num_samples, int num_channels, int sample_rate){
@@ -146,7 +135,9 @@ int wav_writer_close(void){
 }
 
 int wav_writer_write_int8(int num_samples, int8_t * data){
-    if (data == NULL) return 1;
+    btstack_assert(data != NULL);
+    if (wav_writer_state.wav_file == NULL) return 1;
+
     int i = 0;
     int8_t zero_byte = 0;
     for (i=0; i<num_samples; i++){
@@ -161,7 +152,9 @@ int wav_writer_write_int8(int num_samples, int8_t * data){
 }
 
 int wav_writer_write_le_int16(int num_samples, int16_t * data){
-    if (data == NULL) return 1;
+    btstack_assert(data != NULL);
+    if (wav_writer_state.wav_file == NULL) return 1;
+
     fwrite(data, num_samples, 2, wav_writer_state.wav_file);
     
     wav_writer_state.total_num_samples+=num_samples;
@@ -170,10 +163,12 @@ int wav_writer_write_le_int16(int num_samples, int16_t * data){
 }
 
 int wav_writer_write_int16(int num_samples, int16_t * data){
+    btstack_assert(data != NULL);
+    if (wav_writer_state.wav_file == NULL) return 1;
+
     if (btstack_is_little_endian()){
         return wav_writer_write_le_int16(num_samples, data);
     }
-    if (data == NULL) return 1;
 
     int i;
     for (i=0;i<num_samples;i++){
@@ -190,17 +185,16 @@ int wav_writer_write_int16(int num_samples, int16_t * data){
 
 int wav_reader_open(const char * filepath){
     memset (&wav_reader_state, 0, sizeof(wav_reader_state));
-
-    wav_reader_fd = open(filepath, O_RDONLY);
-    if (!wav_reader_fd) {
+    wav_reader_file = fopen(filepath, "rb");
+    if (wav_reader_file == NULL) {
         log_error("Can't open file %s", filepath);
         return 1;
     }
 
     uint8_t buf[40];
-    __read(wav_reader_fd, buf, sizeof(buf));
+    fread(buf, 1, sizeof(buf), wav_reader_file);
 
-    wav_reader_state.num_channels  = little_endian_read_16(buf, 22);
+    wav_reader_state.num_channels  = (uint8_t) little_endian_read_16(buf, 22);
     if ((wav_reader_state.num_channels < 1) || (wav_reader_state.num_channels > 2)) {
         log_error("Unexpected num channels %d", wav_reader_state.num_channels);
         return 1;
@@ -226,24 +220,28 @@ uint32_t wav_reader_get_sampling_rate(void){
 }
 
 int wav_reader_close(void){
-    close(wav_reader_fd);
+    if (wav_reader_file != NULL){
+        fclose(wav_reader_file);
+    }
     return 0;
 }
 
 // Wav data: 8bit is uint8_t; 16bit is int16
 int wav_reader_read_int8(int num_samples, int8_t * data){
-    if (!wav_reader_fd) return 1;
+    if (wav_reader_file == NULL) {
+        return 1;
+    }
     int i;
     int bytes_read = 0;  
 
     for (i=0; i<num_samples; i++){
         if (wav_reader_bytes_per_sample == 2){
             uint8_t buf[2];
-            bytes_read +=__read(wav_reader_fd, &buf, 2);
-            data[i] = buf[1];    
+            bytes_read += (uint16_t) fread(buf, 1, sizeof(buf), wav_reader_file);;
+            data[i] = buf[1];
         } else {
             uint8_t buf[1];
-            bytes_read +=__read(wav_reader_fd, &buf, 1);
+            bytes_read += (uint16_t) fread(buf, 1, sizeof(buf), wav_reader_file);;
             data[i] = buf[0] + 128;
         }
     }
@@ -255,12 +253,14 @@ int wav_reader_read_int8(int num_samples, int8_t * data){
 }
 
 int wav_reader_read_int16(int num_samples, int16_t * data){
-    if (!wav_reader_fd) return 1;
+    if (wav_reader_file == NULL) {
+        return 1;
+    }
     int i;
     int bytes_read = 0;  
     for (i=0; i<num_samples; i++){
         uint8_t buf[2];
-        bytes_read +=__read(wav_reader_fd, &buf, 2);
+        bytes_read += (uint16_t) fread(buf, 1, sizeof(buf), wav_reader_file);;
         data[i] = little_endian_read_16(buf, 0);  
     }
     if (bytes_read == num_samples * wav_reader_bytes_per_sample) {

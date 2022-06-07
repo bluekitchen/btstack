@@ -392,6 +392,7 @@ static int (*sm_get_sc_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * 
 static bool (*sm_get_ltk_callback)(hci_con_handle_t con_handle, uint8_t addres_type, bd_addr_t addr, uint8_t * ltk);
 
 static void sm_run(void);
+static void sm_state_reset(void);
 static void sm_done_for_handle(hci_con_handle_t con_handle);
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle);
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
@@ -572,13 +573,6 @@ static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, h
 static void sm_notify_client_base(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
     uint8_t event[11];
     sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
-    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void sm_notify_client_passkey(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint32_t passkey){
-    uint8_t event[15];
-    sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
-    little_endian_store_32(event, 11, passkey);
     sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -1033,6 +1027,24 @@ void sm_cmac_signed_write_start(const sm_key_t k, uint8_t opcode, hci_con_handle
 }
 #endif
 
+static void sm_trigger_user_response_basic(sm_connection_t * sm_conn, uint8_t event_type){
+    setup->sm_user_response = SM_USER_RESPONSE_PENDING;
+    uint8_t event[12];
+    sm_setup_event_base(event, sizeof(event), event_type, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+    event[11] = setup->sm_use_secure_connections ? 1 : 0;
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void sm_trigger_user_response_passkey(sm_connection_t * sm_conn){
+    uint8_t event[16];
+    uint32_t passkey = big_endian_read_32(setup->sm_tk, 12);
+    sm_setup_event_base(event, sizeof(event), SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle,
+                        sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+    event[11] = setup->sm_use_secure_connections ? 1 : 0;
+    little_endian_store_32(event, 12, passkey);
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void sm_trigger_user_response(sm_connection_t * sm_conn){
     // notify client for: JUST WORKS confirm, Numeric comparison confirm, PASSKEY display or input
     setup->sm_user_response = SM_USER_RESPONSE_IDLE;
@@ -1040,31 +1052,26 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
     switch (setup->sm_stk_generation_method){
         case PK_RESP_INPUT:
             if (IS_RESPONDER(sm_conn->sm_role)){
-                setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+                sm_trigger_user_response_basic(sm_conn, SM_EVENT_PASSKEY_INPUT_NUMBER);
             } else {
-                sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12));
+                sm_trigger_user_response_passkey(sm_conn);
             }
             break;
         case PK_INIT_INPUT:
             if (IS_RESPONDER(sm_conn->sm_role)){
-                sm_notify_client_passkey(SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12));
+                sm_trigger_user_response_passkey(sm_conn);
             } else {
-                setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+                sm_trigger_user_response_basic(sm_conn, SM_EVENT_PASSKEY_INPUT_NUMBER);
             }
             break;
         case PK_BOTH_INPUT:
-            setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-            sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+            sm_trigger_user_response_basic(sm_conn, SM_EVENT_PASSKEY_INPUT_NUMBER);
             break;
         case NUMERIC_COMPARISON:
-            setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-            sm_notify_client_passkey(SM_EVENT_NUMERIC_COMPARISON_REQUEST, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12));
+            sm_trigger_user_response_basic(sm_conn, SM_EVENT_NUMERIC_COMPARISON_REQUEST);
             break;
         case JUST_WORKS:
-            setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-            sm_notify_client_base(SM_EVENT_JUST_WORKS_REQUEST, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+            sm_trigger_user_response_basic(sm_conn, SM_EVENT_JUST_WORKS_REQUEST);
             break;
         case OOB:
             // client already provided OOB data, let's skip notification.
@@ -1076,7 +1083,7 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
 }
 
 static bool sm_key_distribution_all_received(void) {
-    log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, bution_expected_set);
+    log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, setup->sm_key_distribution_expected_set);
     return (setup->sm_key_distribution_expected_set & setup->sm_key_distribution_received_set) == setup->sm_key_distribution_expected_set;
 }
 
@@ -3060,8 +3067,13 @@ static void sm_run(void){
 #endif
 
             case SM_PH3_DISTRIBUTE_KEYS:
+                // send next key
                 if (setup->sm_key_distribution_send_set != 0){
                     sm_run_distribute_keys(connection);
+                }
+
+                // more to send?
+                if (setup->sm_key_distribution_send_set != 0){
                     return;
                 }
 
@@ -3455,6 +3467,7 @@ static void sm_handle_random_result_rau(void * arg){
         default:
             // "The two most significant bits of the address shall be equal to ‘0’""
             sm_random_address[0u] &= 0x3fu;
+            rau_state = RAU_IDLE;
             hci_le_random_address_set(sm_random_address);
             break;
     }
@@ -3645,36 +3658,55 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 			switch (hci_event_packet_get_type(packet)) {
 
                 case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started
-					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                        log_info("HCI Working!");
-
-                        // setup IR/ER with TLV
-                        btstack_tlv_get_instance(&sm_tlv_impl, &sm_tlv_context);
-                        if (sm_tlv_impl != NULL){
-                            int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16u);
-                            if (key_size == 16){
-                                // ok, let's continue
-                                log_info("ER from TLV");
-                                sm_handle_random_result_er( NULL );
+                    switch (btstack_event_state_get_state(packet)){
+                        case HCI_STATE_WORKING:
+                            log_info("HCI Working!");
+                            // setup IR/ER with TLV
+                            btstack_tlv_get_instance(&sm_tlv_impl, &sm_tlv_context);
+                            if (sm_tlv_impl != NULL){
+                                int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16u);
+                                if (key_size == 16){
+                                    // ok, let's continue
+                                    log_info("ER from TLV");
+                                    sm_handle_random_result_er( NULL );
+                                } else {
+                                    // invalid, generate random one
+                                    sm_persistent_keys_random_active = true;
+                                    btstack_crypto_random_generate(&sm_crypto_random_request, sm_persistent_er, 16, &sm_handle_random_result_er, &sm_persistent_er);
+                                }
                             } else {
-                                // invalid, generate random one
-                                sm_persistent_keys_random_active = true;
-                                btstack_crypto_random_generate(&sm_crypto_random_request, sm_persistent_er, 16, &sm_handle_random_result_er, &sm_persistent_er);
-                            }
-                        } else {
-                            sm_validate_er_ir();
-                            dkg_state = DKG_CALC_IRK;
+                                sm_validate_er_ir();
+                                dkg_state = DKG_CALC_IRK;
 
-                            if (test_use_fixed_local_irk){
-                                log_info_key("IRK", sm_persistent_irk);
-                                dkg_state = DKG_CALC_DHK;
+                                if (test_use_fixed_local_irk){
+                                    log_info_key("IRK", sm_persistent_irk);
+                                    dkg_state = DKG_CALC_DHK;
+                                }
                             }
-                        }
 
-                        // restart random address updates after power cycle
-                        gap_random_address_set_mode(gap_random_adress_type);
-					}
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+                            // trigger ECC key generation
+                            if (ec_key_generation_state == EC_KEY_GENERATION_IDLE){
+                                sm_ec_generate_new_key();
+                            }
+#endif
+
+                            // restart random address updates after power cycle
+                            gap_random_address_set_mode(gap_random_adress_type);
+                            break;
+
+                        case HCI_STATE_OFF:
+                        case HCI_STATE_HALTING:
+                            log_info("SM: reset state");
+                            // stop random address update
+                            gap_random_address_update_stop();
+                            // reset state
+                            sm_state_reset();
+                            break;
+
+                        default:
+                            break;
+                    }
 					break;
 					
 #ifdef ENABLE_CLASSIC
@@ -3936,7 +3968,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     break;
 
                 case HCI_EVENT_COMMAND_COMPLETE:
-                    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)) {
+                    if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_BD_ADDR) {
                         // set local addr for le device db
                         reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], addr);
                         le_device_db_set_local_bd_addr(addr);
@@ -4729,6 +4761,24 @@ void sm_test_set_pairing_failure(int reason){
 }
 #endif
 
+static void sm_state_reset(void) {
+#ifdef USE_CMAC_ENGINE
+    sm_cmac_active  = 0;
+#endif
+    dkg_state = DKG_W4_WORKING;
+    rau_state = RAU_IDLE;
+    sm_aes128_state = SM_AES128_IDLE;
+    sm_address_resolution_test = -1;    // no private address to resolve yet
+    sm_address_resolution_ah_calculation_active = 0;
+    sm_address_resolution_mode = ADDRESS_RESOLUTION_IDLE;
+    sm_address_resolution_general_queue = NULL;
+    sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
+    sm_persistent_keys_random_active = false;
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    ec_key_generation_state = EC_KEY_GENERATION_IDLE;
+#endif
+}
+
 void sm_init(void){
 
     if (sm_initialized) return;
@@ -4748,29 +4798,18 @@ void sm_init(void){
     sm_fixed_passkey_in_display_role = 0xffffffffU;
     sm_reconstruct_ltk_without_le_device_db_entry = true;
 
-#ifdef USE_CMAC_ENGINE
-    sm_cmac_active  = 0;
-#endif
-    dkg_state = DKG_W4_WORKING;
-    rau_state = RAU_IDLE;
-    sm_aes128_state = SM_AES128_IDLE;
-    sm_address_resolution_test = -1;    // no private address to resolve yet
-    sm_address_resolution_ah_calculation_active = 0;
-    sm_address_resolution_mode = ADDRESS_RESOLUTION_IDLE;
-    sm_address_resolution_general_queue = NULL;
-
     gap_random_adress_update_period = 15 * 60 * 1000L;
-    sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
 
     test_use_fixed_local_csrk = false;
 
+    // other
     btstack_run_loop_set_timer_handler(&sm_run_timer, &sm_run_timer_handler);
 
     // register for HCI Events from HCI
     hci_event_callback_registration.callback = &sm_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    // 
+    //
     btstack_crypto_init();
 
     // init le_device_db
@@ -4779,9 +4818,8 @@ void sm_init(void){
     // and L2CAP PDUs + L2CAP_EVENT_CAN_SEND_NOW
     l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-    sm_ec_generate_new_key();
-#endif
+    // state
+    sm_state_reset();
 
     sm_initialized = true;
 }

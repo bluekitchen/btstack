@@ -153,6 +153,15 @@ void goep_client_request_create_set_path(uint16_t goep_cid, uint8_t flags);
 void goep_client_request_create_put(uint16_t goep_cid);
 
 /**
+ * @brief Get max size of body data that can be added to current response with goep_client_body_add_static
+ * @param goep_cid
+ * @param data
+ * @param length
+ * @return size in bytes or 0
+ */
+uint16_t goep_client_request_get_max_body_size(uint16_t goep_cid);
+
+/**
  * @brief Add SRM Enable
  * @param goep_cid
  */

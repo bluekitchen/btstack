@@ -121,8 +121,6 @@ coverage-unit.info: subdirs-coverage
 	$(MAKE) subdirs-coverage
 	# collect traces
 	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit.info
-	# demangle
-	python3 coverage_demangle.py coverage-unit.info
 
 coverage-unit-ble.info: subdirs-coverage-ble
 	# delete trace data
@@ -131,8 +129,6 @@ coverage-unit-ble.info: subdirs-coverage-ble
 	$(MAKE) subdirs-coverage-ble
 	# collect traces
 	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit-ble.info
-	# demangle
-	python3 coverage_demangle.py coverage-unit-ble.info
 
 
 coverage-ble.info: coverage-pts.info coverage-sm-sc.info coverage-unit-ble.info

@@ -91,16 +91,34 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
+    uint8_t i;
+    uint8_t usb_path_len;
+    const uint8_t * usb_path;
+
     if (packet_type != HCI_EVENT_PACKET) return;
+
     switch (hci_event_packet_get_type(packet)){
+        case HCI_EVENT_TRANSPORT_USB_INFO:
+            usb_path_len = hci_event_transport_usb_info_get_path_len(packet);
+            usb_path = hci_event_transport_usb_info_get_path(packet);
+            // print device path
+            printf("USB device 0x%04x/0x%04x, path: ",
+                   hci_event_transport_usb_info_get_vendor_id(packet),
+                   hci_event_transport_usb_info_get_product_id(packet));
+            for (i=0;i<usb_path_len;i++){
+                if (i) printf("-");
+                printf("%02x", usb_path[i]);
+            }
+            printf("\n");
+            break;
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)){
                 case HCI_STATE_WORKING:
                     gap_local_bd_addr(local_addr);
                     printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
-                    strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
-                    strcat(tlv_db_path, bd_addr_to_str_with_delimiter(local_addr, '-'));
-                    strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+                    btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
+                    btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str_with_delimiter(local_addr, '-'));
+                    btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
                     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
@@ -183,7 +201,7 @@ int main(int argc, const char * argv[]){
         }
         printf("\n");
         argc -= 2;
-        memmove(&argv[1], &argv[3], (argc-1) * sizeof(char *));
+        memmove((void *) &argv[1], &argv[3], (argc-1) * sizeof(char *));
     }
 
 	/// GET STARTED with BTstack ///
@@ -197,12 +215,12 @@ int main(int argc, const char * argv[]){
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
 
     char pklg_path[100];
-    strcpy(pklg_path, "/tmp/hci_dump");
+    btstack_strcpy(pklg_path, sizeof(pklg_path),  "/tmp/hci_dump");
     if (usb_path_len){
-        strcat(pklg_path, "_");
-        strcat(pklg_path, usb_path_string);
+        btstack_strcat(pklg_path, sizeof(pklg_path), "_");
+        btstack_strcat(pklg_path, sizeof(pklg_path), usb_path_string);
     }
-    strcat(pklg_path, ".pklg");
+    btstack_strcat(pklg_path, sizeof(pklg_path), ".pklg");
     hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
     const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
     hci_dump_init(hci_dump_impl);

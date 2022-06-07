@@ -176,7 +176,7 @@ static void handle_boot_keyboard_event(uint8_t packet_type, uint16_t channel, ui
     uint8_t key_index;
     for (key_index = 0; key_index < NUM_KEYS; key_index++){
 
-        uint16_t usage = data[2 + key_index];
+        uint8_t usage = data[2 + key_index];
         if (usage == 0) continue;
         if (usage >= sizeof(keytable_us_none)) continue;
 
@@ -244,7 +244,7 @@ static void handle_boot_mouse_event(uint8_t packet_type, uint16_t channel, uint8
  */
 static bool adv_event_contains_hid_service(const uint8_t * packet){
     const uint8_t * ad_data = gap_event_advertising_report_get_data(packet);
-    uint16_t ad_len = gap_event_advertising_report_get_data_length(packet);
+    uint8_t ad_len = gap_event_advertising_report_get_data_length(packet);
     return ad_data_contains_uuid16(ad_len, ad_data, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE);
 }
 
@@ -611,7 +611,7 @@ int btstack_main(int argc, const char * argv[]){
     /* LISTING_END */
 
     // Disable stdout buffering
-    setbuf(stdout, NULL);
+	setvbuf(stdin, NULL, _IONBF, 0);
 
     app_state = W4_WORKING;
 

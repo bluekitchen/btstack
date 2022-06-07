@@ -76,6 +76,7 @@ Nordic nRF           | LE        | H4             | Fixed Random | n.a.         
 STM STLC2500D        | Classic   | H4             | No           | Don't know       | n.a    |         n.a.         | No             |       n.a.         | stlc2500d      | Custom deep sleep management not supported
 Renesas RX23W        | LE        | H4             | No           | n.a.             | Yes    |        Yes           | n.a .          |    Don't know      |                | HCI Firmware part of BTTS
 Realtek RTL8822CS    | Dual mode + Wifi | H5      | Yes          | Yes              | Don't know | Don't know       | Don't know     |    Don't know      |                | Requires initial firmware + config       
+Realtek USB Dongles  | Dual mode + Wifi | USB     | Yes          | Yes              | Don't know | Don't know       | Don't know     |    Don't know      | realtek        | Requires initial firmware + config
 Toshiba TC35661      | Dual mode | H4             | No           | No               | No     |         No           | No             |       No           | tc3566         | Only -007/009 models provide full HCI. See below
 TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |    Yes for CC256XC   | No             |       No           | cc256x         | Also WL185x, WL187x, and WL189x
 
@@ -239,6 +240,22 @@ To use these chipsets with BTstack, you need to install an arm-none-eabi gcc too
 
    * For the nRF51 Dev Kit, use `make BOARD=nrf51_pca10028` and `./flash_nrf51_10028.sh` with the nRF51 kit.
    * The nRF5 dev kit acts as an LE HCI Controller with H4 interface.
+
+## Realtek
+
+Realtek provides Dual-Mode Bluetooth Controllers with USB and UART (H4/H5) interfaces as well as combined Bluetooth/WiFi Controllers, which are also available as M.2 modules for laptops.
+They commonly require to download a patch and a configuration file. Patch and configuration file can be found as part of their Linux drivers.
+
+**BD ADDR** is stored in Controller.
+
+**SCO data** can either be routed over HCI with working flow control or over I2S/PCM. The 8822CS supports mSBC codec internally.
+
+**Baud rate** is set by the config file.
+
+**Init script** is required.
+
+**BTstack integration**: H4/H5 Controller require firmware upload. 'rtk_attach' can be used for this. For USB Controllers, 
+*btstack_chipset_realtek.c* implements the patch and config upload mechanism. See port/libusb for details on how to use it.
 
 
 ## Renesas Electronics

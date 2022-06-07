@@ -220,7 +220,7 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
 
 static void beat(void){
     counter++;
-    counter_string_len = sprintf(counter_string, "BTstack counter %04u", counter);
+    counter_string_len = snprintf(counter_string, sizeof(counter_string), "BTstack counter %04u", counter);
     puts(counter_string);
 }
 

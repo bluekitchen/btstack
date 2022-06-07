@@ -85,7 +85,7 @@ static uint8_t device_information_pnp_id[7];
 static att_service_handler_t       device_information_service;
 static void set_string(device_information_field_id_t field_id, const char * text){
 	device_information_fields[field_id].data = (uint8_t*) text;
-	device_information_fields[field_id].len  = strlen(text);
+	device_information_fields[field_id].len  = (uint8_t) strlen(text);
 }
 
 static uint16_t device_information_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
@@ -197,8 +197,8 @@ void device_information_service_server_set_software_revision(const char * softwa
  * @param organizationally_unique_identifier uint24
  */
 void device_information_service_server_set_system_id(uint64_t manufacturer_identifier, uint32_t organizationally_unique_identifier){
-	little_endian_store_32(device_information_system_id, 0, manufacturer_identifier);
-	device_information_system_id[4] = manufacturer_identifier >> 32;
+	little_endian_store_32(device_information_system_id, 0, (uint32_t)(manufacturer_identifier & 0xffffffff));
+	device_information_system_id[4] = (uint8_t) (manufacturer_identifier >> 32);
 	little_endian_store_16(device_information_system_id, 5, organizationally_unique_identifier);
 	device_information_system_id[7] = organizationally_unique_identifier >> 16;
 }

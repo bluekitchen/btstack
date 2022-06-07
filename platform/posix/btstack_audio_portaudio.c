@@ -232,6 +232,7 @@ static int btstack_audio_portaudio_sink_init(
     //const PaDeviceInfo *outputDeviceInfo;
     outputDeviceInfo = Pa_GetDeviceInfo( theOutputParameters.device );
     log_info("PortAudio: sink device: %s", outputDeviceInfo->name);
+    UNUSED(outputDeviceInfo);
 
     /* -- setup stream -- */
     err = Pa_OpenStream(
@@ -298,6 +299,7 @@ static int btstack_audio_portaudio_source_init(
     //const PaDeviceInfo *inputDeviceInfo;
     inputDeviceInfo = Pa_GetDeviceInfo( theInputParameters.device );
     log_info("PortAudio: source device: %s", inputDeviceInfo->name);
+    UNUSED(inputDeviceInfo);
 
     /* -- setup stream -- */
     err = Pa_OpenStream(

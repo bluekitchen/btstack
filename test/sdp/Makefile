@@ -1,10 +1,8 @@
-CC = g++
-
 # Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I..
 
@@ -30,6 +28,7 @@ COMMON = \
 	btstack_memory_pool.c \
 	device_id_server.c \
 	avdtp.c \
+	a2dp.c \
 	a2dp_source.c \
 	a2dp_sink.c \
 	avdtp.c \
@@ -72,15 +71,20 @@ build-%:
 build-coverage/%.o: %.c | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
+build-coverage/%.o: %.cpp | build-coverage
+	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
+
 build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
+build-asan/%.o: %.cpp | build-asan
+	${CXX} -c $(CFLAGS_ASAN) $< -o $@
 
 build-coverage/sdp_record_builder: ${COMMON_OBJ_COVERAGE} build-coverage/sdp_record_builder.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/sdp_record_builder: ${COMMON_OBJ_ASAN} build-asan/sdp_record_builder.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 
 test: all

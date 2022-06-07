@@ -180,7 +180,7 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 		service->index = aics_services_num;
 		
 		service->info = &aics_info[aics_services_num];
-		service->audio_input_description_len = strlen(aics_info->audio_input_description);
+		service->audio_input_description_len = (uint8_t) strlen(aics_info->audio_input_description);
 
 		audio_input_control_service_server_init(service);
     	

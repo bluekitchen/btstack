@@ -41,8 +41,6 @@ add_library(btstack STATIC ${SOURCES})
 # create targets
 file(GLOB TEST_FILES_CPP "*_test.cpp")
 foreach(TEST_FILE ${TEST_FILES_CPP})
-	# Use C++ Compiler
-	# set_source_files_properties(${TEST_FILE} PROPERTIES LANGUAGE CXX )
 	set (SOURCE_FILES ${TEST_FILE})
 	get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
 	message("- " ${TEST_NAME})

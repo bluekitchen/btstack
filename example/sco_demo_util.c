@@ -53,6 +53,11 @@
 #include "classic/hfp.h"
 #include "classic/hfp_msbc.h"
 
+#ifdef _MSC_VER
+// ignore deprecated warning for fopen
+#pragma warning(disable : 4996)
+#endif
+
 #ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
 #endif

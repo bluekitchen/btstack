@@ -157,9 +157,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_STATE_WORKING:
                     gap_local_bd_addr(local_addr);
                     printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
-                    strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
-                    strcat(tlv_db_path, bd_addr_to_str_with_delimiter(local_addr, '-'));
-                    strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+                    btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
+                    btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str_with_delimiter(local_addr, '-'));
+                    btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
                     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
@@ -182,13 +182,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
+            if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_LOCAL_NAME){
                 if (hci_event_command_complete_get_return_parameters(packet)[0]) break;
                 // terminate, name 248 chars
                 packet[6+248] = 0;
                 printf("Local name: %s\n", &packet[6]);
             }        
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
+            if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION){
                 local_version_information_handler(packet);
             }
             break;
@@ -227,7 +227,7 @@ int main(int argc, const char * argv[]){
     if (argc >= 3 && strcmp(argv[1], "-u") == 0){
         config.device_name = argv[2];
         argc -= 2;
-        memmove(&argv[1], &argv[3], (argc-1) * sizeof(char *));
+        memmove((void *) &argv[1], &argv[3], (argc-1) * sizeof(char *));
     }
     printf("H5 device: %s\n", config.device_name);
 

@@ -335,7 +335,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 					break;
 					
 				case HCI_EVENT_COMMAND_COMPLETE:
-					if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_inquiry_cancel)) {
+					if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_INQUIRY_CANCEL){
 						// inq successfully cancelled
 						// printLine("Connecting");
 						l2cap_create_channel(l2cap_packet_handler, keyboard, PSM_HID_INTERRUPT, 150);

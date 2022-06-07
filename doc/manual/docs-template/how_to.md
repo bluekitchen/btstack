@@ -94,6 +94,7 @@ ENABLE_GATT_CLIENT_PAIRING       | Enable GATT Client to start pairing and retry
 ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS | Use [micro-ecc library](https://github.com/kmackay/micro-ecc) for ECC operations
 ENABLE_LE_DATA_LENGTH_EXTENSION  | Enable LE Data Length Extension support
 ENABLE_LE_EXTENDED_ADVERTISING   | Enable extended advertising and scanning
+ENABLE_LE_PERIODIC_ADVERTISING   | Enable periodic advertising and scanning
 ENABLE_LE_SIGNED_WRITE           | Enable LE Signed Writes in ATT/GATT
 ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION | Enable address resolution for resolvable private addresses in Controller
 ENABLE_CROSS_TRANSPORT_KEY_DERIVATION | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections
@@ -117,7 +118,7 @@ ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY | Let application trigger sending IO Capab
 ENABLE_EXPLICIT_LINK_KEY_REPLY | Let application trigger sending Link Key (Negative) Response, allows for asynchronous link key lookup
 ENABLE_EXPLICIT_BR_EDR_SECURITY_MANAGER | Report BR/EDR Security Manager support in L2CAP Information Response
 ENABLE_CLASSIC_OOB_PAIRING       | Enable support for classic Out-of-Band (OOB) pairing
-ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG | Let application configure stream endpoint (skip auto-config of SBC endpoint)
+ENABLE_A2DP_EXPLICIT_CONFIG      | Let application configure stream endpoint (skip auto-config of SBC endpoint)
 ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION | allow accept or reject of stream start on A2DP_SUBEVENT_START_STREAM_REQUESTED
 
 

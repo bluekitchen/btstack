@@ -412,10 +412,24 @@ bool goep_client_version_20_or_higher(uint16_t goep_cid){
     return context->l2cap_psm != 0;
 }
 
+void goep_client_request_can_send_now(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    if (context->l2cap_psm){
+        l2cap_request_can_send_now_event(context->bearer_cid);
+    } else {
+        rfcomm_request_can_send_now_event(context->bearer_cid);
+    }
+}
+
 uint8_t goep_client_disconnect(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    rfcomm_disconnect(context->bearer_cid);
+    if (context->l2cap_psm){
+        l2cap_disconnect(context->bearer_cid);
+    } else {
+        rfcomm_disconnect(context->bearer_cid);
+    }
     return ERROR_CODE_SUCCESS;
 }
 
@@ -429,16 +443,6 @@ uint8_t goep_client_get_request_opcode(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
     return context->obex_opcode;
-}
-
-void goep_client_request_can_send_now(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    if (context->l2cap_psm){
-        l2cap_request_can_send_now_event(context->bearer_cid);
-    } else {
-        rfcomm_request_can_send_now_event(context->bearer_cid);
-    }
 }
 
 void goep_client_request_create_connect(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length){
@@ -601,6 +605,16 @@ void goep_client_header_add_type(uint16_t goep_cid, const char * type){
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
     obex_message_builder_header_add_type(buffer, buffer_len, type);
+}
+
+uint16_t goep_client_request_get_max_body_size(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    uint16_t pos = big_endian_read_16(buffer, 1);
+    return buffer_len - pos;
 }
 
 int goep_client_execute(uint16_t goep_cid){

@@ -1,5 +1,3 @@
-CC=g++
-
 # Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
@@ -26,15 +24,21 @@ build-%:
 build-coverage/%.o: %.c | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
+build-coverage/%.o: %.cpp | build-coverage
+	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
+
 build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
+build-asan/%.o: %.cpp | build-asan
+	${CXX} -c $(CFLAGS_ASAN) $< -o $@
+
 
 build-coverage/sqrt_test: ${COMMON_OBJ_COVERAGE} build-coverage/sqrt_test.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/sqrt_test: ${COMMON_OBJ_ASAN} build-asan/sqrt_test.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
 	build-asan/sqrt_test

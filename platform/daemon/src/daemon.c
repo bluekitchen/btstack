@@ -1008,6 +1008,10 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             cid    = little_endian_read_16(packet, 3);
             l2cap_decline_connection(cid);
             break;
+        case L2CAP_REQUEST_CAN_SEND_NOW:
+            cid    = little_endian_read_16(packet, 3);
+            l2cap_request_can_send_now_event(cid);
+            break;
         case RFCOMM_CREATE_CHANNEL:
             reverse_bd_addr(&packet[3], addr);
             rfcomm_channel = packet[9];
@@ -1078,6 +1082,10 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
             break;
         }
+        case RFCOMM_REQUEST_CAN_SEND_NOW:
+            cid = little_endian_read_16(packet, 3);
+            rfcomm_request_can_send_now_event(cid);
+            break;
         case SDP_REGISTER_SERVICE_RECORD:
             log_info("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
             service_record_handle = daemon_sdp_create_and_register_service(&packet[3]);
@@ -1360,10 +1368,34 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
         case L2CAP_DATA_PACKET:
             // process l2cap packet...
             err = l2cap_send(channel, data, length);
+            switch (err){
+                case BTSTACK_ACL_BUFFERS_FULL:
+                    // temp flow issue
+                    l2cap_request_can_send_now_event(channel);
+                    break;
+                default:
+                    // sending failed
+                    err = ERROR_CODE_SUCCESS;
+                    log_error("Dropping L2CAP packet");
+                    break;
+            }
             break;
         case RFCOMM_DATA_PACKET:
             // process rfcomm packet...
             err = rfcomm_send(channel, data, length);
+            switch (err){
+                case BTSTACK_ACL_BUFFERS_FULL:
+                case RFCOMM_NO_OUTGOING_CREDITS:
+                case RFCOMM_AGGREGATE_FLOW_OFF:
+                    // flow issue
+                    rfcomm_request_can_send_now_event(channel);
+                    break;
+                default:
+                    // sending failed
+                    err = ERROR_CODE_SUCCESS;
+                    log_error("Dropping RFCOMM packet");
+                    break;
+            }
             break;
         case DAEMON_EVENT_PACKET:
             switch (data[0]) {
@@ -1589,12 +1621,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     }
                     return;
                 }
-                
-                case DAEMON_EVENT_RFCOMM_CREDITS:
-                    // RFCOMM CREDITS received...
-                    daemon_retry_parked();
-                    break;
-                
+
                 case RFCOMM_EVENT_CHANNEL_OPENED:
                     cid = little_endian_read_16(packet, 13);
                     connection = connection_for_rfcomm_cid(cid);
@@ -1604,6 +1631,9 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     } else {
                         daemon_add_client_rfcomm_channel(connection, cid);
                     }
+                    break;
+                case RFCOMM_EVENT_CAN_SEND_NOW:
+                    daemon_retry_parked();
                     break;
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
                     cid = little_endian_read_16(packet, 2);
@@ -1624,6 +1654,9 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     } else {
                         daemon_add_client_l2cap_channel(connection, cid);
                     }
+                    break;
+                case L2CAP_EVENT_CAN_SEND_NOW:
+                    daemon_retry_parked();
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     cid = little_endian_read_16(packet, 2);

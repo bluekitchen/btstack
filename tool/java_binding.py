@@ -280,7 +280,7 @@ def create_event(event_name, format, args):
      'X' : 'return Util.readGattService(data, %u);',
      'Y' : 'return Util.readGattCharacteristic(data, %u);',
      'Z' : 'return Util.readGattCharacteristicDescriptor(data, %u);',
-     'T' : 'int offset = %u; \n        return Util.getText(data, offset, getPayloadLen()-offset);',
+     'T' : 'int offset = %u; \n        return Util.getText(data, offset, getPayloadLen()-offset-1);',
      'N' : 'return Util.getText(data, %u, 248);',
      'D' : 'Util.storeBytes(data, %u, 8);',
      'Q' : 'Util.storeBytes(data, %u, 32);',

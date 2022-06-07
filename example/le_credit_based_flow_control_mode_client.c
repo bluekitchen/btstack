@@ -131,8 +131,8 @@ static void test_track_data(le_cbm_connection_t * context, int bytes_transferred
 static int advertisement_report_contains_name(const char * name, uint8_t * advertisement_report){
     // get advertisement from report event
     const uint8_t * adv_data = gap_event_advertising_report_get_data(advertisement_report);
-    uint16_t        adv_len  = gap_event_advertising_report_get_data_length(advertisement_report);
-    int             name_len = strlen(name);
+    uint8_t         adv_len  = gap_event_advertising_report_get_data_length(advertisement_report);
+    uint16_t        name_len = (uint16_t) strlen(name);
 
     // iterate over advertisement data
     ad_context_t context;

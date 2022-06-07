@@ -124,7 +124,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                 
                 case HCI_EVENT_COMMAND_COMPLETE:
 					// use pairing yes/no
-					if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_class_of_device)) {
+					if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_WRITE_CLASS_OF_DEVICE){
     				    bt_send_cmd(&l2cap_create_channel_mtu_cmd, addr, PSM_TEST, PACKET_SIZE);
 					}
 					break;

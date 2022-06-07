@@ -42,6 +42,8 @@
 
 #include "mesh/mesh_node.h"
 
+#include "btstack_util.h"
+
 #include <stddef.h>
 #include <string.h>
 
@@ -275,12 +277,12 @@ uint8_t mesh_heartbeat_count_log(uint16_t value){
     if (value == 0xffff) return 0xff;
     // count leading zeros, supported by clang and gcc
     // note: CountLog(8) == CountLog(7) = 3
-    return 33 - __builtin_clz(value - 1);
+    return 33 - btstack_clz(value - 1);
 }
 
 uint8_t mesh_heartbeat_period_log(uint16_t value){
     if (value == 0)      return 0x00;
     // count leading zeros, supported by clang and gcc
     // note: PeriodLog(8) == PeriodLog(7) = 3
-    return 33 - __builtin_clz(value - 1);
+    return 33 - btstack_clz(value - 1);
 }

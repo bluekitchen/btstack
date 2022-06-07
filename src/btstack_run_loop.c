@@ -119,7 +119,7 @@ void btstack_run_loop_base_dump_timer(void){
     uint16_t i = 0;
     for (it = (btstack_linked_item_t *) btstack_run_loop_base_timers; it ; it = it->next){
         btstack_timer_source_t * timer = (btstack_timer_source_t*) it;
-        log_info("timer %u (%p): timeout %" PRIu32 "u\n", i, (void *) timer, timer->timeout);
+        log_info("timer %u (%p): timeout %" PRIbtstack_time_t "\n", i, (void *) timer, timer->timeout);
     }
 #endif
 

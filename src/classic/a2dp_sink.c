@@ -44,6 +44,7 @@
 #include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
+#include "classic/a2dp.h"
 #include "classic/a2dp_sink.h"
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_util.h"
@@ -55,99 +56,26 @@ static const char * a2dp_sink_default_service_provider_name = "BTstack A2DP Sink
 static uint16_t a2dp_sink_cid;
 static bool a2dp_sink_stream_endpoint_configured = false;
 
-static btstack_packet_handler_t a2dp_sink_packet_handler_user;
 static uint8_t (*a2dp_sink_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
 
 static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name){
-    uint8_t* attribute;
-    de_create_sequence(service);
-
-    // 0x0000 "Service Record Handle"
-    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
-    de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
-
-    // 0x0001 "Service Class ID List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
-    attribute = de_push_sequence(service);
-    {
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_AUDIO_SINK); 
+    if (service_provider_name == NULL){
+        service_provider_name = a2dp_sink_default_service_provider_name;
     }
-    de_pop_sequence(service, attribute);
-
-    // 0x0004 "Protocol Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST);
-    attribute = de_push_sequence(service);
-    {
-        uint8_t* l2cpProtocol = de_push_sequence(attribute);
-        {
-            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVDTP);  
-        }
-        de_pop_sequence(attribute, l2cpProtocol);
-        
-        uint8_t* avProtocol = de_push_sequence(attribute);
-        {
-            de_add_number(avProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVDTP);  // avProtocol_service
-            de_add_number(avProtocol,  DE_UINT, DE_SIZE_16,  0x0103);  // version
-        }
-        de_pop_sequence(attribute, avProtocol);
+    if (service_name == NULL){
+        service_name = a2dp_sink_default_service_name;
     }
-    de_pop_sequence(service, attribute);
-
-    // 0x0005 "Public Browse Group"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BROWSE_GROUP_LIST); // public browse group
-    attribute = de_push_sequence(service);
-    {
-        de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
-    }
-    de_pop_sequence(service, attribute);
-
-    // 0x0009 "Bluetooth Profile Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
-    attribute = de_push_sequence(service);
-    {
-        uint8_t *a2dProfile = de_push_sequence(attribute);
-        {
-            de_add_number(a2dProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_ADVANCED_AUDIO_DISTRIBUTION); 
-            de_add_number(a2dProfile,  DE_UINT, DE_SIZE_16, 0x0103); 
-        }
-        de_pop_sequence(attribute, a2dProfile);
-    }
-    de_pop_sequence(service, attribute);
-
-
-    // 0x0100 "Service Name"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-    if (service_name){
-        de_add_data(service,  DE_STRING, strlen(service_name), (uint8_t *) service_name);
-    } else {
-        de_add_data(service, DE_STRING, strlen(a2dp_sink_default_service_name), (uint8_t *) a2dp_sink_default_service_name);
-    }
-
-    // 0x0100 "Provider Name"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0102);
-    if (service_provider_name){
-        de_add_data(service,  DE_STRING, strlen(service_provider_name), (uint8_t *) service_provider_name);
-    } else {
-        de_add_data(service, DE_STRING, strlen(a2dp_sink_default_service_provider_name), (uint8_t *) a2dp_sink_default_service_provider_name);
-    }
-
-    // 0x0311 "Supported Features"
-    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);
-    de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
+    a2dp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_AUDIO_SINK,
+                           supported_features, service_name, service_provider_name);
 }
 
 void a2dp_sink_register_packet_handler(btstack_packet_handler_t callback){
-    // avdtp_sink_register_packet_handler(callback);
-    // return;
-    if (callback == NULL){
-        log_error("a2dp_sink_register_packet_handler called with NULL callback");
-        return;
-    }
+    btstack_assert(callback);
+
     avdtp_sink_register_packet_handler(&a2dp_sink_packet_handler_internal);
-    a2dp_sink_packet_handler_user = callback;
+    a2dp_register_sink_packet_handler(callback);
 }
 
 void a2dp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size)){
@@ -159,14 +87,15 @@ void a2dp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8
 }
 
 void a2dp_sink_init(void){
+    a2dp_init();
     avdtp_sink_init();
 }
 
 void a2dp_sink_deinit(void){
+    a2dp_deinit();
     avdtp_sink_deinit();
 
     a2dp_sink_cid = 0;
-    a2dp_sink_packet_handler_user = NULL;
     a2dp_sink_media_config_validator = NULL;
     a2dp_sink_stream_endpoint_configured = false;
 }
@@ -211,7 +140,7 @@ uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16
     btstack_assert(connection != NULL);
 
     // setup state
-    connection->a2dp_sink_outgoing_active = true;
+    connection->a2dp_sink_config_process.outgoing_active = true;
     *avdtp_cid = outgoing_cid;
 
     return ERROR_CODE_SUCCESS;
@@ -235,144 +164,10 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
     UNUSED(channel);
     UNUSED(size);
 
-    uint16_t cid;
-    avdtp_connection_t * connection;
-    uint8_t status;
-    uint8_t local_seid;
-    uint8_t signal_identifier;
-    bool reconfigure;
-    uint8_t subevent_id;
-
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
 
-    switch (packet[2]){
-        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
-            if (a2dp_sink_stream_endpoint_configured) return;
-
-            cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
-            connection = avdtp_get_connection_for_avdtp_cid(cid);
-            btstack_assert(connection != NULL);
-
-            status = avdtp_subevent_signaling_connection_established_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                // notify about connection error only if we're initiator
-                if (connection->a2dp_sink_outgoing_active) {
-                    log_info("A2DP sink signaling connection failed status %d", status);
-                    connection->a2dp_sink_outgoing_active = false;
-                    a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
-                }
-            }
-
-            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
-            log_info("A2DP sink signaling connection established avdtp_cid 0x%02x", avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet));
-            break;
-
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION:
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION:
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION:
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
-            reconfigure = avdtp_subevent_signaling_media_codec_other_configuration_get_reconfigure(packet) != 0;
-            // accept configure if not configured and reconfigure if already configured
-            if (a2dp_sink_stream_endpoint_configured != reconfigure) break;
-            a2dp_sink_stream_endpoint_configured = true;
-            a2dp_sink_cid = avdtp_subevent_signaling_media_codec_other_capability_get_avdtp_cid(packet);
-            subevent_id = a2dp_subevent_id_for_avdtp_subevent_id(packet[2]);
-            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, subevent_id);
-            break;
-
-        case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
-            if (a2dp_sink_stream_endpoint_configured == false) break;
-            if (a2dp_sink_cid != avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet)) break;
-
-            connection = avdtp_get_connection_for_avdtp_cid(a2dp_sink_cid);
-            btstack_assert(connection != NULL);
-
-            // about to notify client
-            connection->a2dp_sink_outgoing_active = false;
-            status = avdtp_subevent_streaming_connection_established_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                log_info("A2DP sink streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", a2dp_sink_cid, status);
-                a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
-                break;
-            }
-
-            log_info("A2DP streaming connection established --- avdtp_cid 0x%02x, local seid %d, remote seid %d", a2dp_sink_cid, 
-                avdtp_subevent_streaming_connection_established_get_local_seid(packet), 
-                avdtp_subevent_streaming_connection_established_get_remote_seid(packet));
-
-            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
-            break;
-
-        case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
-            if (a2dp_sink_stream_endpoint_configured == false) break;
-            if (a2dp_sink_cid != avdtp_subevent_signaling_accept_get_avdtp_cid(packet)) break;
-
-            signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
-            local_seid = avdtp_subevent_signaling_accept_get_local_seid(packet);
-
-            switch (signal_identifier){
-                case  AVDTP_SI_START:
-                    a2dp_emit_stream_event(a2dp_sink_packet_handler_user, a2dp_sink_cid, local_seid, A2DP_SUBEVENT_STREAM_STARTED);
-                    break;
-                case AVDTP_SI_SUSPEND:
-                    a2dp_emit_stream_event(a2dp_sink_packet_handler_user, a2dp_sink_cid, local_seid, A2DP_SUBEVENT_STREAM_SUSPENDED);
-                    break;
-                case AVDTP_SI_ABORT:
-                case AVDTP_SI_CLOSE:
-                    a2dp_emit_stream_event(a2dp_sink_packet_handler_user, a2dp_sink_cid, local_seid, A2DP_SUBEVENT_STREAM_STOPPED);
-                    break;
-#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
-                case AVDTP_SI_ACCEPT_START:
-                    a2dp_emit_stream_event(a2dp_sink_packet_handler_user, a2dp_sink_cid, local_seid, A2DP_SUBEVENT_START_STREAM_REQUESTED);
-                    break;
-#endif
-                default:
-                    break;
-            }
-            break;
-        
-        case AVDTP_SUBEVENT_SIGNALING_REJECT:
-            if (a2dp_sink_stream_endpoint_configured == false) break;
-            if (a2dp_sink_cid != avdtp_subevent_signaling_reject_get_avdtp_cid(packet)) break;
-
-            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
-            break;
-
-        case AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT:
-            if (a2dp_sink_stream_endpoint_configured == false) break;
-            if (a2dp_sink_cid != avdtp_subevent_signaling_general_reject_get_avdtp_cid(packet)) break;
-
-            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
-            break;
-
-        case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:
-            if (a2dp_sink_stream_endpoint_configured == false) break;
-            if (a2dp_sink_cid != avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet)) break;
-
-            a2dp_sink_stream_endpoint_configured = false;
-
-            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_RELEASED);
-            break;
-        
-        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
-            cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
-            connection = avdtp_get_connection_for_avdtp_cid(cid);
-            btstack_assert(connection != NULL);
-
-            connection->a2dp_sink_outgoing_active = false;
-
-            if (a2dp_sink_cid != cid) break;
-
-            a2dp_sink_stream_endpoint_configured = false;
-
-            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED);
-            break;
-        default:
-            break;
-    }
-
+    a2dp_config_process_avdtp_event_handler(AVDTP_ROLE_SINK, packet, size);
 }
 
 static uint8_t a2dp_sink_media_config_validator_callback(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size){
@@ -392,4 +187,26 @@ static uint8_t a2dp_sink_media_config_validator_callback(const avdtp_stream_endp
 void a2dp_sink_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size)){
     a2dp_sink_media_config_validator = callback;
     avdtp_sink_register_media_config_validator(&a2dp_sink_media_config_validator_callback);
+}
+
+
+uint8_t a2dp_sink_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_sbc_t * configuration){
+    return a2dp_config_process_set_sbc(AVDTP_ROLE_SINK, a2dp_cid, local_seid, remote_seid, configuration);
+}
+
+uint8_t a2dp_sink_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_mpeg_audio_t * configuration){
+    return a2dp_config_process_set_mpeg_audio(AVDTP_ROLE_SINK, a2dp_cid, local_seid, remote_seid, configuration);
+}
+
+uint8_t a2dp_sink_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid,  uint8_t remote_seid, const avdtp_configuration_mpeg_aac_t * configuration){
+    return a2dp_config_process_set_mpeg_aac(AVDTP_ROLE_SINK, a2dp_cid, local_seid, remote_seid, configuration);
+}
+
+uint8_t a2dp_sink_set_config_atrac(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_atrac_t * configuration){
+    return a2dp_config_process_set_atrac(AVDTP_ROLE_SINK, a2dp_cid, local_seid, remote_seid, configuration);
+}
+
+uint8_t a2dp_sink_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid,
+                                     const uint8_t * media_codec_information, uint8_t media_codec_information_len){
+    return a2dp_config_process_set_other(AVDTP_ROLE_SINK, a2dp_cid, local_seid, remote_seid, media_codec_information, media_codec_information_len);
 }

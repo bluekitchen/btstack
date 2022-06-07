@@ -1,5 +1,3 @@
-CC = g++
-
 # Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
@@ -53,23 +51,23 @@ build-%:
 	mkdir -p $@
 
 build-coverage/%.o: %.c | build-coverage
-	gcc -c $(CFLAGS_COVERAGE) $< -o $@
-
-build-coverage/%.o: %.cpp | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
+build-coverage/%.o: %.cpp | build-coverage
+	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
+
 build-asan/%.o: %.c | build-asan
-	gcc -c $(CFLAGS_ASAN) $< -o $@
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
 build-asan/%.o: %.cpp | build-asan
-	${CC} -c $(CFLAGS_ASAN) $< -o $@
+	${CXX} -c $(CFLAGS_ASAN) $< -o $@
 
 
 build-coverage/security_manager: ${COMMON_OBJ_COVERAGE} build-coverage/security_manager.o | build-coverage
-	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/security_manager: ${COMMON_OBJ_ASAN} build-asan/security_manager.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 
 test: all

@@ -60,10 +60,18 @@
 #ifdef HAVE_APTX
 #include <openaptx.h>
 #endif
+
+#ifdef HAVE_LC3PLUS
+#include <LC3plus/lc3.h>
+#endif
+
 #define A2DP_CODEC_VENDOR_ID_APT_LTD 0x4f
 #define A2DP_CODEC_VENDOR_ID_QUALCOMM 0xd7
 #define A2DP_APT_LTD_CODEC_APTX 0x1
 #define A2DP_QUALCOMM_CODEC_APTX_HD 0x24
+
+#define A2DP_CODEC_VENDOR_ID_FRAUNHOFER 0x08A9
+#define A2DP_FRAUNHOFER_CODEC_LC3PLUS 0x0001
 
 #define AVDTP_MAX_SEP_NUM 10
 #define AVDTP_MAX_MEDIA_CODEC_CONFIG_LEN 16
@@ -135,6 +143,15 @@ typedef struct {
     int sampling_frequency;
 } avdtp_media_codec_configuration_aptx_t;
 
+typedef struct {
+    int reconfigure;
+    int frame_duration;
+    int num_channels;
+    int sampling_frequency;
+    int bitrate;
+    int hrmode;
+} avdtp_media_codec_configuration_lc3plus_t;
+
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
 // pts:         static const char * device_addr_string = "00:1B:DC:08:E2:72";
@@ -176,6 +193,11 @@ static AACENC_InfoStruct aacinf;
 HANDLE_LDAC_BT handleLDAC;
 #endif
 
+#ifdef HAVE_LC3PLUS
+LC3PLUS_Enc *    lc3plus_handle  = NULL;
+static uint8_t * lc3plus_scratch = NULL;
+#endif
+
 static struct aptx_context *aptx_handle;
 
 static a2dp_media_sending_context_t media_tracker;
@@ -215,6 +237,9 @@ static const uint8_t media_sbc_codec_capabilities[] = {
     2, 53
 };
 
+static bool auto_select = false;
+static int set_configuration();
+
 #ifdef HAVE_AAC_FDK
 static uint8_t media_aac_codec_capabilities[] = {
         0xF0,
@@ -246,6 +271,14 @@ static uint8_t media_aptxhd_codec_capabilities[] = {
         0, 0, 0, 0
 };
 
+static uint8_t media_lc3plus_codec_capabilities[] = {
+        0xA9, 0x08, 0x0, 0x0,
+        0x01, 0x0,
+        0x70,
+        0xc0,
+        0x01, 0x80
+};
+
 // configurations for local stream endpoints
 static uint8_t local_stream_endpoint_sbc_media_codec_configuration[4];
 #ifdef HAVE_AAC_FDK
@@ -257,6 +290,8 @@ static uint8_t local_stream_endpoint_aptx_media_codec_configuration[7];
 static avdtp_media_codec_configuration_aptx_t aptx_configuration;
 static uint8_t local_stream_endpoint_aptxhd_media_codec_configuration[11];
 static avdtp_media_codec_configuration_aptx_t aptxhd_configuration;
+static uint8_t local_stream_endpoint_lc3plus_media_codec_configuration[10];
+static avdtp_media_codec_configuration_lc3plus_t lc3plus_configuration;
 
 static int a2dp_sample_rate(void){
     return current_sample_rate;
@@ -337,6 +372,60 @@ static void a2dp_send_aptx_hd(void) {
     media_tracker.codec_ready_to_send = 0;
 }
 
+static void a2dp_send_lc3plus(void) {
+    static bool is_fragmented = false;
+    int         bytes_to_send;
+    media_tracker.codec_storage[0] = 0;
+
+    // Frame does not fit in a single packet -> fragmentation
+    if (media_tracker.codec_storage_count > media_tracker.max_media_payload_size) {
+        // this is not allowed for 2.5 or 5ms frame duration
+        btstack_assert(lc3plus_configuration.frame_duration == 100);
+        // can only be for single frame
+        btstack_assert(media_tracker.codec_num_frames == 1);
+        // actual length to send
+        bytes_to_send = media_tracker.max_media_payload_size;
+        // set fragmented bit
+        media_tracker.codec_storage[0] |= (1 << 7);
+        // if it was not fragmented before it is the first fragment
+        if (!is_fragmented) {
+            media_tracker.codec_storage[0] |= (1 << 6);
+            // calculate number of fragments
+            media_tracker.codec_num_frames = (media_tracker.codec_storage_count - 1) /
+                    (media_tracker.max_media_payload_size - 1) + 1;
+        }
+        // remember fragmentation
+        is_fragmented = true;
+    } else {
+        bytes_to_send = media_tracker.codec_storage_count;
+        // if frame is fragmented, this is the last fragment
+        if (is_fragmented) {
+            media_tracker.codec_storage[0] |= (1 << 7);
+            media_tracker.codec_storage[0] |= (1 << 5);
+        }
+        is_fragmented = false;
+    }
+
+    // store the number of frames / fragments
+    media_tracker.codec_storage[0] |= media_tracker.codec_num_frames;
+
+    a2dp_source_stream_send_media_payload_rtp(media_tracker.avdtp_cid, media_tracker.local_seid, 0,
+        media_tracker.codec_storage, bytes_to_send);
+
+    media_tracker.codec_storage_count -= bytes_to_send;
+    if (media_tracker.codec_storage_count) {
+        // fragmented
+        memcpy(media_tracker.codec_storage + 1, &media_tracker.codec_storage[bytes_to_send],
+               media_tracker.codec_storage_count);
+        media_tracker.codec_num_frames--;
+        media_tracker.codec_storage_count++; // header has to be sent again
+        a2dp_source_stream_endpoint_request_can_send_now(media_tracker.avdtp_cid, media_tracker.local_seid);
+    } else {
+        media_tracker.codec_num_frames = 0;
+        media_tracker.codec_ready_to_send = 0;
+    }
+}
+
 static uint32_t get_vendor_id(const uint8_t *codec_info) {
     uint32_t vendor_id = 0;
     vendor_id |= codec_info[0];
@@ -372,6 +461,8 @@ static void a2dp_demo_send_media_packet(void) {
                 a2dp_send_aptx();
             else if (local_vendor_id == A2DP_CODEC_VENDOR_ID_QUALCOMM && local_codec_id == A2DP_QUALCOMM_CODEC_APTX_HD)
                 a2dp_send_aptx_hd();
+            else if (local_vendor_id == A2DP_CODEC_VENDOR_ID_FRAUNHOFER && local_codec_id == A2DP_FRAUNHOFER_CODEC_LC3PLUS)
+                a2dp_send_lc3plus();
             break;
         default:
             // TODO:
@@ -388,6 +479,27 @@ static void produce_sine_audio(int16_t * pcm_buffer, int num_samples_to_write){
         sine_phase++;
         if (sine_phase >= TABLE_SIZE_441HZ){
             sine_phase -= TABLE_SIZE_441HZ;
+        }
+    }
+}
+
+static void produce_sine_audio24(int32_t * pcm_buffer, int num_samples_to_write){
+    int count;
+    for (count = 0; count < num_samples_to_write ; count++){
+        pcm_buffer[count * 2]     = (sine_int16[sine_phase] >> VOLUME_REDUCTION) << 8;
+        pcm_buffer[count * 2 + 1] = (sine_int16[sine_phase] >> VOLUME_REDUCTION) << 8;
+        sine_phase++;
+        if (sine_phase >= TABLE_SIZE_441HZ){
+            sine_phase -= TABLE_SIZE_441HZ;
+        }
+    }
+}
+
+static void deinterleave(int32_t *in, int32_t **out, int n, int channels) {
+    int ch, i;
+    for (ch = 0; ch < channels; ch++) {
+        for (i = 0; i < n; i++) {
+            out[ch][i] = in[i * channels + ch];
         }
     }
 }
@@ -545,6 +657,48 @@ static int a2dp_demo_fill_aptx_audio_buffer(a2dp_media_sending_context_t *contex
 }
 #endif
 
+#ifdef HAVE_LC3PLUS
+static int a2dp_demo_fill_lc3plus_audio_buffer(a2dp_media_sending_context_t *context) {
+    int      total_samples_read = 0;
+    unsigned input_samples      = lc3plus_enc_get_input_samples(lc3plus_handle);
+    int      bytes_out;
+
+    int32_t  pcm_frame[LC3PLUS_MAX_CHANNELS * LC3PLUS_MAX_SAMPLES];
+    int32_t  buf_24[LC3PLUS_MAX_CHANNELS * LC3PLUS_MAX_SAMPLES];
+    int32_t *input24[] = {buf_24, buf_24 + input_samples};
+
+    while (context->samples_ready >= input_samples &&
+            context->codec_num_frames < ((1 << 4) - 1) && // do not overflow frames
+            // maximal 200ms per packet
+           (context->codec_num_frames + 1) * lc3plus_configuration.frame_duration <= 200) {
+
+        // reserve first byte for media header
+        if (context->codec_storage_count == 0)
+            context->codec_storage_count = 1;
+
+        produce_sine_audio24(pcm_frame, input_samples);
+
+        deinterleave(pcm_frame, input24, input_samples, 2);
+
+        if (lc3plus_enc24(lc3plus_handle, input24,
+                          &context->codec_storage[context->codec_storage_count],
+                          &bytes_out, lc3plus_scratch) != 0) {
+            printf("LC3Plus encoding error!\n");
+        }
+
+        total_samples_read += input_samples;
+        context->codec_storage_count += bytes_out;
+        context->codec_num_frames++;
+        context->samples_ready -= input_samples;
+
+        if ((context->max_media_payload_size - context->codec_storage_count) < lc3plus_enc_get_num_bytes(lc3plus_handle)) {
+            return total_samples_read;
+        }
+    }
+    return total_samples_read;
+}
+#endif
+
 static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
     adtvp_media_codec_capabilities_t local_cap;
     a2dp_media_sending_context_t * context = (a2dp_media_sending_context_t *) btstack_run_loop_get_timer_context(timer);
@@ -623,6 +777,16 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
                 a2dp_demo_fill_aptx_audio_buffer(context);
 
                 if ((context->codec_storage_count + 6) > context->max_media_payload_size) {
+                    // schedule sending
+                    context->codec_ready_to_send = 1;
+                    a2dp_source_stream_endpoint_request_can_send_now(context->avdtp_cid, context->local_seid);
+                }
+            }
+#endif
+#ifdef HAVE_LC3PLUS
+            if (local_vendor_id == A2DP_CODEC_VENDOR_ID_FRAUNHOFER && local_codec_id == A2DP_FRAUNHOFER_CODEC_LC3PLUS) {
+                a2dp_demo_fill_lc3plus_audio_buffer(context);
+                if (context->codec_storage_count > 0) {
                     // schedule sending
                     context->codec_ready_to_send = 1;
                     a2dp_source_stream_endpoint_request_can_send_now(context->avdtp_cid, context->local_seid);
@@ -802,6 +966,21 @@ static void setup_non_a2dp_codec_config(uint8_t local_remote_seid_index) {
         media_codec_config_data[9] = 0x0;
         media_codec_config_data[10] = 0x0;
         media_codec_config_len = 11;
+    } else if (vendor_id == A2DP_CODEC_VENDOR_ID_FRAUNHOFER && codec_id == A2DP_FRAUNHOFER_CODEC_LC3PLUS) {
+        printf("Setup lc3plus\n");
+        media_codec_config_data[0] = 0xA9;
+        media_codec_config_data[1] = 0x08;
+        media_codec_config_data[2] = 0x0;
+        media_codec_config_data[3] = 0x0;
+        media_codec_config_data[4] = 0x01;
+        media_codec_config_data[5] = 0x0;
+        media_codec_config_data[6] = 0x40;
+        media_codec_config_data[7] = 0x40;
+        media_codec_config_data[8] = 0x0;
+        media_codec_config_data[9] = 0x80;
+        media_codec_config_len = 10;
+    }else {
+        printf("Unsuppoted vendor id 0x%08x, codec id 0x%04x\n", vendor_id, codec_id);
     }
 }
 
@@ -938,6 +1117,68 @@ static int convert_aptx_num_channels(uint8_t channel_mode) {
     }
 }
 
+// LC3Helpers
+typedef enum {
+    A2DP_LC3PLUS_FRAME_DURATION_2_5 = 1 << 4,
+    A2DP_LC3PLUS_FRAME_DURATION_5   = 1 << 5,
+    A2DP_LC3PLUS_FRAME_DURATION_10  = 1 << 6,
+} a2dp_shifted_lc3plus_frame_duration_t;
+
+typedef enum {
+    A2DP_LC3PLUS_CHANNEL_COUNT_2 = 1 << 6,
+    A2DP_LC3PLUS_CHANNEL_COUNT_1 = 1 << 7,
+} a2dp_shifted_lc3plus_channel_count_t;
+
+typedef enum {
+    A2DP_LC3PLUS_48000_HR = 1 << 0,
+    A2DP_LC3PLUS_96000_HR = 1 << 15,
+} a2dp_shifted_lc3plus_samplerate_t;
+static uint8_t lc3plus_get_frame_durations(uint8_t *codec_info) { return codec_info[6] & 0xF0; }
+
+static uint8_t lc3plus_get_channel_count(uint8_t *codec_info) { return codec_info[7]; }
+
+uint16_t lc3plus_get_samplerate(uint8_t *codec_info) {
+    return (codec_info[9] << 8) | codec_info[8];
+}
+
+int convert_lc3plus_frame_duration(int duration) {
+    switch (duration) {
+    case A2DP_LC3PLUS_FRAME_DURATION_2_5:
+        return 25;
+    case A2DP_LC3PLUS_FRAME_DURATION_5:
+        return 50;
+    case A2DP_LC3PLUS_FRAME_DURATION_10:
+        return 100;
+    default:
+        printf("invalid lc3plus frame duration %d\n", duration);
+        return 0;
+    }
+}
+
+int convert_lc3plus_samplerate(int rate) {
+    switch (rate) {
+    case A2DP_LC3PLUS_96000_HR:
+        return 96000;
+    case A2DP_LC3PLUS_48000_HR:
+        return 48000;
+    default:
+        printf("invalid lc3plus samplerate %d\n", rate);
+        return 0;
+    }
+}
+
+int convert_lc3plus_channel_count(int channels) {
+    switch (channels) {
+    case A2DP_LC3PLUS_CHANNEL_COUNT_2:
+        return 2;
+    case A2DP_LC3PLUS_CHANNEL_COUNT_1:
+        return 1;
+    default:
+        printf("invalid lc3plus channel count %d\n", channels);
+        return 0;
+    }
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
@@ -963,6 +1204,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             }
             media_tracker.avdtp_cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
             printf("AVDTP source signaling connection established: avdtp_cid 0x%02x\n", avdtp_cid);
+
+            if (auto_select) {
+                // seid selected per argv
+                num_remote_seps = 0;
+                selected_remote_sep_index = 0;
+                status = avdtp_source_discover_stream_endpoints(media_tracker.avdtp_cid);
+            }
             break;
         
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
@@ -972,6 +1220,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 break;
             }
             avdtp_cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
+            media_tracker.local_seid = avdtp_subevent_streaming_connection_established_get_local_seid(packet);
+            media_tracker.remote_seid = avdtp_subevent_streaming_connection_established_get_remote_seid(packet);
             printf("Streaming connection established, avdtp_cid 0x%02x\n", avdtp_cid);
             break;
 
@@ -993,6 +1243,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             if (num_remote_seps == 1){
                 media_tracker.remote_seid = remote_seps[0].sep.seid;
                 printf("Only one remote Stream Endpoint with SEID %u, select it for initiator commands\n", media_tracker.remote_seid);
+            }
+            if (auto_select) {
+                avdtp_source_get_capabilities(media_tracker.avdtp_cid, media_tracker.remote_seid);
             }
             break;
 
@@ -1063,6 +1316,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
             // pre-select SBC codec, can be overwritten for other codecs
             selected_remote_sep_index = local_remote_seid_index;
+            if (auto_select) {
+                set_configuration();
+            }
             break;
         }
 
@@ -1075,6 +1331,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             remote_seps[local_remote_seid_index].sep.capabilities.media_codec.media_codec_type = AVDTP_CODEC_MPEG_1_2_AUDIO;
             remote_seps[local_remote_seid_index].have_media_codec_apabilities = true;
             printf("CAPABILITY - MEDIA_CODEC: MPEG AUDIO, remote seid %u: \n", remote_seid);
+            if (auto_select) {
+                set_configuration();
+            }
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY: {
@@ -1096,6 +1355,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             printf("A2DP Source: Received AAC capabilities! Sampling frequency bitmap: 0x%04x, object type %u, channel mode %u, bitrate %u, vbr: %u\n",
                    aac_capabilities.sampling_frequency_bitmap, aac_capabilities.object_type_bitmap, aac_capabilities.channels_bitmap,
                    aac_capabilities.bit_rate, aac_capabilities.vbr);
+            if (auto_select) {
+                set_configuration();
+            }
             break;
         }
 
@@ -1108,6 +1370,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             remote_seps[local_remote_seid_index].sep.capabilities.media_codec.media_codec_type = AVDTP_CODEC_ATRAC_FAMILY;
             remote_seps[local_remote_seid_index].have_media_codec_apabilities = true;
             printf("CAPABILITY - MEDIA_CODEC: ATRAC, remote seid %u: \n", remote_seid);
+            if (auto_select) {
+                set_configuration();
+            }
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
@@ -1128,8 +1393,23 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 printf("CAPABILITY - APTX, remote seid %u\n", remote_seid);
             else if (vendor_id == A2DP_CODEC_VENDOR_ID_QUALCOMM && codec_id == A2DP_QUALCOMM_CODEC_APTX_HD)
                 printf("CAPABILITY - APTX HD, remote seid %u\n", remote_seid);
+            else if (vendor_id == A2DP_CODEC_VENDOR_ID_FRAUNHOFER && codec_id == A2DP_FRAUNHOFER_CODEC_LC3PLUS) {
+                avdtp_media_codec_configuration_lc3plus_t lc3plus_capabilities;
+                lc3plus_capabilities.frame_duration = lc3plus_get_frame_durations((uint8_t*) media_info);
+                lc3plus_capabilities.num_channels = lc3plus_get_channel_count((uint8_t*) media_info);
+                lc3plus_capabilities.sampling_frequency = lc3plus_get_samplerate((uint8_t*) media_info);
+                printf("CAPABILITY - LC3plus, remote seid %u\n", remote_seid);
+                printf("    - frame duration: 0x%02x\n", lc3plus_capabilities.frame_duration);
+                printf("    - channel count: 0x%02x\n", lc3plus_capabilities.num_channels);
+                printf("    - samplerates: 0x%04x\n", lc3plus_capabilities.sampling_frequency);
+            }
+
             else
                 printf("CAPABILITY - MEDIA_CODEC: OTHER, remote seid %u: \n", remote_seid);
+
+            if (auto_select) {
+                set_configuration();
+            }
 
             break;
 
@@ -1323,6 +1603,54 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 aptx_handle = aptx_init(1);
                 current_sample_rate = aptxhd_configuration.sampling_frequency;
 #endif
+#if HAVE_LC3PLUS
+            } else if (vendor_id == A2DP_CODEC_VENDOR_ID_FRAUNHOFER && codec_id == A2DP_FRAUNHOFER_CODEC_LC3PLUS) {
+                lc3plus_configuration.reconfigure = a2dp_subevent_signaling_media_codec_other_configuration_get_reconfigure(packet);
+                lc3plus_configuration.sampling_frequency = lc3plus_get_samplerate(codec_info);
+                lc3plus_configuration.frame_duration = lc3plus_get_frame_durations(codec_info);
+                lc3plus_configuration.num_channels = lc3plus_get_channel_count(codec_info);
+                lc3plus_configuration.hrmode = 1;
+
+                lc3plus_configuration.frame_duration = convert_lc3plus_frame_duration(lc3plus_configuration.frame_duration);
+                lc3plus_configuration.sampling_frequency = convert_lc3plus_samplerate(lc3plus_configuration.sampling_frequency);
+                lc3plus_configuration.num_channels = convert_lc3plus_channel_count(lc3plus_configuration.num_channels);
+                printf("A2DP Source: Received LC3Plus configuration! Sampling frequency: %d, channels: %d, frame duration %0.1f\n",
+                    lc3plus_configuration.sampling_frequency, lc3plus_configuration.num_channels, lc3plus_configuration.frame_duration * 0.1);
+
+                // init encoder
+                lc3plus_handle = malloc(lc3plus_enc_get_size(lc3plus_configuration.sampling_frequency, lc3plus_configuration.num_channels));
+                if (lc3plus_handle == NULL) {
+                    printf("Failed to allocate lc3plus encoder memory\n");
+                    break;
+                }
+                if (lc3plus_enc_init(lc3plus_handle, lc3plus_configuration.sampling_frequency, lc3plus_configuration.num_channels, lc3plus_configuration.hrmode) != LC3PLUS_OK) {
+                    free(lc3plus_handle);
+                    lc3plus_handle = NULL;
+                    printf("Failed to initialize lc3plus encoder\n");
+                    break;
+                }
+                if (lc3plus_enc_set_frame_dms( lc3plus_handle, lc3plus_configuration.frame_duration) != LC3PLUS_OK) {
+                    free(lc3plus_handle);
+                    lc3plus_handle = NULL;
+                    printf("Failed to set lc3plus frame duration\n");
+                    break;
+                }
+                // set fixed bitrate
+                if (lc3plus_enc_set_bitrate(lc3plus_handle, 500000) != LC3PLUS_OK) {
+                    free(lc3plus_handle);
+                    lc3plus_handle = NULL;
+                    printf("Failed to set lc3plus bitrate\n");
+                    break;
+                }
+                lc3plus_configuration.bitrate = lc3plus_enc_get_real_bitrate(lc3plus_handle);
+                lc3plus_scratch = malloc(lc3plus_enc_get_scratch_size(lc3plus_handle));
+                if (lc3plus_scratch == NULL) {
+                    printf("Failed to allocate lc3plus scratch memory\n");
+                    free(lc3plus_handle);
+                    lc3plus_handle = NULL;
+                    break;
+                }
+#endif
             } else {
                 printf("Config not handled for %s\n", codec_name_for_type(remote_seps[selected_remote_sep_index].sep.capabilities.media_codec.media_codec_type));
             }
@@ -1374,6 +1702,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:
             a2dp_demo_timer_stop(&media_tracker);
+#ifdef HAVE_LC3PLUS
+            if (lc3plus_handle) {
+                free(lc3plus_handle);
+                lc3plus_handle = NULL;
+            }
+            if (lc3plus_scratch) {
+                free(lc3plus_scratch);
+                lc3plus_scratch = NULL;
+            }
+#endif
             printf("Streaming connection released.\n");
             break;
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
@@ -1410,6 +1748,25 @@ static void show_usage(void){
     printf("---\n");
 }
 
+static int set_configuration() {
+    if (num_remote_seps == 0){
+        printf("Remote Stream Endpoints not discovered yet, please discover stream endpoints first\n");
+        return -1;
+    }
+    if (remote_seps[selected_remote_sep_index].have_media_codec_apabilities == false){
+        printf("Remote Stream Endpoints Media Codec Capabilities not received yet, please get (all) capabilities for stream endpoint with seid %u first\n",  media_tracker.remote_seid);
+        return -1;
+    }
+    setup_remote_config(selected_remote_sep_index);
+    printf("Set configuration of stream endpoint with seid %d\n", media_tracker.remote_seid);
+    avdtp_capabilities_t new_configuration;
+    new_configuration.media_codec.media_type = AVDTP_AUDIO;
+    new_configuration.media_codec.media_codec_type = remote_seps[selected_remote_sep_index].sep.capabilities.media_codec.media_codec_type ;
+    new_configuration.media_codec.media_codec_information_len = media_codec_config_len;
+    new_configuration.media_codec.media_codec_information = media_codec_config_data;
+    int status = avdtp_source_set_configuration(media_tracker.avdtp_cid, media_tracker.local_seid, media_tracker.remote_seid, 1 << AVDTP_MEDIA_CODEC, new_configuration);
+    return status;        
+}
 
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
@@ -1472,22 +1829,7 @@ static void stdin_process(char cmd){
             break;
 
         case 's':{
-            if (num_remote_seps == 0){
-                printf("Remote Stream Endpoints not discovered yet, please discover stream endpoints first\n");
-                break;
-            }
-            if (remote_seps[selected_remote_sep_index].have_media_codec_apabilities == false){
-                printf("Remote Stream Endpoints Media Codec Capabilities not received yet, please get (all) capabilities for stream endpoint with seid %u first\n",  media_tracker.remote_seid);
-                break;
-            }
-            setup_remote_config(selected_remote_sep_index);
-            printf("Set configuration of stream endpoint with seid %d\n", media_tracker.remote_seid);
-            avdtp_capabilities_t new_configuration;
-            new_configuration.media_codec.media_type = AVDTP_AUDIO;
-            new_configuration.media_codec.media_codec_type = remote_seps[selected_remote_sep_index].sep.capabilities.media_codec.media_codec_type ;
-            new_configuration.media_codec.media_codec_information_len = media_codec_config_len;
-            new_configuration.media_codec.media_codec_information = media_codec_config_data;
-            status = avdtp_source_set_configuration(media_tracker.avdtp_cid, media_tracker.local_seid, media_tracker.remote_seid, 1 << AVDTP_MEDIA_CODEC, new_configuration);
+            status = set_configuration();
             break;
         }
         case 'R':{
@@ -1579,8 +1921,13 @@ static void stdin_process(char cmd){
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-    UNUSED(argc);
-    (void)argv;
+    if (argc == 2) {
+        printf("Auto select remote seid %d\n", atoi(argv[1]));
+        media_tracker.remote_seid = atoi(argv[1]);
+        auto_select = true;
+    } else {
+        auto_select = false;
+    }
 
     /* Register for HCI events */
     hci_event_callback_registration.callback = &packet_handler;
@@ -1637,6 +1984,15 @@ int btstack_main(int argc, const char * argv[]){
     btstack_assert(stream_endpoint != NULL);
     stream_endpoint->media_codec_configuration_info = local_stream_endpoint_aptxhd_media_codec_configuration;
     stream_endpoint->media_codec_configuration_len  = sizeof(local_stream_endpoint_aptxhd_media_codec_configuration);
+    avdtp_source_register_delay_reporting_category(avdtp_local_seid(stream_endpoint));
+#endif
+
+#ifdef HAVE_LC3PLUS
+    // - LC3PLUS
+    stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_NON_A2DP, (uint8_t *) media_lc3plus_codec_capabilities, sizeof(media_lc3plus_codec_capabilities), (uint8_t*) local_stream_endpoint_lc3plus_media_codec_configuration, sizeof(local_stream_endpoint_lc3plus_media_codec_configuration));
+    btstack_assert(stream_endpoint != NULL);
+    stream_endpoint->media_codec_configuration_info = local_stream_endpoint_lc3plus_media_codec_configuration;
+    stream_endpoint->media_codec_configuration_len  = sizeof(local_stream_endpoint_lc3plus_media_codec_configuration);
     avdtp_source_register_delay_reporting_category(avdtp_local_seid(stream_endpoint));
 #endif
 

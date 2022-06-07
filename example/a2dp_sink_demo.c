@@ -85,8 +85,7 @@
 
 #ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
-#define STORE_TO_SBC_FILE 
-#define STORE_TO_WAV_FILE 
+#define STORE_TO_WAV_FILE
 #endif
 
 #define NUM_CHANNELS 2
@@ -122,11 +121,6 @@ static int       request_frames;
 #ifdef STORE_TO_WAV_FILE
 static uint32_t audio_frame_count = 0;
 static char * wav_filename = "a2dp_sink_demo.wav";
-#endif
-
-#ifdef STORE_TO_SBC_FILE    
-static FILE * sbc_file;
-static char * sbc_filename = "av2dp_sink_demo.sbc";
 #endif
 
 typedef struct {
@@ -282,8 +276,18 @@ static int a2dp_and_avrcp_setup(void){
     // replaced with a actual address once it is available, i.e. when BTstack boots
     // up and starts talking to a Bluetooth module.
     gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");
+
+    // allot to show up in Bluetooth inquiry
     gap_discoverable_control(1);
-    gap_set_class_of_device(0x200408);
+
+    // Service Class: Audio, Major Device Class: Audio, Minor: Loudspeaker
+    gap_set_class_of_device(0x200414);
+
+    // allow for role switch in general and sniff mode
+    gap_set_default_link_policy_settings( LM_LINK_POLICY_ENABLE_ROLE_SWITCH | LM_LINK_POLICY_ENABLE_SNIFF_MODE );
+
+    // allow for role switch on outgoing connections - this allows A2DP Source, e.g. smartphone, to become master when we re-connect to it
+    gap_set_allow_role_switch(true);
 
     // Register for HCI events
     hci_event_callback_registration.callback = &hci_packet_handler;
@@ -381,10 +385,6 @@ static int media_processing_init(media_codec_configuration_sbc_t configuration){
     wav_writer_open(wav_filename, configuration.num_channels, configuration.sampling_frequency);
 #endif
 
-#ifdef STORE_TO_SBC_FILE    
-   sbc_file = fopen(sbc_filename, "wb"); 
-#endif
-
     btstack_ring_buffer_init(&sbc_frame_ring_buffer, sbc_frame_storage, sizeof(sbc_frame_storage));
     btstack_ring_buffer_init(&decoded_audio_ring_buffer, decoded_audio_storage, sizeof(decoded_audio_storage));
     btstack_resample_init(&resample_instance, configuration.num_channels);
@@ -434,10 +434,6 @@ static void media_processing_close(void){
     printf("WAV Writer: Wrote %u audio frames to wav file: %s\n", audio_frame_count, wav_filename);
 #endif
 
-#ifdef STORE_TO_SBC_FILE
-    fclose(sbc_file);
-#endif     
-
     // stop audio playback
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (audio){
@@ -466,10 +462,6 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     
     avdtp_sbc_codec_header_t sbc_header;
     if (!read_sbc_header(packet, size, &pos, &sbc_header)) return;
-
-#ifdef STORE_TO_SBC_FILE
-    fwrite(packet+pos, size-pos, 1, sbc_file);
-#endif
 
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     // process data right away if there's no audio implementation active, e.g. on posix systems to store as .wav
@@ -867,8 +859,7 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             break;
         
         default:
-            printf("A2DP  Sink      : Not parsed 0x%02x\n", packet[2]);
-            break; 
+            break;
     }
 }
 

@@ -1,5 +1,3 @@
-CC = g++
-
 # Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
@@ -78,38 +76,44 @@ build-%/microphone_control_service_profile.h: microphone_control_service.gatt| b
 build-coverage/%.o: %.c | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
+build-coverage/%.o: %.cpp | build-coverage
+	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
+
 build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
+build-asan/%.o: %.cpp | build-asan
+	${CXX} -c $(CFLAGS_ASAN) $< -o $@
+
 build-coverage/battery_service_test: build-coverage/battery_service_profile.h ${COMMON_OBJ_COVERAGE} build-coverage/battery_service_test.o | build-coverage
-	${CC} $(filter-out build-coverage/battery_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $(filter-out build-coverage/battery_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/battery_service_test: build-asan/battery_service_profile.h ${COMMON_OBJ_ASAN} build-asan/battery_service_test.o | build-asan
-	${CC} $(filter-out build-asan/battery_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
+	${CXX} $(filter-out build-asan/battery_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
 build-coverage/device_information_service_test: build-coverage/device_information_service_profile.h ${COMMON_OBJ_COVERAGE} build-coverage/device_information_service_test.o  | build-coverage
-	${CC} $(filter-out build-coverage/device_information_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $(filter-out build-coverage/device_information_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/device_information_service_test: build-asan/device_information_service_profile.h ${COMMON_OBJ_ASAN} build-asan/device_information_service_test.o  | build-asan
-	${CC} $(filter-out build-asan/device_information_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
+	${CXX} $(filter-out build-asan/device_information_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
 build-coverage/tx_power_service_test: build-coverage/tx_power_service_profile.h ${COMMON_OBJ_COVERAGE} build-coverage/tx_power_service_test.o  | build-coverage
-	${CC} $(filter-out build-coverage/tx_power_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $(filter-out build-coverage/tx_power_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/tx_power_service_test: build-asan/tx_power_service_profile.h ${COMMON_OBJ_ASAN} build-asan/tx_power_service_test.o  | build-asan
-	${CC} $(filter-out build-asan/tx_power_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
+	${CXX} $(filter-out build-asan/tx_power_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
 build-coverage/bond_management_service_test: build-coverage/bond_management_service_profile.h ${COMMON_OBJ_COVERAGE} build-coverage/bond_management_service_server.o build-coverage/bond_management_service_test.o  | build-coverage
-	${CC} $(filter-out build-coverage/bond_management_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $(filter-out build-coverage/bond_management_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/bond_management_service_test: build-asan/bond_management_service_profile.h ${COMMON_OBJ_ASAN} build-asan/bond_management_service_server.o  build-asan/bond_management_service_test.o  | build-asan
-	${CC} $(filter-out build-asan/bond_management_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
+	${CXX} $(filter-out build-asan/bond_management_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
 build-coverage/microphone_control_service_test: build-coverage/microphone_control_service_profile.h ${COMMON_OBJ_COVERAGE} build-coverage/microphone_control_service_server.o build-coverage/microphone_control_service_test.o  | build-coverage
-	${CC} $(filter-out build-coverage/microphone_control_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
+	${CXX} $(filter-out build-coverage/microphone_control_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/microphone_control_service_test: build-asan/microphone_control_service_profile.h ${COMMON_OBJ_ASAN} build-asan/microphone_control_service_server.o  build-asan/microphone_control_service_test.o  | build-asan
-	${CC} $(filter-out build-asan/microphone_control_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
+	${CXX} $(filter-out build-asan/microphone_control_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
 test: all
 	build-asan/battery_service_test

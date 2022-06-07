@@ -45,6 +45,11 @@
 #include "btstack_debug.h"
 #include "btstack_util.h"
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#include <windows.h>
+#endif
+
 #ifdef ENABLE_PRINTF_HEXDUMP
 #include <stdio.h>
 #endif
@@ -430,6 +435,46 @@ int count_set_bits_uint32(uint32_t x){
     return v;
 }
 
+uint8_t btstack_clz(uint32_t value) {
+#if defined(__GNUC__) || defined (__clang__)
+    // use gcc/clang intrinsic
+    return (uint8_t) __builtin_clz(value);
+#elif defined(_MSC_VER)
+    // use MSVC intrinsic
+    DWORD leading_zero = 0;
+    if (_BitScanReverse( &leading_zero, value )){
+		return (uint8_t)(31 - leading_zero);
+    } else {
+        return 32;
+    }
+#else
+    // divide-and-conquer implementation for 32-bit integers
+    if (x == 0) return 32;
+    uint8_t r = 0;
+    if ((x & 0xffff0000u) == 0) {
+        x <<= 16;
+        r += 16;
+    }
+    if ((x & 0xff000000u) == 0) {
+        x <<= 8;
+        r += 8;
+    }
+    if ((x & 0xf0000000u) == 0) {
+        x <<= 4;
+        r += 4;
+    }
+    if ((x & 0xc0000000u) == 0) {
+        x <<= 2;
+        r += 2;
+    }
+    if ((x & 0x80000000u) == 0) {
+        x <<= 1;
+        r += 1;
+    }
+    return r;
+#endif
+}
+
 /*  
  * CRC (reversed crc) lookup table as calculated by the table generator in ETSI TS 101 369 V6.3.0.
  */
@@ -495,7 +540,15 @@ uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid){
 }
 
 void btstack_strcpy(char * dst, uint16_t dst_size, const char * src){
-    uint16_t bytes_to_copy = btstack_min( dst_size - 1, strlen(src));
+    uint16_t bytes_to_copy = (uint16_t) btstack_min( dst_size - 1, (uint32_t) strlen(src));
     (void) memcpy(dst, src, bytes_to_copy);
-    dst[dst_size-1] = 0;
+    dst[bytes_to_copy] = 0;
+}
+
+void btstack_strcat(char * dst, uint16_t dst_size, const char * src){
+    uint16_t src_len = (uint16_t) strlen(src);
+    uint16_t dst_len = (uint16_t) strlen(dst);
+    uint16_t bytes_to_copy = btstack_min( src_len, dst_size - dst_len - 1);
+    (void) memcpy( &dst[dst_len], src, bytes_to_copy);
+    dst[dst_len + bytes_to_copy] = 0;
 }

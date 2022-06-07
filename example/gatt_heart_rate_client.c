@@ -101,7 +101,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static int advertisement_report_contains_uuid16(uint16_t uuid16, uint8_t * advertisement_report){
     // get advertisement from report event
     const uint8_t * adv_data = gap_event_advertising_report_get_data(advertisement_report);
-    uint16_t        adv_len  = gap_event_advertising_report_get_data_length(advertisement_report);
+    uint8_t         adv_len  = gap_event_advertising_report_get_data_length(advertisement_report);
 
     // iterate over advertisement data
     ad_context_t context;

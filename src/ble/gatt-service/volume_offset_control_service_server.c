@@ -88,7 +88,7 @@ static uint16_t vocs_read_callback(hci_con_handle_t con_handle, uint16_t attribu
     }
 
     if (attribute_handle == vocs->audio_output_description_value_handle){
-        return att_read_callback_handle_blob((uint8_t *)vocs->info->audio_output_description, strlen(vocs->info->audio_output_description), offset, buffer, buffer_size);
+        return att_read_callback_handle_blob((uint8_t *)vocs->info->audio_output_description, (uint16_t) strlen(vocs->info->audio_output_description), offset, buffer, buffer_size);
     }
     
     
@@ -290,7 +290,7 @@ static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
 
     if (attribute_handle == vocs->audio_output_description_value_handle){
         btstack_strcpy(vocs->info->audio_output_description, vocs->audio_output_description_len, (char *)buffer);
-        vocs->audio_output_description_len = strlen(vocs->info->audio_output_description);
+        vocs->audio_output_description_len = (uint8_t) strlen(vocs->info->audio_output_description);
         vocs_emit_audio_output_description(vocs);
         volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION);
     }
@@ -403,6 +403,6 @@ uint8_t volume_offset_control_service_server_set_audio_location(volume_offset_co
 void volume_offset_control_service_server_set_audio_output_description(volume_offset_control_service_server_t * vocs, const char * audio_output_desc){
     btstack_assert(vocs != NULL);
     btstack_strcpy(vocs->info->audio_output_description, vocs->audio_output_description_len, (char *)audio_output_desc);
-    vocs->audio_output_description_len = strlen(vocs->info->audio_output_description);
+    vocs->audio_output_description_len = (uint8_t) strlen(vocs->info->audio_output_description);
     volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION);
 }

@@ -58,6 +58,7 @@
 #include "classic/obex.h"
 #include "classic/obex_parser.h"
 #include "classic/goep_client.h"
+#include "classic/pbap.h"
 #include "classic/pbap_client.h"
 
 // 796135f0-f0c5-11d8-0966- 0800200c9a66

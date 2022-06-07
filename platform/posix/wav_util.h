@@ -39,11 +39,6 @@
 #define WAV_UIL_H
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #if defined __cplusplus
 extern "C" {

@@ -61,6 +61,13 @@ const hci_transport_t * hci_transport_usb_instance(void);
  */
 void hci_transport_usb_set_path(int len, uint8_t * port_numbers);
 
+/**
+ * @brief Add device to list of known Bluetooth USB Controller
+ * @param vendor_id
+ * @param product_id
+ */
+void hci_transport_usb_add_device(uint16_t vendor_id, uint16_t product_id);
+
 /* API_END */
 
 #if defined __cplusplus

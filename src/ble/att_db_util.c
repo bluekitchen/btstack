@@ -280,7 +280,7 @@ static uint16_t att_db_util_encode_permissions(uint16_t properties, uint8_t read
 
 uint16_t att_db_util_add_characteristic_uuid16(uint16_t uuid16, uint16_t properties, uint8_t read_permission, uint8_t write_permission, uint8_t * data, uint16_t data_len){
 	uint8_t buffer[5];
-	buffer[0] = properties;
+	buffer[0] = (uint8_t) (properties & 0xff);
 	little_endian_store_16(buffer, 1u, att_db_next_handle + 1u);
 	little_endian_store_16(buffer, 3, uuid16);
 	att_db_util_add_attribute_uuid16(GATT_CHARACTERISTICS_UUID, ATT_PROPERTY_READ, buffer, sizeof(buffer));
@@ -295,7 +295,7 @@ uint16_t att_db_util_add_characteristic_uuid16(uint16_t uuid16, uint16_t propert
 
 uint16_t att_db_util_add_characteristic_uuid128(const uint8_t * uuid128, uint16_t properties, uint8_t read_permission, uint8_t write_permission, uint8_t * data, uint16_t data_len){
 	uint8_t buffer[19];
-	buffer[0] = properties;
+	buffer[0] = (uint8_t) (properties & 0xff);
 	little_endian_store_16(buffer, 1u, att_db_next_handle + 1u);
 	reverse_128(uuid128, &buffer[3]);
 	att_db_util_add_attribute_uuid16(GATT_CHARACTERISTICS_UUID, ATT_PROPERTY_READ, buffer, sizeof(buffer));

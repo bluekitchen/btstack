@@ -290,36 +290,36 @@ static void att_prepare_write_update_errors(uint8_t error_code, uint16_t handle)
     }
 }
 
-static uint16_t setup_error(uint8_t * response_buffer, uint16_t request, uint16_t handle, uint8_t error_code){
+static uint16_t setup_error(uint8_t * response_buffer, uint8_t request_opcode, uint16_t handle, uint8_t error_code){
     response_buffer[0] = (uint8_t)ATT_ERROR_RESPONSE;
-    response_buffer[1] = request;
+    response_buffer[1] = request_opcode;
     little_endian_store_16(response_buffer, 2, handle);
     response_buffer[4] = error_code;
     return 5;
 }
 
-static inline uint16_t setup_error_read_not_permitted(uint8_t * response_buffer, uint16_t request, uint16_t start_handle){
-    return setup_error(response_buffer, request, start_handle, ATT_ERROR_READ_NOT_PERMITTED);
+static inline uint16_t setup_error_read_not_permitted(uint8_t * response_buffer, uint8_t request_opcode, uint16_t start_handle){
+    return setup_error(response_buffer, request_opcode, start_handle, ATT_ERROR_READ_NOT_PERMITTED);
 }
 
-static inline uint16_t setup_error_write_not_permitted(uint8_t * response_buffer, uint16_t request, uint16_t start_handle){
+static inline uint16_t setup_error_write_not_permitted(uint8_t * response_buffer, uint8_t request, uint16_t start_handle){
     return setup_error(response_buffer, request, start_handle, ATT_ERROR_WRITE_NOT_PERMITTED);
 }
 
-static inline uint16_t setup_error_atribute_not_found(uint8_t * response_buffer, uint16_t request, uint16_t start_handle){
-    return setup_error(response_buffer, request, start_handle, ATT_ERROR_ATTRIBUTE_NOT_FOUND);
+static inline uint16_t setup_error_atribute_not_found(uint8_t * response_buffer, uint8_t request_opcode, uint16_t start_handle){
+    return setup_error(response_buffer, request_opcode, start_handle, ATT_ERROR_ATTRIBUTE_NOT_FOUND);
 }
 
-static inline uint16_t setup_error_invalid_handle(uint8_t * response_buffer, uint16_t request, uint16_t handle){
-    return setup_error(response_buffer, request, handle, ATT_ERROR_INVALID_HANDLE);
+static inline uint16_t setup_error_invalid_handle(uint8_t * response_buffer, uint8_t request_opcode, uint16_t handle){
+    return setup_error(response_buffer, request_opcode, handle, ATT_ERROR_INVALID_HANDLE);
 }
 
-static inline uint16_t setup_error_invalid_offset(uint8_t * response_buffer, uint16_t request, uint16_t handle){
-    return setup_error(response_buffer, request, handle, ATT_ERROR_INVALID_OFFSET);
+static inline uint16_t setup_error_invalid_offset(uint8_t * response_buffer, uint8_t request_opcode, uint16_t handle){
+    return setup_error(response_buffer, request_opcode, handle, ATT_ERROR_INVALID_OFFSET);
 }
 
-static inline uint16_t setup_error_invalid_pdu(uint8_t *response_buffer, uint16_t request) {
-    return setup_error(response_buffer, request, 0, ATT_ERROR_INVALID_PDU);
+static inline uint16_t setup_error_invalid_pdu(uint8_t *response_buffer, uint8_t request_opcode) {
+    return setup_error(response_buffer, request_opcode, 0, ATT_ERROR_INVALID_PDU);
 }
 
 struct att_security_settings {
@@ -664,7 +664,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         // first
         if (offset == 1u) {
             pair_len = this_pair_len;
-            response_buffer[offset] = pair_len;
+            response_buffer[offset] = (uint8_t) pair_len;
             offset++;
         }
         
@@ -1030,7 +1030,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
             // first
             if (offset == 1u) {
                 pair_len = this_pair_len;
-                response_buffer[offset] = this_pair_len;
+                response_buffer[offset] = (uint8_t) this_pair_len;
                 offset++;
             }
             

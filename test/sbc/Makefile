@@ -1,5 +1,3 @@
-CC=gcc
-
 BTSTACK_ROOT = ../..
 SBC_DECODER_ROOT = ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder
 SBC_ENCODER_ROOT = ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder
@@ -19,8 +17,7 @@ CFLAGS += -I${SBC_ENCODER_ROOT}/include
 CFLAGS += -Werror=unused-parameter
 # CFLAGS += -D OCTAVE_OUTPUT 
 #CFLAGS += -D PRINT_SAMPLES -D PRINT_SCALEFACTORS -D OI_DEBUG -D TRACE_EXECUTION 
-LDFLAGS_CPPUTEST += -lCppUTest -lCppUTestExt
-VPATH += ${SBC_DECODER_ROOT}/srce 
+VPATH += ${SBC_DECODER_ROOT}/srce
 VPATH += ${SBC_ENCODER_ROOT}/srce
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/classic

@@ -139,7 +139,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
                 
                 case HCI_EVENT_COMMAND_COMPLETE:
-                    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)){
+                    if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_BD_ADDR) {
                         reverse_bd_addr(&packet[6], event_addr);
                         printf("BD-ADDR: %s\n\r", bd_addr_to_str(event_addr));
                         break;

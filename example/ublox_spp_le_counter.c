@@ -106,7 +106,7 @@ static int  counter_string_len;
 
 static void beat(void){
     counter++;
-    counter_string_len = sprintf(counter_string, "BTstack counter %03u", counter);
+    counter_string_len = snprintf(counter_string, sizeof(counter_string), "BTstack counter %03u", counter);
 }
 
 static void ublox_can_send(void * context){

@@ -63,6 +63,7 @@
 
 static btstack_linked_list_t clients;
 static uint16_t battery_service_cid_counter = 0;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void battery_service_poll_timer_start(battery_service_client_t * client);
@@ -167,7 +168,7 @@ static void battery_service_emit_battery_level(battery_service_client_t * client
 static bool battery_service_registered_notification(battery_service_client_t * client, uint16_t service_index){
     gatt_client_characteristic_t characteristic;
     // if there are services without notification, register pool timer, 
-    // othervise register for notifications
+    // otherwise register for notifications
     characteristic.value_handle = client->services[service_index].value_handle;
     characteristic.properties   = client->services[service_index].properties;
     characteristic.end_handle   = client->services[service_index].end_handle;
@@ -368,7 +369,7 @@ static bool battery_service_client_handle_query_complete(battery_service_client_
                 return false;
             }
 
-            // we are done with quering all services
+            // we are done with querying all services
             client->service_index = 0;
 
 #ifdef ENABLE_TESTING_SUPPORT
@@ -551,6 +552,31 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 }
 
 
+static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type); // ok: only hci events
+    UNUSED(channel);     // ok: there is no channel
+    UNUSED(size);        // ok: fixed format events read from HCI buffer
+
+    hci_con_handle_t con_handle;
+    battery_service_client_t * client;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            client = battery_service_get_client_for_con_handle(con_handle);
+            if (client){
+                // finalize
+                uint16_t cid = client->cid;
+                battery_service_finalize_client(client);
+                // TODO: emit disconnected event
+                UNUSED(cid);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 uint8_t battery_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, uint32_t poll_interval_ms, uint16_t * battery_service_cid){
     btstack_assert(packet_handler != NULL);
     
@@ -603,7 +629,10 @@ uint8_t battery_service_client_read_battery_level(uint16_t battery_service_cid, 
     return ERROR_CODE_SUCCESS;
 }
 
-void battery_service_client_init(void){}
+void battery_service_client_init(void){
+    hci_event_callback_registration.callback = &handle_hci_event;
+    hci_add_event_handler(&hci_event_callback_registration);
+}
 
 void battery_service_client_deinit(void){
     battery_service_cid_counter = 0;
