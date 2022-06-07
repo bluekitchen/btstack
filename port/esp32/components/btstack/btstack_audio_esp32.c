@@ -52,22 +52,30 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+
+#include "driver/gpio.h"
 #include "driver/i2s.h"
+
 #include <string.h>
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
 #include "driver/i2c.h"
-#include "driver/gpio.h"
 #include "es8388.h"
 #define IIC_DATA                    (GPIO_NUM_18)
 #define IIC_CLK                     (GPIO_NUM_23)
 #endif
 
+#if CONFIG_IDF_TARGET_ESP32C3
+#define BTSTACK_AUDIO_I2S_BCK GPIO_NUM_2
+#define BTSTACK_AUDIO_I2S_WS  GPIO_NUM_8
+#define BTSTACK_AUDIO_I2S_OUT GPIO_NUM_9
+#define BTSTACK_AUDIO_I2S_IN  GPIO_NUM_10
+#else
 #define BTSTACK_AUDIO_I2S_BCK GPIO_NUM_5
 #define BTSTACK_AUDIO_I2S_WS  GPIO_NUM_25
 #define BTSTACK_AUDIO_I2S_OUT GPIO_NUM_26
 #define BTSTACK_AUDIO_I2S_IN  GPIO_NUM_35
-
+#endif
 
 // prototypes
 static void btstack_audio_esp32_sink_fill_buffer(void);
