@@ -21,7 +21,7 @@
 #include "bluetooth_gatt.h"
 
 #include "ble/gatt-service/tx_power_service_server.h"
-#include "tx_power_service_profile.h"
+#include "tx_power_service_server_test.h"
 #include "mock_att_server.h"
 
 static int8_t tx_power_level = 100;

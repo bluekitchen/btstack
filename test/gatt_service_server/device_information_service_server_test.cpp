@@ -21,7 +21,7 @@
 #include "bluetooth_gatt.h"
 
 #include "ble/gatt-service/device_information_service_server.h"
-#include "device_information_service_profile.h"
+#include "device_information_service_server_test.h"
 #include "mock_att_server.h"
 
 typedef struct {

@@ -19,7 +19,7 @@ SUBDIRS =  \
 	gatt-service-client \
 	gatt_client \
 	gatt_server \
-	gatt_service \
+	gatt_service_server \
 	hfp \
 	hid_parser \
 	l2cap-cbm \
@@ -57,8 +57,7 @@ SUBDIRS_BLE = \
 	gatt-service-client \
 	gatt_client \
 	gatt_server \
-	gatt_server \
-	gatt_service \
+	gatt_service_server \
 	hid_parser \
 	l2cap-cbm \
 	le_device_db_tlv \

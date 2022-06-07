@@ -22,7 +22,7 @@
 #include "bluetooth_gatt.h"
 #include "ble/le_device_db.h"
 #include "ble/gatt-service/bond_management_service_server.h"
-#include "bond_management_service_profile.h"
+#include "bond_management_service_server_test.h"
 #include "mock_att_server.h"
 
 static uint32_t bond_management_features = 0xFFFFFF;
