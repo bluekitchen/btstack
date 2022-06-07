@@ -63,6 +63,12 @@
 #define IIC_CLK                     (GPIO_NUM_23)
 #endif
 
+#define BTSTACK_AUDIO_I2S_BCK GPIO_NUM_5
+#define BTSTACK_AUDIO_I2S_WS  GPIO_NUM_25
+#define BTSTACK_AUDIO_I2S_OUT GPIO_NUM_26
+#define BTSTACK_AUDIO_I2S_IN  GPIO_NUM_35
+
+
 // prototypes
 static void btstack_audio_esp32_sink_fill_buffer(void);
 static void btstack_audio_esp32_source_process_buffer(void);
@@ -200,7 +206,7 @@ static void btstack_audio_esp32_init(void){
 
     if (btstack_audio_esp32_sink_state != BTSTACK_AUDIO_ESP32_OFF){
         i2s_mode |= I2S_MODE_TX; // playback
-        i2s_data_out_pin = GPIO_NUM_26;
+        i2s_data_out_pin = BTSTACK_AUDIO_I2S_OUT;
         if (btstack_audio_esp32_i2s_samplerate != 0){
             btstack_assert(btstack_audio_esp32_i2s_samplerate == btstack_audio_esp32_sink_samplerate);
         }
@@ -209,7 +215,7 @@ static void btstack_audio_esp32_init(void){
 
     if (btstack_audio_esp32_source_state != BTSTACK_AUDIO_ESP32_OFF){
         i2s_mode |= I2S_MODE_RX; // recording
-        i2s_data_in_pin = GPIO_NUM_35;
+        i2s_data_in_pin = BTSTACK_AUDIO_I2S_OUT;
         if (btstack_audio_esp32_i2s_samplerate != 0){
             btstack_assert(btstack_audio_esp32_i2s_samplerate == btstack_audio_esp32_source_samplerate);
         }
@@ -231,8 +237,8 @@ static void btstack_audio_esp32_init(void){
 
     i2s_pin_config_t pins =
     {
-        .bck_io_num           = GPIO_NUM_5,
-        .ws_io_num            = GPIO_NUM_25,
+        .bck_io_num           = BTSTACK_AUDIO_I2S_BCK,
+        .ws_io_num            = BTSTACK_AUDIO_I2S_WS,
         .data_out_num         = i2s_data_out_pin,
         .data_in_num          = i2s_data_in_pin
     };
