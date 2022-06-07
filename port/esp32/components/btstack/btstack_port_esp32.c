@@ -241,7 +241,6 @@ static int transport_open(void){
             return -1;
         }
 
-        esp_vhci_host_register_callback(&vhci_host_cb);
     }
 
     // Enable classic mode by default
@@ -260,6 +259,8 @@ static int transport_open(void){
         log_error("transport: esp_bt_controller_enable failed");
         return -1;
     }
+
+    esp_vhci_host_register_callback(&vhci_host_cb);
 
     return 0;
 }
