@@ -8066,7 +8066,7 @@ uint16_t hci_get_sco_packet_length(void){
         // 3 byte SCO header + SCO packet size over the air (60 bytes)
         sco_packet_length = 3 + 60 * multiplier;
         // assert that it still fits inside an SCO buffer
-        if (sco_packet_length > hci_stack->sco_data_packet_length){
+        if (sco_packet_length > (hci_stack->sco_data_packet_length + 3)){
             sco_packet_length = 3 + 60;
         }
     }
