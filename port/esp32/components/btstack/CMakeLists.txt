@@ -34,12 +34,15 @@ set(src_dirs "3rd-party/bluedroid/decoder/srce"
              "3rd-party/lwip/dhcp-server"
              "src/ble/gatt-service"
              "src/ble"
-             "src/classic"
              "src/mesh"
              "src/"
              "platform/freertos"
              "platform/lwip"
              ".")
+
+if(CONFIG_IDF_TARGET_ESP32)
+        list(APPEND src_dirs "src/classic")
+endif()
 
 set(priv_include_dirs
         "3rd-party/micro-ecc"

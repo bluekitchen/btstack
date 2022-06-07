@@ -40,11 +40,14 @@ COMPONENT_SRCDIRS := \
 	3rd-party/md5 \
 	src/ble/gatt-service \
 	src/ble \
-	src/classic \
 	src/mesh \
 	src/ \
 	platform/freertos \
 	platform/lwip \
 	. \
+
+ifdef CONFIG_IDF_TARGET_ESP32
+	COMPONENT_SRCDIRS += src/classic 
+endif
 
 CFLAGS += -Wno-format
