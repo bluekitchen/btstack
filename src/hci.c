@@ -7887,7 +7887,7 @@ int gap_pin_code_response_binary(const bd_addr_t addr, const uint8_t * pin_data,
  * @return 0 if ok
  */
 int gap_pin_code_response(const bd_addr_t addr, const char * pin){
-    return gap_pin_code_response_binary(addr, (const uint8_t*) pin, strlen(pin));
+    return gap_pin_code_response_binary(addr, (const uint8_t*) pin, (uint8_t) strlen(pin));
 }
 
 /**

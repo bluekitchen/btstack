@@ -945,7 +945,7 @@ typedef struct {
     const uint8_t *    eir_data;
     uint32_t           class_of_device;
     bd_addr_t          local_bd_addr;
-    uint8_t            default_link_policy_settings;
+    uint16_t           default_link_policy_settings;
     uint8_t            allow_role_switch;
     uint8_t            ssp_enable;
     uint8_t            ssp_io_capability;
