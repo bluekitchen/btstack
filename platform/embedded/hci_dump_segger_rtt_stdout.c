@@ -165,7 +165,8 @@ static void hci_dump_segger_rtt_stdout_log_packet(uint8_t packet_type, uint8_t i
     hci_dump_segger_rtt_stdout_packet(packet_type, in, packet, len);
 }
 
-static void hci_dump_segger_rtt_stdout_log_message(const char * format, va_list argptr){
+static void hci_dump_segger_rtt_stdout_log_message(int log_level, const char * format, va_list argptr){
+    UNUSED(log_level);
 #if SEGGER_RTT_MODE_DEFAULT != SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL
     // to avoid using snprintf for this, we cheat and assume that the messages is less then HCI_DUMP_MAX_MESSAGE_LEN
     bool ready = hci_dump_segger_prepare_message(HCI_DUMP_MAX_MESSAGE_LEN);

@@ -121,7 +121,8 @@ static void hci_dump_segger_rtt_binary_log_packet(uint8_t packet_type, uint8_t i
     SEGGER_RTT_Write(SEGGER_RTT_PACKETLOG_CHANNEL, packet, len);
 }
 
-static void hci_dump_segger_rtt_binary_log_message(const char * format, va_list argptr){
+static void hci_dump_segger_rtt_binary_log_message(int log_level, const char * format, va_list argptr){
+    UNUSED(log_level);
     if (dump_format == HCI_DUMP_INVALID) return;
     int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
     hci_dump_segger_rtt_binary_log_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);

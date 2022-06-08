@@ -101,7 +101,7 @@ void hci_dump_log(int log_level, const char * format, ...){
 
     va_list argptr;
     va_start(argptr, format);
-    (*hci_dump_implementation->log_message)(format, argptr);
+    (*hci_dump_implementation->log_message)(log_level, format, argptr);
     va_end(argptr);
 }
 
@@ -111,7 +111,7 @@ void hci_dump_log_P(int log_level, PGM_P format, ...){
 
     va_list argptr;
     va_start(argptr, format);
-    (*hci_dump_implementation->log_message_P)(format, argptr);
+    (*hci_dump_implementation->log_message_P)(log_level, format, argptr);
     va_end(argptr);
 }
 #endif
