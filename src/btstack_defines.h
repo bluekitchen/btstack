@@ -135,6 +135,9 @@ typedef uint8_t sm_key_t[16];
 // OPP data
 #define OPP_DATA_PACKET          0x14u
 
+// OPP data
+#define OPP_DATA_PACKET          0x14u
+
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfcu
 
