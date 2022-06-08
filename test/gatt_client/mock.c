@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "hci.h"
@@ -8,18 +7,17 @@
 #include "l2cap.h"
 
 #include "ble/att_db.h"
-#include "ble/gatt_client.h"
 #include "ble/sm.h"
 #include "gap.h"
 
 #define PREBUFFER_SIZE (HCI_INCOMING_PRE_BUFFER_SIZE + 8)
+#define TEST_MAX_MTU 23
 
 static btstack_packet_handler_t att_packet_handler;
 static void (*registered_hci_event_handler) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = NULL;
 
 static btstack_linked_list_t     connections;
-static const uint16_t max_mtu = 23;
-static uint8_t  l2cap_stack_buffer[PREBUFFER_SIZE + max_mtu];	// pre buffer + HCI Header + L2CAP header
+static uint8_t  l2cap_stack_buffer[PREBUFFER_SIZE + TEST_MAX_MTU];	// pre buffer + HCI Header + L2CAP header
 static uint16_t gatt_client_handle = 0x40;
 static hci_connection_t hci_connection;
 
@@ -73,8 +71,8 @@ int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
 }
 
 static void att_init_connection(att_connection_t * att_connection){
-    att_connection->mtu = 23;
-    att_connection->max_mtu = 23;
+    att_connection->mtu = TEST_MAX_MTU;
+    att_connection->max_mtu = TEST_MAX_MTU;
     att_connection->encryption_key_size = 0;
     att_connection->authenticated = 0;
 	att_connection->authorized = 0;
@@ -93,13 +91,11 @@ uint8_t *l2cap_get_outgoing_buffer(void){
 }
 
 uint16_t l2cap_max_mtu(void){
-	// printf("l2cap_max_mtu\n");
-    return max_mtu;
+    return TEST_MAX_MTU;
 }
 
 uint16_t l2cap_max_le_mtu(void){
-	// printf("l2cap_max_mtu\n");
-    return max_mtu;
+    return TEST_MAX_MTU;
 }
 
 void l2cap_init(void){}
@@ -128,7 +124,7 @@ void l2cap_request_can_send_fix_channel_now_event(uint16_t handle, uint16_t chan
 uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
 	att_connection_t att_connection;
 	att_init_connection(&att_connection);
-	uint8_t response_buffer[PREBUFFER_SIZE + max_mtu];
+	uint8_t response_buffer[PREBUFFER_SIZE + TEST_MAX_MTU];
 	uint8_t * response = &response_buffer[PREBUFFER_SIZE];
 	uint16_t response_len = att_handle_request(&att_connection, l2cap_get_outgoing_buffer(), len, response);
 	if (response_len){
