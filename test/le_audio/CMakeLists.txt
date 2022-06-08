@@ -128,10 +128,6 @@ set(SOURCES
 )
 list(SORT SOURCES)
 
-# Enable ASAN
-add_compile_options( -g -fsanitize=address)
-add_link_options(       -fsanitize=address)
-
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
@@ -158,5 +154,5 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 		message("LE Audio Tool: ${EXAMPLE}")
 	endif()
 	add_executable(${EXAMPLE} ${EXAMPLE_FILE} )
-	target_link_libraries(${EXAMPLE} btstack)
+	target_link_libraries(${EXAMPLE} btstack m pthread)
 endforeach(EXAMPLE_FILE)

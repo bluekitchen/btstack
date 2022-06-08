@@ -74,7 +74,7 @@
 #define MAX_NUM_BIS 2
 #define MAX_SAMPLES_PER_FRAME 480
 
-#define DUMP_LEN_LC3_FRAMES 1000
+#define DUMP_LEN_LC3_FRAMES 10000
 
 // playback
 #define MAX_NUM_LC3_FRAMES   5
@@ -127,6 +127,8 @@ static bd_addr_type_t remote_type;
 static uint8_t remote_sid;
 static bool count_mode;
 static bool pts_mode;
+static bool nrf5340_audio_demo;
+
 
 // broadcast info
 static const uint8_t    big_handle = 1;
@@ -231,6 +233,20 @@ static void close_files(void){
 }
 
 static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size){
+    // nRF534_audio quirk - no BASE in periodic advertisement
+    if (nrf5340_audio_demo){
+        // hard coded config LC3
+        // default: mono bitrate 96000, 10 ms with USB audio source, 120 octets per frame
+        count_mode = 0;
+        pts_mode   = 0;
+        num_bis    = 1;
+        sampling_frequency_hz = 48000;
+        frame_duration = BTSTACK_LC3_FRAME_DURATION_10000US;
+        octets_per_frame = 120;
+        have_base = true;
+        return;
+    }
+
     // periodic advertisement contains the BASE
     // TODO: BASE might be split across multiple advertisements
     const uint8_t * adv_data = hci_subevent_le_periodic_advertising_report_get_data(packet);
@@ -423,6 +439,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         size = btstack_min(sizeof(remote_name) - 1, size);
                         memcpy(remote_name, data, size);
                         remote_name[size] = 0;
+                        // support for nRF5340 Audio DK
+                        if (strncmp("NRF5340", remote_name, 7) == 0){
+                            nrf5340_audio_demo = true;
+                            found = true;
+                        }
                         break;
                     default:
                         break;
@@ -622,7 +643,7 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         frames_per_second[bis_channel]++;
 
         uint32_t time_ms = btstack_run_loop_get_time_ms();
-        if (btstack_time_delta(time_ms, last_samples_report_ms) > 1000){
+        if (btstack_time_delta(time_ms, last_samples_report_ms) >= 1000){
             last_samples_report_ms = time_ms;
             printf("LC3 Frames: %4u - ", lc3_frames / num_bis);
             uint8_t i;
