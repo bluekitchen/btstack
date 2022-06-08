@@ -396,6 +396,10 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 
+    gap_discoverable_control(1);
+    gap_set_class_of_device(0x200408);
+    gap_set_local_name("PBAP Server Demo 00:00:00:00:00:00");
+
     // init L2CAP
     l2cap_init();
 
