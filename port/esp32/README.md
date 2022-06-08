@@ -18,27 +18,39 @@ The script will copy parts of the BTstack tree into the ESP-IDF as $IDF_PATH/com
 
 Each example project folder, e.g. port/esp32/examples/spp_and_le_counter, contains a Makefile. Please run the command again after updating the BTstack tree (e.g. by git pull) to also update the copy in the ESP-IDF.
 
+The examples are configure for the original ESP32. IF you want to use the newer ESP32-C3 or ESP32-S3 - both only support Bluetooth LE - you need to:
+1. set target:
+
+    `idf.py set-target esp32c3`
+
+    or 
+
+    `idf.py set-target esp32s3`
+
+2. re-enable Bluetooth Controller via menuconfig
+   
+   1. `idf.py menuconfig`
+   2. select `Component Config`
+   3. select `Bluetooth` and enable
+   4. select `Bluetooth Host`
+   5. select `Controller Only`
+   6. exit and save config
+
 To compile an example, run:
 
-	make
+    idf.py
 
 
 To upload the binary to your device, run:
 
-	make flash
+	idf.py -p PATH-TO-DEVICE flash
 
 
-To get the debug output, run:
+To get debug output, run:
 
-	make monitor
+	idf.py monitor
 
 You can quit the monitor with CTRL-].
-
-## Old Make Versions
-
-Compilation fails with older versions of the make tool, e.g. make 3.8.1 (from 2006) provided by the current Xcode 9 on macOS or Ubuntu 14.04.1 LTS.
-
-Interestingly, if you run make a second time, it completes the compilation.
 
 ## Configuration
 
