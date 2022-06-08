@@ -3041,7 +3041,7 @@ static void l2cap_register_signaling_response(hci_con_handle_t handle, uint8_t c
 }
 
 #ifdef ENABLE_CLASSIC
-static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t identifier){
+static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint8_t identifier){
     switch (channel->state){
         case L2CAP_STATE_CONFIG:
         case L2CAP_STATE_OPEN:
@@ -3274,7 +3274,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
 }
 
 // @pre command len is valid, see check in l2cap_signaling_handler_channel
-static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, uint8_t result, uint8_t *command){
+static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, uint16_t result, uint8_t *command){
     log_info("l2cap_signaling_handle_configure_response");
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     uint16_t end_pos = 4 + little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
