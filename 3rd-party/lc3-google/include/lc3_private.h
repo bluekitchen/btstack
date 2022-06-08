@@ -99,16 +99,22 @@ typedef struct lc3_spec_analysis {
     int nbits_spare;
 } lc3_spec_analysis_t;
 
+// BK: to avoid C2229 on MSVC due to zero-sized array not being the last element in struct when
+//     LC3_ENCODER_MEM_T is used, we define the struct with the help of a macro
+
+#define LC3_ENCODER_FIELDS(SAMPLES) \
+    enum lc3_dt dt;                 \
+    enum lc3_srate sr, sr_pcm;      \
+                                    \
+    lc3_attdet_analysis_t attdet;   \
+    lc3_ltpf_analysis_t ltpf;       \
+    lc3_spec_analysis_t spec;       \
+                                    \
+    int16_t *xt;                    \
+    float *xs, *xd, s[SAMPLES];
+
 struct lc3_encoder {
-    enum lc3_dt dt;
-    enum lc3_srate sr, sr_pcm;
-
-    lc3_attdet_analysis_t attdet;
-    lc3_ltpf_analysis_t ltpf;
-    lc3_spec_analysis_t spec;
-
-    int16_t *xt;
-    float *xs, *xd, s[0];
+    LC3_ENCODER_FIELDS(0)
 };
 
 #define LC3_ENCODER_BUFFER_COUNT(dt_us, sr_hz) \
@@ -116,9 +122,8 @@ struct lc3_encoder {
         __LC3_NS(dt_us, sr_hz) + __LC3_ND(dt_us, sr_hz) )
 
 #define LC3_ENCODER_MEM_T(dt_us, sr_hz) \
-    struct { \
-        struct lc3_encoder __e; \
-        float __s[LC3_ENCODER_BUFFER_COUNT(dt_us, sr_hz)]; \
+    struct {                            \
+        LC3_ENCODER_FIELDS( LC3_ENCODER_BUFFER_COUNT(dt_us, sr_hz) ) \
     }
 
 
@@ -138,14 +143,20 @@ typedef struct lc3_plc_state {
     float alpha;
 } lc3_plc_state_t;
 
+// BK: to avoid C2229 on MSVC due to zero-sized array not being the last element in struct when
+//     LC3_ENCODER_MEM_T is used, we define the struct with the help of a macro
+
+#define LC3_DECODER_FIELDS(SAMPLES)         \
+    enum lc3_dt dt;                         \
+    enum lc3_srate sr, sr_pcm;              \
+                                            \
+    lc3_ltpf_synthesis_t ltpf;              \
+    lc3_plc_state_t plc;                    \
+                                            \
+    float *xh, *xs, *xd, *xg, s[SAMPLES];
+
 struct lc3_decoder {
-    enum lc3_dt dt;
-    enum lc3_srate sr, sr_pcm;
-
-    lc3_ltpf_synthesis_t ltpf;
-    lc3_plc_state_t plc;
-
-    float *xh, *xs, *xd, *xg, s[0];
+    LC3_DECODER_FIELDS(0)
 };
 
 #define LC3_DECODER_BUFFER_COUNT(dt_us, sr_hz) \
@@ -154,8 +165,7 @@ struct lc3_decoder {
 
 #define LC3_DECODER_MEM_T(dt_us, sr_hz) \
     struct { \
-        struct lc3_decoder __d; \
-        float __s[LC3_DECODER_BUFFER_COUNT(dt_us, sr_hz)]; \
+        LC3_DECODER_FIELDS(LC3_DECODER_BUFFER_COUNT(dt_us, sr_hz)) \
     }
 
 
