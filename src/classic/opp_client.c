@@ -187,6 +187,10 @@ static void opp_client_parser_callback_get_operation(void * user_data, uint8_t h
         case OBEX_HEADER_BODY:
         case OBEX_HEADER_END_OF_BODY:
             switch(opp_client->state){
+                case 0:
+                    client->client_handler(OPP_DATA_PACKET, client->cid, (uint8_t *) data_buffer, data_len);
+                    break;
+
                 default:
                     btstack_unreachable();
                     break;
