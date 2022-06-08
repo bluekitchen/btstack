@@ -132,6 +132,9 @@ typedef uint8_t sm_key_t[16];
 // Mesh Network PDU
 #define MESH_BEACON_PACKET       0x14u
 
+// OPP data
+#define OPP_DATA_PACKET          0x14u
+
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfcu
 
@@ -1918,6 +1921,7 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_MAP_META                                       0xF4u
 #define HCI_EVENT_MESH_META                                      0xF5u
 #define HCI_EVENT_LEAUDIO_META                                   0xF6u
+#define HCI_EVENT_OPP_META                                       0xF7u
 
 // Potential other meta groups
 // #define HCI_EVENT_BNEP_META                                0xxx
@@ -3788,6 +3792,65 @@ typedef uint8_t sm_key_t[16];
  * @param name
  */
 #define PBAP_SUBEVENT_PULL_VCARD_ENTRY                                     0x0Eu
+
+
+// OPP Meta Event Group
+
+/**
+ * @format 121BH1
+ * @param subevent_code
+ * @param opp_cid
+ * @param status
+ * @param bd_addr
+ * @param con_handle
+ * @param incoming
+ */
+#define OPP_SUBEVENT_CONNECTION_OPENED                                     0x01u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param opp_cid
+*/
+#define OPP_SUBEVENT_CONNECTION_CLOSED                                     0x02u
+
+/**
+ * @format 1242
+ * @param subevent_code
+ * @param opp_cid
+ * @param position
+ * @param buffer_size
+ */
+#define OPP_SUBEVENT_PUSH_OBJECT_DATA                                      0x03u
+
+/**
+ * @format 124JVJV
+ * @param subevent_code
+ * @param opp_cid
+ * @param object_size
+ * @param name_len
+ * @param name
+ * @param type_len
+ * @param type
+ */
+#define OPP_SUBEVENT_PUSH_OBJECT                                           0x04u
+
+/**
+ * @format 1242
+ * @param subevent_code
+ * @param opp_cid
+ * @param position
+ * @param buffer_size
+ */
+#define OPP_SUBEVENT_PULL_DEFAULT_OBJECT                                   0x05u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param opp_cid
+ * @param status
+ */
+#define OPP_SUBEVENT_OPERATION_COMPLETED                                   0x06u
 
 
 // HID Meta Event Group
