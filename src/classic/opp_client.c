@@ -55,6 +55,7 @@
 
 #include "classic/obex.h"
 #include "classic/obex_parser.h"
+#include "classic/obex_iterator.h"
 #include "classic/goep_client.h"
 #include "classic/opp_client.h"
 
@@ -72,9 +73,11 @@ typedef enum {
     // pull default object
     OPP_W2_GET_DEFAULT_OBJECT,
     OPP_W4_GET_DEFAULT_OBJECT,
+    // push object
+    OPP_W2_PUT_OBJECT,
+    OPP_W4_PUT_OBJECT,
     // abort operation
     OPP_W4_ABORT_COMPLETE,
-
 } opp_state_t;
 
 typedef enum {
@@ -104,6 +107,11 @@ typedef struct opp_client {
     bool obex_parser_waiting_for_response;
     obex_parser_t obex_parser;
     uint8_t obex_header_buffer[4];
+    /* object put */
+    char     *object_name;
+    char     *object_type;
+    uint8_t  *object_data;
+    uint32_t  object_size;
     /* srm */
     obex_srm_t obex_srm;
     srm_state_t srm_state;
@@ -216,6 +224,12 @@ static void opp_client_prepare_get_operation(opp_client_t * client){
     client->obex_parser_waiting_for_response = true;
 }
 
+static void opp_client_prepare_put_operation(opp_client_t * client){
+    obex_parser_init_for_response(&client->obex_parser, OBEX_OPCODE_PUT, opp_client_parser_callback_get_operation, opp_client);
+    obex_srm_init(&client->obex_srm);
+    client->obex_parser_waiting_for_response = true;
+}
+
 static void opp_handle_can_send_now(void){
     if (opp_client->abort_operation){
         opp_client->abort_operation = 0;
@@ -258,6 +272,24 @@ static void opp_handle_can_send_now(void){
             // send packet
             goep_client_execute(opp_client->goep_cid);
             return;
+
+        case OPP_W2_PUT_OBJECT:
+            // prepare request
+            goep_client_request_create_put(opp_client->goep_cid);
+            if (opp_client->request_number == 0){
+                goep_client_header_add_name(opp_client->goep_cid, opp_client->object_name);
+                goep_client_header_add_type(opp_client->goep_cid, opp_client->object_type);
+                goep_client_header_add_length(opp_client->goep_cid, opp_client->object_size);
+
+                goep_client_body_add_static (opp_client->goep_cid, opp_client->object_data, opp_client->object_size);
+            }
+            // state
+            opp_client->state = OPP_W4_PUT_OBJECT;
+            opp_client_prepare_put_operation(opp_client);
+            // send packet
+            opp_client->request_number++;
+            goep_client_execute(opp_client->goep_cid);
+            break;
 
         case OPP_W2_GET_DEFAULT_OBJECT:
             // prepare request
@@ -360,6 +392,8 @@ static void opp_packet_handler_hci(uint8_t *packet, uint16_t size){
 }
 
 static void opp_packet_handler_goep(uint8_t *packet, uint16_t size){
+    obex_iterator_t it;
+
     if (opp_client->obex_parser_waiting_for_response == false) return;
 
     obex_parser_object_state_t parser_state;
@@ -383,6 +417,25 @@ static void opp_packet_handler_goep(uint8_t *packet, uint16_t size){
                 break;
             case OPP_W4_DISCONNECT_RESPONSE:
                 goep_client_disconnect(opp_client->goep_cid);
+                break;
+            case OPP_W4_PUT_OBJECT:
+                opp_client->state = OPP_CONNECTED;
+                printf("Message:\n");
+                for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(opp_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
+                        uint8_t hi = obex_iterator_get_hi(&it);
+                        //uint16_t     data_len = obex_iterator_get_data_len(&it);
+                        const uint8_t  * data = obex_iterator_get_data(&it);
+                        switch (hi){
+                            case OBEX_HEADER_BODY:
+                            case OBEX_HEADER_END_OF_BODY:
+                                printf("%s\n", data);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    printf("\n");
+
                 break;
             case OPP_W4_GET_DEFAULT_OBJECT:
                 switch (op_info.response_code) {
@@ -472,6 +525,27 @@ uint8_t opp_disconnect(uint16_t opp_cid){
         return BTSTACK_BUSY;
     }
     opp_client->state = OPP_W2_SEND_DISCONNECT_REQUEST;
+    goep_client_request_can_send_now(opp_client->goep_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t opp_push_object(uint16_t opp_cid,
+                        char     *name,
+                        char     *type,
+                        uint8_t  *data,
+                        uint32_t  size)
+{
+    UNUSED(opp_cid);
+    if (opp_client->state != OPP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+    opp_client->object_name = name;
+    opp_client->object_type = type;
+    opp_client->object_data = data;
+    opp_client->object_size = size;
+
+    opp_client->state = OPP_W2_PUT_OBJECT;
+    opp_client->request_number = 0;
     goep_client_request_can_send_now(opp_client->goep_cid);
     return ERROR_CODE_SUCCESS;
 }
