@@ -307,7 +307,7 @@ static int hfp_ag_indicators_cmd_generator_num_segments(hfp_connection_t * hfp_c
 // get size of individual segment for hfp_ag_retrieve_indicators_cmd
 static int hfp_ag_indicators_cmd_generator_get_segment_len(hfp_connection_t * hfp_connection, int index){
     if (index == 0) {
-        return strlen(HFP_INDICATOR) + 3;   // "\n\r%s:""
+        return (uint16_t) strlen(HFP_INDICATOR) + 3;   // "\n\r%s:""
     }
     index--;
     int num_indicators = hfp_ag_get_ag_indicators_nr(hfp_connection);
@@ -325,7 +325,7 @@ static void hfp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * hfp
     if (index == 0){
         *buffer++ = '\r';
         *buffer++ = '\n';
-        int len = strlen(HFP_INDICATOR);
+        int len = (uint16_t) strlen(HFP_INDICATOR);
         (void)memcpy(buffer, HFP_INDICATOR, len);
         buffer += len;
         *buffer++ = ':';
@@ -2583,7 +2583,7 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
 }
 
 
-void hfp_ag_init(uint16_t rfcomm_channel_nr){
+void hfp_ag_init(uint8_t rfcomm_channel_nr){
 
     hfp_init();
     hfp_ag_call_hold_services_nr = 0;
@@ -3006,7 +3006,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
-    uint16_t message_len = strlen(msg.text);
+    uint16_t message_len = (uint16_t) strlen(msg.text);
 
     if (message_len > HFP_MAX_VR_TEXT_SIZE){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;

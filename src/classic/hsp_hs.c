@@ -202,7 +202,7 @@ static void emit_event_audio_disconnected(uint16_t sco_handle){
 
 static int hsp_hs_send_str_over_rfcomm(uint16_t cid, const char * command){
     if (!rfcomm_can_send_packet_now(hsp_hs_rfcomm_cid)) return 1;
-    int err = rfcomm_send(cid, (uint8_t*) command, strlen(command));
+    int err = rfcomm_send(cid, (uint8_t*) command, (uint16_t) strlen(command));
     if (err){
         log_info("rfcomm_send_internal -> error 0X%02x", err);
     }
@@ -281,9 +281,9 @@ void hsp_hs_create_sdp_record(uint8_t * service,  uint32_t service_record_handle
     // 0x0100 "Service Name"
     de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
     if (name){
-        de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
     } else {
-        de_add_data(service, DE_STRING, strlen(hsp_hs_default_service_name), (uint8_t *) hsp_hs_default_service_name);
+        de_add_data(service, DE_STRING, (uint16_t) strlen(hsp_hs_default_service_name), (uint8_t *) hsp_hs_default_service_name);
     }
     
     // Remote audio volume control
@@ -550,15 +550,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             while ((size > 0) && ((packet[size-1] == '\n') || (packet[size-1] == '\r'))){
                 size--;
             }
+			if ((size + 4) > 255) return;
             // add trailing \0
             packet[size] = 0;
             // re-use incoming buffer to avoid reserving buffers/memcpy - ugly but efficient
             uint8_t * event = packet - 6;
             event[0] = HCI_EVENT_HSP_META;
-            event[1] = size + 4;
+            event[1] = (uint8_t) (size + 4);
             event[2] = HSP_SUBEVENT_AG_INDICATION;
             little_endian_store_16(event, 3, hsp_hs_rfcomm_handle);
-            event[5] = size;
+            event[5] = (uint8_t) size;
             (*hsp_hs_callback)(HCI_EVENT_PACKET, 0, event, size+6);
         }
         hsp_run();

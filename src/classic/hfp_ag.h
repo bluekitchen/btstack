@@ -73,7 +73,7 @@ void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
  * @brief Set up HFP Audio Gateway (AG) device without additional supported features.
  * @param rfcomm_channel_nr
  */
-void hfp_ag_init(uint16_t rfcomm_channel_nr);
+void hfp_ag_init(uint8_t rfcomm_channel_nr);
 
 /**
  * @brief Set codecs. 

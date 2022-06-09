@@ -260,14 +260,14 @@ void hsp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
     // 0x0100 "Service Name"
     de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
     if (name){
-        de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
     } else {
-        de_add_data(service, DE_STRING, strlen(hsp_ag_default_service_name), (uint8_t *) hsp_ag_default_service_name);
+        de_add_data(service, DE_STRING, (uint16_t) strlen(hsp_ag_default_service_name), (uint8_t *) hsp_ag_default_service_name);
     }
 }
 
 static int hsp_ag_send_str_over_rfcomm(const uint16_t cid, const char * command){
-    int err = rfcomm_send(cid, (uint8_t*) command, strlen(command));
+    int err = rfcomm_send(cid, (uint8_t*) command, (uint16_t) strlen(command));
     if (err){
         log_error("rfcomm_send_internal -> error 0X%02x", err);
         return err;
@@ -585,13 +585,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         } else if (strncmp((char *)packet, "AT+", 3) == 0){
             hsp_ag_send_error = 1;
             if (!hsp_ag_callback) return;
+			if ((size + 4) > 255) return;
             // re-use incoming buffer to avoid reserving buffers/memcpy - ugly but efficient
-            uint8_t * event = packet - 6;
+			uint8_t * event = packet - 6;
             event[0] = HCI_EVENT_HSP_META;
-            event[1] = size + 4;
+            event[1] = (uint8_t) (size + 4);
             event[2] = HSP_SUBEVENT_HS_COMMAND;
             little_endian_store_16(event, 3, hsp_ag_rfcomm_handle);
-            event[5] = size;
+            event[5] = (uint8_t) size;
             (*hsp_ag_callback)(HCI_EVENT_PACKET, 0, event, size+6);
         }
 

@@ -71,7 +71,7 @@ void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
  *                  - RFCOMM_SERVICE_ALREADY_REGISTERED or 
  *                  - BTSTACK_MEMORY_ALLOC_FAILED if allocation of any of RFCOMM or L2CAP services failed 
  */
-uint8_t hfp_hf_init(uint16_t rfcomm_channel_nr);
+uint8_t hfp_hf_init(uint8_t rfcomm_channel_nr);
 
 /**
  * @brief Set codecs. 

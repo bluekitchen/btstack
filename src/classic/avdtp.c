@@ -69,12 +69,12 @@ static uint16_t avdtp_sdp_query_context_avdtp_cid = 0;
 
 // registered stream endpoints
 static btstack_linked_list_t avdtp_stream_endpoints;
-static uint16_t avdtp_stream_endpoints_id_counter = 0;
+static uint8_t avdtp_stream_endpoints_id_counter = 0;
 
 static bool avdtp_l2cap_registered;
 
 static btstack_linked_list_t avdtp_connections;
-static uint16_t avdtp_transaction_id_counter = 0;
+static uint8_t avdtp_transaction_id_counter = 0;
 
 static int avdtp_record_id;
 static uint8_t avdtp_attribute_value[45];
@@ -227,7 +227,7 @@ static avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_signaling_cid(uin
     return NULL;
 }
 
-uint16_t avdtp_get_next_transaction_label(void){
+uint8_t avdtp_get_next_transaction_label(void){
     avdtp_transaction_id_counter++;
     if (avdtp_transaction_id_counter == 16){
         avdtp_transaction_id_counter = 1;
@@ -261,8 +261,9 @@ static uint16_t avdtp_get_next_cid(void){
     return avdtp_cid_counter;
 }
 
-static uint16_t avdtp_get_next_local_seid(void){
-    if (avdtp_stream_endpoints_id_counter == 0xffff) {
+// Stream Endpoint Identifier are 6-bit
+static uint8_t avdtp_get_next_local_seid(void){
+    if (avdtp_stream_endpoints_id_counter >= 0x3f) {
         avdtp_stream_endpoints_id_counter = 1;
     } else {
         avdtp_stream_endpoints_id_counter++;

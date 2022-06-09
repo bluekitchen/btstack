@@ -237,7 +237,7 @@ const char * hfp_ag_feature(int index){
 int send_str_over_rfcomm(uint16_t cid, char * command){
     if (!rfcomm_can_send_packet_now(cid)) return 1;
     log_info("HFP_TX %s", command);
-    int err = rfcomm_send(cid, (uint8_t*) command, strlen(command));
+    int err = rfcomm_send(cid, (uint8_t*) command, (uint16_t) strlen(command));
     if (err){
         log_error("rfcomm_send -> error 0x%02x \n", err);
     } 
@@ -473,7 +473,7 @@ void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subt
 #else
     uint8_t event[40];
 #endif
-    uint16_t string_len = btstack_min(strlen(value), sizeof(event) - 6);
+    uint16_t string_len = btstack_min((uint16_t) strlen(value), sizeof(event) - 6);
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 4 + string_len;
     event[2] = event_subtype;
@@ -699,7 +699,7 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
 
     // 0x0100 "Service Name"
     de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-    de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
+    de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
 }
 
 static void hfp_handle_slc_setup_error(hfp_connection_t * hfp_connection, uint8_t status){
@@ -1583,7 +1583,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             break;
         case HFP_CMD_AVAILABLE_CODECS:
             log_info("Parsed codec %s\n", hfp_connection->line_buffer);
-            hfp_connection->remote_codecs[hfp_connection->parser_item_index] = (uint16_t)btstack_atoi((char*)hfp_connection->line_buffer);
+            hfp_connection->remote_codecs[hfp_connection->parser_item_index] = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
             hfp_next_codec_index(hfp_connection);
             hfp_connection->remote_codecs_nr = hfp_connection->parser_item_index;
             break;

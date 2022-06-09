@@ -707,7 +707,7 @@ static void avdtp_signaling_emit_media_codec_atrac_capability(uint16_t avdtp_cid
 
     uint8_t  version                   =  media_codec_information[0] >> 5;
     uint8_t  channel_mode_bitmap       = (media_codec_information[0] >> 2) & 0x07;
-    uint16_t sampling_frequency_bitmap = (media_codec_information[1] >> 4) & 0x03;
+    uint8_t sampling_frequency_bitmap = (media_codec_information[1] >> 4) & 0x03;
     uint8_t  vbr                       = (media_codec_information[1] >> 3) & 0x01;
     uint16_t bit_rate_index_bitmap     = ((media_codec_information[1]) & 0x07) << 16 | (media_codec_information[2] << 8) | media_codec_information[3];
     uint16_t maximum_sul               = (media_codec_information[4] << 8) | media_codec_information[5];

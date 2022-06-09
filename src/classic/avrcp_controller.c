@@ -123,7 +123,7 @@ static int avrcp_controller_supports_browsing(uint16_t controller_supported_feat
     return controller_supported_features & AVRCP_FEATURE_MASK_BROWSING;
 }
 
-static void avrcp_controller_prepare_custom_command_response(avrcp_connection_t * connection, uint8_t response_len, uint8_t * in_place_buffer){
+static void avrcp_controller_prepare_custom_command_response(avrcp_connection_t * connection, uint16_t response_len, uint8_t * in_place_buffer){
     uint8_t pos = 0;
     in_place_buffer[pos++] = HCI_EVENT_AVRCP_META;
     // skip len
@@ -381,12 +381,12 @@ static void avrcp_controller_emit_now_playing_info_event_done(btstack_packet_han
 
 static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t ctype, avrcp_media_attribute_id_t attr_id, uint8_t * value, uint16_t value_len){
     uint8_t event[HCI_EVENT_BUFFER_SIZE];
-    int pos = 0;
+    uint16_t pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     // reserve one byte for subevent type and data len
-    int data_len_pos = pos;
+	uint16_t data_len_pos = pos;
     pos++;
-    int subevent_type_pos = pos;
+	uint16_t subevent_type_pos = pos;
     pos++;
     little_endian_store_16(event, pos, avrcp_cid);
     pos += 2;
@@ -395,22 +395,26 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
     switch (attr_id){
         case AVRCP_MEDIA_ATTR_TITLE:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO;
-            event[pos++] = value_len;
+			btstack_assert(value_len <= 255);
+            event[pos++] = (uint8_t) value_len;
             (void)memcpy(event + pos, value, value_len);
             break;
         case AVRCP_MEDIA_ATTR_ARTIST:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO;
-            event[pos++] = value_len;
+			btstack_assert(value_len <= 255);
+			event[pos++] = (uint8_t) value_len;
             (void)memcpy(event + pos, value, value_len);
             break;
         case AVRCP_MEDIA_ATTR_ALBUM:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO;
-            event[pos++] = value_len;
+			btstack_assert(value_len <= 255);
+			event[pos++] = (uint8_t) value_len;
             (void)memcpy(event + pos, value, value_len);
             break;
         case AVRCP_MEDIA_ATTR_GENRE:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO;
-            event[pos++] = value_len;
+			btstack_assert(value_len <= 255);
+			event[pos++] = (uint8_t) value_len;
             (void)memcpy(event + pos, value, value_len);
             break;
         case AVRCP_MEDIA_ATTR_SONG_LENGTH_MS:
@@ -570,7 +574,8 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
         uint16_t num_payload_bytes = param_len - max_payload_size;
         uint16_t frame_size_for_continue_packet = max_frame_size - avctp_get_num_bytes_for_header(AVCTP_CONTINUE_PACKET);
         uint16_t num_avctp_packets = (num_payload_bytes + frame_size_for_continue_packet - 1)/frame_size_for_continue_packet + 1;
-        packet[pos++] = num_avctp_packets;
+		btstack_assert(num_avctp_packets <= 255);
+        packet[pos++] = (uint8_t) num_avctp_packets;
     }
 
     switch (connection->avctp_packet_type){
@@ -687,7 +692,9 @@ static uint8_t avrcp_controller_request_pass_through_release_control_cmd(avrcp_c
 }
 
 static uint8_t avrcp_controller_request_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed, bool continuous_cmd){
-    log_info("Send command %d", opid);
+	UNUSED(playback_speed);
+
+	log_info("Send command %d", opid);
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -699,11 +706,6 @@ static uint8_t avrcp_controller_request_pass_through_press_control_cmd(uint16_t 
     } 
     connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
     avrcp_controller_pass_through_command_data_init(connection, opid);
-
-    if (playback_speed > 0){
-        connection->data[0] = playback_speed;
-        connection->data_len = 1;
-    } 
     
     connection->controller_press_and_hold_cmd_active = continuous_cmd;
     if (connection->controller_press_and_hold_cmd_active){
@@ -1093,7 +1095,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                                 for (i = (uint8_t)AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; i < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; i++){
                                     if ((connection->controller_notifications_to_register & (1 << i)) != 0){
                                         if ((connection->notifications_supported_by_target & (1 << i)) == 0){
-                                            avrcp_controller_emit_notification_complete(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE, i, false);
+                                            avrcp_controller_emit_notification_complete(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE, (uint8_t) i, false);
                                             connection->controller_notifications_to_register &= ~(1 << i);
                                         }
                                     }

@@ -544,7 +544,7 @@ typedef struct hfp_connection {
     bd_addr_t remote_addr;
     hci_con_handle_t acl_handle;
     hci_con_handle_t sco_handle;
-    uint16_t rfcomm_channel_nr;
+    uint8_t rfcomm_channel_nr;
     uint16_t rfcomm_cid;
     uint16_t rfcomm_mtu;
     

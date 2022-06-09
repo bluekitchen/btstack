@@ -140,7 +140,7 @@ static hfp_connection_t * get_hfp_hf_connection_context_for_acl_handle(uint16_t 
 
 static void hfp_hf_emit_subscriber_information(const hfp_connection_t * hfp_connection, uint8_t status){
     if (hfp_hf_callback == NULL) return;
-    uint16_t bnip_number_len = btstack_min(strlen(hfp_connection->bnip_number), sizeof(hfp_connection->bnip_number)-1);
+    uint16_t bnip_number_len = btstack_min((uint16_t) strlen(hfp_connection->bnip_number), sizeof(hfp_connection->bnip_number)-1);
     uint8_t event[7 + sizeof(hfp_connection->bnip_number)];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 6 + bnip_number_len;
@@ -155,10 +155,10 @@ static void hfp_hf_emit_subscriber_information(const hfp_connection_t * hfp_conn
 
 static void hfp_hf_emit_type_number_alpha(const hfp_connection_t * hfp_connection, uint8_t event_subtype){
     if (hfp_hf_callback == NULL) return;
-    uint16_t bnip_number_len = btstack_min(strlen(hfp_connection->bnip_number), sizeof(hfp_connection->bnip_number)-1);
+    uint16_t bnip_number_len = btstack_min((uint16_t) strlen(hfp_connection->bnip_number), sizeof(hfp_connection->bnip_number)-1);
     // 10 fixed - 1 (bnip_number_len <= sizeof(hfp_connection->bnip_number)-1) + 1 (trailing \0 for line buffer)
     uint8_t event[10 + sizeof(hfp_connection->bnip_number) + sizeof(hfp_connection->line_buffer)];
-    uint8_t alpha_len = hfp_connection->clip_have_alpha ? strlen((const char *) hfp_connection->line_buffer) : 0;
+    uint8_t alpha_len = hfp_connection->clip_have_alpha ? (uint16_t) strlen((const char *) hfp_connection->line_buffer) : 0;
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = 8 + bnip_number_len + alpha_len;
@@ -180,7 +180,7 @@ static void hfp_hf_emit_type_number_alpha(const hfp_connection_t * hfp_connectio
 static void hfp_hf_emit_enhanced_call_status(const hfp_connection_t * hfp_connection){
     if (hfp_hf_callback == NULL) return;
     
-    uint16_t bnip_number_len = strlen((const char *) hfp_connection->bnip_number);
+    uint16_t bnip_number_len = (uint16_t) strlen((const char *) hfp_connection->bnip_number);
     uint8_t event[11 + HFP_BNEP_NUM_MAX_SIZE];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 10 + bnip_number_len + 1;
@@ -200,7 +200,7 @@ static void hfp_hf_emit_enhanced_call_status(const hfp_connection_t * hfp_connec
 static void hfp_emit_ag_indicator_mapping_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
     if (hfp_hf_callback == NULL) return;
     uint8_t event[8 + HFP_MAX_INDICATOR_DESC_SIZE];
-    uint16_t indicator_len = btstack_min(strlen(indicator->name), HFP_MAX_INDICATOR_DESC_SIZE-1);
+    uint16_t indicator_len = btstack_min((uint16_t) strlen(indicator->name), HFP_MAX_INDICATOR_DESC_SIZE-1);
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 7 + indicator_len;
     event[2] = HFP_SUBEVENT_AG_INDICATOR_MAPPING;
@@ -216,7 +216,7 @@ static void hfp_emit_ag_indicator_mapping_event(const hfp_connection_t * hfp_con
 static void hfp_emit_ag_indicator_status_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
 	if (hfp_hf_callback == NULL) return;
 	uint8_t event[12+HFP_MAX_INDICATOR_DESC_SIZE];
-    uint16_t indicator_len = btstack_min(strlen(indicator->name), HFP_MAX_INDICATOR_DESC_SIZE-1);
+    uint16_t indicator_len = btstack_min((uint16_t) strlen(indicator->name), HFP_MAX_INDICATOR_DESC_SIZE-1);
 	event[0] = HCI_EVENT_HFP_META;
 	event[1] = 11 + indicator_len;
 	event[2] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
@@ -235,7 +235,7 @@ static void hfp_emit_ag_indicator_status_event(const hfp_connection_t * hfp_conn
 
 static void hfp_emit_network_operator_event(const hfp_connection_t * hfp_connection){
     if (hfp_hf_callback == NULL) return;
-    uint16_t operator_len = btstack_min(strlen(hfp_connection->network_operator.name), HFP_MAX_NETWORK_OPERATOR_NAME_SIZE-1);
+    uint16_t operator_len = btstack_min((uint16_t) strlen(hfp_connection->network_operator.name), HFP_MAX_NETWORK_OPERATOR_NAME_SIZE-1);
 	uint8_t event[7+HFP_MAX_NETWORK_OPERATOR_NAME_SIZE];
 	event[0] = HCI_EVENT_HFP_META;
 	event[1] = sizeof(event) - 2;
@@ -1473,7 +1473,7 @@ static void hfp_hf_set_defaults(void){
     hfp_hf_indicators_nr = 0;
 }
 
-uint8_t hfp_hf_init(uint16_t rfcomm_channel_nr){
+uint8_t hfp_hf_init(uint8_t rfcomm_channel_nr){
     uint8_t status = rfcomm_register_service(hfp_hf_rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);
     if (status != ERROR_CODE_SUCCESS){
         return status;
@@ -1519,7 +1519,7 @@ void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators){
     hfp_hf_indicators_nr = indicators_nr;
     int i;
     for (i = 0; i < hfp_hf_indicators_nr ; i++){
-        hfp_hf_indicators[i] = indicators[i];
+        hfp_hf_indicators[i] = (uint8_t) indicators[i];
     }
 }
 

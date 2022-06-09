@@ -308,24 +308,24 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
     // 0x0100 "Service Name"
     de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
     if (service_name){
-        de_add_data(service,  DE_STRING, strlen(service_name), (uint8_t *) service_name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(service_name), (uint8_t *) service_name);
     } else {
         if (controller){
-            de_add_data(service, DE_STRING, strlen(avrcp_default_controller_service_name), (uint8_t *) avrcp_default_controller_service_name);
+            de_add_data(service, DE_STRING, (uint16_t) strlen(avrcp_default_controller_service_name), (uint8_t *) avrcp_default_controller_service_name);
         } else {
-            de_add_data(service, DE_STRING, strlen(avrcp_defaul_target_service_name), (uint8_t *) avrcp_defaul_target_service_name);
+            de_add_data(service, DE_STRING, (uint16_t) strlen(avrcp_defaul_target_service_name), (uint8_t *) avrcp_defaul_target_service_name);
         }
     }
 
     // 0x0100 "Provider Name"
     de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0102);
     if (service_provider_name){
-        de_add_data(service,  DE_STRING, strlen(service_provider_name), (uint8_t *) service_provider_name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(service_provider_name), (uint8_t *) service_provider_name);
     } else {
         if (controller){
-            de_add_data(service, DE_STRING, strlen(avrcp_default_controller_service_provider_name), (uint8_t *) avrcp_default_controller_service_provider_name);
+            de_add_data(service, DE_STRING, (uint16_t) strlen(avrcp_default_controller_service_provider_name), (uint8_t *) avrcp_default_controller_service_provider_name);
         } else {
-            de_add_data(service, DE_STRING, strlen(avrcp_default_target_service_provider_name), (uint8_t *) avrcp_default_target_service_provider_name);
+            de_add_data(service, DE_STRING, (uint16_t) strlen(avrcp_default_target_service_provider_name), (uint8_t *) avrcp_default_target_service_provider_name);
         }
     }
 

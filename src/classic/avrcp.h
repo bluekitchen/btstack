@@ -595,8 +595,8 @@ typedef struct {
 
     // target only
     // PID check
-    bool    target_reject_transport_header;
-    uint8_t target_invalid_pid;
+    bool     target_reject_transport_header;
+    uint16_t target_invalid_pid;
 
     uint8_t  target_notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_MAX_VALUE + 1];
 
