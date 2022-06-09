@@ -155,6 +155,15 @@ uint8_t obex_message_builder_request_create_abort(uint8_t * buffer, uint16_t buf
 uint8_t obex_message_builder_request_create_set_path(uint8_t * buffer, uint16_t buffer_len, uint8_t flags, uint32_t connection_id);
 
 /**
+ * @brief Control the "final" bit
+ * @param buffer
+ * @param buffer_len
+ * @param final
+ * @return status
+ */
+uint8_t obex_message_builder_set_final_bit (uint8_t * buffer, uint16_t buffer_len, bool final);
+
+/**
  * @brief Add SRM Enable
  * @param buffer
  * @param buffer_len
@@ -192,6 +201,18 @@ uint8_t obex_message_builder_header_add_word(uint8_t * buffer, uint16_t buffer_l
  * @return status
  */
 uint8_t obex_message_builder_header_add_variable(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length);
+
+/**
+ * @brief Add (partial) header with variable size
+ * @param buffer
+ * @param buffer_len
+ * @param header_type
+ * @param header_data
+ * @param header_data_length
+ * @param ret_length
+ * @return status
+ */
+uint8_t obex_message_builder_header_fillup_variable(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length, uint32_t * ret_length);
 
 /**
  * @brief Add name header to current request
@@ -251,6 +272,15 @@ uint8_t obex_message_builder_header_add_type(uint8_t * buffer, uint16_t buffer_l
 uint8_t obex_message_builder_header_add_count(uint8_t * buffer, uint16_t buffer_len, uint32_t count);
 
 /**
+ * @brief Add length header to current request
+ * @param buffer
+ * @param buffer_len
+ * @param lenght
+ * @return status
+ */
+uint8_t obex_message_builder_header_add_length(uint8_t * buffer, uint16_t buffer_len, uint32_t length);
+
+/**
  * @brief Add application parameters header to current request
  * @param buffer
  * @param buffer_len
@@ -279,6 +309,17 @@ uint8_t obex_message_builder_header_add_challenge_response(uint8_t * buffer, uin
  * @return status
  */
 uint8_t obex_message_builder_body_add_static(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length);
+
+/**
+ * @brief Add body
+ * @param buffer
+ * @param buffer_len
+ * @param data
+ * @param length
+ * @param ret_length
+ * @return status
+ */
+uint8_t obex_message_builder_body_fillup_static(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length, uint32_t *ret_length);
 
 /* API_END */
 

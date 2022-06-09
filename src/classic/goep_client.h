@@ -230,6 +230,13 @@ void goep_client_header_add_type(uint16_t goep_cid, const char * type);
 void goep_client_header_add_count(uint16_t goep_cid, uint32_t count);
 
 /**
+ * @brief Add length header to current request
+ * @param goep_cid
+ * @param length
+ */
+void goep_client_header_add_length(uint16_t goep_cid, uint32_t length);
+
+/**
  * @brief Add application parameters header to current request
  * @param goep_cid
  * @param data 
@@ -252,6 +259,15 @@ void goep_client_header_add_challenge_response(uint16_t goep_cid, const uint8_t 
  * @param lenght 
  */
 void goep_client_body_add_static(uint16_t goep_cid, const uint8_t * data, uint32_t length);
+
+/**
+ * @brief Add body
+ * @param goep_cid
+ * @param data
+ * @param length
+ * @param ret_length
+ */
+void goep_client_body_fillup_static(uint16_t goep_cid, const uint8_t * data, uint32_t length, uint32_t * ret_length);
 
 /**
  * @brief Execute prepared request
