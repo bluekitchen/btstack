@@ -120,7 +120,7 @@ static void  heartbeat_handler(struct btstack_timer_source *ts){
     static int counter = 0;
 
     if (rfcomm_channel_id){
-        sprintf(lineBuffer, "BTstack counter %04u\n", ++counter);
+        snprintf(lineBuffer, sizeof(lineBuffer), "BTstack counter %04u\n", ++counter);
         printf("%s", lineBuffer);
 
         rfcomm_request_can_send_now_event(rfcomm_channel_id);
@@ -225,7 +225,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;
                 case RFCOMM_EVENT_CAN_SEND_NOW:
-                    rfcomm_send(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));  
+                    rfcomm_send(rfcomm_channel_id, (uint8_t*) lineBuffer, (uint16_t) strlen(lineBuffer));  
                     break;
 
 /* LISTING_PAUSE */                 
