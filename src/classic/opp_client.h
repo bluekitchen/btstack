@@ -79,6 +79,16 @@ uint8_t opp_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t *
 uint8_t opp_disconnect(uint16_t opp_cid);
 
 /**
+ * @brief Pull default object from server. The result is reported via registered packet handler (see opp_connect function),
+ * with packet type set to OPP_DATA_PACKET. Event OPP_SUBEVENT_OPERATION_COMPLETED marks the end of the default object.
+ *_
+ * @param opp_cid
+ * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_BUSY if in a wrong state.
+ */
+
+uint8_t opp_pull_default_object(uint16_t opp_cid);
+
+/**
  * @brief Abort current operation. No event is emitted.
  * 
  * @param opp_cid

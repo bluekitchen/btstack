@@ -69,6 +69,9 @@ typedef enum {
     //
     OPP_W2_SEND_DISCONNECT_REQUEST,
     OPP_W4_DISCONNECT_RESPONSE,
+    // pull default object
+    OPP_W2_GET_DEFAULT_OBJECT,
+    OPP_W4_GET_DEFAULT_OBJECT,
     // abort operation
     OPP_W4_ABORT_COMPLETE,
 
@@ -185,7 +188,7 @@ static void opp_client_parser_callback_get_operation(void * user_data, uint8_t h
         case OBEX_HEADER_BODY:
         case OBEX_HEADER_END_OF_BODY:
             switch(opp_client->state){
-                case 0:
+                case OPP_W4_GET_DEFAULT_OBJECT:
                     client->client_handler(OPP_DATA_PACKET, client->cid, (uint8_t *) data_buffer, data_len);
                     break;
 
@@ -242,6 +245,7 @@ static void opp_handle_can_send_now(void){
             // send packet
             goep_client_execute(opp_client->goep_cid);
             break;
+
         case OPP_W2_SEND_DISCONNECT_REQUEST:
             // prepare request
             goep_client_request_create_disconnect(opp_client->goep_cid);
@@ -254,6 +258,24 @@ static void opp_handle_can_send_now(void){
             // send packet
             goep_client_execute(opp_client->goep_cid);
             return;
+
+        case OPP_W2_GET_DEFAULT_OBJECT:
+            // prepare request
+            goep_client_request_create_get(opp_client->goep_cid);
+            if (opp_client->request_number == 0){
+                opp_client_prepare_srm_header(opp_client);
+                // no name for the default object
+                // type is fixed
+                goep_client_header_add_type(opp_client->goep_cid, "text/x-vcard");
+            }
+            // state
+            opp_client->state = OPP_W4_GET_DEFAULT_OBJECT;
+            opp_client_prepare_get_operation(opp_client);
+            // send packet
+            opp_client->request_number++;
+            goep_client_execute(opp_client->goep_cid);
+            break;
+
         default:
             break;
     }
@@ -357,11 +379,37 @@ static void opp_packet_handler_goep(uint8_t *packet, uint16_t size){
                         log_info("opp: obex connect failed, result 0x%02x", packet[0]);
                         opp_client->state = OPP_INIT;
                         opp_client_emit_connected_event(opp_client, OBEX_CONNECT_FAILED);
-                        break;
                 }
                 break;
             case OPP_W4_DISCONNECT_RESPONSE:
                 goep_client_disconnect(opp_client->goep_cid);
+                break;
+            case OPP_W4_GET_DEFAULT_OBJECT:
+                switch (op_info.response_code) {
+                    case OBEX_RESP_CONTINUE:
+                        opp_client_handle_srm_headers(opp_client);
+                        if (opp_client->srm_state == SRM_ENABLED) {
+                            // prepare response
+                            opp_client_prepare_get_operation(opp_client);
+                            break;
+                        }
+                        opp_client->state = OPP_W2_GET_DEFAULT_OBJECT;
+                        goep_client_request_can_send_now(opp_client->goep_cid);
+                        break;
+                    case OBEX_RESP_SUCCESS:
+                        opp_client->state = OPP_CONNECTED;
+                        opp_client_emit_operation_complete_event(opp_client, ERROR_CODE_SUCCESS);
+                        break;
+                    case OBEX_RESP_NOT_IMPLEMENTED:
+                        opp_client->state = OPP_CONNECTED;
+                        opp_client_emit_operation_complete_event(opp_client, OBEX_NOT_FOUND);
+                        break;
+                    default:
+                        log_info("unexpected obex response 0x%02x", op_info.response_code);
+                        opp_client->state = OPP_CONNECTED;
+                        opp_client_emit_operation_complete_event(opp_client, OBEX_UNKNOWN_ERROR);
+                        break;
+                }
                 break;
             case OPP_W4_ABORT_COMPLETE:
                 opp_client->state = OPP_CONNECTED;
@@ -412,7 +460,7 @@ uint8_t opp_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t *
     opp_client->state = OPP_W4_GOEP_CONNECTION;
     opp_client->client_handler = handler;
 
-    uint8_t err = goep_client_create_connection(&opp_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE, &opp_client->goep_cid);
+    uint8_t err = goep_client_create_connection(&opp_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_OBEX_OBJECT_PUSH, &opp_client->goep_cid);
     *out_cid = opp_client->cid;
     if (err) return err;
     return ERROR_CODE_SUCCESS;
@@ -428,6 +476,17 @@ uint8_t opp_disconnect(uint16_t opp_cid){
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t opp_pull_default_object(uint16_t opp_cid){
+    UNUSED(opp_cid);
+    if (opp_client->state != OPP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+    opp_client->state = OPP_W2_GET_DEFAULT_OBJECT;
+    opp_client->request_number = 0;
+    goep_client_request_can_send_now(opp_client->goep_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t opp_abort(uint16_t opp_cid){
     UNUSED(opp_cid);
     if ((opp_client->state < OPP_CONNECTED) || (opp_client->abort_operation != 0)){
@@ -435,12 +494,6 @@ uint8_t opp_abort(uint16_t opp_cid){
     }
     log_info("abort current operation, state 0x%02x", opp_client->state);
     opp_client->abort_operation = 1;
-    return ERROR_CODE_SUCCESS;
-}
-
-uint8_t opp_next_packet(uint16_t opp_cid){
-    // log_info("opp_next_packet, state %x", opp_client->state);
-    UNUSED(opp_cid);
     return ERROR_CODE_SUCCESS;
 }
 

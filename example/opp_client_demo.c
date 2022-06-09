@@ -82,12 +82,14 @@ static void show_usage(void){
     printf("\n--- Bluetooth OPP Client Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("\n");
     printf("a - establish OPP connection to %s\n", bd_addr_to_str(remote_addr));
+    printf("d - pull default object (owner vcard)\n");
     printf("t - disconnect\n");
     printf("x - abort operation\n");
     printf("\n");
 }
 
 static void stdin_process(char c){
+    uint8_t ret;
     switch (c){
         case '\n':
         case '\r':
@@ -95,6 +97,11 @@ static void stdin_process(char c){
         case 'a':
             printf("[+] Connecting to %s...\n", bd_addr_to_str(remote_addr));
             opp_connect(&packet_handler, remote_addr, &opp_cid);
+            break;
+        case 'd':
+            printf("[+] Pulling default Object");
+            ret = opp_pull_default_object(opp_cid);
+            printf(" (%02x)\n", ret);
             break;
         case 'x':
             printf("[+] Abort\n");
