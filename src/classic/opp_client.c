@@ -58,8 +58,6 @@
 #include "classic/goep_client.h"
 #include "classic/opp_client.h"
 
-// 796135f0-f0c5-11d8-0966- 0800200c9a66
-static const uint8_t opp_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
 
 typedef enum {
     OPP_INIT = 0,
@@ -235,7 +233,6 @@ static void opp_handle_can_send_now(void){
         case OPP_W2_SEND_CONNECT_REQUEST:
             // prepare request
             goep_client_request_create_connect(opp_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
-            goep_client_header_add_target(opp_client->goep_cid, opp_uuid, 16);
             // state
             opp_client->state = OPP_W4_CONNECT_RESPONSE;
             // prepare response
