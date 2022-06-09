@@ -282,7 +282,8 @@ obex_app_param_parser_params_state_t obex_app_param_parser_process_data(obex_app
                 break;
             case OBEX_APP_PARAM_PARSER_STATE_W4_VALUE:
                 bytes_to_consume = btstack_min(parser->tag_len - parser->tag_pos, data_len);
-                (*parser->callback)(parser->user_data, parser->tag_id, parser->tag_len, parser->tag_pos, data_buffer, bytes_to_consume);
+				// param_size is uint8_t
+                (*parser->callback)(parser->user_data, parser->tag_id, (uint8_t) parser->tag_len, (uint8_t) parser->tag_pos, data_buffer, (uint8_t) bytes_to_consume);
                 parser->tag_pos   += bytes_to_consume;
                 if (parser->tag_pos == parser->tag_len){
                     parser->state = OBEX_APP_PARAM_PARSER_STATE_W4_TYPE;

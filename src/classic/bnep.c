@@ -1040,14 +1040,15 @@ static int bnep_handle_multi_addr_set(bnep_channel_t *channel, uint8_t *packet, 
     }
 
     /* Check if we have enough space for more filters */
-    if ((list_length / (2 * ETHER_ADDR_LEN)) > MAX_BNEP_MULTICAST_FILTER) {
+	uint16_t list_count = list_length / (2 * ETHER_ADDR_LEN);
+    if (list_count > MAX_BNEP_MULTICAST_FILTER) {
         log_info("BNEP_MULTI_ADDR_SET: Too many filter");         
         response_code = BNEP_RESP_FILTER_ERR_TOO_MANY_FILTERS;
     } else {
         unsigned int i;
         channel->multicast_filter_count = 0;
         /* There is enough space, copy the filters to our filter list */
-        for (i = 0; i < (list_length / (2 * ETHER_ADDR_LEN)); i ++) {
+        for (i = 0; i < list_count; i ++) {
             bd_addr_copy(channel->multicast_filter[channel->multicast_filter_count].addr_start, packet + 1 + 2 + (i * ETHER_ADDR_LEN * 2));
             bd_addr_copy(channel->multicast_filter[channel->multicast_filter_count].addr_end, packet + 1 + 2 + (i * ETHER_ADDR_LEN * 2) + ETHER_ADDR_LEN);
 

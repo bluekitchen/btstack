@@ -292,11 +292,11 @@ static void pbap_client_emit_card_result_event(pbap_client_t * context, const ch
     event[pos++] = PBAP_SUBEVENT_CARD_RESULT;
     little_endian_store_16(event,pos,context->cid);
     pos+=2;
-    int name_len = btstack_min(PBAP_MAX_NAME_LEN, strlen(name));
+    int name_len = btstack_min(PBAP_MAX_NAME_LEN, (uint16_t) strlen(name));
     event[pos++] = name_len;
     (void)memcpy(&event[pos], name, name_len);
     pos += name_len;
-    int handle_len = btstack_min(PBAP_MAX_HANDLE_LEN, strlen(handle));
+    int handle_len = btstack_min(PBAP_MAX_HANDLE_LEN, (uint16_t) strlen(handle));
     event[pos++] = handle_len;
     (void)memcpy(&event[pos], handle, handle_len);
     pos += handle_len;
@@ -442,9 +442,9 @@ static void obex_srm_init(obex_srm_t * obex_srm){
 }
 static void pbap_client_yml_append_character(yxml_t * xml_parser, char * buffer, uint16_t buffer_size){
     // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-    uint16_t char_len = strlen(xml_parser->data);
+    uint16_t char_len = (uint16_t) strlen(xml_parser->data);
     btstack_assert(char_len <= 4);
-    uint16_t dest_len = strlen(buffer);
+    uint16_t dest_len = (uint16_t) strlen(buffer);
     uint16_t zero_pos = dest_len + char_len;
     if (zero_pos >= buffer_size) return;
     memcpy(&buffer[dest_len], xml_parser->data, char_len);
@@ -601,9 +601,10 @@ static uint16_t pbap_client_application_params_add_phone_number(const pbap_clien
     uint16_t pos = 0;
     if (client->phone_number){
         // Search by phone number
-        uint16_t phone_number_len = btstack_min(PBAP_MAX_PHONE_NUMBER_LEN, strlen(client->phone_number));
+        uint16_t phone_number_len = btstack_min(PBAP_MAX_PHONE_NUMBER_LEN, (uint16_t) strlen(client->phone_number));
         application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
-        application_parameters[pos++] = phone_number_len;
+		btstack_assert(phone_number_len <= 255);
+        application_parameters[pos++] = (uint8_t) phone_number_len;
         (void)memcpy(&application_parameters[pos],
                      pbap_client->phone_number, phone_number_len);
         pos += phone_number_len;
@@ -721,7 +722,7 @@ static void pbap_handle_can_send_now(void){
             MD5_Init(&md5_ctx);
             MD5_Update(&md5_ctx, pbap_client->obex_auth_parser.authentication_nonce, 16);
             MD5_Update(&md5_ctx, &collon, 1);
-            MD5_Update(&md5_ctx, pbap_client->authentication_password, strlen(pbap_client->authentication_password));
+            MD5_Update(&md5_ctx, pbap_client->authentication_password, (uint16_t) strlen(pbap_client->authentication_password));
             MD5_Final(&challenge_response[pos], &md5_ctx);
             pos += 16;
             challenge_response[pos++] = 2;  // Tag Nonce

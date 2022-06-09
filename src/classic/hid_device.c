@@ -76,7 +76,7 @@ typedef struct hid_device {
     uint8_t   connected;
     hid_device_state_t state;
     hid_report_type_t report_type;
-    uint16_t  report_id;
+    uint8_t   report_id;
     uint16_t  expected_report_size;
     uint16_t  report_size;
     uint8_t   user_request_can_send_now;
@@ -228,7 +228,7 @@ void hid_create_sdp_record(uint8_t *service, uint32_t service_record_handle, con
 
     // 0x0100 "ServiceName"
     de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-    de_add_data(service,  DE_STRING, strlen(params->device_name), (uint8_t *) params->device_name); 
+    de_add_data(service,  DE_STRING, (uint16_t) strlen(params->device_name), (uint8_t *) params->device_name);
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
