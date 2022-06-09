@@ -89,6 +89,20 @@ uint8_t opp_disconnect(uint16_t opp_cid);
 uint8_t opp_pull_default_object(uint16_t opp_cid);
 
 /**
+ * @brief Push object to server.
+ * Event OPP_SUBEVENT_OPERATION_COMPLETED marks the end of the transfer.
+ *_
+ * @param opp_cid
+ * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_BUSY if in a wrong state.
+ */
+
+uint8_t opp_push_object(uint16_t  opp_cid,
+                        char     *name,
+                        char     *type,
+                        uint8_t  *data,
+                        uint32_t  size);
+
+/**
  * @brief Abort current operation. No event is emitted.
  * 
  * @param opp_cid
