@@ -83,6 +83,7 @@ static void show_usage(void){
     printf("\n");
     printf("a - establish OPP connection to %s\n", bd_addr_to_str(remote_addr));
     printf("d - pull default object (owner vcard)\n");
+    printf("p - push text/plain object\n");
     printf("t - disconnect\n");
     printf("x - abort operation\n");
     printf("\n");
@@ -101,6 +102,11 @@ static void stdin_process(char c){
         case 'd':
             printf("[+] Pulling default Object");
             ret = opp_pull_default_object(opp_cid);
+            printf(" (%02x)\n", ret);
+            break;
+        case 'p':
+            printf("[+] Pushing text/plain Object");
+            ret = opp_push_object(opp_cid, "hello.txt", "text/plain", "huhu!\n", 6);
             printf(" (%02x)\n", ret);
             break;
         case 'x':
