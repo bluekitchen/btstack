@@ -57,12 +57,6 @@
 #ifdef HAVE_POSIX_FILE_IO
 #include <ctype.h>
 #include <dirent.h>
-#include <fcntl.h>
-#include <unistd.h>
-#endif
-
-#ifdef _WIN32
-#include <Windows.h>
 #endif
 
 // assert outgoing and incoming hci packet buffers can hold max hci command resp. event packet
@@ -106,7 +100,7 @@ static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer)
 
 static const char * hcd_file_path;
 static const char * hcd_folder_path = ".";
-static int hcd_fd;
+static FILE * hcd_file;
 static char matched_file[1000];
 
 
@@ -118,16 +112,16 @@ static void chipset_init(const void * config){
     }
     send_download_command = 1;
     init_script_offset = 0;
-    hcd_fd = -1;
+    hcd_file = NULL;
 }
 
 static const uint8_t download_command[] = {0x2e, 0xfc, 0x00};
 
 static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
-    if (hcd_fd < 0){
+    if (hcd_file == NULL){
         log_info("chipset-bcm: open file %s", hcd_file_path);
-        hcd_fd = open(hcd_file_path, O_RDONLY);
-        if (hcd_fd < 0){
+        hcd_file = fopen(hcd_file_path, "rb");
+        if (hcd_file == NULL){
             log_error("chipset-bcm: can't open file %s", hcd_file_path);
             return BTSTACK_CHIPSET_NO_INIT_SCRIPT;
         }
@@ -143,14 +137,15 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     // read next command, but skip download command
     do {
         // read command
-        int res = read(hcd_fd, hci_cmd_buffer, 3);
-        if (res == 0){
-            log_info("chipset-bcm: end of file, size %u", init_script_offset);
-            close(hcd_fd);
-            return BTSTACK_CHIPSET_DONE;
-        }
-        if (res < 0){
-            log_error("chipset-bcm: read error at %u", init_script_offset);
+        size_t bytes_read = fread(hci_cmd_buffer, 1, 3, hcd_file);
+        if (bytes_read < 3){
+            if (feof(hcd_file)) {
+                log_info("chipset-bcm: end of file, size %u", init_script_offset);
+            } else {
+                log_error("chipset-bcm: read error at %u", init_script_offset);
+            }
+            fclose(hcd_file);
+            hcd_file = NULL;
             return BTSTACK_CHIPSET_DONE;
         }
         init_script_offset += 3;
@@ -158,10 +153,12 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
         // read parameters
         int param_len = hci_cmd_buffer[2];
         if (param_len){
-            res = read(hcd_fd, &hci_cmd_buffer[3], param_len);
+            bytes_read = fread(&hci_cmd_buffer[3], 1, param_len, hcd_file);
         }
-        if (res < 0){
+        if (bytes_read < param_len){
             log_error("chipset-bcm: read error at %u", init_script_offset);
+            fclose(hcd_file);
+            hcd_file = NULL;
             return BTSTACK_CHIPSET_DONE;
         }
         init_script_offset += param_len;
