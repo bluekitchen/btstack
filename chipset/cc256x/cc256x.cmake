@@ -45,7 +45,7 @@ endfunction()
 # ZIP and bts from BlueKitchen mirror
 foreach(FILE ${BK_FILES})
     message("CC256x: Download ${FILE}")
-    file(DOWNLOAD ${BLUEKITCHEN_URL}/${FILE} ${FILE})
+    file(DOWNLOAD ${BLUEKITCHEN_URL}/${FILE} ${CMAKE_CURRENT_BINARY_DIR}/${FILE})
 endforeach()
 
 # Other bts

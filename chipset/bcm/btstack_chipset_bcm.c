@@ -59,6 +59,11 @@
 #include <ctype.h>
 #endif
 
+#ifdef _MSC_VER
+// ignore deprecated warning for fopen
+#pragma warning(disable : 4996)
+#endif
+
 // assert outgoing and incoming hci packet buffers can hold max hci command resp. event packet
 #if HCI_OUTGOING_PACKET_BUFFER_SIZE < (HCI_CMD_HEADER_SIZE + 255)
 #error "HCI_OUTGOING_PACKET_BUFFER_SIZE to small. Outgoing HCI packet buffer to small for largest HCI Command packet. Please set HCI_ACL_PAYLOAD_SIZE to 258 or higher."
@@ -206,7 +211,7 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
     // construct short variant without revision info
     char filename_short[MAX_DEVICE_NAME_LEN+5];
     strcpy(filename_short, device_name);
-    int len = strlen(filename_short);
+    uint16_t len = (uint16_t) strlen(filename_short);
     while (len > 3){
         char c = filename_short[len-1];
         if (isdigit(c) == 0) break;
