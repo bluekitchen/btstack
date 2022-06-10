@@ -55,8 +55,8 @@
 #include "hci.h"
 
 #ifdef HAVE_POSIX_FILE_IO
+#include "tinydir.h"
 #include <ctype.h>
-#include <dirent.h>
 #endif
 
 // assert outgoing and incoming hci packet buffers can hold max hci command resp. event packet
@@ -219,25 +219,28 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
     log_info("chipset-bcm: looking for %s and %s", filename_short, filename_complete);
 
     // find in folder
-    DIR *dirp = opendir(hcd_folder_path);
-    int match_short = 0;
-    int match_complete = 0;
-    if (!dirp){
+    tinydir_dir dir = { 0 };
+    int res = tinydir_open(&dir, hcd_folder_path);
+    if (res < 0){
         log_error("chipset-bcm: could not get directory for %s", hcd_folder_path);
         return;
     }
-    while (true){
-        struct dirent *dp = readdir(dirp);
-        if (!dp) break;
-        if (equal_ignore_case(filename_complete, dp->d_name)){
+
+    int match_short = 0;
+    int match_complete = 0;
+    while (dir.has_next) {
+        tinydir_file file;
+        tinydir_readfile(&dir, &file);
+        tinydir_next(&dir);
+        if (equal_ignore_case(filename_complete, file.name)){
             match_complete = 1;
             continue;
         }
-        if (equal_ignore_case(filename_short, dp->d_name)){
-            match_short = 1;            
+        if (equal_ignore_case(filename_short, file.name)){
+            match_short = 1;
         }
     }
-    closedir(dirp);
+    tinydir_close(&dir);
     if (match_complete){
         sprintf(matched_file, "%s/%s", hcd_folder_path, filename_complete);
         hcd_file_path = matched_file;
