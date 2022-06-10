@@ -71,7 +71,7 @@
 #define LC3_ABS(v)  ( (v) < 0 ? -(v) : (v) )
 
 
-#ifdef __ARM_FEATURE_SAT
+#if defined(__ARM_FEATURE_SAT) && !(__GNUC__ < 10)
 
 #undef  LC3_SAT16
 #define LC3_SAT16(v) __ssat(v, 16)
