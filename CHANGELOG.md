@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- port: CMake build files in all windows-* ports allow to use Visual Studio 2022
 
 ### Fixed
 

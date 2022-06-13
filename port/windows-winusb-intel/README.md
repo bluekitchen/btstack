@@ -3,6 +3,9 @@
 Same as port/windows-winusb, but customized for Intel Wireless 8260 and 8265 Controllers.
 These controller require firmware upload and configuration to work. Firmware and config is downloaded from the Linux firmware repository.
 
+The port provides both a regular Makefile as well as a CMake build file. It uses native Win32 APIs for file access and does not require the Cygwin or mingw64 build/runtine. All examples can also be build with Visual Studio 2022 (e.g. Community Edition).
+
+
 ## Access to Bluetooth USB Dongle with Zadig
 
 To allow libusb or WinUSB to access an USB Bluetooth dongle, you need to install a special device driver to make it accessible to user space processes. 
@@ -16,11 +19,14 @@ It works like this:
 -  Select WinUSB (libusb) in the right pull pull down list
 -  Select “Replace Driver”
 
-## Toolchain
+## Visual Studio 2022
 
-The port requires a Unix-like toolchain. We successfully used [mingw-w64](https://mingw-w64.org/doku.php) to compile and run the examples. mingw64-w64 is based on [MinGW](https://en.wikipedia.org/wiki/MinGW), which '...provides a complete Open Source programming tool set which is suitable for the development of native MS-Windows applications, and which do not depend on any 3rd-party C-Runtime DLLs.'
+Visual Studio can directly open the provided `port/windows-windows-h4-zephyr/CMakeLists.txt` and allows to compile and run all examples.
 
-We've used the Msys2 package available from the [downloads page](https://mingw-w64.org/doku.php/download) on Windows 10, 64-bit and use the MSYS2 MinGW 32-bit start menu item to compile 32-bit binaries that run on both 32/64-bit systems.
+## mingw64 
+
+It can also be compiles with a regular Unix-style toolchain like [mingw-w64](https://www.mingw-w64.org).
+mingw64-w64 is based on [MinGW](https://en.wikipedia.org/wiki/MinGW), which '...provides a complete Open Source programming tool set which is suitable for the development of native MS-Windows applications, and which do not depend on any 3rd-party C-Runtime DLLs.'
 
 In the MSYS2 shell, you can install git, python, and, winpty with pacman:
 
@@ -30,7 +36,7 @@ In the MSYS2 shell, you can install git, python, and, winpty with pacman:
 
 ## Compilation
 
-With mingw64-w64 installed, just go to the port/windows-winusb directory and run make
+With mingw64-w64 installed, just go to the port/windows-winusb-intel directory and run make
 
     $ cd btstack/port/windows-winusb
     $ make
@@ -42,5 +48,6 @@ as `conio.h` seems to be mission. Please use msys2-64 bit with the 64-bit toolch
 
 When running the examples in the MSYS2 shell, the console input (via btstack_stdin_support) doesn't work. It works in the older MSYS and also the regular CMD.exe environment. Another option is to install WinPTY and then start the example via WinPTY like this:
 
-    $ winpty ./spp_and_le_counter.exe
+    $ winpty ./gatt_counter.exe
 
+The packet log will be written to hci_dump.pklg
