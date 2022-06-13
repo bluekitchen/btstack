@@ -166,13 +166,11 @@ list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 # create targets
 foreach(EXAMPLE ${EXAMPLES})
 	# get c file
-	file(GLOB EXAMPLE_FILE "${BTSTACK_ROOT}/example/${EXAMPLE}.c")
-	set (SOURCE_FILES ${EXAMPLE_FILE})
+	set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
 
 	# add GATT DB creation
 	if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
 		message("example ${EXAMPLE} -- with GATT DB")
-	  	message("${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h <- ${Python_EXECUTABLE} ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h")
 	  	add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 			DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
@@ -183,6 +181,6 @@ foreach(EXAMPLE ${EXAMPLES})
 	else()
 		message("example ${EXAMPLE}")
 	endif()
-	add_executable(${EXAMPLE} ${SOURCE_FILES} )
+	add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
 	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE)

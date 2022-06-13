@@ -85,15 +85,14 @@ list(REMOVE_DUPLICATES EXAMPLES)
 list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 
 # create targets
-set (EXAMPLES_C)
 foreach(EXAMPLE ${EXAMPLES})
 	# get c file
-	file(GLOB EXAMPLE_FILE "../../example/${EXAMPLE}.c")
+	set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
 
 	# add GATT DB creation
 	if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
 		message("example ${EXAMPLE} -- with GATT DB")
-		add_custom_command(
+	  	add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 			DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
 			COMMAND ${Python_EXECUTABLE}
@@ -103,6 +102,6 @@ foreach(EXAMPLE ${EXAMPLES})
 	else()
 		message("example ${EXAMPLE}")
 	endif()
-	add_executable(${EXAMPLE} ${EXAMPLE_FILE} )
-	target_link_libraries(${EXAMPLE} btstack setupapi winusb)
+	add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE)

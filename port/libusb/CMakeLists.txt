@@ -181,11 +181,13 @@ set (LWIP_EXAMPLES pan_lwip_http_server)
 # create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-	set (SOURCE_FILES ${EXAMPLE_FILE})
+
+	# get c file
+	set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
 
 	# add lwip sources for lwip examples
 	if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
-		list(APPEND SOURCE_FILES ${SOURCES_LWIP})
+		list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
 	endif()
 
 	# add GATT DB creation
@@ -197,10 +199,10 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 			COMMAND ${Python_EXECUTABLE}
 			ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 		)
-		list(APPEND SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
+		list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
 	else()
 		message("example ${EXAMPLE}")
 	endif()
-	add_executable(${EXAMPLE} ${SOURCE_FILES} )
+	add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
 	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE_FILE)
