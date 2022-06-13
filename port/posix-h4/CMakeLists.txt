@@ -72,9 +72,6 @@ file(GLOB SOURCES_ZEPHYR    "${BTSTACK_ROOT}/chipset/zephyr/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
 file(GLOB SOURCES_PORT      "*.c")
 
-# select init script for CC256x, chipset/cc256x.cmake for options
-list(APPEND SOURCES_CC256X bluetooth_init_cc2564C_1.5.c)
-
 set(LWIP_CORE_SRC
 		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/def.c
 		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/inet_chksum.c
