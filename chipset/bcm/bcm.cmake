@@ -3,4 +3,4 @@
 #
 
 # used with AMPAK AP6121 and BCM43438A1
-file(DOWNLOAD https://github.com/OpenELEC/misc-firmware/raw/master/firmware/brcm/BCM43430A1.hcd BCM43430A1.hcd)
+file(DOWNLOAD https://github.com/OpenELEC/misc-firmware/raw/master/firmware/brcm/BCM43430A1.hcd ${CMAKE_CURRENT_BINARY_DIR}/BCM43430A1.hcd)

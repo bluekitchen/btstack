@@ -278,7 +278,7 @@ static uint32_t read_file(FILE **file, uint8_t **buf, const char *name) {
     }
 
     // read file
-    uint8_t ret = fread(*buf, size, 1, *file);
+    size_t ret = fread(*buf, size, 1, *file);
     if (ret != 1) {
         log_info("Failed to read %u bytes from file %s (ret = %u)", size, name, ret);
         fclose(*file);

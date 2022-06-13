@@ -20,12 +20,12 @@ function(cc256x_init_script output_file archive main_script optional_script)
 
             # Download init scripts
             message("CC256x: Download ${archive}")
-            file(DOWNLOAD ${BLUEKITCHEN_URL}/${archive} ${archive})
+            file(DOWNLOAD ${BLUEKITCHEN_URL}/${archive} ${CMAKE_CURRENT_BINARY_DIR}/${archive})
 
             # unpack zip
             if (${archive} MATCHES "zip$")
                 message("CC256x: Extract ${archive}")
-                file(ARCHIVE_EXTRACT INPUT ${archive})
+                file(ARCHIVE_EXTRACT INPUT ${CMAKE_CURRENT_BINARY_DIR}/${archive})
             endif()
 
             # add custom command to convert bts file(s) into C array
@@ -33,8 +33,8 @@ function(cc256x_init_script output_file archive main_script optional_script)
             add_custom_command(
                     OUTPUT ${output_file}
                     DEPENDS ${main_script} ${optional_script}
-                    COMMAND ${CONVERSION_SCRIPT}
-                    ARGS  ${main_script} ${optional_script} ${output_file}
+                    COMMAND python
+                    ARGS ${CONVERSION_SCRIPT} ${main_script} ${optional_script} ${output_file}
             )
 
             # Add CC256x chipset support
