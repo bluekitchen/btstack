@@ -4,12 +4,6 @@ project(BTstack-posix-h4)
 
 SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
-# CC256x Init Scripts
-include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
-
-# BCM Init Scripts
-include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)
-
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
 	# using Clang
@@ -44,7 +38,6 @@ include_directories(${BTSTACK_ROOT}/3rd-party/yxml)
 include_directories(${BTSTACK_ROOT}/3rd-party/tinydir)
 include_directories(${BTSTACK_ROOT}/src)
 include_directories(${BTSTACK_ROOT}/chipset/bcm)
-include_directories(${BTSTACK_ROOT}/chipset/cc256x)
 include_directories(${BTSTACK_ROOT}/chipset/csr)
 include_directories(${BTSTACK_ROOT}/chipset/cc256x)
 include_directories(${BTSTACK_ROOT}/chipset/em9301)
@@ -71,7 +64,6 @@ file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_POSIX     "${BTSTACK_ROOT}/platform/posix/*.c")
 file(GLOB SOURCES_BCM       "${BTSTACK_ROOT}/chipset/bcm/*.c")
 file(GLOB SOURCES_CSR       "${BTSTACK_ROOT}/chipset/csr/*.c")
-file(GLOB SOURCES_CC256X    "${BTSTACK_ROOT}/chipset/cc256x/*.c")
 file(GLOB SOURCES_EM9301    "${BTSTACK_ROOT}/chipset/em9301/*.c")
 file(GLOB SOURCES_STLC2500D "${BTSTACK_ROOT}/chipset/stlc2500d/*.c")
 file(GLOB SOURCES_TC2566X   "${BTSTACK_ROOT}/chipset/tc3566x/*.c")
@@ -147,7 +139,6 @@ set(SOURCES
 		${SOURCES_REALTEK}
 		${SOURCES_RIJNDAEL}
 		${SOURCES_SRC}
-		${SOURCES_CC256X}
 		${SOURCES_CSR}
 		${SOURCES_STLC2500D}
 		${SOURCES_TC2566X}
@@ -160,6 +151,13 @@ list(SORT SOURCES)
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
+
+# Add CC256x Support and specify init script
+set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
+include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
+
+# Add BCM Support and download PatchRAM files
+include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)
 
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)
