@@ -38,7 +38,6 @@
 #define BTSTACK_FILE__ "btstack_chipset_intel_firmware.c"
 
 #include <fcntl.h>
-#include <unistd.h>
 #include <stdio.h>
 
 #include "btstack_chipset_intel_firmware.h"
@@ -51,6 +50,11 @@
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
+
+#ifdef _MSC_VER
+ // ignore deprecated warning for fopen
+#pragma warning(disable : 4996)
+#endif
 
 // assert outgoing and incoming hci packet buffers can hold max hci command resp. event packet
 #if HCI_OUTGOING_PACKET_BUFFER_SIZE < (HCI_CMD_HEADER_SIZE + 255)
@@ -131,7 +135,7 @@ static uint8_t  hw_variant;
 static uint16_t dev_revid;
 
 static FILE *   fw_file;
-static uint32_t fw_offset;
+static size_t   fw_offset;
 
 static void (*done)(int result);
 
@@ -156,7 +160,7 @@ static int transport_send_cmd(const hci_cmd_t *cmd, ...){
     return res;
 }
 
-static int transport_send_intel_secure(uint8_t fragment_type, const uint8_t * data, uint16_t len){
+static int transport_send_intel_secure(uint8_t fragment_type, const uint8_t * data, uint8_t len){
     little_endian_store_16(hci_outgoing, 0, 0xfc09);
     hci_outgoing[2] = 1 + len;
     hci_outgoing[3] = fragment_type;
@@ -165,7 +169,7 @@ static int transport_send_intel_secure(uint8_t fragment_type, const uint8_t * da
     return transport_send_packet(HCI_ACL_DATA_PACKET, hci_outgoing, size);
 }
 
-static int transport_send_intel_ddc(const uint8_t * data, uint16_t len){
+static int transport_send_intel_ddc(const uint8_t * data, uint8_t len){
     little_endian_store_16(hci_outgoing, 0, 0xfc8b);
     hci_outgoing[2] = len;
     memcpy(&hci_outgoing[3], data, len);
@@ -176,8 +180,8 @@ static int transport_send_intel_ddc(const uint8_t * data, uint16_t len){
 static void state_machine(uint8_t * packet);
 
 // read data from fw file and send it via intel_secure + update state
-static int intel_send_fragment(uint8_t fragment_type, uint16_t len){
-    int res = fread(fw_buffer, 1, len, fw_file);
+static int intel_send_fragment(uint8_t fragment_type, uint8_t len){
+    size_t res = fread(fw_buffer, 1, len, fw_file);
     log_info("offset %6u, read %3u -> res %d", fw_offset, len, res);
     fw_offset += res;
     state++;
@@ -187,7 +191,7 @@ static int intel_send_fragment(uint8_t fragment_type, uint16_t len){
 // read data from  ddc file and send iva intel ddc command
 // @returns -1 on eof
 static int intel_send_ddc(void){
-    int res;
+    size_t res;
     // read len
     res = fread(fw_buffer, 1, 1, fw_file);
     log_info("offset %6u, read 1 -> res %d", fw_offset, res);
@@ -230,8 +234,8 @@ static int waiting_for_command_complete;
 static void state_machine(uint8_t * packet){
     intel_version_t     * version;
     intel_boot_params_t * boot_params;
-    int res;
-    uint16_t buffer_offset;
+    size_t res;
+    size_t buffer_offset;
     bd_addr_t addr;
     char    fw_path[300];
 
@@ -364,7 +368,7 @@ static void state_machine(uint8_t * packet){
             if (buffer_offset == 0) break;
 
             waiting_for_command_complete = 1;
-            transport_send_intel_secure(0x01, fw_buffer, buffer_offset);
+            transport_send_intel_secure(0x01, fw_buffer, (uint8_t) buffer_offset);
             break;
 
         case 9:
