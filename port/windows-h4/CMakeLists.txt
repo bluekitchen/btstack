@@ -17,7 +17,8 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
 	# using Visual Studio C++
 endif()
 
-# to find generated .h from .gatt files
+# to generate .h from .gatt files
+find_package (Python REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
@@ -175,7 +176,7 @@ foreach(EXAMPLE ${EXAMPLES})
 		add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 			DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
-			COMMAND python3
+			COMMAND ${Python_EXECUTABLE}
 			ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 		)
 		list(APPEND SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
