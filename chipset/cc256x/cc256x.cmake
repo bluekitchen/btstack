@@ -24,6 +24,8 @@ set (BK_FILES
         cc256xc_bt_sp_v1.3.zip
         cc256xc_bt_sp_v1.4.zip
         cc256xc_bt_sp_v1.5.zip
+        TIInit_6.7.16_bt_spec_4.1.bts
+        TIInit_6.7.16_ble_add-on.bts
         TIInit_11.8.32_4.2.bts
         TIInit_11.8.32_4.6.bts
         TIInit_11.8.32_4.7.bts
@@ -47,10 +49,6 @@ foreach(FILE ${BK_FILES})
     message("CC256x: Download ${FILE}")
     file(DOWNLOAD ${BLUEKITCHEN_URL}/${FILE} ${CMAKE_CURRENT_BINARY_DIR}/${FILE})
 endforeach()
-
-# Other bts
-file(DOWNLOAD https://git.ti.com/ti-bt/service-packs/blobs/raw/54f5c151dacc608b19ab2ce4c30e27a3983048b2/initscripts/TIInit_6.7.16_bt_spec_4.1.bts TIInit_6.7.16_bt_spec_4.1.bts)
-file(DOWNLOAD https://git.ti.com/ti-bt/service-packs/blobs/raw/89c8db14929f10d75627b132690432cd71f5f54f/initscripts/TIInit_6.7.16_ble_add-on.bts  TIInit_6.7.16_ble_add-on.bts)
 
 # Extract archives
 foreach(FILE ${BK_FILES})
