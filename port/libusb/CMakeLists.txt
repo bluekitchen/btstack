@@ -5,6 +5,7 @@ SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(BTstack-libusb)
 
+SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
 # pkgconfig
 find_package(PkgConfig REQUIRED)

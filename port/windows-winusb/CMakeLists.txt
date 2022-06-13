@@ -2,6 +2,8 @@ cmake_minimum_required (VERSION 3.5)
 
 project(BTstack-windows-winusb)
 
+SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
+
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
 	# using Clang

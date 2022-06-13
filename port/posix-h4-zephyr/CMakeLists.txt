@@ -5,6 +5,8 @@ SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(BTstack-posix-h4-zephyr)
 
+SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
+
 # pkgconfig
 find_package(PkgConfig REQUIRED)
 

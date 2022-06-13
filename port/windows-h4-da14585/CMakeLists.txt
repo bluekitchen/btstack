@@ -2,6 +2,8 @@ cmake_minimum_required (VERSION 3.5)
 
 project(BTstack-windows-h4-da14585)
 
+SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
+
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
 	# using Clang
@@ -82,9 +84,9 @@ foreach(EXAMPLE ${EXAMPLES})
 		message("example ${EXAMPLE} -- with GATT DB")
 		add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-			DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
-			COMMAND ${Python_EXECUTABLE}
-			ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+			DEPENDS ${CMAKE_SOURCE_DIR}/../../example/${EXAMPLE}.gatt
+			COMMAND ${CMAKE_SOURCE_DIR}/../../tool/compile_gatt.py
+			ARGS ${CMAKE_SOURCE_DIR}/../../example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 		)
 		list(APPEND SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
 	else()

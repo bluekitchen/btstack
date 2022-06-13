@@ -172,7 +172,8 @@ foreach(EXAMPLE ${EXAMPLES})
 	# add GATT DB creation
 	if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
 		message("example ${EXAMPLE} -- with GATT DB")
-		add_custom_command(
+	  	message("${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h <- ${Python_EXECUTABLE} ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h")
+	  	add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 			DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
 			COMMAND ${Python_EXECUTABLE}
