@@ -2519,6 +2519,8 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
     hci_con_handle_t handle;
     hci_connection_t * conn;
+#endif
+#if defined(ENABLE_CLASSIC) || (defined(ENABLE_BLE) && defined(ENABLE_LE_ISOCHRONOUS_STREAMS))
     uint8_t status;
 #endif
     // get num cmd packets - limit to 1 to reduce complexity
