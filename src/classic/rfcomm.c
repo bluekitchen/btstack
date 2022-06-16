@@ -1398,6 +1398,7 @@ static void rfcomm_channel_send_credits(rfcomm_channel_t *channel, uint8_t credi
 }
 
 static bool rfcomm_channel_can_send(rfcomm_channel_t * channel){
+    log_debug("cid 0x%04x, outgoing credits %u", channel->credits_outgoing);
     if (!channel->credits_outgoing) return false;
     if ((channel->multiplexer->fcon & 1) == 0) return false;
     return l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid) != 0;
