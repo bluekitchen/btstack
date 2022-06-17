@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - HCI Dump: provide log level to log_message implementation
+- GAP: replace BTSTACK_EVENT_DISCOVERABLE_ENABLED with BTSTACK_EVENT_SCAN_MODE_CHANGED
 
 
 ## Release v1.5.3

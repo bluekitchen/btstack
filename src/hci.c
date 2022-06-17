@@ -174,7 +174,7 @@ enum {
 // prototypes
 #ifdef ENABLE_CLASSIC
 static void hci_update_scan_enable(void);
-static void hci_emit_discoverable_enabled(uint8_t enabled);
+static void hci_emit_scan_mode_changed(uint8_t discoverable, uint8_t connectable);
 static int  hci_local_ssp_activated(void);
 static bool hci_remote_ssp_supported(hci_con_handle_t con_handle);
 static bool hci_ssp_supported(hci_connection_t * connection);
@@ -2617,7 +2617,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             break;
 #ifdef ENABLE_CLASSIC
         case HCI_OPCODE_HCI_WRITE_SCAN_ENABLE:
-            hci_emit_discoverable_enabled(hci_stack->discoverable);
+            hci_emit_scan_mode_changed(hci_stack->discoverable, hci_stack->connectable);
             break;
         case HCI_OPCODE_HCI_PERIODIC_INQUIRY_MODE:
             status = hci_event_command_complete_get_return_parameters(packet)[0];
@@ -4772,7 +4772,7 @@ void gap_discoverable_control(uint8_t enable){
     if (enable) enable = 1; // normalize argument
     
     if (hci_stack->discoverable == enable){
-        hci_emit_discoverable_enabled(hci_stack->discoverable);
+        hci_emit_scan_mode_changed(hci_stack->discoverable, hci_stack->connectable);
         return;
     }
 
@@ -6788,12 +6788,12 @@ static gap_security_level_t gap_security_level_for_connection(hci_connection_t *
     return security_level;
 }    
 
-static void hci_emit_discoverable_enabled(uint8_t enabled){
-    log_info("BTSTACK_EVENT_DISCOVERABLE_ENABLED %u", enabled);
-    uint8_t event[3];
-    event[0] = BTSTACK_EVENT_DISCOVERABLE_ENABLED;
+static void hci_emit_scan_mode_changed(uint8_t discoverable, uint8_t connectable){
+    uint8_t event[4];
+    event[0] = BTSTACK_EVENT_SCAN_MODE_CHANGED;
     event[1] = sizeof(event) - 2;
-    event[2] = enabled;
+    event[2] = discoverable;
+    event[3] = connectable;
     hci_emit_event(event, sizeof(event), 1);
 }
 

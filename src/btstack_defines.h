@@ -1004,8 +1004,9 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1
  * @param discoverable
+ * @param connectable
  */
-#define BTSTACK_EVENT_DISCOVERABLE_ENABLED                 0x66u
+#define BTSTACK_EVENT_SCAN_MODE_CHANGED                    0x66u
 
 // Daemon Events
 
