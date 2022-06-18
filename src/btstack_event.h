@@ -1467,6 +1467,15 @@ static inline uint8_t btstack_event_nr_connections_changed_get_number_connection
 static inline uint8_t btstack_event_scan_mode_changed_get_discoverable(const uint8_t * event){
     return event[2];
 }
+/**
+ * @brief Get field connectable from event BTSTACK_EVENT_SCAN_MODE_CHANGED
+ * @param event packet
+ * @return connectable
+ * @note: btstack_type 1
+ */
+static inline uint8_t btstack_event_scan_mode_changed_get_connectable(const uint8_t * event){
+    return event[3];
+}
 
 /**
  * @brief Get field active from event HCI_EVENT_TRANSPORT_SLEEP_MODE

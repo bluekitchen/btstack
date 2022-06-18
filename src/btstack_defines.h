@@ -1002,7 +1002,7 @@ typedef uint8_t sm_key_t[16];
 #define BTSTACK_EVENT_POWERON_FAILED                       0x62u
 
 /**
- * @format 1
+ * @format 11
  * @param discoverable
  * @param connectable
  */
