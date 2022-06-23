@@ -50,6 +50,8 @@ Embedded platform properties:
 -----------------------------------|------------------------------------
 HAVE_EMBEDDED_TIME_MS              | System provides time in milliseconds
 HAVE_EMBEDDED_TICK                 | System provides tick interrupt
+HAVE_HAL_AUDIO                     | Audio HAL is available
+HAVE_HAL_AUDIO_SINK_STEREO_ONLY    | Duplicate samples for mono playback 
 
 FreeRTOS platform properties:
 
