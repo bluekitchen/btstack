@@ -118,6 +118,11 @@ static void local_version_information_handler(uint8_t * packet){
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
+    uint8_t usb_path_len;
+    const uint8_t * usb_path;
+    uint16_t product_id;
+    uint8_t i;
+    
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
@@ -134,13 +139,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("TLV path: %s", tlv_db_path);
                     if (tlv_clear){
                         int rc = unlink(tlv_db_path);
-                        if((rc == 0) || ( errno == ENOENT )){
-                            printf(", clear ok\n");
+                        if (rc == 0) {
+                            printf(", reset ok");
                         } else {
-                            printf(", clear failed because %s\n", strerror(errno));
+                            printf(", reset failed with result = %d", rc);
                         }
                     }
-
+                    printf("\n");
                     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
@@ -168,6 +173,20 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 using_static_address = 1;
             }
             break;
+        case HCI_EVENT_TRANSPORT_USB_INFO:
+            usb_path_len = hci_event_transport_usb_info_get_path_len(packet);
+            usb_path = hci_event_transport_usb_info_get_path(packet);
+            // print device path
+            product_id = hci_event_transport_usb_info_get_product_id(packet);
+            printf("USB device 0x%04x/0x%04x, path: ",
+                   hci_event_transport_usb_info_get_vendor_id(packet), product_id);
+            for (i=0;i<usb_path_len;i++){
+                if (i) printf("-");
+                printf("%02x", usb_path[i]);
+            }
+            printf("\n");
+            break;
+
         default:
             break;
     }
