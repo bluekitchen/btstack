@@ -71,7 +71,6 @@ static          unsigned int output_buffer_samples;
 static volatile int       input_buffer_ready;
 static volatile const int16_t * input_buffer_samples;
 static volatile uint16_t  input_buffer_num_samples;
-static          unsigned int output_channels;
 
 static int source_active;
 static int sink_active;
@@ -141,7 +140,7 @@ static int btstack_audio_embedded_sink_init(
 
 #ifdef HAVE_HAL_AUDIO_SINK_STEREO_ONLY
     // always use stereo from hal, duplicate samples if needed
-    output_duplicate_samples = num_channels != 2;
+    output_duplicate_samples = channels != 2;
     channels = 2;
 #endif
 
