@@ -22,7 +22,6 @@
 #define ENABLE_LOG_ERROR
 #define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SCO_OVER_HCI
-#define ENABLE_SCO_STEREO_PLAYBACK
 #define ENABLE_SEGGER_RTT
 
 // BTstack configuration. buffers, sizes, ...
