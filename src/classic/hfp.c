@@ -234,7 +234,7 @@ const char * hfp_ag_feature(int index){
     return hfp_ag_features[index];
 }
 
-int send_str_over_rfcomm(uint16_t cid, char * command){
+int send_str_over_rfcomm(uint16_t cid, const char * command){
     if (!rfcomm_can_send_packet_now(cid)) return 1;
     log_info("HFP_TX %s", command);
     int err = rfcomm_send(cid, (uint8_t*) command, (uint16_t) strlen(command));

@@ -734,7 +734,7 @@ typedef struct hfp_connection {
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils
-int send_str_over_rfcomm(uint16_t cid, char * command);
+int send_str_over_rfcomm(uint16_t cid, const char * command);
 int join(char * buffer, int buffer_size, uint8_t * values, int values_nr);
 int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr);
 int get_bit(uint16_t bitmap, int position);
