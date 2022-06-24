@@ -1114,7 +1114,13 @@ static void hfp_hf_handle_suggested_codec(hfp_connection_t * hfp_connection){
 static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_t status){
     bool event_emited = true;
 
-    switch (hfp_connection->response_pending_for_command){
+    // cache state and reset
+    hfp_command_t response_pending_for_command = hfp_connection->response_pending_for_command;
+    hfp_connection->response_pending_for_command = HFP_CMD_NONE;
+    hfp_connection->command = HFP_CMD_NONE;
+    hfp_connection->ok_pending = 0;
+
+    switch (response_pending_for_command){
         case HFP_CMD_TURN_OFF_EC_AND_NR:
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
             break;
@@ -1224,10 +1230,6 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
             break;
     }
 
-    // done
-    hfp_connection->response_pending_for_command = HFP_CMD_NONE;
-    hfp_connection->ok_pending = 0;
-    hfp_connection->command = HFP_CMD_NONE;
     return event_emited;
 }   
 
