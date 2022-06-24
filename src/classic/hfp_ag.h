@@ -474,6 +474,17 @@ uint8_t hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle);
 uint8_t hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, hfp_cme_error_t error);
 
 /**
+ * @brief Send unsolicited result code (most likely a response to a vendor-specific command not part of standard HFP).
+ * @note  Emits HFP_SUBEVENT_COMPLETE when result code was sent
+ *
+ * @param unsolicited_result_code to send
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if extended audio gateway error report is disabled
+ */
+uint8_t hfp_ag_send_unsolicited_result_code(hci_con_handle_t acl_handle, const char * unsolicited_result_code);
+
+/**
  * @brief De-Init HFP AG
  */
 void hfp_ag_deinit(void);

@@ -2070,6 +2070,15 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         return 1;
     }
 
+    // note: before ok_pending and send_error to allow for unsolicited result on custom command
+    if (hfp_connection->send_custom_message != NULL){
+        const char * message = hfp_connection->send_custom_message;
+        hfp_connection->send_custom_message = NULL;
+        send_str_over_rfcomm(hfp_connection->rfcomm_cid, message);
+        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_SUCCESS);
+        return 1;
+    }
+
     if (hfp_connection->ok_pending){
         hfp_connection->ok_pending = 0;
         hfp_connection->command = HFP_CMD_NONE;
@@ -3092,6 +3101,19 @@ uint8_t hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle){
     }
 
     hfp_connection->ok_pending = 1;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hfp_ag_send_unsolicited_result_code(hci_con_handle_t acl_handle, const char * unsolicited_result_code){
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
+    if (!hfp_connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (hfp_connection->send_custom_message != NULL){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    hfp_connection->send_custom_message = unsolicited_result_code;
+    hfp_ag_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
 
