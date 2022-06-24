@@ -6759,6 +6759,34 @@ static inline uint8_t hfp_subevent_hf_indicator_get_value(const uint8_t * event)
     return event[7];
 }
 
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_CUSTOM_AT_COMMAND
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_custom_at_command_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_id from event HFP_SUBEVENT_CUSTOM_AT_COMMAND
+ * @param event packet
+ * @return command_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t hfp_subevent_custom_at_command_get_command_id(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field command_string from event HFP_SUBEVENT_CUSTOM_AT_COMMAND
+ * @param event packet
+ * @return command_string
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_custom_at_command_get_command_string(const uint8_t * event){
+    return (const char *) &event[7];
+}
+
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event ANCS_SUBEVENT_CLIENT_CONNECTED

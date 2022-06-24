@@ -2306,6 +2306,15 @@ typedef uint8_t sm_key_t[16];
  */
 #define HFP_SUBEVENT_HF_INDICATOR                                    0x27u
 
+/**
+ * @format 1H2T
+ * @param subevent_code
+ * @param acl_handle
+ * @param command_id
+ * @param command_string
+ */
+#define HFP_SUBEVENT_CUSTOM_AT_COMMAND                               0x28u
+
 
 // ANCS Client
 
