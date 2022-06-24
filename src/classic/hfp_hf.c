@@ -1176,13 +1176,13 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
                 case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     if (hfp_connection->enable_status_update_for_ag_indicators != 0xFF){
                         hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
-                        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, 0);
+                        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_SUCCESS);
                         break;
                     }
 
                     if (hfp_connection->change_status_update_for_individual_ag_indicators == 1){
                         hfp_connection->change_status_update_for_individual_ag_indicators = 0;
-                        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, 0);
+                        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_SUCCESS);
                         break;
                     }
 
@@ -1364,7 +1364,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             }
             event_emited = hfp_hf_switch_on_ok_pending(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
             if (!event_emited){
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, 1);
+                hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_UNSPECIFIED_ERROR);
             }
             hfp_reset_context_flags(hfp_connection);
             break;
