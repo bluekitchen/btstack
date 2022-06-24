@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - HFP HF: send custom AT command with hfp_hf_send_at_command
+- HFP AG: support handling of custom AT commands with hfp_ag_register_custom_at_command
 - HFP AG: send custom unsolicited result code with hfp_ag_send_unsolicited_result_code
 - port: CMake build files in all windows-* ports allow to use Visual Studio 2022
 - embedded audio: mono audio is played on both channels if HAVE_HAL_AUDIO_SINK_STEREO_ONLY is defined

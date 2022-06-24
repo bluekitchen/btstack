@@ -317,7 +317,8 @@ typedef enum {
     HFP_PARSER_CMD_HEADER = 0,
     HFP_PARSER_CMD_SEQUENCE,
     HFP_PARSER_SECOND_ITEM,
-    HFP_PARSER_THIRD_ITEM
+    HFP_PARSER_THIRD_ITEM,
+    HFP_PARSER_CUSTOM_COMMAND
 } hfp_parser_state_t;
 
 typedef enum {
@@ -564,6 +565,8 @@ typedef struct hfp_connection {
     int      parser_indicator_index;
     uint32_t parser_indicator_value;
     bool     parser_quoted;
+
+    // line buffer is always \0 terminated
     uint8_t  line_buffer[HFP_MAX_VR_TEXT_SIZE];
     int      line_size;
     
@@ -660,6 +663,7 @@ typedef struct hfp_connection {
 
     int send_status_of_current_calls;
     int next_call_index;
+    uint16_t ag_custom_at_command_id;
 
     // HF only
     // HF: track command for which ok/error response need to be received
@@ -737,6 +741,15 @@ typedef struct hfp_connection {
 #endif
 } hfp_connection_t;
 
+/**
+ * @brief Struct to register custom AT Command.
+ */
+typedef struct {
+    btstack_linked_item_t * next;
+    const char *            command;
+    uint16_t                command_id;
+} hfp_custom_at_command_t;
+
 // UTILS_START : TODO move to utils
 int send_str_over_rfcomm(uint16_t cid, const char * command);
 int join(char * buffer, int buffer_size, uint8_t * values, int values_nr);
@@ -756,6 +769,8 @@ void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler);
 
 void hfp_init(void);
 void hfp_deinit(void);
+
+void hfp_register_custom_ag_command(hfp_custom_at_command_t * at_command);
 
 void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
 void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role);
@@ -789,6 +804,7 @@ hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hf
 
 btstack_linked_list_t * hfp_get_connections(void);
 void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);
+void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection);
 
 /**
  * @brief Establish RFCOMM connection, and perform service level connection agreement:

@@ -94,6 +94,8 @@ static btstack_context_callback_registration_t hfp_sdp_query_request;
 
 
 
+// custom commands
+static btstack_linked_list_t hfp_custom_commands_ag;
 
 // prototypes
 static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
@@ -1146,6 +1148,19 @@ static hfp_command_entry_t hfp_hf_commmand_table[] = {
     { "RING",   HFP_CMD_RING },
 };
 
+static const hfp_custom_at_command_t * hfp_custom_command_lookup(const char * text){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hfp_custom_commands_ag);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        hfp_custom_at_command_t *at_command = (hfp_custom_at_command_t *) btstack_linked_list_iterator_next(&it);
+        int match = strcmp(text, at_command->command);
+        if (match == 0) {
+            return at_command;
+        }
+    }
+    return NULL;
+}
+
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
 
     // table lookup based on role
@@ -1184,6 +1199,14 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_CALL_PHONE_NUMBER;
     }
 
+    // check for custom commands, AG only
+    if (isHandsFree == 0) {
+        const hfp_custom_at_command_t * custom_at_command = hfp_custom_command_lookup(line_buffer);
+        if (custom_at_command != NULL){
+            return HFP_CMD_CUSTOM_MESSAGE;
+        }
+    }
+
     // Valid looking, but unknown commands/responses
     if ((isHandsFree == 0) && (strncmp(line_buffer, "AT+", 3) == 0)){
         return HFP_CMD_UNKNOWN;
@@ -1209,7 +1232,7 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
     return (byte == '\n') || (byte == '\r');
 }
 
-static void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
+void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
     hfp_connection->line_size = 0;
     // we don't set the first byte to '\0' to allow access to last argument e.g. in hfp_hf_handle_rfcommand
 }
@@ -1311,6 +1334,14 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             }
 
             log_info("command string '%s', handsfree %u -> cmd id %u", (char *)hfp_connection->line_buffer, isHandsFree, hfp_connection->command);
+
+            // store command id for custom command and just store rest of line
+            if (hfp_connection->command == HFP_CMD_CUSTOM_MESSAGE){
+                const hfp_custom_at_command_t * at_command = hfp_custom_command_lookup((const char *)hfp_connection->line_buffer);
+                hfp_connection->ag_custom_at_command_id = at_command->command_id;
+                hfp_connection->parser_state = HFP_PARSER_CUSTOM_COMMAND;
+                return true;
+            }
 
             // next state
             hfp_connection->found_equal_sign = false;
@@ -1437,6 +1468,10 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS){
                 hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
             }
+            return true;
+
+        case HFP_PARSER_CUSTOM_COMMAND:
+            hfp_parser_store_byte(hfp_connection, byte);
             return true;
 
         default:
@@ -1975,6 +2010,7 @@ void hfp_deinit(void){
     hfp_hf_rfcomm_packet_handler = NULL;
     hfp_ag_rfcomm_packet_handler = NULL;
     hfp_sco_establishment_active = NULL;
+    hfp_custom_commands_ag = NULL;
     (void) memset(&hfp_sdp_query_context, 0, sizeof(hfp_sdp_query_context_t));
     (void) memset(&hfp_sdp_query_request, 0, sizeof(btstack_context_callback_registration_t));
 }
@@ -2048,4 +2084,8 @@ void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size){
     printable[i] = 0;
     log_info("%s: '%s'", tag, printable);
 #endif
+}
+
+void hfp_register_custom_ag_command(hfp_custom_at_command_t * custom_at_command){
+    btstack_linked_list_add(&hfp_custom_commands_ag, (btstack_linked_item_t *) custom_at_command);
 }

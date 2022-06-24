@@ -117,6 +117,12 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
 void hfp_ag_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
+ * @brief Register custom AT command.
+ * @param hfp_custom_at_command (with 'AT+' prefix)
+ */
+void hfp_ag_register_custom_at_command(hfp_custom_at_command_t * custom_at_command);
+
+/**
  * @brief Enable/Disable in-band ring tone.
  *
  * @param use_in_band_ring_tone
@@ -483,6 +489,17 @@ uint8_t hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t 
  *              - ERROR_CODE_COMMAND_DISALLOWED if extended audio gateway error report is disabled
  */
 uint8_t hfp_ag_send_unsolicited_result_code(hci_con_handle_t acl_handle, const char * unsolicited_result_code);
+
+/**
+ * @brief Send result code for AT command received via HFP_SUBEVENT_CUSTOM_AT_COMMAND
+ * @note  Emits HFP_SUBEVENT_COMPLETE when result code was sent
+ *
+ * @param ok for OK, or ERROR
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if extended audio gateway error report is disabled
+ */
+uint8_t hfp_ag_send_command_result_code(hci_con_handle_t acl_handle, bool ok);
 
 /**
  * @brief De-Init HFP AG
