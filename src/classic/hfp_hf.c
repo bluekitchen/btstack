@@ -1049,6 +1049,15 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         }
     }
 
+    if (hfp_connection->send_custom_message != NULL){
+        const char * message = hfp_connection->send_custom_message;
+        hfp_connection->send_custom_message = NULL;
+        hfp_connection->ok_pending = 1;
+        hfp_connection->response_pending_for_command = HFP_CMD_CUSTOM_MESSAGE;
+        send_str_over_rfcomm(hfp_connection->rfcomm_cid, message);
+        return;
+    }
+
     if (done) return;
     // deal with disconnect
     switch (hfp_connection->state){ 
@@ -1123,6 +1132,9 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
     switch (response_pending_for_command){
         case HFP_CMD_TURN_OFF_EC_AND_NR:
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
+            break;
+        case HFP_CMD_CUSTOM_MESSAGE:
+            hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, status);
             break;
         default:
             event_emited = false;
@@ -2168,6 +2180,19 @@ uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number
             return ERROR_CODE_SUCCESS;
         }
     }
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hfp_hf_send_at_command(hci_con_handle_t acl_handle, const char * at_command){
+    hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
+    if (!hfp_connection) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (hfp_connection->send_custom_message != NULL){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    hfp_connection->send_custom_message = at_command;
+    hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
 

@@ -222,7 +222,8 @@ typedef enum {
     HFP_CMD_RESPONSE_AND_HOLD_QUERY,
     HFP_CMD_RESPONSE_AND_HOLD_COMMAND,
     HFP_CMD_RESPONSE_AND_HOLD_STATUS,
-    HFP_CMD_HF_INDICATOR_STATUS
+    HFP_CMD_HF_INDICATOR_STATUS,
+    HFP_CMD_CUSTOM_MESSAGE
 } hfp_command_t;
  
 
@@ -631,7 +632,10 @@ typedef struct hfp_connection {
     uint8_t send_ag_status_indicators;
     uint8_t send_ag_indicators_segment;
     uint8_t send_response_and_hold_status;  // 0 - don't send. BRTH:0 == 1, ..
-    
+
+    // HF: AT Command, AG: Unsolicited Result Code
+    const char * send_custom_message;
+
     bool emit_vra_enabled_after_audio_established;
     // AG only
     uint8_t change_in_band_ring_tone_setting;
