@@ -525,12 +525,13 @@ int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle);
  * @note  Result (OK/ERROR) is reported via HFP_SUBEVENT_COMPLETE
  *        To receive potential unsolicited result code, add ENABLE_HFP_AT_MESSAGES to get all message via HFP_SUBEVENT_AT_MESSAGE_RECEIVED
  *
+ * @param acl_handle
  * @param at_command to send
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
  *              - ERROR_CODE_COMMAND_DISALLOWED if extended audio gateway error report is disabled
  */
-uint8_t hfp_hf_send_at_command(hci_con_handle_t hfp_ag_acl_handle, const char * at_command);
+uint8_t hfp_hf_send_at_command(hci_con_handle_t acl_handle, const char * at_command);
 
 /**
  * @brief De-Init HFP HF
