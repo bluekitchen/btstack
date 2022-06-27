@@ -335,7 +335,7 @@ static void sm_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
                     break;
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
                     // display number
-                    printf("PASSKEY_DISPLAY_NUMBER: %06u\n", little_endian_read_32(packet, 11));
+                    printf("PASSKEY_DISPLAY_NUMBER: %06u\n", sm_event_passkey_display_number_get_passkey(packet));
                     break;
                 case SM_EVENT_PASSKEY_DISPLAY_CANCEL:
                     break;
