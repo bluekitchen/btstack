@@ -1884,7 +1884,10 @@ static void hci_initializing_run(void){
             break;
 
         case HCI_INIT_SET_EVENT_MASK_2:
-            if (hci_command_supported(SUPPORTED_HCI_COMMAND_SET_EVENT_MASK_PAGE_2)){
+            // On Bluettooth PTS dongle (BL 654) with PacketCraft HCI Firmware (LMP subversion) 0x5244,
+            // setting Event Mask 2 causes Controller to drop Encryption Change events.
+            if (hci_command_supported(SUPPORTED_HCI_COMMAND_SET_EVENT_MASK_PAGE_2)
+            && (hci_stack->manufacturer != BLUETOOTH_COMPANY_ID_PACKETCRAFT_INC)){
                 hci_stack->substate = HCI_INIT_W4_SET_EVENT_MASK_2;
                 // Encryption Change Event v2 - bit 25
                 hci_send_cmd(&hci_set_event_mask_2,0x02000000U, 0x0);
