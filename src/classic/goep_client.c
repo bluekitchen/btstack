@@ -636,9 +636,17 @@ uint16_t goep_client_request_get_max_body_size(uint16_t goep_cid){
 }
 
 int goep_client_execute(uint16_t goep_cid){
+    return goep_client_execute_with_final_bit (goep_cid, true);
+}
+
+int goep_client_execute_with_final_bit(uint16_t goep_cid, bool final){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+
+    obex_message_builder_set_final_bit (buffer, buffer_len, final);
+
     uint16_t pos = big_endian_read_16(buffer, 1);
     if (context->l2cap_psm){
         return l2cap_send(context->bearer_cid, buffer, pos);

@@ -277,6 +277,13 @@ void goep_client_body_fillup_static(uint16_t goep_cid, const uint8_t * data, uin
 int goep_client_execute(uint16_t goep_cid);
 
 /**
+ * @brief Execute prepared request with final bit
+ * @param goep_cid
+ * @param final
+ */
+int goep_client_execute_with_final_bit(uint16_t goep_cid, bool final);
+
+/**
  * @brief De-Init GOEP Client
  */
 void goep_client_deinit(void);
