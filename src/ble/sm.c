@@ -3835,6 +3835,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     break;
 
                 case HCI_EVENT_ENCRYPTION_CHANGE:
+                case HCI_EVENT_ENCRYPTION_CHANGE_V2:
                 	con_handle = hci_event_encryption_change_get_connection_handle(packet);
                     sm_conn = sm_get_connection_for_handle(con_handle);
                     if (!sm_conn) break;
