@@ -514,6 +514,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     sm_request_pairing(connection_handle);
                     break;
                 case HCI_EVENT_ENCRYPTION_CHANGE:
+                case HCI_EVENT_ENCRYPTION_CHANGE_V2:
                     if (connection_handle != hci_event_encryption_change_get_connection_handle(packet)) break;
                     printf("Connection encrypted: %u\n", hci_event_encryption_change_get_encryption_enabled(packet));
                     if (hci_event_encryption_change_get_encryption_enabled(packet) == 0){
