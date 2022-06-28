@@ -112,6 +112,7 @@ typedef struct opp_client {
     char     *object_type;
     uint8_t  *object_data;
     uint32_t  object_size;
+    uint32_t  object_pos;
     /* srm */
     obex_srm_t obex_srm;
     srm_state_t srm_state;
@@ -280,15 +281,24 @@ static void opp_handle_can_send_now(void){
                 goep_client_header_add_name(opp_client->goep_cid, opp_client->object_name);
                 goep_client_header_add_type(opp_client->goep_cid, opp_client->object_type);
                 goep_client_header_add_length(opp_client->goep_cid, opp_client->object_size);
-
-                goep_client_body_add_static (opp_client->goep_cid, opp_client->object_data, opp_client->object_size);
             }
+
+            uint32_t used_space = 0;
+
+            goep_client_body_fillup_static (opp_client->goep_cid, opp_client->object_data + opp_client->object_pos, opp_client->object_size - opp_client->object_pos, &used_space);
+            opp_client->object_pos += used_space;
+
             // state
-            opp_client->state = OPP_W4_PUT_OBJECT;
             opp_client_prepare_put_operation(opp_client);
-            // send packet
             opp_client->request_number++;
-            goep_client_execute(opp_client->goep_cid);
+            if (opp_client->object_pos >= opp_client->object_size) {
+                opp_client->state = OPP_W4_PUT_OBJECT;
+                goep_client_execute_with_final_bit(opp_client->goep_cid, true);
+            } else {
+                opp_client->state = OPP_W2_PUT_OBJECT;
+                goep_client_execute_with_final_bit(opp_client->goep_cid, false);
+                goep_client_request_can_send_now(opp_client->goep_cid);
+            }
             break;
 
         case OPP_W2_GET_DEFAULT_OBJECT:
@@ -543,6 +553,7 @@ uint8_t opp_push_object(uint16_t opp_cid,
     opp_client->object_type = type;
     opp_client->object_data = data;
     opp_client->object_size = size;
+    opp_client->object_pos  = 0;
 
     opp_client->state = OPP_W2_PUT_OBJECT;
     opp_client->request_number = 0;
