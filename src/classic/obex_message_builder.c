@@ -95,9 +95,10 @@ uint8_t obex_message_builder_header_add_variable(uint8_t * buffer, uint16_t buff
 uint8_t obex_message_builder_header_fillup_variable(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length, uint32_t * ret_length){
     uint8_t header[3];
     header[0] = header_type;
+    uint16_t pos = big_endian_read_16(buffer, 1);
 
-    if (sizeof (header) + header_data_length > buffer_len)
-        header_data_length = buffer_len - sizeof (header);
+    if (sizeof (header) + header_data_length + pos > buffer_len)
+        header_data_length = buffer_len - pos - sizeof (header);
 
     big_endian_store_16(header, 1, sizeof(header) + header_data_length);
     *ret_length = 0;
