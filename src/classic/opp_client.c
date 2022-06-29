@@ -278,6 +278,7 @@ static void opp_handle_can_send_now(void){
             // prepare request
             goep_client_request_create_put(opp_client->goep_cid);
             if (opp_client->request_number == 0){
+                opp_client_prepare_srm_header(opp_client);
                 goep_client_header_add_name(opp_client->goep_cid, opp_client->object_name);
                 goep_client_header_add_type(opp_client->goep_cid, opp_client->object_type);
                 goep_client_header_add_length(opp_client->goep_cid, opp_client->object_size);
@@ -295,9 +296,14 @@ static void opp_handle_can_send_now(void){
                 opp_client->state = OPP_W4_PUT_OBJECT;
                 goep_client_execute_with_final_bit(opp_client->goep_cid, true);
             } else {
-                opp_client->state = OPP_W2_PUT_OBJECT;
                 goep_client_execute_with_final_bit(opp_client->goep_cid, false);
-                goep_client_request_can_send_now(opp_client->goep_cid);
+
+                if (opp_client->srm_state == SRM_ENABLED) {
+                  opp_client->state = OPP_W2_PUT_OBJECT;
+                  goep_client_request_can_send_now(opp_client->goep_cid);
+                } else {
+                  opp_client->state = OPP_W4_PUT_OBJECT;
+                }
             }
             break;
 
@@ -402,8 +408,6 @@ static void opp_packet_handler_hci(uint8_t *packet, uint16_t size){
 }
 
 static void opp_packet_handler_goep(uint8_t *packet, uint16_t size){
-    obex_iterator_t it;
-
     if (opp_client->obex_parser_waiting_for_response == false) return;
 
     obex_parser_object_state_t parser_state;
@@ -429,24 +433,54 @@ static void opp_packet_handler_goep(uint8_t *packet, uint16_t size){
                 goep_client_disconnect(opp_client->goep_cid);
                 break;
             case OPP_W4_PUT_OBJECT:
-                opp_client->state = OPP_CONNECTED;
-                printf("Message:\n");
-                for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(opp_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
-                        uint8_t hi = obex_iterator_get_hi(&it);
-                        //uint16_t     data_len = obex_iterator_get_data_len(&it);
-                        const uint8_t  * data = obex_iterator_get_data(&it);
-                        switch (hi){
-                            case OBEX_HEADER_BODY:
-                            case OBEX_HEADER_END_OF_BODY:
-                                printf("%s\n", data);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    printf("\n");
+                switch (op_info.response_code) {
+                    case OBEX_RESP_CONTINUE:
+                        opp_client_handle_srm_headers(opp_client);
 
+                        if (opp_client->object_pos < opp_client->object_size) {
+                            opp_client->state = OPP_W2_PUT_OBJECT;
+                            goep_client_request_can_send_now(opp_client->goep_cid);
+                        } else {
+                            opp_client->state = OPP_CONNECTED;
+                            opp_client_emit_operation_complete_event(opp_client, ERROR_CODE_SUCCESS);
+                        }
+
+#if 0
+                        obex_iterator_t it;
+
+                        printf("Message:\n");
+                        for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(opp_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
+                            uint8_t hi = obex_iterator_get_hi(&it);
+                            //uint16_t     data_len = obex_iterator_get_data_len(&it);
+                            const uint8_t  * data = obex_iterator_get_data(&it);
+                            switch (hi){
+                                case OBEX_HEADER_BODY:
+                                case OBEX_HEADER_END_OF_BODY:
+                                    printf("%s\n", data);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        printf("\n");
+#endif
+                        break;
+                    case OBEX_RESP_SUCCESS:
+                        opp_client->state = OPP_CONNECTED;
+                        opp_client_emit_operation_complete_event(opp_client, ERROR_CODE_SUCCESS);
+                        break;
+                    case OBEX_RESP_NOT_IMPLEMENTED:
+                        opp_client->state = OPP_CONNECTED;
+                        opp_client_emit_operation_complete_event(opp_client, OBEX_RESP_NOT_IMPLEMENTED);
+                        break;
+                    default:
+                        log_info("unexpected obex response 0x%02x", op_info.response_code);
+                        opp_client->state = OPP_CONNECTED;
+                        opp_client_emit_operation_complete_event(opp_client, OBEX_UNKNOWN_ERROR);
+                        break;
+                }
                 break;
+
             case OPP_W4_GET_DEFAULT_OBJECT:
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
