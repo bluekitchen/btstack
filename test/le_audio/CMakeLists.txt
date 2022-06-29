@@ -5,12 +5,6 @@ set (CMAKE_CXX_STANDARD 11)
 # fink pkgconfig
 find_package(PkgConfig REQUIRED)
 
-# libusb
-pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-include_directories(${LIBUSB_INCLUDE_DIRS})
-link_directories(${LIBUSB_LIBRARY_DIRS})
-link_libraries(${LIBUSB_LIBRARIES})
-
 # portaudio
 pkg_check_modules(PORTAUDIO portaudio-2.0)
 if(PORTAUDIO_FOUND)
@@ -132,7 +126,7 @@ list(SORT SOURCES)
 add_library(btstack STATIC ${SOURCES})
 
 # create targets for all examples
-file(GLOB EXAMPLES_C    "le_audio_*.c")
+file(GLOB EXAMPLES_C    "le_audio_*.c" "lc3_*.c")
 list(SORT EXAMPLES_C)
 file(GLOB EXAMPLES_GATT "*.gatt")
 
