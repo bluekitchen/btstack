@@ -218,6 +218,9 @@ static bool bis_has_data[MAX_NUM_BIS];
 static uint8_t iso_frame_counter;
 static uint16_t frame_duration_us;
 
+static le_audio_big_t big_storage;
+static le_audio_big_params_t big_params;
+
 // time stamping
 #ifdef COUNT_MODE
 #define MAX_PACKET_INTERVAL_BINS_MS 50
@@ -267,9 +270,7 @@ static enum {
 static enum {
     APP_IDLE,
     APP_W4_PERIODIC_ENABLED,
-    APP_CREATE_BIG,
     APP_W4_CREATE_BIG_COMPLETE,
-    APP_SET_ISO_PATH,
     APP_STREAMING
 } app_state = APP_IDLE;
 
@@ -531,6 +532,47 @@ static void generate_audio_timer_handler(btstack_timer_source_t *ts){
 }
 #endif
 
+static void create_big(void){
+    // Create BIG
+    big_params.big_handle = 0;
+    big_params.advertising_handle = adv_handle;
+    big_params.num_bis = num_bis;
+    big_params.max_sdu = octets_per_frame;
+    big_params.max_transport_latency_ms = 31;
+    big_params.rtn = 2;
+    big_params.phy = 2;
+    big_params.packing = 0;
+    big_params.encryption = 0;
+    memset(big_params.broadcast_code, 0, 16);
+    if (sampling_frequency_hz == 44100){
+        // same config as for 48k -> frame is longer by 48/44.1
+        big_params.sdu_interval_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
+        big_params.framing = 1;
+    } else {
+        big_params.sdu_interval_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
+        big_params.framing = 0;
+    }
+    app_state = APP_W4_CREATE_BIG_COMPLETE;
+    gap_big_create(&big_storage, &big_params);
+}
+
+static void ready_to_send(void){
+    // ready to send
+    uint8_t i;
+    for (i=0;i<num_bis;i++) {
+        bis_can_send[i] = true;
+    }
+    app_state = APP_STREAMING;
+    //
+#ifdef GENERATE_AUDIO_WITH_TIMER
+    btstack_run_loop_set_timer_handler(&send_timer, &generate_audio_timer_handler);
+                        uint32_t next_send_time_ms = btstack_run_loop_get_time_ms() + 10;
+                        uint32_t now = btstack_run_loop_get_time_ms();
+                        btstack_run_loop_set_timer(&send_timer, next_send_time_ms - now);
+                        btstack_run_loop_add_timer(&send_timer);
+#endif
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -554,46 +596,26 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch (hci_event_command_complete_get_command_opcode(packet)){
                 case HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_ENABLE:
                     if (app_state != APP_W4_PERIODIC_ENABLED) break;
-                    app_state = APP_CREATE_BIG;
+                    create_big();
                     break;
-                case HCI_OPCODE_HCI_LE_SETUP_ISO_DATA_PATH:
-                    next_bis_index++;
-                    if (next_bis_index == num_bis){
-                        printf("%u ISO path(s) set up\n", num_bis);
-                        // ready to send
-                        uint8_t i;
-                        for (i=0;i<num_bis;i++) {
-                            bis_can_send[i] = true;
-                        }
-                        app_state = APP_STREAMING;
-                        //
-#ifdef GENERATE_AUDIO_WITH_TIMER
-                        btstack_run_loop_set_timer_handler(&send_timer, &generate_audio_timer_handler);
-                        uint32_t next_send_time_ms = btstack_run_loop_get_time_ms() + 10;
-                        uint32_t now = btstack_run_loop_get_time_ms();
-                        btstack_run_loop_set_timer(&send_timer, next_send_time_ms - now);
-                        btstack_run_loop_add_timer(&send_timer);
-#endif
-                    }
+                default:
                     break;
             }
             break;
-        case HCI_EVENT_LE_META:
-            switch(hci_event_le_meta_get_subevent_code(packet)){
-                case HCI_SUBEVENT_LE_CREATE_BIG_COMPLETE:
-                    if (app_state == APP_W4_CREATE_BIG_COMPLETE){
-                        uint8_t i;
-                        printf("BIS Connection Handles: ");
-                        for (i=0;i<num_bis;i++){
-                            bis_con_handles[i] = little_endian_read_16(packet, 21 + 2*i);
-                            printf("0x%04x ", bis_con_handles[i]);
-                        }
-                        printf("\n");
-                        next_bis_index = 0;
-                        app_state = APP_SET_ISO_PATH;
-                        printf("Start streaming\n");
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_BIG_CREATED: {
+                    printf("BIG Created with BIS Connection handles: \n");
+                    uint8_t i;
+                    for (i=0;i<num_bis;i++){
+                        bis_con_handles[i] = gap_subevent_big_created_get_bis_con_handles(packet, i);
+                        printf("0x%04x ", bis_con_handles[i]);
                     }
+                    ready_to_send();
+                    app_state = APP_STREAMING;
+                    printf("Start streaming\n");
                     break;
+                }
                 default:
                     break;
             }
@@ -618,30 +640,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                 }
             }
-            break;
-        default:
-            break;
-    }
-
-    const uint8_t broadcast_code[16] = { 0 };
-    switch(app_state){
-        case APP_CREATE_BIG:
-            if (hci_can_send_command_packet_now()) {
-                app_state = APP_W4_CREATE_BIG_COMPLETE;
-                if (sampling_frequency_hz == 44100){
-                    framed_pdus = 1;
-                    // same config as for 48k -> frame is longer by 48/44.1
-                    frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
-                } else {
-                    framed_pdus = 0;
-                    frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
-                }
-                hci_send_cmd(&hci_le_create_big, 0, adv_handle, num_bis, frame_duration_us, octets_per_frame, 0x1F, 2, 2, 0, framed_pdus, 0, broadcast_code);
-            }
-            break;
-        case APP_SET_ISO_PATH:
-            if (!hci_can_send_command_packet_now()) break;
-            hci_send_cmd(&hci_le_setup_iso_data_path, bis_con_handles[next_bis_index], 0, 0,  0, 0, 0,  0, 0, NULL);
             break;
         default:
             break;
