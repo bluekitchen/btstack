@@ -230,6 +230,9 @@ static hci_iso_stream_t * hci_iso_stream_for_cis_handle(hci_con_handle_t cis_han
 static void hci_iso_stream_requested_finalize(void);
 static void hci_iso_stream_requested_confirm(void);
 static void hci_iso_packet_handler(uint8_t * packet, uint16_t size);
+static le_audio_big_t * hci_big_for_handle(uint8_t big_handle);
+static void hci_emit_big_created(const le_audio_big_t * big, uint8_t status);
+static void hci_emit_big_terminated(const le_audio_big_t * big);
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
 #endif /* ENABLE_BLE */
 
@@ -2735,6 +2738,32 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                 hci_iso_stream_requested_finalize();
             }
             break;
+        case HCI_OPCODE_HCI_LE_SETUP_ISO_DATA_PATH: {
+            // lookup BIG by state
+            btstack_linked_list_iterator_t it;
+            btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
+            while (btstack_linked_list_iterator_has_next(&it)) {
+                le_audio_big_t *big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
+                if (big->state == LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH){
+                    status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
+                    if (status == ERROR_CODE_SUCCESS){
+                        big->state_vars.next_bis++;
+                        if (big->state_vars.next_bis == big->num_bis){
+                            big->state = LE_AUDIO_BIG_STATE_ACTIVE;
+                            hci_emit_big_created(big, ERROR_CODE_SUCCESS);
+                        } else {
+                            big->state = LE_AUDIO_BIG_STATE_SETUP_ISO_PATH;
+                        }
+                    } else {
+                        big->state = LE_AUDIO_BIG_STATE_SETUP_ISO_PATHS_FAILED;
+                        big->state_vars.status = status;
+                        break;
+                    }
+                    return;
+                }
+            }
+            break;
+        }
 #endif
 #endif
         default:
@@ -3037,6 +3066,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     hci_iso_stream_t * iso_stream;
+    le_audio_big_t   * big;
 #endif
 
     // log_info("HCI:EVENT:%02x", hci_event_packet_get_type(packet));
@@ -3733,6 +3763,41 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             hci_iso_stream_finalize(iso_stream);
                         }
                     }
+                    break;
+                case HCI_SUBEVENT_LE_CREATE_BIG_COMPLETE:
+                    big = hci_big_for_handle(packet[4]);
+                    if (big != NULL){
+                        uint8_t status = packet[3];
+                        if (status == ERROR_CODE_SUCCESS){
+                            // store bis_con_handles and trigger iso path setup
+                            uint8_t num_bis = btstack_min(MAX_NR_BIS, packet[20]);
+                            uint8_t i;
+                            for (i=0;i<num_bis;i++){
+                                big->bis_con_handles[i] = little_endian_read_16(packet, 21 + (2 * i));
+                            }
+                            big->state = LE_AUDIO_BIG_STATE_SETUP_ISO_PATH;
+                            big->state_vars.next_bis = 0;
+                        } else {
+                            // create BIG failed
+                            btstack_linked_list_remove(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) big);
+                            hci_emit_big_created(big, status);
+                        }
+                    }
+                    break;
+                case HCI_SUBEVENT_LE_TERMINATE_BIG_COMPLETE:
+                    big = hci_big_for_handle(hci_subevent_le_terminate_big_complete_get_big_handle(packet));
+                    if (big != NULL){
+                        btstack_linked_list_remove(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) big);
+                        switch (big->state){
+                            case LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED:
+                                hci_emit_big_created(big, big->state_vars.status);
+                                break;
+                            default:
+                                hci_emit_big_terminated(big);
+                                break;
+                        }
+                    }
+                    break;
 #endif
                 default:
                     break;
@@ -5829,6 +5894,49 @@ static bool hci_run_general_gap_le(void){
 
     return false;
 }
+
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+static bool hci_run_iso_tasks(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        le_audio_big_t * big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
+        switch (big->state){
+            case LE_AUDIO_BIG_STATE_CREATE:
+                big->state = LE_AUDIO_BIG_STATE_W4_ESTABLISHED;
+                hci_send_cmd(&hci_le_create_big,
+                             big->params->big_handle,
+                             big->params->advertising_handle,
+                             big->params->num_bis,
+                             big->params->sdu_interval_us,
+                             big->params->max_sdu,
+                             big->params->max_transport_latency_ms,
+                             big->params->rtn,
+                             big->params->phy,
+                             big->params->packing,
+                             big->params->framing,
+                             big->params->encryption,
+                             big->params->broadcast_code);
+                return true;
+            case LE_AUDIO_BIG_STATE_SETUP_ISO_PATH:
+                big->state = LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH;
+                hci_send_cmd(&hci_le_setup_iso_data_path, big->bis_con_handles[big->state_vars.next_bis], 0, 0,  0, 0, 0,  0, 0, NULL);
+                return true;
+            case LE_AUDIO_BIG_STATE_SETUP_ISO_PATHS_FAILED:
+                big->state = LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED;
+                hci_send_cmd(&hci_le_terminate_big, big->big_handle);
+                break;
+            case LE_AUDIO_BIG_STATE_TERMINATE:
+                big->state = LE_AUDIO_BIG_STATE_W4_TERMINATED;
+                hci_send_cmd(&hci_le_terminate_big, big->big_handle);
+                return true;
+            default:
+                break;
+        }
+    }
+    return false;
+}
+#endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
 #endif
 
 static bool hci_run_general_pending_commands(void){
@@ -6280,6 +6388,12 @@ static void hci_run(void){
     // general gap le
     done = hci_run_general_gap_le();
     if (done) return;
+
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    // ISO related tasks, e.g. BIG create/terminate/sync
+    done = hci_run_iso_tasks();
+    if (done) return;
+#endif
 #endif
 
     // send pending HCI commands
@@ -8622,6 +8736,94 @@ static void hci_iso_packet_handler(uint8_t * packet, uint16_t size){
     }
 }
 
+static void hci_emit_big_created(const le_audio_big_t * big, uint8_t status){
+    uint8_t event [6 + (MAX_NR_BIS * 2)];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_META_GAP;
+    event[pos++] = 4 + (2 * big->num_bis);
+    event[pos++] = GAP_SUBEVENT_BIG_CREATED;
+    event[pos++] = status;
+    event[pos++] = big->big_handle;
+    event[pos++] = big->num_bis;
+    uint8_t i;
+    for (i=0;i<big->num_bis;i++){
+        little_endian_store_16(event, pos, big->bis_con_handles[i]);
+        pos += 2;
+    }
+    hci_emit_event(event, pos, 0);
+}
+
+static void hci_emit_big_terminated(const le_audio_big_t * big){
+    uint8_t event [4];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_META_GAP;
+    event[pos++] = 2;
+    event[pos++] = GAP_SUBEVENT_BIG_TERMINATED;
+    event[pos++] = big->big_handle;
+    hci_emit_event(event, pos, 0);
+}
+
+static le_audio_big_t * hci_big_for_handle(uint8_t big_handle){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        le_audio_big_t * big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
+        if ( big->big_handle == big_handle ) {
+            return big;
+        }
+    }
+    return NULL;
+}
+
+uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_params){
+    if (hci_big_for_handle(big_params->big_handle) != NULL){
+        return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
+    }
+
+    if (big_params->num_bis == 0){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    if (big_params->num_bis > MAX_NR_BIS){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
+    le_audio_big_t * big = storage;
+    big->big_handle = big_params->big_handle;
+    big->params = big_params;
+    big->state = LE_AUDIO_BIG_STATE_CREATE;
+    big->num_bis = big_params->num_bis;
+    btstack_linked_list_add(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) big);
+
+    hci_run();
+
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_big_terminate(uint8_t big_handle){
+    le_audio_big_t * big = hci_big_for_handle(big_handle);
+    if (big == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    switch (big->state){
+        case LE_AUDIO_BIG_STATE_CREATE:
+            btstack_linked_list_remove(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) big);
+            break;
+        case LE_AUDIO_BIG_STATE_W4_ESTABLISHED:
+            big->state = LE_AUDIO_BIG_STATE_W4_ESTABLISHED_THEN_TERMINATE;
+            break;
+        case LE_AUDIO_BIG_STATE_SETUP_ISO_PATH:
+        case LE_AUDIO_BIG_STATE_ACTIVE:
+            big->state = LE_AUDIO_BIG_STATE_TERMINATE;
+            hci_run();
+            break;
+        case LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH:
+            big->state = LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH_THEN_TERMINATE;
+            break;
+        default:
+            return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    return ERROR_CODE_SUCCESS;
+}
 
 #endif
 #endif /* ENABLE_BLE */

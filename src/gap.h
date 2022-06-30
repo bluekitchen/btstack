@@ -54,6 +54,11 @@ extern "C" {
 #include "classic/btstack_link_key_db.h"
 #endif
 
+// BIG has up to 2 BIS (stereo)
+#ifndef MAX_NR_BIS
+#define MAX_NR_BIS 2
+#endif
+
 typedef enum {
 
 	// MITM protection not required
@@ -181,6 +186,52 @@ typedef struct {
     uint8_t   state;
     uint8_t   tasks;
 } le_advertising_set_t;
+
+// Isochronous Streams
+
+// -- Broadcast Isochronous Group BIG
+
+typedef struct {
+    uint8_t  big_handle;
+    uint8_t  advertising_handle;
+    uint8_t  num_bis;
+    uint32_t sdu_interval_us;
+    uint16_t max_sdu;
+    uint16_t max_transport_latency_ms;
+    uint8_t  rtn;
+    uint8_t  phy;
+    uint8_t  packing;
+    uint8_t  framing;
+    uint8_t  encryption;
+    uint8_t  broadcast_code[16];
+} le_audio_big_params_t;
+
+typedef enum {
+    LE_AUDIO_BIG_STATE_CREATE,
+    LE_AUDIO_BIG_STATE_W4_ESTABLISHED,
+    LE_AUDIO_BIG_STATE_W4_ESTABLISHED_THEN_TERMINATE,
+    LE_AUDIO_BIG_STATE_SETUP_ISO_PATH,
+    LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH,
+    LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH_THEN_TERMINATE,
+    LE_AUDIO_BIG_STATE_ACTIVE,
+    LE_AUDIO_BIG_STATE_SETUP_ISO_PATHS_FAILED,
+    LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED,
+    LE_AUDIO_BIG_STATE_TERMINATE,
+    LE_AUDIO_BIG_STATE_W4_TERMINATED,
+} le_audio_big_state_t;
+
+typedef struct {
+	btstack_linked_item_t item;
+    uint8_t big_handle;
+    le_audio_big_state_t state;
+    union {
+        uint8_t next_bis;
+        uint8_t status;
+    } state_vars;
+    uint8_t num_bis;
+    hci_con_handle_t bis_con_handles[MAX_NR_BIS];
+    const le_audio_big_params_t * params;
+} le_audio_big_t;
 
 /* API_START */
 
@@ -631,6 +682,21 @@ uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle);
  * @events: GAP_SUBEVENT_ADVERTISING_SET_REMOVED
  */
 uint8_t gap_extended_advertising_remove(uint8_t advertising_handle);
+
+/**
+ * @brief Create Broadcast Isochronous Group (BIG)
+ * @param storage to use by stack, needs to stay valid until adv set is removed with gap_big_terminate
+ * @param big_params
+ * @return status
+ */
+uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_params);
+
+/**
+ * @brief Terminate Broadcast Isochronous Group (BIG)
+ * @param big_handle
+ * @return status
+ */
+uint8_t gap_big_terminate(uint8_t big_handle);
 
 /**
  * @brief Set connection parameters for outgoing connections

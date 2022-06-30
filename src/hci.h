@@ -924,6 +924,9 @@ typedef struct {
     int (*gap_classic_accept_callback)(bd_addr_t addr, hci_link_type_t link_type);
 #endif
 
+    // hardware error callback
+    void (*hardware_error_callback)(uint8_t error);
+
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     /* callback for ISO data */
     btstack_packet_handler_t iso_packet_handler;
@@ -935,10 +938,10 @@ typedef struct {
 
     // list of iso streams
     btstack_linked_list_t iso_streams;
-#endif
 
-    // hardware error callback
-    void (*hardware_error_callback)(uint8_t error);
+    // list of BIGs
+    btstack_linked_list_t le_audio_bigs;
+#endif
 
     // basic configuration
     const char *       local_name;
