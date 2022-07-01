@@ -101,11 +101,8 @@ static enum {
     APP_W4_WORKING,
     APP_W4_BROADCAST_ADV,
     APP_W4_PA_AND_BIG_INFO,
-    APP_CREATE_BIG_SYNC,
     APP_W4_BIG_SYNC_ESTABLISHED,
-    APP_SET_ISO_PATHS,
     APP_STREAMING,
-    APP_TERMINATE_BIG,
     APP_IDLE
 } app_state = APP_W4_WORKING;
 
@@ -140,6 +137,10 @@ static unsigned int     next_bis_index;
 static uint16_t last_packet_sequence[MAX_NUM_BIS];
 static uint32_t last_packet_time_ms[MAX_NUM_BIS];
 static uint8_t last_packet_prefix[MAX_NUM_BIS * PACKET_PREFIX_LEN];
+
+// BIG Sync
+static le_audio_big_sync_t        big_sync_storage;
+static le_audio_big_sync_params_t big_sync_params;
 
 // lc3 writer
 static int dump_file;
@@ -386,7 +387,22 @@ static void enter_create_big_sync(void){
         sink->start_stream();
     }
 
-    app_state = APP_CREATE_BIG_SYNC;
+    big_sync_params.big_handle = big_handle;
+    big_sync_params.sync_handle = sync_handle;
+    big_sync_params.encryption = 0;
+    memset(big_sync_params.broadcast_code, 0, 16);
+    big_sync_params.mse = 0;
+    big_sync_params.big_sync_timeout_10ms = 100;
+    big_sync_params.num_bis = num_bis;
+    uint8_t i;
+    printf("BIG Create Sync for BIS: ");
+    for (i=0;i<num_bis;i++){
+        big_sync_params.bis_indices[i] = i + 1;
+        printf("%u ", big_sync_params.bis_indices[i]);
+    }
+    printf("\n");
+    app_state = APP_W4_BIG_SYNC_ESTABLISHED;
+    gap_big_sync_create(&big_sync_storage, &big_sync_params);
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -486,54 +502,27 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         enter_create_big_sync();
                     }
                     break;
-                case HCI_SUBEVENT_LE_BIG_SYNC_ESTABLISHED:
-                    printf("BIG Sync Established\n");
-                    if (app_state == APP_W4_BIG_SYNC_ESTABLISHED){
-                        gap_stop_scan();
-                        gap_periodic_advertising_terminate_sync(sync_handle);
-                        // update num_bis
-                        num_bis = packet[16];
-                        for (i=0;i<num_bis;i++){
-                            bis_con_handles[i] = little_endian_read_16(packet, 17 + 2*i);
-                        }
-                        next_bis_index = 0;
-                        app_state = APP_SET_ISO_PATHS;
-                    }
-                    break;
                 default:
                     break;
             }
-        default:
             break;
-    }
-
-    if (!hci_can_send_command_packet_now()) return;
-
-    const uint8_t broadcast_code[16] = { 0 };
-    uint8_t bis_array[MAX_NUM_BIS];
-    switch(app_state){
-        case APP_CREATE_BIG_SYNC:
-            app_state = APP_W4_BIG_SYNC_ESTABLISHED;
-            printf("BIG Create Sync for BIS: ");
-            for (i=0;i<num_bis;i++){
-                bis_array[i] = i + 1;
-                printf("%u ", bis_array[i]);
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_BIG_SYNC_CREATED: {
+                    printf("BIG Sync created with BIS Connection handles: ");
+                    uint8_t i;
+                    for (i=0;i<num_bis;i++){
+                        bis_con_handles[i] = gap_subevent_big_sync_created_get_bis_con_handles(packet, i);
+                        printf("0x%04x ", bis_con_handles[i]);
+                    }
+                    app_state = APP_STREAMING;
+                    last_samples_report_ms = btstack_run_loop_get_time_ms();
+                    printf("Start streaming\n");
+                    break;
+                }
+                default:
+                    break;
             }
-            printf("\n");
-            hci_send_cmd(&hci_le_big_create_sync, big_handle, sync_handle, 0, broadcast_code, 0, 100, num_bis, bis_array);
-            break;
-        case APP_SET_ISO_PATHS:
-            hci_send_cmd(&hci_le_setup_iso_data_path, bis_con_handles[next_bis_index++], 1, 0, 0, 0, 0, 0, 0, NULL);
-            if (next_bis_index == num_bis){
-                app_state = APP_STREAMING;
-                last_samples_report_ms = btstack_run_loop_get_time_ms();
-            }
-            break;
-        case APP_TERMINATE_BIG:
-            hci_send_cmd(&hci_le_big_terminate_sync, big_handle);
-            app_state = APP_IDLE;
-            printf("Shutdown...\n");
-            hci_power_control(HCI_POWER_OFF);
             break;
         default:
             break;
