@@ -1875,7 +1875,6 @@ typedef uint8_t sm_key_t[16];
  */
 #define GAP_SUBEVENT_ADVERTISING_SET_REMOVED                     0x01u
 
-// subevent_code, status, big_handle, num_bis, bis_con_handles[]
 /**
  * @format 1111C
  * @param subevent_code
@@ -1892,6 +1891,23 @@ typedef uint8_t sm_key_t[16];
  * @param big_handle
  */
 #define GAP_SUBEVENT_BIG_TERMINATED                              0x03u
+
+/**
+ * @format 1111C
+ * @param subevent_code
+ * @param status
+ * @param big_handle
+ * @param num_bis
+ * @param bis_con_handles
+ */
+#define GAP_SUBEVENT_BIG_SYNC_CREATED                            0x04u
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param big_handle
+ */
+#define GAP_SUBEVENT_BIG_SYNC_STOPPED                             0x05u
 
 /** HSP Subevent */
 

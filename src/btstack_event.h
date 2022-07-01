@@ -5598,6 +5598,54 @@ static inline uint8_t gap_subevent_big_terminated_get_big_handle(const uint8_t *
 }
 
 /**
+ * @brief Get field status from event GAP_SUBEVENT_BIG_SYNC_CREATED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_big_sync_created_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field big_handle from event GAP_SUBEVENT_BIG_SYNC_CREATED
+ * @param event packet
+ * @return big_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_big_sync_created_get_big_handle(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field num_bis from event GAP_SUBEVENT_BIG_SYNC_CREATED
+ * @param event packet
+ * @return num_bis
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_big_sync_created_get_num_bis(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get element of array field bis_con_handles from event GAP_SUBEVENT_BIG_SYNC_CREATED
+ * @param event packet
+ * @param index
+ * @return bis_con_handles
+ * @note: btstack_type C
+ */
+static inline uint16_t gap_subevent_big_sync_created_get_bis_con_handles(const uint8_t * event, uint8_t index){
+    return little_endian_read_16(event, 6 + (2 * index));
+}
+
+/**
+ * @brief Get field big_handle from event GAP_SUBEVENT_BIG_SYNC_STOPPED
+ * @param event packet
+ * @return big_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_big_sync_stopped_get_big_handle(const uint8_t * event){
+    return event[3];
+}
+
+/**
  * @brief Get field acl_handle from event HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE
  * @param event packet
  * @return acl_handle
