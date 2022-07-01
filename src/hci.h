@@ -939,8 +939,9 @@ typedef struct {
     // list of iso streams
     btstack_linked_list_t iso_streams;
 
-    // list of BIGs
+    // list of BIGs and BIG Syncs
     btstack_linked_list_t le_audio_bigs;
+    btstack_linked_list_t le_audio_big_syncs;
 #endif
 
     // basic configuration

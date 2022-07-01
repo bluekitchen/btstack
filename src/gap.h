@@ -206,17 +206,27 @@ typedef struct {
     uint8_t  broadcast_code[16];
 } le_audio_big_params_t;
 
+typedef struct {
+    uint8_t  big_handle;
+    uint8_t  sync_handle;
+    uint8_t  encryption;
+    uint8_t  broadcast_code[16];
+    uint8_t  mse;
+    uint16_t big_sync_timeout_10ms;
+    uint8_t  num_bis;
+    hci_con_handle_t bis_indices[MAX_NR_BIS];
+} le_audio_big_sync_params_t;
+
 typedef enum {
     LE_AUDIO_BIG_STATE_CREATE,
     LE_AUDIO_BIG_STATE_W4_ESTABLISHED,
-    LE_AUDIO_BIG_STATE_W4_ESTABLISHED_THEN_TERMINATE,
     LE_AUDIO_BIG_STATE_SETUP_ISO_PATH,
     LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH,
     LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH_THEN_TERMINATE,
-    LE_AUDIO_BIG_STATE_ACTIVE,
     LE_AUDIO_BIG_STATE_SETUP_ISO_PATHS_FAILED,
-    LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED,
+    LE_AUDIO_BIG_STATE_ACTIVE,
     LE_AUDIO_BIG_STATE_TERMINATE,
+    LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED,
     LE_AUDIO_BIG_STATE_W4_TERMINATED,
 } le_audio_big_state_t;
 
@@ -232,6 +242,19 @@ typedef struct {
     hci_con_handle_t bis_con_handles[MAX_NR_BIS];
     const le_audio_big_params_t * params;
 } le_audio_big_t;
+
+typedef struct {
+    btstack_linked_item_t  item;
+    uint8_t big_handle;
+    le_audio_big_state_t   state;
+    union {
+        uint8_t next_bis;
+        uint8_t status;
+    } state_vars;
+    uint8_t num_bis;
+    hci_con_handle_t bis_con_handles[MAX_NR_BIS];
+    const le_audio_big_sync_params_t * params;
+} le_audio_big_sync_t;
 
 /* API_START */
 
@@ -679,7 +702,7 @@ uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle);
  * @brief Remove advertising set from Controller
  * @param advertising_handle
  * @return status
- * @events: GAP_SUBEVENT_ADVERTISING_SET_REMOVED
+ * @events GAP_SUBEVENT_ADVERTISING_SET_REMOVED
  */
 uint8_t gap_extended_advertising_remove(uint8_t advertising_handle);
 
@@ -688,6 +711,7 @@ uint8_t gap_extended_advertising_remove(uint8_t advertising_handle);
  * @param storage to use by stack, needs to stay valid until adv set is removed with gap_big_terminate
  * @param big_params
  * @return status
+ * @events GAP_SUBEVENT_BIG_CREATED unless interrupted by call to gap_big_terminate
  */
 uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_params);
 
@@ -695,8 +719,27 @@ uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_par
  * @brief Terminate Broadcast Isochronous Group (BIG)
  * @param big_handle
  * @return status
+ * @events: GAP_SUBEVENT_BIG_TERMINATED
  */
 uint8_t gap_big_terminate(uint8_t big_handle);
+
+/**
+ * @brief Synchronize to Broadcast Isochronous Group (BIG)
+ * @param storage to use by stack, needs to stay valid until adv set is removed with gap_big_terminate
+ * @param big_sync_params
+ * @return status
+ * @events GAP_SUBEVENT_BIG_SYNC_CREATED unless interrupted by call to gap_big_sync_terminate
+ */
+uint8_t gap_big_sync_create(le_audio_big_sync_t * storage, le_audio_big_sync_params_t * big_sync_params);
+
+/**
+ * @brief Stop synchronizing to Broadcast Isochronous Group (BIG). Triggers GAP_SUBEVENT_BIG_SYNC_STOPPED
+ * @note Also used to stop synchronizing before BIG Sync was established
+ * @param big_handle
+ * @return status
+ * @events GAP_SUBEVENT_BIG_SYNC_STOPPED
+ */
+uint8_t gap_big_sync_terminate(uint8_t big_handle);
 
 /**
  * @brief Set connection parameters for outgoing connections
