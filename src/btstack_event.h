@@ -1525,14 +1525,33 @@ static inline const uint8_t * hci_event_transport_usb_info_get_path(const uint8_
 }
 
 /**
- * @brief Get field handle from event HCI_EVENT_SCO_CAN_SEND_NOW
+ * @brief Get field big_handle from event HCI_EVENT_BIS_CAN_SEND_NOW
  * @param event packet
- * @param Pointer to storage for handle
- * @note: btstack_type B
+ * @return big_handle
+ * @note: btstack_type 1
  */
-static inline void hci_event_sco_can_send_now_get_handle(const uint8_t * event, bd_addr_t handle){
-    reverse_bytes(&event[2], handle, 6);
+static inline uint8_t hci_event_bis_can_send_now_get_big_handle(const uint8_t * event){
+    return event[2];
 }
+/**
+ * @brief Get field bis_index from event HCI_EVENT_BIS_CAN_SEND_NOW
+ * @param event packet
+ * @return bis_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_bis_can_send_now_get_bis_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field con_handle from event HCI_EVENT_BIS_CAN_SEND_NOW
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_bis_can_send_now_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
 
 /**
  * @brief Get field status from event L2CAP_EVENT_CHANNEL_OPENED

@@ -1104,8 +1104,15 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_TRANSPORT_PACKET_SENT                    0x6Eu
 
 /**
- * @format B
- * @param handle
+ * @format 11H
+ * @param big_handle
+ * @param bis_index
+ * @param con_handle
+ */
+#define HCI_EVENT_BIS_CAN_SEND_NOW                         0x6Bu
+
+/**
+ * @format
  */
 #define HCI_EVENT_SCO_CAN_SEND_NOW                         0x6Fu
 
