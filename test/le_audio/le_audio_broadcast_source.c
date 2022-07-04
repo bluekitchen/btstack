@@ -457,50 +457,13 @@ static void send_iso_packet(uint8_t bis_index) {
     packet_sequence_numbers[bis_index]++;
 }
 
-
-static void encode_and_send(uint8_t bis_index){
-    encode(bis_index);
-    send_iso_packet(bis_index);
-}
-
-static void try_send(void){
-    if (app_state != APP_STREAMING) return;
-
-    bool all_can_send = true;
+static void generate_audio_and_encode(void){
     uint8_t i;
-    for (i=0; i<num_bis;i++) {
-        all_can_send &= bis_can_send[i];
+    generate_audio();
+    for (i = 0; i < num_bis; i++) {
+        encode(i);
+        bis_has_data[i] = true;
     }
-#ifdef PTS_MODE
-   static uint8_t next_sender;
-    // PTS 8.2 sends a packet after the previous one was received -> it sends at half speed for stereo configuration
-    if (all_can_send) {
-        if (next_sender == 0) {
-            generate_audio();
-        }
-        bis_can_send[next_sender] = false;
-        encode_and_send(next_sender);
-        next_sender = (num_bis - 1) - next_sender;
-    }
-#else
-    // check if next audio frame should be produced and send
-    if (all_can_send){
-        generate_audio();
-        for (i=0; i<num_bis;i++) {
-            bis_has_data[i] = true;
-        }
-    }
-
-    for (i=0;i<num_bis;i++){
-        if (hci_is_packet_buffer_reserved()) return;
-        if (bis_can_send[i] && bis_has_data[i]){
-            bis_can_send[i] = false;
-            bis_has_data[i] = false;
-            encode_and_send(i);
-            return;
-        }
-    }
-#endif
 }
 
 static void create_big(void){
@@ -527,18 +490,10 @@ static void create_big(void){
     gap_big_create(&big_storage, &big_params);
 }
 
-static void ready_to_send(void){
-    // ready to send
-    uint8_t i;
-    for (i=0;i<num_bis;i++) {
-        bis_can_send[i] = true;
-    }
-    app_state = APP_STREAMING;
-}
-
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
+    uint8_t bis_index;
 
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
@@ -567,48 +522,32 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
-                case GAP_SUBEVENT_BIG_CREATED: {
+                case GAP_SUBEVENT_BIG_CREATED:
                     printf("BIG Created with BIS Connection handles: \n");
-                    uint8_t i;
-                    for (i=0;i<num_bis;i++){
-                        bis_con_handles[i] = gap_subevent_big_created_get_bis_con_handles(packet, i);
-                        printf("0x%04x ", bis_con_handles[i]);
+                    for (bis_index=0;bis_index<num_bis;bis_index++){
+                        bis_con_handles[bis_index] = gap_subevent_big_created_get_bis_con_handles(packet, bis_index);
+                        printf("0x%04x ", bis_con_handles[bis_index]);
                     }
-                    ready_to_send();
                     app_state = APP_STREAMING;
                     printf("Start streaming\n");
+                    generate_audio_and_encode();
+                    hci_request_bis_can_send_now_events(big_params.big_handle);
                     break;
-                }
                 default:
                     break;
             }
             break;
-        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
-            if (size >= 3){
-                uint16_t num_handles = packet[2];
-                if (size != (3u + num_handles * 4u)) break;
-                uint16_t offset = 3;
-                uint16_t i;
-                for (i=0; i<num_handles;i++) {
-                    hci_con_handle_t handle = little_endian_read_16(packet, offset) & 0x0fffu;
-                    offset += 2u;
-                    uint16_t num_packets = little_endian_read_16(packet, offset);
-                    offset += 2u;
-                    uint8_t j;
-                    for (j=0 ; j<num_bis ; j++){
-                        if (handle == bis_con_handles[j]){
-                            // allow to send
-                            bis_can_send[j] = true;
-                        }
-                    }
-                }
+        case HCI_EVENT_BIS_CAN_SEND_NOW:
+            send_iso_packet(hci_event_bis_can_send_now_get_bis_index(packet));
+            bis_index++;
+            if (bis_index == num_bis){
+                generate_audio_and_encode();
+                hci_request_bis_can_send_now_events(big_params.big_handle);
             }
             break;
         default:
             break;
     }
-
-    try_send();
 }
 
 static void show_usage(void){
