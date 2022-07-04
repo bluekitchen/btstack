@@ -3856,6 +3856,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         while (btstack_linked_list_iterator_has_next(&it)){
                             hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
                             if (iso_stream->big_handle == big->big_handle){
+                                log_info("BIG Terminated, big_handle 0x%02x, con handle 0x%04x", iso_stream->big_handle, iso_stream->con_handle);
                                 btstack_linked_list_iterator_remove(&it);
                                 btstack_memory_hci_iso_stream_free(iso_stream);
                             }
@@ -4326,14 +4327,19 @@ void hci_set_control(const btstack_control_t *hardware_control){
 }
 
 static void hci_discard_connections(void){
-    btstack_linked_list_iterator_t lit;
-    btstack_linked_list_iterator_init(&lit, &hci_stack->connections);
-    while (btstack_linked_list_iterator_has_next(&lit)){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
         // cancel all l2cap connections by emitting dicsconnection complete before shutdown (free) connection
-        hci_connection_t * connection = (hci_connection_t*) btstack_linked_list_iterator_next(&lit);
+        hci_connection_t * connection = (hci_connection_t*) btstack_linked_list_iterator_next(&it);
         hci_emit_disconnection_complete(connection->con_handle, 0x16); // terminated by local host
         hci_shutdown_connection(connection);
     }
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    while (hci_stack->iso_streams != NULL){
+        hci_iso_stream_finalize((hci_iso_stream_t *) hci_stack->iso_streams);
+    }
+#endif
 }
 
 void hci_close(void){
@@ -4854,6 +4860,24 @@ static void hci_halting_run(void) {
                 hci_send_cmd(&hci_disconnect, con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
                 return;
             }
+
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+            // stop BIGs and BIG Syncs
+            if (hci_stack->le_audio_bigs != NULL){
+                le_audio_big_t * big = (le_audio_big_t*) hci_stack->le_audio_bigs;
+                if (big->state == LE_AUDIO_BIG_STATE_W4_TERMINATED) return;
+                big->state = LE_AUDIO_BIG_STATE_W4_TERMINATED;
+                hci_send_cmd(&hci_le_terminate_big, big->big_handle);
+                return;
+            }
+            if (hci_stack->le_audio_big_syncs != NULL){
+                le_audio_big_sync_t * big_sync = (le_audio_big_sync_t*) hci_stack->le_audio_big_syncs;
+                if (big_sync->state == LE_AUDIO_BIG_STATE_W4_TERMINATED) return;
+                big_sync->state = LE_AUDIO_BIG_STATE_W4_TERMINATED;
+                hci_send_cmd(&hci_le_big_terminate_sync, big_sync->big_handle);
+                return;
+            }
+#endif
 
             btstack_run_loop_remove_timer(&hci_stack->timeout);
 
@@ -8778,6 +8802,7 @@ static hci_iso_stream_t * hci_iso_stream_for_con_handle(hci_con_handle_t con_han
 }
 
 static void hci_iso_stream_finalize(hci_iso_stream_t * iso_stream){
+    log_info("hci_iso_stream_finalize con_handle 0x%04x, big_handle 0x%02x", iso_stream->con_handle, iso_stream->big_handle);
     btstack_linked_list_remove(&hci_stack->iso_streams, (btstack_linked_item_t*) iso_stream);
     btstack_memory_hci_iso_stream_free(iso_stream);
 }
