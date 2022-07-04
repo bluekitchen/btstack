@@ -241,6 +241,8 @@ typedef struct {
     uint8_t num_bis;
     hci_con_handle_t bis_con_handles[MAX_NR_BIS];
     const le_audio_big_params_t * params;
+    // request to send
+    bool can_send_now_requested;
 } le_audio_big_t;
 
 typedef struct {

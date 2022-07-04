@@ -231,6 +231,7 @@ static void hci_iso_stream_requested_finalize(uint8_t big_handle);
 static void hci_iso_stream_requested_confirm(uint8_t big_handle);
 static void hci_iso_packet_handler(uint8_t * packet, uint16_t size);
 static le_audio_big_t * hci_big_for_handle(uint8_t big_handle);
+static void hci_iso_notify_can_send_now(void);
 static void hci_emit_big_created(const le_audio_big_t * big, uint8_t status);
 static void hci_emit_big_terminated(const le_audio_big_t * big);
 static void hci_emit_big_sync_created(const le_audio_big_sync_t * big_sync, uint8_t status);
@@ -3170,6 +3171,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u",
                                  num_packets, handle, iso_stream->num_packets_sent);
                     }
+                    hci_iso_notify_can_send_now();
                 }
 #endif
 
@@ -3732,7 +3734,10 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
             if (hci_stack->acl_fragmentation_total_size) break;
             hci_release_packet_buffer();
-            
+
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+            hci_iso_notify_can_send_now();
+#endif
             // L2CAP receives this event via the hci_emit_event below
 
 #ifdef ENABLE_CLASSIC
@@ -8984,6 +8989,17 @@ static void hci_emit_big_sync_stopped(const le_audio_big_sync_t * big_sync){
     hci_emit_event(event, pos, 0);
 }
 
+static void hci_emit_bis_can_send_now(const le_audio_big_t *big, uint8_t bis_index) {
+    uint8_t event[6];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_BIS_CAN_SEND_NOW;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = big->big_handle;
+    event[pos++] = bis_index;
+    little_endian_store_16(event, pos, big->bis_con_handles[bis_index]);
+    hci_emit_event(&event[0], sizeof(event), 0);  // don't dump
+}
+
 static le_audio_big_t * hci_big_for_handle(uint8_t big_handle){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
@@ -9006,6 +9022,52 @@ static le_audio_big_sync_t * hci_big_sync_for_handle(uint8_t big_handle){
         }
     }
     return NULL;
+}
+
+static void hci_iso_notify_can_send_now(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        le_audio_big_t * big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
+        if (big->can_send_now_requested){
+            // check if no outgoing iso packets pending
+            uint8_t i;
+            bool can_send = true;
+            for (i=0;i<big->num_bis;i++){
+                hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(big->bis_con_handles[i]);
+                if ((iso_stream == NULL) || (iso_stream->num_packets_sent > 0)){
+                    can_send = false;
+                    break;
+                }
+            }
+            if (can_send){
+                // propagate can send now to individual streams
+                big->can_send_now_requested = false;
+                for (i=0;i<big->num_bis;i++){
+                    hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(big->bis_con_handles[i]);
+                    iso_stream->emit_ready_to_send = true;
+                }
+            }
+        }
+    }
+
+    if (hci_stack->hci_packet_buffer_reserved) return;
+
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        le_audio_big_t * big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
+        // report bis ready
+        uint8_t i;
+        bool can_send = true;
+        for (i=0;i<big->num_bis;i++){
+            hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(big->bis_con_handles[i]);
+            if ((iso_stream != NULL) && iso_stream->emit_ready_to_send){
+                iso_stream->emit_ready_to_send = false;
+                hci_emit_bis_can_send_now(big, i);
+                break;
+            }
+        }
+    }
 }
 
 uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_params){
@@ -9120,6 +9182,18 @@ uint8_t gap_big_sync_terminate(uint8_t big_handle){
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t hci_request_bis_can_send_now_events(uint8_t big_handle){
+    le_audio_big_t * big = hci_big_for_handle(big_handle);
+    if (big == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (big->state != LE_AUDIO_BIG_STATE_ACTIVE){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    big->can_send_now_requested = true;
+    hci_iso_notify_can_send_now();
+    return ERROR_CODE_SUCCESS;
+}
 #endif
 #endif /* ENABLE_BLE */
 

@@ -697,6 +697,9 @@ typedef struct {
     // number packets sent to controller
     uint8_t num_packets_sent;
 
+    // ready to send
+    bool emit_ready_to_send;
+
 } hci_iso_stream_t;
 #endif
 
@@ -1357,6 +1360,14 @@ bool hci_can_send_prepared_sco_packet_now(void);
  * @brief Send SCO packet prepared in HCI packet buffer
  */
 uint8_t hci_send_sco_packet_buffer(int size);
+
+/**
+ * @brief Request emission of HCI_EVENT_BIS_CAN_SEND_NOW for all BIS as soon as possible
+ * @param big_handle
+ * @note HCI_EVENT_ISO_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ */
+uint8_t hci_request_bis_can_send_now_events(uint8_t big_handle);
 
 /**
  * @brief Send ISO packet prepared in HCI packet buffer
