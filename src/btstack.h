@@ -135,6 +135,7 @@
 #include "classic/hsp_hs.h"
 #include "classic/obex.h"
 #include "classic/opp_client.h"
+#include "classic/opp_server.h"
 #include "classic/pan.h"
 #include "classic/pbap.h"
 #include "classic/pbap_client.h"
