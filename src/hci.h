@@ -687,6 +687,9 @@ typedef struct {
     // state
     hci_iso_stream_state_t state;
 
+    // BIG handle or 0xff for CIS
+    uint8_t big_handle;
+
     // re-assembly buffer
     uint16_t reassembly_pos;
     uint8_t  reassembly_buffer[HCI_ISO_PAYLOAD_SIZE];
