@@ -261,7 +261,6 @@ static enum {
 
 static enum {
     APP_IDLE,
-    APP_W4_PERIODIC_ENABLED,
     APP_W4_CREATE_BIG_COMPLETE,
     APP_STREAMING,
     APP_W4_POWER_OFF,
@@ -466,7 +465,30 @@ static void generate_audio_and_encode(void){
     }
 }
 
-static void create_big(void){
+static void setup_advertising() {
+    gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
+    gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
+    gap_periodic_advertising_set_params(adv_handle, &periodic_params);
+    switch(num_bis){
+        case 1:
+            gap_periodic_advertising_set_data(adv_handle, sizeof(periodic_adv_data_1), periodic_adv_data_1);
+            printf("BASE: ");
+            printf_hexdump(periodic_adv_data_1, sizeof(periodic_adv_data_1));
+            break;
+        case 2:
+            gap_periodic_advertising_set_data(adv_handle, sizeof(periodic_adv_data_2), periodic_adv_data_2);
+            printf("BASE: ");
+            printf_hexdump(periodic_adv_data_2, sizeof(periodic_adv_data_2));
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+    gap_periodic_advertising_start(adv_handle, 0);
+    gap_extended_advertising_start(adv_handle, 0, 0);
+}
+
+static void setup_big(void){
     // Create BIG
     big_params.big_handle = 0;
     big_params.advertising_handle = adv_handle;
@@ -510,16 +532,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             }
             break;
-        case HCI_EVENT_COMMAND_COMPLETE:
-            switch (hci_event_command_complete_get_command_opcode(packet)){
-                case HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_ENABLE:
-                    if (app_state != APP_W4_PERIODIC_ENABLED) break;
-                    create_big();
-                    break;
-                default:
-                    break;
-            }
-            break;
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
                 case GAP_SUBEVENT_BIG_CREATED:
@@ -528,6 +540,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         bis_con_handles[bis_index] = gap_subevent_big_created_get_bis_con_handles(packet, bis_index);
                         printf("0x%04x ", bis_con_handles[bis_index]);
                     }
+
                     app_state = APP_STREAMING;
                     printf("Start streaming\n");
                     generate_audio_and_encode();
@@ -644,28 +657,11 @@ static void stdin_process(char c){
                 sine_step = 96000 / sampling_frequency_hz;
             }
 
-            // setup
-            app_state = APP_W4_PERIODIC_ENABLED;
-            gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
-            gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
-            gap_periodic_advertising_set_params(adv_handle, &periodic_params);
-            switch(num_bis){
-                case 1:
-                    gap_periodic_advertising_set_data(adv_handle, sizeof(periodic_adv_data_1), periodic_adv_data_1);
-                    printf("BASE: ");
-                    printf_hexdump(periodic_adv_data_1, sizeof(periodic_adv_data_1));
-                    break;
-                case 2:
-                    gap_periodic_advertising_set_data(adv_handle, sizeof(periodic_adv_data_2), periodic_adv_data_2);
-                    printf("BASE: ");
-                    printf_hexdump(periodic_adv_data_2, sizeof(periodic_adv_data_2));
-                    break;
-                default:
-                    btstack_unreachable();
-                    break;
-            }
-            gap_periodic_advertising_start(adv_handle, 0);
-            gap_extended_advertising_start(adv_handle, 0, 0);
+            // setup extended and periodic advertising
+            setup_advertising();
+
+            // setup big
+            setup_big();
             break;
         case 't':
             audio_source = 1 - audio_source;
