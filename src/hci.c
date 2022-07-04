@@ -3817,7 +3817,19 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             uint8_t num_bis = btstack_min(MAX_NR_BIS, packet[20]);
                             uint8_t i;
                             for (i=0;i<num_bis;i++){
-                                big->bis_con_handles[i] = little_endian_read_16(packet, 21 + (2 * i));
+                                hci_con_handle_t bis_handle = (hci_con_handle_t) little_endian_read_16(packet, 21 + (2 * i));
+                                big->bis_con_handles[i] = bis_handle;
+                                // assign bis handle
+                                btstack_linked_list_iterator_t it;
+                                btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
+                                while (btstack_linked_list_iterator_has_next(&it)){
+                                    hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+                                    if ((iso_stream->state == HCI_ISO_STREAM_STATE_REQUESTED ) &&
+                                        (iso_stream->big_handle == big->big_handle)){
+                                        iso_stream->con_handle = bis_handle;
+                                        iso_stream->state = HCI_ISO_STREAM_STATE_ESTABLISHED;
+                                    }
+                                }
                             }
                             if (big->state == LE_AUDIO_BIG_STATE_W4_ESTABLISHED) {
                                 big->state = LE_AUDIO_BIG_STATE_SETUP_ISO_PATH;
@@ -3825,6 +3837,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             }
                         } else {
                             // create BIG failed or has been stopped by us
+                            hci_iso_stream_requested_finalize(big->big_handle);
                             btstack_linked_list_remove(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) big);
                             if (big->state == LE_AUDIO_BIG_STATE_W4_ESTABLISHED){
                                 hci_emit_big_created(big, status);
@@ -3837,6 +3850,16 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 case HCI_SUBEVENT_LE_TERMINATE_BIG_COMPLETE:
                     big = hci_big_for_handle(hci_subevent_le_terminate_big_complete_get_big_handle(packet));
                     if (big != NULL){
+                        // finalize associated ISO streams
+                        btstack_linked_list_iterator_t it;
+                        btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
+                        while (btstack_linked_list_iterator_has_next(&it)){
+                            hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+                            if (iso_stream->big_handle == big->big_handle){
+                                btstack_linked_list_iterator_remove(&it);
+                                btstack_memory_hci_iso_stream_free(iso_stream);
+                            }
+                        }
                         btstack_linked_list_remove(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) big);
                         switch (big->state){
                             case LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED:
@@ -8946,6 +8969,22 @@ uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_par
     }
     if (big_params->num_bis > MAX_NR_BIS){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
+    // reserve ISO Streams
+    uint8_t i;
+    uint8_t status = ERROR_CODE_SUCCESS;
+    for (i=0;i<big_params->num_bis;i++){
+        status = hci_iso_stream_create(HCI_CON_HANDLE_INVALID, big_params->big_handle);
+        if (status != ERROR_CODE_SUCCESS) {
+            break;
+        }
+    }
+
+    // free structs on error
+    if (status != ERROR_CODE_SUCCESS){
+        hci_iso_stream_requested_finalize(big_params->big_handle);
+        return status;
     }
 
     le_audio_big_t * big = storage;
