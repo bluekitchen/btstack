@@ -187,7 +187,8 @@ static enum {
     APP_IDLE,
     APP_W4_CIS_COMPLETE,
     APP_SET_ISO_PATH,
-    APP_STREAMING
+    APP_STREAMING,
+    APP_W4_POWER_OFF,
 } app_state = APP_W4_WORKING;
 
 // enumerate default codec configs
@@ -378,6 +379,8 @@ static void encode_and_send(uint8_t cis_index){
 }
 
 static void try_send(void){
+    if (app_state != APP_STREAMING) return;
+
     bool all_can_send = true;
     uint8_t i;
     for (i=0; i < num_cis; i++) {
@@ -653,6 +656,7 @@ static void stdin_process(char c){
             }
 #endif
             printf("Shutdown...\n");
+            app_state = APP_W4_POWER_OFF;
             hci_power_control(HCI_POWER_OFF);
             break;
         case 's':
