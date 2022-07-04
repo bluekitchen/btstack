@@ -69,6 +69,7 @@
 // max config
 #define MAX_NUM_BIS 2
 #define MAX_SAMPLES_PER_FRAME 480
+#define MAX_LC3_FRAME_BYTES   155
 
 static const uint8_t adv_sid = 0;
 
@@ -236,6 +237,7 @@ static uint8_t  num_bis = 1;
 static const btstack_lc3_encoder_t * lc3_encoder;
 static btstack_lc3_encoder_google_t encoder_contexts[MAX_NUM_BIS];
 static int16_t pcm[MAX_NUM_BIS * MAX_SAMPLES_PER_FRAME];
+static uint8_t iso_payload[MAX_NUM_BIS * MAX_LC3_FRAME_BYTES];
 static uint32_t time_generation_ms;
 
 // codec menu
@@ -397,7 +399,13 @@ static void generate_audio(void){
     iso_frame_counter++;
 }
 
-static void encode_and_send(uint8_t bis_index){
+static void encode(uint8_t bis_index){
+    // encode as lc3
+    lc3_encoder->encode_signed_16(&encoder_contexts[bis_index], &pcm[bis_index], num_bis, &iso_payload[bis_index * MAX_LC3_FRAME_BYTES], octets_per_frame);
+}
+
+
+static void send_iso_packet(uint8_t bis_index) {
 
 #ifdef COUNT_MODE
     if (bis_index == 0) {
@@ -430,12 +438,13 @@ static void encode_and_send(uint8_t bis_index){
     buffer[8] = bis_index;
     memset(&buffer[9], iso_frame_counter, octets_per_frame - 1);
 #else
-    // encode as lc3
-    lc3_encoder->encode_signed_16(&encoder_contexts[bis_index], &pcm[bis_index], num_bis, &buffer[8], octets_per_frame);
+    // copy encoded payload
+    memcpy(&buffer[8], &iso_payload[bis_index * MAX_LC3_FRAME_BYTES], octets_per_frame);
 #endif
     // send
     hci_send_iso_packet_buffer(4 + 0 + 4 + octets_per_frame);
 
+#ifdef HAVE_POSIX_FILE_IO
     if (((packet_sequence_numbers[bis_index] & 0x7f) == 0) && (bis_index == 0)) {
         printf("Encoding time: %u\n", time_generation_ms);
     }
@@ -443,8 +452,15 @@ static void encode_and_send(uint8_t bis_index){
         printf("%04x %10u %u ", packet_sequence_numbers[bis_index], btstack_run_loop_get_time_ms(), bis_index);
         printf_hexdump(&buffer[8], octets_per_frame);
     }
+#endif
 
     packet_sequence_numbers[bis_index]++;
+}
+
+
+static void encode_and_send(uint8_t bis_index){
+    encode(bis_index);
+    send_iso_packet(bis_index);
 }
 
 static void try_send(void){
