@@ -693,6 +693,10 @@ typedef struct {
     // re-assembly buffer
     uint16_t reassembly_pos;
     uint8_t  reassembly_buffer[HCI_ISO_PAYLOAD_SIZE];
+
+    // number packets sent to controller
+    uint8_t num_packets_sent;
+
 } hci_iso_stream_t;
 #endif
 

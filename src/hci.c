@@ -1068,12 +1068,21 @@ static uint8_t hci_send_iso_packet_fragments(void){
 uint8_t hci_send_iso_packet_buffer(uint16_t size){
     btstack_assert(hci_stack->hci_packet_buffer_reserved);
 
+    hci_con_handle_t con_handle = (hci_con_handle_t) little_endian_read_16(hci_stack->hci_packet_buffer, 0) & 0xfff;
+    hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(con_handle);
+    if (iso_stream == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    // TODO: check for space on controller
+
+    // track outgoing packet sent
+    log_info("Outgoing ISO packet for con handle 0x%04x", con_handle);
+    iso_stream->num_packets_sent++;
+
     // setup data
     hci_stack->iso_fragmentation_total_size = size;
     hci_stack->iso_fragmentation_pos = 4;   // start of L2CAP packet
-
-    // TODO: check for space on controller
-    // TODO: track outgoing packet sent
 
     return hci_send_iso_packet_fragments();
 }
@@ -3137,18 +3146,32 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 offset += 2u;
                 
                 conn = hci_connection_for_handle(handle);
-                if (!conn){
-                    log_error("hci_number_completed_packet lists unused con handle %u", handle);
-                    continue;
+                if (conn != NULL) {
+
+                    if (conn->num_packets_sent >= num_packets) {
+                        conn->num_packets_sent -= num_packets;
+                    } else {
+                        log_error("hci_number_completed_packets, more packet slots freed then sent.");
+                        conn->num_packets_sent = 0;
+                    }
+                    // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u", num_packets, handle, conn->num_packets_sent);
                 }
-                
-                if (conn->num_packets_sent >= num_packets){
-                    conn->num_packets_sent -= num_packets;
-                } else {
-                    log_error("hci_number_completed_packets, more packet slots freed then sent.");
-                    conn->num_packets_sent = 0;
+
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+                if (conn == NULL){
+                    hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(handle);
+                    if (iso_stream != NULL){
+                        if (iso_stream->num_packets_sent >= num_packets) {
+                            iso_stream->num_packets_sent -= num_packets;
+                        } else {
+                            log_error("hci_number_completed_packets, more packet slots freed then sent.");
+                            iso_stream->num_packets_sent = 0;
+                        }
+                        log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u",
+                                 num_packets, handle, iso_stream->num_packets_sent);
+                    }
                 }
-                // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u", num_packets, handle, conn->num_packets_sent);
+#endif
 
 #ifdef ENABLE_CLASSIC
                 // For SCO, we do the can_send_now_check here
