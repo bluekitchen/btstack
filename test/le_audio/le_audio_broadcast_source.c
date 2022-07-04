@@ -66,9 +66,6 @@
 // Count mode - send packet count as test data for manual analysis
 // #define COUNT_MODE
 
-// create audio based on timer instead of num completed packets
-// #define GENERATE_AUDIO_WITH_TIMER
-
 // max config
 #define MAX_NUM_BIS 2
 #define MAX_SAMPLES_PER_FRAME 480
@@ -226,13 +223,6 @@ static le_audio_big_params_t big_params;
 #define MAX_PACKET_INTERVAL_BINS_MS 50
 static uint32_t send_time_bins[MAX_PACKET_INTERVAL_BINS_MS];
 static uint32_t send_last_ms;
-#endif
-
-// time based sender
-#ifdef GENERATE_AUDIO_WITH_TIMER
-static uint32_t next_send_time_ms;
-static uint32_t next_send_time_additional_us;
-static btstack_timer_source_t send_timer;
 #endif
 
 // lc3 codec config
@@ -477,17 +467,6 @@ static void try_send(void){
         next_sender = (num_bis - 1) - next_sender;
     }
 #else
-#ifdef GENERATE_AUDIO_WITH_TIMER
-    for (i=0;i<num_bis;i++){
-        if (hci_is_packet_buffer_reserved()) return;
-        if (bis_has_data[i]){
-            bis_can_send[i] = false;
-            bis_has_data[i] = false;
-            encode_and_send(i);
-            return;
-        }
-    }
-#else
     // check if next audio frame should be produced and send
     if (all_can_send){
         generate_audio();
@@ -506,34 +485,7 @@ static void try_send(void){
         }
     }
 #endif
-#endif
 }
-
-#ifdef GENERATE_AUDIO_WITH_TIMER
-static void generate_audio_timer_handler(btstack_timer_source_t *ts){
-
-    generate_audio();
-
-    uint8_t i;
-    for (i=0; i<num_bis;i++) {
-        bis_has_data[i] = true;
-    }
-
-    // next send time based on frame_duration_us
-    next_send_time_additional_us += frame_duration_us % 1000;
-    if (next_send_time_additional_us > 1000){
-        next_send_time_ms++;
-        next_send_time_additional_us -= 1000;
-    }
-    next_send_time_ms += frame_duration_us / 1000;
-
-    uint32_t now = btstack_run_loop_get_time_ms();
-    btstack_run_loop_set_timer(&send_timer, next_send_time_ms - now);
-    btstack_run_loop_add_timer(&send_timer);
-
-    try_send();
-}
-#endif
 
 static void create_big(void){
     // Create BIG
@@ -566,14 +518,6 @@ static void ready_to_send(void){
         bis_can_send[i] = true;
     }
     app_state = APP_STREAMING;
-    //
-#ifdef GENERATE_AUDIO_WITH_TIMER
-    btstack_run_loop_set_timer_handler(&send_timer, &generate_audio_timer_handler);
-                        uint32_t next_send_time_ms = btstack_run_loop_get_time_ms() + 10;
-                        uint32_t now = btstack_run_loop_get_time_ms();
-                        btstack_run_loop_set_timer(&send_timer, next_send_time_ms - now);
-                        btstack_run_loop_add_timer(&send_timer);
-#endif
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
