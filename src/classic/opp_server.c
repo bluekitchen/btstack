@@ -154,9 +154,9 @@ static void opp_server_finalize_connection(opp_server_t * opp_server){
 }
 
 void opp_server_create_sdp_record(uint8_t *service, uint32_t service_record_handle, uint8_t rfcomm_channel_nr,
-                                  uint16_t l2cap_psm, const char *name, uint8_t supported_repositories,
-                                  uint32_t opp_supported_features) {
-    uint8_t* attribute;
+                                  uint16_t l2cap_psm, const char *name, uint8_t num_supported_formats,
+                                  const uint8_t * supported_formats) {
+    uint8_t *attribute;
     de_create_sequence(service);
 
     // 0x0000 "Service Record Handle"
@@ -164,54 +164,54 @@ void opp_server_create_sdp_record(uint8_t *service, uint32_t service_record_hand
     de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
 
     // 0x0001 "Service Class ID List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
     attribute = de_push_sequence(service);
     {
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE);
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_OBEX_OBJECT_PUSH);
     }
     de_pop_sequence(service, attribute);
 
     // 0x0004 "Protocol Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST);
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
     {
-        uint8_t* l2cpProtocol = de_push_sequence(attribute);
+        uint8_t *l2cpProtocol = de_push_sequence(attribute);
         {
-            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
+            de_add_number(l2cpProtocol, DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
         }
         de_pop_sequence(attribute, l2cpProtocol);
 
-        uint8_t* rfcomm = de_push_sequence(attribute);
+        uint8_t *rfcomm = de_push_sequence(attribute);
         {
-            de_add_number(rfcomm,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_RFCOMM);
-            de_add_number(rfcomm,  DE_UINT, DE_SIZE_8,  rfcomm_channel_nr);
+            de_add_number(rfcomm, DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_RFCOMM);
+            de_add_number(rfcomm, DE_UINT, DE_SIZE_8, rfcomm_channel_nr);
         }
         de_pop_sequence(attribute, rfcomm);
 
-        uint8_t* obexProtocol = de_push_sequence(attribute);
+        uint8_t *obexProtocol = de_push_sequence(attribute);
         {
-            de_add_number(obexProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_OBEX);
+            de_add_number(obexProtocol, DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_OBEX);
         }
         de_pop_sequence(attribute, obexProtocol);
     }
     de_pop_sequence(service, attribute);
 
     // 0x0009 "Bluetooth Profile Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
     {
         uint8_t *oppServerProfile = de_push_sequence(attribute);
         {
-            de_add_number(oppServerProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS);
-            de_add_number(oppServerProfile,  DE_UINT, DE_SIZE_16, 0x0102); // Verision 1.2
+            de_add_number(oppServerProfile, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_OBEX_OBJECT_PUSH);
+            de_add_number(oppServerProfile, DE_UINT, DE_SIZE_16, 0x0102); // Version 1.2
         }
         de_pop_sequence(attribute, oppServerProfile);
     }
     de_pop_sequence(service, attribute);
 
     // 0x0100 "Service Name"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-    de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0100);
+    de_add_data(service, DE_STRING, strlen(name), (uint8_t *) name);
 
 #ifdef ENABLE_GOEP_L2CAP
     // 0x0200 "GOEP L2CAP PSM"
@@ -219,9 +219,15 @@ void opp_server_create_sdp_record(uint8_t *service, uint32_t service_record_hand
     de_add_number(service, DE_UINT, DE_SIZE_16, l2cap_psm);
 #endif
 
-    // 0x0314 "Supported Repositories"
-    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SUPPORTED_REPOSITORIES);
-    de_add_number(service, DE_UINT, DE_SIZE_16, supported_repositories);
+    // 0x0314 "Supported Formats List" - DES of Uint8
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SUPPORTED_FORMATS_LIST);
+    attribute = de_push_sequence(service);{
+        uint8_t i;
+        for (i=0;i<num_supported_formats;i++){
+            de_add_number(attribute, DE_UINT, DE_SIZE_8, supported_formats[i]);
+        }
+    }
+    de_pop_sequence(service, attribute);
 }
 
 static void obex_srm_init(obex_srm_t * obex_srm){
