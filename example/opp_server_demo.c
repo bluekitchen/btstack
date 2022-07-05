@@ -50,8 +50,6 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "btstack.h"
 
@@ -65,7 +63,7 @@ static uint8_t service_buffer[150];
 
 // static uint32_t sdp_service_record_handle;
 
-static uint32_t supported_features_default = 0;
+static const uint8_t supported_formats[] = { 1, 2, 3, 4, 5, 6};
 
 // packet handler
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -159,9 +157,8 @@ int btstack_main(int argc, const char * argv[]){
 
     // setup SDP Record
     sdp_init();
-    uint32_t supported_features = supported_features_default;
     opp_server_create_sdp_record(service_buffer, sdp_create_service_record_handle(), OPP_SERVER_RFCOMM_CHANNEL_NR,
-                                  OPP_SERVER_L2CAP_PSM, "OPP Server", 1, supported_features);
+                                  OPP_SERVER_L2CAP_PSM, "OPP Server", sizeof(supported_formats), supported_formats);
     sdp_register_service(service_buffer);
 
     // register for HCI events
