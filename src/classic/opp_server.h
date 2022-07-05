@@ -107,10 +107,12 @@ extern "C" {
  * @param rfcomm_channel_nr
  * @param l2cap_psm
  * @param name
+ * @param num_supported_formats
+ * @param supported_formats
  */
 void opp_server_create_sdp_record(uint8_t *service, uint32_t service_record_handle, uint8_t rfcomm_channel_nr,
-                                   uint16_t l2cap_psm, const char *name, uint8_t supported_repositories,
-                                   uint32_t opp_supported_features);
+                                   uint16_t l2cap_psm, const char *name, uint8_t num_supported_formats,
+                                   const uint8_t * supported_formats);
 
 /**
  * Setup OPP Server
