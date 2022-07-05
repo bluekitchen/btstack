@@ -54,6 +54,7 @@ all: build-coverage/battery_service_server_test 			build-asan/battery_service_se
 	 build-coverage/tx_power_service_server_test 			build-asan/tx_power_service_server_test 			\
 	 build-coverage/bond_management_service_server_test 	build-asan/bond_management_service_server_test 		\
 	 build-coverage/microphone_control_service_server_test 	build-asan/microphone_control_service_server_test 	\
+	 build-coverage/heart_rate_service_server_test 			build-asan/heart_rate_service_server_test 			\
 
 build-%:
 	mkdir -p $@
@@ -71,6 +72,9 @@ build-%/bond_management_service_server_test.h: bond_management_service_server_te
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 build-%/microphone_control_service_server_test.h: microphone_control_service_server_test.gatt| build-%
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+
+build-%/heart_rate_service_server_test.h: heart_rate_service_server_test.gatt| build-%
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 build-coverage/%.o: %.c | build-coverage
@@ -115,12 +119,19 @@ build-coverage/microphone_control_service_server_test: build-coverage/microphone
 build-asan/microphone_control_service_server_test: build-asan/microphone_control_service_server_test.h ${COMMON_OBJ_ASAN} build-asan/microphone_control_service_server.o  build-asan/microphone_control_service_server_test.o  | build-asan
 	${CXX} $(filter-out build-asan/microphone_control_service_server_test.h,$^) ${LDFLAGS_ASAN} -o $@
 
+build-coverage/heart_rate_service_server_test: build-coverage/heart_rate_service_server_test.h ${COMMON_OBJ_COVERAGE} build-coverage/heart_rate_service_server.o build-coverage/heart_rate_service_server_test.o  | build-coverage
+	${CXX} $(filter-out build-coverage/heart_rate_service_server_test.h,$^) ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/heart_rate_service_server_test: build-asan/heart_rate_service_server_test.h ${COMMON_OBJ_ASAN} build-asan/heart_rate_service_server.o  build-asan/heart_rate_service_server_test.o  | build-asan
+	${CXX} $(filter-out build-asan/heart_rate_service_server_test.h,$^) ${LDFLAGS_ASAN} -o $@
+
 test: all
 	build-asan/battery_service_server_test
 	build-asan/device_information_service_server_test
 	build-asan/tx_power_service_server_test
 	build-asan/bond_management_service_server_test
 	build-asan/microphone_control_service_server_test
+	build-asan/heart_rate_service_server_test
 		
 coverage: all
 	rm -f build-coverage/*.gcda
@@ -129,6 +140,7 @@ coverage: all
 	build-coverage/tx_power_service_server_test
 	build-coverage/bond_management_service_server_test
 	build-coverage/microphone_control_service_server_test
+	build-coverage/heart_rate_service_server_test
 
 clean:
 	rm -rf build-coverage build-asan
