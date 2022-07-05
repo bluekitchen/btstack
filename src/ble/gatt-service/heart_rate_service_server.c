@@ -96,15 +96,15 @@ static uint16_t heart_rate_service_read_callback(hci_con_handle_t con_handle, ui
     if (attribute_handle == heart_rate.measurement_client_configuration_descriptor_handle){
         if (buffer && (buffer_size >= 2u)){
             little_endian_store_16(buffer, 0, heart_rate.measurement_client_configuration_descriptor_notify);
-            return 2;
         } 
+        return 2;
     }
     
     if (attribute_handle == heart_rate.sensor_location_value_handle){
         if (buffer && (buffer_size >= 1u)){
             buffer[0] = heart_rate.sensor_location;
-            return 1;
         }
+        return 1;
     }
     return 0;
 }
