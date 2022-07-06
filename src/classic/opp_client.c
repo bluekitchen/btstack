@@ -108,9 +108,9 @@ typedef struct opp_client {
     obex_parser_t obex_parser;
     uint8_t obex_header_buffer[4];
     /* object put */
-    char     *object_name;
-    char     *object_type;
-    uint8_t  *object_data;
+    const char     *object_name;
+    const char     *object_type;
+    const uint8_t  *object_data;
     uint32_t  object_size;
     uint32_t  object_pos;
     /* srm */
@@ -231,7 +231,7 @@ static void opp_client_prepare_put_operation(opp_client_t * client){
     client->obex_parser_waiting_for_response = true;
 }
 
-static void opp_handle_can_send_now(void){
+static void opp_client_handle_can_send_now(void){
     if (opp_client->abort_operation){
         opp_client->abort_operation = 0;
         // prepare request
@@ -366,7 +366,7 @@ static void opp_client_handle_srm_headers(opp_client_t *context) {
     log_info("SRM state %u", context->srm_state);
 }
 
-static void opp_packet_handler_hci(uint8_t *packet, uint16_t size){
+static void opp_client_packet_handler_hci(uint8_t *packet, uint16_t size){
     UNUSED(size);
     uint8_t status;
     switch (hci_event_packet_get_type(packet)) {
@@ -396,7 +396,7 @@ static void opp_packet_handler_hci(uint8_t *packet, uint16_t size){
                     opp_client_emit_connection_closed_event(opp_client);
                     break;
                 case GOEP_SUBEVENT_CAN_SEND_NOW:
-                    opp_handle_can_send_now();
+                    opp_client_handle_can_send_now();
                     break;
                 default:
                     break;
@@ -407,7 +407,7 @@ static void opp_packet_handler_hci(uint8_t *packet, uint16_t size){
     }
 }
 
-static void opp_packet_handler_goep(uint8_t *packet, uint16_t size){
+static void opp_client_packet_handler_goep(uint8_t *packet, uint16_t size){
     if (opp_client->obex_parser_waiting_for_response == false) return;
 
     obex_parser_object_state_t parser_state;
@@ -519,16 +519,16 @@ static void opp_packet_handler_goep(uint8_t *packet, uint16_t size){
     }
 }
 
-static void opp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void opp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel); // ok: there is no channel
     UNUSED(size);    // ok: handling own geop events
 
     switch (packet_type){
         case HCI_EVENT_PACKET:
-            opp_packet_handler_hci(packet, size);
+            opp_client_packet_handler_hci(packet, size);
             break;
         case GOEP_DATA_PACKET:
-            opp_packet_handler_goep(packet, size);
+            opp_client_packet_handler_goep(packet, size);
             break;
         default:
             break;
@@ -549,7 +549,7 @@ void opp_client_deinit(void){
     memset(opp_client, 0, sizeof(opp_client_t));
 }
 
-uint8_t opp_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
+uint8_t opp_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
     if (opp_client->state != OPP_INIT){
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -557,13 +557,13 @@ uint8_t opp_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t *
     opp_client->state = OPP_W4_GOEP_CONNECTION;
     opp_client->client_handler = handler;
 
-    uint8_t err = goep_client_create_connection(&opp_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_OBEX_OBJECT_PUSH, &opp_client->goep_cid);
+    uint8_t err = goep_client_create_connection(&opp_client_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_OBEX_OBJECT_PUSH, &opp_client->goep_cid);
     *out_cid = opp_client->cid;
     if (err) return err;
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t opp_disconnect(uint16_t opp_cid){
+uint8_t opp_client_disconnect(uint16_t opp_cid){
     UNUSED(opp_cid);
     if (opp_client->state < OPP_CONNECTED){
         return BTSTACK_BUSY;
@@ -573,11 +573,11 @@ uint8_t opp_disconnect(uint16_t opp_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t opp_push_object(uint16_t opp_cid,
-                        char     *name,
-                        char     *type,
-                        uint8_t  *data,
-                        uint32_t  size)
+uint8_t opp_client_push_object(uint16_t        opp_cid,
+                               const char     *name,
+                               const char     *type,
+                               const uint8_t  *data,
+                               uint32_t        size)
 {
     UNUSED(opp_cid);
     if (opp_client->state != OPP_CONNECTED){
@@ -595,7 +595,7 @@ uint8_t opp_push_object(uint16_t opp_cid,
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t opp_pull_default_object(uint16_t opp_cid){
+uint8_t opp_client_pull_default_object(uint16_t opp_cid){
     UNUSED(opp_cid);
     if (opp_client->state != OPP_CONNECTED){
         return BTSTACK_BUSY;
@@ -606,7 +606,7 @@ uint8_t opp_pull_default_object(uint16_t opp_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t opp_abort(uint16_t opp_cid){
+uint8_t opp_client_abort(uint16_t opp_cid){
     UNUSED(opp_cid);
     if ((opp_client->state < OPP_CONNECTED) || (opp_client->abort_operation != 0)){
         return ERROR_CODE_COMMAND_DISALLOWED;
