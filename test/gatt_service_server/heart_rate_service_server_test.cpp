@@ -64,17 +64,21 @@ TEST(HEART_RATE_SERVER, read_callback_test){
     response_len = mock_att_service_read_callback(con_handle, 0xffff, 0xffff, response, sizeof(response));
     CHECK_EQUAL(0, response_len);
 
+    // get location value length (1 byte length)
+    response_len = mock_att_service_read_callback(con_handle, body_sensor_location_value_handle, 0, NULL, 0);
+    CHECK_EQUAL(1, response_len);
+
+    // get location value (1 byte length)
     response_len = mock_att_service_read_callback(con_handle, body_sensor_location_value_handle, 0, response, sizeof(response));
     CHECK_EQUAL(1, response_len);
     
-    response_len = mock_att_service_read_callback(con_handle, body_sensor_location_value_handle, 0, response, 0);
-    CHECK_EQUAL(0, response_len);
-
-    response_len = mock_att_service_read_callback(con_handle, heart_rate_measurement_configuration_handle, 0, response, sizeof(response));
+    // get rate measurement configuration length (2 byte length)
+    response_len = mock_att_service_read_callback(con_handle, heart_rate_measurement_configuration_handle, 0, NULL, 0);
     CHECK_EQUAL(2, response_len);
 
-    response_len = mock_att_service_read_callback(con_handle, heart_rate_measurement_configuration_handle, 0, response, 0);
-    CHECK_EQUAL(0, response_len);
+    // get rate measurement configuration (2 byte length)
+    response_len = mock_att_service_read_callback(con_handle, heart_rate_measurement_configuration_handle, 0, response, sizeof(response));
+    CHECK_EQUAL(2, response_len);
 }
 
 int main (int argc, const char * argv[]){
