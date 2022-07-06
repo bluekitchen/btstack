@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI_ACL_CHUNK_SIZE_ALIGNMENT allows to keep HCI transport writes aligned
 - GAP: support additional LE PHYs for scanning and outgoing connections
 - HFP: provide SCO packet types and rx/tx packet lengths in HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
-- Port for Renesas RA6M4 with DA14531
 - example: gatt_streamer_server and le_streamer_client report DLE and PHY changes
 - gatt_client: queue requests with gatt_client_request_to_send_gatt_query and gatt_client_request_to_write_without_response 
 - esp32: warn about unsuitable sdkconfig
@@ -20,6 +19,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - esp32: allow to disable default audio i2s driver via component config
 - esp32: support esp-idf v5.x audio driver
 - esp32: btstack_stdio_init configures buffered output, required for stdin support
+- nxp: support for bootloader version v1, e.g. NXP 88W8997
+- Port for Renesas RA6M4 with DA14531
+- Port for NXP Controller on POSIX (posix-h4-nxp)
 
 ## Removed
 - AVDTP Source: avdtp_source_stream_send_media_payload, use avdtp_source_stream_send_media_payload_rtp instead
@@ -39,12 +41,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Changed
 - GAP: add gap_set_peer_privacy_mode with default LE_PRIVACY_MODE_DEVICE
 - bluetooth: indicated identity address in resolved address type names
+- chipset/bcm: look for PatchRAM file DEVICE_NAME...hcd
 - btstack_audio: added get_samplerate function to help with audio sample rate synchronization 
 - btstack_flash_bank: write empty tag instead of overwriting existing tag with ENABLE_TLV_FLASH_WRITE_ONCE
 - esp32: drop support for Makefile projects from esp-idf 3.x
 - esp32: replace deprecated btstack_run_loop_freertos API calls
 - sco_demo_util: replace hfp_msbc by hfp_codec
-- chipset/bcm: look for PatchRAM file DEVICE_NAME...hcd
 
 
 ## Release v1.5.5
