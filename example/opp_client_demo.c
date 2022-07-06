@@ -450,34 +450,34 @@ static void stdin_process(char c){
             break;
         case 'a':
             printf("[+] Connecting to %s...\n", bd_addr_to_str(remote_addr));
-            opp_connect(&packet_handler, remote_addr, &opp_cid);
+            opp_client_connect(&packet_handler, remote_addr, &opp_cid);
             break;
         case 'd':
             printf("[+] Pulling default Object");
-            ret = opp_pull_default_object(opp_cid);
+            ret = opp_client_pull_default_object(opp_cid);
             printf(" (%02x)\n", ret);
             break;
         case 'p':
             printf("[+] Pushing text/plain Object");
-            ret = opp_push_object(opp_cid, "hello.txt", "text/plain", (uint8_t *) "huhu!\n", 6);
+            ret = opp_client_push_object(opp_cid, "hello.txt", "text/plain", (uint8_t *) "huhu!\n", 6);
             printf(" (%02x)\n", ret);
             break;
         case 'i':
             printf("[+] Pushing image/jpeg Object");
-            ret = opp_push_object(opp_cid, "git-pull.jpg", "image/jpeg", test_jpg_image, sizeof (test_jpg_image));
+            ret = opp_client_push_object(opp_cid, "git-pull.jpg", "image/jpeg", test_jpg_image, sizeof (test_jpg_image));
             printf(" (%02x)\n", ret);
             break;
         case 'v':
             printf("[+] Pushing text/x-vcard Object");
-            ret = opp_push_object(opp_cid, "contact.vcf", "text/x-vcard", (uint8_t*) test_vcard, strlen (test_vcard));
+            ret = opp_client_push_object(opp_cid, "contact.vcf", "text/x-vcard", (uint8_t*) test_vcard, strlen (test_vcard));
             printf(" (%02x)\n", ret);
             break;
         case 'x':
             printf("[+] Abort\n");
-            opp_abort(opp_cid);
+            opp_client_abort(opp_cid);
             break;
         case 't':
-            opp_disconnect(opp_cid);
+            opp_client_disconnect(opp_cid);
             break;
         default:
             show_usage();

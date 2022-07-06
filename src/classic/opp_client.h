@@ -67,7 +67,7 @@ void opp_client_init(void);
  * @param out_cid to use for further commands
  * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_MEMORY_ALLOC_FAILED if OPP or GOEP connection already exists.
  */
-uint8_t opp_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
+uint8_t opp_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
 
 /**
  * @brief Disconnects OPP connection with given identifier.
@@ -76,7 +76,7 @@ uint8_t opp_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t *
  * @param opp_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_BUSY if in a wrong state.
  */
-uint8_t opp_disconnect(uint16_t opp_cid);
+uint8_t opp_client_disconnect(uint16_t opp_cid);
 
 /**
  * @brief Pull default object from server. The result is reported via registered packet handler (see opp_connect function),
@@ -86,7 +86,7 @@ uint8_t opp_disconnect(uint16_t opp_cid);
  * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_BUSY if in a wrong state.
  */
 
-uint8_t opp_pull_default_object(uint16_t opp_cid);
+uint8_t opp_client_pull_default_object(uint16_t opp_cid);
 
 /**
  * @brief Push object to server.
@@ -96,11 +96,11 @@ uint8_t opp_pull_default_object(uint16_t opp_cid);
  * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_BUSY if in a wrong state.
  */
 
-uint8_t opp_push_object(uint16_t  opp_cid,
-                        char     *name,
-                        char     *type,
-                        uint8_t  *data,
-                        uint32_t  size);
+uint8_t opp_client_push_object(uint16_t        opp_cid,
+                               const char     *name,
+                               const char     *type,
+                               const uint8_t  *data,
+                               uint32_t        size);
 
 /**
  * @brief Abort current operation. No event is emitted.
@@ -108,7 +108,7 @@ uint8_t opp_push_object(uint16_t  opp_cid,
  * @param opp_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_BUSY if in a wrong state.
  */
-uint8_t opp_abort(uint16_t opp_cid);
+uint8_t opp_client_abort(uint16_t opp_cid);
 
 
 /**
