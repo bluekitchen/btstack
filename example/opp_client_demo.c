@@ -418,7 +418,7 @@ uint8_t test_jpg_image[] = {
     0x55, 0x70, 0xfb, 0xdf, 0xff, 0xd9
 };
 
-uint8_t test_vcard[] = \
+static char test_vcard[] = \
     "BEGIN:VCARD\n"                                                     \
     "VERSION:3.0\n"                                                     \
     "N:Doe;John;;;\n"                                                   \
@@ -469,7 +469,7 @@ static void stdin_process(char c){
             break;
         case 'v':
             printf("[+] Pushing text/x-vcard Object");
-            ret = opp_push_object(opp_cid, "contact.vcf", "text/x-vcard", test_vcard, sizeof (test_vcard));
+            ret = opp_push_object(opp_cid, "contact.vcf", "text/x-vcard", (uint8_t*) test_vcard, strlen (test_vcard));
             printf(" (%02x)\n", ret);
             break;
         case 'x':
