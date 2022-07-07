@@ -72,6 +72,8 @@ static  char * remote_addr_string = "58:d9:c3:2b:fb:a7";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t opp_cid;
 
+#define N_ELEMENTS(arr) (sizeof (arr) / sizeof ((arr)[0]))
+
 #ifdef HAVE_BTSTACK_STDIN
 
 uint8_t test_jpg_image[] = {
@@ -426,11 +428,93 @@ static const char * test_vcards[] = {
     "FN:John Doe\n"
     "END:VCARD\n",
     // card 1
-"BEGIN:VCARD\n"
+    "BEGIN:VCARD\n"
     "VERSION:3.0\n"
-    "N:Doe;John;\n"
-    "FN:John Doe\n"
+    "N:Roe;Jane;\n"
+    "FN:Jane Roe\n"
+    "END:VCARD\n",
+};
+
+
+static const char * test_texts[] = {
+    // text 0
+    "hello!\n",
+    // text 1
+    "Hello! This is a slightly longer text sample file\n",
+    // text 2
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
+    "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
+    "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris "
+    "nisi ut aliquip ex ea commodo consequat.\n"
+    "Duis aute irure dolor in reprehenderit in voluptate velit esse "
+    "cillum dolore eu fugiat nulla pariatur. "
+    "Excepteur sint occaecat cupidatat non proident, "
+    "sunt in culpa qui officia deserunt mollit anim id est laborum.\n",
+};
+
+
+static const char *test_vmsgs[] = {
+    // vmsg 1
+    "BEGIN: VMSG\n"
+    "VERSION:1.0\n"
+    "BEGIN:VCARD\n"
+    "VERSION:2.1\n"
+    "N:Harry\n"
+    "TEL:555-1234\n"
     "END:VCARD\n"
+    "BEGIN:VENV\n"
+    "BEGIN:VBODY\n"
+    "Subject:Reminder\n"
+    "Don't forget to buy milk\n"
+    "END:VBODY\n"
+    "END:VENV\n"
+    "END:VMSG\n",
+    // vmsg 2
+
+    "BEGIN: VMSG\n"
+    "VERSION:1.0\n"
+    "BEGIN:VCARD\n"
+    "VERSION:2:1\n"
+    "N:Harry\n"
+    "TEL:555-1234\n"
+    "END:VCARD\n"
+    "BEGIN:VENV\n"
+    "BEGIN:VCARD\n"
+    "VERSION:2.1\n"
+    "N:Matti\n"
+    "TEL:+376254\n"
+    "END:VCARD\n"
+    "BEGIN:VENV\n"
+    "BEGIN:VBODY\n"
+    "From: harry@office\n"
+    "Subject: Meeting\n"
+    "2pm is ok!\n"
+    "END:VBODY\n"
+    "END:VENV\n"
+    "END:VENV\n"
+    "END:VMSG\n",
+};
+
+
+static const char *test_vcals[] = {
+    // vcal 1
+    "BEGIN:VCALENDAR\n"
+    "VERSION:1.0\n"
+    "BEGIN:VEVENT\n"
+    "CLASS:PRIVATE\n"
+    "DESCRIPTION: Lunch with Mark.\n"
+    "DTSTART:20220102T120000\n"
+    "END:VEVENT\n"
+    "END:VCALENDAR\n",
+    // vcal 2
+    "BEGIN:VCALENDAR\n"
+    "VERSION:1.0\n"
+    "BEGIN:VEVENT\n"
+    "CLASS:PRIVATE\n"
+    "DESCRIPTION: Another Lunch with Mark.\n"
+    "DTSTART:20220103T130000\n"
+    "END:VEVENT\n"
+    "END:VCALENDAR\n",
 };
 
 
@@ -448,6 +532,8 @@ static void show_usage(void){
     printf("d - pull default object (owner vcard)\n");
     printf("p - push text/plain object\n");
     printf("i - push image/jpeg object\n");
+    printf("c - push text/x-vcalendar object\n");
+    printf("m - push text/x-vmsg object\n");
     printf("v - push text/x-vcard object\n");
     printf("t - disconnect\n");
     printf("x - abort operation\n");
@@ -470,16 +556,36 @@ static void stdin_process(char c){
             printf(" (%02x)\n", ret);
             break;
         case 'p':
-            printf("[+] Pushing text/plain Object");
-            ret = opp_client_push_object(opp_cid, "hello.txt", "text/plain", (uint8_t *) "huhu!\n", 6);
+            index_toggle %= N_ELEMENTS(test_texts);
+            sprintf(filename, "text_%u.txt", index_toggle);
+            printf("[+] Pushing text/plain Object %s", filename);
+            ret = opp_client_push_object(opp_cid, filename, "text/plain", (uint8_t*) test_texts[index_toggle], strlen (test_texts[index_toggle]));
             printf(" (%02x)\n", ret);
+            index_toggle++;
             break;
         case 'i':
             printf("[+] Pushing image/jpeg Object");
             ret = opp_client_push_object(opp_cid, "git-pull.jpg", "image/jpeg", test_jpg_image, sizeof (test_jpg_image));
             printf(" (%02x)\n", ret);
             break;
+        case 'c':
+            index_toggle %= N_ELEMENTS(test_vcals);
+            sprintf(filename, "cal_%u.ics", index_toggle);
+            printf("[+] Pushing text/x-vcalendar Object %s", filename);
+            ret = opp_client_push_object(opp_cid, filename, "text/x-vcalendar", (uint8_t*) test_vcals[index_toggle], strlen (test_vcals[index_toggle]));
+            printf(" (%02x)\n", ret);
+            index_toggle++;
+            break;
+        case 'm':
+            index_toggle %= N_ELEMENTS(test_vmsgs);
+            sprintf(filename, "message_%u.vmg", index_toggle);
+            printf("[+] Pushing text/x-vmsg Object %s", filename);
+            ret = opp_client_push_object(opp_cid, filename, "text/x-vmsg", (uint8_t*) test_vmsgs[index_toggle], strlen (test_vmsgs[index_toggle]));
+            printf(" (%02x)\n", ret);
+            index_toggle++;
+            break;
         case 'v':
+            index_toggle %= N_ELEMENTS(test_vcards);
             sprintf(filename, "contact_%u.vcf", index_toggle);
             printf("[+] Pushing text/x-vcard Object %s", filename);
             ret = opp_client_push_object(opp_cid, filename, "text/x-vcard", (uint8_t*) test_vcards[index_toggle], strlen (test_vcards[index_toggle]));
