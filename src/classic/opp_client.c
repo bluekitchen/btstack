@@ -30,13 +30,13 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 #define BTSTACK_FILE__ "opp_client.c"
- 
+
 #include "btstack_config.h"
 
 #include <stdint.h>
@@ -111,8 +111,10 @@ typedef struct opp_client {
     const char     *object_name;
     const char     *object_type;
     const uint8_t  *object_data;
-    uint32_t  object_size;
-    uint32_t  object_pos;
+    uint32_t  object_data_size;
+    uint32_t  object_data_offset;
+    uint32_t  object_total_size;
+    uint32_t  object_total_pos;
     /* srm */
     obex_srm_t obex_srm;
     srm_state_t srm_state;
@@ -138,7 +140,7 @@ static void opp_client_emit_connected_event(opp_client_t * context, uint8_t stat
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("goep_client_emit_connected_event size %u", pos);
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
-}   
+}
 
 static void opp_client_emit_connection_closed_event(opp_client_t * context){
     uint8_t event[5];
@@ -151,7 +153,22 @@ static void opp_client_emit_connection_closed_event(opp_client_t * context){
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("opp_client_emit_connection_closed_event size %u", pos);
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
-}   
+}
+
+static void opp_client_emit_push_object_data_event(opp_client_t * context,uint32_t cur_position){
+    uint8_t event[9];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_OPP_META;
+    pos++;  // skip len
+    event[pos++] = OPP_SUBEVENT_PUSH_OBJECT_DATA;
+    little_endian_store_16(event,pos,context->cid);
+    pos+=2;
+    little_endian_store_32(event,pos,cur_position);
+    pos+=4;
+    event[1] = pos - 2;
+    if (pos != sizeof(event)) log_error("opp_client_emit_connection_closed_event size %u", pos);
+    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+}
 
 static void opp_client_emit_operation_complete_event(opp_client_t * context, uint8_t status){
     uint8_t event[6];
@@ -281,28 +298,35 @@ static void opp_client_handle_can_send_now(void){
                 opp_client_prepare_srm_header(opp_client);
                 goep_client_header_add_name(opp_client->goep_cid, opp_client->object_name);
                 goep_client_header_add_type(opp_client->goep_cid, opp_client->object_type);
-                goep_client_header_add_length(opp_client->goep_cid, opp_client->object_size);
+                goep_client_header_add_length(opp_client->goep_cid, opp_client->object_total_size);
             }
 
             uint32_t used_space = 0;
+            uint32_t chunk_pos = opp_client->object_total_pos - opp_client->object_data_offset;
 
-            goep_client_body_fillup_static (opp_client->goep_cid, opp_client->object_data + opp_client->object_pos, opp_client->object_size - opp_client->object_pos, &used_space);
-            opp_client->object_pos += used_space;
+            goep_client_body_fillup_static (opp_client->goep_cid, opp_client->object_data + chunk_pos, opp_client->object_data_size - chunk_pos, &used_space);
+            opp_client->object_total_pos += used_space;
 
             // state
             opp_client_prepare_put_operation(opp_client);
             opp_client->request_number++;
-            if (opp_client->object_pos >= opp_client->object_size) {
+            if (opp_client->object_total_pos >= opp_client->object_total_size) {
                 opp_client->state = OPP_W4_PUT_OBJECT;
                 goep_client_execute_with_final_bit(opp_client->goep_cid, true);
             } else {
                 goep_client_execute_with_final_bit(opp_client->goep_cid, false);
 
-                if (opp_client->srm_state == SRM_ENABLED) {
-                  opp_client->state = OPP_W2_PUT_OBJECT;
-                  goep_client_request_can_send_now(opp_client->goep_cid);
+                if (chunk_pos + used_space >= opp_client->object_data_size) {
+                    opp_client->state = OPP_W2_PUT_OBJECT;
+                    opp_client->object_data = NULL;
+                    opp_client_emit_push_object_data_event(opp_client, opp_client->object_total_pos);
                 } else {
-                  opp_client->state = OPP_W4_PUT_OBJECT;
+                    if (opp_client->srm_state == SRM_ENABLED) {
+                        opp_client->state = OPP_W2_PUT_OBJECT;
+                        goep_client_request_can_send_now(opp_client->goep_cid);
+                    } else {
+                        opp_client->state = OPP_W4_PUT_OBJECT;
+                    }
                 }
             }
             break;
@@ -437,9 +461,13 @@ static void opp_client_packet_handler_goep(uint8_t *packet, uint16_t size){
                     case OBEX_RESP_CONTINUE:
                         opp_client_handle_srm_headers(opp_client);
 
-                        if (opp_client->object_pos < opp_client->object_size) {
+                        if (opp_client->object_total_pos < opp_client->object_total_size) {
                             opp_client->state = OPP_W2_PUT_OBJECT;
-                            goep_client_request_can_send_now(opp_client->goep_cid);
+                            if (opp_client->object_data) {
+                                goep_client_request_can_send_now(opp_client->goep_cid);
+                            } else {
+                                opp_client_emit_push_object_data_event(opp_client, opp_client->object_total_pos);
+                            }
                         } else {
                             opp_client->state = OPP_CONNECTED;
                             opp_client_emit_operation_complete_event(opp_client, ERROR_CODE_SUCCESS);
@@ -586,12 +614,49 @@ uint8_t opp_client_push_object(uint16_t        opp_cid,
     opp_client->object_name = name;
     opp_client->object_type = type;
     opp_client->object_data = data;
-    opp_client->object_size = size;
-    opp_client->object_pos  = 0;
+    if (opp_client->object_data) {
+        opp_client->object_data_size = size;
+        opp_client->object_data_offset = 0;
+    }
+    opp_client->object_total_size = size;
+    opp_client->object_total_pos  = 0;
 
     opp_client->state = OPP_W2_PUT_OBJECT;
     opp_client->request_number = 0;
+
+    if (opp_client->object_data) {
+        goep_client_request_can_send_now(opp_client->goep_cid);
+    } else {
+        opp_client_emit_push_object_data_event(opp_client, 0);
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t opp_client_push_object_chunk(uint16_t       opp_cid,
+                                     const uint8_t *chunk_data,
+                                     uint32_t       chunk_offset,
+                                     uint32_t       chunk_size)
+{
+    UNUSED(opp_cid);
+    if (opp_client->state != OPP_W2_PUT_OBJECT){
+        log_error("opp_client_push_object_chunk called without a pending PUT state");
+        return BTSTACK_BUSY;
+    }
+    if (opp_client->object_data != NULL) {
+        log_error("opp_client_push_object_chunk called while we still have outgoing data");
+        return BTSTACK_BUSY;
+    }
+    if (chunk_offset != opp_client->object_data_offset + opp_client->object_data_size) {
+        log_error("opp_client_push_object_chunk called with wrong start offset. Expected %u, got %u.", chunk_offset, opp_client->object_data_offset + opp_client->object_data_size);
+        return BTSTACK_BUSY;
+    }
+
+    opp_client->object_data = chunk_data;
+    opp_client->object_data_offset = chunk_offset;
+    opp_client->object_data_size = chunk_size;
+
     goep_client_request_can_send_now(opp_client->goep_cid);
+
     return ERROR_CODE_SUCCESS;
 }
 
