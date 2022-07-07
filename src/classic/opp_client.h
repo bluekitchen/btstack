@@ -93,6 +93,10 @@ uint8_t opp_client_pull_default_object(uint16_t opp_cid);
  * Event OPP_SUBEVENT_OPERATION_COMPLETED marks the end of the transfer.
  *_
  * @param opp_cid
+ * @param name  filename for the object
+ * @param type  MIME-type for the object
+ * @param data  data for the object or NULL to request chunked transfers
+ * @param size  total size of the object
  * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_BUSY if in a wrong state.
  */
 
@@ -101,6 +105,22 @@ uint8_t opp_client_push_object(uint16_t        opp_cid,
                                const char     *type,
                                const uint8_t  *data,
                                uint32_t        size);
+
+/**
+ * @brief provide chunked data for an ongoing transfer.
+ * Event OPP_SUBEVENT_OPERATION_COMPLETED marks the end of the transfer.
+ *_
+ * @param opp_cid
+ * @param chunk_data   data for the object
+ * @param chunk_offset offset of the data within the object. Sanity-checks will be performed.
+ * @param chunk_size   amount of currently available data
+ * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_BUSY if in a wrong state.
+ */
+
+uint8_t opp_client_push_object_chunk(uint16_t       opp_cid,
+                                     const uint8_t *chunk_data,
+                                     uint32_t       chunk_offset,
+                                     uint32_t       chunk_size);
 
 /**
  * @brief Abort current operation. No event is emitted.
