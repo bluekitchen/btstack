@@ -522,6 +522,9 @@ static const char *test_vcals[] = {
 static uint8_t index_toggle;
 static char filename[256];
 
+#define CHUNK_SIZE 512
+static uint32_t expected_chunk_pos = 0;
+
 static void show_usage(void){
     bd_addr_t iut_address;
     gap_local_bd_addr(iut_address);
@@ -532,6 +535,7 @@ static void show_usage(void){
     printf("d - pull default object (owner vcard)\n");
     printf("p - push text/plain object\n");
     printf("i - push image/jpeg object\n");
+    printf("I - push image/jpeg object (chunked)\n");
     printf("c - push text/x-vcalendar object\n");
     printf("m - push text/x-vmsg object\n");
     printf("v - push text/x-vcard object\n");
@@ -566,6 +570,12 @@ static void stdin_process(char c){
         case 'i':
             printf("[+] Pushing image/jpeg Object");
             ret = opp_client_push_object(opp_cid, "git-pull.jpg", "image/jpeg", test_jpg_image, sizeof (test_jpg_image));
+            printf(" (%02x)\n", ret);
+            break;
+        case 'I':
+            printf("[+] Pushing image/jpeg Object (chunked)\n");
+            expected_chunk_pos = 0;
+            ret = opp_client_push_object(opp_cid, "git-pull.jpg", "image/jpeg", NULL, sizeof (test_jpg_image));
             printf(" (%02x)\n", ret);
             break;
         case 'c':
@@ -632,6 +642,22 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         case OPP_SUBEVENT_CONNECTION_CLOSED:
                             printf("[+] Connection closed\n");
+                            break;
+                        case OPP_SUBEVENT_PUSH_OBJECT_DATA:
+                            uint32_t cur_pos = opp_subevent_push_object_data_get_cur_position(packet);
+                            uint32_t cur_size;
+
+                            cur_size = sizeof (test_jpg_image) - cur_pos;
+                            if (cur_size > CHUNK_SIZE)
+                                cur_size = CHUNK_SIZE;
+                            opp_client_push_object_chunk (opp_cid, test_jpg_image + cur_pos, cur_pos, cur_size);
+                            printf("[+] ... push data requested, offset %u, pushing %u bytes\n",
+                                   cur_pos, cur_size);
+                            if (cur_pos != expected_chunk_pos)
+                                printf(" !!! mismatch in expected chunk position (got %u, expected %u)\n", cur_pos, expected_chunk_pos);
+
+
+                            expected_chunk_pos = cur_pos + cur_size;
                             break;
                         case OPP_SUBEVENT_OPERATION_COMPLETED:
                             printf("[+] Operation complete, status 0x%02x\n",
