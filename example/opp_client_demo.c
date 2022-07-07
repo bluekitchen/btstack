@@ -418,14 +418,26 @@ uint8_t test_jpg_image[] = {
     0x55, 0x70, 0xfb, 0xdf, 0xff, 0xd9
 };
 
-static char test_vcard[] = \
-    "BEGIN:VCARD\n"                                                     \
-    "VERSION:3.0\n"                                                     \
-    "N:Doe;John;;;\n"                                                   \
-    "FN:John Doe\n"                                                     \
-    "END:VCARD\n";
+static const char * test_vcards[] = {
+    // card 0
+    "BEGIN:VCARD\n"
+    "VERSION:3.0\n"
+    "N:Doe;John;\n"
+    "FN:John Doe\n"
+    "END:VCARD\n",
+    // card 1
+"BEGIN:VCARD\n"
+    "VERSION:3.0\n"
+    "N:Doe;John;\n"
+    "FN:John Doe\n"
+    "END:VCARD\n"
+};
+
 
 // Testing User Interface
+static uint8_t index_toggle;
+static char filename[256];
+
 static void show_usage(void){
     bd_addr_t iut_address;
     gap_local_bd_addr(iut_address);
@@ -468,9 +480,11 @@ static void stdin_process(char c){
             printf(" (%02x)\n", ret);
             break;
         case 'v':
-            printf("[+] Pushing text/x-vcard Object");
-            ret = opp_client_push_object(opp_cid, "contact.vcf", "text/x-vcard", (uint8_t*) test_vcard, strlen (test_vcard));
+            sprintf(filename, "contact_%u.vcf", index_toggle);
+            printf("[+] Pushing text/x-vcard Object %s", filename);
+            ret = opp_client_push_object(opp_cid, filename, "text/x-vcard", (uint8_t*) test_vcards[index_toggle], strlen (test_vcards[index_toggle]));
             printf(" (%02x)\n", ret);
+            index_toggle++;
             break;
         case 'x':
             printf("[+] Abort\n");
