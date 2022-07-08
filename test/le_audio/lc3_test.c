@@ -65,6 +65,8 @@
 #include "wav_util.h"
 #endif
 
+#include "btstack_lc3plus_fraunhofer.h"
+
 // max config
 #define MAX_SAMPLES_PER_FRAME 480
 #define MAX_NUM_BIS 2
@@ -82,9 +84,15 @@ static btstack_lc3_encoder_google_t encoder_contexts[MAX_NUM_BIS];
 static int16_t pcm[MAX_NUM_BIS * MAX_SAMPLES_PER_FRAME];
 
 // lc3 decoder
+static bool use_lc3plus_decoder = false;
 static const btstack_lc3_decoder_t * lc3_decoder;
-static btstack_lc3_decoder_google_t decoder_contexts[MAX_NUM_BIS];
 static int16_t pcm[MAX_NUM_BIS * MAX_SAMPLES_PER_FRAME];
+
+static btstack_lc3_decoder_google_t google_decoder_contexts[MAX_NUM_BIS];
+#ifdef HAVE_LC3PLUS
+static btstack_lc3plus_fraunhofer_decoder_t fraunhofer_decoder_contexts[MAX_NUM_BIS];
+#endif
+static void * decoder_contexts[MAX_NR_BIS];
 
 // PLC
 static uint16_t plc_frame_counter;
@@ -208,14 +216,15 @@ static const int16_t sine_int16[] = {
 static void show_usage(void);
 
 static void print_config(void) {
-    printf("Config '%s_%u': %u, %s ms, %u octets - %s, drop frame interval %u\n",
+    printf("Config '%s_%u': %u, %s ms, %u octets - %s, drop frame interval %u, decoder %s\n",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
            num_bis,
            codec_configurations[menu_sampling_frequency].samplingrate_hz,
            codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame,
            audio_source == AUDIO_SOURCE_SINE ? "Sine" : "Modplayer",
-           plc_dopped_frame_interval);
+           plc_dopped_frame_interval,
+           use_lc3plus_decoder ? "LC3plus" : "LC3");
 }
 
 static void setup_lc3_encoder(void){
@@ -234,12 +243,24 @@ static void setup_lc3_encoder(void){
 
 static void setup_lc3_decoder(void){
     uint8_t channel;
-    for (channel = 0 ; channel < num_bis ; channel++){
-        btstack_lc3_decoder_google_t * decoder_context = &decoder_contexts[channel];
-        lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
-        lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration);
-    }
-    number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(&decoder_contexts[0]);
+        for (channel = 0 ; channel < num_bis ; channel++){
+            // pick decoder
+            void * decoder_context = NULL;
+#ifdef HAVE_LC3PLUS
+             if (use_lc3plus_decoder){
+                decoder_context = &fraunhofer_decoder_contexts[channel];
+                lc3_decoder = btstack_lc3plus_fraunhofer_decoder_init_instance(decoder_context);
+            }
+            else
+#endif
+            {
+                decoder_context = &google_decoder_contexts[channel];
+                lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
+            }
+            decoder_contexts[channel] = decoder_context;
+            lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration);
+        }
+    number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(decoder_contexts[0]);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
 }
 
@@ -323,27 +344,14 @@ static void test_encoder(){
             BFI = 1;
         }
 
-#ifdef HAVE_POSIX_FILE_IO
-        if (BFI){
-            // insert silence before for analysis in audacity
-            memset(pcm, 0, sizeof(pcm));
-            wav_writer_write_int16(number_samples_per_frame, pcm);
-        }
-#endif
-
         // decode codec frame
         uint8_t tmp_BEC_detect;
-        (void) lc3_decoder->decode_signed_16(&decoder_contexts[0], buffer, octets_per_frame, BFI, pcm, 1, &tmp_BEC_detect);
+        (void) lc3_decoder->decode_signed_16(decoder_contexts[0], buffer, octets_per_frame, BFI, pcm, 1, &tmp_BEC_detect);
 
         uint32_t block_decoded_ms  = btstack_run_loop_get_time_ms();
 
 #ifdef HAVE_POSIX_FILE_IO
         wav_writer_write_int16(number_samples_per_frame, pcm);
-        if (BFI){
-            // insert silence after for analysis in audacity
-            memset(pcm, 0, sizeof(pcm));
-            wav_writer_write_int16(number_samples_per_frame, pcm);
-        }
 #endif
 
         // summary
@@ -368,6 +376,9 @@ static void show_usage(void){
     printf("v - next codec variant\n");
     printf("t - toggle sine / modplayer\n");
     printf("p - simulated dropped frames\n");
+#ifdef HAVE_LC3PLUS
+    printf("q - use LC3plus\n");
+#endif
     printf("s - start test\n");
     printf("---\n");
 }
@@ -378,6 +389,16 @@ static void stdin_process(char c){
             plc_dopped_frame_interval = 16 - plc_dopped_frame_interval;
             print_config();
             break;
+#ifdef HAVE_LC3PLUS
+        case 'q':
+            use_lc3plus_decoder = true;
+            // enforce 10ms as 7.5ms is not supported
+            if ((menu_variant & 1) == 0){
+                menu_variant++;
+            }
+            print_config();
+            break;
+#endif
         case 'f':
             menu_sampling_frequency++;
             if (menu_sampling_frequency >= 6){

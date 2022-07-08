@@ -54,6 +54,17 @@ if (APTX_FOUND)
     add_compile_definitions(HAVE_APTX)
 endif()
 
+# lc3plus
+pkg_check_modules(LC3PLUS LC3plus)
+if(LC3PLUS_FOUND)
+	message("HAVE_LC3PLUS")
+	include_directories(${LC3PLUS_INCLUDE_DIRS})
+	link_directories(${LC3PLUS_LIBRARY_DIRS})
+	link_libraries(${LC3PLUS_LIBRARIES})
+	add_definitions(${LC3PLUS_CFLAGS})
+	add_compile_definitions(HAVE_LC3PLUS)
+endif()
+
 # enable optional features
 add_compile_definitions(ENABLE_TESTING_SUPPORT)
 
@@ -94,7 +105,7 @@ file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
 file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
-file(GLOB SOURCES_MAIN      "main.c")
+file(GLOB SOURCES_MAIN      "main.c" "btstack_lc3plus_fraunhofer.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 
