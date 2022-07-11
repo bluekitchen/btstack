@@ -568,15 +568,19 @@ static void stdin_process(char c){
             index_toggle++;
             break;
         case 'i':
-            printf("[+] Pushing image/jpeg Object");
-            ret = opp_client_push_object(opp_cid, "git-pull.jpg", "image/jpeg", test_jpg_image, sizeof (test_jpg_image));
+            sprintf(filename, "git-pull-%u.txt", index_toggle);
+            printf("[+] Pushing image/jpeg Object %s", filename);
+            ret = opp_client_push_object(opp_cid, filename, "image/jpeg", test_jpg_image, sizeof (test_jpg_image));
             printf(" (%02x)\n", ret);
+            index_toggle++;
             break;
         case 'I':
-            printf("[+] Pushing image/jpeg Object (chunked)\n");
+            sprintf(filename, "git-pull-%u.txt", index_toggle);
+            printf("[+] Pushing image/jpeg Object %s (chunked)", filename);
             expected_chunk_pos = 0;
-            ret = opp_client_push_object(opp_cid, "git-pull.jpg", "image/jpeg", NULL, sizeof (test_jpg_image));
+            ret = opp_client_push_object(opp_cid, filename, "image/jpeg", NULL, sizeof (test_jpg_image));
             printf(" (%02x)\n", ret);
+            index_toggle++;
             break;
         case 'c':
             index_toggle %= N_ELEMENTS(test_vcals);
@@ -645,14 +649,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         case OPP_SUBEVENT_PUSH_OBJECT_DATA:
                             uint32_t cur_pos = opp_subevent_push_object_data_get_cur_position(packet);
+                            uint16_t bufsize = opp_subevent_push_object_data_get_buf_size(packet);
                             uint32_t cur_size;
 
                             cur_size = sizeof (test_jpg_image) - cur_pos;
                             if (cur_size > CHUNK_SIZE)
                                 cur_size = CHUNK_SIZE;
                             opp_client_push_object_chunk (opp_cid, test_jpg_image + cur_pos, cur_pos, cur_size);
-                            printf("[+] ... push data requested, offset %u, pushing %u bytes\n",
-                                   cur_pos, cur_size);
+                            printf("[+] ... push data requested, offset %u, bufsize %u, pushing %u bytes\n",
+                                   cur_pos, bufsize, cur_size);
                             if (cur_pos != expected_chunk_pos)
                                 printf(" !!! mismatch in expected chunk position (got %u, expected %u)\n", cur_pos, expected_chunk_pos);
 
