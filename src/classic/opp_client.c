@@ -658,10 +658,6 @@ uint8_t opp_client_push_object_chunk(uint16_t       opp_cid,
         log_error("opp_client_push_object_chunk called while we still have outgoing data");
         return BTSTACK_BUSY;
     }
-    if (chunk_offset != opp_client->object_data_offset + opp_client->object_data_size) {
-        log_error("opp_client_push_object_chunk called with wrong start offset. Expected %u, got %u.", opp_client->object_data_offset + opp_client->object_data_size, chunk_offset);
-        return BTSTACK_BUSY;
-    }
 
     opp_client->object_data = chunk_data;
     opp_client->object_data_offset = chunk_offset;
