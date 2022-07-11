@@ -73,6 +73,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t opp_cid;
 
 #define N_ELEMENTS(arr) (sizeof (arr) / sizeof ((arr)[0]))
+#define BIG_FILE_SIZE (2*1024*1024)
 
 #ifdef HAVE_BTSTACK_STDIN
 
@@ -518,8 +519,20 @@ static const char *test_vcals[] = {
 };
 
 
+static char test_bigtxt_data[] = \
+    "xxxxxxxx: abcdef0123456789abcdef0123456789abcdef0123456789abcdef" \
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" \
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" \
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" \
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" \
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" \
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" \
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\n";
+
+
 // Testing User Interface
 static uint8_t index_toggle;
+static uint8_t chunked_mode = 0;
 static char filename[256];
 
 #define CHUNK_SIZE 512
@@ -539,6 +552,7 @@ static void show_usage(void){
     printf("c - push text/x-vcalendar object\n");
     printf("m - push text/x-vmsg object\n");
     printf("v - push text/x-vcard object\n");
+    printf("b - push big (2MB) text/plain object (chunked)\n");
     printf("t - disconnect\n");
     printf("x - abort operation\n");
     printf("\n");
@@ -579,6 +593,16 @@ static void stdin_process(char c){
             printf("[+] Pushing image/jpeg Object %s (chunked)", filename);
             expected_chunk_pos = 0;
             ret = opp_client_push_object(opp_cid, filename, "image/jpeg", NULL, sizeof (test_jpg_image));
+            chunked_mode = 0;
+            printf(" (%02x)\n", ret);
+            index_toggle++;
+            break;
+        case 'b':
+            sprintf(filename, "bigtext-%u.txt", index_toggle);
+            printf("[+] Pushing big text/plain Object %s (chunked)", filename);
+            expected_chunk_pos = 0;
+            ret = opp_client_push_object(opp_cid, filename, "text/plain", NULL, BIG_FILE_SIZE);
+            chunked_mode = 1;
             printf(" (%02x)\n", ret);
             index_toggle++;
             break;
@@ -652,10 +676,22 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             uint16_t bufsize = opp_subevent_push_object_data_get_buf_size(packet);
                             uint32_t cur_size;
 
-                            cur_size = sizeof (test_jpg_image) - cur_pos;
-                            if (cur_size > CHUNK_SIZE)
-                                cur_size = CHUNK_SIZE;
-                            opp_client_push_object_chunk (opp_cid, test_jpg_image + cur_pos, cur_pos, cur_size);
+                            switch (chunked_mode) {
+                                case 0:
+                                    cur_size = sizeof (test_jpg_image) - cur_pos;
+                                    if (cur_size > CHUNK_SIZE)
+                                        cur_size = CHUNK_SIZE;
+                                    opp_client_push_object_chunk (opp_cid, test_jpg_image + cur_pos, cur_pos, cur_size);
+                                    break;
+                                case 1:
+                                    sprintf (test_bigtxt_data, "%08u", cur_pos);
+                                    test_bigtxt_data[8] = ':';
+                                    cur_size = sizeof (test_bigtxt_data) - 1;
+                                    opp_client_push_object_chunk (opp_cid, test_bigtxt_data, cur_pos, cur_size);
+                                    break;
+                                default:
+                                    printf ("huh, unexpected chunked_mode!\n");
+                            }
                             printf("[+] ... push data requested, offset %u, bufsize %u, pushing %u bytes\n",
                                    cur_pos, bufsize, cur_size);
                             if (cur_pos != expected_chunk_pos)
