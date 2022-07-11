@@ -405,6 +405,13 @@ static void enter_create_big_sync(void){
     gap_big_sync_create(&big_sync_storage, &big_sync_params);
 }
 
+static void start_scanning() {
+    app_state = APP_W4_BROADCAST_ADV;
+    gap_set_scan_params(1, 0x30, 0x30, 0);
+    gap_start_scan();
+    printf("Start scan..\n");
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -414,10 +421,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
                     if (app_state != APP_W4_WORKING) break;
-                    app_state = APP_W4_BROADCAST_ADV;
-                    gap_set_scan_params(1, 0x30, 0x30, 0);
-                    gap_start_scan();
-                    printf("Start scan..\n");
+                    start_scanning();
                     break;
                 case HCI_STATE_OFF:
                     printf("Goodbye\n");
@@ -501,6 +505,18 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (have_base & have_big_info){
                         enter_create_big_sync();
                     }
+                    break;
+                case HCI_SUBEVENT_LE_BIG_SYNC_LOST:
+                    printf("BIG Sync Lost\n");
+                    {
+                        const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
+                        if (sink != NULL) {
+                            sink->stop_stream();
+                            sink->close();
+                        }
+                    }
+                    // start over
+                    start_scanning();
                     break;
                 default:
                     break;
