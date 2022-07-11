@@ -536,7 +536,6 @@ static uint8_t chunked_mode = 0;
 static char filename[256];
 
 #define CHUNK_SIZE 512
-static uint32_t expected_chunk_pos = 0;
 
 static void show_usage(void){
     bd_addr_t iut_address;
@@ -591,7 +590,6 @@ static void stdin_process(char c){
         case 'I':
             sprintf(filename, "git-pull-%u.txt", index_toggle);
             printf("[+] Pushing image/jpeg Object %s (chunked)", filename);
-            expected_chunk_pos = 0;
             ret = opp_client_push_object(opp_cid, filename, "image/jpeg", NULL, sizeof (test_jpg_image));
             chunked_mode = 0;
             printf(" (%02x)\n", ret);
@@ -600,7 +598,6 @@ static void stdin_process(char c){
         case 'b':
             sprintf(filename, "bigtext-%u.txt", index_toggle);
             printf("[+] Pushing big text/plain Object %s (chunked)", filename);
-            expected_chunk_pos = 0;
             ret = opp_client_push_object(opp_cid, filename, "text/plain", NULL, BIG_FILE_SIZE);
             chunked_mode = 1;
             printf(" (%02x)\n", ret);
@@ -694,11 +691,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             }
                             printf("[+] ... push data requested, offset %u, bufsize %u, pushing %u bytes\n",
                                    cur_pos, bufsize, cur_size);
-                            if (cur_pos != expected_chunk_pos)
-                                printf(" !!! mismatch in expected chunk position (got %u, expected %u)\n", cur_pos, expected_chunk_pos);
 
-
-                            expected_chunk_pos = cur_pos + cur_size;
                             break;
                         case OPP_SUBEVENT_OPERATION_COMPLETED:
                             printf("[+] Operation complete, status 0x%02x\n",
