@@ -155,8 +155,8 @@ static void opp_client_emit_connection_closed_event(opp_client_t * context){
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }
 
-static void opp_client_emit_push_object_data_event(opp_client_t * context,uint32_t cur_position){
-    uint8_t event[9];
+static void opp_client_emit_push_object_data_event(opp_client_t * context,uint32_t cur_position, uint16_t buf_size){
+    uint8_t event[11];
     int pos = 0;
     event[pos++] = HCI_EVENT_OPP_META;
     pos++;  // skip len
@@ -165,6 +165,8 @@ static void opp_client_emit_push_object_data_event(opp_client_t * context,uint32
     pos+=2;
     little_endian_store_32(event,pos,cur_position);
     pos+=4;
+    little_endian_store_16(event,pos,buf_size);
+    pos+=2;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("opp_client_emit_connection_closed_event size %u", pos);
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
@@ -317,9 +319,11 @@ static void opp_client_handle_can_send_now(void){
                 goep_client_execute_with_final_bit(opp_client->goep_cid, false);
 
                 if (chunk_pos + used_space >= opp_client->object_data_size) {
+                    uint16_t buf_size;
                     opp_client->state = OPP_W2_PUT_OBJECT;
                     opp_client->object_data = NULL;
-                    opp_client_emit_push_object_data_event(opp_client, opp_client->object_total_pos);
+                    buf_size = goep_client_body_get_outgoing_buffer_len(opp_client->goep_cid);
+                    opp_client_emit_push_object_data_event(opp_client, opp_client->object_total_pos, buf_size);
                 } else {
                     if (opp_client->srm_state == SRM_ENABLED) {
                         opp_client->state = OPP_W2_PUT_OBJECT;
@@ -466,7 +470,10 @@ static void opp_client_packet_handler_goep(uint8_t *packet, uint16_t size){
                             if (opp_client->object_data) {
                                 goep_client_request_can_send_now(opp_client->goep_cid);
                             } else {
-                                opp_client_emit_push_object_data_event(opp_client, opp_client->object_total_pos);
+                                uint16_t buf_size;
+
+                                buf_size = goep_client_body_get_outgoing_buffer_len(opp_client->goep_cid);
+                                opp_client_emit_push_object_data_event(opp_client, opp_client->object_total_pos, buf_size);
                             }
                         } else {
                             opp_client->state = OPP_CONNECTED;
@@ -614,9 +621,11 @@ uint8_t opp_client_push_object(uint16_t        opp_cid,
     opp_client->object_name = name;
     opp_client->object_type = type;
     opp_client->object_data = data;
+    opp_client->object_data_offset = 0;
     if (opp_client->object_data) {
         opp_client->object_data_size = size;
-        opp_client->object_data_offset = 0;
+    } else {
+        opp_client->object_data_size = 0;
     }
     opp_client->object_total_size = size;
     opp_client->object_total_pos  = 0;
@@ -627,7 +636,10 @@ uint8_t opp_client_push_object(uint16_t        opp_cid,
     if (opp_client->object_data) {
         goep_client_request_can_send_now(opp_client->goep_cid);
     } else {
-        opp_client_emit_push_object_data_event(opp_client, 0);
+        uint16_t buf_size;
+
+        buf_size = goep_client_body_get_outgoing_buffer_len(opp_client->goep_cid);
+        opp_client_emit_push_object_data_event(opp_client, 0, buf_size);
     }
     return ERROR_CODE_SUCCESS;
 }
@@ -647,7 +659,7 @@ uint8_t opp_client_push_object_chunk(uint16_t       opp_cid,
         return BTSTACK_BUSY;
     }
     if (chunk_offset != opp_client->object_data_offset + opp_client->object_data_size) {
-        log_error("opp_client_push_object_chunk called with wrong start offset. Expected %u, got %u.", chunk_offset, opp_client->object_data_offset + opp_client->object_data_size);
+        log_error("opp_client_push_object_chunk called with wrong start offset. Expected %u, got %u.", opp_client->object_data_offset + opp_client->object_data_size, chunk_offset);
         return BTSTACK_BUSY;
     }
 
