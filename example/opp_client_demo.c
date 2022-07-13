@@ -590,16 +590,16 @@ static void stdin_process(char c){
         case 'I':
             sprintf(filename, "git-pull-%u.txt", index_toggle);
             printf("[+] Pushing image/jpeg Object %s (chunked)", filename);
-            ret = opp_client_push_object(opp_cid, filename, "image/jpeg", NULL, sizeof (test_jpg_image));
             chunked_mode = 0;
+            ret = opp_client_push_object(opp_cid, filename, "image/jpeg", NULL, sizeof (test_jpg_image));
             printf(" (%02x)\n", ret);
             index_toggle++;
             break;
         case 'b':
             sprintf(filename, "bigtext-%u.txt", index_toggle);
             printf("[+] Pushing big text/plain Object %s (chunked)", filename);
-            ret = opp_client_push_object(opp_cid, filename, "text/plain", NULL, BIG_FILE_SIZE);
             chunked_mode = 1;
+            ret = opp_client_push_object(opp_cid, filename, "text/plain", NULL, BIG_FILE_SIZE);
             printf(" (%02x)\n", ret);
             index_toggle++;
             break;
