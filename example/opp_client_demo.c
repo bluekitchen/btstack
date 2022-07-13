@@ -646,6 +646,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     int i;
     uint8_t status;
+    uint32_t cur_pos;
+    uint16_t bufsize;
+    uint32_t cur_size;
+
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -669,10 +673,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("[+] Connection closed\n");
                             break;
                         case OPP_SUBEVENT_PUSH_OBJECT_DATA:
-                            uint32_t cur_pos = opp_subevent_push_object_data_get_cur_position(packet);
-                            uint16_t bufsize = opp_subevent_push_object_data_get_buf_size(packet);
-                            uint32_t cur_size;
-
+                            cur_pos = opp_subevent_push_object_data_get_cur_position(packet);
+                            bufsize = opp_subevent_push_object_data_get_buf_size(packet);
                             switch (chunked_mode) {
                                 case 0:
                                     cur_size = sizeof (test_jpg_image) - cur_pos;
@@ -684,10 +686,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                     sprintf (test_bigtxt_data, "%08u", cur_pos);
                                     test_bigtxt_data[8] = ':';
                                     cur_size = sizeof (test_bigtxt_data) - 1;
-                                    opp_client_push_object_chunk (opp_cid, test_bigtxt_data, cur_pos, cur_size);
+                                    opp_client_push_object_chunk (opp_cid, (const uint8_t*) test_bigtxt_data, cur_pos, cur_size);
                                     break;
                                 default:
-                                    printf ("huh, unexpected chunked_mode!\n");
+                                    btstack_unreachable();
+                                    break;
                             }
                             printf("[+] ... push data requested, offset %u, bufsize %u, pushing %u bytes\n",
                                    cur_pos, bufsize, cur_size);
