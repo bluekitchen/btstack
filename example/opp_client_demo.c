@@ -529,6 +529,24 @@ static char test_bigtxt_data[] = \
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" \
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\n";
 
+static const char * test_vnotes[] = {
+    // vnote 1
+    "BEGIN:VNOTE\n"
+    "VERSION:1.1\n"
+    "BODY:Some test text inside a vNote\n"
+    "DCREATED:20010602T100000Z\n"
+    "LAST-MODIFIED:20010602T100000Z\n"
+    "CLASS:PUBLIC\n"
+    "END:VNOTE",
+    // vnote 2
+    "BEGIN:VNOTE\n"
+    "VERSION:1.1\n"
+    "BODY:Another test text inside a vNote\n"
+    "DCREATED:20010602T100000Z\n"
+    "LAST-MODIFIED:20010602T100000Z\n"
+    "CLASS:PUBLIC\n"
+    "END:VNOTE"
+};
 
 // Testing User Interface
 static uint8_t index_toggle;
@@ -550,6 +568,7 @@ static void show_usage(void){
     printf("I - push image/jpeg object (chunked)\n");
     printf("c - push text/x-vcalendar object\n");
     printf("m - push text/x-vmsg object\n");
+    printf("n - push text/x-vnote object\n");
     printf("v - push text/x-vcard object\n");
     printf("b - push big (2MB) text/plain object (chunked)\n");
     printf("t - disconnect\n");
@@ -616,6 +635,14 @@ static void stdin_process(char c){
             sprintf(filename, "message_%u.vmg", index_toggle);
             printf("[+] Pushing text/x-vmsg Object %s", filename);
             ret = opp_client_push_object(opp_cid, filename, "text/x-vmsg", (uint8_t*) test_vmsgs[index_toggle], strlen (test_vmsgs[index_toggle]));
+            printf(" (%02x)\n", ret);
+            index_toggle++;
+            break;
+        case 'n':
+            index_toggle %= N_ELEMENTS(test_vnotes);
+            sprintf(filename, "vnote_%u.vnt", index_toggle);
+            printf("[+] Pushing text/x-vnote Object %s", filename);
+            ret = opp_client_push_object(opp_cid, filename, "text/x-vnote", (uint8_t*) test_vnotes[index_toggle], strlen (test_vnotes[index_toggle]));
             printf(" (%02x)\n", ret);
             index_toggle++;
             break;
