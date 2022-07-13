@@ -72,7 +72,7 @@ add_compile_definitions(ENABLE_TESTING_SUPPORT)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
-include_directories(.)
+include_directories(include)
 
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
