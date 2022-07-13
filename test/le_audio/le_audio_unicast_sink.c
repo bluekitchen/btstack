@@ -70,7 +70,10 @@
 #include "hci_cmd.h"
 #include "btstack_lc3.h"
 #include "btstack_lc3_google.h"
+
+#ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
+#endif
 
 // max config
 #define MAX_CHANNELS 2
@@ -147,7 +150,7 @@ static int dump_file;
 static uint32_t lc3_frames;
 
 // lc3 codec config
-static uint32_t sampling_frequency_hz;
+static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
@@ -188,6 +191,7 @@ static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_sam
     btstack_assert(bytes_read == bytes_needed);
 }
 
+#ifdef HAVE_POSIX_FILE_IO
 static void open_lc3_file(void) {
     // open lc3 file
     int oflags = O_WRONLY | O_CREAT | O_TRUNC;
@@ -215,6 +219,7 @@ static void open_lc3_file(void) {
     little_endian_store_32(header, 14, DUMP_LEN_LC3_FRAMES * number_samples_per_frame);
     write(dump_file, header, sizeof(header));
 }
+#endif
 
 static void setup_lc3_decoder(void){
     uint8_t channel;
@@ -228,9 +233,11 @@ static void setup_lc3_decoder(void){
 }
 
 static void close_files(void){
+#ifdef HAVE_POSIX_FILE_IO
     printf("Close files\n");
     close(dump_file);
     wav_writer_close();
+#endif
 }
 
 static void enter_streaming(void){
@@ -240,12 +247,14 @@ static void enter_streaming(void){
 
     printf("Configure: %u channels, sampling rate %u, samples per frame %u\n", num_channels, sampling_frequency_hz, number_samples_per_frame);
 
+#ifdef HAVE_POSIX_FILE_IO
     // create lc3 file
     open_lc3_file();
 
     // create wav file
     printf("WAV file: %s\n", filename_wav);
     wav_writer_open(filename_wav, num_channels, sampling_frequency_hz);
+#endif
 
     // init playback buffer
     btstack_ring_buffer_init(&playback_buffer, playback_buffer_storage, PLAYBACK_BUFFER_SIZE);
@@ -578,6 +587,7 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             printf_hexdump(&packet[offset], iso_sdu_length);
         }
 
+#ifdef HAVE_POSIX_FILE_IO
         if (lc3_frames < DUMP_LEN_LC3_FRAMES) {
             // store len header only for first bis
             if (cis_channel == 0) {
@@ -589,6 +599,7 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             // store complete sdu
             write(dump_file, &packet[offset], iso_sdu_length);
         }
+#endif
 
         uint8_t channel;
         for (channel = 0 ; channel < num_channels ; channel++){
@@ -602,8 +613,10 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             offset += octets_per_frame;
         }
 
+#ifdef HAVE_POSIX_FILE_IO
         // write wav samples
         wav_writer_write_int16(num_channels * number_samples_per_frame, pcm);
+#endif
 
         // store samples in playback buffer
         uint32_t bytes_to_store = num_channels * number_samples_per_frame * 2;

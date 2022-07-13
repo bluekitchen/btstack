@@ -193,7 +193,7 @@ static enum {
 
 // enumerate default codec configs
 static struct {
-    uint32_t samplingrate_hz;
+    uint16_t samplingrate_hz;
     uint8_t  samplingrate_index;
     uint8_t  num_variants;
     struct {

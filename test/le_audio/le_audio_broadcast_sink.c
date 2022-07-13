@@ -68,7 +68,10 @@
 #include "hci_cmd.h"
 #include "btstack_lc3.h"
 #include "btstack_lc3_google.h"
+
+#ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
+#endif
 
 // max config
 #define MAX_NUM_BIS 2
@@ -113,8 +116,8 @@ static bool have_base;
 static bool have_big_info;
 
 uint32_t last_samples_report_ms;
-uint32_t samples_received;
-uint32_t samples_dropped;
+uint16_t samples_received;
+uint16_t samples_dropped;
 uint16_t frames_per_second[MAX_NUM_BIS];
 
 // remote info
@@ -147,7 +150,7 @@ static int dump_file;
 static uint32_t lc3_frames;
 
 // lc3 codec config
-static uint32_t sampling_frequency_hz;
+static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
@@ -188,6 +191,7 @@ static void le_audio_broadcast_sink_playback(int16_t * buffer, uint16_t num_samp
     btstack_assert(bytes_read == bytes_needed);
 }
 
+#ifdef HAVE_POSIX_FILE_IO
 static void open_lc3_file(void) {
     // open lc3 file
     int oflags = O_WRONLY | O_CREAT | O_TRUNC;
@@ -215,6 +219,7 @@ static void open_lc3_file(void) {
     little_endian_store_32(header, 14, DUMP_LEN_LC3_FRAMES * number_samples_per_frame);
     write(dump_file, header, sizeof(header));
 }
+#endif
 
 static void setup_lc3_decoder(void){
     uint8_t channel;
@@ -228,9 +233,11 @@ static void setup_lc3_decoder(void){
 }
 
 static void close_files(void){
+#ifdef HAVE_POSIX_FILE_IO
     printf("Close files\n");
     close(dump_file);
     wav_writer_close();
+#endif
 }
 
 static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size){
@@ -263,7 +270,8 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
     ad_context_t context;
     for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
         uint8_t data_type = ad_iterator_get_data_type(&context);
-        uint8_t data_size = ad_iterator_get_data_len(&context);
+        // TODO: avoid out-of-bounds read
+        // uint8_t data_size = ad_iterator_get_data_len(&context);
         const uint8_t * data = ad_iterator_get_data(&context);
         uint16_t uuid;
         switch (data_type){
@@ -273,7 +281,8 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                     have_base = true;
                     // Level 1: Group Level
                     const uint8_t * base_data = &data[2];
-                    uint16_t base_len = data_size - 2;
+                    // TODO: avoid out-of-bounds read
+                    // uint16_t base_len = data_size - 2;
                     printf("BASE:\n");
                     uint32_t presentation_delay = little_endian_read_24(base_data, 0);
                     printf("- presentation delay: %"PRIu32" us\n", presentation_delay);
@@ -304,7 +313,7 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                                     sampling_frequency_index = codec_specific_configuration[codec_offset+1];
                                     // TODO: check range
                                     sampling_frequency_hz = sampling_frequency_map[sampling_frequency_index - 1];
-                                    printf("    - sampling frequency[%u]: %"PRIu32"\n", i, sampling_frequency_hz);
+                                    printf("    - sampling frequency[%u]: %u\n", i, sampling_frequency_hz);
                                     break;
                                 case 0x02: // 0 = 7.5, 1 = 10 ms
                                     frame_duration_index =  codec_specific_configuration[codec_offset+1];
@@ -362,12 +371,14 @@ static void enter_create_big_sync(void){
 
     printf("Configure: %u channels, sampling rate %u, samples per frame %u\n", num_bis, sampling_frequency_hz, number_samples_per_frame);
 
+#ifdef HAVE_POSIX_FILE_IO
     // create lc3 file
     open_lc3_file();
 
     // create wav file
     printf("WAV file: %s\n", filename_wav);
     wav_writer_open(filename_wav, num_bis, sampling_frequency_hz);
+#endif
 
     // init playback buffer
     btstack_ring_buffer_init(&playback_buffer, playback_buffer_storage, PLAYBACK_BUFFER_SIZE);
@@ -376,7 +387,7 @@ static void enter_create_big_sync(void){
     // PTS 8.2 sends stereo at half speed for stereo, for now playback at half speed
     const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
     if (sink != NULL){
-        uint32_t playback_speed;
+        uint16_t playback_speed;
         if ((num_bis > 1) && pts_mode){
             playback_speed = sampling_frequency_hz / num_bis;
             printf("PTS workaround: playback at %u hz\n", playback_speed);
@@ -415,7 +426,6 @@ static void start_scanning() {
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
-    unsigned int i;
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
@@ -581,7 +591,7 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         if (packet_missed){
             // print last packet
             printf("\n");
-            printf("%04x %10u %u ", last_seq_no, last_packet_time_ms[bis_channel], bis_channel);
+            printf("%04x %10"PRIu32" %u ", last_seq_no, last_packet_time_ms[bis_channel], bis_channel);
             printf_hexdump(&last_packet_prefix[num_bis*PACKET_PREFIX_LEN], PACKET_PREFIX_LEN);
             last_seq_no++;
 
@@ -593,7 +603,7 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             printf(ANSI_COLOR_RESET);
 
             // print current packet
-            printf("%04x %10u %u ", packet_sequence_number, now, bis_channel);
+            printf("%04x %10"PRIu32" %u ", packet_sequence_number, now, bis_channel);
             printf_hexdump(&packet[offset], PACKET_PREFIX_LEN);
         }
 
@@ -605,7 +615,7 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     } else {
 
         if ((packet_sequence_number & 0x7c) == 0) {
-            printf("%04x %10u %u ", packet_sequence_number, btstack_run_loop_get_time_ms(), bis_channel);
+            printf("%04x %10"PRIu32" %u ", packet_sequence_number, btstack_run_loop_get_time_ms(), bis_channel);
             printf_hexdump(&packet[offset], iso_sdu_length);
         }
 
@@ -630,8 +640,10 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
         // process complete iso frame
         if ((bis_channel + 1) == num_bis) {
+#ifdef HAVE_POSIX_FILE_IO
             // write wav samples
             wav_writer_write_int16(num_bis * number_samples_per_frame, pcm);
+#endif
             // store samples in playback buffer
             uint32_t bytes_to_store = num_bis * number_samples_per_frame * 2;
             samples_received += number_samples_per_frame;
@@ -650,7 +662,7 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         uint32_t time_ms = btstack_run_loop_get_time_ms();
         if (btstack_time_delta(time_ms, last_samples_report_ms) >= 1000){
             last_samples_report_ms = time_ms;
-            printf("LC3 Frames: %4u - ", lc3_frames / num_bis);
+            printf("LC3 Frames: %4u - ", (int) (lc3_frames / num_bis));
             uint8_t i;
             for (i=0;i<num_bis;i++){
                 printf("%u ", frames_per_second[i]);
