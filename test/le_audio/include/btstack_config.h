@@ -2,8 +2,6 @@
 // btstack_config.h for libusb port
 //
 
-#error
-
 #ifndef BTSTACK_CONFIG_H
 #define BTSTACK_CONFIG_H
 
