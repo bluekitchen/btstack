@@ -41,7 +41,6 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <stdio.h>
 
 #include "hci_cmd.h"
 #include "btstack_run_loop.h"
@@ -329,14 +328,12 @@ static void opp_client_handle_can_send_now(void){
                 } else {
                     opp_client->state = OPP_W4_PUT_OBJECT;
                 }
-                printf ("now in state %s\n", opp_client->state == OPP_W2_PUT_OBJECT ? "W2" : "W4");
 
                 if (chunk_pos + used_space >= opp_client->object_data_size) {
                     // we've used up all the data of the current chunk,
                     // request the next one.
                     uint16_t buf_size;
                     opp_client->object_data = NULL;
-                    printf ("requesting new data\n");
                     buf_size = goep_client_body_get_outgoing_buffer_len(opp_client->goep_cid);
                     opp_client_emit_push_object_data_event(opp_client, opp_client->object_total_pos, buf_size);
                 } else {
@@ -347,7 +344,6 @@ static void opp_client_handle_can_send_now(void){
                     }
                 }
             }
-            printf ("... state: %d, srm: %d\n", opp_client->state, opp_client->srm_state);
             break;
 
         case OPP_W2_GET_DEFAULT_OBJECT:
@@ -479,7 +475,6 @@ static void opp_client_packet_handler_goep(uint8_t *packet, uint16_t size){
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         opp_client_handle_srm_headers(opp_client);
-                        printf ("... got response\n");
 
                         if (opp_client->object_total_pos < opp_client->object_total_size) {
                             opp_client->state = OPP_W2_PUT_OBJECT;
@@ -646,7 +641,6 @@ uint8_t opp_client_push_object_chunk(uint16_t       opp_cid,
                                      uint32_t       chunk_size)
 {
     UNUSED(opp_cid);
-    printf ("chunk provided\n");
     if (opp_client->state != OPP_W2_PUT_OBJECT && opp_client->state != OPP_W4_PUT_OBJECT){
         log_error("opp_client_push_object_chunk called without an ongoing PUT state");
         return BTSTACK_BUSY;
@@ -661,11 +655,9 @@ uint8_t opp_client_push_object_chunk(uint16_t       opp_cid,
     opp_client->object_data_offset = chunk_offset;
     opp_client->object_data_size = chunk_size;
 
-    printf ("chunk provided - got data\n");
     // if we're in W2_PUT (usually when SRM is enabled)
     // request the next can_send
     if (opp_client->state == OPP_W2_PUT_OBJECT) {
-        printf ("request can_send\n");
         goep_client_request_can_send_now(opp_client->goep_cid);
     }
 
