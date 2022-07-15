@@ -74,6 +74,10 @@
 #include "hci_dump.h"
 #include "ad_parser.h"
 
+#ifdef ENABLE_CONTROLLER_DUMP_PACKETS
+#include <stdio.h>  // sprintf
+#endif
+
 #ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
 #ifndef HCI_HOST_ACL_PACKET_NUM
 #error "ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL requires to define HCI_HOST_ACL_PACKET_NUM"
@@ -802,6 +806,46 @@ static int hci_transport_synchronous(void){
     return hci_stack->hci_transport->can_send_packet_now == NULL;
 }
 
+// used for debugging
+#ifdef ENABLE_CONTROLLER_DUMP_PACKETS
+static void hci_controller_dump_packets(void){
+    // format: "{handle:04x}:{count:02d} "
+    char summaries[3][7 * 8 + 1];
+    uint16_t totals[3];
+    uint8_t index;
+    for (index = 0 ; index < 3 ; index++){
+        summaries[index][0] = 0;
+        totals[index] = 0;
+    }
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it != NULL; it = it->next){
+        hci_connection_t * connection = (hci_connection_t *) it;
+        switch (connection->address_type){
+            case BD_ADDR_TYPE_ACL:
+                index = 0;
+                break;
+            case BD_ADDR_TYPE_SCO:
+                index = 2;
+                break;
+            default:
+                index = 1;
+        }
+        totals[index] += connection->num_packets_sent;
+        char item_text[10];
+        sprintf(item_text, "%04x:%02d", connection->con_handle,connection->num_packets_sent);
+        btstack_strcat(summaries[index], sizeof(summaries[0]), item_text);
+        break;
+    }
+    for (index = 0 ; index < 3 ; index++){
+        if (summaries[index][0] == 0){
+            summaries[index][0] = '-';
+            summaries[index][1] = 0;
+        }
+    }
+    log_info("Controller ACL BR/EDR: %s total %u / LE: %s total %u / SCO: %s total %u", summaries[0], totals[0], summaries[1], totals[1], summaries[2], totals[2]);
+}
+#endif
+
 static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
 
     // log_info("hci_send_acl_packet_fragments  %u/%u (con 0x%04x)", hci_stack->acl_fragmentation_pos, hci_stack->acl_fragmentation_total_size, connection->con_handle);
@@ -846,7 +890,7 @@ static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
 
         // update header len
         little_endian_store_16(hci_stack->hci_packet_buffer, acl_header_pos + 2u, current_acl_data_packet_length);
-
+        
         // count packet
         connection->num_packets_sent++;
         log_debug("hci_send_acl_packet_fragments loop before send (more fragments %d)", (int) more_fragments);
@@ -871,6 +915,10 @@ static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
             // no error from HCI Transport expected
             status = ERROR_CODE_HARDWARE_FAILURE;
         }
+
+#ifdef ENABLE_CONTROLLER_DUMP_PACKETS
+        hci_controller_dump_packets();
+#endif
 
         log_debug("hci_send_acl_packet_fragments loop after send (more fragments %d)", (int) more_fragments);
 
@@ -3160,6 +3208,10 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u", num_packets, handle, conn->num_packets_sent);
                 }
 
+#ifdef ENABLE_CONTROLLER_DUMP_PACKETS
+                hci_controller_dump_packets();
+#endif
+
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
                 if (conn == NULL){
                     hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(handle);
@@ -3970,6 +4022,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
 		if (aConn && aConn->state == RECEIVED_DISCONNECTION_COMPLETE){
 			hci_shutdown_connection(aConn);
 		}
+#ifdef ENABLE_CONTROLLER_DUMP_PACKETS
+        hci_controller_dump_packets();
+#endif
     }
 
 	// execute main loop
