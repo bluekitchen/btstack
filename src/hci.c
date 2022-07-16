@@ -829,12 +829,12 @@ static void hci_controller_dump_packets(void){
                 break;
             default:
                 index = 1;
+                break;
         }
         totals[index] += connection->num_packets_sent;
         char item_text[10];
-        sprintf(item_text, "%04x:%02d", connection->con_handle,connection->num_packets_sent);
+        sprintf(item_text, "%04x:%02d ", connection->con_handle,connection->num_packets_sent);
         btstack_strcat(summaries[index], sizeof(summaries[0]), item_text);
-        break;
     }
     for (index = 0 ; index < 3 ; index++){
         if (summaries[index][0] == 0){
