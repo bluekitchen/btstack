@@ -456,6 +456,46 @@ static void generate_audio_timer_handler(btstack_timer_source_t *ts){
 }
 #endif
 
+
+static void start_unicast() {// use values from table
+    sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
+    octets_per_frame      = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+    frame_duration        = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration;
+
+    // get num samples per frame
+    setup_lc3_encoder();
+
+    // setup mod player
+    setup_mod_player();
+
+    // setup sine generator
+    if (sampling_frequency_hz == 44100){
+        sine_step = 2;
+    } else {
+        sine_step = 96000 / sampling_frequency_hz;
+    }
+
+    // update adv / BASE
+    adv_data[4] = 0; // subtype
+    adv_data[5] = 0; // flags
+    adv_data[6] = num_channels;
+    adv_data[7] = sampling_frequency_hz / 1000;
+    adv_data[8] = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 0 : 1;
+    adv_data[9] = octets_per_frame;
+
+    // setup advertisements
+    uint16_t adv_int_min = 0x0030;
+    uint16_t adv_int_max = 0x0030;
+    uint8_t adv_type = 0;
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    gap_advertisements_set_data(sizeof(adv_data), adv_data);
+    gap_advertisements_enable(1);
+    num_cis = 1;
+    app_state = APP_W4_CIS_COMPLETE;
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -570,8 +610,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             case APP_SET_HOST_FEATURES:
                 hci_send_cmd(&hci_le_set_host_feature, 32, 1);
                 app_state = APP_IDLE;
+#ifdef ENABLE_DEMO_MODE
+                // start unicast automatically, mod player, 48_5_2
+                num_channels = 2;
+                menu_sampling_frequency = 5;
+                menu_variant = 4;
+                start_unicast();
+#else
                 show_usage();
                 printf("Please select sample frequency and variation, then start advertising\n");
+#endif
                 break;
             case APP_W4_CIS_COMPLETE:
             {
@@ -664,43 +712,8 @@ static void stdin_process(char c){
                 printf("Cannot start advertising - not in idle state\n");
                 break;
             }
-            // use values from table
-            sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
-            octets_per_frame      = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
-            frame_duration        = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration;
+            start_unicast();
 
-            // get num samples per frame
-            setup_lc3_encoder();
-
-            // setup mod player
-            setup_mod_player();
-
-            // setup sine generator
-            if (sampling_frequency_hz == 44100){
-                sine_step = 2;
-            } else {
-                sine_step = 96000 / sampling_frequency_hz;
-            }
-
-            // update adv / BASE
-            adv_data[4] = 0; // subtype
-            adv_data[5] = 0; // flags
-            adv_data[6] = num_channels;
-            adv_data[7] = sampling_frequency_hz / 1000;
-            adv_data[8] = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 0 : 1;
-            adv_data[9] = octets_per_frame;
-
-            // setup advertisements
-            uint16_t adv_int_min = 0x0030;
-            uint16_t adv_int_max = 0x0030;
-            uint8_t adv_type = 0;
-            bd_addr_t null_addr;
-            memset(null_addr, 0, 6);
-            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-            gap_advertisements_set_data(sizeof(adv_data), adv_data);
-            gap_advertisements_enable(1);
-            num_cis = 1;
-            app_state = APP_W4_CIS_COMPLETE;
             break;
         case 't':
             audio_source = 1 - audio_source;
