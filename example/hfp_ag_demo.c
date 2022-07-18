@@ -718,6 +718,9 @@ int btstack_main(int argc, const char * argv[]){
 
     sco_demo_init();
 
+    // Request role change on reconnecting headset to always use them in slave mode
+    hci_set_master_slave_policy(0);
+
     gap_set_local_name("HFP AG Demo 00:00:00:00:00:00");
     gap_discoverable_control(1);
 
