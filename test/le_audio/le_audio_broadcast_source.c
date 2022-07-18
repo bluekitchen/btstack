@@ -514,6 +514,41 @@ static void setup_big(void){
     gap_big_create(&big_storage, &big_params);
 }
 
+
+static void start_broadcast() {// use values from table
+    sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
+    octets_per_frame      = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+    frame_duration        = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration;
+
+    // get num samples per frame
+    setup_lc3_encoder();
+
+    // update BASEs
+    periodic_adv_data_1[17] = codec_configurations[menu_sampling_frequency].samplingrate_index;
+    periodic_adv_data_1[20] = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;
+    little_endian_store_16(periodic_adv_data_1, 23, octets_per_frame);
+
+    periodic_adv_data_2[17] = codec_configurations[menu_sampling_frequency].samplingrate_index;
+    periodic_adv_data_2[20] = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;
+    little_endian_store_16(periodic_adv_data_2, 23, octets_per_frame);
+
+    // setup mod player
+    setup_mod_player();
+
+    // setup sine generator
+    if (sampling_frequency_hz == 44100){
+        sine_step = 2;
+    } else {
+        sine_step = 96000 / sampling_frequency_hz;
+    }
+
+    // setup extended and periodic advertising
+    setup_advertising();
+
+    // setup big
+    setup_big();
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -523,8 +558,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
+#ifdef ENABLE_DEMO_MODE
+                    // start broadcast automatically, mod player, 48_5_1
+                    num_bis = 1;
+                    menu_sampling_frequency = 5;
+                    menu_variant = 4;
+                    start_broadcast();
+#else
                     show_usage();
                     printf("Please select sample frequency and variation, then start broadcast\n");
+#endif
                     break;
                 case HCI_STATE_OFF:
                     printf("Goodbye\n");
@@ -577,7 +620,6 @@ static void show_usage(void){
     printf("x - shutdown\n");
     printf("---\n");
 }
-
 static void stdin_process(char c){
     switch (c){
         case 'c':
@@ -632,38 +674,7 @@ static void stdin_process(char c){
                 printf("Cannot start broadcast - not in idle state\n");
                 break;
             }
-            // use values from table
-            sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
-            octets_per_frame      = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
-            frame_duration        = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration;
-
-            // get num samples per frame
-            setup_lc3_encoder();
-
-            // update BASEs
-            periodic_adv_data_1[17] = codec_configurations[menu_sampling_frequency].samplingrate_index;
-            periodic_adv_data_1[20] = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;
-            little_endian_store_16(periodic_adv_data_1, 23, octets_per_frame);
-
-            periodic_adv_data_2[17] = codec_configurations[menu_sampling_frequency].samplingrate_index;
-            periodic_adv_data_2[20] = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;
-            little_endian_store_16(periodic_adv_data_2, 23, octets_per_frame);
-
-            // setup mod player
-            setup_mod_player();
-
-            // setup sine generator
-            if (sampling_frequency_hz == 44100){
-                sine_step = 2;
-            } else {
-                sine_step = 96000 / sampling_frequency_hz;
-            }
-
-            // setup extended and periodic advertising
-            setup_advertising();
-
-            // setup big
-            setup_big();
+            start_broadcast();
             break;
         case 't':
             audio_source = 1 - audio_source;
