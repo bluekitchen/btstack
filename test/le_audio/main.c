@@ -219,7 +219,7 @@ int main(int argc, const char * argv[]){
 	    
 
     // pre-select serial device
-    config.device_name = "/dev/tty.usbmodemE6589B44933B1"; // BL654 with PTS Firmware
+    config.device_name = "/dev/tty.usbmodemD5D5237DC25B1"; // BL654 with PTS Firmware
 
     // accept path from command line
     bool second_device = false;

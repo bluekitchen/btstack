@@ -41,8 +41,6 @@
  * LE Audio Broadcast Source
  */
 
-#define ENABLE_DEMO_MODE
-
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
