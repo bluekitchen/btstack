@@ -555,6 +555,22 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
+static void store_samples_in_ringbuffer(void){
+#ifdef HAVE_POSIX_FILE_IO
+    // write wav samples
+    wav_writer_write_int16(num_bis * number_samples_per_frame, pcm);
+#endif
+    // store samples in playback buffer
+    uint32_t bytes_to_store = num_bis * number_samples_per_frame * 2;
+    samples_received += number_samples_per_frame;
+    if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
+        btstack_ring_buffer_write(&playback_buffer, (uint8_t *) pcm, bytes_to_store);
+    } else {
+        printf("Samples dropped\n");
+        samples_dropped += number_samples_per_frame;
+    }
+}
+
 static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     uint16_t header = little_endian_read_16(packet, 0);
@@ -640,22 +656,9 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
         // process complete iso frame
         if ((bis_channel + 1) == num_bis) {
-#ifdef HAVE_POSIX_FILE_IO
-            // write wav samples
-            wav_writer_write_int16(num_bis * number_samples_per_frame, pcm);
-#endif
-            // store samples in playback buffer
-            uint32_t bytes_to_store = num_bis * number_samples_per_frame * 2;
-            samples_received += number_samples_per_frame;
-            if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
-                btstack_ring_buffer_write(&playback_buffer, (uint8_t *) pcm, bytes_to_store);
-            } else {
-                samples_dropped += number_samples_per_frame;
-            }
+            store_samples_in_ringbuffer();
         }
-
-        log_info("Samples in playback buffer %5u", btstack_ring_buffer_bytes_available(&playback_buffer) / (num_bis * 2));
-
+        
         lc3_frames++;
         frames_per_second[bis_channel]++;
 
