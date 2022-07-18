@@ -183,7 +183,6 @@ static enum {
 
 static enum {
     APP_W4_WORKING,
-    APP_SET_HOST_FEATURES,
     APP_IDLE,
     APP_W4_CIS_COMPLETE,
     APP_SET_ISO_PATH,
@@ -506,7 +505,17 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
-                    app_state = APP_SET_HOST_FEATURES;
+                    app_state = APP_IDLE;
+#ifdef ENABLE_DEMO_MODE
+                    // start unicast automatically, mod player, 48_5_2
+                    num_channels = 2;
+                    menu_sampling_frequency = 5;
+                    menu_variant = 4;
+                    start_unicast();
+#else
+                    show_usage();
+                    printf("Please select sample frequency and variation, then start advertising\n");
+#endif
                     break;
                 case HCI_STATE_OFF:
                     printf("Goodbye\n");
@@ -607,20 +616,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
     if (hci_can_send_command_packet_now()) {
         switch(app_state){
-            case APP_SET_HOST_FEATURES:
-                hci_send_cmd(&hci_le_set_host_feature, 32, 1);
-                app_state = APP_IDLE;
-#ifdef ENABLE_DEMO_MODE
-                // start unicast automatically, mod player, 48_5_2
-                num_channels = 2;
-                menu_sampling_frequency = 5;
-                menu_variant = 4;
-                start_unicast();
-#else
-                show_usage();
-                printf("Please select sample frequency and variation, then start advertising\n");
-#endif
-                break;
             case APP_W4_CIS_COMPLETE:
             {
                 uint8_t i;

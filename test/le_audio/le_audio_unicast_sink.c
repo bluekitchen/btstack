@@ -104,7 +104,6 @@ static const char * filename_wav = "le_audio_unicast_sink.wav";
 
 static enum {
     APP_W4_WORKING,
-    APP_SET_HOST_FEATURES,
     APP_W4_SOURCE_ADV,
     APP_CREATE_CIG,
     APP_W4_CIG_COMPLETE,
@@ -290,7 +289,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
                     if (app_state != APP_W4_WORKING) break;
-                    app_state = APP_SET_HOST_FEATURES;
+                    enter_scanning();
                     break;
                 case HCI_STATE_OFF:
                     printf("Goodbye\n");
@@ -434,10 +433,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     if (!hci_can_send_command_packet_now()) return;
 
     switch(app_state){
-        case APP_SET_HOST_FEATURES:
-            hci_send_cmd(&hci_le_set_host_feature, 32, 1);
-            enter_scanning();
-            break;
         case APP_CREATE_CIG:
             {
                 if (sampling_frequency_hz == 44100){
