@@ -165,6 +165,12 @@ static int16_t pcm[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME];
 static uint8_t playback_buffer_storage[PLAYBACK_BUFFER_SIZE];
 static btstack_ring_buffer_t playback_buffer;
 
+// PLC state
+#define PLC_GUARD_MS 1
+
+static btstack_timer_source_t next_packet_timer;
+static uint16_t               cached_iso_sdu_len;
+
 static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_samples){
     // called from lower-layer but guaranteed to be on main thread
     uint32_t bytes_needed = num_samples * num_channels * 2;
@@ -535,6 +541,26 @@ static void store_samples_in_ringbuffer(void){
     }
 }
 
+static void plc_timeout(btstack_timer_source_t * timer) {
+    // set timer again
+    uint32_t frame_duration_ms = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8 : 10;
+    btstack_run_loop_set_timer(&next_packet_timer, frame_duration_ms);
+    btstack_run_loop_set_timer_handler(&next_packet_timer, plc_timeout);
+    btstack_run_loop_add_timer(&next_packet_timer);
+
+    // inject packet
+    uint8_t tmp_BEC_detect;
+    uint8_t BFI = 1;
+    uint8_t channel;
+    for (channel = 0; channel < num_channels; channel++){
+        (void) lc3_decoder->decode_signed_16(&decoder_contexts[channel], NULL, cached_iso_sdu_len, BFI,
+                                             &pcm[channel], num_channels,
+                                             &tmp_BEC_detect);
+    }
+
+    store_samples_in_ringbuffer();
+}
+
 static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     uint16_t header = little_endian_read_16(packet, 0);
@@ -630,11 +656,19 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         }
 
         store_samples_in_ringbuffer();
-        
+
         log_info("Samples in playback buffer %5u", btstack_ring_buffer_bytes_available(&playback_buffer) / (num_channels * 2));
 
         lc3_frames++;
         frames_per_second[cis_channel]++;
+
+        // PLC
+        cached_iso_sdu_len = iso_sdu_length;
+        uint32_t frame_duration_ms = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8 : 10;
+        btstack_run_loop_remove_timer(&next_packet_timer);
+        btstack_run_loop_set_timer(&next_packet_timer, frame_duration_ms + PLC_GUARD_MS);
+        btstack_run_loop_set_timer_handler(&next_packet_timer, plc_timeout);
+        btstack_run_loop_add_timer(&next_packet_timer);
 
         uint32_t time_ms = btstack_run_loop_get_time_ms();
         if (btstack_time_delta(time_ms, last_samples_report_ms) > 1000){
