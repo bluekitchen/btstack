@@ -4663,6 +4663,9 @@ static void hci_power_enter_initializing_state(void){
 static void hci_power_enter_halting_state(void){
 #ifdef ENABLE_BLE
     hci_whitelist_free();
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
+    hci_periodic_advertiser_list_free();
+#endif
 #endif
     // see hci_run
     hci_stack->state = HCI_STATE_HALTING;
@@ -4896,7 +4899,7 @@ static void hci_halting_run(void) {
                 }
             }
             else
-#else
+#else /* ENABLE_LE_PERIPHERAL */
             {
                 if (stop_advertismenets) {
                     hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
@@ -9115,7 +9118,6 @@ static void hci_iso_notify_can_send_now(void){
         le_audio_big_t * big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
         // report bis ready
         uint8_t i;
-        bool can_send = true;
         for (i=0;i<big->num_bis;i++){
             hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(big->bis_con_handles[i]);
             if ((iso_stream != NULL) && iso_stream->emit_ready_to_send){
