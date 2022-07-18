@@ -2152,6 +2152,17 @@ static void hci_initializing_run(void){
 #endif
             /* fall through */
 
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    case HCI_INIT_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS:
+            if (hci_le_supported()) {
+                hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS;
+                hci_send_cmd(&hci_le_set_host_feature, 32, 1);
+                break;
+            }
+#endif
+
+            /* fall through */
+
         case HCI_INIT_DONE:
             hci_stack->substate = HCI_INIT_DONE;
             // main init sequence complete
