@@ -84,7 +84,7 @@ static const le_extended_advertising_parameters_t extended_params = {
         .primary_advertising_channel_map = 7,
         .own_address_type = 0,
         .peer_address_type = 0,
-        .peer_address = 0,
+        .peer_address =  { 0 },
         .advertising_filter_policy = 0,
         .advertising_tx_power = 10, // 10 dBm
         .primary_advertising_phy = 1, // LE 1M PHY
@@ -229,7 +229,7 @@ static uint32_t send_last_ms;
 #endif
 
 // lc3 codec config
-static uint32_t sampling_frequency_hz;
+static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
@@ -270,7 +270,7 @@ static enum {
 
 // enumerate default codec configs
 static struct {
-    uint32_t samplingrate_hz;
+    uint16_t samplingrate_hz;
     uint8_t  samplingrate_index;
     uint8_t  num_variants;
     struct {
