@@ -70,6 +70,7 @@
 #include "hci_cmd.h"
 #include "btstack_lc3.h"
 #include "btstack_lc3_google.h"
+#include "btstack_lc3plus_fraunhofer.h"
 
 #ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
@@ -156,9 +157,16 @@ static uint16_t octets_per_frame;
 static uint8_t  num_channels;
 
 // lc3 decoder
+static bool request_lc3plus_decoder = false;
+static bool use_lc3plus_decoder = false;
 static const btstack_lc3_decoder_t * lc3_decoder;
-static btstack_lc3_decoder_google_t decoder_contexts[MAX_CHANNELS];
 static int16_t pcm[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME];
+
+static btstack_lc3_decoder_google_t google_decoder_contexts[MAX_CHANNELS];
+#ifdef HAVE_LC3PLUS
+static btstack_lc3plus_fraunhofer_decoder_t fraunhofer_decoder_contexts[MAX_CHANNELS];
+#endif
+static void * decoder_contexts[MAX_NR_BIS];
 
 // playback
 static uint8_t playback_buffer_storage[PLAYBACK_BUFFER_SIZE];
@@ -229,11 +237,23 @@ static void open_lc3_file(void) {
 static void setup_lc3_decoder(void){
     uint8_t channel;
     for (channel = 0 ; channel < num_channels ; channel++){
-        btstack_lc3_decoder_google_t * decoder_context = &decoder_contexts[channel];
-        lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
+        // pick decoder
+        void * decoder_context = NULL;
+#ifdef HAVE_LC3PLUS
+        if (use_lc3plus_decoder){
+            decoder_context = &fraunhofer_decoder_contexts[channel];
+            lc3_decoder = btstack_lc3plus_fraunhofer_decoder_init_instance(decoder_context);
+        }
+        else
+#endif
+        {
+            decoder_context = &google_decoder_contexts[channel];
+            lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
+        }
+        decoder_contexts[channel] = decoder_context;
         lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration);
     }
-    number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(&decoder_contexts[0]);
+    number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(decoder_contexts[0]);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
 }
 
@@ -247,10 +267,13 @@ static void close_files(void){
 
 static void enter_streaming(void){
 
+    // switch to lc3plus if requested and possible
+    use_lc3plus_decoder = request_lc3plus_decoder && (frame_duration == BTSTACK_LC3_FRAME_DURATION_10000US);
+
     // init decoder
     setup_lc3_decoder();
 
-    printf("Configure: %u channels, sampling rate %u, samples per frame %u\n", num_channels, sampling_frequency_hz, number_samples_per_frame);
+    printf("Configure: %u channels, sampling rate %u, samples per frame %u, lc3plus %u\n", num_channels, sampling_frequency_hz, number_samples_per_frame, use_lc3plus_decoder);
 
 #ifdef HAVE_POSIX_FILE_IO
     // create lc3 file
@@ -272,7 +295,7 @@ static void enter_streaming(void){
     }
 }
 
-static void enter_scanning() {
+static void start_scanning() {
     app_state = APP_W4_SOURCE_ADV;
     gap_set_scan_params(1, 0x30, 0x30, 0);
     gap_start_scan();
@@ -288,8 +311,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
+#ifdef ENABLE_DEMO_MODE
                     if (app_state != APP_W4_WORKING) break;
-                    enter_scanning();
+                    start_scanning();
+#else
+                    show_usage();
+#endif
                     break;
                 case HCI_STATE_OFF:
                     printf("Goodbye\n");
@@ -326,7 +353,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     sink->stop_stream();
                 }
 
-                enter_scanning();
+                start_scanning();
             }
             break;
         case GAP_EVENT_ADVERTISING_REPORT:
@@ -548,7 +575,7 @@ static void plc_timeout(btstack_timer_source_t * timer) {
     uint8_t BFI = 1;
     uint8_t channel;
     for (channel = 0; channel < num_channels; channel++){
-        (void) lc3_decoder->decode_signed_16(&decoder_contexts[channel], NULL, cached_iso_sdu_len, BFI,
+        (void) lc3_decoder->decode_signed_16(decoder_contexts[channel], NULL, cached_iso_sdu_len, BFI,
                                              &pcm[channel], num_channels,
                                              &tmp_BEC_detect);
     }
@@ -644,7 +671,7 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             // decode codec frame
             uint8_t tmp_BEC_detect;
             uint8_t BFI = 0;
-            (void) lc3_decoder->decode_signed_16(&decoder_contexts[channel], &packet[offset], octets_per_frame, BFI,
+            (void) lc3_decoder->decode_signed_16(decoder_contexts[channel], &packet[offset], octets_per_frame, BFI,
                                        &pcm[channel], num_channels,
                                        &tmp_BEC_detect);
             offset += octets_per_frame;
@@ -688,12 +715,25 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 static void show_usage(void){
     printf("\n--- LE Audio Unicast Sink Test Console ---\n");
     printf("x - close files and exit\n");
+    printf("s - start scanning\n");
+#ifdef HAVE_LC3PLUS
+    printf("q - use LC3plus decoder if 10 ms ISO interval is used\n");
+#endif
     printf("---\n");
 }
 
 static void stdin_process(char c){
     switch (c){
-        case 'x':
+        case 's':
+            if (app_state != APP_W4_WORKING) break;
+            start_scanning();
+            break;
+#ifdef HAVE_LC3PLUS
+        case 'q':
+            request_lc3plus_decoder = true;
+            break;
+#endif
+            case 'x':
             close_files();
             printf("Shutdown...\n");
             hci_power_control(HCI_POWER_OFF);
