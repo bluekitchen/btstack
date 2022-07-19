@@ -279,15 +279,15 @@ microphone_control_service_client_test: microphone_control_service_client_test.h
 
 myclean:
 	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o 
-	rm -rf hog_device_test.h
-	rm -rf gatt_client_test.h
-	rm -rf gatt_server_test.h
-	rm -rf csc_server_test.h
-	rm -rf cycling_power_server_test.h
-	rm -rf gatt_profiles.h
-	rm -rf hrp_server_test.h
-	rm -f sco_input.msbc
-	rm -f sco_output.msbc
+	rm -f csc_server_test.h
+	rm -f cycling_power_server_test.h
+	rm -f gap_central_test.h
+	rm -f gap_peripheral_test.h
+	rm -f gatt_client_test.h
+	rm -f gatt_profiles.h
+	rm -f gatt_server_test.h
+	rm -f hog_device_test.h
+	rm -f hrp_server_test.h
 	rm -f microphone_control_service_client_test.h
 
 clean: myclean
