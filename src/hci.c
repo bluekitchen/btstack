@@ -230,6 +230,7 @@ static le_advertising_set_t * hci_advertising_set_for_handle(uint8_t advertising
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
 static uint8_t hci_iso_stream_create(hci_iso_type_t iso_type, hci_con_handle_t con_handle, uint8_t group_id);
 static void hci_iso_stream_finalize(hci_iso_stream_t * iso_stream);
+static void hci_iso_stream_finalize_by_type_and_group_id(hci_iso_type_t iso_type, uint8_t group_id);
 static hci_iso_stream_t * hci_iso_stream_for_con_handle(hci_con_handle_t con_handle);
 static void hci_iso_stream_requested_finalize(uint8_t big_handle);
 static void hci_iso_stream_requested_confirm(uint8_t big_handle);
@@ -3973,7 +3974,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             }
                         } else {
                             // create BIG failed or has been stopped by us
-                            hci_iso_stream_requested_finalize(big->big_handle);
+                            hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big->big_handle);
                             btstack_linked_list_remove(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) big);
                             if (big->state == LE_AUDIO_BIG_STATE_W4_ESTABLISHED){
                                 hci_emit_big_created(big, status);
@@ -8957,6 +8958,19 @@ static void hci_iso_stream_finalize(hci_iso_stream_t * iso_stream){
     btstack_memory_hci_iso_stream_free(iso_stream);
 }
 
+static void hci_iso_stream_finalize_by_type_and_group_id(hci_iso_type_t iso_type, uint8_t group_id) {
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+        if ((iso_stream->group_id == group_id) &&
+            (iso_stream->iso_type == iso_type)){
+            btstack_linked_list_iterator_remove(&it);
+            btstack_memory_hci_iso_stream_free(iso_stream);
+        }
+    }
+}
+
 static void hci_iso_stream_requested_finalize(uint8_t group_id) {
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
@@ -9253,7 +9267,7 @@ uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_par
 
     // free structs on error
     if (status != ERROR_CODE_SUCCESS){
-        hci_iso_stream_requested_finalize(big_params->big_handle);
+        hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big_params->big_handle);
         return status;
     }
 
