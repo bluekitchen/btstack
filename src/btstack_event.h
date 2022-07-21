@@ -1552,6 +1552,16 @@ static inline hci_con_handle_t hci_event_bis_can_send_now_get_con_handle(const u
     return little_endian_read_16(event, 4);
 }
 
+/**
+ * @brief Get field cis_con_handle from event HCI_EVENT_CIS_CAN_SEND_NOW
+ * @param event packet
+ * @return cis_con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_cis_can_send_now_get_cis_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+
 
 /**
  * @brief Get field status from event L2CAP_EVENT_CHANNEL_OPENED
@@ -1746,12 +1756,12 @@ static inline uint16_t l2cap_event_connection_parameter_update_request_get_inter
     return little_endian_read_16(event, 6);
 }
 /**
- * @brief Get field latencey from event L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST
+ * @brief Get field latency from event L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST
  * @param event packet
- * @return latencey
+ * @return latency
  * @note: btstack_type 2
  */
-static inline uint16_t l2cap_event_connection_parameter_update_request_get_latencey(const uint8_t * event){
+static inline uint16_t l2cap_event_connection_parameter_update_request_get_latency(const uint8_t * event){
     return little_endian_read_16(event, 8);
 }
 /**
@@ -5662,6 +5672,72 @@ static inline uint16_t gap_subevent_big_sync_created_get_bis_con_handles(const u
  */
 static inline uint8_t gap_subevent_big_sync_stopped_get_big_handle(const uint8_t * event){
     return event[3];
+}
+
+/**
+ * @brief Get field status from event GAP_SUBEVENT_CIG_CREATED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_cig_created_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field cig_id from event GAP_SUBEVENT_CIG_CREATED
+ * @param event packet
+ * @return cig_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_cig_created_get_cig_id(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field num_cis from event GAP_SUBEVENT_CIG_CREATED
+ * @param event packet
+ * @return num_cis
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_cig_created_get_num_cis(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get element of array field cis_con_handles from event GAP_SUBEVENT_CIG_CREATED
+ * @param event packet
+ * @param index
+ * @return cis_con_handles
+ * @note: btstack_type C
+ */
+static inline uint16_t gap_subevent_cig_created_get_cis_con_handles(const uint8_t * event, uint8_t index){
+    return little_endian_read_16(event, 6 + (2 * index));
+}
+
+/**
+ * @brief Get field status from event GAP_SUBEVENT_CIS_CREATED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_cis_created_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field cig_id from event GAP_SUBEVENT_CIS_CREATED
+ * @param event packet
+ * @return cig_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_cis_created_get_cig_id(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field cis_con_handle from event GAP_SUBEVENT_CIS_CREATED
+ * @param event packet
+ * @return cis_con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gap_subevent_cis_created_get_cis_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 5);
 }
 
 /**

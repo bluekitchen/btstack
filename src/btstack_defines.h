@@ -1112,6 +1112,12 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_BIS_CAN_SEND_NOW                         0x6Bu
 
 /**
+ * @format H
+ * @param cis_con_handle
+ */
+#define HCI_EVENT_CIS_CAN_SEND_NOW                         0x6Cu
+
+/**
  * @format
  */
 #define HCI_EVENT_SCO_CAN_SEND_NOW                         0x6Fu
@@ -1914,7 +1920,26 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param big_handle
  */
-#define GAP_SUBEVENT_BIG_SYNC_STOPPED                             0x05u
+#define GAP_SUBEVENT_BIG_SYNC_STOPPED                            0x05u
+
+/**
+ * @format 1111C
+ * @param subevent_code
+ * @param status
+ * @param cig_id
+ * @param num_cis
+ * @param cis_con_handles
+ */
+#define GAP_SUBEVENT_CIG_CREATED                                 0x06u
+
+/**
+ * @format 111H
+ * @param subevent_code
+ * @param status
+ * @param cig_id
+ * @param cis_con_handle
+ */
+#define GAP_SUBEVENT_CIS_CREATED                                 0x07u
 
 /** HSP Subevent */
 
