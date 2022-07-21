@@ -129,6 +129,9 @@ static hci_con_handle_t remote_handle;
 static bool count_mode;
 static bool pts_mode;
 
+static le_audio_cig_t cig;
+static le_audio_cig_params_t cig_params;
+
 // iso info
 static bool framed_pdus;
 static uint16_t frame_duration_us;
@@ -290,24 +293,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             }
             break;
-        case HCI_EVENT_COMMAND_COMPLETE:
-            switch (hci_event_command_complete_get_command_opcode(packet)) {
-                case HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS:
-                    if (app_state == APP_W4_CIG_COMPLETE){
-                        uint8_t i;
-                        printf("CIS Connection Handles: ");
-                        for (i=0; i < num_cis; i++){
-                            cis_con_handles[i] = little_endian_read_16(packet, 8 + 2*i);
-                            printf("0x%04x ", cis_con_handles[i]);
-                        }
-                        printf("\n");
-                        next_cis_index = 0;
-                        app_state = APP_CREATE_CIS;
-                    }
-                default:
-                    break;
-            }
-            break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (hci_event_disconnection_complete_get_connection_handle(packet) == remote_handle){
                 printf("Disconnected, back to scanning\n");
@@ -417,6 +402,22 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 default:
                     break;
             }
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_CIG_CREATED:
+                    if (app_state == APP_W4_CIG_COMPLETE){
+                        uint8_t i;
+                        printf("CIS Connection Handles: ");
+                        for (i=0; i < num_cis; i++){
+                            cis_con_handles[i] = gap_subevent_cig_created_get_cis_con_handles(packet, i);
+                            printf("0x%04x ", cis_con_handles[i]);
+                        }
+                        printf("\n");
+                        next_cis_index = 0;
+                        app_state = APP_CREATE_CIS;
+                    }
+                    break;
+            }
         default:
             break;
     }
@@ -434,55 +435,32 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     framed_pdus = 0;
                     frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
                 }
+
                 printf("Send: LE Set CIG Parameters\n");
 
                 app_state = APP_W4_CIG_COMPLETE;
 
                 num_cis = 1;
-
-                uint8_t  cig_id = 0;
-                uint32_t sdu_interval_c_to_p = frame_duration_us;
-                uint32_t sdu_interval_p_to_c = frame_duration_us;
-                uint8_t worst_case_sca = 0; // 251 ppm to 500 ppm
-                uint8_t packing = 0; // sequential
-                uint8_t framing = framed_pdus; // unframed (44.1 khz requires framed)
-                uint16_t max_transport_latency_c_to_p = 40;
-                uint16_t max_transport_latency_p_to_c = 40;
-                uint8_t  cis_id[MAX_CHANNELS];
-                uint16_t max_sdu_c_to_p[MAX_CHANNELS];
-                uint16_t max_sdu_p_to_c[MAX_CHANNELS];
-                uint8_t phy_c_to_p[MAX_CHANNELS];
-                uint8_t phy_p_to_c[MAX_CHANNELS];
-                uint8_t rtn_c_to_p[MAX_CHANNELS];
-                uint8_t rtn_p_to_c[MAX_CHANNELS];
+                cig_params.cig_id = 0;
+                cig_params.num_cis = 1;
+                cig_params.sdu_interval_c_to_p = frame_duration_us;
+                cig_params.sdu_interval_p_to_c = frame_duration_us;
+                cig_params.worst_case_sca = 0; // 251 ppm to 500 ppm
+                cig_params.packing = 0;        // sequential
+                cig_params.framing = framed_pdus;
+                cig_params.max_transport_latency_c_to_p = 40;
+                cig_params.max_transport_latency_p_to_c = 40;
                 uint8_t i;
                 for (i=0; i < num_cis; i++){
-                    cis_id[i] = i;
-                    max_sdu_c_to_p[i] = 0;
-                    max_sdu_p_to_c[i] = num_channels * octets_per_frame;
-                    phy_c_to_p[i] = 2;  // 2M
-                    phy_p_to_c[i] = 2;  // 2M
-                    rtn_c_to_p[i] = 2;
-                    rtn_p_to_c[i] = 2;
+                    cig_params.cis_params[i].cis_id = i;
+                    cig_params.cis_params[i].max_sdu_c_to_p = 0;
+                    cig_params.cis_params[i].max_sdu_p_to_c = num_channels * octets_per_frame;
+                    cig_params.cis_params[i].phy_c_to_p = 2;  // 2M
+                    cig_params.cis_params[i].phy_p_to_c = 2;  // 2M
+                    cig_params.cis_params[i].rtn_c_to_p = 2;
+                    cig_params.cis_params[i].rtn_p_to_c = 2;
                 }
-                hci_send_cmd(&hci_le_set_cig_parameters,
-                             cig_id,
-                             sdu_interval_c_to_p,
-                             sdu_interval_p_to_c,
-                             worst_case_sca,
-                             packing,
-                             framing,
-                             max_transport_latency_c_to_p,
-                             max_transport_latency_p_to_c,
-                             num_cis,
-                             cis_id,
-                             max_sdu_c_to_p,
-                             max_sdu_p_to_c,
-                             phy_c_to_p,
-                             phy_p_to_c,
-                             rtn_c_to_p,
-                             rtn_p_to_c
-                );
+                gap_cig_create(&cig, &cig_params);
                 break;
             }
         case APP_CREATE_CIS:
