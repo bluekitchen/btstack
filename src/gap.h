@@ -264,6 +264,59 @@ typedef struct {
     const le_audio_big_sync_params_t * params;
 } le_audio_big_sync_t;
 
+// -- Connected Isochronuous Group CIG
+
+typedef enum {
+    LE_AUDIO_CIG_STATE_CREATE,
+    LE_AUDIO_CIG_STATE_W4_ESTABLISHED,
+//    LE_AUDIO_CIG_STATE_SETUP_ISO_PATH,
+//    LE_AUDIO_CIG_STATE_W4_SETUP_ISO_PATH,
+//    LE_AUDIO_CIG_STATE_W4_SETUP_ISO_PATH_THEN_TERMINATE,
+//    LE_AUDIO_CIG_STATE_SETUP_ISO_PATHS_FAILED,
+    LE_AUDIO_CIG_STATE_ACTIVE,
+//    LE_AUDIO_CIG_STATE_TERMINATE,
+//    LE_AUDIO_CIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED,
+//    LE_AUDIO_CIG_STATE_W4_TERMINATED,
+} le_audio_cig_state_t;
+
+typedef struct {
+    uint8_t  cis_id;
+    uint16_t max_sdu_c_to_p;
+    uint16_t max_sdu_p_to_c;
+    uint8_t phy_c_to_p;
+    uint8_t phy_p_to_c;
+    uint8_t rtn_c_to_p;
+    uint8_t rtn_p_to_c;
+} le_audio_cis_params_t;
+
+typedef struct {
+    uint8_t  cig_id;
+    uint32_t sdu_interval_c_to_p;
+    uint32_t sdu_interval_p_to_c;
+    uint8_t worst_case_sca;
+    uint8_t packing;
+    uint8_t framing;
+    uint16_t max_transport_latency_c_to_p;
+    uint16_t max_transport_latency_p_to_c;
+    uint8_t num_cis;
+    le_audio_cis_params_t cis_params[MAX_NR_CIS];
+} le_audio_cig_params_t;
+
+typedef struct {
+    btstack_linked_item_t item;
+    uint8_t cig_id;
+    le_audio_cig_params_t * params;
+    le_audio_cig_state_t state;
+    union {
+        uint8_t next_cis;
+        uint8_t status;
+    } state_vars;
+    uint8_t num_cis;
+    hci_con_handle_t cis_con_handles[MAX_NR_CIS];
+    // request to send
+    bool can_send_now_requested;
+} le_audio_cig_t;
+
 /* API_START */
 
 // Classic + LE

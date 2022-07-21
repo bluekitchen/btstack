@@ -968,6 +968,9 @@ typedef struct {
     // list of BIGs and BIG Syncs
     btstack_linked_list_t le_audio_bigs;
     btstack_linked_list_t le_audio_big_syncs;
+
+    // list of CIGs
+    btstack_linked_list_t le_audio_cigs;
 #endif
 
     // basic configuration
