@@ -3943,6 +3943,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
                     break;
                 case HCI_SUBEVENT_LE_CREATE_BIG_COMPLETE:
+                    hci_stack->iso_active_operation_group_id = 0xff;
                     big = hci_big_for_handle(packet[4]);
                     if (big != NULL){
                         uint8_t status = packet[3];
@@ -4312,6 +4313,9 @@ static void hci_state_reset(void){
     if (hci_stack->le_advertisements_data != NULL){
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
     }
+#endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    hci_stack->iso_active_operation_group_id = 0xff;
 #endif
 }
 
@@ -6178,12 +6182,18 @@ static bool hci_run_general_gap_le(void){
 static bool hci_run_iso_tasks(void){
     btstack_linked_list_iterator_t it;
 
+    if (hci_stack->iso_active_operation_group_id != 0xff) {
+        return false;
+    }
+
     // BIG
     btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
     while (btstack_linked_list_iterator_has_next(&it)){
         le_audio_big_t * big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
         switch (big->state){
             case LE_AUDIO_BIG_STATE_CREATE:
+                hci_stack->iso_active_operation_group_id = big->params->big_handle;
+                hci_stack->iso_active_operation_type = HCI_ISO_TYPE_BIS;
                 big->state = LE_AUDIO_BIG_STATE_W4_ESTABLISHED;
                 hci_send_cmd(&hci_le_create_big,
                              big->params->big_handle,
@@ -6222,6 +6232,8 @@ static bool hci_run_iso_tasks(void){
         le_audio_big_sync_t * big_sync = (le_audio_big_sync_t *) btstack_linked_list_iterator_next(&it);
         switch (big_sync->state){
             case LE_AUDIO_BIG_STATE_CREATE:
+                hci_stack->iso_active_operation_group_id = big_sync->params->big_handle;
+                hci_stack->iso_active_operation_type = HCI_ISO_TYPE_BIS;
                 big_sync->state = LE_AUDIO_BIG_STATE_W4_ESTABLISHED;
                 hci_send_cmd(&hci_le_big_create_sync,
                              big_sync->params->big_handle,

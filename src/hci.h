@@ -961,6 +961,9 @@ typedef struct {
     bool      iso_fragmentation_tx_active;
 
     uint8_t   iso_packets_to_queue;
+    // group id and type of active operation
+    hci_iso_type_t iso_active_operation_type;
+    uint8_t iso_active_operation_group_id;
 
     // list of iso streams
     btstack_linked_list_t iso_streams;
