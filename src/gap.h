@@ -59,6 +59,11 @@ extern "C" {
 #define MAX_NR_BIS 2
 #endif
 
+// CIG usually has up to 2 CIS (stereo)
+#ifndef MAX_NR_CIS
+#define MAX_NR_CIS 2
+#endif
+
 typedef enum {
 
 	// MITM protection not required
@@ -801,6 +806,24 @@ uint8_t gap_big_sync_create(le_audio_big_sync_t * storage, le_audio_big_sync_par
  * @events GAP_SUBEVENT_BIG_SYNC_STOPPED
  */
 uint8_t gap_big_sync_terminate(uint8_t big_handle);
+
+/**
+ * @brief Create Connected Isochronous Group (CIG)
+ * @param storage to use by stack, needs to stay valid until CIG removed with gap_cig_remove
+ * @param cig_params
+ * @return status
+ * @events GAP_SUBEVENT_CIG_CREATED unless interrupted by call to gap_cig_remove
+ */
+uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_params);
+
+/**
+ * @brief Remove Connected Isochronous Group (CIG)
+ * @param storage to use by stack, needs to stay valid until CIG removed with gap_cig_remove
+ * @param cig_handle
+ * @return status
+ * @events GAP_SUBEVENT_CIG_TERMINATED
+ */
+uint8_t gap_cig_remove(uint8_t cig_handle);
 
 /**
  * @brief Set connection parameters for outgoing connections
