@@ -236,11 +236,13 @@ static void hci_iso_stream_requested_finalize(uint8_t big_handle);
 static void hci_iso_stream_requested_confirm(uint8_t big_handle);
 static void hci_iso_packet_handler(uint8_t * packet, uint16_t size);
 static le_audio_big_t * hci_big_for_handle(uint8_t big_handle);
+static le_audio_cig_t * hci_cig_for_id(uint8_t cig_id);
 static void hci_iso_notify_can_send_now(void);
 static void hci_emit_big_created(const le_audio_big_t * big, uint8_t status);
 static void hci_emit_big_terminated(const le_audio_big_t * big);
 static void hci_emit_big_sync_created(const le_audio_big_sync_t * big_sync, uint8_t status);
 static void hci_emit_big_sync_stopped(uint8_t big_handle);
+static void hci_emit_cig_created(const le_audio_cig_t * cig, uint8_t status);
 static le_audio_big_sync_t * hci_big_sync_for_handle(uint8_t big_handle);
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
 #endif /* ENABLE_BLE */
@@ -2597,6 +2599,10 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #if defined(ENABLE_CLASSIC) || (defined(ENABLE_BLE) && defined(ENABLE_LE_ISOCHRONOUS_STREAMS))
     uint8_t status;
 #endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    le_audio_cig_t * cig;
+#endif
+
     // get num cmd packets - limit to 1 to reduce complexity
     hci_stack->num_cmd_packets = packet[2] ? 1 : 0;
 
@@ -2820,6 +2826,35 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #endif
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+        case HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS:
+            // lookup CIG
+            cig = hci_cig_for_id(hci_stack->iso_active_operation_group_id);
+            if (cig != NULL){
+                status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
+                uint8_t i = 0;
+                if (status == ERROR_CODE_SUCCESS){
+                    // assign CIS handles to pre-allocated CIS
+                    btstack_linked_list_iterator_t it;
+                    btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
+                    while (btstack_linked_list_iterator_has_next(&it) && (i < cig->num_cis)) {
+                        hci_iso_stream_t *iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+                        if ((iso_stream->group_id == hci_stack->iso_active_operation_group_id) &&
+                            (iso_stream->iso_type == HCI_ISO_TYPE_CIS)){
+                            hci_con_handle_t cis_handle = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3+(2*i));
+                            iso_stream->con_handle  = cis_handle;
+                            cig->cis_con_handles[i] = cis_handle;
+                            i++;
+                        }
+                    }
+                    cig->state = LE_AUDIO_CIG_STATE_ACTIVE;
+                    hci_emit_cig_created(cig, status);
+                } else {
+                    hci_emit_cig_created(cig, status);
+                    btstack_linked_list_remove(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) cig);
+                }
+            }
+            hci_stack->iso_active_operation_group_id = 0xff;
+            break;
         case HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST:
         case HCI_OPCODE_HCI_LE_CREATE_CIS:
             status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
@@ -6263,6 +6298,58 @@ static bool hci_run_iso_tasks(void){
         }
     }
 
+    // CIG
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_cigs);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        le_audio_cig_t *cig = (le_audio_cig_t *) btstack_linked_list_iterator_next(&it);
+        uint8_t i;
+        uint8_t cis_id[MAX_NR_CIS];
+        uint16_t max_sdu_c_to_p[MAX_NR_CIS];
+        uint16_t max_sdu_p_to_c[MAX_NR_CIS];
+        uint8_t phy_c_to_p[MAX_NR_CIS];
+        uint8_t phy_p_to_c[MAX_NR_CIS];
+        uint8_t rtn_c_to_p[MAX_NR_CIS];
+        uint8_t rtn_p_to_c[MAX_NR_CIS];
+        switch (cig->state) {
+            case LE_AUDIO_CIG_STATE_CREATE:
+                hci_stack->iso_active_operation_group_id = cig->params->cig_id;
+                hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
+                cig->state = LE_AUDIO_CIG_STATE_W4_ESTABLISHED;
+                le_audio_cig_params_t * params = cig->params;
+                for (i = 0; i < params->num_cis; i++) {
+                    le_audio_cis_params_t * cis_params = &cig->params->cis_params[i];
+                    cis_id[i]         = cis_params->cis_id;
+                    max_sdu_c_to_p[i] = cis_params->max_sdu_c_to_p;
+                    max_sdu_p_to_c[i] = cis_params->max_sdu_p_to_c;
+                    phy_c_to_p[i]     = cis_params->phy_c_to_p;
+                    phy_p_to_c[i]     = cis_params->phy_p_to_c;
+                    rtn_c_to_p[i]     = cis_params->rtn_c_to_p;
+                    rtn_p_to_c[i]     = cis_params->rtn_p_to_c;
+                }
+                hci_send_cmd(&hci_le_set_cig_parameters,
+                             cig->cig_id,
+                             params->sdu_interval_c_to_p,
+                             params->sdu_interval_p_to_c,
+                             params->worst_case_sca,
+                             params->packing,
+                             params->framing,
+                             params->max_transport_latency_c_to_p,
+                             params->max_transport_latency_p_to_c,
+                             params->num_cis,
+                             cis_id,
+                             max_sdu_c_to_p,
+                             max_sdu_p_to_c,
+                             phy_c_to_p,
+                             phy_p_to_c,
+                             rtn_c_to_p,
+                             rtn_p_to_c
+                );
+                return false;
+            default:
+                break;
+        }
+    }
+
     return false;
 }
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
@@ -9088,6 +9175,22 @@ static void hci_emit_big_created(const le_audio_big_t * big, uint8_t status){
     hci_emit_event(event, pos, 0);
 }
 
+static void hci_emit_cig_created(const le_audio_cig_t * cig, uint8_t status){
+    uint8_t event [6 + (MAX_NR_CIS * 2)];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_META_GAP;
+    event[pos++] = 4 + (2 * cig->num_cis);
+    event[pos++] = GAP_SUBEVENT_CIG_CREATED;
+    event[pos++] = status;
+    event[pos++] = cig->cig_id;
+    event[pos++] = cig->num_cis;
+    uint8_t i;
+    for (i=0;i<cig->num_cis;i++){
+        little_endian_store_16(event, pos, cig->cis_con_handles[i]);
+        pos += 2;
+    }
+    hci_emit_event(event, pos, 0);
+}
 static void hci_emit_big_terminated(const le_audio_big_t * big){
     uint8_t event [4];
     uint16_t pos = 0;
@@ -9162,6 +9265,18 @@ static le_audio_big_sync_t * hci_big_sync_for_handle(uint8_t big_handle){
 
 void hci_set_num_iso_packets_to_queue(uint8_t num_packets){
     hci_stack->iso_packets_to_queue = num_packets;
+}
+
+static le_audio_cig_t * hci_cig_for_id(uint8_t cig_id){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_cigs);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        le_audio_cig_t * cig = (le_audio_cig_t *) btstack_linked_list_iterator_next(&it);
+        if ( cig->cig_id == cig_id ) {
+            return cig;
+        }
+    }
+    return NULL;
 }
 
 static void hci_iso_notify_can_send_now(void){
@@ -9368,6 +9483,46 @@ uint8_t hci_request_bis_can_send_now_events(uint8_t big_handle){
     hci_iso_notify_can_send_now();
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_params){
+    if (hci_cig_for_id(cig_params->cig_id) != NULL){
+        return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
+    }
+    if (cig_params->num_cis == 0){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    if (cig_params->num_cis > MAX_NR_BIS){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
+    // reserve ISO Streams
+    uint8_t i;
+    uint8_t status = ERROR_CODE_SUCCESS;
+    for (i=0;i<cig_params->num_cis;i++){
+        status = hci_iso_stream_create(HCI_ISO_TYPE_CIS, HCI_CON_HANDLE_INVALID, cig_params->cig_id);
+        if (status != ERROR_CODE_SUCCESS) {
+            break;
+        }
+    }
+
+    // free structs on error
+    if (status != ERROR_CODE_SUCCESS){
+        hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_CIS, cig_params->cig_id);
+        return status;
+    }
+
+    le_audio_cig_t * cig = storage;
+    cig->cig_id = cig_params->cig_id;
+    cig->num_cis = cig_params->num_cis;
+    cig->params = cig_params;
+    cig->state = LE_AUDIO_CIG_STATE_CREATE;
+    btstack_linked_list_add(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) cig);
+
+    hci_run();
+
+    return ERROR_CODE_SUCCESS;
+}
+
 #endif
 #endif /* ENABLE_BLE */
 
