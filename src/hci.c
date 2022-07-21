@@ -228,7 +228,7 @@ static le_advertising_set_t * hci_advertising_set_for_handle(uint8_t advertising
 #endif /* ENABLE_LE_EXTENDED_ADVERTISING */
 #endif /* ENABLE_LE_PERIPHERAL */
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-static uint8_t hci_iso_stream_create(hci_con_handle_t con_handle, uint8_t big_handle);
+static uint8_t hci_iso_stream_create(hci_iso_type_t iso_type, hci_con_handle_t con_handle, uint8_t group_id);
 static void hci_iso_stream_finalize(hci_iso_stream_t * iso_stream);
 static hci_iso_stream_t * hci_iso_stream_for_con_handle(hci_con_handle_t con_handle);
 static void hci_iso_stream_requested_finalize(uint8_t big_handle);
@@ -3257,9 +3257,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             log_error("hci_number_completed_packets, more packet slots freed then sent.");
                             iso_stream->num_packets_sent = 0;
                         }
-                        uint8_t big_handle = iso_stream->big_handle;
-                        if (big_handle != 0xff){
-                            le_audio_big_t * big = hci_big_for_handle(big_handle);
+                        if (iso_stream->iso_type == HCI_ISO_TYPE_BIS){
+                            le_audio_big_t * big = hci_big_for_handle(iso_stream->group_id);
                             if (big != NULL){
                                 big->num_completed_timestamp_current_valid = true;
                                 big->num_completed_timestamp_current_ms = btstack_run_loop_get_time_ms();
@@ -3960,7 +3959,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                                 while (btstack_linked_list_iterator_has_next(&it)){
                                     hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
                                     if ((iso_stream->state == HCI_ISO_STREAM_STATE_REQUESTED ) &&
-                                        (iso_stream->big_handle == big->big_handle)){
+                                        (iso_stream->group_id == big->big_handle)){
                                         iso_stream->con_handle = bis_handle;
                                         iso_stream->state = HCI_ISO_STREAM_STATE_ESTABLISHED;
                                         break;
@@ -3991,8 +3990,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
                         while (btstack_linked_list_iterator_has_next(&it)){
                             hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
-                            if (iso_stream->big_handle == big->big_handle){
-                                log_info("BIG Terminated, big_handle 0x%02x, con handle 0x%04x", iso_stream->big_handle, iso_stream->con_handle);
+                            if (iso_stream->group_id == big->big_handle){
+                                log_info("BIG Terminated, big_handle 0x%02x, con handle 0x%04x", iso_stream->group_id, iso_stream->con_handle);
                                 btstack_linked_list_iterator_remove(&it);
                                 btstack_memory_hci_iso_stream_free(iso_stream);
                             }
@@ -6836,7 +6835,7 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             // setup hci_iso_streams
             for (i=0;i<num_cis;i++){
                 cis_handle = (hci_con_handle_t) little_endian_read_16(packet, 4 + (4 * i));
-                status = hci_iso_stream_create(cis_handle, 0xff);
+                status = hci_iso_stream_create(HCI_ISO_TYPE_BIS, cis_handle, 0xff);
                 if (status != ERROR_CODE_SUCCESS) {
                     break;
                 }
@@ -6851,7 +6850,7 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
 #ifdef ENABLE_LE_PERIPHERAL
         case HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST:
             cis_handle = (hci_con_handle_t) little_endian_read_16(packet, 3);
-            status = hci_iso_stream_create(cis_handle, 0xff);
+            status = hci_iso_stream_create(HCI_ISO_TYPE_BIS, cis_handle, 0xff);
             if (status != ERROR_CODE_SUCCESS){
                 return status;
             }
@@ -8914,14 +8913,15 @@ uint8_t gap_periodic_advertising_terminate_sync(uint16_t sync_handle){
 #endif
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-static uint8_t hci_iso_stream_create(hci_con_handle_t con_handle, uint8_t big_handle) {
+static uint8_t hci_iso_stream_create(hci_iso_type_t iso_type, hci_con_handle_t con_handle, uint8_t group_id) {
     hci_iso_stream_t * iso_stream = btstack_memory_hci_iso_stream_get();
     if (iso_stream == NULL){
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     } else {
+        iso_stream->iso_type = iso_type;
         iso_stream->state = HCI_ISO_STREAM_STATE_REQUESTED;
         iso_stream->con_handle = con_handle;
-        iso_stream->big_handle = big_handle;
+        iso_stream->group_id = group_id;
         btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t*) iso_stream);
         return ERROR_CODE_SUCCESS;
     }
@@ -8940,18 +8940,18 @@ static hci_iso_stream_t * hci_iso_stream_for_con_handle(hci_con_handle_t con_han
 }
 
 static void hci_iso_stream_finalize(hci_iso_stream_t * iso_stream){
-    log_info("hci_iso_stream_finalize con_handle 0x%04x, big_handle 0x%02x", iso_stream->con_handle, iso_stream->big_handle);
+    log_info("hci_iso_stream_finalize con_handle 0x%04x, group_id 0x%02x", iso_stream->con_handle, iso_stream->group_id);
     btstack_linked_list_remove(&hci_stack->iso_streams, (btstack_linked_item_t*) iso_stream);
     btstack_memory_hci_iso_stream_free(iso_stream);
 }
 
-static void hci_iso_stream_requested_finalize(uint8_t big_handle) {
+static void hci_iso_stream_requested_finalize(uint8_t group_id) {
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
     while (btstack_linked_list_iterator_has_next(&it)){
         hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
         if ((iso_stream->state == HCI_ISO_STREAM_STATE_REQUESTED ) &&
-            (iso_stream->big_handle == big_handle)){
+            (iso_stream->group_id == group_id)){
             btstack_linked_list_iterator_remove(&it);
             btstack_memory_hci_iso_stream_free(iso_stream);
         }
@@ -9233,7 +9233,7 @@ uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_par
     uint8_t i;
     uint8_t status = ERROR_CODE_SUCCESS;
     for (i=0;i<big_params->num_bis;i++){
-        status = hci_iso_stream_create(HCI_CON_HANDLE_INVALID, big_params->big_handle);
+        status = hci_iso_stream_create(HCI_ISO_TYPE_BIS, HCI_CON_HANDLE_INVALID, big_params->big_handle);
         if (status != ERROR_CODE_SUCCESS) {
             break;
         }

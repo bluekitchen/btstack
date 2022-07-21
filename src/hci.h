@@ -668,6 +668,13 @@ typedef struct {
 } hci_connection_t;
 
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+
+
+typedef enum {
+    HCI_ISO_TYPE_BIS = 0,
+    HCI_ISO_TYPE_CIS
+} hci_iso_type_t;
+
 typedef enum{
     HCI_ISO_STREAM_STATE_REQUESTED,
     HCI_ISO_STREAM_STATE_W4_ESTABLISHED,
@@ -678,14 +685,17 @@ typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
 
-    // peer info
-    hci_con_handle_t con_handle;
+    // iso type: bis or cis
+    hci_iso_type_t iso_type;
+
+    // group_id: big_handle or cis_id
+    uint8_t group_id;
 
     // state
     hci_iso_stream_state_t state;
 
-    // BIG handle or 0xff for CIS
-    uint8_t big_handle;
+    // peer info
+    hci_con_handle_t con_handle;
 
     // re-assembly buffer
     uint16_t reassembly_pos;
