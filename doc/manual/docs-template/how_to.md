@@ -120,6 +120,7 @@ ENABLE_EXPLICIT_BR_EDR_SECURITY_MANAGER | Report BR/EDR Security Manager support
 ENABLE_CLASSIC_OOB_PAIRING       | Enable support for classic Out-of-Band (OOB) pairing
 ENABLE_A2DP_EXPLICIT_CONFIG      | Let application configure stream endpoint (skip auto-config of SBC endpoint)
 ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION | allow accept or reject of stream start on A2DP_SUBEVENT_START_STREAM_REQUESTED
+ENABLE_LE_WHITELIST_TOUCH_AFTER_RESOLVING_LIST_UPDATE | Enable Workaround for Controller bug.
 
 
 Notes:
@@ -161,6 +162,7 @@ For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For 
 \#define | Description
 --------|------------
 HCI_ACL_PAYLOAD_SIZE | Max size of HCI ACL payloads
+HCI_INCOMING_PRE_BUFFER_SIZE | Number of bytes reserved before actual data for incoming HCI packets
 MAX_NR_BNEP_CHANNELS | Max number of BNEP channels
 MAX_NR_BNEP_SERVICES | Max number of BNEP services
 MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES | Max number of link key entries cached in RAM
