@@ -594,7 +594,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             break;
         case HCI_EVENT_BIS_CAN_SEND_NOW:
-            send_iso_packet(hci_event_bis_can_send_now_get_bis_index(packet));
+            bis_index = hci_event_bis_can_send_now_get_bis_index(packet);
+            send_iso_packet(bis_index);
             bis_index++;
             if (bis_index == num_bis){
                 generate_audio_and_encode();
