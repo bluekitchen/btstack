@@ -3921,6 +3921,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                                         (iso_stream->big_handle == big->big_handle)){
                                         iso_stream->con_handle = bis_handle;
                                         iso_stream->state = HCI_ISO_STREAM_STATE_ESTABLISHED;
+                                        break;
                                     }
                                 }
                             }
