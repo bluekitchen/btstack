@@ -1344,7 +1344,6 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             }
 
             // next state
-            hfp_connection->found_equal_sign = false;
             hfp_parser_reset_line_buffer(hfp_connection);
             hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
 
@@ -1487,6 +1486,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
     }
     // reset parser state on end-of-line
     if (hfp_parser_is_end_of_line(byte)){
+        hfp_connection->found_equal_sign = false;
         hfp_connection->parser_item_index = 0;
         hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
     }
