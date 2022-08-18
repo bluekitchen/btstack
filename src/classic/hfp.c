@@ -1163,6 +1163,14 @@ static const hfp_custom_at_command_t * hfp_custom_command_lookup(const char * te
 
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
 
+    // check for custom commands, AG only
+    if (isHandsFree == 0) {
+        const hfp_custom_at_command_t * custom_at_command = hfp_custom_command_lookup(line_buffer);
+        if (custom_at_command != NULL){
+            return HFP_CMD_CUSTOM_MESSAGE;
+        }
+    }
+
     // table lookup based on role
     uint16_t num_entries;
     hfp_command_entry_t * table;
@@ -1197,14 +1205,6 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     // prefix match on 'ATD', AG only
     if ((isHandsFree == 0) && (strncmp(line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0)){
         return HFP_CMD_CALL_PHONE_NUMBER;
-    }
-
-    // check for custom commands, AG only
-    if (isHandsFree == 0) {
-        const hfp_custom_at_command_t * custom_at_command = hfp_custom_command_lookup(line_buffer);
-        if (custom_at_command != NULL){
-            return HFP_CMD_CUSTOM_MESSAGE;
-        }
     }
 
     // Valid looking, but unknown commands/responses
