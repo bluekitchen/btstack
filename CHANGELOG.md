@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - embedded audio: mono audio is played on both channels if HAVE_HAL_AUDIO_SINK_STEREO_ONLY is defined
  
 ### Fixed
-
+- GAP: use static random address after power up
+ 
 ### Changed
 - HCI Dump: provide log level to log_message implementation
 - GAP: replace BTSTACK_EVENT_DISCOVERABLE_ENABLED with BTSTACK_EVENT_SCAN_MODE_CHANGED

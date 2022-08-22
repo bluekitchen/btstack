@@ -3692,7 +3692,11 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 #endif
 
                             // restart random address updates after power cycle
-                            gap_random_address_set_mode(gap_random_adress_type);
+                            if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_STATIC){
+                                gap_random_address_set(sm_random_address);
+                            } else {
+                                gap_random_address_set_mode(gap_random_adress_type);
+                            }
                             break;
 
                         case HCI_STATE_OFF:
