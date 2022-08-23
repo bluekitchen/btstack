@@ -9102,12 +9102,12 @@ static void hci_iso_notify_can_send_now(void){
     while (btstack_linked_list_iterator_has_next(&it)){
         le_audio_big_t * big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
         if (big->can_send_now_requested){
-            // check if no outgoing iso packets pending
+            // check if no outgoing iso packets pending and no can send now have to be emitted
             uint8_t i;
             bool can_send = true;
             for (i=0;i<big->num_bis;i++){
                 hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(big->bis_con_handles[i]);
-                if ((iso_stream == NULL) || (iso_stream->num_packets_sent > 0)){
+                if ((iso_stream == NULL) || (iso_stream->num_packets_sent > 0) || (iso_stream->emit_ready_to_send)){
                     can_send = false;
                     break;
                 }
