@@ -4384,6 +4384,10 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->le_connection_parameter_range.le_supervision_timeout_min =   10;
     hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
 
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    hci_stack->iso_packets_to_queue = 1;
+#endif
+
     hci_state_reset();
 }
 
@@ -9096,6 +9100,10 @@ static le_audio_big_sync_t * hci_big_sync_for_handle(uint8_t big_handle){
     return NULL;
 }
 
+void hci_set_num_iso_packets_to_queue(uint8_t num_packets){
+    hci_stack->iso_packets_to_queue = num_packets;
+}
+
 static void hci_iso_notify_can_send_now(void){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
@@ -9107,7 +9115,7 @@ static void hci_iso_notify_can_send_now(void){
             bool can_send = true;
             for (i=0;i<big->num_bis;i++){
                 hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(big->bis_con_handles[i]);
-                if ((iso_stream == NULL) || (iso_stream->num_packets_sent > 0) || (iso_stream->emit_ready_to_send)){
+                if ((iso_stream == NULL) || (iso_stream->num_packets_sent >= hci_stack->iso_packets_to_queue) || (iso_stream->emit_ready_to_send)){
                     can_send = false;
                     break;
                 }

@@ -950,6 +950,8 @@ typedef struct {
     uint16_t  iso_fragmentation_total_size;
     bool      iso_fragmentation_tx_active;
 
+    uint8_t   iso_packets_to_queue;
+
     // list of iso streams
     btstack_linked_list_t iso_streams;
 
@@ -1270,6 +1272,12 @@ void hci_set_sco_voice_setting(uint16_t voice_setting);
  * @return current voice setting
  */
 uint16_t hci_get_sco_voice_setting(void);
+
+/**
+ * @brief Set number of ISO packets to buffer for BIS/CIS
+ * @param num_packets (default = 1)
+ */
+void hci_set_num_iso_packets_to_queue(uint8_t num_packets);
 
 /**
  * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
