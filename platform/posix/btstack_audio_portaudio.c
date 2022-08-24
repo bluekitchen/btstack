@@ -165,7 +165,7 @@ static int portaudio_callback_source( const void *                     inputBuff
 static void driver_timer_handler_sink(btstack_timer_source_t * ts){
 
     // playback buffer ready to fill
-    if (output_buffer_to_play != output_buffer_to_fill){
+    while (output_buffer_to_play != output_buffer_to_fill){
         (*playback_callback)(output_buffers[output_buffer_to_fill], NUM_FRAMES_PER_PA_BUFFER);
 
         // next
