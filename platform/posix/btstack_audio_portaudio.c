@@ -48,7 +48,7 @@
 
 #define PA_SAMPLE_TYPE               paInt16
 #define NUM_FRAMES_PER_PA_BUFFER       512
-#define NUM_OUTPUT_BUFFERS               3
+#define NUM_OUTPUT_BUFFERS               5
 #define NUM_INPUT_BUFFERS                2
 #define DRIVER_POLL_INTERVAL_MS          5
 
