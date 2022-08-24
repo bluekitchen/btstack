@@ -1734,6 +1734,18 @@ uint8_t hfp_hf_user_busy(hci_con_handle_t acl_handle){
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t hfp_hf_terminate_held_calls(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
+    if (!hfp_connection) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    hfp_connection->hf_send_chld_0 = 1;
+    hfp_hf_run_for_context(hfp_connection);
+
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t hfp_hf_end_active_and_accept_other(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {

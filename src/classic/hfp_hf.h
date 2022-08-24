@@ -281,6 +281,14 @@ uint8_t hfp_hf_connect_calls(hci_con_handle_t acl_handle);
 uint8_t hfp_hf_terminate_call(hci_con_handle_t acl_handle);
 
 /**
+ * @brief Terminate all held calls.
+ *
+ * @param acl_handle
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
+ */
+uint8_t hfp_hf_terminate_held_calls(hci_con_handle_t acl_handle);
+
+/**
  * @brief Initiate outgoing voice call by providing the destination phone number to the AG. 
  *
  * @param acl_handle
