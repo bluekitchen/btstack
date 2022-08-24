@@ -79,10 +79,8 @@ static void (*playback_callback)(int16_t * buffer, uint16_t num_samples);
 static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples);
 
 // output buffer
-static int16_t               output_buffer_a[NUM_FRAMES_PER_PA_BUFFER * 2];   // stereo
-static int16_t               output_buffer_b[NUM_FRAMES_PER_PA_BUFFER * 2];   // stereo
-static int16_t               output_buffer_c[NUM_FRAMES_PER_PA_BUFFER * 2];   // stereo
-static int16_t             * output_buffers[NUM_OUTPUT_BUFFERS] = { output_buffer_a, output_buffer_b, output_buffer_c};
+static int16_t               output_buffer_storage[NUM_OUTPUT_BUFFERS * NUM_FRAMES_PER_PA_BUFFER * 2];   // stereo
+static int16_t             * output_buffers[NUM_OUTPUT_BUFFERS];
 static int                   output_buffer_to_play;
 static int                   output_buffer_to_fill;
 
@@ -100,7 +98,7 @@ static btstack_timer_source_t  driver_timer_source;
 
 static int portaudio_callback_sink( const void *                     inputBuffer, 
                                     void *                           outputBuffer,
-                                    unsigned long                    samples_per_buffer,
+                                    unsigned long                    frames_per_buffer,
                                     const PaStreamCallbackTimeInfo * timeInfo,
                                     PaStreamCallbackFlags            statusFlags,
                                     void *                           userData ) {
@@ -110,13 +108,14 @@ static int portaudio_callback_sink( const void *                     inputBuffer
     (void) timeInfo; /* Prevent unused variable warnings. */
     (void) statusFlags;
     (void) userData;
-    (void) samples_per_buffer;
+    (void) frames_per_buffer;
     (void) inputBuffer;
 
     // simplified volume control
     uint16_t index;
     int16_t * from_buffer = output_buffers[output_buffer_to_play];
     int16_t * to_buffer = (int16_t *) outputBuffer;
+    btstack_assert(frames_per_buffer == NUM_FRAMES_PER_PA_BUFFER);
 
 #if 0
     // up to 8 right shifts
@@ -203,6 +202,11 @@ static int btstack_audio_portaudio_sink_init(
 
     num_channels_sink = channels;
     num_bytes_per_sample_sink = 2 * channels;
+
+    uint8_t i;
+    for (i=0;i<NUM_OUTPUT_BUFFERS;i++){
+        output_buffers[i] = &output_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * 2];
+    }
 
     if (!playback){
         log_error("No playback callback");
@@ -339,11 +343,13 @@ static void btstack_audio_portaudio_sink_start_stream(void){
 
     if (!playback_callback) return;
 
-    // fill buffer once
-    (*playback_callback)(output_buffer_a, NUM_FRAMES_PER_PA_BUFFER);
-    (*playback_callback)(output_buffer_b, NUM_FRAMES_PER_PA_BUFFER);
+    // fill buffers once
+    uint8_t i;
+    for (i=0;i<NUM_OUTPUT_BUFFERS-1;i++){
+        (*playback_callback)(&output_buffer_storage[i*NUM_FRAMES_PER_PA_BUFFER*2], NUM_FRAMES_PER_PA_BUFFER);
+    }
     output_buffer_to_play = 0;
-    output_buffer_to_fill = 2;
+    output_buffer_to_fill = NUM_OUTPUT_BUFFERS-1;
 
     /* -- start stream -- */
     PaError err = Pa_StartStream(stream_sink);
