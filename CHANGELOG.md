@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - HFP HF: send custom AT command with hfp_hf_send_at_command
 - HFP HF: terminate held calls with hfp_hf_terminate_held_calls
+- HFP HF: provide Call Waiting information alpha field
 - HFP AG: support handling of custom AT commands with hfp_ag_register_custom_at_command
 - HFP AG: send custom unsolicited result code with hfp_ag_send_unsolicited_result_code
 - GAP: support BIG with gap_big_create and gap_big_terminate
