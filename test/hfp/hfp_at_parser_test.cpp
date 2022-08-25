@@ -573,6 +573,15 @@ TEST(HFPParser, HFP_CMD_AG_SENT_CLIP_INFORMATION_d){
     STRCMP_EQUAL("BlueKitchen GmbH", (const char *)context.line_buffer);
 }
 
+TEST(HFPParser, HFP_CMD_AG_SENT_CALL_WAITING_INFORMATION){
+    parse_hf("\r\n+CCWA: \"+123456789\",145,\"\",1,\"BlueKitchen GmbH\"\r\n");
+    CHECK_EQUAL(HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE, context.command);
+    STRCMP_EQUAL("+123456789", context.bnip_number);
+    CHECK_EQUAL(145, context.bnip_type);
+    CHECK_EQUAL(true, context.clip_have_alpha);
+    STRCMP_EQUAL("BlueKitchen GmbH", (const char *)context.line_buffer);
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
