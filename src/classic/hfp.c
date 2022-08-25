@@ -1455,6 +1455,7 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                     hfp_connection->ag_indicators_nr = hfp_connection->parser_item_index;
                     break;
                 case HFP_CMD_AG_SENT_CLIP_INFORMATION:
+                case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
                     // track if last argument exists
                     hfp_connection->clip_have_alpha = hfp_connection->line_size != 0;
                     break;
