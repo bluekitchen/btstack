@@ -6162,7 +6162,7 @@ static bool hci_run_iso_tasks(void){
             case LE_AUDIO_BIG_STATE_SETUP_ISO_PATHS_FAILED:
                 big->state = LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED;
                 hci_send_cmd(&hci_le_terminate_big, big->big_handle, big->state_vars.status);
-                break;
+                return true;
             case LE_AUDIO_BIG_STATE_TERMINATE:
                 big->state = LE_AUDIO_BIG_STATE_W4_TERMINATED;
                 hci_send_cmd(&hci_le_terminate_big, big->big_handle, ERROR_CODE_SUCCESS);
@@ -6196,7 +6196,7 @@ static bool hci_run_iso_tasks(void){
             case LE_AUDIO_BIG_STATE_SETUP_ISO_PATHS_FAILED:
                 big_sync->state = LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED;
                 hci_send_cmd(&hci_le_big_terminate_sync, big_sync->big_handle);
-                break;
+                return true;
             case LE_AUDIO_BIG_STATE_TERMINATE:
                 big_sync->state = LE_AUDIO_BIG_STATE_W4_TERMINATED;
                 hci_send_cmd(&hci_le_big_terminate_sync, big_sync->big_handle);
