@@ -3211,6 +3211,12 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (size < 3) return;
             uint16_t num_handles = packet[2];
             if (size != (3u + num_handles * 4u)) return;
+#ifdef ENABLE_CLASSIC
+            bool notify_sco = false;
+#endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+            bool notify_iso = false;
+#endif
             uint16_t offset = 3;
             for (i=0; i<num_handles;i++){
                 handle = little_endian_read_16(packet, offset) & 0x0fffu;
@@ -3228,6 +3234,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         conn->num_packets_sent = 0;
                     }
                     // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u", num_packets, handle, conn->num_packets_sent);
+#ifdef ENABLE_CLASSIC
+                    if (conn->address_type == BD_ADDR_TYPE_SCO){
+                        notify_sco = true;
+                    }
+#endif
                 }
 
 #ifdef ENABLE_CONTROLLER_DUMP_PACKETS
@@ -3246,16 +3257,22 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         }
                         log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u",
                                  num_packets, handle, iso_stream->num_packets_sent);
+                        notify_iso = true;
                     }
-                    hci_iso_notify_can_send_now();
                 }
 #endif
+            }
 
 #ifdef ENABLE_CLASSIC
-                // For SCO, we do the can_send_now_check here
+            if (notify_sco){
                 hci_notify_if_sco_can_send_now();
-#endif
             }
+#endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+            if (notify_iso){
+                hci_iso_notify_can_send_now();
+            }
+#endif
             break;
         }
 
