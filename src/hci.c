@@ -9146,13 +9146,48 @@ static void hci_iso_notify_can_send_now(void){
     btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
     while (btstack_linked_list_iterator_has_next(&it)){
         le_audio_big_t * big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
+        // track number completed packet timestamps
+        if (big->num_completed_timestamp_current_valid){
+            big->num_completed_timestamp_current_valid = false;
+            if (big->num_completed_timestamp_previous_valid){
+                // detect delayed sending of all BIS: tolerate up to 50% delayed event handling
+                uint32_t iso_interval_missed_threshold_ms = big->params->sdu_interval_us * 3 / 2000;
+                int32_t  num_completed_timestamp_delta_ms = btstack_time_delta(big->num_completed_timestamp_current_ms,
+                                                                               big->num_completed_timestamp_previous_ms);
+                if (num_completed_timestamp_delta_ms > iso_interval_missed_threshold_ms){
+                    // to catch up, skip packet on all BIS
+                    uint8_t i;
+                    for (i=0;i<big->num_bis;i++){
+                        hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(big->bis_con_handles[i]);
+                        if (iso_stream){
+                            iso_stream->num_packets_to_skip++;
+                        }
+                    }
+                }
+            }
+            big->num_completed_timestamp_previous_valid = true;
+            big->num_completed_timestamp_previous_ms = big->num_completed_timestamp_current_ms;
+        }
+
         if (big->can_send_now_requested){
             // check if no outgoing iso packets pending and no can send now have to be emitted
             uint8_t i;
             bool can_send = true;
+            uint8_t num_iso_queued_minimum = 0;
             for (i=0;i<big->num_bis;i++){
                 hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(big->bis_con_handles[i]);
-                if ((iso_stream == NULL) || (iso_stream->num_packets_sent >= hci_stack->iso_packets_to_queue) || (iso_stream->emit_ready_to_send)){
+                if (iso_stream == NULL) continue;
+                // handle case where individual ISO packet was sent too late:
+                // for each additionally queued packet, a new one needs to get skipped
+                if (i==0){
+                    num_iso_queued_minimum = iso_stream->num_packets_sent;
+                } else if (iso_stream->num_packets_sent > num_iso_queued_minimum){
+                    uint8_t num_packets_to_skip = iso_stream->num_packets_sent - num_iso_queued_minimum;
+                    iso_stream->num_packets_to_skip += num_packets_to_skip;
+                    iso_stream->num_packets_sent    -= num_packets_to_skip;
+                }
+                // check if we can send now
+                if  ((iso_stream->num_packets_sent >= hci_stack->iso_packets_to_queue) || (iso_stream->emit_ready_to_send)){
                     can_send = false;
                     break;
                 }
