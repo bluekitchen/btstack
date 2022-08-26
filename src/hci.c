@@ -5959,6 +5959,7 @@ static bool hci_run_general_gap_le(void){
 					sm_key_t peer_irk;
 					le_device_db_info(i, &peer_identity_addr_type, peer_identity_addreses, peer_irk);
 					if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
+                    if (btstack_is_null(peer_irk, 16)) continue;
 					const uint8_t *local_irk = gap_get_persistent_irk();
 					// command uses format specifier 'P' that stores 16-byte value without flip
 					uint8_t local_irk_flipped[16];

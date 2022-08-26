@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - embedded audio: mono audio is played on both channels if HAVE_HAL_AUDIO_SINK_STEREO_ONLY is defined
  
 ### Fixed
+- HCI: only add paired LE devices with IRK to resolving list
 - GAP: use static random address after power up
  
 ### Changed
