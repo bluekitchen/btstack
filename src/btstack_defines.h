@@ -1161,7 +1161,7 @@ typedef uint8_t sm_key_t[16];
  * @param handle
  * @param interval_min
  * @param interval_max
- * @param latencey
+ * @param latency
  * @param timeout_multiplier
  */
 #define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST    0x76u

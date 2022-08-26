@@ -4145,7 +4145,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             }
 
             event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST;
-            event[1] = 8;
+            event[1] = 10;
             little_endian_store_16(event, 2, handle);
             (void)memcpy(&event[4], &command[4], 8);
             l2cap_emit_event(event, sizeof(event));
