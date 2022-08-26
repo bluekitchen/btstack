@@ -697,6 +697,9 @@ typedef struct {
     // number packets sent to controller
     uint8_t num_packets_sent;
 
+    // packets to skip due to queuing them to late before
+    uint8_t num_packets_to_skip;
+
     // ready to send
     bool emit_ready_to_send;
 

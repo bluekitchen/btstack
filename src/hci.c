@@ -1120,10 +1120,21 @@ uint8_t hci_send_iso_packet_buffer(uint16_t size){
     hci_con_handle_t con_handle = (hci_con_handle_t) little_endian_read_16(hci_stack->hci_packet_buffer, 0) & 0xfff;
     hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(con_handle);
     if (iso_stream == NULL){
+        hci_release_packet_buffer();
+        hci_iso_notify_can_send_now();
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
     // TODO: check for space on controller
+
+    // skip iso packets if needed
+    if (iso_stream->num_packets_to_skip > 0){
+        iso_stream->num_packets_to_skip--;
+        // pretend it was processed and trigger next one
+        hci_release_packet_buffer();
+        hci_iso_notify_can_send_now();
+        return ERROR_CODE_SUCCESS;
+    }
 
     // track outgoing packet sent
     log_info("Outgoing ISO packet for con handle 0x%04x", con_handle);
