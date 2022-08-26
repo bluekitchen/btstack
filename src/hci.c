@@ -3255,6 +3255,14 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             log_error("hci_number_completed_packets, more packet slots freed then sent.");
                             iso_stream->num_packets_sent = 0;
                         }
+                        uint8_t big_handle = iso_stream->big_handle;
+                        if (big_handle != 0xff){
+                            le_audio_big_t * big = hci_big_for_handle(big_handle);
+                            if (big != NULL){
+                                big->num_completed_timestamp_current_valid = true;
+                                big->num_completed_timestamp_current_ms = btstack_run_loop_get_time_ms();
+                            }
+                        }
                         log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u",
                                  num_packets, handle, iso_stream->num_packets_sent);
                         notify_iso = true;

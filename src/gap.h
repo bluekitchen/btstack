@@ -243,6 +243,9 @@ typedef struct {
     const le_audio_big_params_t * params;
     // request to send
     bool can_send_now_requested;
+    // previous and current timestamp of number completed event to track ISO intervals
+    bool     num_completed_timestamp_current_valid;
+    uint32_t num_completed_timestamp_current_ms;
 } le_audio_big_t;
 
 typedef struct {
