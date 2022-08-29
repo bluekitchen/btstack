@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
  
 ### Fixed
 - HCI: only add paired LE devices with IRK to resolving list
+- HCI: send HCI LE Create Connection Cancel only once for outgoing LE connections without whitelist
 - GAP: use static random address after power up
 - L2CAP: fix L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST
  

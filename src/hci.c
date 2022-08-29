@@ -7558,8 +7558,7 @@ uint8_t gap_connect_cancel(void){
                         btstack_memory_hci_connection_free( conn );
                         break;
                     case SENT_CREATE_CONNECTION:
-                        // request to send cancel connection
-                        conn->state = SEND_CANCEL_CONNECTION;
+                        // let hci_run_general_gap_le cancel outgoing connection
                         hci_run();
                         break;
                     default:
