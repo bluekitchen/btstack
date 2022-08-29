@@ -6329,15 +6329,6 @@ static bool hci_run_general_pending_commands(void){
                 }
                 break;
 #endif
-
-#ifdef ENABLE_BLE
-#ifdef ENABLE_LE_CENTRAL
-            case SEND_CANCEL_CONNECTION:
-                connection->state = SENT_CANCEL_CONNECTION;
-                hci_send_cmd(&hci_le_create_connection_cancel);
-                return true;
-#endif
-#endif
             case SEND_DISCONNECT:
                 connection->state = SENT_DISCONNECT;
                 hci_send_cmd(&hci_disconnect, connection->con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
@@ -7526,7 +7517,6 @@ static hci_connection_t * gap_get_outgoing_connection(void){
         switch (conn->state){
             case SEND_CREATE_CONNECTION:
             case SENT_CREATE_CONNECTION:
-            case SENT_CANCEL_CONNECTION:
                 return conn;
             default:
                 break;
