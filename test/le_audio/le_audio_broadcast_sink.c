@@ -78,8 +78,6 @@
 #define MAX_NUM_BIS 2
 #define MAX_SAMPLES_PER_FRAME 480
 
-#define DUMP_LEN_LC3_FRAMES 10000
-
 // playback
 #define MAX_NUM_LC3_FRAMES   5
 #define MAX_BYTES_PER_SAMPLE 4
@@ -98,7 +96,6 @@
 
 static void show_usage(void);
 
-static const char * filename_lc3 = "le_audio_broadcast_sink.lc3";
 static const char * filename_wav = "le_audio_broadcast_sink.wav";
 
 static enum {
@@ -205,36 +202,6 @@ static void le_audio_broadcast_sink_playback(int16_t * buffer, uint16_t num_samp
     btstack_ring_buffer_read(&playback_buffer, (uint8_t *) buffer, bytes_needed, &bytes_read);
     btstack_assert(bytes_read == bytes_needed);
 }
-
-#ifdef HAVE_POSIX_FILE_IO
-static void open_lc3_file(void) {
-    // open lc3 file
-    int oflags = O_WRONLY | O_CREAT | O_TRUNC;
-    dump_file = open(filename_lc3, oflags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (dump_file < 0) {
-        printf("failed to open file %s, errno = %d\n", filename_lc3, errno);
-        return;
-    }
-
-    printf("LC3 binary file: %s\n", filename_lc3);
-
-    // calc bps
-    uint16_t frame_duration_100us = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 75 : 100;
-    uint32_t bits_per_second = (uint32_t) octets_per_frame * num_bis * 8 * 10000 / frame_duration_100us;
-
-    // write header for floating point implementation
-    uint8_t header[18];
-    little_endian_store_16(header, 0, 0xcc1c);
-    little_endian_store_16(header, 2, sizeof(header));
-    little_endian_store_16(header, 4, sampling_frequency_hz / 100);
-    little_endian_store_16(header, 6, bits_per_second / 100);
-    little_endian_store_16(header, 8, num_bis);
-    little_endian_store_16(header, 10, frame_duration_100us * 10);
-    little_endian_store_16(header, 12, 0);
-    little_endian_store_32(header, 14, DUMP_LEN_LC3_FRAMES * number_samples_per_frame);
-    write(dump_file, header, sizeof(header));
-}
-#endif
 
 static void setup_lc3_decoder(void){
     uint8_t channel;
@@ -402,9 +369,6 @@ static void enter_create_big_sync(void){
     printf("Configure: %u channels, sampling rate %u, samples per frame %u, lc3plus %u\n", num_bis, sampling_frequency_hz, number_samples_per_frame, use_lc3plus_decoder);
 
 #ifdef HAVE_POSIX_FILE_IO
-    // create lc3 file
-    open_lc3_file();
-
     // create wav file
     printf("WAV file: %s\n", filename_wav);
     wav_writer_open(filename_wav, num_bis, sampling_frequency_hz);
@@ -669,7 +633,6 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     if (count_mode){
         // check for missing packet
         uint16_t last_seq_no = last_packet_sequence[bis_channel];
-        uint32_t now = btstack_run_loop_get_time_ms();
         bool packet_missed = (last_seq_no != 0) && ((last_seq_no + 1) != packet_sequence_number);
         if (packet_missed){
             // print last packet
@@ -686,28 +649,14 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             printf(ANSI_COLOR_RESET);
 
             // print current packet
-            printf("%04x %10"PRIu32" %u ", packet_sequence_number, now, bis_channel);
+            printf("%04x %10"PRIu32" %u ", packet_sequence_number, receive_time_ms, bis_channel);
             printf_hexdump(&packet[offset], PACKET_PREFIX_LEN);
         }
 
         // cache current packet
-        last_packet_time_ms[bis_channel] = now;
-        last_packet_sequence[bis_channel] = packet_sequence_number;
         memcpy(&last_packet_prefix[num_bis*PACKET_PREFIX_LEN], &packet[offset], PACKET_PREFIX_LEN);
 
     } else {
-
-        if (lc3_frames < DUMP_LEN_LC3_FRAMES) {
-            // store len header only for first bis
-            if (bis_channel == 0) {
-                uint8_t len_header[2];
-                little_endian_store_16(len_header, 0, num_bis * iso_sdu_length);
-                write(dump_file, len_header, 2);
-            }
-
-            // store single channel codec frame
-            write(dump_file, &packet[offset], iso_sdu_length);
-        }
 
         // decode codec frame
         uint8_t tmp_BEC_detect;
@@ -743,11 +692,10 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             samples_received = 0;
             samples_dropped  =  0;
         }
-
-        if (lc3_frames == DUMP_LEN_LC3_FRAMES){
-            close_files();
-        }
     }
+
+    last_packet_time_ms[bis_channel]  = receive_time_ms;
+    last_packet_sequence[bis_channel] = packet_sequence_number;
 }
 
 static void show_usage(void){

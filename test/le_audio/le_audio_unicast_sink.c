@@ -80,8 +80,6 @@
 #define MAX_CHANNELS 2
 #define MAX_SAMPLES_PER_FRAME 480
 
-#define DUMP_LEN_LC3_FRAMES 1000
-
 // playback
 #define MAX_NUM_LC3_FRAMES   5
 #define MAX_BYTES_PER_SAMPLE 4
@@ -100,7 +98,6 @@
 
 static void show_usage(void);
 
-static const char * filename_lc3 = "le_audio_unicast_sink.lc3";
 static const char * filename_wav = "le_audio_unicast_sink.wav";
 
 static enum {
@@ -204,36 +201,6 @@ static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_sam
     btstack_assert(bytes_read == bytes_needed);
 }
 
-#ifdef HAVE_POSIX_FILE_IO
-static void open_lc3_file(void) {
-    // open lc3 file
-    int oflags = O_WRONLY | O_CREAT | O_TRUNC;
-    dump_file = open(filename_lc3, oflags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (dump_file < 0) {
-        printf("failed to open file %s, errno = %d\n", filename_lc3, errno);
-        return;
-    }
-
-    printf("LC3 binary file: %s\n", filename_lc3);
-
-    // calc bps
-    uint16_t frame_duration_100us = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 75 : 100;
-    uint32_t bits_per_second = (uint32_t) octets_per_frame * num_channels * 8 * 10000 / frame_duration_100us;
-
-    // write header for floating point implementation
-    uint8_t header[18];
-    little_endian_store_16(header, 0, 0xcc1c);
-    little_endian_store_16(header, 2, sizeof(header));
-    little_endian_store_16(header, 4, sampling_frequency_hz / 100);
-    little_endian_store_16(header, 6, bits_per_second / 100);
-    little_endian_store_16(header, 8, num_channels);
-    little_endian_store_16(header, 10, frame_duration_100us * 10);
-    little_endian_store_16(header, 12, 0);
-    little_endian_store_32(header, 14, DUMP_LEN_LC3_FRAMES * number_samples_per_frame);
-    write(dump_file, header, sizeof(header));
-}
-#endif
-
 static void setup_lc3_decoder(void){
     uint8_t channel;
     for (channel = 0 ; channel < num_channels ; channel++){
@@ -276,9 +243,6 @@ static void enter_streaming(void){
     printf("Configure: %u channels, sampling rate %u, samples per frame %u, lc3plus %u\n", num_channels, sampling_frequency_hz, number_samples_per_frame, use_lc3plus_decoder);
 
 #ifdef HAVE_POSIX_FILE_IO
-    // create lc3 file
-    open_lc3_file();
-
     // create wav file
     printf("WAV file: %s\n", filename_wav);
     wav_writer_open(filename_wav, num_channels, sampling_frequency_hz);
@@ -646,20 +610,6 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
     } else {
 
-#ifdef HAVE_POSIX_FILE_IO
-        if (lc3_frames < DUMP_LEN_LC3_FRAMES) {
-            // store len header only for first bis
-            if (cis_channel == 0) {
-                uint8_t len_header[2];
-                little_endian_store_16(len_header, 0, iso_sdu_length);
-                write(dump_file, len_header, 2);
-            }
-
-            // store complete sdu
-            write(dump_file, &packet[offset], iso_sdu_length);
-        }
-#endif
-
         uint8_t channel;
         for (channel = 0 ; channel < num_channels ; channel++){
 
@@ -699,10 +649,6 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             printf(" frames per second, dropped %u of %u\n", samples_dropped, samples_received);
             samples_received = 0;
             samples_dropped  =  0;
-        }
-
-        if (lc3_frames == DUMP_LEN_LC3_FRAMES){
-            close_files();
         }
     }
 }
