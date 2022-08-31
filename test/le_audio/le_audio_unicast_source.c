@@ -369,10 +369,6 @@ static void encode_and_send(uint8_t cis_index){
     if (((packet_sequence_numbers[cis_index] & 0x7f) == 0) && (cis_index == 0)) {
         printf("Encoding time: %u\n", time_generation_ms);
     }
-    if ((packet_sequence_numbers[cis_index] & 0x7c) == 0){
-        printf("%04x %10u %u ", packet_sequence_numbers[cis_index], btstack_run_loop_get_time_ms(), cis_index);
-        printf_hexdump(&buffer[8], octets_per_frame);
-    }
 
     packet_sequence_numbers[cis_index]++;
 }

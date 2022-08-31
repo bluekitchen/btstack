@@ -447,10 +447,6 @@ static void send_iso_packet(uint8_t bis_index) {
     if (((packet_sequence_numbers[bis_index] & 0x7f) == 0) && (bis_index == 0)) {
         printf("Encoding time: %u\n", time_generation_ms);
     }
-    if ((packet_sequence_numbers[bis_index] & 0x7c) == 0){
-        printf("%04x %10u %u ", packet_sequence_numbers[bis_index], btstack_run_loop_get_time_ms(), bis_index);
-        printf_hexdump(&buffer[8], octets_per_frame);
-    }
 #endif
 
     packet_sequence_numbers[bis_index]++;

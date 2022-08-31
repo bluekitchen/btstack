@@ -697,11 +697,6 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
     } else {
 
-        if ((packet_sequence_number & 0x7c) == 0) {
-            printf("%04x %10"PRIu32" %u ", packet_sequence_number, btstack_run_loop_get_time_ms(), bis_channel);
-            printf_hexdump(&packet[offset], iso_sdu_length);
-        }
-
         if (lc3_frames < DUMP_LEN_LC3_FRAMES) {
             // store len header only for first bis
             if (bis_channel == 0) {
