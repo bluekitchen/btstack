@@ -41,6 +41,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#ifdef ENABLE_BTSTACK_STDIN_LOGGING
+#include "btstack_debug.h"
+#endif
 #include "btstack_defines.h"
 #include "btstack_run_loop.h"
 #include <stdlib.h>
@@ -61,6 +64,10 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     int result = read(stdin_source.source.fd, &data, 1);
     if (result < 1) return;
     if (stdin_handler == NULL) return;
+
+#ifdef ENABLE_BTSTACK_STDIN_LOGGING
+    log_info("stdin: %c", data);
+#endif
 
     (*stdin_handler)(data);
 }

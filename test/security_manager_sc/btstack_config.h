@@ -24,6 +24,7 @@
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 #define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SOFTWARE_AES128
+#define ENABLE_BTSTACK_STDIN_LOGGING
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
