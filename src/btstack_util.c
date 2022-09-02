@@ -177,13 +177,20 @@ uint32_t btstack_max(uint32_t a, uint32_t b){
 }
 
 /**
- * @brief Calculate delta between two points in time
+ * @brief Calculate delta between two uint32_t points in time
  * @return time_a - time_b - result > 0 if time_a is newer than time_b
  */
 int32_t btstack_time_delta(uint32_t time_a, uint32_t time_b){
     return (int32_t)(time_a - time_b);
 }
 
+/**
+ * @brief Calculate delta between two uint16_t points in time
+ * @return time_a - time_b - result > 0 if time_a is newer than time_b
+ */
+int16_t btstack_time16_delta(uint16_t time_a, uint16_t time_b){
+    return (int16_t)(time_a - time_b);
+}
 
 char char_for_nibble(int nibble){
 
