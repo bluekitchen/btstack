@@ -104,7 +104,6 @@ static enum {
     APP_W4_WORKING,
     APP_W4_SOURCE_ADV,
     APP_W4_CIG_COMPLETE,
-    APP_CREATE_CIS,
     APP_W4_CIS_CREATED,
     APP_SET_ISO_PATHS,
     APP_STREAMING,
@@ -450,7 +449,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         }
                         printf("\n");
                         next_cis_index = 0;
-                        app_state = APP_CREATE_CIS;
+
+                        printf("Create CIS\n");
+                        hci_con_handle_t acl_connection_handles[MAX_CHANNELS];
+                        for (i=0; i < num_cis; i++){
+                            acl_connection_handles[i] = remote_handle;
+                        }
+                        gap_cis_create(cig_params.cig_id, cis_con_handles, acl_connection_handles);
+                        app_state = APP_W4_CIS_CREATED;
                     }
                     break;
             }
@@ -461,20 +467,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     if (!hci_can_send_command_packet_now()) return;
 
     switch(app_state){
-        case APP_CREATE_CIS:
-            {
-                printf("Create CIS\n");
-                app_state = APP_W4_CIS_CREATED;
-                hci_con_handle_t cis_connection_handle[MAX_CHANNELS];
-                hci_con_handle_t acl_connection_handle[MAX_CHANNELS];
-                uint16_t i;
-                for (i=0; i < num_cis; i++){
-                    cis_connection_handle[i] = cis_con_handles[i];
-                    acl_connection_handle[i] = remote_handle;
-                }
-                hci_send_cmd(&hci_le_create_cis, num_cis, cis_connection_handle, acl_connection_handle);
-                break;
-            }
         case APP_SET_ISO_PATHS:
             hci_send_cmd(&hci_le_setup_iso_data_path, cis_con_handles[next_cis_index++], 1, 0, 0, 0, 0, 0, 0, NULL);
             if (next_cis_index == num_cis){
