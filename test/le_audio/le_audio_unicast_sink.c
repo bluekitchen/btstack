@@ -103,7 +103,6 @@ static const char * filename_wav = "le_audio_unicast_sink.wav";
 static enum {
     APP_W4_WORKING,
     APP_W4_SOURCE_ADV,
-    APP_CREATE_CIG,
     APP_W4_CIG_COMPLETE,
     APP_CREATE_CIS,
     APP_W4_CIS_CREATED,
@@ -269,6 +268,43 @@ static void start_scanning() {
     printf("Start scan..\n");
 }
 
+static void create_cig() {
+    if (sampling_frequency_hz == 44100){
+        framed_pdus = 1;
+        // same config as for 48k -> frame is longer by 48/44.1
+        frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
+    } else {
+        framed_pdus = 0;
+        frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
+    }
+
+    printf("Send: LE Set CIG Parameters\n");
+
+    num_cis = 1;
+    cig_params.cig_id = 0;
+    cig_params.num_cis = 1;
+    cig_params.sdu_interval_c_to_p = frame_duration_us;
+    cig_params.sdu_interval_p_to_c = frame_duration_us;
+    cig_params.worst_case_sca = 0; // 251 ppm to 500 ppm
+    cig_params.packing = 0;        // sequential
+    cig_params.framing = framed_pdus;
+    cig_params.max_transport_latency_c_to_p = 40;
+    cig_params.max_transport_latency_p_to_c = 40;
+    uint8_t i;
+    for (i=0; i < num_cis; i++){
+        cig_params.cis_params[i].cis_id = i;
+        cig_params.cis_params[i].max_sdu_c_to_p = 0;
+        cig_params.cis_params[i].max_sdu_p_to_c = num_channels * octets_per_frame;
+        cig_params.cis_params[i].phy_c_to_p = 2;  // 2M
+        cig_params.cis_params[i].phy_p_to_c = 2;  // 2M
+        cig_params.cis_params[i].rtn_c_to_p = 2;
+        cig_params.cis_params[i].rtn_p_to_c = 2;
+    }
+
+    app_state = APP_W4_CIG_COMPLETE;
+    gap_cig_create(&cig, &cig_params);
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     bd_addr_t event_addr;
@@ -371,11 +407,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    app_state = APP_CREATE_CIG;
                     enter_streaming();
                     hci_subevent_le_connection_complete_get_peer_address(packet, event_addr);
                     remote_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                     printf("Connected, remote %s, handle %04x\n", bd_addr_to_str(event_addr), remote_handle);
+                    create_cig();
                     break;
                 case HCI_SUBEVENT_LE_CIS_ESTABLISHED:
                 {
@@ -425,44 +461,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     if (!hci_can_send_command_packet_now()) return;
 
     switch(app_state){
-        case APP_CREATE_CIG:
-            {
-                if (sampling_frequency_hz == 44100){
-                    framed_pdus = 1;
-                    // same config as for 48k -> frame is longer by 48/44.1
-                    frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
-                } else {
-                    framed_pdus = 0;
-                    frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
-                }
-
-                printf("Send: LE Set CIG Parameters\n");
-
-                app_state = APP_W4_CIG_COMPLETE;
-
-                num_cis = 1;
-                cig_params.cig_id = 0;
-                cig_params.num_cis = 1;
-                cig_params.sdu_interval_c_to_p = frame_duration_us;
-                cig_params.sdu_interval_p_to_c = frame_duration_us;
-                cig_params.worst_case_sca = 0; // 251 ppm to 500 ppm
-                cig_params.packing = 0;        // sequential
-                cig_params.framing = framed_pdus;
-                cig_params.max_transport_latency_c_to_p = 40;
-                cig_params.max_transport_latency_p_to_c = 40;
-                uint8_t i;
-                for (i=0; i < num_cis; i++){
-                    cig_params.cis_params[i].cis_id = i;
-                    cig_params.cis_params[i].max_sdu_c_to_p = 0;
-                    cig_params.cis_params[i].max_sdu_p_to_c = num_channels * octets_per_frame;
-                    cig_params.cis_params[i].phy_c_to_p = 2;  // 2M
-                    cig_params.cis_params[i].phy_p_to_c = 2;  // 2M
-                    cig_params.cis_params[i].rtn_c_to_p = 2;
-                    cig_params.cis_params[i].rtn_p_to_c = 2;
-                }
-                gap_cig_create(&cig, &cig_params);
-                break;
-            }
         case APP_CREATE_CIS:
             {
                 printf("Create CIS\n");
