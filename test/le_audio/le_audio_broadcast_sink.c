@@ -578,6 +578,18 @@ static void store_samples_in_ringbuffer(void){
     }
 }
 
+static void plc_do(uint8_t bis_channel) {// inject packet
+    uint8_t tmp_BEC_detect;
+    uint8_t BFI = 1;
+    (void) lc3_decoder->decode_signed_16(decoder_contexts[bis_channel], NULL, cached_iso_sdu_len, BFI,
+                                         &pcm[bis_channel], num_bis,
+                                         &tmp_BEC_detect);
+
+    printf("PLC channel %u - packet sequence %u\n", bis_channel,  last_packet_sequence[bis_channel]);
+
+    have_pcm[bis_channel] = true;
+    store_samples_in_ringbuffer();
+}
 
 static void plc_timeout(btstack_timer_source_t * timer) {
 
@@ -589,20 +601,9 @@ static void plc_timeout(btstack_timer_source_t * timer) {
     btstack_run_loop_set_timer_handler(&next_packet_timer[bis_channel], plc_timeout);
     btstack_run_loop_add_timer(&next_packet_timer[bis_channel]);
 
-    // inject packet
-    uint8_t tmp_BEC_detect;
-    uint8_t BFI = 1;
-    (void) lc3_decoder->decode_signed_16(decoder_contexts[bis_channel], NULL, cached_iso_sdu_len, BFI,
-                                         &pcm[bis_channel], num_bis,
-                                         &tmp_BEC_detect);
-
     last_packet_sequence[bis_channel]++;
     last_packet_time_ms[bis_channel] += frame_duration;
-
-    printf("PLC channel %u - packet sequence %u\n", bis_channel,  last_packet_sequence[bis_channel]);
-
-    have_pcm[bis_channel] = true;
-    store_samples_in_ringbuffer();
+    plc_do(bis_channel);
 }
 
 static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
