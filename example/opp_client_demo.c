@@ -67,7 +67,7 @@ static bd_addr_t    remote_addr;
 // Nexus 7 "30-85-A9-54-2E-78"
 // iPhone SE "BC:EC:5D:E6:15:03"
 // PTS "001BDC080AA5"
-static  char * remote_addr_string = "58:d9:c3:2b:fb:a7";
+static  char * remote_addr_string = "001BDC08E25C";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t opp_cid;
