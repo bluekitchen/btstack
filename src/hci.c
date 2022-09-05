@@ -2855,8 +2855,13 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             }
             hci_stack->iso_active_operation_group_id = 0xff;
             break;
-        case HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST:
         case HCI_OPCODE_HCI_LE_CREATE_CIS:
+            status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
+            if (status != ERROR_CODE_SUCCESS){
+                hci_iso_stream_requested_finalize(0xff);
+            }
+            break;
+        case HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST:
             status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
             if (status != ERROR_CODE_SUCCESS){
                 hci_iso_stream_requested_finalize(0xff);
