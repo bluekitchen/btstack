@@ -274,14 +274,13 @@ typedef struct {
 typedef enum {
     LE_AUDIO_CIG_STATE_CREATE,
     LE_AUDIO_CIG_STATE_W4_ESTABLISHED,
-//    LE_AUDIO_CIG_STATE_SETUP_ISO_PATH,
-//    LE_AUDIO_CIG_STATE_W4_SETUP_ISO_PATH,
-//    LE_AUDIO_CIG_STATE_W4_SETUP_ISO_PATH_THEN_TERMINATE,
-//    LE_AUDIO_CIG_STATE_SETUP_ISO_PATHS_FAILED,
+    LE_AUDIO_CIG_STATE_W4_CIS_REQUEST,
+    LE_AUDIO_CIG_STATE_CREATE_CIS,
+    LE_AUDIO_CIG_STATE_W4_CREATE_CIS,
+    LE_AUDIO_CIG_STATE_SETUP_ISO_PATH,
+    LE_AUDIO_CIG_STATE_W4_SETUP_ISO_PATH,
     LE_AUDIO_CIG_STATE_ACTIVE,
-//    LE_AUDIO_CIG_STATE_TERMINATE,
-//    LE_AUDIO_CIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED,
-//    LE_AUDIO_CIG_STATE_W4_TERMINATED,
+    LE_AUDIO_CIG_STATE_REMOVE,
 } le_audio_cig_state_t;
 
 typedef struct {
@@ -318,6 +317,7 @@ typedef struct {
     } state_vars;
     uint8_t num_cis;
     hci_con_handle_t cis_con_handles[MAX_NR_CIS];
+    hci_con_handle_t acl_con_handles[MAX_NR_CIS];
     // request to send
     bool can_send_now_requested;
 } le_audio_cig_t;
@@ -818,12 +818,22 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
 
 /**
  * @brief Remove Connected Isochronous Group (CIG)
- * @param storage to use by stack, needs to stay valid until CIG removed with gap_cig_remove
  * @param cig_handle
  * @return status
  * @events GAP_SUBEVENT_CIG_TERMINATED
  */
 uint8_t gap_cig_remove(uint8_t cig_handle);
+
+/**
+ * @brief Create Connected Isochronous Streams (CIS)
+ * @note number of CIS from cig_params in gap_cig_create is used
+ * @param cig_handle
+ * @param cis_con_handles array of CIS Connection Handles
+ * @param acl_con_handles array of ACL Connection Handles
+ * @return status
+ * @events GAP_SUBEVENT_CIS_CREATED unless interrupted by call to gap_cig_remove
+ */
+uint8_t gap_cis_create(uint8_t cig_handle, hci_con_handle_t cis_con_handles [], hci_con_handle_t acl_con_handles []);
 
 /**
  * @brief Set connection parameters for outgoing connections

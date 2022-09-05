@@ -2846,7 +2846,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                             i++;
                         }
                     }
-                    cig->state = LE_AUDIO_CIG_STATE_ACTIVE;
+                    cig->state = LE_AUDIO_CIG_STATE_W4_CIS_REQUEST;
                     hci_emit_cig_created(cig, status);
                 } else {
                     hci_emit_cig_created(cig, status);
@@ -6303,6 +6303,7 @@ static bool hci_run_iso_tasks(void){
     while (btstack_linked_list_iterator_has_next(&it)) {
         le_audio_cig_t *cig = (le_audio_cig_t *) btstack_linked_list_iterator_next(&it);
         uint8_t i;
+        // Set CIG Parameters
         uint8_t cis_id[MAX_NR_CIS];
         uint16_t max_sdu_c_to_p[MAX_NR_CIS];
         uint16_t max_sdu_p_to_c[MAX_NR_CIS];
@@ -6345,6 +6346,10 @@ static bool hci_run_iso_tasks(void){
                              rtn_p_to_c
                 );
                 return false;
+            case LE_AUDIO_CIG_STATE_CREATE_CIS:
+                cig->state = LE_AUDIO_CIG_STATE_W4_CREATE_CIS;
+                hci_send_cmd(&hci_le_create_cis, cig->num_cis, cig->cis_con_handles, cig->acl_con_handles);
+                break;
             default:
                 break;
         }
@@ -9516,8 +9521,47 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
     cig->num_cis = cig_params->num_cis;
     cig->params = cig_params;
     cig->state = LE_AUDIO_CIG_STATE_CREATE;
+    for (i=0;i<cig->num_cis;i++){
+        cig->cis_con_handles[i] = HCI_CON_HANDLE_INVALID;
+        cig->acl_con_handles[i] = HCI_CON_HANDLE_INVALID;
+    }
     btstack_linked_list_add(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) cig);
 
+    hci_run();
+
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_cis_create(uint8_t cig_handle, hci_con_handle_t cis_con_handles [], hci_con_handle_t acl_con_handles []){
+    le_audio_cig_t * cig = hci_cig_for_id(cig_handle);
+    if (cig == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (cig->state != LE_AUDIO_CIG_STATE_W4_CIS_REQUEST){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    // store ACL Connection Handles
+    uint8_t i;
+    for (i=0;i<cig->num_cis;i++){
+        // check that all con handles exit
+        hci_con_handle_t cis_handle = cis_con_handles[i];
+        uint8_t j;
+        bool found = false;
+        for (j=0;j<cig->num_cis;j++){
+            if (cig->cis_con_handles[j] == cis_handle){
+                cig->acl_con_handles[j] = acl_con_handles[j];
+                found = true;
+                break;
+            }
+        }
+        if (!found){
+            return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        }
+    }
+
+    cig->state = LE_AUDIO_CIG_STATE_CREATE_CIS;
     hci_run();
 
     return ERROR_CODE_SUCCESS;
