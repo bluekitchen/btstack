@@ -2915,6 +2915,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             // Lookup CIS via active group operation
             if (hci_stack->iso_active_operation_type == HCI_ISO_TYPE_CIS){
                 cig = hci_cig_for_id(hci_stack->iso_active_operation_group_id);
+                hci_stack->iso_active_operation_group_id = 0xff;
                 if (cig != NULL) {
                     // emit cis created if all ISO Paths have been created
                     // assume we are central
@@ -3992,39 +3993,44 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
                 case HCI_SUBEVENT_LE_CIS_ESTABLISHED:
-                    handle = hci_subevent_le_cis_established_get_connection_handle(packet);
-                    iso_stream = hci_iso_stream_for_con_handle(handle);
-                    if (iso_stream){
+                    if (hci_stack->iso_active_operation_type == HCI_ISO_TYPE_CIS){
+                        le_audio_cig_t * cig = hci_cig_for_id(hci_stack->iso_active_operation_group_id);
+                        btstack_assert(cig != NULL);
+                        handle = hci_subevent_le_cis_established_get_connection_handle(packet);
                         uint8_t status = hci_subevent_le_cis_established_get_status(packet);
-                        uint8_t cig_id = iso_stream->group_id;
+
+                        // update iso stream state
+                        iso_stream = hci_iso_stream_for_con_handle(handle);
+                        btstack_assert(iso_stream != NULL);
                         if (status == ERROR_CODE_SUCCESS){
                             iso_stream->state = HCI_ISO_STREAM_STATE_ESTABLISHED;
                         } else {
-                            hci_iso_stream_finalize(iso_stream);
+                            iso_stream->state = HCI_ISO_STREAM_STATE_IDLE;
                         }
-                        // CIG/CIS
-                        if (iso_stream->iso_type == HCI_ISO_TYPE_CIS){
-                            le_audio_cig_t * cig = hci_cig_for_id(cig_id);
-                            if (cig){
-                                uint8_t i;
-                                for (i=0;i<cig->num_cis;i++){
-                                    if (cig->cis_con_handles[i] == handle){
-                                        cig->cis_setup_active[i] = false;
-                                        if (status == ERROR_CODE_SUCCESS){
-                                            cig->cis_established[i] = true;
-                                        } else {
-                                            hci_emit_cis_created(cig_id, handle, status);
-                                        }
-                                    }
+
+                        // update cig state
+                        uint8_t i;
+                        for (i=0;i<cig->num_cis;i++){
+                            if (cig->cis_con_handles[i] == handle){
+                                cig->cis_setup_active[i] = false;
+                                if (status == ERROR_CODE_SUCCESS){
+                                    cig->cis_setup_active[i] = false;
+                                    cig->cis_established[i] = true;
+                                } else {
+                                    hci_emit_cis_created(cig->cig_id, handle, status);
                                 }
-                                // check if complete
-                                bool complete = true;
-                                for (i=0;i<cig->num_cis;i++){
-                                    complete &= cig->cis_setup_active[i];
-                                }
-                                cig->state_vars.next_cis = 0;
-                                cig->state = LE_AUDIO_CIG_STATE_SETUP_ISO_PATH;
                             }
+                        }
+
+                        // trigger iso path setup if complete
+                        bool setup_active = false;
+                        for (i=0;i<cig->num_cis;i++){
+                            setup_active |= cig->cis_setup_active[i];
+                        }
+                        if (setup_active == false){
+                            cig->state_vars.next_cis = 0;
+                            cig->state = LE_AUDIO_CIG_STATE_SETUP_ISO_PATH;
+                            hci_stack->iso_active_operation_group_id = 0xff;
                         }
                     }
                     break;
@@ -6414,7 +6420,7 @@ static bool hci_run_iso_tasks(void){
                     }
                     uint8_t cis_direction = cig->state_vars.next_cis & 1;
                     bool setup = true;
-                    if (cis_direction){
+                    if (cis_direction == 0){
                         // 0 - input - host to controller
                         // we are central => central to peripheral
                         setup &= cig->params->cis_params[cis_index].max_sdu_c_to_p > 0;
@@ -6427,8 +6433,10 @@ static bool hci_run_iso_tasks(void){
                         hci_stack->iso_active_operation_group_id = cig->params->cig_id;
                         hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                         cig->state = LE_AUDIO_CIG_STATE_W4_SETUP_ISO_PATH;
+                        hci_send_cmd(&hci_le_setup_iso_data_path, cig->cis_con_handles[cis_index], cis_direction, 0, 0, 0, 0, 0, 0, NULL);
                         return true;
                     }
+                    cig->state_vars.next_cis++;
                 }
                 // emit done
                 cig->state = LE_AUDIO_CIG_STATE_ACTIVE;
@@ -7015,25 +7023,6 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             break;
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-#ifdef ENABLE_LE_CENTRAL
-        case HCI_OPCODE_HCI_LE_CREATE_CIS:
-            status = ERROR_CODE_SUCCESS;
-            num_cis = packet[3];
-            // setup hci_iso_streams
-            for (i=0;i<num_cis;i++){
-                cis_handle = (hci_con_handle_t) little_endian_read_16(packet, 4 + (4 * i));
-                status = hci_iso_stream_create(HCI_ISO_TYPE_BIS, cis_handle, 0xff);
-                if (status != ERROR_CODE_SUCCESS) {
-                    break;
-                }
-            }
-            // free structs on error
-            if (status != ERROR_CODE_SUCCESS){
-                hci_iso_stream_requested_finalize(0xff);
-                return status;
-            }
-            break;
-#endif /* ENABLE_LE_CENTRAL */
 #ifdef ENABLE_LE_PERIPHERAL
         case HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST:
             cis_handle = (hci_con_handle_t) little_endian_read_16(packet, 3);
