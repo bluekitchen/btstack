@@ -675,6 +675,8 @@ typedef enum {
     HCI_ISO_TYPE_CIS
 } hci_iso_type_t;
 
+#define HCI_ISO_GROUP_ID_INVALID 0xff
+
 typedef enum{
     HCI_ISO_STREAM_STATE_IDLE,
     HCI_ISO_STREAM_STATE_REQUESTED,

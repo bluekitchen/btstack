@@ -2855,18 +2855,18 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                     btstack_linked_list_remove(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) cig);
                 }
             }
-            hci_stack->iso_active_operation_group_id = 0xff;
+            hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_INVALID;
             break;
         case HCI_OPCODE_HCI_LE_CREATE_CIS:
             status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
             if (status != ERROR_CODE_SUCCESS){
-                hci_iso_stream_requested_finalize(0xff);
+                hci_iso_stream_requested_finalize(HCI_ISO_GROUP_ID_INVALID);
             }
             break;
         case HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST:
             status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
             if (status != ERROR_CODE_SUCCESS){
-                hci_iso_stream_requested_finalize(0xff);
+                hci_iso_stream_requested_finalize(HCI_ISO_GROUP_ID_INVALID);
             }
             break;
         case HCI_OPCODE_HCI_LE_SETUP_ISO_DATA_PATH: {
@@ -2915,7 +2915,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             // Lookup CIS via active group operation
             if (hci_stack->iso_active_operation_type == HCI_ISO_TYPE_CIS){
                 cig = hci_cig_for_id(hci_stack->iso_active_operation_group_id);
-                hci_stack->iso_active_operation_group_id = 0xff;
+                hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_INVALID;
                 if (cig != NULL) {
                     // emit cis created if all ISO Paths have been created
                     // assume we are central
@@ -3021,9 +3021,9 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
         case HCI_OPCODE_HCI_LE_CREATE_CIS:
         case HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST:
             if (status == ERROR_CODE_SUCCESS){
-                hci_iso_stream_requested_confirm(0xff);
+                hci_iso_stream_requested_confirm(HCI_ISO_GROUP_ID_INVALID);
             } else {
-                hci_iso_stream_requested_finalize(0xff);
+                hci_iso_stream_requested_finalize(HCI_ISO_GROUP_ID_INVALID);
             }
             break;
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
@@ -4030,12 +4030,12 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         if (setup_active == false){
                             cig->state_vars.next_cis = 0;
                             cig->state = LE_AUDIO_CIG_STATE_SETUP_ISO_PATH;
-                            hci_stack->iso_active_operation_group_id = 0xff;
+                            hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_INVALID;
                         }
                     }
                     break;
                 case HCI_SUBEVENT_LE_CREATE_BIG_COMPLETE:
-                    hci_stack->iso_active_operation_group_id = 0xff;
+                    hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_INVALID;
                     big = hci_big_for_handle(packet[4]);
                     if (big != NULL){
                         uint8_t status = packet[3];
@@ -4407,7 +4407,7 @@ static void hci_state_reset(void){
     }
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-    hci_stack->iso_active_operation_group_id = 0xff;
+    hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_INVALID;
 #endif
 }
 
@@ -6274,7 +6274,7 @@ static bool hci_run_general_gap_le(void){
 static bool hci_run_iso_tasks(void){
     btstack_linked_list_iterator_t it;
 
-    if (hci_stack->iso_active_operation_group_id != 0xff) {
+    if (hci_stack->iso_active_operation_group_id != HCI_ISO_GROUP_ID_INVALID) {
         return false;
     }
 
@@ -7026,7 +7026,7 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
 #ifdef ENABLE_LE_PERIPHERAL
         case HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST:
             cis_handle = (hci_con_handle_t) little_endian_read_16(packet, 3);
-            status = hci_iso_stream_create(HCI_ISO_TYPE_BIS, cis_handle, 0xff);
+            status = hci_iso_stream_create(HCI_ISO_TYPE_BIS, cis_handle, HCI_ISO_GROUP_ID_INVALID);
             if (status != ERROR_CODE_SUCCESS){
                 return status;
             }
