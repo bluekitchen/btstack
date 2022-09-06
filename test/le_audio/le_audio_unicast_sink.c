@@ -105,7 +105,6 @@ static enum {
     APP_W4_SOURCE_ADV,
     APP_W4_CIG_COMPLETE,
     APP_W4_CIS_CREATED,
-    APP_SET_ISO_PATHS,
     APP_STREAMING,
     APP_IDLE
 } app_state = APP_W4_WORKING;
@@ -307,8 +306,9 @@ static void create_cig() {
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     bd_addr_t event_addr;
-    if (packet_type != HCI_EVENT_PACKET) return;
+    hci_con_handle_t cis_handle;
     unsigned int i;
+    if (packet_type != HCI_EVENT_PACKET) return;
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
@@ -412,28 +412,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("Connected, remote %s, handle %04x\n", bd_addr_to_str(event_addr), remote_handle);
                     create_cig();
                     break;
-                case HCI_SUBEVENT_LE_CIS_ESTABLISHED:
-                {
-                    // only look for cis handle
-                    uint8_t i;
-                    hci_con_handle_t cis_handle = hci_subevent_le_cis_established_get_connection_handle(packet);
-                    for (i=0; i < num_cis; i++){
-                        if (cis_handle == cis_con_handles[i]){
-                            cis_established[i] = true;
-                        }
-                    }
-                    // check for complete
-                    bool complete = true;
-                    for (i=0; i < num_cis; i++) {
-                        complete &= cis_established[i];
-                    }
-                    if (complete) {
-                        printf("All CIS Established\n");
-                        next_cis_index = 0;
-                        app_state = APP_SET_ISO_PATHS;
-                    }
-                    break;
-                }
                 default:
                     break;
             }
@@ -441,7 +419,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch (hci_event_gap_meta_get_subevent_code(packet)){
                 case GAP_SUBEVENT_CIG_CREATED:
                     if (app_state == APP_W4_CIG_COMPLETE){
-                        uint8_t i;
                         printf("CIS Connection Handles: ");
                         for (i=0; i < num_cis; i++){
                             cis_con_handles[i] = gap_subevent_cig_created_get_cis_con_handles(packet, i);
@@ -459,21 +436,28 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         app_state = APP_W4_CIS_CREATED;
                     }
                     break;
+                case GAP_SUBEVENT_CIS_CREATED:
+                    // only look for cis handle
+                    cis_handle = gap_subevent_cis_created_get_cis_con_handle(packet);
+                    for (i=0; i < num_cis; i++){
+                        if (cis_handle == cis_con_handles[i]){
+                            cis_established[i] = true;
+                        }
+                    }
+                    // check for complete
+                    bool complete = true;
+                    for (i=0; i < num_cis; i++) {
+                        complete &= cis_established[i];
+                    }
+                    if (complete) {
+                        printf("All CIS Established\n");
+                        next_cis_index = 0;
+                        app_state = APP_STREAMING;
+                    }
+                    break;
+                default:
+                    break;
             }
-        default:
-            break;
-    }
-
-    if (!hci_can_send_command_packet_now()) return;
-
-    switch(app_state){
-        case APP_SET_ISO_PATHS:
-            hci_send_cmd(&hci_le_setup_iso_data_path, cis_con_handles[next_cis_index++], 1, 0, 0, 0, 0, 0, 0, NULL);
-            if (next_cis_index == num_cis){
-                app_state = APP_STREAMING;
-                last_samples_report_ms = btstack_run_loop_get_time_ms();
-            }
-            break;
         default:
             break;
     }
