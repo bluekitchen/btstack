@@ -2912,6 +2912,24 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                     return;
                 }
             }
+            // Lookup CIS via active group operation
+            if (hci_stack->iso_active_operation_type == HCI_ISO_TYPE_CIS){
+                cig = hci_cig_for_id(hci_stack->iso_active_operation_group_id);
+                if (cig != NULL) {
+                    // emit cis created if all ISO Paths have been created
+                    // assume we are central
+                    uint8_t cis_index = cig->state_vars.next_cis >> 1;
+                    uint8_t cis_direction = cig->state_vars.next_cis & 1;
+                    bool outgoing_needed = cig->params->cis_params[cis_index].max_sdu_p_to_c > 0;
+                    // if outgoing has been setup, or incoming was setup but outgoing not required
+                    if ((cis_direction == 1) || (outgoing_needed == false)){
+                        hci_emit_cis_created(cig->cig_id, cig->cis_con_handles[cis_index], status);
+                    }
+                    // next state
+                    cig->state_vars.next_cis++;
+                    cig->state = LE_AUDIO_CIG_STATE_SETUP_ISO_PATH;
+                }
+            }
             break;
         }
         case HCI_OPCODE_HCI_LE_BIG_TERMINATE_SYNC: {
@@ -3992,9 +4010,20 @@ static void event_handler(uint8_t *packet, uint16_t size){
                                 for (i=0;i<cig->num_cis;i++){
                                     if (cig->cis_con_handles[i] == handle){
                                         cig->cis_setup_active[i] = false;
-                                        hci_emit_cis_created(cig_id, handle, status);
+                                        if (status == ERROR_CODE_SUCCESS){
+                                            cig->cis_established[i] = true;
+                                        } else {
+                                            hci_emit_cis_created(cig_id, handle, status);
+                                        }
                                     }
                                 }
+                                // check if complete
+                                bool complete = true;
+                                for (i=0;i<cig->num_cis;i++){
+                                    complete &= cig->cis_setup_active[i];
+                                }
+                                cig->state_vars.next_cis = 0;
+                                cig->state = LE_AUDIO_CIG_STATE_SETUP_ISO_PATH;
                             }
                         }
                     }
@@ -6376,6 +6405,33 @@ static bool hci_run_iso_tasks(void){
                 }
                 hci_send_cmd(&hci_le_create_cis, cig->num_cis, cig->cis_con_handles, cig->acl_con_handles);
                 return true;
+            case LE_AUDIO_CIG_STATE_SETUP_ISO_PATH:
+                while (cig->state_vars.next_cis < (cig->num_cis * 2)){
+                    // find next path to setup
+                    uint8_t cis_index = cig->state_vars.next_cis >> 1;
+                    if (cig->cis_established[cis_index] == false) {
+                        continue;
+                    }
+                    uint8_t cis_direction = cig->state_vars.next_cis & 1;
+                    bool setup = true;
+                    if (cis_direction){
+                        // 0 - input - host to controller
+                        // we are central => central to peripheral
+                        setup &= cig->params->cis_params[cis_index].max_sdu_c_to_p > 0;
+                    } else {
+                        // 1 - output - controller to host
+                        // we are central => peripheral to central
+                        setup &= cig->params->cis_params[cis_index].max_sdu_p_to_c > 0;
+                    }
+                    if (setup){
+                        hci_stack->iso_active_operation_group_id = cig->params->cig_id;
+                        hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
+                        cig->state = LE_AUDIO_CIG_STATE_W4_SETUP_ISO_PATH;
+                        return true;
+                    }
+                }
+                // emit done
+                cig->state = LE_AUDIO_CIG_STATE_ACTIVE;
             default:
                 break;
         }
