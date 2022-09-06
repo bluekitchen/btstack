@@ -243,6 +243,7 @@ static void hci_emit_big_terminated(const le_audio_big_t * big);
 static void hci_emit_big_sync_created(const le_audio_big_sync_t * big_sync, uint8_t status);
 static void hci_emit_big_sync_stopped(uint8_t big_handle);
 static void hci_emit_cig_created(const le_audio_cig_t * cig, uint8_t status);
+static void hci_emit_cis_created(const le_audio_cig_t * cig, uint8_t cis_index, uint8_t status);
 static le_audio_big_sync_t * hci_big_sync_for_handle(uint8_t big_handle);
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
 #endif /* ENABLE_BLE */
@@ -3980,6 +3981,18 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             iso_stream->state = HCI_ISO_STREAM_STATE_ESTABLISHED;
                         } else {
                             hci_iso_stream_finalize(iso_stream);
+                        }
+                        // CIG/CIS
+                        if (iso_stream->iso_type == HCI_ISO_TYPE_CIS){
+                            le_audio_cig_t * cig = hci_cig_for_id(iso_stream->group_id);
+                            if (cig){
+                                uint8_t i;
+                                for (i=0;i<cig->num_cis;i++){
+                                    if (cig->cis_con_handles[i] == handle){
+                                        hci_emit_cis_created(cig, i, status);
+                                    }
+                                }
+                            }
                         }
                     }
                     break;
@@ -9203,6 +9216,20 @@ static void hci_emit_cig_created(const le_audio_cig_t * cig, uint8_t status){
     }
     hci_emit_event(event, pos, 0);
 }
+
+static void hci_emit_cis_created(const le_audio_cig_t * cig, uint8_t cis_index, uint8_t status){
+    uint8_t event [7];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_META_GAP;
+    event[pos++] = 5;
+    event[pos++] = GAP_SUBEVENT_CIS_CREATED;
+    event[pos++] = status;
+    event[pos++] = cig->cig_id;
+    little_endian_store_16(event, pos, cig->cis_con_handles[cis_index]);
+    pos += 2;
+    hci_emit_event(event, pos, 0);
+}
+
 static void hci_emit_big_terminated(const le_audio_big_t * big){
     uint8_t event [4];
     uint16_t pos = 0;
