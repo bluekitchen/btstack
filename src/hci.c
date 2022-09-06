@@ -6350,11 +6350,13 @@ static bool hci_run_iso_tasks(void){
                              rtn_c_to_p,
                              rtn_p_to_c
                 );
-                return false;
+                return true;
             case LE_AUDIO_CIG_STATE_CREATE_CIS:
+                hci_stack->iso_active_operation_group_id = cig->params->cig_id;
+                hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                 cig->state = LE_AUDIO_CIG_STATE_W4_CREATE_CIS;
                 hci_send_cmd(&hci_le_create_cis, cig->num_cis, cig->cis_con_handles, cig->acl_con_handles);
-                break;
+                return true;
             default:
                 break;
         }
