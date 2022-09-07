@@ -40,10 +40,10 @@
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
-
 #ifdef ENABLE_BTSTACK_STDIN_LOGGING
 #include "btstack_debug.h"
 #endif
+#include "btstack_debug.h"
 #include "btstack_defines.h"
 #include "btstack_run_loop.h"
 #include <stdlib.h>
