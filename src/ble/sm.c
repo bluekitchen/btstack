@@ -2378,7 +2378,7 @@ static void sm_run_send_keypress_notification(sm_connection_t * connection){
     sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
 
     // try
-    l2cap_request_can_send_fix_channel_now_event(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+    l2cap_request_can_send_fix_channel_now_event(sm_active_connection_handle, connection->sm_cid);
 }
 
 static void sm_run_distribute_keys(sm_connection_t * connection){
@@ -2576,9 +2576,9 @@ static void sm_run(void){
         }
 
         // assert that we could send a SM PDU - not needed for all of the following
-        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) {
+        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, connection->sm_cid)) {
             log_info("cannot send now, requesting can send now event");
-            l2cap_request_can_send_fix_channel_now_event(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+            l2cap_request_can_send_fix_channel_now_event(sm_active_connection_handle, connection->sm_cid);
             return;
         }
 
@@ -2597,7 +2597,7 @@ static void sm_run(void){
 #endif
 
         log_info("sm_run: state %u", connection->sm_engine_state);
-        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) {
+        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, connection->sm_cid)) {
             log_info("sm_run // cannot send");
         }
         switch (connection->sm_engine_state){
@@ -4822,6 +4822,9 @@ void sm_init(void){
 
     // and L2CAP PDUs + L2CAP_EVENT_CAN_SEND_NOW
     l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+#ifdef ENABLE_CLASSIC
+    l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_BR_EDR_SECURITY_MANAGER);
+#endif
 
     // state
     sm_state_reset();

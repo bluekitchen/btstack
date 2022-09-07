@@ -4644,7 +4644,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
 
 #ifdef ENABLE_BLE
         case L2CAP_CID_BR_EDR_SECURITY_MANAGER:
-            l2cap_fixed_channel = l2cap_fixed_channel_for_channel_id(L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+            l2cap_fixed_channel = l2cap_fixed_channel_for_channel_id(L2CAP_CID_BR_EDR_SECURITY_MANAGER);
             if ((l2cap_fixed_channel == NULL) || (l2cap_fixed_channel->packet_handler == NULL)){
                 // Pairing Failed
                 l2cap_register_signaling_response(handle, (uint8_t) SM_PAIRING_FAILED, 0, L2CAP_CID_BR_EDR_SECURITY_MANAGER, SM_REASON_PAIRING_NOT_SUPPORTED);
