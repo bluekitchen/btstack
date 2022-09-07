@@ -206,6 +206,7 @@ static l2cap_fixed_channel_t l2cap_fixed_channel_le_sm;
 #endif
 #ifdef ENABLE_CLASSIC
 static l2cap_fixed_channel_t l2cap_fixed_channel_classic_connectionless;
+static l2cap_fixed_channel_t l2cap_fixed_channel_classic_sm;
 #endif
 
 #ifdef ENABLE_CLASSIC
@@ -948,7 +949,13 @@ void l2cap_init(void){
     l2cap_fixed_channel_le_sm.channel_type  = L2CAP_CHANNEL_TYPE_FIXED_LE;
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_le_sm);
 #endif
-    
+#ifdef ENABLE_CLASSIC
+    // Setup fixed SM Channel
+    l2cap_fixed_channel_classic_sm.local_cid     = L2CAP_CID_BR_EDR_SECURITY_MANAGER;
+    l2cap_fixed_channel_classic_sm.channel_type  = L2CAP_CHANNEL_TYPE_FIXED_CLASSIC;
+    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_classic_sm);
+#endif
+
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
     l2cap_enhanced_mps_min = 0x0001;
     l2cap_enhanced_mps_max = 0xffff;
@@ -980,6 +987,7 @@ void l2cap_deinit(void){
     (void)memset(&l2cap_fixed_channel_classic_connectionless, 0, sizeof(l2cap_fixed_channel_classic_connectionless));
     l2cap_services = NULL;
     (void)memset(l2cap_outgoing_classic_addr, 0, 6);
+    (void)memset(&l2cap_fixed_channel_classic_sm, 0, sizeof(l2cap_fixed_channel_classic_sm));
 #endif
 #ifdef ENABLE_BLE
     l2cap_le_custom_max_mtu = 0;
