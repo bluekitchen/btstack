@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: send HCI LE Create Connection Cancel only once for outgoing LE connections without whitelist
 - GAP: use static random address after power up
 - L2CAP: fix L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST
+- SM: avoid potential loop during CTKD  
  
 ### Changed
 - HCI Dump: provide log level to log_message implementation
