@@ -1213,7 +1213,10 @@ static void acl_handler(uint8_t *packet, uint16_t size){
             
             // sanity check
             if (conn->acl_recombination_pos) {
-                log_error( "ACL First Fragment but data in buffer for handle 0x%02x, dropping stale fragments", con_handle);
+                // we just received the first fragment, but still have data. Only warn if the packet wasn't a flushable packet
+                if ((conn->acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE+1] >> 4) != 0x02){
+                    log_error( "ACL First Fragment but %u bytes in buffer for handle 0x%02x, dropping stale fragments", conn->acl_recombination_pos, con_handle);
+                }
                 conn->acl_recombination_pos = 0;
             }
 
