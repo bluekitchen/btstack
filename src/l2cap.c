@@ -201,11 +201,11 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
 
 // l2cap_fixed_channel_t entries
 #ifdef ENABLE_BLE
-static l2cap_fixed_channel_t l2cap_fixed_channel_att;
-static l2cap_fixed_channel_t l2cap_fixed_channel_sm;
+static l2cap_fixed_channel_t l2cap_fixed_channel_le_att;
+static l2cap_fixed_channel_t l2cap_fixed_channel_le_sm;
 #endif
 #ifdef ENABLE_CLASSIC
-static l2cap_fixed_channel_t l2cap_fixed_channel_connectionless;
+static l2cap_fixed_channel_t l2cap_fixed_channel_classic_connectionless;
 #endif
 
 #ifdef ENABLE_CLASSIC
@@ -932,21 +932,21 @@ void l2cap_init(void){
 
 #ifdef ENABLE_CLASSIC
     // Setup Connectionless Channel
-    l2cap_fixed_channel_connectionless.local_cid     = L2CAP_CID_CONNECTIONLESS_CHANNEL;
-    l2cap_fixed_channel_connectionless.channel_type  = L2CAP_CHANNEL_TYPE_CONNECTIONLESS;
-    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_connectionless);
+    l2cap_fixed_channel_classic_connectionless.local_cid     = L2CAP_CID_CONNECTIONLESS_CHANNEL;
+    l2cap_fixed_channel_classic_connectionless.channel_type  = L2CAP_CHANNEL_TYPE_CONNECTIONLESS;
+    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_classic_connectionless);
 #endif
 
 #ifdef ENABLE_BLE
     // Setup fixed ATT Channel
-    l2cap_fixed_channel_att.local_cid    = L2CAP_CID_ATTRIBUTE_PROTOCOL;
-    l2cap_fixed_channel_att.channel_type = L2CAP_CHANNEL_TYPE_FIXED;
-    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_att);
+    l2cap_fixed_channel_le_att.local_cid    = L2CAP_CID_ATTRIBUTE_PROTOCOL;
+    l2cap_fixed_channel_le_att.channel_type = L2CAP_CHANNEL_TYPE_FIXED_LE;
+    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_le_att);
 
     // Setup fixed SM Channel
-    l2cap_fixed_channel_sm.local_cid     = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
-    l2cap_fixed_channel_sm.channel_type  = L2CAP_CHANNEL_TYPE_FIXED;
-    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_sm);
+    l2cap_fixed_channel_le_sm.local_cid     = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
+    l2cap_fixed_channel_le_sm.channel_type  = L2CAP_CHANNEL_TYPE_FIXED_LE;
+    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_le_sm);
 #endif
     
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
@@ -977,14 +977,14 @@ void l2cap_deinit(void){
     l2cap_signaling_responses_pending = 0;
 #ifdef ENABLE_CLASSIC
     l2cap_require_security_level2_for_outgoing_sdp = 0;
-    (void)memset(&l2cap_fixed_channel_connectionless, 0, sizeof(l2cap_fixed_channel_connectionless));
+    (void)memset(&l2cap_fixed_channel_classic_connectionless, 0, sizeof(l2cap_fixed_channel_classic_connectionless));
     l2cap_services = NULL;
     (void)memset(l2cap_outgoing_classic_addr, 0, 6);
 #endif
 #ifdef ENABLE_BLE
     l2cap_le_custom_max_mtu = 0;
-    (void)memset(&l2cap_fixed_channel_att, 0, sizeof(l2cap_fixed_channel_att));
-    (void)memset(&l2cap_fixed_channel_sm, 0, sizeof(l2cap_fixed_channel_sm));
+    (void)memset(&l2cap_fixed_channel_le_att, 0, sizeof(l2cap_fixed_channel_le_att));
+    (void)memset(&l2cap_fixed_channel_le_sm, 0, sizeof(l2cap_fixed_channel_le_sm));
 #endif
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
     l2cap_le_services = NULL;
@@ -2607,7 +2607,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
             return hci_can_send_acl_classic_packet_now() != 0;
 #endif
 #ifdef ENABLE_BLE
-        case L2CAP_CHANNEL_TYPE_FIXED:
+        case L2CAP_CHANNEL_TYPE_FIXED_LE:
             if (!channel->waiting_for_can_send_now) return false;
             return hci_can_send_acl_le_packet_now() != 0;
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
@@ -2649,7 +2649,7 @@ static void l2cap_channel_trigger_send(l2cap_channel_t * channel){
             break;
 #endif
 #ifdef ENABLE_BLE
-        case L2CAP_CHANNEL_TYPE_FIXED:
+        case L2CAP_CHANNEL_TYPE_FIXED_LE:
             channel->waiting_for_can_send_now = 0;
             l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
             break;
