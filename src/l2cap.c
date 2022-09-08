@@ -2653,6 +2653,7 @@ static void l2cap_channel_trigger_send(l2cap_channel_t * channel){
             l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
             break;
         case L2CAP_CHANNEL_TYPE_CONNECTIONLESS:
+        case L2CAP_CHANNEL_TYPE_FIXED_CLASSIC:
             channel->waiting_for_can_send_now = 0;
             l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
             break;
@@ -2674,6 +2675,7 @@ static void l2cap_channel_trigger_send(l2cap_channel_t * channel){
             break;
 #endif
         default:
+            btstack_unreachable();
             break;
     }
 }
