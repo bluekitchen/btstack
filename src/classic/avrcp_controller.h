@@ -348,6 +348,9 @@ void avrcp_controller_deinit(void);
 
 /* API_END */
 
+// send press command if connection is open. use with great care and only if there's no other option
+uint8_t avrcp_controller_force_send_press_cmd(uint16_t avrcp_cid, avrcp_operation_id_t operation_id);
+
 // Used by AVRCP controller and AVRCP browsing controller
 extern avrcp_context_t avrcp_controller_context;
 

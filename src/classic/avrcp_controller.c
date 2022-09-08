@@ -119,6 +119,7 @@ static void avrcp_controller_pass_through_command_data_init(avrcp_connection_t *
     connection->data_offset = 0;
     connection->data_len = 0;
 }
+
 static int avrcp_controller_supports_browsing(uint16_t controller_supported_features){
     return controller_supported_features & AVRCP_FEATURE_MASK_BROWSING;
 }
@@ -1803,6 +1804,21 @@ uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid,
     connection->data = (uint8_t *)data;
     connection->data_len = data_len;
 
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_force_send_press_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state < AVCTP_CONNECTION_OPENED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_controller_pass_through_command_data_init(connection, opid);
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
