@@ -412,6 +412,8 @@ static void enter_create_big_sync(void){
 
 static void start_scanning() {
     app_state = APP_W4_BROADCAST_ADV;
+    have_base = false;
+    have_big_info = false;
     gap_set_scan_params(1, 0x30, 0x30, 0);
     gap_start_scan();
     printf("Start scan..\n");
@@ -424,8 +426,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
+                    app_state = APP_IDLE;
 #ifdef ENABLE_DEMO_MODE
-                    if (app_state != APP_W4_WORKING) break;
                     start_scanning();
 #else
                     show_usage();
@@ -498,7 +500,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
-                    printf("Periodic advertising sync established\n");
+                    sync_handle = hci_subevent_le_periodic_advertising_sync_establishment_get_sync_handle(packet);
+                    printf("Periodic advertising sync with handle 0x%04x established\n", sync_handle);
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT:
                     if (have_base) break;
@@ -757,6 +760,7 @@ static void show_usage(void){
 #ifdef HAVE_LC3PLUS
     printf("q - use LC3plus decoder if 10 ms ISO interval is used\n");
 #endif
+    printf("t - terminate BIS streams\n");
     printf("x - close files and exit\n");
     printf("---\n");
 }
@@ -764,7 +768,7 @@ static void show_usage(void){
 static void stdin_process(char c){
     switch (c){
         case 's':
-            if (app_state != APP_W4_WORKING) break;
+            if (app_state != APP_IDLE) break;
             start_scanning();
             break;
 #ifdef HAVE_LC3PLUS
@@ -773,6 +777,19 @@ static void stdin_process(char c){
             request_lc3plus_decoder = true;
             break;
 #endif
+        case 't':
+            switch (app_state){
+                case APP_STREAMING:
+                case APP_W4_BIG_SYNC_ESTABLISHED:
+                    app_state = APP_IDLE;
+                    close_files();
+                    printf("Terminate BIG SYNC\n");
+                    gap_big_sync_terminate(big_handle);
+                    break;
+                default:
+                    break;
+            }
+            break;
         case 'x':
             close_files();
             printf("Shutdown...\n");
