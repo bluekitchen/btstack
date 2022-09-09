@@ -1514,7 +1514,7 @@ void hfp_hf_deinit(void){
 }
 
 void hfp_hf_init_codecs(int codecs_nr, const uint8_t * codecs){
-    btstack_assert(codecs_nr < HFP_MAX_NUM_CODECS);
+    btstack_assert(codecs_nr <= HFP_MAX_NUM_CODECS);
 
     hfp_hf_codecs_nr = codecs_nr;
     int i;
