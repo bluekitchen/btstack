@@ -3878,6 +3878,10 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     if (!hci_stack->le_scanning_enabled) break;
                     le_handle_extended_advertisement_report(packet, size);
                     break;
+                case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
+                    hci_stack->le_periodic_sync_request = LE_CONNECTING_IDLE;
+                    hci_stack->le_periodic_sync_state = LE_CONNECTING_IDLE;
+                    break;
 #endif
 #endif
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
