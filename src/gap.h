@@ -838,6 +838,22 @@ uint8_t gap_cig_remove(uint8_t cig_handle);
 uint8_t gap_cis_create(uint8_t cig_handle, hci_con_handle_t cis_con_handles [], hci_con_handle_t acl_con_handles []);
 
 /**
+ * @brief Accept Connected Isochronous Stream (CIS)
+ * @param cis_con_handle
+ * @return status
+ * @events GAP_SUBEVENT_CIS_CREATED
+ */
+uint8_t gap_cis_accept(hci_con_handle_t cis_con_handle);
+
+/**
+ * @brief Reject Connected Isochronous Stream (CIS)
+ * @param cis_con_handle
+ * @return status
+ * @events GAP_SUBEVENT_CIS_CREATED
+ */
+uint8_t gap_cis_reject(hci_con_handle_t cis_con_handle);
+
+/**
  * @brief Set connection parameters for outgoing connections
  * @param conn_scan_interval (unit: 0.625 msec), default: 60 ms
  * @param conn_scan_window (unit: 0.625 msec), default: 30 ms

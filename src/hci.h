@@ -671,17 +671,25 @@ typedef struct {
 
 
 typedef enum {
-    HCI_ISO_TYPE_BIS = 0,
-    HCI_ISO_TYPE_CIS
+    HCI_ISO_TYPE_INVALID = 0,
+    HCI_ISO_TYPE_BIS,
+    HCI_ISO_TYPE_CIS,
 } hci_iso_type_t;
 
-#define HCI_ISO_GROUP_ID_INVALID 0xff
+#define HCI_ISO_GROUP_ID_SINGLE_CIS 0xfe
+#define HCI_ISO_GROUP_ID_INVALID    0xff
 
 typedef enum{
     HCI_ISO_STREAM_STATE_IDLE,
+    HCI_ISO_STREAM_W2_ACCEPT,
+    HCI_ISO_STREAM_W2_REJECT,
     HCI_ISO_STREAM_STATE_REQUESTED,
     HCI_ISO_STREAM_STATE_W4_ESTABLISHED,
     HCI_ISO_STREAM_STATE_ESTABLISHED,
+    HCI_ISO_STREAM_STATE_W2_SETUP_ISO_INPUT,
+    HCI_ISO_STREAM_STATE_W4_ISO_SETUP_INPUT,
+    HCI_ISO_STREAM_STATE_W2_SETUP_ISO_OUTPUT,
+    HCI_ISO_STREAM_STATE_W4_ISO_SETUP_OUTPUT,
 } hci_iso_stream_state_t;
 
 typedef struct {
@@ -699,6 +707,10 @@ typedef struct {
 
     // peer info
     hci_con_handle_t con_handle;
+
+    // connection info
+    uint16_t max_sdu_c_to_p;
+    uint16_t max_sdu_p_to_c;
 
     // re-assembly buffer
     uint16_t reassembly_pos;
