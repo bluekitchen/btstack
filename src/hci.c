@@ -239,7 +239,7 @@ static void hci_iso_notify_can_send_now(void);
 static void hci_emit_big_created(const le_audio_big_t * big, uint8_t status);
 static void hci_emit_big_terminated(const le_audio_big_t * big);
 static void hci_emit_big_sync_created(const le_audio_big_sync_t * big_sync, uint8_t status);
-static void hci_emit_big_sync_stopped(const le_audio_big_sync_t * big_sync);
+static void hci_emit_big_sync_stopped(uint8_t big_handle);
 static le_audio_big_sync_t * hci_big_sync_for_handle(uint8_t big_handle);
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
 #endif /* ENABLE_BLE */
@@ -2877,17 +2877,16 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_big_syncs);
             while (btstack_linked_list_iterator_has_next(&it)) {
                 le_audio_big_sync_t *big_sync = (le_audio_big_sync_t *) btstack_linked_list_iterator_next(&it);
-                if (big_sync->state == LE_AUDIO_BIG_STATE_W4_TERMINATED){
-                    btstack_linked_list_iterator_remove(&it);
-                    switch (big_sync->state){
-                        case LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED:
-                            hci_emit_big_sync_created(big_sync, big_sync->state_vars.status);
-                            break;
-                        default:
-                            hci_emit_big_sync_stopped(big_sync);
-                            break;
-                    }
-                    return;
+                uint8_t big_handle = big_sync->big_handle;
+                switch (big_sync->state){
+                    case LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED:
+                        btstack_linked_list_iterator_remove(&it);
+                        hci_emit_big_sync_created(big_sync, big_sync->state_vars.status);
+                        return;
+                    default:
+                        btstack_linked_list_iterator_remove(&it);
+                        hci_emit_big_sync_stopped(big_handle);
+                        return;
                 }
             }
             break;
@@ -4013,6 +4012,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     big_sync = hci_big_sync_for_handle(packet[4]);
                     if (big_sync != NULL){
                         uint8_t status = packet[3];
+                        uint8_t big_handle = packet[4];
                         if (status == ERROR_CODE_SUCCESS){
                             // store bis_con_handles and trigger iso path setup
                             uint8_t num_bis = btstack_min(MAX_NR_BIS, packet[16]);
@@ -4031,7 +4031,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             if (big_sync->state == LE_AUDIO_BIG_STATE_W4_ESTABLISHED) {
                                 hci_emit_big_sync_created(big_sync, status);
                             } else {
-                                hci_emit_big_sync_stopped(big_sync);
+                                hci_emit_big_sync_stopped(big_handle);
                             }
                         }
                     }
@@ -4039,8 +4039,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 case HCI_SUBEVENT_LE_BIG_SYNC_LOST:
                     big_sync = hci_big_sync_for_handle(packet[4]);
                     if (big_sync != NULL){
+                        uint8_t big_handle = packet[4];
                         btstack_linked_list_remove(&hci_stack->le_audio_big_syncs, (btstack_linked_item_t *) big_sync);
-                        hci_emit_big_sync_stopped(big_sync);
+                        hci_emit_big_sync_stopped(big_handle);
                     }
                     break;
 #endif
@@ -9088,13 +9089,13 @@ static void hci_emit_big_sync_created(const le_audio_big_sync_t * big_sync, uint
     hci_emit_event(event, pos, 0);
 }
 
-static void hci_emit_big_sync_stopped(const le_audio_big_sync_t * big_sync){
+static void hci_emit_big_sync_stopped(uint8_t big_handle){
     uint8_t event [4];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_META_GAP;
     event[pos++] = 2;
     event[pos++] = GAP_SUBEVENT_BIG_SYNC_STOPPED;
-    event[pos++] = big_sync->big_handle;
+    event[pos++] = big_handle;
     hci_emit_event(event, pos, 0);
 }
 
@@ -9312,7 +9313,7 @@ uint8_t gap_big_sync_terminate(uint8_t big_handle){
     switch (big_sync->state){
         case LE_AUDIO_BIG_STATE_CREATE:
             btstack_linked_list_remove(&hci_stack->le_audio_big_syncs, (btstack_linked_item_t *) big_sync);
-            hci_emit_big_sync_stopped(big_sync);
+            hci_emit_big_sync_stopped(big_handle);
             break;
         case LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH:
             big_sync->state = LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH_THEN_TERMINATE;
