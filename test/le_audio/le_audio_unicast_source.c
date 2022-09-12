@@ -530,7 +530,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_OPCODE_HCI_LE_SETUP_ISO_DATA_PATH:
                     next_cis_index++;
                     if (next_cis_index == num_cis){
-                        printf("%u ISO path(s) set up\n", num_channels);
+                        printf("%u ISO path(s) set up\n", num_cis);
                         // ready to send
                         uint8_t i;
                         for (i=0; i < num_cis; i++) {
