@@ -147,7 +147,6 @@ static le_audio_big_sync_t        big_sync_storage;
 static le_audio_big_sync_params_t big_sync_params;
 
 // lc3 writer
-static int dump_file;
 static uint32_t lc3_frames;
 
 // lc3 codec config
@@ -229,9 +228,13 @@ static void setup_lc3_decoder(void){
 static void close_files(void){
 #ifdef HAVE_POSIX_FILE_IO
     printf("Close files\n");
-    close(dump_file);
     wav_writer_close();
 #endif
+    const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
+    if (sink != NULL){
+        sink->stop_stream();
+        sink->close();
+    }
 }
 
 static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size){
@@ -551,6 +554,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("Start receiving\n");
                     break;
                 }
+                case GAP_SUBEVENT_BIG_SYNC_STOPPED:
+                    printf("BIG Sync stopped, big_handle 0x%02x\n", gap_subevent_big_sync_stopped_get_big_handle(packet));
+                    break;
                 default:
                     break;
             }
@@ -624,6 +630,8 @@ static void plc_missing(uint16_t packet_sequence_number) {
 }
 
 static void plc_timeout(btstack_timer_source_t * timer) {
+    if (app_state != APP_STREAMING) return;
+
     // Restart timer. This will loose sync with ISO interval, but if we stop caring if we loose that many packets
     uint32_t frame_duration_ms = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8 : 10;
     btstack_run_loop_set_timer(timer, frame_duration_ms);
@@ -635,6 +643,8 @@ static void plc_timeout(btstack_timer_source_t * timer) {
 }
 
 static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    if (app_state != APP_STREAMING) return;
 
     uint16_t header = little_endian_read_16(packet, 0);
     hci_con_handle_t con_handle = header & 0x0fff;
