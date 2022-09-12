@@ -129,7 +129,6 @@ static uint16_t packet_sequence_numbers[MAX_CHANNELS];
 static uint8_t framed_pdus;
 static bool cis_can_send[MAX_CHANNELS];
 static bool cis_has_data[MAX_CHANNELS];
-static bool cis_request[MAX_CHANNELS];
 static bool cis_established[MAX_CHANNELS];
 static uint8_t iso_frame_counter;
 static uint16_t frame_duration_us;
@@ -521,34 +520,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             }
             break;
-        case HCI_EVENT_COMMAND_COMPLETE:
-            switch (hci_event_command_complete_get_command_opcode(packet)){
-                case HCI_OPCODE_HCI_LE_CREATE_CIS:
-                    app_state = APP_SET_ISO_PATH;
-                    printf("Set ISO Paths\n");
-                    break;
-                case HCI_OPCODE_HCI_LE_SETUP_ISO_DATA_PATH:
-                    next_cis_index++;
-                    if (next_cis_index == num_cis){
-                        printf("%u ISO path(s) set up\n", num_cis);
-                        // ready to send
-                        uint8_t i;
-                        for (i=0; i < num_cis; i++) {
-                            cis_can_send[i] = true;
-                        }
-                        app_state = APP_STREAMING;
-                        //
-#ifdef GENERATE_AUDIO_WITH_TIMER
-                        btstack_run_loop_set_timer_handler(&send_timer, &generate_audio_timer_handler);
-                        uint32_t next_send_time_ms = btstack_run_loop_get_time_ms() + 10;
-                        uint32_t now = btstack_run_loop_get_time_ms();
-                        btstack_run_loop_set_timer(&send_timer, next_send_time_ms - now);
-                        btstack_run_loop_add_timer(&send_timer);
-#endif
-                    }
-                    break;
-            }
-            break;
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)){
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
@@ -556,14 +527,18 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
                 case HCI_SUBEVENT_LE_CIS_REQUEST:
                     cis_con_handles[next_cis_index] = hci_subevent_le_cis_request_get_cis_connection_handle(packet);
-                    cis_request[next_cis_index] = true;
+                    gap_cis_accept(cis_con_handles[next_cis_index]);
                     next_cis_index++;
                     break;
-                case HCI_SUBEVENT_LE_CIS_ESTABLISHED:
-                {
-                    // only look for cis handle
+                default:
+                    break;
+            }
+            break;
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                case GAP_SUBEVENT_CIS_CREATED: {
                     uint8_t i;
-                    hci_con_handle_t cis_handle = hci_subevent_le_cis_established_get_connection_handle(packet);
+                    hci_con_handle_t cis_handle = gap_subevent_cis_created_get_cis_con_handle(packet);
                     for (i=0; i < num_cis; i++){
                         if (cis_handle == cis_con_handles[i]){
                             cis_established[i] = true;
@@ -574,15 +549,17 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     for (i=0; i < num_cis; i++) {
                         complete &= cis_established[i];
                     }
+                    // ready to send
                     if (complete) {
-                        printf("All CIS Established\n");
+                        for (i=0; i < num_cis; i++) {
+                            cis_can_send[i] = true;
+                        }
+                        printf("All CIS Established and ISO Path setup\n");
                         next_cis_index = 0;
-                        app_state = APP_SET_ISO_PATH;
+                        app_state = APP_STREAMING;
                     }
                     break;
                 }
-                default:
-                    break;
             }
             break;
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
@@ -608,29 +585,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         default:
             break;
-    }
-
-    if (hci_can_send_command_packet_now()) {
-        switch(app_state){
-            case APP_W4_CIS_COMPLETE:
-            {
-                uint8_t i;
-                for (i=0; i < num_cis; i++){
-                    if (cis_request[i]){
-                        cis_request[i] = false;
-                        printf("Accept CIS Request for conn handle %04x\n", cis_con_handles[i]);
-                        hci_send_cmd(&hci_le_accept_cis_request, cis_con_handles[i]);
-                        break;
-                    }
-                }
-                break;
-            }
-            case APP_SET_ISO_PATH:
-                hci_send_cmd(&hci_le_setup_iso_data_path, cis_con_handles[next_cis_index], 0, 0,  0, 0, 0,  0, 0, NULL);
-                break;
-            default:
-                break;
-        }
     }
 
     try_send();
