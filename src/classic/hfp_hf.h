@@ -101,6 +101,24 @@ void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators);
 void hfp_hf_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
+ * @brief Set microphone gain used during SLC for Volume Synchronization.
+ *
+ * @param gain Valid range: [0,15]
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if invalid gain range
+ */
+uint8_t hfp_hf_set_default_microphone_gain(uint8_t gain);
+
+/**
+ * @brief Set speaker gain used during SLC for Volume Synchronization.
+ *
+ * @param gain Valid range: [0,15]
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if invalid gain range
+ */
+uint8_t hfp_hf_set_default_speaker_gain(uint8_t gain);
+
+/**
  * @brief Establish RFCOMM connection with the AG with given Bluetooth address, 
  * and perform service level connection (SLC) agreement:
  * - exchange supported features

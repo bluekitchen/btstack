@@ -1487,6 +1487,22 @@ static void hfp_hf_set_defaults(void){
     hfp_hf_indicators_nr = 0;
 }
 
+uint8_t hfp_hf_set_default_microphone_gain(uint8_t gain){
+    if ((gain < 0) || (gain > 15)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    hfp_hf_microphone_gain = gain;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hfp_hf_set_default_speaker_gain(uint8_t gain){
+    if ((gain < 0) || (gain > 15)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    hfp_hf_speaker_gain = gain;
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t hfp_hf_init(uint8_t rfcomm_channel_nr){
     uint8_t status = rfcomm_register_service(hfp_hf_rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);
     if (status != ERROR_CODE_SUCCESS){
