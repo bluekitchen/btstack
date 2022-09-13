@@ -27,7 +27,7 @@ HFP/HF/CLI/BV-01-I: L, f
 
 HFP/HF/ICA/BV-01-I: f
 HFP/HF/ICA/BV-02-I: f, F, f
-HFP/HF/ICA/BV-03-I: f (ok if you see RING message)
+HFP/HF/ICA/BV-03-I: o, f (ok if you see RING message)
 HFP/HF/ICA/BV-04-I: f
 HFP/HF/ICA/BV-05-I: f
 HFP/HF/ICA/BV-06-I: (confirm)
@@ -36,10 +36,10 @@ HFP/HF/ICA/BV-17-I: a, f
 HFP/HF/ICR/BV-01-I: G
 HFP/HF/ICR/BV-02-I: (confirm)
 
-HFP/HF/TCA/BV-01-C: f, F
-HFP/HF/TCA/BV-02-C: f
-HFP/HF/TCA/BV-03-C: f
-HFP/HF/TCA/BV-04-C: i, F
+HFP/HF/TCA/BV-01-I: f, F
+HFP/HF/TCA/BV-02-I: f
+HFP/HF/TCA/BV-03-I: f
+HFP/HF/TCA/BV-04-I: i, F
 
 HFP/HF/TDS/BV-01-I: (confirm)
 
@@ -141,7 +141,7 @@ HFP/HF/IIA/BV-04-I: D
 
 HFP/HF/HFI/BV-01-I: !, !, !
 
-HFP/HF/VRR/BV-01-I: R, B, r
+HFP/HF/VRR/BV-01-I: R, r
 
 HFP/HF/VTA/BV-01-I: R, R
 
