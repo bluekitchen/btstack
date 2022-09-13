@@ -64,7 +64,10 @@
 
 // max config
 #define MAX_CHANNELS 2
+#define MAX_NUM_CIS 1
 #define MAX_SAMPLES_PER_FRAME 480
+#define MAX_LC3_FRAME_BYTES   155
+
 
 static uint8_t adv_data[] = {
         // Manufacturer Specific Data to indicate codec
@@ -124,28 +127,22 @@ static hci_con_handle_t remote_handle;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static unsigned int     next_cis_index;
-static hci_con_handle_t cis_con_handles[MAX_CHANNELS];
-static uint16_t packet_sequence_numbers[MAX_CHANNELS];
+static hci_con_handle_t cis_con_handles[MAX_NUM_CIS];
+static uint16_t packet_sequence_numbers[MAX_NUM_CIS];
 static uint8_t framed_pdus;
-static bool cis_can_send[MAX_CHANNELS];
-static bool cis_has_data[MAX_CHANNELS];
-static bool cis_established[MAX_CHANNELS];
+static bool cis_can_send[MAX_NUM_CIS];
+static bool cis_has_data[MAX_NUM_CIS];
+static bool cis_established[MAX_NUM_CIS];
 static uint8_t iso_frame_counter;
 static uint16_t frame_duration_us;
 static uint8_t num_cis;
+static uint8_t iso_payload[MAX_CHANNELS * MAX_LC3_FRAME_BYTES];
 
 // time stamping
 #ifdef COUNT_MODE
 #define MAX_PACKET_INTERVAL_BINS_MS 50
 static uint32_t send_time_bins[MAX_PACKET_INTERVAL_BINS_MS];
 static uint32_t send_last_ms;
-#endif
-
-// time based sender
-#ifdef GENERATE_AUDIO_WITH_TIMER
-static uint32_t next_send_time_ms;
-static uint32_t next_send_time_additional_us;
-static btstack_timer_source_t send_timer;
 #endif
 
 // lc3 codec config
@@ -184,7 +181,6 @@ static enum {
     APP_W4_WORKING,
     APP_IDLE,
     APP_W4_CIS_COMPLETE,
-    APP_SET_ISO_PATH,
     APP_STREAMING,
     APP_W4_POWER_OFF,
 } app_state = APP_W4_WORKING;
@@ -321,7 +317,12 @@ static void generate_audio(void){
     iso_frame_counter++;
 }
 
-static void encode_and_send(uint8_t cis_index){
+static void encode(uint8_t channel){
+    // encode as lc3
+    lc3_encoder->encode_signed_16(&encoder_contexts[channel], &pcm[channel], num_channels, &iso_payload[channel * MAX_LC3_FRAME_BYTES], octets_per_frame);
+}
+
+static void send_iso_packet(uint8_t cis_index){
 
 #ifdef COUNT_MODE
     if (bis_index == 0) {
@@ -354,22 +355,32 @@ static void encode_and_send(uint8_t cis_index){
     buffer[8] = bis_index;
     memset(&buffer[9], iso_frame_counter, num_channels * octets_per_frame - 1);
 #else
-    // encode as lc3
-    uint8_t channel;
+    // copy encoded payload
+    uint8_t i;
     uint16_t offset = 8;
-    for (channel = 0; channel < num_channels; channel++){
-        lc3_encoder->encode_signed_16(&encoder_contexts[channel], &pcm[channel], num_channels, &buffer[offset], octets_per_frame);
+    for (i=0; i<num_channels;i++) {
+        memcpy(&buffer[offset], &iso_payload[i * MAX_LC3_FRAME_BYTES], octets_per_frame);
         offset += octets_per_frame;
     }
 #endif
+
     // send
-    hci_send_iso_packet_buffer(4 + 0 + 4 + num_channels * octets_per_frame);
+    hci_send_iso_packet_buffer(offset);
 
     if (((packet_sequence_numbers[cis_index] & 0x7f) == 0) && (cis_index == 0)) {
         printf("Encoding time: %u\n", time_generation_ms);
     }
 
     packet_sequence_numbers[cis_index]++;
+}
+
+static void generate_audio_and_encode(uint8_t cis_index){
+    generate_audio();
+    uint8_t i;
+    for (i=0; i<num_channels;i++) {
+        encode(i);
+    }
+    cis_has_data[cis_index] = true;
 }
 
 static void try_send(void){
@@ -380,32 +391,8 @@ static void try_send(void){
     for (i=0; i < num_cis; i++) {
         all_can_send &= cis_can_send[i];
     }
-#ifdef PTS_MODE
-   static uint8_t next_sender;
-    // PTS 8.2 sends a packet after the previous one was received -> it sends at half speed for stereo configuration
-    if (all_can_send) {
-        if (next_sender == 0) {
-            generate_audio();
-        }
-        cis_can_send[next_sender] = false;
-        encode_and_send(next_sender);
-        next_sender = (num_cis - 1) - next_sender;
-    }
-#else
-#ifdef GENERATE_AUDIO_WITH_TIMER
-    for (i=0;i<num_cis;i++){
-        if (hci_is_packet_buffer_reserved()) return;
-        if (cis_has_data[i]){
-            cis_can_send[i] = false;
-            cis_has_data[i] = false;
-            encode_and_send(i);
-            return;
-        }
-    }
-#else
     // check if next audio frame should be produced and send
     if (all_can_send){
-        generate_audio();
         for (i=0; i < num_cis; i++) {
             cis_has_data[i] = true;
         }
@@ -416,40 +403,12 @@ static void try_send(void){
         if (cis_can_send[i] && cis_has_data[i]){
             cis_can_send[i] = false;
             cis_has_data[i] = false;
-            encode_and_send(i);
+            send_iso_packet(i);
+            generate_audio_and_encode(0);
             return;
         }
     }
-#endif
-#endif
 }
-
-#ifdef GENERATE_AUDIO_WITH_TIMER
-static void generate_audio_timer_handler(btstack_timer_source_t *ts){
-
-    generate_audio();
-
-    uint8_t i;
-    for (i=0; i<num_cis;i++) {
-        cis_has_data[i] = true;
-    }
-
-    // next send time based on frame_duration_us
-    next_send_time_additional_us += frame_duration_us % 1000;
-    if (next_send_time_additional_us > 1000){
-        next_send_time_ms++;
-        next_send_time_additional_us -= 1000;
-    }
-    next_send_time_ms += frame_duration_us / 1000;
-
-    uint32_t now = btstack_run_loop_get_time_ms();
-    btstack_run_loop_set_timer(&send_timer, next_send_time_ms - now);
-    btstack_run_loop_add_timer(&send_timer);
-
-    try_send();
-}
-#endif
-
 
 static void start_unicast() {// use values from table
     sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
@@ -557,6 +516,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("All CIS Established and ISO Path setup\n");
                         next_cis_index = 0;
                         app_state = APP_STREAMING;
+                        generate_audio_and_encode(0);
                     }
                     break;
                 }
@@ -574,7 +534,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     uint16_t num_packets = little_endian_read_16(packet, offset);
                     offset += 2u;
                     uint8_t j;
-                    for (j=0 ; j < num_channels ; j++){
+                    for (j=0 ; j < num_cis ; j++){
                         if (handle == cis_con_handles[j]){
                             // allow to send
                             cis_can_send[j] = true;
