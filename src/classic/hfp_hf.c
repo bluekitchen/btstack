@@ -1071,7 +1071,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
     }
 }
 
-static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
+static void hfp_hf_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
 
     hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
@@ -1168,16 +1168,16 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
                     if (has_hf_indicators_feature(hfp_connection)){
                         hfp_connection->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
                         break;
-                    } 
-                    hfp_ag_slc_established(hfp_connection);
+                    }
+                    hfp_hf_slc_established(hfp_connection);
                     break;
                 
                 case HFP_W4_RETRIEVE_CAN_HOLD_CALL:
                     if (has_hf_indicators_feature(hfp_connection)){
                         hfp_connection->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
                         break;
-                    } 
-                    hfp_ag_slc_established(hfp_connection);
+                    }
+                    hfp_hf_slc_established(hfp_connection);
                     break;
                 
                 case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
@@ -1189,7 +1189,7 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
                     break;
                             
                 case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-                    hfp_ag_slc_established(hfp_connection);
+                    hfp_hf_slc_established(hfp_connection);
                     break;
                 case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     if (hfp_connection->enable_status_update_for_ag_indicators != 0xFF){
