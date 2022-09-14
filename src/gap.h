@@ -773,6 +773,23 @@ uint8_t gap_periodic_advertising_start(uint8_t advertising_handle, bool include_
 uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle);
 
 /**
+ * @brief Set Default Periodic Advertising Sync Transfer Parameters
+ * @note The parameters are used for all subsequent connections over the LE transport.
+ *       If mode != 0, an HCI_LE_Periodic_Advertising_Sync_Transfer_Received event will be emitted by the Controller
+ * @param mode 0 = ignore (default), 1 = periodic advertising events disabled
+ *             2 = periodic advertising events enabled with duplicate filtering
+ *             3 = periodic advertising events enabled with duplicate filtering
+ * @return status
+ * @param skip The number of periodic advertising packets that can be skipped after a successful receive
+ * @param sync_timeout Range: 0x000A to 0x4000, Time = N*10 ms, Time Range: 100 ms to 163.84 s
+ * @param cte_type  bit 0 = Do not sync to packets with an AoA Constant Tone Extension
+ *                  bit 1 = Do not sync to packets with an AoD Constant Tone Extension with 1 μs slots
+ *                  bit 2 = Do not sync to packets with an AoD Constant Tone Extension with 2 μs slots
+ *                  bit 3 = Do not sync to packets without a Constant Tone Extension
+ */
+uint8_t gap_periodic_advertising_sync_transfer_set_default_parameters(uint8_t mode, uint16_t skip, uint16_t sync_timeout, uint8_t cte_type);
+
+/**
  * @brief Remove advertising set from Controller
  * @param advertising_handle
  * @return status

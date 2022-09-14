@@ -1165,6 +1165,7 @@ typedef struct {
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     btstack_linked_list_t le_periodic_advertiser_list;
     uint16_t        le_periodic_terminate_sync_handle;
+
     // Periodic Advertising Sync parameters
     uint8_t         le_periodic_sync_options;
     uint8_t         le_periodic_sync_advertising_sid;
@@ -1175,6 +1176,13 @@ typedef struct {
     uint8_t         le_periodic_sync_cte_type;
     le_connecting_state_t le_periodic_sync_state;
     le_connecting_state_t le_periodic_sync_request;
+
+    // Periodic Advertising Sync Transfer (PAST)
+    bool     le_past_set_default_params;
+    uint8_t  le_past_mode;
+    uint16_t le_past_skip;
+    uint16_t le_past_sync_timeout;
+    uint8_t  le_past_cte_type;
 #endif
 #endif
 

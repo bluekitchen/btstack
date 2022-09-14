@@ -6205,6 +6205,22 @@ static bool hci_run_general_gap_le(void){
 #endif
 #endif
 
+#ifdef ENABLE_LE_CENTRAL
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
+    if (hci_stack->le_past_set_default_params){
+        hci_stack->le_past_set_default_params = false;
+        hci_send_cmd(&hci_le_set_default_periodic_advertising_sync_transfer_parameters,
+                     hci_stack->le_past_mode,
+                     hci_stack->le_past_skip,
+                     hci_stack->le_past_sync_timeout,
+                     hci_stack->le_past_cte_type);
+        return true;
+    }
+#endif
+#endif
+#endif
+
     // post-pone all actions until stack is fully working
     if (hci_stack->state != HCI_STATE_WORKING) return false;
 
@@ -8138,6 +8154,17 @@ uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle){
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t gap_periodic_advertising_sync_transfer_set_default_parameters(uint8_t mode, uint16_t skip, uint16_t sync_timeout, uint8_t cte_type){
+    hci_stack->le_past_mode = mode;
+    hci_stack->le_past_skip = skip;
+    hci_stack->le_past_sync_timeout = sync_timeout;
+    hci_stack->le_past_cte_type = cte_type;
+    hci_stack->le_past_set_default_params = true;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
 #endif /* ENABLE_LE_PERIODIC_ADVERTISING */
 
 #endif
