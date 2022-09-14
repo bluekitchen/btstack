@@ -722,6 +722,9 @@ typedef struct {
     // packets to skip due to queuing them to late before
     uint8_t num_packets_to_skip;
 
+    // request to send
+    bool can_send_now_requested;
+
     // ready to send
     bool emit_ready_to_send;
 
@@ -1411,6 +1414,14 @@ uint8_t hci_send_sco_packet_buffer(int size);
  *       so packet handler should be ready to handle it
  */
 uint8_t hci_request_bis_can_send_now_events(uint8_t big_handle);
+
+/**
+ * @brief Request emission of HCI_EVENT_CIS_CAN_SEND_NOW for CIS as soon as possible
+ * @param cis_con_handle
+ * @note HCI_EVENT_CIS_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ */
+uint8_t hci_request_cis_can_send_now_events(hci_con_handle_t cis_con_handle);
 
 /**
  * @brief Send ISO packet prepared in HCI packet buffer

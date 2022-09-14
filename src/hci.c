@@ -9414,6 +9414,15 @@ static void hci_emit_bis_can_send_now(const le_audio_big_t *big, uint8_t bis_ind
     hci_emit_event(&event[0], sizeof(event), 0);  // don't dump
 }
 
+static void hci_emit_cis_can_send_now(hci_con_handle_t cis_con_handle) {
+    uint8_t event[4];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_CIS_CAN_SEND_NOW;
+    event[pos++] = sizeof(event) - 2;
+    little_endian_store_16(event, pos, cis_con_handle);
+    hci_emit_event(&event[0], sizeof(event), 0);  // don't dump
+}
+
 static le_audio_big_t * hci_big_for_handle(uint8_t big_handle){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
@@ -9455,6 +9464,9 @@ static le_audio_cig_t * hci_cig_for_id(uint8_t cig_id){
 }
 
 static void hci_iso_notify_can_send_now(void){
+
+    // BIG
+
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -9530,6 +9542,17 @@ static void hci_iso_notify_can_send_now(void){
                 hci_emit_bis_can_send_now(big, i);
                 break;
             }
+        }
+    }
+
+    // CIS
+    btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        hci_iso_stream_t *iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+        if ((iso_stream->can_send_now_requested) &&
+            (iso_stream->num_packets_sent < hci_stack->iso_packets_to_queue)){
+            iso_stream->can_send_now_requested = false;
+            hci_emit_cis_can_send_now(iso_stream->con_handle);
         }
     }
 }
@@ -9656,6 +9679,19 @@ uint8_t hci_request_bis_can_send_now_events(uint8_t big_handle){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     big->can_send_now_requested = true;
+    hci_iso_notify_can_send_now();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hci_request_cis_can_send_now_events(hci_con_handle_t cis_con_handle){
+    hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(cis_con_handle);
+    if (iso_stream == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if ((iso_stream->iso_type != HCI_ISO_TYPE_CIS) && (iso_stream->state != HCI_ISO_STREAM_STATE_ESTABLISHED)) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    iso_stream->can_send_now_requested = true;
     hci_iso_notify_can_send_now();
     return ERROR_CODE_SUCCESS;
 }
