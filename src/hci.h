@@ -654,6 +654,11 @@ typedef struct {
     // ATT Server
     att_server_t    att_server;
 
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
+    hci_con_handle_t le_past_sync_handle;
+    uint16_t         le_past_service_data;
+#endif
+
 #endif
 
     l2cap_state_t l2cap_state;

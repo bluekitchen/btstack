@@ -790,6 +790,15 @@ uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle);
 uint8_t gap_periodic_advertising_sync_transfer_set_default_parameters(uint8_t mode, uint16_t skip, uint16_t sync_timeout, uint8_t cte_type);
 
 /**
+ * @brief Send Periodic Advertising Sync Transfer to connected device
+ * @param con_handle of connected device
+ * @param service_data 16-bit data to trasnfer to remote host
+ * @param sync_handle of periodic advertising train to transfer
+ * @return
+ */
+uint8_t gap_periodic_advertising_sync_transfer_send(hci_con_handle_t con_handle, uint16_t service_data, hci_con_handle_t sync_handle);
+
+/**
  * @brief Remove advertising set from Controller
  * @param advertising_handle
  * @return status
