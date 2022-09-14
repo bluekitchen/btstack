@@ -133,6 +133,8 @@ static const uint8_t    big_handle = 1;
 static hci_con_handle_t sync_handle;
 static hci_con_handle_t bis_con_handles[MAX_NUM_BIS];
 static unsigned int     next_bis_index;
+static uint8_t          encryption;
+static uint8_t          broadcast_code [] = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
 
 // analysis
 static bool     last_packet_received_big;
@@ -356,6 +358,10 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
 static void handle_big_info(const uint8_t * packet, uint16_t size){
     printf("BIG Info advertising report\n");
     sync_handle = hci_subevent_le_biginfo_advertising_report_get_sync_handle(packet);
+    encryption = hci_subevent_le_biginfo_advertising_report_get_encryption(packet);
+    if (encryption) {
+        printf("Stream is encrypted\n");
+    }
     have_big_info = true;
 }
 
@@ -397,8 +403,12 @@ static void enter_create_big_sync(void){
 
     big_sync_params.big_handle = big_handle;
     big_sync_params.sync_handle = sync_handle;
-    big_sync_params.encryption = 0;
-    memset(big_sync_params.broadcast_code, 0, 16);
+    big_sync_params.encryption = encryption;
+    if (encryption) {
+        memcpy(big_sync_params.broadcast_code, &broadcast_code[0], 16);
+    } else {
+        memset(big_sync_params.broadcast_code, 0, 16);
+    }
     big_sync_params.mse = 0;
     big_sync_params.big_sync_timeout_10ms = 100;
     big_sync_params.num_bis = num_bis;

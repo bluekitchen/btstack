@@ -253,6 +253,10 @@ static tracker_buffer_state trkbuf;
 static uint8_t  sine_step;
 static uint16_t sine_phases[MAX_NUM_BIS];
 
+// encryption
+static uint8_t encryption = 0;
+static uint8_t broadcast_code [] = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+
 // audio producer
 static enum {
     AUDIO_SOURCE_SINE,
@@ -328,13 +332,13 @@ static struct {
 static void show_usage(void);
 
 static void print_config(void) {
-    printf("Config '%s_%u': %u, %s ms, %u octets - %s\n",
+    printf("Config '%s_%u': %u, %s ms, %u octets - %s%s\n",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
            num_bis,
            codec_configurations[menu_sampling_frequency].samplingrate_hz,
            codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame,
-           audio_source == AUDIO_SOURCE_SINE ? "Sine" : "Modplayer");
+           audio_source == AUDIO_SOURCE_SINE ? "Sine" : "Modplayer", encryption ? " (encrypted)" : "");
 }
 
 static void setup_lc3_encoder(void){
@@ -494,8 +498,12 @@ static void setup_big(void){
     big_params.rtn = 2;
     big_params.phy = 2;
     big_params.packing = 0;
-    big_params.encryption = 0;
-    memset(big_params.broadcast_code, 0, 16);
+    big_params.encryption = encryption;
+    if (encryption) {
+        memcpy(big_params.broadcast_code, &broadcast_code[0], 16);
+    } else {
+        memset(big_params.broadcast_code, 0, 16);
+    }
     if (sampling_frequency_hz == 44100){
         // same config as for 48k -> frame is longer by 48/44.1
         big_params.sdu_interval_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
@@ -608,6 +616,7 @@ static void show_usage(void){
     print_config();
     printf("---\n");
     printf("c - toggle channels\n");
+    printf("e - toggle encryption\n");
     printf("f - next sampling frequency\n");
     printf("v - next codec variant\n");
     printf("t - toggle sine / modplayer\n");
@@ -623,6 +632,14 @@ static void stdin_process(char c){
                 break;
             }
             num_bis = 3 - num_bis;
+            print_config();
+            break;
+        case 'e':
+            if (app_state != APP_IDLE){
+                printf("Encryption can only be changed in idle state\n");
+                break;
+            }
+            encryption = 1 - encryption;
             print_config();
             break;
         case 'f':
