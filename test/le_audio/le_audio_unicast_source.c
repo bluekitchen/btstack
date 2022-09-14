@@ -130,8 +130,6 @@ static unsigned int     next_cis_index;
 static hci_con_handle_t cis_con_handles[MAX_NUM_CIS];
 static uint16_t packet_sequence_numbers[MAX_NUM_CIS];
 static uint8_t framed_pdus;
-static bool cis_can_send[MAX_NUM_CIS];
-static bool cis_has_data[MAX_NUM_CIS];
 static bool cis_established[MAX_NUM_CIS];
 static uint8_t iso_frame_counter;
 static uint16_t frame_duration_us;
@@ -380,34 +378,6 @@ static void generate_audio_and_encode(uint8_t cis_index){
     for (i=0; i<num_channels;i++) {
         encode(i);
     }
-    cis_has_data[cis_index] = true;
-}
-
-static void try_send(void){
-    if (app_state != APP_STREAMING) return;
-
-    bool all_can_send = true;
-    uint8_t i;
-    for (i=0; i < num_cis; i++) {
-        all_can_send &= cis_can_send[i];
-    }
-    // check if next audio frame should be produced and send
-    if (all_can_send){
-        for (i=0; i < num_cis; i++) {
-            cis_has_data[i] = true;
-        }
-    }
-
-    for (i=0; i < num_cis; i++){
-        if (hci_is_packet_buffer_reserved()) return;
-        if (cis_can_send[i] && cis_has_data[i]){
-            cis_can_send[i] = false;
-            cis_has_data[i] = false;
-            send_iso_packet(i);
-            generate_audio_and_encode(0);
-            return;
-        }
-    }
 }
 
 static void start_unicast() {// use values from table
@@ -454,6 +424,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     if (packet_type != HCI_EVENT_PACKET) return;
 
     bd_addr_t event_addr;
+    hci_con_handle_t cis_con_handle;
+    uint8_t i;
 
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
@@ -496,10 +468,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)) {
                 case GAP_SUBEVENT_CIS_CREATED: {
-                    uint8_t i;
-                    hci_con_handle_t cis_handle = gap_subevent_cis_created_get_cis_con_handle(packet);
+                    cis_con_handle = gap_subevent_cis_created_get_cis_con_handle(packet);
                     for (i=0; i < num_cis; i++){
-                        if (cis_handle == cis_con_handles[i]){
+                        if (cis_con_handle == cis_con_handles[i]){
                             cis_established[i] = true;
                         }
                     }
@@ -510,44 +481,31 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     // ready to send
                     if (complete) {
-                        for (i=0; i < num_cis; i++) {
-                            cis_can_send[i] = true;
-                        }
                         printf("All CIS Established and ISO Path setup\n");
                         next_cis_index = 0;
                         app_state = APP_STREAMING;
                         generate_audio_and_encode(0);
+                        hci_request_cis_can_send_now_events(cis_con_handles[0]);
                     }
                     break;
                 }
             }
             break;
-        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
-            if (size >= 3){
-                uint16_t num_handles = packet[2];
-                if (size != (3u + num_handles * 4u)) break;
-                uint16_t offset = 3;
-                uint16_t i;
-                for (i=0; i<num_handles;i++) {
-                    hci_con_handle_t handle = little_endian_read_16(packet, offset) & 0x0fffu;
-                    offset += 2u;
-                    uint16_t num_packets = little_endian_read_16(packet, offset);
-                    offset += 2u;
-                    uint8_t j;
-                    for (j=0 ; j < num_cis ; j++){
-                        if (handle == cis_con_handles[j]){
-                            // allow to send
-                            cis_can_send[j] = true;
-                        }
-                    }
+        case HCI_EVENT_CIS_CAN_SEND_NOW:
+            cis_con_handle = hci_event_cis_can_send_now_get_cis_con_handle(packet);
+            for (i=0;i<num_cis;i++){
+                if (cis_con_handle == cis_con_handles[i]){
+                    // allow to send
+                    send_iso_packet(i);
+                    generate_audio_and_encode(0);
+                    hci_request_cis_can_send_now_events(cis_con_handles[0]);
                 }
             }
             break;
+
         default:
             break;
     }
-
-    try_send();
 }
 
 static void show_usage(void){
