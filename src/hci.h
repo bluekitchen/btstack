@@ -1144,6 +1144,7 @@ typedef struct {
     le_connecting_state_t le_connecting_request;
 
     bool     le_scanning_param_update;
+    uint8_t  le_scan_filter_duplicates;
     uint8_t  le_scan_type;
     uint8_t  le_scan_filter_policy;
     uint16_t le_scan_interval;

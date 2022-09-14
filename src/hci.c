@@ -6219,11 +6219,11 @@ static bool hci_run_general_gap_le(void){
         hci_stack->le_scanning_active = true;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
         if (hci_extended_advertising_supported()){
-            hci_send_cmd(&hci_le_set_extended_scan_enable, 1, 0, 0, 0);
+            hci_send_cmd(&hci_le_set_extended_scan_enable, 1, hci_stack->le_scan_filter_duplicates, 0, 0);
         } else
 #endif
         {
-            hci_send_cmd(&hci_le_set_scan_enable, 1, 0);
+            hci_send_cmd(&hci_le_set_scan_enable, 1, hci_stack->le_scan_filter_duplicates);
         }
         return true;
     }
@@ -7721,6 +7721,10 @@ void gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t sca
 
 void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
     gap_set_scan_params(scan_type, scan_interval, scan_window, 0);
+}
+
+void gap_set_scan_duplicate_filter(bool enabled){
+    hci_stack->le_scan_filter_duplicates = enabled ? 1 : 0;
 }
 
 uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type){

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP HF: add hfp_hf_set_default_microphone_gain and hfp_hf_set_set_default_speaker_gain for SLC
 - HFP AG: support handling of custom AT commands with hfp_ag_register_custom_at_command
 - HFP AG: send custom unsolicited result code with hfp_ag_send_unsolicited_result_code
+- GAP: allow to enable duplicate filter for LE scanning with gap_set_scan_duplicate_filter
 - GAP: support BIG with gap_big_create and gap_big_terminate
 - GAP: support BIG Sync gap_big_sync_create and gap_big_sync_terminate
 - port: CMake build files in all windows-* ports allow to use Visual Studio 2022

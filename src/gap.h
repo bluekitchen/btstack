@@ -584,6 +584,12 @@ void gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t sca
 void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
 
 /**
+ * @brief Set duplicate filter for LE Scan
+ * @param enabled if enabled, only one advertisements per BD_ADDR is reported, default: false
+ */
+void gap_set_scan_duplicate_filter(bool enabled);
+
+/**
  * @brief Start LE Scan 
  */
 void gap_start_scan(void);
