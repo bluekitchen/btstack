@@ -71,7 +71,7 @@ void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
  *                  - RFCOMM_SERVICE_ALREADY_REGISTERED or 
  *                  - BTSTACK_MEMORY_ALLOC_FAILED if allocation of any of RFCOMM or L2CAP services failed 
  */
-uint8_t hfp_hf_init(uint16_t rfcomm_channel_nr);
+uint8_t hfp_hf_init(uint8_t rfcomm_channel_nr);
 
 /**
  * @brief Set codecs. 
@@ -99,6 +99,24 @@ void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators);
  * @param callback
  */
 void hfp_hf_register_packet_handler(btstack_packet_handler_t callback);
+
+/**
+ * @brief Set microphone gain used during SLC for Volume Synchronization.
+ *
+ * @param gain Valid range: [0,15]
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if invalid gain range
+ */
+uint8_t hfp_hf_set_default_microphone_gain(uint8_t gain);
+
+/**
+ * @brief Set speaker gain used during SLC for Volume Synchronization.
+ *
+ * @param gain Valid range: [0,15]
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if invalid gain range
+ */
+uint8_t hfp_hf_set_default_speaker_gain(uint8_t gain);
 
 /**
  * @brief Establish RFCOMM connection with the AG with given Bluetooth address, 
@@ -281,6 +299,14 @@ uint8_t hfp_hf_connect_calls(hci_con_handle_t acl_handle);
 uint8_t hfp_hf_terminate_call(hci_con_handle_t acl_handle);
 
 /**
+ * @brief Terminate all held calls.
+ *
+ * @param acl_handle
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
+ */
+uint8_t hfp_hf_terminate_held_calls(hci_con_handle_t acl_handle);
+
+/**
  * @brief Initiate outgoing voice call by providing the destination phone number to the AG. 
  *
  * @param acl_handle
@@ -306,7 +332,7 @@ uint8_t hfp_hf_dial_memory(hci_con_handle_t acl_handle, int memory_id);
  */
 uint8_t hfp_hf_redial_last_number(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Enable the “Call Waiting notification” function in the AG. 
  * The AG shall send the corresponding result code to the HF whenever 
  * an incoming call is waiting during an ongoing call. In that event,
@@ -317,7 +343,7 @@ uint8_t hfp_hf_redial_last_number(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_hf_activate_call_waiting_notification(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Disable the “Call Waiting notification” function in the AG.
  *
  * @param acl_handle
@@ -325,7 +351,7 @@ uint8_t hfp_hf_activate_call_waiting_notification(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_hf_deactivate_call_waiting_notification(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Enable the “Calling Line Identification notification” function in the AG. 
  * The AG shall issue the corresponding result code just after every RING indication,
  * when the HF is alerted in an incoming call. In that event,
@@ -334,7 +360,7 @@ uint8_t hfp_hf_deactivate_call_waiting_notification(hci_con_handle_t acl_handle)
  */
 uint8_t hfp_hf_activate_calling_line_notification(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Disable the “Calling Line Identification notification” function in the AG.
  *
  * @param acl_handle
@@ -343,7 +369,7 @@ uint8_t hfp_hf_activate_calling_line_notification(hci_con_handle_t acl_handle);
 uint8_t hfp_hf_deactivate_calling_line_notification(hci_con_handle_t acl_handle);
 
 
-/*
+/**
  * @brief Deactivate echo canceling (EC) and noise reduction (NR) in the AG and emit 
  * HFP_SUBEVENT_ECHO_CANCELING_NOISE_REDUCTION_DEACTIVATE with status ERROR_CODE_SUCCESS if AG supports EC and AG.
  * If the AG supports its own embedded echo canceling and/or noise reduction function, 
@@ -391,7 +417,7 @@ uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle);
 uint8_t hfp_hf_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_t acl_handle);
 
 
-/*
+/**
  * @brief Set microphone gain. 
  *
  * @param acl_handle
@@ -402,7 +428,7 @@ uint8_t hfp_hf_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_
  */
 uint8_t hfp_hf_set_microphone_gain(hci_con_handle_t acl_handle, int gain);
 
-/*
+/**
  * @brief Set speaker gain.
  *
  * @param acl_handle
@@ -413,7 +439,7 @@ uint8_t hfp_hf_set_microphone_gain(hci_con_handle_t acl_handle, int gain);
  */
 uint8_t hfp_hf_set_speaker_gain(hci_con_handle_t acl_handle, int gain);
 
-/*
+/**
  * @brief Instruct the AG to transmit a DTMF code.
  *
  * @param acl_handle
@@ -422,7 +448,7 @@ uint8_t hfp_hf_set_speaker_gain(hci_con_handle_t acl_handle, int gain);
  */
 uint8_t hfp_hf_send_dtmf_code(hci_con_handle_t acl_handle, char code);
 
-/*
+/**
  * @brief Read numbers from the AG for the purpose of creating 
  * a unique voice tag and storing the number and its linked voice
  * tag in the HF’s memory. 
@@ -433,7 +459,7 @@ uint8_t hfp_hf_send_dtmf_code(hci_con_handle_t acl_handle, char code);
  */
 uint8_t hfp_hf_request_phone_number_for_voice_tag(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Query the list of current calls in AG. 
  * The result is received via HFP_SUBEVENT_ENHANCED_CALL_STATUS.
  *
@@ -442,7 +468,7 @@ uint8_t hfp_hf_request_phone_number_for_voice_tag(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_hf_query_current_call_status(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Release a call with index in the AG.
  *
  * @param acl_handle
@@ -451,7 +477,7 @@ uint8_t hfp_hf_query_current_call_status(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_hf_release_call_with_index(hci_con_handle_t acl_handle, int index);
 
-/*
+/**
  * @brief Place all parties of a multiparty call on hold with the 
  * exception of the specified call.
  *
@@ -461,7 +487,7 @@ uint8_t hfp_hf_release_call_with_index(hci_con_handle_t acl_handle, int index);
  */
 uint8_t hfp_hf_private_consultation_with_call(hci_con_handle_t acl_handle, int index);
 
-/*
+/**
  * @brief Query the status of the “Response and Hold” state of the AG.
  * The result is reported via HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS.
  *
@@ -470,7 +496,7 @@ uint8_t hfp_hf_private_consultation_with_call(hci_con_handle_t acl_handle, int i
  */
 uint8_t hfp_hf_rrh_query_status(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Put an incoming call on hold in the AG.
  *
  * @param acl_handle
@@ -478,7 +504,7 @@ uint8_t hfp_hf_rrh_query_status(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_hf_rrh_hold_call(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Accept held incoming call in the AG.
  *
  * @param acl_handle
@@ -486,7 +512,7 @@ uint8_t hfp_hf_rrh_hold_call(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_hf_rrh_accept_held_call(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Reject held incoming call in the AG.
  *
  * @param acl_handle
@@ -494,7 +520,7 @@ uint8_t hfp_hf_rrh_accept_held_call(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_hf_rrh_reject_held_call(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Query the AG subscriber number. The result is reported via HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION.
  *
  * @param acl_handle
@@ -502,7 +528,7 @@ uint8_t hfp_hf_rrh_reject_held_call(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_hf_query_subscriber_number(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Set HF indicator.
  *
  * @param acl_handle
@@ -512,13 +538,26 @@ uint8_t hfp_hf_query_subscriber_number(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, int value);
 
-/*
+/**
  * @brief Tests if in-band ringtone is active on AG (requires SLC)
  *
  * @param acl_handler
  * @return 0 if unknown acl_handle or in-band ring-tone disabled, otherwise 1
  */
 int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle);
+
+/**
+ * @brief Send AT command (most likely a vendor-specific command not part of standard HFP).
+ * @note  Result (OK/ERROR) is reported via HFP_SUBEVENT_COMPLETE
+ *        To receive potential unsolicited result code, add ENABLE_HFP_AT_MESSAGES to get all message via HFP_SUBEVENT_AT_MESSAGE_RECEIVED
+ *
+ * @param acl_handle
+ * @param at_command to send
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if extended audio gateway error report is disabled
+ */
+uint8_t hfp_hf_send_at_command(hci_con_handle_t acl_handle, const char * at_command);
 
 /**
  * @brief De-Init HFP HF

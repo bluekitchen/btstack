@@ -12,6 +12,7 @@ link_libraries(${LIBUSB_LIBRARIES})
 
 # add all directories
 include_directories(../../3rd-party/micro-ecc)
+include_directories(../../3rd-party/lc3-google/include)
 # include_directories(../../3rd-party/bluedroid/decoder/include)
 # include_directories(../../3rd-party/bluedroid/encoder/include)
 # include_directories(../../3rd-party/md5)

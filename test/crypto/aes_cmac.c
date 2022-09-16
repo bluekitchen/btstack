@@ -56,7 +56,8 @@ void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data, int s
 
     // Step 6
     sm_key_t sm_cmac_y;
-    for (int block = 0 ; block < sm_cmac_block_count-1 ; block++){
+    int block;
+    for (block = 0 ; block < sm_cmac_block_count-1 ; block++){
         for (i=0;i<16;i++){
         	sm_cmac_y[i] = sm_cmac_x[i] ^ data[block * 16 + i];
         }

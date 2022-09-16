@@ -47,6 +47,9 @@
 
 #define TABLE_SIZE_441HZ            100
 
+// change to 1 for mono output
+#define NUM_CHANNELS 2
+
 static int sine_phase;
 
 static const int16_t sine_int16[] = {
@@ -65,8 +68,10 @@ static const int16_t sine_int16[] = {
 static void audio_playback(int16_t * pcm_buffer, uint16_t num_samples_to_write){
     int count;
     for (count = 0; count < num_samples_to_write ; count++){
-        pcm_buffer[count * 2]     = sine_int16[sine_phase];
-        pcm_buffer[count * 2 + 1] = sine_int16[sine_phase];
+        unsigned int channel;
+        for (channel = 0; channel < NUM_CHANNELS ; channel++){
+            pcm_buffer[count * NUM_CHANNELS + channel] = sine_int16[sine_phase];
+        }
         sine_phase++;
         if (sine_phase >= TABLE_SIZE_441HZ){
             sine_phase -= TABLE_SIZE_441HZ;
@@ -85,7 +90,7 @@ int btstack_main(int argc, const char * argv[]){
         printf("BTstack Audio Sink not setup\n");
         return 10;
     }
-    audio->init(2, 44100, &audio_playback);
+    audio->init(NUM_CHANNELS, 44100, &audio_playback);
     audio->start_stream();
 
     return 0;

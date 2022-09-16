@@ -1,0 +1,2 @@
+// add Heart Rate Service
+#import <heart_rate_service.gatt>

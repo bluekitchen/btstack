@@ -270,7 +270,8 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     }
     (void)memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
     pos += attr_list_size;
-    connection->cmd_operands_length = pos;
+	btstack_assert(pos <= 255);
+    connection->cmd_operands_length = (uint8_t) pos;
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
@@ -316,7 +317,8 @@ uint8_t avrcp_browsing_target_send_accept_set_browsed_player(uint16_t avrcp_brow
     
     (void)memcpy(&connection->cmd_operands[pos], response, response_size);
     pos += response_size;
-    connection->cmd_operands_length = pos;
+	btstack_assert(pos <= 255);
+    connection->cmd_operands_length = (uint8_t) pos;
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);

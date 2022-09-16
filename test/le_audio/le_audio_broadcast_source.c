@@ -66,12 +66,10 @@
 // Count mode - send packet count as test data for manual analysis
 // #define COUNT_MODE
 
-// create audio based on timer instead of num completed packets
-// #define GENERATE_AUDIO_WITH_TIMER
-
 // max config
 #define MAX_NUM_BIS 2
 #define MAX_SAMPLES_PER_FRAME 480
+#define MAX_LC3_FRAME_BYTES   155
 
 static const uint8_t adv_sid = 0;
 
@@ -84,7 +82,7 @@ static const le_extended_advertising_parameters_t extended_params = {
         .primary_advertising_channel_map = 7,
         .own_address_type = 0,
         .peer_address_type = 0,
-        .peer_address = 0,
+        .peer_address =  { 0 },
         .advertising_filter_policy = 0,
         .advertising_tx_power = 10, // 10 dBm
         .primary_advertising_phy = 1, // LE 1M PHY
@@ -218,6 +216,9 @@ static bool bis_has_data[MAX_NUM_BIS];
 static uint8_t iso_frame_counter;
 static uint16_t frame_duration_us;
 
+static le_audio_big_t big_storage;
+static le_audio_big_params_t big_params;
+
 // time stamping
 #ifdef COUNT_MODE
 #define MAX_PACKET_INTERVAL_BINS_MS 50
@@ -225,15 +226,8 @@ static uint32_t send_time_bins[MAX_PACKET_INTERVAL_BINS_MS];
 static uint32_t send_last_ms;
 #endif
 
-// time based sender
-#ifdef GENERATE_AUDIO_WITH_TIMER
-static uint32_t next_send_time_ms;
-static uint32_t next_send_time_additional_us;
-static btstack_timer_source_t send_timer;
-#endif
-
 // lc3 codec config
-static uint32_t sampling_frequency_hz;
+static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
@@ -243,6 +237,7 @@ static uint8_t  num_bis = 1;
 static const btstack_lc3_encoder_t * lc3_encoder;
 static btstack_lc3_encoder_google_t encoder_contexts[MAX_NUM_BIS];
 static int16_t pcm[MAX_NUM_BIS * MAX_SAMPLES_PER_FRAME];
+static uint8_t iso_payload[MAX_NUM_BIS * MAX_LC3_FRAME_BYTES];
 static uint32_t time_generation_ms;
 
 // codec menu
@@ -258,6 +253,10 @@ static tracker_buffer_state trkbuf;
 static uint8_t  sine_step;
 static uint16_t sine_phases[MAX_NUM_BIS];
 
+// encryption
+static uint8_t encryption = 0;
+static uint8_t broadcast_code [] = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+
 // audio producer
 static enum {
     AUDIO_SOURCE_SINE,
@@ -266,16 +265,14 @@ static enum {
 
 static enum {
     APP_IDLE,
-    APP_W4_PERIODIC_ENABLED,
-    APP_CREATE_BIG,
     APP_W4_CREATE_BIG_COMPLETE,
-    APP_SET_ISO_PATH,
-    APP_STREAMING
+    APP_STREAMING,
+    APP_W4_POWER_OFF,
 } app_state = APP_IDLE;
 
 // enumerate default codec configs
 static struct {
-    uint32_t samplingrate_hz;
+    uint16_t samplingrate_hz;
     uint8_t  samplingrate_index;
     uint8_t  num_variants;
     struct {
@@ -335,13 +332,13 @@ static struct {
 static void show_usage(void);
 
 static void print_config(void) {
-    printf("Config '%s_%u': %u, %s ms, %u octets - %s\n",
+    printf("Config '%s_%u': %u, %s ms, %u octets - %s%s\n",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
            num_bis,
            codec_configurations[menu_sampling_frequency].samplingrate_hz,
            codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame,
-           audio_source == AUDIO_SOURCE_SINE ? "Sine" : "Modplayer");
+           audio_source == AUDIO_SOURCE_SINE ? "Sine" : "Modplayer", encryption ? " (encrypted)" : "");
 }
 
 static void setup_lc3_encoder(void){
@@ -405,7 +402,13 @@ static void generate_audio(void){
     iso_frame_counter++;
 }
 
-static void encode_and_send(uint8_t bis_index){
+static void encode(uint8_t bis_index){
+    // encode as lc3
+    lc3_encoder->encode_signed_16(&encoder_contexts[bis_index], &pcm[bis_index], num_bis, &iso_payload[bis_index * MAX_LC3_FRAME_BYTES], octets_per_frame);
+}
+
+
+static void send_iso_packet(uint8_t bis_index) {
 
 #ifdef COUNT_MODE
     if (bis_index == 0) {
@@ -438,109 +441,135 @@ static void encode_and_send(uint8_t bis_index){
     buffer[8] = bis_index;
     memset(&buffer[9], iso_frame_counter, octets_per_frame - 1);
 #else
-    // encode as lc3
-    lc3_encoder->encode_signed_16(&encoder_contexts[bis_index], &pcm[bis_index], num_bis, &buffer[8], octets_per_frame);
+    // copy encoded payload
+    memcpy(&buffer[8], &iso_payload[bis_index * MAX_LC3_FRAME_BYTES], octets_per_frame);
 #endif
     // send
     hci_send_iso_packet_buffer(4 + 0 + 4 + octets_per_frame);
 
+#ifdef HAVE_POSIX_FILE_IO
     if (((packet_sequence_numbers[bis_index] & 0x7f) == 0) && (bis_index == 0)) {
         printf("Encoding time: %u\n", time_generation_ms);
     }
-    if ((packet_sequence_numbers[bis_index] & 0x7c) == 0){
-        printf("%04x %10u %u ", packet_sequence_numbers[bis_index], btstack_run_loop_get_time_ms(), bis_index);
-        printf_hexdump(&buffer[8], octets_per_frame);
-    }
+#endif
 
     packet_sequence_numbers[bis_index]++;
 }
 
-static void try_send(void){
-    bool all_can_send = true;
+static void generate_audio_and_encode(void){
     uint8_t i;
-    for (i=0; i<num_bis;i++) {
-        all_can_send &= bis_can_send[i];
-    }
-#ifdef PTS_MODE
-   static uint8_t next_sender;
-    // PTS 8.2 sends a packet after the previous one was received -> it sends at half speed for stereo configuration
-    if (all_can_send) {
-        if (next_sender == 0) {
-            generate_audio();
-        }
-        bis_can_send[next_sender] = false;
-        encode_and_send(next_sender);
-        next_sender = (num_bis - 1) - next_sender;
-    }
-#else
-#ifdef GENERATE_AUDIO_WITH_TIMER
-    for (i=0;i<num_bis;i++){
-        if (hci_is_packet_buffer_reserved()) return;
-        if (bis_has_data[i]){
-            bis_can_send[i] = false;
-            bis_has_data[i] = false;
-            encode_and_send(i);
-            return;
-        }
-    }
-#else
-    // check if next audio frame should be produced and send
-    if (all_can_send){
-        generate_audio();
-        for (i=0; i<num_bis;i++) {
-            bis_has_data[i] = true;
-        }
-    }
-
-    for (i=0;i<num_bis;i++){
-        if (hci_is_packet_buffer_reserved()) return;
-        if (bis_can_send[i] && bis_has_data[i]){
-            bis_can_send[i] = false;
-            bis_has_data[i] = false;
-            encode_and_send(i);
-            return;
-        }
-    }
-#endif
-#endif
-}
-
-#ifdef GENERATE_AUDIO_WITH_TIMER
-static void generate_audio_timer_handler(btstack_timer_source_t *ts){
-
     generate_audio();
-
-    uint8_t i;
-    for (i=0; i<num_bis;i++) {
+    for (i = 0; i < num_bis; i++) {
+        encode(i);
         bis_has_data[i] = true;
     }
-
-    // next send time based on frame_duration_us
-    next_send_time_additional_us += frame_duration_us % 1000;
-    if (next_send_time_additional_us > 1000){
-        next_send_time_ms++;
-        next_send_time_additional_us -= 1000;
-    }
-    next_send_time_ms += frame_duration_us / 1000;
-
-    uint32_t now = btstack_run_loop_get_time_ms();
-    btstack_run_loop_set_timer(&send_timer, next_send_time_ms - now);
-    btstack_run_loop_add_timer(&send_timer);
-
-    try_send();
 }
-#endif
+
+static void setup_advertising() {
+    gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
+    gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
+    gap_periodic_advertising_set_params(adv_handle, &periodic_params);
+    switch(num_bis){
+        case 1:
+            gap_periodic_advertising_set_data(adv_handle, sizeof(periodic_adv_data_1), periodic_adv_data_1);
+            printf("BASE: ");
+            printf_hexdump(periodic_adv_data_1, sizeof(periodic_adv_data_1));
+            break;
+        case 2:
+            gap_periodic_advertising_set_data(adv_handle, sizeof(periodic_adv_data_2), periodic_adv_data_2);
+            printf("BASE: ");
+            printf_hexdump(periodic_adv_data_2, sizeof(periodic_adv_data_2));
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+    gap_periodic_advertising_start(adv_handle, 0);
+    gap_extended_advertising_start(adv_handle, 0, 0);
+}
+
+static void setup_big(void){
+    // Create BIG
+    big_params.big_handle = 0;
+    big_params.advertising_handle = adv_handle;
+    big_params.num_bis = num_bis;
+    big_params.max_sdu = octets_per_frame;
+    big_params.max_transport_latency_ms = 31;
+    big_params.rtn = 2;
+    big_params.phy = 2;
+    big_params.packing = 0;
+    big_params.encryption = encryption;
+    if (encryption) {
+        memcpy(big_params.broadcast_code, &broadcast_code[0], 16);
+    } else {
+        memset(big_params.broadcast_code, 0, 16);
+    }
+    if (sampling_frequency_hz == 44100){
+        // same config as for 48k -> frame is longer by 48/44.1
+        big_params.sdu_interval_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
+        big_params.framing = 1;
+    } else {
+        big_params.sdu_interval_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
+        big_params.framing = 0;
+    }
+    app_state = APP_W4_CREATE_BIG_COMPLETE;
+    gap_big_create(&big_storage, &big_params);
+}
+
+
+static void start_broadcast() {// use values from table
+    sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
+    octets_per_frame      = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+    frame_duration        = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration;
+
+    // get num samples per frame
+    setup_lc3_encoder();
+
+    // update BASEs
+    periodic_adv_data_1[17] = codec_configurations[menu_sampling_frequency].samplingrate_index;
+    periodic_adv_data_1[20] = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;
+    little_endian_store_16(periodic_adv_data_1, 23, octets_per_frame);
+
+    periodic_adv_data_2[17] = codec_configurations[menu_sampling_frequency].samplingrate_index;
+    periodic_adv_data_2[20] = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;
+    little_endian_store_16(periodic_adv_data_2, 23, octets_per_frame);
+
+    // setup mod player
+    setup_mod_player();
+
+    // setup sine generator
+    if (sampling_frequency_hz == 44100){
+        sine_step = 2;
+    } else {
+        sine_step = 96000 / sampling_frequency_hz;
+    }
+
+    // setup extended and periodic advertising
+    setup_advertising();
+
+    // setup big
+    setup_big();
+}
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
+    uint8_t bis_index;
 
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
+#ifdef ENABLE_DEMO_MODE
+                    // start broadcast automatically, mod player, 48_5_1
+                    num_bis = 1;
+                    menu_sampling_frequency = 5;
+                    menu_variant = 4;
+                    start_broadcast();
+#else
                     show_usage();
                     printf("Please select sample frequency and variation, then start broadcast\n");
+#endif
                     break;
                 case HCI_STATE_OFF:
                     printf("Goodbye\n");
@@ -550,104 +579,36 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             }
             break;
-        case HCI_EVENT_COMMAND_COMPLETE:
-            switch (hci_event_command_complete_get_command_opcode(packet)){
-                case HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_ENABLE:
-                    if (app_state != APP_W4_PERIODIC_ENABLED) break;
-                    app_state = APP_CREATE_BIG;
-                    break;
-                case HCI_OPCODE_HCI_LE_SETUP_ISO_DATA_PATH:
-                    next_bis_index++;
-                    if (next_bis_index == num_bis){
-                        printf("%u ISO path(s) set up\n", num_bis);
-                        // ready to send
-                        uint8_t i;
-                        for (i=0;i<num_bis;i++) {
-                            bis_can_send[i] = true;
-                        }
-                        app_state = APP_STREAMING;
-                        //
-#ifdef GENERATE_AUDIO_WITH_TIMER
-                        btstack_run_loop_set_timer_handler(&send_timer, &generate_audio_timer_handler);
-                        uint32_t next_send_time_ms = btstack_run_loop_get_time_ms() + 10;
-                        uint32_t now = btstack_run_loop_get_time_ms();
-                        btstack_run_loop_set_timer(&send_timer, next_send_time_ms - now);
-                        btstack_run_loop_add_timer(&send_timer);
-#endif
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_BIG_CREATED:
+                    printf("BIG Created with BIS Connection handles: \n");
+                    for (bis_index=0;bis_index<num_bis;bis_index++){
+                        bis_con_handles[bis_index] = gap_subevent_big_created_get_bis_con_handles(packet, bis_index);
+                        printf("0x%04x ", bis_con_handles[bis_index]);
                     }
-                    break;
-            }
-            break;
-        case HCI_EVENT_LE_META:
-            switch(hci_event_le_meta_get_subevent_code(packet)){
-                case HCI_SUBEVENT_LE_CREATE_BIG_COMPLETE:
-                    if (app_state == APP_W4_CREATE_BIG_COMPLETE){
-                        uint8_t i;
-                        printf("BIS Connection Handles: ");
-                        for (i=0;i<num_bis;i++){
-                            bis_con_handles[i] = little_endian_read_16(packet, 21 + 2*i);
-                            printf("0x%04x ", bis_con_handles[i]);
-                        }
-                        printf("\n");
-                        next_bis_index = 0;
-                        app_state = APP_SET_ISO_PATH;
-                        printf("Start streaming\n");
-                    }
+
+                    app_state = APP_STREAMING;
+                    printf("Start streaming\n");
+                    generate_audio_and_encode();
+                    hci_request_bis_can_send_now_events(big_params.big_handle);
                     break;
                 default:
                     break;
             }
             break;
-        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
-            if (size >= 3){
-                uint16_t num_handles = packet[2];
-                if (size != (3u + num_handles * 4u)) break;
-                uint16_t offset = 3;
-                uint16_t i;
-                for (i=0; i<num_handles;i++) {
-                    hci_con_handle_t handle = little_endian_read_16(packet, offset) & 0x0fffu;
-                    offset += 2u;
-                    uint16_t num_packets = little_endian_read_16(packet, offset);
-                    offset += 2u;
-                    uint8_t j;
-                    for (j=0 ; j<num_bis ; j++){
-                        if (handle == bis_con_handles[j]){
-                            // allow to send
-                            bis_can_send[j] = true;
-                        }
-                    }
-                }
+        case HCI_EVENT_BIS_CAN_SEND_NOW:
+            bis_index = hci_event_bis_can_send_now_get_bis_index(packet);
+            send_iso_packet(bis_index);
+            bis_index++;
+            if (bis_index == num_bis){
+                generate_audio_and_encode();
+                hci_request_bis_can_send_now_events(big_params.big_handle);
             }
             break;
         default:
             break;
     }
-
-    const uint8_t broadcast_code[16] = { 0 };
-    switch(app_state){
-        case APP_CREATE_BIG:
-            if (hci_can_send_command_packet_now()) {
-                app_state = APP_W4_CREATE_BIG_COMPLETE;
-                if (sampling_frequency_hz == 44100){
-                    framed_pdus = 1;
-                    // same config as for 48k -> frame is longer by 48/44.1
-                    frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
-                } else {
-                    framed_pdus = 0;
-                    frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
-                }
-                hci_send_cmd(&hci_le_create_big, 0, adv_handle, num_bis, frame_duration_us, octets_per_frame, 0x1F, 2, 2, 0, framed_pdus, 0, broadcast_code);
-            }
-            break;
-        case APP_SET_ISO_PATH:
-            if (!hci_can_send_command_packet_now()) break;
-            hci_send_cmd(&hci_le_setup_iso_data_path, bis_con_handles[next_bis_index], 0, 0,  0, 0, 0,  0, 0, NULL);
-            break;
-        default:
-            break;
-    }
-
-    try_send();
 }
 
 static void show_usage(void){
@@ -655,6 +616,7 @@ static void show_usage(void){
     print_config();
     printf("---\n");
     printf("c - toggle channels\n");
+    printf("e - toggle encryption\n");
     printf("f - next sampling frequency\n");
     printf("v - next codec variant\n");
     printf("t - toggle sine / modplayer\n");
@@ -662,7 +624,6 @@ static void show_usage(void){
     printf("x - shutdown\n");
     printf("---\n");
 }
-
 static void stdin_process(char c){
     switch (c){
         case 'c':
@@ -671,6 +632,14 @@ static void stdin_process(char c){
                 break;
             }
             num_bis = 3 - num_bis;
+            print_config();
+            break;
+        case 'e':
+            if (app_state != APP_IDLE){
+                printf("Encryption can only be changed in idle state\n");
+                break;
+            }
+            encryption = 1 - encryption;
             print_config();
             break;
         case 'f':
@@ -709,6 +678,7 @@ static void stdin_process(char c){
             }
 #endif
             printf("Shutdown...\n");
+            app_state = APP_W4_POWER_OFF;
             hci_power_control(HCI_POWER_OFF);
             break;
         case 's':
@@ -716,55 +686,7 @@ static void stdin_process(char c){
                 printf("Cannot start broadcast - not in idle state\n");
                 break;
             }
-            // use values from table
-            sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
-            octets_per_frame      = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
-            frame_duration        = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration;
-
-            // get num samples per frame
-            setup_lc3_encoder();
-
-            // update BASEs
-            periodic_adv_data_1[17] = codec_configurations[menu_sampling_frequency].samplingrate_index;
-            periodic_adv_data_1[20] = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;
-            little_endian_store_16(periodic_adv_data_1, 23, octets_per_frame);
-
-            periodic_adv_data_2[17] = codec_configurations[menu_sampling_frequency].samplingrate_index;
-            periodic_adv_data_2[20] = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;
-            little_endian_store_16(periodic_adv_data_2, 23, octets_per_frame);
-
-            // setup mod player
-            setup_mod_player();
-
-            // setup sine generator
-            if (sampling_frequency_hz == 44100){
-                sine_step = 2;
-            } else {
-                sine_step = 96000 / sampling_frequency_hz;
-            }
-
-            // setup
-            app_state = APP_W4_PERIODIC_ENABLED;
-            gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
-            gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
-            gap_periodic_advertising_set_params(adv_handle, &periodic_params);
-            switch(num_bis){
-                case 1:
-                    gap_periodic_advertising_set_data(adv_handle, sizeof(periodic_adv_data_1), periodic_adv_data_1);
-                    printf("BASE: ");
-                    printf_hexdump(periodic_adv_data_1, sizeof(periodic_adv_data_1));
-                    break;
-                case 2:
-                    gap_periodic_advertising_set_data(adv_handle, sizeof(periodic_adv_data_2), periodic_adv_data_2);
-                    printf("BASE: ");
-                    printf_hexdump(periodic_adv_data_2, sizeof(periodic_adv_data_2));
-                    break;
-                default:
-                    btstack_unreachable();
-                    break;
-            }
-            gap_periodic_advertising_start(adv_handle, 0);
-            gap_extended_advertising_start(adv_handle, 0, 0);
+            start_broadcast();
             break;
         case 't':
             audio_source = 1 - audio_source;

@@ -307,7 +307,7 @@ static int hfp_ag_indicators_cmd_generator_num_segments(hfp_connection_t * hfp_c
 // get size of individual segment for hfp_ag_retrieve_indicators_cmd
 static int hfp_ag_indicators_cmd_generator_get_segment_len(hfp_connection_t * hfp_connection, int index){
     if (index == 0) {
-        return strlen(HFP_INDICATOR) + 3;   // "\n\r%s:""
+        return (uint16_t) strlen(HFP_INDICATOR) + 3;   // "\n\r%s:""
     }
     index--;
     int num_indicators = hfp_ag_get_ag_indicators_nr(hfp_connection);
@@ -325,7 +325,7 @@ static void hfp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * hfp
     if (index == 0){
         *buffer++ = '\r';
         *buffer++ = '\n';
-        int len = strlen(HFP_INDICATOR);
+        int len = (uint16_t) strlen(HFP_INDICATOR);
         (void)memcpy(buffer, HFP_INDICATOR, len);
         buffer += len;
         *buffer++ = ':';
@@ -873,6 +873,20 @@ static void hfp_ag_emit_general_simple_event(uint8_t event_subtype){
     event[2] = event_subtype;
     little_endian_store_16(event, 3, HCI_CON_HANDLE_INVALID);
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void hfp_ag_emit_custom_command_event(hfp_connection_t * hfp_connection){
+    btstack_assert(sizeof(hfp_connection->line_buffer) < (255-5));
+
+    uint16_t line_len = strlen((const char*)hfp_connection->line_buffer) + 1;
+    uint8_t event[7 + sizeof(hfp_connection->line_buffer)];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = 5 + line_len;
+    event[2] = HFP_SUBEVENT_CUSTOM_AT_COMMAND;
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    little_endian_store_16(event, 5, hfp_connection->ag_custom_at_command_id);
+    memcpy(&event[7], hfp_connection->line_buffer, line_len);
+    (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, 7 + line_len);
 }
 
 // @return status
@@ -2070,6 +2084,15 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         return 1;
     }
 
+    // note: before ok_pending and send_error to allow for unsolicited result on custom command
+    if (hfp_connection->send_custom_message != NULL){
+        const char * message = hfp_connection->send_custom_message;
+        hfp_connection->send_custom_message = NULL;
+        send_str_over_rfcomm(hfp_connection->rfcomm_cid, message);
+        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_SUCCESS);
+        return 1;
+    }
+
     if (hfp_connection->ok_pending){
         hfp_connection->ok_pending = 0;
         hfp_connection->command = HFP_CMD_NONE;
@@ -2494,6 +2517,12 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 log_info("HF microphone gain = %u", hfp_connection->microphone_gain);
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_connection->microphone_gain);
                 break;
+            case HFP_CMD_CUSTOM_MESSAGE:
+                hfp_connection->command = HFP_CMD_NONE;
+                hfp_parser_reset_line_buffer(hfp_connection);
+                log_info("Custom AT Command ID 0x%04x", hfp_connection->ag_custom_at_command_id);
+                hfp_ag_emit_custom_command_event(hfp_connection);
+                break;
             case HFP_CMD_UNKNOWN:
                 hfp_connection->command = HFP_CMD_NONE;
                 hfp_connection->send_error = 1;
@@ -2583,7 +2612,7 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
 }
 
 
-void hfp_ag_init(uint16_t rfcomm_channel_nr){
+void hfp_ag_init(uint8_t rfcomm_channel_nr){
 
     hfp_init();
     hfp_ag_call_hold_services_nr = 0;
@@ -3006,7 +3035,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
-    uint16_t message_len = strlen(msg.text);
+    uint16_t message_len = (uint16_t) strlen(msg.text);
 
     if (message_len > HFP_MAX_VR_TEXT_SIZE){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
@@ -3095,6 +3124,33 @@ uint8_t hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle){
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t hfp_ag_send_unsolicited_result_code(hci_con_handle_t acl_handle, const char * unsolicited_result_code){
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
+    if (!hfp_connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (hfp_connection->send_custom_message != NULL){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    hfp_connection->send_custom_message = unsolicited_result_code;
+    hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hfp_ag_send_command_result_code(hci_con_handle_t acl_handle, bool ok){
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
+    if (!hfp_connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (ok){
+        hfp_connection->ok_pending = 1;
+    } else {
+        hfp_connection->send_error = 1;
+    }
+    hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
+}
+
 void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count){
     hfp_ag_subscriber_numbers = numbers;
     hfp_ag_subscriber_numbers_count = numbers_count;
@@ -3169,4 +3225,8 @@ void hfp_ag_register_packet_handler(btstack_packet_handler_t callback){
 
 void hfp_ag_register_custom_call_sm_handler(bool (*handler)(hfp_ag_call_event_t event)){
     hfp_ag_custom_call_sm_handler = handler;
+}
+
+void hfp_ag_register_custom_at_command(hfp_custom_at_command_t * custom_at_command){
+    hfp_register_custom_ag_command(custom_at_command);
 }

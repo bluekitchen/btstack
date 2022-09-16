@@ -70,13 +70,15 @@
 #include "hci_cmd.h"
 #include "btstack_lc3.h"
 #include "btstack_lc3_google.h"
+#include "btstack_lc3plus_fraunhofer.h"
+
+#ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
+#endif
 
 // max config
 #define MAX_CHANNELS 2
 #define MAX_SAMPLES_PER_FRAME 480
-
-#define DUMP_LEN_LC3_FRAMES 1000
 
 // playback
 #define MAX_NUM_LC3_FRAMES   5
@@ -96,18 +98,13 @@
 
 static void show_usage(void);
 
-static const char * filename_lc3 = "le_audio_unicast_sink.lc3";
 static const char * filename_wav = "le_audio_unicast_sink.wav";
 
 static enum {
     APP_W4_WORKING,
-    APP_SET_HOST_FEATURES,
     APP_W4_SOURCE_ADV,
-    APP_CREATE_CIG,
     APP_W4_CIG_COMPLETE,
-    APP_CREATE_CIS,
     APP_W4_CIS_CREATED,
-    APP_SET_ISO_PATHS,
     APP_STREAMING,
     APP_IDLE
 } app_state = APP_W4_WORKING;
@@ -129,6 +126,9 @@ static hci_con_handle_t remote_handle;
 static bool count_mode;
 static bool pts_mode;
 
+static le_audio_cig_t cig;
+static le_audio_cig_params_t cig_params;
+
 // iso info
 static bool framed_pdus;
 static uint16_t frame_duration_us;
@@ -147,20 +147,33 @@ static int dump_file;
 static uint32_t lc3_frames;
 
 // lc3 codec config
-static uint32_t sampling_frequency_hz;
+static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
 static uint8_t  num_channels;
 
 // lc3 decoder
+static bool request_lc3plus_decoder = false;
+static bool use_lc3plus_decoder = false;
 static const btstack_lc3_decoder_t * lc3_decoder;
-static btstack_lc3_decoder_google_t decoder_contexts[MAX_CHANNELS];
 static int16_t pcm[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME];
+
+static btstack_lc3_decoder_google_t google_decoder_contexts[MAX_CHANNELS];
+#ifdef HAVE_LC3PLUS
+static btstack_lc3plus_fraunhofer_decoder_t fraunhofer_decoder_contexts[MAX_CHANNELS];
+#endif
+static void * decoder_contexts[MAX_NR_BIS];
 
 // playback
 static uint8_t playback_buffer_storage[PLAYBACK_BUFFER_SIZE];
 static btstack_ring_buffer_t playback_buffer;
+
+// PLC state
+#define PLC_GUARD_MS 1
+
+static btstack_timer_source_t next_packet_timer;
+static uint16_t               cached_iso_sdu_len;
 
 static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_samples){
     // called from lower-layer but guaranteed to be on main thread
@@ -188,64 +201,52 @@ static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_sam
     btstack_assert(bytes_read == bytes_needed);
 }
 
-static void open_lc3_file(void) {
-    // open lc3 file
-    int oflags = O_WRONLY | O_CREAT | O_TRUNC;
-    dump_file = open(filename_lc3, oflags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (dump_file < 0) {
-        printf("failed to open file %s, errno = %d\n", filename_lc3, errno);
-        return;
-    }
-
-    printf("LC3 binary file: %s\n", filename_lc3);
-
-    // calc bps
-    uint16_t frame_duration_100us = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 75 : 100;
-    uint32_t bits_per_second = (uint32_t) octets_per_frame * num_channels * 8 * 10000 / frame_duration_100us;
-
-    // write header for floating point implementation
-    uint8_t header[18];
-    little_endian_store_16(header, 0, 0xcc1c);
-    little_endian_store_16(header, 2, sizeof(header));
-    little_endian_store_16(header, 4, sampling_frequency_hz / 100);
-    little_endian_store_16(header, 6, bits_per_second / 100);
-    little_endian_store_16(header, 8, num_channels);
-    little_endian_store_16(header, 10, frame_duration_100us * 10);
-    little_endian_store_16(header, 12, 0);
-    little_endian_store_32(header, 14, DUMP_LEN_LC3_FRAMES * number_samples_per_frame);
-    write(dump_file, header, sizeof(header));
-}
-
 static void setup_lc3_decoder(void){
     uint8_t channel;
     for (channel = 0 ; channel < num_channels ; channel++){
-        btstack_lc3_decoder_google_t * decoder_context = &decoder_contexts[channel];
-        lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
+        // pick decoder
+        void * decoder_context = NULL;
+#ifdef HAVE_LC3PLUS
+        if (use_lc3plus_decoder){
+            decoder_context = &fraunhofer_decoder_contexts[channel];
+            lc3_decoder = btstack_lc3plus_fraunhofer_decoder_init_instance(decoder_context);
+        }
+        else
+#endif
+        {
+            decoder_context = &google_decoder_contexts[channel];
+            lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
+        }
+        decoder_contexts[channel] = decoder_context;
         lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration);
     }
-    number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(&decoder_contexts[0]);
+    number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(decoder_contexts[0]);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
 }
 
 static void close_files(void){
+#ifdef HAVE_POSIX_FILE_IO
     printf("Close files\n");
     close(dump_file);
     wav_writer_close();
+#endif
 }
 
 static void enter_streaming(void){
 
+    // switch to lc3plus if requested and possible
+    use_lc3plus_decoder = request_lc3plus_decoder && (frame_duration == BTSTACK_LC3_FRAME_DURATION_10000US);
+
     // init decoder
     setup_lc3_decoder();
 
-    printf("Configure: %u channels, sampling rate %u, samples per frame %u\n", num_channels, sampling_frequency_hz, number_samples_per_frame);
+    printf("Configure: %u channels, sampling rate %u, samples per frame %u, lc3plus %u\n", num_channels, sampling_frequency_hz, number_samples_per_frame, use_lc3plus_decoder);
 
-    // create lc3 file
-    open_lc3_file();
-
+#ifdef HAVE_POSIX_FILE_IO
     // create wav file
     printf("WAV file: %s\n", filename_wav);
     wav_writer_open(filename_wav, num_channels, sampling_frequency_hz);
+#endif
 
     // init playback buffer
     btstack_ring_buffer_init(&playback_buffer, playback_buffer_storage, PLAYBACK_BUFFER_SIZE);
@@ -258,17 +259,66 @@ static void enter_streaming(void){
     }
 }
 
+static void start_scanning() {
+    app_state = APP_W4_SOURCE_ADV;
+    gap_set_scan_params(1, 0x30, 0x30, 0);
+    gap_start_scan();
+    printf("Start scan..\n");
+}
+
+static void create_cig() {
+    if (sampling_frequency_hz == 44100){
+        framed_pdus = 1;
+        // same config as for 48k -> frame is longer by 48/44.1
+        frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
+    } else {
+        framed_pdus = 0;
+        frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
+    }
+
+    printf("Send: LE Set CIG Parameters\n");
+
+    num_cis = 1;
+    cig_params.cig_id = 0;
+    cig_params.num_cis = 1;
+    cig_params.sdu_interval_c_to_p = frame_duration_us;
+    cig_params.sdu_interval_p_to_c = frame_duration_us;
+    cig_params.worst_case_sca = 0; // 251 ppm to 500 ppm
+    cig_params.packing = 0;        // sequential
+    cig_params.framing = framed_pdus;
+    cig_params.max_transport_latency_c_to_p = 40;
+    cig_params.max_transport_latency_p_to_c = 40;
+    uint8_t i;
+    for (i=0; i < num_cis; i++){
+        cig_params.cis_params[i].cis_id = i;
+        cig_params.cis_params[i].max_sdu_c_to_p = 0;
+        cig_params.cis_params[i].max_sdu_p_to_c = num_channels * octets_per_frame;
+        cig_params.cis_params[i].phy_c_to_p = 2;  // 2M
+        cig_params.cis_params[i].phy_p_to_c = 2;  // 2M
+        cig_params.cis_params[i].rtn_c_to_p = 2;
+        cig_params.cis_params[i].rtn_p_to_c = 2;
+    }
+
+    app_state = APP_W4_CIG_COMPLETE;
+    gap_cig_create(&cig, &cig_params);
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     bd_addr_t event_addr;
-    if (packet_type != HCI_EVENT_PACKET) return;
+    hci_con_handle_t cis_handle;
     unsigned int i;
+    if (packet_type != HCI_EVENT_PACKET) return;
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
+#ifdef ENABLE_DEMO_MODE
                     if (app_state != APP_W4_WORKING) break;
-                    app_state = APP_SET_HOST_FEATURES;
+                    start_scanning();
+#else
+                    show_usage();
+#endif
                     break;
                 case HCI_STATE_OFF:
                     printf("Goodbye\n");
@@ -278,22 +328,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             }
             break;
-        case HCI_EVENT_COMMAND_COMPLETE:
-            switch (hci_event_command_complete_get_command_opcode(packet)) {
-                case HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS:
-                    if (app_state == APP_W4_CIG_COMPLETE){
-                        uint8_t i;
-                        printf("CIS Connection Handles: ");
-                        for (i=0; i < num_cis; i++){
-                            cis_con_handles[i] = little_endian_read_16(packet, 8 + 2*i);
-                            printf("0x%04x ", cis_con_handles[i]);
-                        }
-                        printf("\n");
-                        next_cis_index = 0;
-                        app_state = APP_CREATE_CIS;
-                    }
-                default:
-                    break;
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            if (hci_event_disconnection_complete_get_connection_handle(packet) == remote_handle){
+                printf("Disconnected, back to scanning\n");
+                // stop playback
+                const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
+                if (sink != NULL){
+                    sink->stop_stream();
+                }
+
+                start_scanning();
             }
             break;
         case GAP_EVENT_ADVERTISING_REPORT:
@@ -362,17 +406,39 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    app_state = APP_CREATE_CIG;
                     enter_streaming();
                     hci_subevent_le_connection_complete_get_peer_address(packet, event_addr);
                     remote_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                     printf("Connected, remote %s, handle %04x\n", bd_addr_to_str(event_addr), remote_handle);
+                    create_cig();
                     break;
-                case HCI_SUBEVENT_LE_CIS_ESTABLISHED:
-                {
+                default:
+                    break;
+            }
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_CIG_CREATED:
+                    if (app_state == APP_W4_CIG_COMPLETE){
+                        printf("CIS Connection Handles: ");
+                        for (i=0; i < num_cis; i++){
+                            cis_con_handles[i] = gap_subevent_cig_created_get_cis_con_handles(packet, i);
+                            printf("0x%04x ", cis_con_handles[i]);
+                        }
+                        printf("\n");
+                        next_cis_index = 0;
+
+                        printf("Create CIS\n");
+                        hci_con_handle_t acl_connection_handles[MAX_CHANNELS];
+                        for (i=0; i < num_cis; i++){
+                            acl_connection_handles[i] = remote_handle;
+                        }
+                        gap_cis_create(cig_params.cig_id, cis_con_handles, acl_connection_handles);
+                        app_state = APP_W4_CIS_CREATED;
+                    }
+                    break;
+                case GAP_SUBEVENT_CIS_CREATED:
                     // only look for cis handle
-                    uint8_t i;
-                    hci_con_handle_t cis_handle = hci_subevent_le_cis_established_get_connection_handle(packet);
+                    cis_handle = gap_subevent_cis_created_get_cis_con_handle(packet);
                     for (i=0; i < num_cis; i++){
                         if (cis_handle == cis_con_handles[i]){
                             cis_established[i] = true;
@@ -386,113 +452,51 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (complete) {
                         printf("All CIS Established\n");
                         next_cis_index = 0;
-                        app_state = APP_SET_ISO_PATHS;
+                        app_state = APP_STREAMING;
                     }
                     break;
-                }
                 default:
                     break;
             }
         default:
             break;
     }
+}
 
-    if (!hci_can_send_command_packet_now()) return;
-
-    switch(app_state){
-        case APP_SET_HOST_FEATURES:
-            hci_send_cmd(&hci_le_set_host_feature, 32, 1);
-
-            app_state = APP_W4_SOURCE_ADV;
-            gap_set_scan_params(1, 0x30, 0x30, 0);
-            gap_start_scan();
-            printf("Start scan..\n");
-            break;
-        case APP_CREATE_CIG:
-            {
-                if (sampling_frequency_hz == 44100){
-                    framed_pdus = 1;
-                    // same config as for 48k -> frame is longer by 48/44.1
-                    frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
-                } else {
-                    framed_pdus = 0;
-                    frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
-                }
-                printf("Send: LE Set CIG Parameters\n");
-
-                app_state = APP_W4_CIG_COMPLETE;
-
-                num_cis = 1;
-
-                uint8_t  cig_id = 0;
-                uint32_t sdu_interval_c_to_p = frame_duration_us;
-                uint32_t sdu_interval_p_to_c = frame_duration_us;
-                uint8_t worst_case_sca = 0; // 251 ppm to 500 ppm
-                uint8_t packing = 0; // sequential
-                uint8_t framing = framed_pdus; // unframed (44.1 khz requires framed)
-                uint16_t max_transport_latency_c_to_p = 40;
-                uint16_t max_transport_latency_p_to_c = 40;
-                uint8_t  cis_id[MAX_CHANNELS];
-                uint16_t max_sdu_c_to_p[MAX_CHANNELS];
-                uint16_t max_sdu_p_to_c[MAX_CHANNELS];
-                uint8_t phy_c_to_p[MAX_CHANNELS];
-                uint8_t phy_p_to_c[MAX_CHANNELS];
-                uint8_t rtn_c_to_p[MAX_CHANNELS];
-                uint8_t rtn_p_to_c[MAX_CHANNELS];
-                uint8_t i;
-                for (i=0; i < num_cis; i++){
-                    cis_id[i] = i;
-                    max_sdu_c_to_p[i] = 0;
-                    max_sdu_p_to_c[i] = num_channels * octets_per_frame;
-                    phy_c_to_p[i] = 2;  // 2M
-                    phy_p_to_c[i] = 2;  // 2M
-                    rtn_c_to_p[i] = 2;
-                    rtn_p_to_c[i] = 2;
-                }
-                hci_send_cmd(&hci_le_set_cig_parameters,
-                             cig_id,
-                             sdu_interval_c_to_p,
-                             sdu_interval_p_to_c,
-                             worst_case_sca,
-                             packing,
-                             framing,
-                             max_transport_latency_c_to_p,
-                             max_transport_latency_p_to_c,
-                             num_cis,
-                             cis_id,
-                             max_sdu_c_to_p,
-                             max_sdu_p_to_c,
-                             phy_c_to_p,
-                             phy_p_to_c,
-                             rtn_c_to_p,
-                             rtn_p_to_c
-                );
-                break;
-            }
-        case APP_CREATE_CIS:
-            {
-                printf("Create CIS\n");
-                app_state = APP_W4_CIS_CREATED;
-                hci_con_handle_t cis_connection_handle[MAX_CHANNELS];
-                hci_con_handle_t acl_connection_handle[MAX_CHANNELS];
-                uint16_t i;
-                for (i=0; i < num_cis; i++){
-                    cis_connection_handle[i] = cis_con_handles[i];
-                    acl_connection_handle[i] = remote_handle;
-                }
-                hci_send_cmd(&hci_le_create_cis, num_cis, cis_connection_handle, acl_connection_handle);
-                break;
-            }
-        case APP_SET_ISO_PATHS:
-            hci_send_cmd(&hci_le_setup_iso_data_path, cis_con_handles[next_cis_index++], 1, 0, 0, 0, 0, 0, 0, NULL);
-            if (next_cis_index == num_cis){
-                app_state = APP_STREAMING;
-                last_samples_report_ms = btstack_run_loop_get_time_ms();
-            }
-            break;
-        default:
-            break;
+static void store_samples_in_ringbuffer(void){
+#ifdef HAVE_POSIX_FILE_IO
+    // write wav samples
+    wav_writer_write_int16(num_channels * number_samples_per_frame, pcm);
+#endif
+    // store samples in playback buffer
+    uint32_t bytes_to_store = num_channels * number_samples_per_frame * 2;
+    samples_received += number_samples_per_frame;
+    if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
+        btstack_ring_buffer_write(&playback_buffer, (uint8_t *) pcm, bytes_to_store);
+    } else {
+        printf("Samples dropped\n");
+        samples_dropped += number_samples_per_frame;
     }
+}
+
+static void plc_timeout(btstack_timer_source_t * timer) {
+    // set timer again
+    uint32_t frame_duration_ms = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8 : 10;
+    btstack_run_loop_set_timer(&next_packet_timer, frame_duration_ms);
+    btstack_run_loop_set_timer_handler(&next_packet_timer, plc_timeout);
+    btstack_run_loop_add_timer(&next_packet_timer);
+
+    // inject packet
+    uint8_t tmp_BEC_detect;
+    uint8_t BFI = 1;
+    uint8_t channel;
+    for (channel = 0; channel < num_channels; channel++){
+        (void) lc3_decoder->decode_signed_16(decoder_contexts[channel], NULL, cached_iso_sdu_len, BFI,
+                                             &pcm[channel], num_channels,
+                                             &tmp_BEC_detect);
+    }
+
+    store_samples_in_ringbuffer();
 }
 
 static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -558,51 +562,32 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
     } else {
 
-        if ((packet_sequence_number & 0x7c) == 0) {
-            printf("%04x %10u %u ", packet_sequence_number, btstack_run_loop_get_time_ms(), cis_channel);
-            printf_hexdump(&packet[offset], iso_sdu_length);
-        }
-
-        if (lc3_frames < DUMP_LEN_LC3_FRAMES) {
-            // store len header only for first bis
-            if (cis_channel == 0) {
-                uint8_t len_header[2];
-                little_endian_store_16(len_header, 0, iso_sdu_length);
-                write(dump_file, len_header, 2);
-            }
-
-            // store complete sdu
-            write(dump_file, &packet[offset], iso_sdu_length);
-        }
-
         uint8_t channel;
         for (channel = 0 ; channel < num_channels ; channel++){
 
             // decode codec frame
             uint8_t tmp_BEC_detect;
             uint8_t BFI = 0;
-            (void) lc3_decoder->decode_signed_16(&decoder_contexts[channel], &packet[offset], octets_per_frame, BFI,
+            (void) lc3_decoder->decode_signed_16(decoder_contexts[channel], &packet[offset], octets_per_frame, BFI,
                                        &pcm[channel], num_channels,
                                        &tmp_BEC_detect);
             offset += octets_per_frame;
         }
 
-        // write wav samples
-        wav_writer_write_int16(num_channels * number_samples_per_frame, pcm);
-
-        // store samples in playback buffer
-        uint32_t bytes_to_store = num_channels * number_samples_per_frame * 2;
-        samples_received += number_samples_per_frame;
-        if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
-            btstack_ring_buffer_write(&playback_buffer, (uint8_t *) pcm, bytes_to_store);
-        } else {
-            samples_dropped += number_samples_per_frame;
-        }
+        store_samples_in_ringbuffer();
 
         log_info("Samples in playback buffer %5u", btstack_ring_buffer_bytes_available(&playback_buffer) / (num_channels * 2));
 
         lc3_frames++;
         frames_per_second[cis_channel]++;
+
+        // PLC
+        cached_iso_sdu_len = iso_sdu_length;
+        uint32_t frame_duration_ms = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8 : 10;
+        btstack_run_loop_remove_timer(&next_packet_timer);
+        btstack_run_loop_set_timer(&next_packet_timer, frame_duration_ms + PLC_GUARD_MS);
+        btstack_run_loop_set_timer_handler(&next_packet_timer, plc_timeout);
+        btstack_run_loop_add_timer(&next_packet_timer);
 
         uint32_t time_ms = btstack_run_loop_get_time_ms();
         if (btstack_time_delta(time_ms, last_samples_report_ms) > 1000){
@@ -617,22 +602,31 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             samples_received = 0;
             samples_dropped  =  0;
         }
-
-        if (lc3_frames == DUMP_LEN_LC3_FRAMES){
-            close_files();
-        }
     }
 }
 
 static void show_usage(void){
     printf("\n--- LE Audio Unicast Sink Test Console ---\n");
     printf("x - close files and exit\n");
+    printf("s - start scanning\n");
+#ifdef HAVE_LC3PLUS
+    printf("q - use LC3plus decoder if 10 ms ISO interval is used\n");
+#endif
     printf("---\n");
 }
 
 static void stdin_process(char c){
     switch (c){
-        case 'x':
+        case 's':
+            if (app_state != APP_W4_WORKING) break;
+            start_scanning();
+            break;
+#ifdef HAVE_LC3PLUS
+        case 'q':
+            request_lc3plus_decoder = true;
+            break;
+#endif
+            case 'x':
             close_files();
             printf("Shutdown...\n");
             hci_power_control(HCI_POWER_OFF);

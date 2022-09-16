@@ -140,7 +140,7 @@ static hfp_connection_t * get_hfp_hf_connection_context_for_acl_handle(uint16_t 
 
 static void hfp_hf_emit_subscriber_information(const hfp_connection_t * hfp_connection, uint8_t status){
     if (hfp_hf_callback == NULL) return;
-    uint16_t bnip_number_len = btstack_min(strlen(hfp_connection->bnip_number), sizeof(hfp_connection->bnip_number)-1);
+    uint16_t bnip_number_len = btstack_min((uint16_t) strlen(hfp_connection->bnip_number), sizeof(hfp_connection->bnip_number)-1);
     uint8_t event[7 + sizeof(hfp_connection->bnip_number)];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 6 + bnip_number_len;
@@ -155,10 +155,10 @@ static void hfp_hf_emit_subscriber_information(const hfp_connection_t * hfp_conn
 
 static void hfp_hf_emit_type_number_alpha(const hfp_connection_t * hfp_connection, uint8_t event_subtype){
     if (hfp_hf_callback == NULL) return;
-    uint16_t bnip_number_len = btstack_min(strlen(hfp_connection->bnip_number), sizeof(hfp_connection->bnip_number)-1);
+    uint16_t bnip_number_len = btstack_min((uint16_t) strlen(hfp_connection->bnip_number), sizeof(hfp_connection->bnip_number)-1);
     // 10 fixed - 1 (bnip_number_len <= sizeof(hfp_connection->bnip_number)-1) + 1 (trailing \0 for line buffer)
     uint8_t event[10 + sizeof(hfp_connection->bnip_number) + sizeof(hfp_connection->line_buffer)];
-    uint8_t alpha_len = hfp_connection->clip_have_alpha ? strlen((const char *) hfp_connection->line_buffer) : 0;
+    uint8_t alpha_len = hfp_connection->clip_have_alpha ? (uint16_t) strlen((const char *) hfp_connection->line_buffer) : 0;
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = 8 + bnip_number_len + alpha_len;
@@ -180,7 +180,7 @@ static void hfp_hf_emit_type_number_alpha(const hfp_connection_t * hfp_connectio
 static void hfp_hf_emit_enhanced_call_status(const hfp_connection_t * hfp_connection){
     if (hfp_hf_callback == NULL) return;
     
-    uint16_t bnip_number_len = strlen((const char *) hfp_connection->bnip_number);
+    uint16_t bnip_number_len = (uint16_t) strlen((const char *) hfp_connection->bnip_number);
     uint8_t event[11 + HFP_BNEP_NUM_MAX_SIZE];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 10 + bnip_number_len + 1;
@@ -200,7 +200,7 @@ static void hfp_hf_emit_enhanced_call_status(const hfp_connection_t * hfp_connec
 static void hfp_emit_ag_indicator_mapping_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
     if (hfp_hf_callback == NULL) return;
     uint8_t event[8 + HFP_MAX_INDICATOR_DESC_SIZE];
-    uint16_t indicator_len = btstack_min(strlen(indicator->name), HFP_MAX_INDICATOR_DESC_SIZE-1);
+    uint16_t indicator_len = btstack_min((uint16_t) strlen(indicator->name), HFP_MAX_INDICATOR_DESC_SIZE-1);
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 7 + indicator_len;
     event[2] = HFP_SUBEVENT_AG_INDICATOR_MAPPING;
@@ -216,7 +216,7 @@ static void hfp_emit_ag_indicator_mapping_event(const hfp_connection_t * hfp_con
 static void hfp_emit_ag_indicator_status_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
 	if (hfp_hf_callback == NULL) return;
 	uint8_t event[12+HFP_MAX_INDICATOR_DESC_SIZE];
-    uint16_t indicator_len = btstack_min(strlen(indicator->name), HFP_MAX_INDICATOR_DESC_SIZE-1);
+    uint16_t indicator_len = btstack_min((uint16_t) strlen(indicator->name), HFP_MAX_INDICATOR_DESC_SIZE-1);
 	event[0] = HCI_EVENT_HFP_META;
 	event[1] = 11 + indicator_len;
 	event[2] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
@@ -235,7 +235,7 @@ static void hfp_emit_ag_indicator_status_event(const hfp_connection_t * hfp_conn
 
 static void hfp_emit_network_operator_event(const hfp_connection_t * hfp_connection){
     if (hfp_hf_callback == NULL) return;
-    uint16_t operator_len = btstack_min(strlen(hfp_connection->network_operator.name), HFP_MAX_NETWORK_OPERATOR_NAME_SIZE-1);
+    uint16_t operator_len = btstack_min((uint16_t) strlen(hfp_connection->network_operator.name), HFP_MAX_NETWORK_OPERATOR_NAME_SIZE-1);
 	uint8_t event[7+HFP_MAX_NETWORK_OPERATOR_NAME_SIZE];
 	event[0] = HCI_EVENT_HFP_META;
 	event[1] = sizeof(event) - 2;
@@ -1049,6 +1049,15 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         }
     }
 
+    if (hfp_connection->send_custom_message != NULL){
+        const char * message = hfp_connection->send_custom_message;
+        hfp_connection->send_custom_message = NULL;
+        hfp_connection->ok_pending = 1;
+        hfp_connection->response_pending_for_command = HFP_CMD_CUSTOM_MESSAGE;
+        send_str_over_rfcomm(hfp_connection->rfcomm_cid, message);
+        return;
+    }
+
     if (done) return;
     // deal with disconnect
     switch (hfp_connection->state){ 
@@ -1062,7 +1071,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
     }
 }
 
-static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
+static void hfp_hf_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
 
     hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
@@ -1114,9 +1123,18 @@ static void hfp_hf_handle_suggested_codec(hfp_connection_t * hfp_connection){
 static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_t status){
     bool event_emited = true;
 
-    switch (hfp_connection->response_pending_for_command){
+    // cache state and reset
+    hfp_command_t response_pending_for_command = hfp_connection->response_pending_for_command;
+    hfp_connection->response_pending_for_command = HFP_CMD_NONE;
+    hfp_connection->command = HFP_CMD_NONE;
+    hfp_connection->ok_pending = 0;
+
+    switch (response_pending_for_command){
         case HFP_CMD_TURN_OFF_EC_AND_NR:
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
+            break;
+        case HFP_CMD_CUSTOM_MESSAGE:
+            hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, status);
             break;
         default:
             event_emited = false;
@@ -1150,16 +1168,16 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
                     if (has_hf_indicators_feature(hfp_connection)){
                         hfp_connection->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
                         break;
-                    } 
-                    hfp_ag_slc_established(hfp_connection);
+                    }
+                    hfp_hf_slc_established(hfp_connection);
                     break;
                 
                 case HFP_W4_RETRIEVE_CAN_HOLD_CALL:
                     if (has_hf_indicators_feature(hfp_connection)){
                         hfp_connection->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
                         break;
-                    } 
-                    hfp_ag_slc_established(hfp_connection);
+                    }
+                    hfp_hf_slc_established(hfp_connection);
                     break;
                 
                 case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
@@ -1171,18 +1189,18 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
                     break;
                             
                 case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-                    hfp_ag_slc_established(hfp_connection);
+                    hfp_hf_slc_established(hfp_connection);
                     break;
                 case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     if (hfp_connection->enable_status_update_for_ag_indicators != 0xFF){
                         hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
-                        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, 0);
+                        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_SUCCESS);
                         break;
                     }
 
                     if (hfp_connection->change_status_update_for_individual_ag_indicators == 1){
                         hfp_connection->change_status_update_for_individual_ag_indicators = 0;
-                        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, 0);
+                        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_SUCCESS);
                         break;
                     }
 
@@ -1224,10 +1242,6 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
             break;
     }
 
-    // done
-    hfp_connection->response_pending_for_command = HFP_CMD_NONE;
-    hfp_connection->ok_pending = 0;
-    hfp_connection->command = HFP_CMD_NONE;
     return event_emited;
 }   
 
@@ -1364,7 +1378,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             }
             event_emited = hfp_hf_switch_on_ok_pending(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
             if (!event_emited){
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, 1);
+                hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_UNSPECIFIED_ERROR);
             }
             hfp_reset_context_flags(hfp_connection);
             break;
@@ -1473,7 +1487,23 @@ static void hfp_hf_set_defaults(void){
     hfp_hf_indicators_nr = 0;
 }
 
-uint8_t hfp_hf_init(uint16_t rfcomm_channel_nr){
+uint8_t hfp_hf_set_default_microphone_gain(uint8_t gain){
+    if ((gain < 0) || (gain > 15)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    hfp_hf_microphone_gain = gain;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hfp_hf_set_default_speaker_gain(uint8_t gain){
+    if ((gain < 0) || (gain > 15)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    hfp_hf_speaker_gain = gain;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hfp_hf_init(uint8_t rfcomm_channel_nr){
     uint8_t status = rfcomm_register_service(hfp_hf_rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);
     if (status != ERROR_CODE_SUCCESS){
         return status;
@@ -1500,7 +1530,7 @@ void hfp_hf_deinit(void){
 }
 
 void hfp_hf_init_codecs(int codecs_nr, const uint8_t * codecs){
-    btstack_assert(codecs_nr < HFP_MAX_NUM_CODECS);
+    btstack_assert(codecs_nr <= HFP_MAX_NUM_CODECS);
 
     hfp_hf_codecs_nr = codecs_nr;
     int i;
@@ -1519,7 +1549,7 @@ void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators){
     hfp_hf_indicators_nr = indicators_nr;
     int i;
     for (i = 0; i < hfp_hf_indicators_nr ; i++){
-        hfp_hf_indicators[i] = indicators[i];
+        hfp_hf_indicators[i] = (uint8_t) indicators[i];
     }
 }
 
@@ -1717,6 +1747,18 @@ uint8_t hfp_hf_user_busy(hci_con_handle_t acl_handle){
         hfp_connection->hf_send_chld_0 = 1;
         hfp_hf_run_for_context(hfp_connection);
     }
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hfp_hf_terminate_held_calls(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
+    if (!hfp_connection) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    hfp_connection->hf_send_chld_0 = 1;
+    hfp_hf_run_for_context(hfp_connection);
+
     return ERROR_CODE_SUCCESS;
 }
 
@@ -2166,6 +2208,19 @@ uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number
             return ERROR_CODE_SUCCESS;
         }
     }
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hfp_hf_send_at_command(hci_con_handle_t acl_handle, const char * at_command){
+    hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
+    if (!hfp_connection) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (hfp_connection->send_custom_message != NULL){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    hfp_connection->send_custom_message = at_command;
+    hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
 

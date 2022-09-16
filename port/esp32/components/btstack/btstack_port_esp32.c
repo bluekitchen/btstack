@@ -234,6 +234,18 @@ static int transport_open(void){
     if (!bt_controller_initialized){
         bt_controller_initialized = 1;
 
+
+#if CONFIG_IDF_TARGET_ESP32
+#ifndef ENABLE_CLASSIC
+        //  LE-only on ESP32 - release memory used for classic mode
+        ret = esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
+        if (ret) {
+            log_error("Bluetooth controller release classic bt memory failed: %s", esp_err_to_name(ret));
+            return -1;
+        }
+#endif
+#endif
+
         esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
         ret = esp_bt_controller_init(&bt_cfg);
         if (ret) {
@@ -241,18 +253,16 @@ static int transport_open(void){
             return -1;
         }
 
-        esp_vhci_host_register_callback(&vhci_host_cb);
     }
 
-    // Enable classic mode by default
-    esp_bt_mode_t bt_mode = ESP_BT_MODE_CLASSIC_BT;
-
+    // Enable LE mode by default
+    esp_bt_mode_t bt_mode = ESP_BT_MODE_BLE;
+#if CONFIG_IDF_TARGET_ESP32
 #if CONFIG_BTDM_CTRL_MODE_BTDM
-    // enable dual mode
     bt_mode = ESP_BT_MODE_BTDM;
-#elif BTDM_CTRL_MODE_BLE_ONLY
-    // enable bluetooth low energy mode
-    bt_mode = ESP_BT_MODE_BLE;
+#elif BTDM_CTRL_MODE_BR_EDR_ONLY
+    bt_mode = ESP_BT_MODE_CLASSIC_BT;
+#endif
 #endif
 
     ret = esp_bt_controller_enable(bt_mode);
@@ -260,6 +270,8 @@ static int transport_open(void){
         log_error("transport: esp_bt_controller_enable failed");
         return -1;
     }
+
+    esp_vhci_host_register_callback(&vhci_host_cb);
 
     return 0;
 }
@@ -382,12 +394,16 @@ uint8_t btstack_init(void){
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_esp32_get_instance();
     btstack_tlv_set_instance(btstack_tlv_impl, NULL);
 
+#ifdef ENABLE_CLASSIC
     // setup Link Key DB using TLV
     const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, NULL);
     hci_set_link_key_db(btstack_link_key_db);
+#endif
 
+#ifdef ENABLE_BLE
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, NULL);
+#endif
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

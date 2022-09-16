@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 BlueKitchen GmbH
+ * Copyright (C) 2022 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -55,6 +55,11 @@
 #include "btstack_util.h"
 #include "hci.h"
 #include "hci_transport.h"
+
+#ifdef _MSC_VER
+// ignore deprecated warning for fopen
+#pragma warning(disable : 4996)
+#endif
 
 #define ROM_LMP_NONE 0x0000
 #define ROM_LMP_8723a 0x1200
@@ -220,8 +225,8 @@ static void chipset_init(const void *config) {
             state = STATE_DONE;
             return;
         }
-        sprintf(firmware_file, "%s/%s", firmware_folder_path, patch->patch_name);
-        sprintf(config_file, "%s/%s", config_folder_path, patch->config_name);
+        snprintf(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch->patch_name);
+        snprintf(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch->config_name);
         firmware_file_path = &firmware_file[0];
         config_file_path   = &config_file[0];
         lmp_subversion     = patch->lmp_sub;
@@ -273,9 +278,9 @@ static uint32_t read_file(FILE **file, uint8_t **buf, const char *name) {
     }
 
     // read file
-    uint8_t ret = fread(*buf, size, 1, *file);
+    size_t ret = fread(*buf, size, 1, *file);
     if (ret != 1) {
-        log_info("Failed to read %u bytes from file %s (ret = %u)", size, name, ret);
+        log_info("Failed to read %u bytes from file %s (ret = %d)", size, name, (int) ret);
         fclose(*file);
         free(*buf);
         *file = NULL;

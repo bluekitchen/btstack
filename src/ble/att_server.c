@@ -349,8 +349,9 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     }
                     break;
 
-                case HCI_EVENT_ENCRYPTION_CHANGE: 
-                case HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE: 
+                case HCI_EVENT_ENCRYPTION_CHANGE:
+                case HCI_EVENT_ENCRYPTION_CHANGE_V2:
+                case HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE:
                 	// check handle
                     con_handle = little_endian_read_16(packet, 3);
                     hci_connection = hci_connection_for_handle(con_handle);

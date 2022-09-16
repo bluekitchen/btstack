@@ -241,11 +241,8 @@ typedef enum {
 typedef enum {
     SEND_CREATE_CONNECTION = 0,
     SENT_CREATE_CONNECTION,
-    SEND_CANCEL_CONNECTION,
-    SENT_CANCEL_CONNECTION,
     RECEIVED_CONNECTION_REQUEST,
     ACCEPTED_CONNECTION_REQUEST,
-    REJECTED_CONNECTION_REQUEST,
     OPEN,
     SEND_DISCONNECT,
     SENT_DISCONNECT,
@@ -657,6 +654,11 @@ typedef struct {
     // ATT Server
     att_server_t    att_server;
 
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
+    hci_con_handle_t le_past_sync_handle;
+    uint16_t         le_past_service_data;
+#endif
+
 #endif
 
     l2cap_state_t l2cap_state;
@@ -671,25 +673,66 @@ typedef struct {
 } hci_connection_t;
 
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+
+
+typedef enum {
+    HCI_ISO_TYPE_INVALID = 0,
+    HCI_ISO_TYPE_BIS,
+    HCI_ISO_TYPE_CIS,
+} hci_iso_type_t;
+
+#define HCI_ISO_GROUP_ID_SINGLE_CIS 0xfe
+#define HCI_ISO_GROUP_ID_INVALID    0xff
+
 typedef enum{
+    HCI_ISO_STREAM_STATE_IDLE,
+    HCI_ISO_STREAM_W2_ACCEPT,
+    HCI_ISO_STREAM_W2_REJECT,
     HCI_ISO_STREAM_STATE_REQUESTED,
     HCI_ISO_STREAM_STATE_W4_ESTABLISHED,
     HCI_ISO_STREAM_STATE_ESTABLISHED,
+    HCI_ISO_STREAM_STATE_W2_SETUP_ISO_INPUT,
+    HCI_ISO_STREAM_STATE_W4_ISO_SETUP_INPUT,
+    HCI_ISO_STREAM_STATE_W2_SETUP_ISO_OUTPUT,
+    HCI_ISO_STREAM_STATE_W4_ISO_SETUP_OUTPUT,
 } hci_iso_stream_state_t;
 
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
 
-    // peer info
-    hci_con_handle_t con_handle;
+    // iso type: bis or cis
+    hci_iso_type_t iso_type;
+
+    // group_id: big_handle or cis_id
+    uint8_t group_id;
 
     // state
     hci_iso_stream_state_t state;
 
+    // peer info
+    hci_con_handle_t con_handle;
+
+    // connection info
+    uint16_t max_sdu_c_to_p;
+    uint16_t max_sdu_p_to_c;
+
     // re-assembly buffer
     uint16_t reassembly_pos;
     uint8_t  reassembly_buffer[HCI_ISO_PAYLOAD_SIZE];
+
+    // number packets sent to controller
+    uint8_t num_packets_sent;
+
+    // packets to skip due to queuing them to late before
+    uint8_t num_packets_to_skip;
+
+    // request to send
+    bool can_send_now_requested;
+
+    // ready to send
+    bool emit_ready_to_send;
+
 } hci_iso_stream_t;
 #endif
 
@@ -802,6 +845,10 @@ typedef enum hci_init_state{
     HCI_INIT_LE_READ_MAX_ADV_DATA_LEN,
     HCI_INIT_W4_LE_READ_MAX_ADV_DATA_LEN,
 #endif
+#endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    HCI_INIT_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS,
+    HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS,
 #endif
 
     HCI_INIT_DONE,
@@ -924,6 +971,9 @@ typedef struct {
     int (*gap_classic_accept_callback)(bd_addr_t addr, hci_link_type_t link_type);
 #endif
 
+    // hardware error callback
+    void (*hardware_error_callback)(uint8_t error);
+
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     /* callback for ISO data */
     btstack_packet_handler_t iso_packet_handler;
@@ -933,19 +983,28 @@ typedef struct {
     uint16_t  iso_fragmentation_total_size;
     bool      iso_fragmentation_tx_active;
 
+    uint8_t   iso_packets_to_queue;
+    // group id and type of active operation
+    hci_iso_type_t iso_active_operation_type;
+    uint8_t iso_active_operation_group_id;
+
     // list of iso streams
     btstack_linked_list_t iso_streams;
-#endif
 
-    // hardware error callback
-    void (*hardware_error_callback)(uint8_t error);
+    // list of BIGs and BIG Syncs
+    btstack_linked_list_t le_audio_bigs;
+    btstack_linked_list_t le_audio_big_syncs;
+
+    // list of CIGs
+    btstack_linked_list_t le_audio_cigs;
+#endif
 
     // basic configuration
     const char *       local_name;
     const uint8_t *    eir_data;
     uint32_t           class_of_device;
     bd_addr_t          local_bd_addr;
-    uint8_t            default_link_policy_settings;
+    uint16_t           default_link_policy_settings;
     uint8_t            allow_role_switch;
     uint8_t            ssp_enable;
     uint8_t            ssp_io_capability;
@@ -1090,6 +1149,7 @@ typedef struct {
     le_connecting_state_t le_connecting_request;
 
     bool     le_scanning_param_update;
+    uint8_t  le_scan_filter_duplicates;
     uint8_t  le_scan_type;
     uint8_t  le_scan_filter_policy;
     uint16_t le_scan_interval;
@@ -1110,6 +1170,7 @@ typedef struct {
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     btstack_linked_list_t le_periodic_advertiser_list;
     uint16_t        le_periodic_terminate_sync_handle;
+
     // Periodic Advertising Sync parameters
     uint8_t         le_periodic_sync_options;
     uint8_t         le_periodic_sync_advertising_sid;
@@ -1120,6 +1181,13 @@ typedef struct {
     uint8_t         le_periodic_sync_cte_type;
     le_connecting_state_t le_periodic_sync_state;
     le_connecting_state_t le_periodic_sync_request;
+
+    // Periodic Advertising Sync Transfer (PAST)
+    bool     le_past_set_default_params;
+    uint8_t  le_past_mode;
+    uint16_t le_past_skip;
+    uint16_t le_past_sync_timeout;
+    uint8_t  le_past_cte_type;
 #endif
 #endif
 
@@ -1254,6 +1322,12 @@ void hci_set_sco_voice_setting(uint16_t voice_setting);
 uint16_t hci_get_sco_voice_setting(void);
 
 /**
+ * @brief Set number of ISO packets to buffer for BIS/CIS
+ * @param num_packets (default = 1)
+ */
+void hci_set_num_iso_packets_to_queue(uint8_t num_packets);
+
+/**
  * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
  * @param inquriy_mode see bluetooth_defines.h
  */
@@ -1346,6 +1420,22 @@ bool hci_can_send_prepared_sco_packet_now(void);
  * @brief Send SCO packet prepared in HCI packet buffer
  */
 uint8_t hci_send_sco_packet_buffer(int size);
+
+/**
+ * @brief Request emission of HCI_EVENT_BIS_CAN_SEND_NOW for all BIS as soon as possible
+ * @param big_handle
+ * @note HCI_EVENT_ISO_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ */
+uint8_t hci_request_bis_can_send_now_events(uint8_t big_handle);
+
+/**
+ * @brief Request emission of HCI_EVENT_CIS_CAN_SEND_NOW for CIS as soon as possible
+ * @param cis_con_handle
+ * @note HCI_EVENT_CIS_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ */
+uint8_t hci_request_cis_can_send_now_events(hci_con_handle_t cis_con_handle);
 
 /**
  * @brief Send ISO packet prepared in HCI packet buffer

@@ -144,12 +144,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             switch (hci_event_command_complete_get_command_opcode(packet)){
-                case HCI_OPCODE_HCI_READ_BD_ADDR:
-                    if (hci_event_command_complete_get_return_parameters(packet)[0]) break;
-                    // terminate, name 248 chars
-                    packet[6+248] = 0;
-                    printf("Local name: %s\n", &packet[6]);
-                    break;                
                 case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
                     local_version_information_handler(packet);
                     break;

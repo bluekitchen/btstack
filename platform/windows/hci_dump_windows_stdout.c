@@ -105,7 +105,8 @@ static void hci_dump_windows_stdout_log_packet(uint8_t packet_type, uint8_t in, 
     hci_dump_windows_stdout_packet(packet_type, in, packet, len);
 }
 
-static void hci_dump_windows_stdout_log_message(const char * format, va_list argptr){
+static void hci_dump_windows_stdout_log_message(int log_level, const char * format, va_list argptr){
+    UNUSED(log_level);
     int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
     hci_dump_windows_stdout_log_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
 }

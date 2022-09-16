@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- *  Copyright 2015 Google, Inc.
+ *  Copyright 2022 Google LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -26,18 +26,22 @@
 /**
  * Return number of samples, delayed samples and
  * encoded spectrum coefficients within a frame
- * For decoding, add number of samples of 18 ms history
+ * - For encoding, keep 1.25 ms of temporal winodw
+ * - For decoding, keep 18 ms of history, aligned on frames, and a frame
  */
 
 #define __LC3_NS(dt_us, sr_hz) \
-    ((dt_us * sr_hz) / 1000 / 1000)
+    ( (dt_us * sr_hz) / 1000 / 1000 )
 
 #define __LC3_ND(dt_us, sr_hz) \
     ( (dt_us) == 7500 ? 23 * __LC3_NS(dt_us, sr_hz) / 30 \
                       :  5 * __LC3_NS(dt_us, sr_hz) /  8 )
 
-#define __LC3_NH(sr_hz) \
-    ( (18 * sr_hz) / 1000 )
+#define __LC3_NT(sr_hz) \
+    ( (5 * sr_hz) / 4000 )
+
+#define __LC3_NH(dt_us, sr_hz) \
+    ( ((3 - ((dt_us) >= 10000)) + 1) * __LC3_NS(dt_us, sr_hz) )
 
 
 /**
@@ -71,12 +75,12 @@ enum lc3_srate {
  */
 
 typedef struct lc3_attdet_analysis {
-    float en1, an1;
+    int32_t en1, an1;
     int p_att;
 } lc3_attdet_analysis_t;
 
 struct lc3_ltpf_hp50_state {
-    float s1, s2;
+    int64_t s1, s2;
 };
 
 typedef struct lc3_ltpf_analysis {
@@ -85,8 +89,8 @@ typedef struct lc3_ltpf_analysis {
     float nc[2];
 
     struct lc3_ltpf_hp50_state hp50;
-    float x_12k8[384];
-    float x_6k4[178];
+    int16_t x_12k8[384];
+    int16_t x_6k4[178];
     int tc;
 } lc3_ltpf_analysis_t;
 
@@ -95,25 +99,31 @@ typedef struct lc3_spec_analysis {
     int nbits_spare;
 } lc3_spec_analysis_t;
 
+// BK: to avoid C2229 on MSVC due to zero-sized array not being the last element in struct when
+//     LC3_ENCODER_MEM_T is used, we define the struct with the help of a macro
+
+#define LC3_ENCODER_FIELDS(SAMPLES) \
+    enum lc3_dt dt;                 \
+    enum lc3_srate sr, sr_pcm;      \
+                                    \
+    lc3_attdet_analysis_t attdet;   \
+    lc3_ltpf_analysis_t ltpf;       \
+    lc3_spec_analysis_t spec;       \
+                                    \
+    int16_t *xt;                    \
+    float *xs, *xd, s[SAMPLES];
+
 struct lc3_encoder {
-    enum lc3_dt dt;
-    enum lc3_srate sr, sr_pcm;
-
-    lc3_attdet_analysis_t attdet;
-    lc3_ltpf_analysis_t ltpf;
-    lc3_spec_analysis_t spec;
-
-    // BK: s[0] -> s[1] to avoid compiler warning for zero sized warning
-    float *xs, *xf, s[1];
+    LC3_ENCODER_FIELDS(0)
 };
 
 #define LC3_ENCODER_BUFFER_COUNT(dt_us, sr_hz) \
-    ( 2*__LC3_NS(dt_us, sr_hz) + __LC3_ND(dt_us, sr_hz) )
+    ( ( __LC3_NS(dt_us, sr_hz) + __LC3_NT(sr_hz) ) / 2 + \
+        __LC3_NS(dt_us, sr_hz) + __LC3_ND(dt_us, sr_hz) )
 
 #define LC3_ENCODER_MEM_T(dt_us, sr_hz) \
-    struct { \
-        struct lc3_encoder __e; \
-        float __s[LC3_ENCODER_BUFFER_COUNT(dt_us, sr_hz)]; \
+    struct {                            \
+        LC3_ENCODER_FIELDS( LC3_ENCODER_BUFFER_COUNT(dt_us, sr_hz) ) \
     }
 
 
@@ -124,7 +134,7 @@ struct lc3_encoder {
 typedef struct lc3_ltpf_synthesis {
     bool active;
     int pitch;
-    float c[12][2], x[12];
+    float c[2*12], x[12];
 } lc3_ltpf_synthesis_t;
 
 typedef struct lc3_plc_state {
@@ -133,25 +143,29 @@ typedef struct lc3_plc_state {
     float alpha;
 } lc3_plc_state_t;
 
+// BK: to avoid C2229 on MSVC due to zero-sized array not being the last element in struct when
+//     LC3_ENCODER_MEM_T is used, we define the struct with the help of a macro
+
+#define LC3_DECODER_FIELDS(SAMPLES)         \
+    enum lc3_dt dt;                         \
+    enum lc3_srate sr, sr_pcm;              \
+                                            \
+    lc3_ltpf_synthesis_t ltpf;              \
+    lc3_plc_state_t plc;                    \
+                                            \
+    float *xh, *xs, *xd, *xg, s[SAMPLES];
+
 struct lc3_decoder {
-    enum lc3_dt dt;
-    enum lc3_srate sr, sr_pcm;
-
-    lc3_ltpf_synthesis_t ltpf;
-    lc3_plc_state_t plc;
-
-    // BK: s[0] -> s[1] to avoid compiler warning for zero sized warning
-    float *xs, *xd, *xg, s[1];
+    LC3_DECODER_FIELDS(0)
 };
 
 #define LC3_DECODER_BUFFER_COUNT(dt_us, sr_hz) \
-    ( __LC3_NH(sr_hz) +  __LC3_NS(dt_us, sr_hz) + \
-      __LC3_ND(dt_us, sr_hz) + __LC3_NS(dt_us, sr_hz) )
+    ( __LC3_NH(dt_us, sr_hz) + __LC3_ND(dt_us, sr_hz) + \
+      __LC3_NS(dt_us, sr_hz) )
 
 #define LC3_DECODER_MEM_T(dt_us, sr_hz) \
     struct { \
-        struct lc3_decoder __d; \
-        float __s[LC3_DECODER_BUFFER_COUNT(dt_us, sr_hz)]; \
+        LC3_DECODER_FIELDS(LC3_DECODER_BUFFER_COUNT(dt_us, sr_hz)) \
     }
 
 

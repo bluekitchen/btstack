@@ -80,15 +80,15 @@ uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_buffer, const h
 
 uint16_t hci_event_create_from_template_and_arguments(uint8_t *hci_buffer, const hci_event_t *event, ...);
 
-const hci_event_t hci_event_hardware_error;
-const hci_event_t hci_event_command_complete;
-const hci_event_t hci_event_disconnection_complete;
-const hci_event_t hci_event_number_of_completed_packets_1;
-const hci_event_t hci_event_transport_packet_sent;
+/* LE Events */
+extern const hci_event_t hci_event_hardware_error;
+extern const hci_event_t hci_event_command_complete;
+extern const hci_event_t hci_event_disconnection_complete;
+extern const hci_event_t hci_event_number_of_completed_packets_1;
+extern const hci_event_t hci_event_transport_packet_sent;
 
 /* LE Subevents */
-
-const hci_event_t hci_subevent_le_connection_complete;
+extern const hci_event_t hci_subevent_le_connection_complete;
 
     
 #if defined __cplusplus

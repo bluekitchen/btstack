@@ -195,7 +195,6 @@ static void show_usage(void){
 }
 
 static void stdin_process(char cmd){
-    log_info("stdin: %c", cmd);
     switch (cmd){
         case 'a':
             printf("Establish HFP service level connection to %s...\n", bd_addr_to_str(device_addr));

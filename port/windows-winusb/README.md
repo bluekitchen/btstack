@@ -2,6 +2,8 @@
 
 The Windows-WinUSB port uses the native run loop and WinUSB API to access a USB Bluetooth dongle.
 
+The port provides both a regular Makefile as well as a CMake build file. It uses native Win32 APIs for file access and does not require the Cygwin or mingw64 build/runtine. All examples can also be build with Visual Studio 2022 (e.g. Community Edition).
+
 ## Access to Bluetooth USB Dongle with Zadig
 
 To allow libusb or WinUSB to access an USB Bluetooth dongle, you need to install a special device driver to make it accessible to user space processes. 
@@ -15,11 +17,14 @@ It works like this:
 -  Select WinUSB (libusb) in the right pull pull down list
 -  Select “Replace Driver”
 
-## Toolchain
+## Visual Studio 2022
 
-The port requires a Unix-like toolchain. We successfully used [mingw-w64](https://mingw-w64.org/doku.php) to compile and run the examples. mingw64-w64 is based on [MinGW](https://en.wikipedia.org/wiki/MinGW), which '...provides a complete Open Source programming tool set which is suitable for the development of native MS-Windows applications, and which do not depend on any 3rd-party C-Runtime DLLs.'
+Visual Studio can directly open the provided `port/windows-windows-h4-zephyr/CMakeLists.txt` and allows to compile and run all examples.
 
-We've used the Msys2 package available from the [downloads page](https://mingw-w64.org/doku.php/download) on Windows 10, 64-bit and use the MSYS2 MinGW 64-bit start menu item to compile 64-bit binaries.
+## mingw64 
+
+It can also be compiles with a regular Unix-style toolchain like [mingw-w64](https://www.mingw-w64.org).
+mingw64-w64 is based on [MinGW](https://en.wikipedia.org/wiki/MinGW), which '...provides a complete Open Source programming tool set which is suitable for the development of native MS-Windows applications, and which do not depend on any 3rd-party C-Runtime DLLs.'
 
 In the MSYS2 shell, you can install everything with pacman:
 

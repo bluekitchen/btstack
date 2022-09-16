@@ -184,7 +184,7 @@ static int btstack_link_key_db_tlv_iterator_init(btstack_link_key_iterator_t * i
 }
 
 static int  btstack_link_key_db_tlv_iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type){
-    uintptr_t i = (uintptr_t) it->context;
+    uint8_t i = (uint8_t)(uintptr_t) it->context;
     int found = 0;
     while (i<NVM_NUM_LINK_KEYS){
         link_key_nvm_t entry;
@@ -197,7 +197,7 @@ static int  btstack_link_key_db_tlv_iterator_get_next(btstack_link_key_iterator_
         found = 1;
         break;
     }
-    it->context = (void*) i;
+    it->context = (void*)(uintptr_t) i;
     return found;
 }
 

@@ -6,7 +6,7 @@
 
 static void hci_dump_embedded_stdout_log_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len){
 }
-static void hci_dump_embedded_stdout_log_message(const char * format, va_list argptr){
+static void hci_dump_embedded_stdout_log_message(int log_level, const char * format, va_list argptr){
 }
 static void hci_dump_embedded_stdout_reset(void){}
 

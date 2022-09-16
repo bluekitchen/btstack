@@ -2,6 +2,8 @@ cmake_minimum_required (VERSION 3.5)
 
 project(BTstack-windows-h4-da14585)
 
+SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
+
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
 	# using Clang
@@ -15,7 +17,8 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
 	# using Visual Studio C++
 endif()
 
-# to find generated .h from .gatt files
+# to generate .h from .gatt files
+find_package (Python REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
@@ -74,21 +77,21 @@ list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 # create targets
 foreach(EXAMPLE ${EXAMPLES})
 	# get c file
-	file(GLOB EXAMPLE_FILE "../../example/${EXAMPLE}.c")
+	set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
 
 	# add GATT DB creation
 	if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
 		message("example ${EXAMPLE} -- with GATT DB")
-		add_custom_command(
+	  	add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-			DEPENDS ${CMAKE_SOURCE_DIR}/../../example/${EXAMPLE}.gatt
-			COMMAND ${CMAKE_SOURCE_DIR}/../../tool/compile_gatt.py
-			ARGS ${CMAKE_SOURCE_DIR}/../../example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+			DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
+			COMMAND ${Python_EXECUTABLE}
+			ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 		)
 		list(APPEND SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
 	else()
 		message("example ${EXAMPLE}")
 	endif()
-	add_executable(${EXAMPLE} ${EXAMPLE_FILE} )
+	add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
 	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE)

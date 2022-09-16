@@ -450,7 +450,7 @@ typedef struct {
     uint16_t offset;
     uint8_t  acp_seid;
     uint8_t  int_seid;
-    uint16_t transaction_label;
+    uint8_t transaction_label;
     uint16_t num_packets;
     avdtp_signal_identifier_t   signal_identifier;
     avdtp_message_type_t        message_type;
@@ -683,7 +683,7 @@ uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint);
 
 uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoint);
 
-uint16_t avdtp_get_next_transaction_label(void);
+uint8_t avdtp_get_next_transaction_label(void);
 
 #ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
 uint8_t avdtp_start_stream_accept(uint16_t avdtp_cid, uint8_t local_seid);

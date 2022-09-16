@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- *  Copyright 2021 Google, Inc.
+ *  Copyright 2022 Google LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ static bool resolve_lpc_weighting(enum lc3_dt dt, int nbytes)
  * a, b, n         The 2 vectors of size `n`
  * return          sum( a[i] * b[i] ), i = [0..n-1]
  */
-static inline float dot(const float *a, const float *b, int n)
+LC3_HOT static inline float dot(const float *a, const float *b, int n)
 {
     float v = 0;
 
@@ -55,7 +55,8 @@ static inline float dot(const float *a, const float *b, int n)
  * x               Spectral coefficients
  * gain, a         Output the prediction gains and LPC coefficients
  */
-static void compute_lpc_coeffs(enum lc3_dt dt, enum lc3_bandwidth bw,
+LC3_HOT static void compute_lpc_coeffs(
+    enum lc3_dt dt, enum lc3_bandwidth bw,
     const float *x, float *gain, float (*a)[9])
 {
     static const int sub_7m5_nb[]   = {  9, 26,  43,  60 };
@@ -148,9 +149,11 @@ static void compute_lpc_coeffs(enum lc3_dt dt, enum lc3_bandwidth bw,
  * LPC Weighting
  * gain, a         Prediction gain and LPC coefficients, weighted as output
  */
-static void lpc_weighting(float pred_gain, float *a)
+LC3_HOT static void lpc_weighting(float pred_gain, float *a)
 {
-    float gamma = 1. - (1. - 0.85) * (2. - pred_gain) / (2. - 1.5), g = 1;
+    float gamma = 1.f - (1.f - 0.85f) * (2.f - pred_gain) / (2.f - 1.5f);
+    float g = 1.f;
+
     for (int i = 1; i < 9; i++)
         a[i] *= (g *= gamma);
 }
@@ -160,7 +163,7 @@ static void lpc_weighting(float pred_gain, float *a)
  * a               LPC coefficients
  * rc              Output refelection coefficients
  */
-static void lpc_reflection(const float *a, float *rc)
+LC3_HOT static void lpc_reflection(const float *a, float *rc)
 {
     float e, b[2][7], *b0, *b1;
 
@@ -249,7 +252,7 @@ static void unquantize_rc(const int *rc_q, int rc_order, float rc[8])
  * rc_order, rc    Order of coefficients, and coefficients
  * x               Spectral coefficients, filtered as output
  */
-static void forward_filtering(
+LC3_HOT static void forward_filtering(
     enum lc3_dt dt, enum lc3_bandwidth bw,
     const int rc_order[2], const float rc[2][8], float *x)
 {
@@ -290,7 +293,7 @@ static void forward_filtering(
  * rc_order, rc    Order of coefficients, and unquantized coefficients
  * x               Spectral coefficients, filtered as output
  */
-static void inverse_filtering(
+LC3_HOT static void inverse_filtering(
     enum lc3_dt dt, enum lc3_bandwidth bw,
     const int rc_order[2], const float rc[2][8], float *x)
 {
@@ -354,10 +357,10 @@ void lc3_tns_analyze(enum lc3_dt dt, enum lc3_bandwidth bw,
     for (int f = 0; f < data->nfilters; f++) {
 
         data->rc_order[f] = 0;
-        if (nn_flag || pred_gain[f] <= 1.5)
+        if (nn_flag || pred_gain[f] <= 1.5f)
             continue;
 
-        if (data->lpc_weighting && pred_gain[f] < 2)
+        if (data->lpc_weighting && pred_gain[f] < 2.f)
             lpc_weighting(pred_gain[f], a[f]);
 
         lpc_reflection(a[f], rc[f]);

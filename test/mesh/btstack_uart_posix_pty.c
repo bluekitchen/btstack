@@ -203,29 +203,6 @@ static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
         case 921600: brate=B921600; break;
 #endif
 
-// Hacks to switch to 2/3 mbps on FTDI FT232 chipsets
-// requires special config in Info.plist or Registry
-        case 2000000: 
-#if defined(HAVE_POSIX_B300_MAPPED_TO_2000000)
-            log_info("hci_transport_posix: using B300 for 2 mbps");
-            brate=B300; 
-#elif defined(HAVE_POSIX_B1200_MAPPED_TO_2000000)
-           log_info("hci_transport_posix: using B1200 for 2 mbps");
-            brate=B1200;
-#endif
-            break;
-        case 3000000:
-#if defined(HAVE_POSIX_B600_MAPPED_TO_3000000)
-            log_info("hci_transport_posix: using B600 for 3 mbps");
-            brate=B600;
-#elif defined(HAVE_POSIX_B2400_MAPPED_TO_3000000)
-            log_info("hci_transport_posix: using B2400 for 3 mbps");
-            brate=B2400;
-#endif
-            break;
-        default:
-            break;
-    }
     cfsetospeed(&toptions, brate);
     cfsetispeed(&toptions, brate);
 

@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- *  Copyright 2021 Google, Inc.
+ *  Copyright 2022 Google LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -120,7 +120,7 @@ static const float dct16_m[16][16] = {
  * Forward DCT-16 transformation
  * x, y            Input and output 16 values
  */
-static void dct16_forward(const float *x, float *y)
+LC3_HOT static void dct16_forward(const float *x, float *y)
 {
     for (int i = 0, j; i < 16; i++)
         for (y[i] = 0, j = 0; j < 16; j++)
@@ -131,7 +131,7 @@ static void dct16_forward(const float *x, float *y)
  * Inverse DCT-16 transformation
  * x, y            Input and output 16 values
  */
-static void dct16_inverse(const float *x, float *y)
+LC3_HOT static void dct16_inverse(const float *x, float *y)
 {
     for (int i = 0, j; i < 16; i++)
         for (y[i] = 0, j = 0; j < 16; j++)
@@ -150,7 +150,8 @@ static void dct16_inverse(const float *x, float *y)
  * att             1: Attack detected  0: Otherwise
  * scf             Output 16 scale factors
  */
-static void compute_scale_factors(enum lc3_dt dt, enum lc3_srate sr,
+LC3_HOT static void compute_scale_factors(
+    enum lc3_dt dt, enum lc3_srate sr,
     const float *eb, bool att, float *scf)
 {
     /* Pre-emphasis gain table :
@@ -269,47 +270,47 @@ static void compute_scale_factors(enum lc3_dt dt, enum lc3_srate sr,
     float e_sum = 0;
 
     for (int i = 0; i < LC3_NUM_BANDS-1; ) {
-        e[i] = (e0 * 0.25 + e1 * 0.5 + (e2 = e[i+1]) * 0.25) * ge[i];
+        e[i] = (e0 * 0.25f + e1 * 0.5f + (e2 = e[i+1]) * 0.25f) * ge[i];
         e_sum += e[i++];
 
-        e[i] = (e1 * 0.25 + e2 * 0.5 + (e0 = e[i+1]) * 0.25) * ge[i];
+        e[i] = (e1 * 0.25f + e2 * 0.5f + (e0 = e[i+1]) * 0.25f) * ge[i];
         e_sum += e[i++];
 
-        e[i] = (e2 * 0.25 + e0 * 0.5 + (e1 = e[i+1]) * 0.25) * ge[i];
+        e[i] = (e2 * 0.25f + e0 * 0.5f + (e1 = e[i+1]) * 0.25f) * ge[i];
         e_sum += e[i++];
     }
 
-    e[LC3_NUM_BANDS-1] = (e0 * 0.25 + e1 * 0.75) * ge[LC3_NUM_BANDS-1];
+    e[LC3_NUM_BANDS-1] = (e0 * 0.25f + e1 * 0.75f) * ge[LC3_NUM_BANDS-1];
     e_sum += e[LC3_NUM_BANDS-1];
 
-    float noise_floor = fmaxf(e_sum * (1e-4 / 64), 0x1p-32);
+    float noise_floor = fmaxf(e_sum * (1e-4f / 64), 0x1p-32f);
 
     for (int i = 0; i < LC3_NUM_BANDS; i++)
-        e[i] = log2f(fmaxf(e[i], noise_floor)) * 0.5;
+        e[i] = fast_log2f(fmaxf(e[i], noise_floor)) * 0.5f;
 
     /* --- Grouping & scaling --- */
 
     float scf_sum;
 
-    scf[0] = (e[0] + e[4]) * 1./12 +
-             (e[0] + e[3]) * 2./12 +
-             (e[1] + e[2]) * 3./12  ;
+    scf[0] = (e[0] + e[4]) * 1.f/12 +
+             (e[0] + e[3]) * 2.f/12 +
+             (e[1] + e[2]) * 3.f/12  ;
     scf_sum = scf[0];
 
     for (int i = 1; i < 15; i++) {
-        scf[i] = (e[4*i-1] + e[4*i+4]) * 1./12 +
-                 (e[4*i  ] + e[4*i+3]) * 2./12 +
-                 (e[4*i+1] + e[4*i+2]) * 3./12  ;
+        scf[i] = (e[4*i-1] + e[4*i+4]) * 1.f/12 +
+                 (e[4*i  ] + e[4*i+3]) * 2.f/12 +
+                 (e[4*i+1] + e[4*i+2]) * 3.f/12  ;
         scf_sum += scf[i];
     }
 
-    scf[15] = (e[59] + e[63]) * 1./12 +
-              (e[60] + e[63]) * 2./12 +
-              (e[61] + e[62]) * 3./12  ;
+    scf[15] = (e[59] + e[63]) * 1.f/12 +
+              (e[60] + e[63]) * 2.f/12 +
+              (e[61] + e[62]) * 3.f/12  ;
     scf_sum += scf[15];
 
     for (int i = 0; i < 16; i++)
-        scf[i] = 0.85 * (scf[i] - scf_sum * 1./16);
+        scf[i] = 0.85f * (scf[i] - scf_sum * 1.f/16);
 
     /* --- Attack handling --- */
 
@@ -319,23 +320,23 @@ static void compute_scale_factors(enum lc3_dt dt, enum lc3_srate sr,
     float s0, s1 = scf[0], s2 = scf[1], s3 = scf[2], s4 = scf[3];
     float sn = s1 + s2;
 
-    scf[0] = (sn += s3) * 1./3;
-    scf[1] = (sn += s4) * 1./4;
+    scf[0] = (sn += s3) * 1.f/3;
+    scf[1] = (sn += s4) * 1.f/4;
     scf_sum = scf[0] + scf[1];
 
     for (int i = 2; i < 14; i++, sn -= s0) {
         s0 = s1, s1 = s2, s2 = s3, s3 = s4, s4 = scf[i+2];
-        scf[i] = (sn += s4) * 1./5;
+        scf[i] = (sn += s4) * 1.f/5;
         scf_sum += scf[i];
     }
 
-    scf[14] = (sn      ) * 1./4;
-    scf[15] = (sn -= s1) * 1./3;
+    scf[14] = (sn      ) * 1.f/4;
+    scf[15] = (sn -= s1) * 1.f/3;
     scf_sum += scf[14] + scf[15];
 
     for (int i = 0; i < 16; i++)
-        scf[i] = (dt == LC3_DT_7M5 ? 0.3 : 0.5) *
-                 (scf[i] - scf_sum * 1./16);
+        scf[i] = (dt == LC3_DT_7M5 ? 0.3f : 0.5f) *
+                 (scf[i] - scf_sum * 1.f/16);
 }
 
 /**
@@ -343,7 +344,8 @@ static void compute_scale_factors(enum lc3_dt dt, enum lc3_srate sr,
  * scf             Input 16 scale factors
  * lf/hfcb_idx     Output the low and high frequency codebooks index
  */
-static void resolve_codebooks(const float *scf, int *lfcb_idx, int *hfcb_idx)
+LC3_HOT static void resolve_codebooks(
+    const float *scf, int *lfcb_idx, int *hfcb_idx)
 {
     float dlfcb_max = 0, dhfcb_max = 0;
     *lfcb_idx = *hfcb_idx = 0;
@@ -371,7 +373,7 @@ static void resolve_codebooks(const float *scf, int *lfcb_idx, int *hfcb_idx)
  * c               Pulse configuration
  * cn              Normalized pulse configuration
  */
-static void normalize(const int *c, float *cn)
+LC3_HOT static void normalize(const int *c, float *cn)
 {
     int c2_sum = 0;
     for (int i = 0; i < 16; i++)
@@ -389,7 +391,7 @@ static void normalize(const int *c, float *cn)
  * start, end      Current number of pulses, limit to reach
  * corr, energy    Correlation (x,y) and y energy, updated at output
  */
-static void add_pulse(const float *x, int *y, int n,
+LC3_HOT static void add_pulse(const float *x, int *y, int n,
     int start, int end, float *corr, float *energy)
 {
     for (int k = start; k < end; k++) {
@@ -418,7 +420,7 @@ static void add_pulse(const float *x, int *y, int n,
  * c, cn           Output 4 pulse configurations candidates, normalized
  * shape/gain_idx  Output selected shape/gain indexes
  */
-static void quantize(const float *scf, int lfcb_idx, int hfcb_idx,
+LC3_HOT static void quantize(const float *scf, int lfcb_idx, int hfcb_idx,
     int (*c)[16], float (*cn)[16], int *shape_idx, int *gain_idx)
 {
     /* --- Residual --- */
@@ -446,7 +448,7 @@ static void quantize(const float *scf, int lfcb_idx, int hfcb_idx,
         xm_sum += xm[i];
     }
 
-    float proj_factor = (6 - 1) / fmaxf(xm_sum, 1e-31);
+    float proj_factor = (6 - 1) / fmaxf(xm_sum, 1e-31f);
     float corr = 0, energy = 0;
     int npulses = 0;
 
@@ -539,7 +541,7 @@ static void quantize(const float *scf, int lfcb_idx, int hfcb_idx,
  * shape/gain      Selected shape/gain indexes
  * scf             Return unquantized scale factors
  */
-static void unquantize(int lfcb_idx, int hfcb_idx,
+LC3_HOT static void unquantize(int lfcb_idx, int hfcb_idx,
     const float *c, int shape, int gain, float *scf)
 {
     const float *lfcb = lc3_sns_lfcb[lfcb_idx];
@@ -673,7 +675,7 @@ static void deenumerate(int shape,
  *
  * `x` and `y` can be the same buffer
  */
-static void spectral_shaping(enum lc3_dt dt, enum lc3_srate sr,
+LC3_HOT static void spectral_shaping(enum lc3_dt dt, enum lc3_srate sr,
     const float *scf_q, bool inv, const float *x, float *y)
 {
     /* --- Interpolate scale factors --- */
@@ -684,19 +686,19 @@ static void spectral_shaping(enum lc3_dt dt, enum lc3_srate sr,
     scf[0] = scf[1] = s1;
     for (int i = 0; i < 15; i++) {
         s0 = s1, s1 = inv ? -scf_q[i+1] : scf_q[i+1];
-        scf[4*i+2] = s0 + 0.125 * (s1 - s0);
-        scf[4*i+3] = s0 + 0.375 * (s1 - s0);
-        scf[4*i+4] = s0 + 0.625 * (s1 - s0);
-        scf[4*i+5] = s0 + 0.875 * (s1 - s0);
+        scf[4*i+2] = s0 + 0.125f * (s1 - s0);
+        scf[4*i+3] = s0 + 0.375f * (s1 - s0);
+        scf[4*i+4] = s0 + 0.625f * (s1 - s0);
+        scf[4*i+5] = s0 + 0.875f * (s1 - s0);
     }
-    scf[62] = s1 + 0.125 * (s1 - s0);
-    scf[63] = s1 + 0.375 * (s1 - s0);
+    scf[62] = s1 + 0.125f * (s1 - s0);
+    scf[63] = s1 + 0.375f * (s1 - s0);
 
     int nb = LC3_MIN(lc3_band_lim[dt][sr][LC3_NUM_BANDS], LC3_NUM_BANDS);
     int n2 = LC3_NUM_BANDS - nb;
 
     for (int i2 = 0; i2 < n2; i2++)
-        scf[i2] = 0.5 * (scf[2*i2] + scf[2*i2+1]);
+        scf[i2] = 0.5f * (scf[2*i2] + scf[2*i2+1]);
 
     if (n2 > 0)
         memmove(scf + n2, scf + 2*n2, (nb - n2) * sizeof(float));
@@ -706,7 +708,7 @@ static void spectral_shaping(enum lc3_dt dt, enum lc3_srate sr,
     const int *lim = lc3_band_lim[dt][sr];
 
     for (int i = 0, ib = 0; ib < nb; ib++) {
-        float g_sns = powf(2, -scf[ib]);
+        float g_sns = fast_exp2f(-scf[ib]);
 
         for ( ; i < lim[ib+1]; i++)
             y[i] = x[i] * g_sns;

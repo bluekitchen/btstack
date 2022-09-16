@@ -136,13 +136,13 @@ static uint16_t avrcp_now_playing_info_attr_id_value_len(avrcp_connection_t * co
         case AVRCP_MEDIA_ATTR_NONE:
             return 0;
         case AVRCP_MEDIA_ATTR_TRACK:
-            str_len = sprintf(buffer, "%0" PRIu32, connection->target_track_nr);
+            str_len = snprintf(buffer, sizeof(buffer), "%" PRIu32, connection->target_track_nr);
             break;
         case AVRCP_MEDIA_ATTR_TOTAL_NUM_ITEMS:
-            str_len = sprintf(buffer, "%0" PRIu32, connection->target_total_tracks);
+            str_len = snprintf(buffer, sizeof(buffer), "%" PRIu32, connection->target_total_tracks);
             break;
         case AVRCP_MEDIA_ATTR_SONG_LENGTH_MS:
-            str_len = sprintf(buffer, "%0" PRIu32, connection->target_song_length_ms);
+            str_len = snprintf(buffer, sizeof(buffer), "%" PRIu32, connection->target_song_length_ms);
             break;
         default:
             str_len = connection->target_now_playing_info[(uint16_t)attr_id - 1].len;
@@ -181,7 +181,8 @@ static uint8_t * avrcp_get_attribute_value_from_u32(avrcp_connection_t * connect
     *num_bytes_to_copy = 0;
 
     if (connection->attribute_value_len == 0){
-        connection->attribute_value_len = sprintf((char *)connection->attribute_value, "%0" PRIu32, value);
+		// "4294967296" = 10 chars + \0
+        connection->attribute_value_len = snprintf((char *)connection->attribute_value, 11, "%" PRIu32, value);
         connection->attribute_value_offset = 0;
     }
     *num_bytes_to_copy = connection->attribute_value_len - connection->attribute_value_offset;
@@ -292,7 +293,8 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
         uint16_t num_payload_bytes = param_len - max_payload_size;
         uint16_t frame_size_for_continue_packet = max_frame_size - avctp_get_num_bytes_for_header(AVCTP_CONTINUE_PACKET);
         uint16_t num_avctp_packets = (num_payload_bytes + frame_size_for_continue_packet - 1)/frame_size_for_continue_packet + 1;
-        packet[pos++] = num_avctp_packets;
+		btstack_assert(num_avctp_packets <= 255);
+        packet[pos++] = (uint8_t) num_avctp_packets;
     }
 
     uint16_t bytes_stored = 0;
@@ -727,8 +729,10 @@ uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, ui
 static uint8_t avrcp_target_store_media_attr(avrcp_connection_t * connection, avrcp_media_attribute_id_t attr_id, const char * value){
     int index = attr_id - 1;
     if (!value) return AVRCP_STATUS_INVALID_PARAMETER;
-    connection->target_now_playing_info[index].value = (uint8_t*)value;
-    connection->target_now_playing_info[index].len   = strlen(value);
+	uint16_t value_len = (uint16_t)strlen(value);
+	btstack_assert(value_len <= 255);
+	connection->target_now_playing_info[index].value = (uint8_t*)value;
+    connection->target_now_playing_info[index].len   = value_len;
     return ERROR_CODE_SUCCESS;
 }   
 

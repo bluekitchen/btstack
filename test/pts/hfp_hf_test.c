@@ -159,8 +159,6 @@ static void show_usage(void){
 }
 
 static void stdin_process(char c){
-    log_info("stdin: %c", c);
-
     cmd = c;    // used in packet handler
 
     if (cmd >= '0' && cmd <= '9'){

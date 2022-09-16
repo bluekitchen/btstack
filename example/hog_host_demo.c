@@ -374,7 +374,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     UNUSED(channel);
     UNUSED(size);
     uint8_t event;
-    uint8_t status;
     /* LISTING_RESUME */
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -426,23 +425,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     app_state = W4_ENCRYPTED;
                     sm_request_pairing(connection_handle);
                     break;
-                case HCI_EVENT_ENCRYPTION_CHANGE:
-                    if (connection_handle != hci_event_encryption_change_get_connection_handle(packet)) break;
-                    printf("Connection encrypted: %u\n", hci_event_encryption_change_get_encryption_enabled(packet));
-                    if (hci_event_encryption_change_get_encryption_enabled(packet) == 0){
-                        printf("Encryption failed -> abort\n");
-                        handle_outgoing_connection_error();
-                        break;
-                    }
-                    // continue - query primary services
-                    printf("Search for HID service.\n");
-                    app_state = W4_HID_CLIENT_CONNECTED;
-                    
-                    status = hids_client_connect(connection_handle, handle_gatt_client_event, protocol_mode, &hids_cid);
-                    if (status != ERROR_CODE_SUCCESS){
-                        printf("HID client connection failed, status 0x%02x\n", status);
-                    }
-                    break;
                 default:
                     break;
             }
@@ -484,12 +466,17 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             switch (sm_event_pairing_complete_get_status(packet)){
                 case ERROR_CODE_SUCCESS:
                     printf("Pairing complete, success\n");
+
+                    // continue - query primary services
+                    printf("Search for HID service.\n");
+                    app_state = W4_HID_CLIENT_CONNECTED;
+                    hids_client_connect(connection_handle, handle_gatt_client_event, protocol_mode, &hids_cid);
                     break;
                 case ERROR_CODE_CONNECTION_TIMEOUT:
                     printf("Pairing failed, timeout\n");
                     break;
                 case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
-                    printf("Pairing faileed, disconnected\n");
+                    printf("Pairing failed, disconnected\n");
                     break;
                 case ERROR_CODE_AUTHENTICATION_FAILURE:
                     printf("Pairing failed, reason = %u\n", sm_event_pairing_complete_get_reason(packet));

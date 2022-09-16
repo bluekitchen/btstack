@@ -580,7 +580,7 @@ static void handle_notification_event(uint8_t packet_type, uint16_t channel, uin
     if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION) return;
 
     hids_client_t * client = hids_get_client_for_con_handle(gatt_event_notification_get_handle(packet));
-    btstack_assert(client != NULL);
+    if (client == NULL) return;
 
     uint8_t report_index = find_report_index_for_value_handle(client, gatt_event_notification_get_value_handle(packet));
     if (report_index == HIDS_CLIENT_INVALID_REPORT_INDEX){
@@ -599,7 +599,7 @@ static void handle_report_event(uint8_t packet_type, uint16_t channel, uint8_t *
     if (hci_event_packet_get_type(packet) != GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT) return;
     
     hids_client_t * client = hids_get_client_for_con_handle(gatt_event_characteristic_value_query_result_get_handle(packet));
-    btstack_assert(client != NULL);
+    if (client == NULL) return;
     
     if (client->state != HIDS_CLIENT_W4_GET_REPORT_RESULT){
         return;
@@ -887,7 +887,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_SERVICE_QUERY_RESULT:
             client = hids_get_client_for_con_handle(gatt_event_service_query_result_get_handle(packet));
-            btstack_assert(client != NULL);
+            if (client == NULL) break;
 
             if (client->num_instances < MAX_NUM_HID_SERVICES){
                 uint8_t index = client->num_instances;
@@ -907,7 +907,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
             client = hids_get_client_for_con_handle(gatt_event_characteristic_query_result_get_handle(packet));
-            btstack_assert(client != NULL);
+            if (client == NULL) break;
+
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
             
             report_index = HIDS_CLIENT_INVALID_REPORT_INDEX;
@@ -976,7 +977,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
             // Map Report characteristic value == HID Descriptor
             client = hids_get_client_for_con_handle(gatt_event_long_characteristic_value_query_result_get_handle(packet));
-            btstack_assert(client != NULL);
+            if (client == NULL) break;
             
             value = gatt_event_long_characteristic_value_query_result_get_value(packet);
             value_len = gatt_event_long_characteristic_value_query_result_get_value_length(packet);
@@ -996,7 +997,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
             client = hids_get_client_for_con_handle(gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
-            btstack_assert(client != NULL);
+            if (client == NULL) break;
+
             gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &characteristic_descriptor);
             
             switch (client->state) {
@@ -1043,7 +1045,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             client = hids_get_client_for_con_handle(gatt_event_characteristic_value_query_result_get_handle(packet));
-            btstack_assert(client != NULL);
+            if (client == NULL) break;
 
             value = gatt_event_characteristic_value_query_result_get_value(packet);
             value_len = gatt_event_characteristic_value_query_result_get_value_length(packet);
@@ -1076,7 +1078,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
         case GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
             client = hids_get_client_for_con_handle(gatt_event_characteristic_descriptor_query_result_get_handle(packet));
-            btstack_assert(client != NULL);
+            if (client == NULL) break;
             
             if (gatt_event_characteristic_descriptor_query_result_get_descriptor_length(packet) != 2){
                 break;
@@ -1117,7 +1119,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
         case GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE:
             client = hids_get_client_for_con_handle(gatt_event_can_write_without_response_get_handle(packet));
-            btstack_assert(client != NULL);
+            if (client == NULL) break;
 
             switch (client->state){
                 case HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE:
@@ -1171,7 +1173,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
         case GATT_EVENT_QUERY_COMPLETE:
             client = hids_get_client_for_con_handle(gatt_event_query_complete_get_handle(packet));
-            btstack_assert(client != NULL);
+            if (client == NULL) break;
             
             att_status = gatt_event_query_complete_get_att_status(packet);
             

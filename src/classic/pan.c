@@ -152,17 +152,17 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 	// 0x0100 "Service Name"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
 	if (name){
-		de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
+		de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
 	} else {
 		switch (service_uuid){
 			case BLUETOOTH_SERVICE_CLASS_PANU:
-				de_add_data(service, DE_STRING, strlen(pan_default_panu_service_name), (uint8_t *) pan_default_panu_service_name);
+				de_add_data(service, DE_STRING, (uint16_t) strlen(pan_default_panu_service_name), (uint8_t *) pan_default_panu_service_name);
 				break;
 			case BLUETOOTH_SERVICE_CLASS_NAP:
-				de_add_data(service, DE_STRING, strlen(pan_default_nap_service_name), (uint8_t *) pan_default_nap_service_name);
+				de_add_data(service, DE_STRING, (uint16_t) strlen(pan_default_nap_service_name), (uint8_t *) pan_default_nap_service_name);
 				break;
 			case BLUETOOTH_SERVICE_CLASS_GN:
-				de_add_data(service, DE_STRING, strlen(pan_default_gn_service_name), (uint8_t *) pan_default_gn_service_name);
+				de_add_data(service, DE_STRING, (uint16_t) strlen(pan_default_gn_service_name), (uint8_t *) pan_default_gn_service_name);
 				break;
 			default:
 				break;
@@ -172,17 +172,17 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 	// 0x0101 "Service Description"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0101);
 	if (descriptor){
-		de_add_data(service,  DE_STRING, strlen(descriptor), (uint8_t *) descriptor);
+		de_add_data(service,  DE_STRING, (uint16_t) strlen(descriptor), (uint8_t *) descriptor);
 	} else {
 		switch (service_uuid){
 			case BLUETOOTH_SERVICE_CLASS_PANU:
-				de_add_data(service, DE_STRING, strlen(pan_default_panu_service_desc), (uint8_t *) pan_default_panu_service_desc);
+				de_add_data(service, DE_STRING, (uint16_t) strlen(pan_default_panu_service_desc), (uint8_t *) pan_default_panu_service_desc);
 				break;
 			case BLUETOOTH_SERVICE_CLASS_NAP:
-				de_add_data(service, DE_STRING, strlen(pan_default_nap_service_desc), (uint8_t *) pan_default_nap_service_desc);
+				de_add_data(service, DE_STRING, (uint16_t) strlen(pan_default_nap_service_desc), (uint8_t *) pan_default_nap_service_desc);
 				break;
 			case BLUETOOTH_SERVICE_CLASS_GN:
-				de_add_data(service, DE_STRING, strlen(pan_default_gn_service_desc), (uint8_t *) pan_default_gn_service_desc);
+				de_add_data(service, DE_STRING, (uint16_t) strlen(pan_default_gn_service_desc), (uint8_t *) pan_default_gn_service_desc);
 				break;
 			default:
 				break;
@@ -198,13 +198,13 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 	if (IPv4Subnet){
 		// 0x030D "IPv4Subnet", optional
 		de_add_number(service,  DE_UINT, DE_SIZE_16, 0x030D);
-		de_add_data(service,  DE_STRING, strlen(IPv4Subnet), (uint8_t *) IPv4Subnet);
+		de_add_data(service,  DE_STRING, (uint16_t) strlen(IPv4Subnet), (uint8_t *) IPv4Subnet);
 	}
 
 	if (IPv6Subnet){
 		// 0x030E "IPv6Subnet", optional
 		de_add_number(service,  DE_UINT, DE_SIZE_16, 0x030E);
-		de_add_data(service,  DE_STRING, strlen(IPv6Subnet), (uint8_t *) IPv6Subnet);
+		de_add_data(service,  DE_STRING, (uint16_t) strlen(IPv6Subnet), (uint8_t *) IPv6Subnet);
 	}
 
 	if (service_uuid == BLUETOOTH_SERVICE_CLASS_GN) return;

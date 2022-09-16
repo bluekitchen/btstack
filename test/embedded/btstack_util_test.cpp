@@ -283,6 +283,17 @@ TEST(BTstackUtil, crc8){
     CHECK_EQUAL(1, btstack_crc8_check(data, sizeof(data), 74));
 }
 
+TEST(BTstackUtil, strcat){
+    char summaries[3][7 * 8 + 1];
+    CHECK_EQUAL((7*8+1), sizeof(summaries[0]));
+    summaries[0][0] = 0;
+    char item_text[10];
+    sprintf(item_text, "%04x:%02d ", 1 ,2);
+    btstack_strcat(summaries[0], sizeof(summaries[0]), item_text);
+    sprintf(item_text, "%04x:%02d ", 3 ,4);
+    btstack_strcat(summaries[0], sizeof(summaries[0]), item_text);
+    STRCMP_EQUAL("0001:02 0003:04 ", summaries[0]);
+}
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);

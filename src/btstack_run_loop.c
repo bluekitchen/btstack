@@ -94,7 +94,24 @@ void btstack_run_loop_base_add_timer(btstack_timer_source_t * timer){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &btstack_run_loop_base_timers; it->next ; it = it->next){
         btstack_timer_source_t * next = (btstack_timer_source_t *) it->next;
-        btstack_assert(next != timer);
+
+        if (next == timer){
+            log_error("Timer %p already registered! Please read source code comment.", timer);
+            //
+            // Dear BTstack User!
+            //
+            // If you hit the assert below, your application code tried to add a timer to the list of
+            // timers that's already in the timer list, i.e., it's already registered.
+            //
+            // As you've probably already modified the timer, just ignoring this might lead to unexpected
+            // and hard to debug issues. Instead, we decided to raise an assert in this case to help.
+            //
+            // Please do a backtrace and check where you register this timer.
+            // If you just want to restart it you can call btstack_run_loop_timer_remove(..) before restarting the timer.
+            //
+            btstack_assert(false);
+        }
+
         int32_t delta = btstack_time_delta(timer->timeout, next->timeout);
         if (delta < 0) break;
     }

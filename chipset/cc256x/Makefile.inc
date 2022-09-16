@@ -59,11 +59,11 @@ BLE_init_cc2564B_1.2.bts:
 # v1.4 - versioned files TI Git Repo
 TIInit_6.7.16_bt_spec_4.1.bts:
 	@echo "Downloading $@"
-	@curl -sS -O https://git.ti.com/ti-bt/service-packs/blobs/raw/54f5c151dacc608b19ab2ce4c30e27a3983048b2/initscripts/TIInit_6.7.16_bt_spec_4.1.bts
+	@curl -sS -O $(BLUEKITCHEN_URL)/TIInit_6.7.16_bt_spec_4.1.bts
 
 TIInit_6.7.16_ble_add-on.bts:
 	@echo "Downloading $@"
-	@curl -sS -O https://git.ti.com/ti-bt/service-packs/blobs/raw/89c8db14929f10d75627b132690432cd71f5f54f/initscripts/TIInit_6.7.16_ble_add-on.bts
+	@curl -sS -O $(BLUEKITCHEN_URL)/TIInit_6.7.16_ble_add-on.bts
 
 # v1.5 - unversioned files from BlueKitchen website, original: http://www.ti.com/tool/cc256xb-bt-sp
 cc256x_bt_sp_v1.5.zip:

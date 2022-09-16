@@ -62,6 +62,10 @@
 // to enable demo text on POSIX systems
 // #undef HAVE_BTSTACK_STDIN
 
+// timing of keypresses
+#define TYPING_KEYDOWN_MS  20
+#define TYPING_DELAY_MS    20
+
 // When not set to 0xffff, sniff and sniff subrating are enabled
 static uint16_t host_max_latency = 1600;
 static uint16_t host_min_timeout = 3200;
@@ -181,10 +185,18 @@ static uint8_t device_id_sdp_service_buffer[100];
 static const char hid_device_name[] = "BTstack HID Keyboard";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t hid_cid;
-static bd_addr_t device_addr;
 static uint8_t hid_boot_device = 0;
 
+// HID Report sending
+static uint8_t                send_buffer_storage[16];
+static btstack_ring_buffer_t  send_buffer;
+static btstack_timer_source_t send_timer;
+static uint8_t                send_modifier;
+static uint8_t                send_keycode;
+static bool                   send_active;
+
 #ifdef HAVE_BTSTACK_STDIN
+static bd_addr_t device_addr;
 static const char * device_addr_string = "BC:EC:5D:E6:15:03";
 #endif
 
@@ -196,44 +208,69 @@ static enum {
 } app_state = APP_BOOTING;
 
 // HID Keyboard lookup
-static int lookup_keycode(uint8_t character, const uint8_t * table, int size, uint8_t * keycode){
+static bool lookup_keycode(uint8_t character, const uint8_t * table, int size, uint8_t * keycode){
     int i;
     for (i=0;i<size;i++){
         if (table[i] != character) continue;
         *keycode = i;
-        return 1;
+        return true;
     }
-    return 0;
+    return false;
 }
 
-static int keycode_and_modifer_us_for_character(uint8_t character, uint8_t * keycode, uint8_t * modifier){
-    int found;
+static bool keycode_and_modifer_us_for_character(uint8_t character, uint8_t * keycode, uint8_t * modifier){
+    bool found;
     found = lookup_keycode(character, keytable_us_none, sizeof(keytable_us_none), keycode);
     if (found) {
         *modifier = 0;  // none
-        return 1;
+        return true;
     }
     found = lookup_keycode(character, keytable_us_shift, sizeof(keytable_us_shift), keycode);
     if (found) {
         *modifier = 2;  // shift
-        return 1;
+        return true;
     }
-    return 0;
-}
-
-// HID Report sending
-static int send_keycode;
-static int send_modifier;
-
-static void send_key(int modifier, int keycode){
-    send_keycode = keycode;
-    send_modifier = modifier;
-    hid_device_request_can_send_now_event(hid_cid);
+    return false;
 }
 
 static void send_report(int modifier, int keycode){
     uint8_t report[] = { 0xa1, REPORT_ID, modifier, 0, keycode, 0, 0, 0, 0, 0};
     hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
+}
+
+static void trigger_key_up(btstack_timer_source_t * ts){
+    UNUSED(ts);
+    hid_device_request_can_send_now_event(hid_cid);
+}
+
+static void send_next(btstack_timer_source_t * ts) {
+    // get next key from buffer
+    uint8_t character;
+    uint32_t num_bytes_read = 0;
+    btstack_ring_buffer_read(&send_buffer, &character, 1, &num_bytes_read);
+    if (num_bytes_read == 0) {
+        // buffer empty, nothing to send
+        send_active = false;
+    } else {
+        send_active = true;
+        // lookup keycode and modifier using US layout
+        bool found = keycode_and_modifer_us_for_character(character, &send_keycode, &send_modifier);
+        if (found) {
+            // request can send now
+            hid_device_request_can_send_now_event(hid_cid);
+        } else {
+            // restart timer for next character
+            btstack_run_loop_set_timer(ts, TYPING_DELAY_MS);
+            btstack_run_loop_add_timer(ts);
+        }
+    }
+}
+
+static void queue_character(char character){
+    btstack_ring_buffer_write(&send_buffer, (uint8_t *) &character, 1);
+    if (send_active == false) {
+        send_next(&send_timer);
+    }
 }
 
 // Demo Application
@@ -243,23 +280,14 @@ static void send_report(int modifier, int keycode){
 // On systems with STDIN, we can directly type on the console
 
 static void stdin_process(char character){
-    uint8_t modifier;
-    uint8_t keycode;
-    int found;
-
     switch (app_state){
         case APP_BOOTING:
         case APP_CONNECTING:
             // ignore
             break;
-
         case APP_CONNECTED:
-            // send keyu
-            found = keycode_and_modifer_us_for_character(character, &keycode, &modifier);
-            if (found){
-                send_key(modifier, keycode);
-                return;
-            }
+            // add char to send buffer
+            queue_character(character);
             break;
         case APP_NOT_CONNECTED:
             printf("Connecting to %s...\n", bd_addr_to_str(device_addr));
@@ -272,44 +300,28 @@ static void stdin_process(char character){
 }
 #else
 
-// On embedded systems, send constant demo text with fixed period
+// On embedded systems, send constant demo text
 
-#define TYPING_PERIOD_MS 100
+#define TYPING_DEMO_PERIOD_MS 100
+
 static const char * demo_text = "\n\nHello World!\n\nThis is the BTstack HID Keyboard Demo running on an Embedded Device.\n\n";
-
 static int demo_pos;
-static btstack_timer_source_t typing_timer;
+static btstack_timer_source_t demo_text_timer;
 
-static void typing_timer_handler(btstack_timer_source_t * ts){
+static void demo_text_timer_handler(btstack_timer_source_t * ts){
+    UNUSED(ts);
 
-    // abort if not connected
-    if (!hid_cid) return;
-
-    // get next character
+    // queue character
     uint8_t character = demo_text[demo_pos++];
     if (demo_text[demo_pos] == 0){
         demo_pos = 0;
     }
+    queue_character(character);
 
-    // get keycodeand send
-    uint8_t modifier;
-    uint8_t keycode;
-    int found = keycode_and_modifer_us_for_character(character, &keycode, &modifier);
-    if (found){
-        send_key(modifier, keycode);
-    }
-
-    // set next timer
-    btstack_run_loop_set_timer(ts, TYPING_PERIOD_MS);
-    btstack_run_loop_add_timer(ts);
-}
-
-static void hid_embedded_start_typing(void){
-    demo_pos = 0;
-    // set one-shot timer
-    typing_timer.process = &typing_timer_handler;
-    btstack_run_loop_set_timer(&typing_timer, TYPING_PERIOD_MS);
-    btstack_run_loop_add_timer(&typing_timer);
+    // set timer for next character
+    btstack_run_loop_set_timer_handler(&demo_text_timer, demo_text_timer_handler);
+    btstack_run_loop_set_timer(&demo_text_timer, TYPING_DEMO_PERIOD_MS);
+    btstack_run_loop_add_timer(&demo_text_timer);
 }
 
 #endif
@@ -349,10 +361,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             printf("HID Connected, please start typing...\n");
 #else                        
                             printf("HID Connected, sending demo text...\n");
-                            hid_embedded_start_typing();
+                            demo_text_timer_handler(NULL);
 #endif
                             break;
                         case HID_SUBEVENT_CONNECTION_CLOSED:
+                            btstack_run_loop_remove_timer(&send_timer);
                             printf("HID Disconnected\n");
                             app_state = APP_NOT_CONNECTED;
                             hid_cid = 0;
@@ -360,12 +373,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         case HID_SUBEVENT_CAN_SEND_NOW:
                             if (send_keycode){
                                 send_report(send_modifier, send_keycode);
+                                // schedule key up
                                 send_keycode = 0;
                                 send_modifier = 0;
-                                hid_device_request_can_send_now_event(hid_cid);
+                                btstack_run_loop_set_timer_handler(&send_timer, trigger_key_up);
+                                btstack_run_loop_set_timer(&send_timer, TYPING_KEYDOWN_MS);
                             } else {
                                 send_report(0, 0);
+                                // schedule next key down
+                                btstack_run_loop_set_timer_handler(&send_timer, send_next);
+                                btstack_run_loop_set_timer(&send_timer, TYPING_DELAY_MS);
                             }
+                            btstack_run_loop_add_timer(&send_timer);
                             break;
                         default:
                             break;
@@ -459,7 +478,10 @@ int btstack_main(int argc, const char * argv[]){
 #ifdef HAVE_BTSTACK_STDIN
     sscanf_bd_addr(device_addr_string, device_addr);
     btstack_stdin_setup(stdin_process);
-#endif  
+#endif
+
+    btstack_ring_buffer_init(&send_buffer, send_buffer_storage, sizeof(send_buffer_storage));
+
     // turn on!
     hci_power_control(HCI_POWER_ON);
     return 0;

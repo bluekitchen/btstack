@@ -118,7 +118,7 @@ void hal_audio_sink_init(uint8_t channels,
 
 	// F4 Discovery Audio BSP only supports stereo playback
 	if (channels == 1){
-		log_error("F4 Discovery Audio BSP only supports stereo playback. HFP/HSP demos using sco_demo_util, please #define ENABLE_SCO_STEREO_PLAYBACK");
+		log_error("F4 Discovery Audio BSP only supports stereo playback. Please #define HAVE_HAL_AUDIO_SINK_STEREO_ONLY");
 		return;
 	}
 

@@ -5,12 +5,6 @@ set (CMAKE_CXX_STANDARD 11)
 # fink pkgconfig
 find_package(PkgConfig REQUIRED)
 
-# libusb
-pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-include_directories(${LIBUSB_INCLUDE_DIRS})
-link_directories(${LIBUSB_LIBRARY_DIRS})
-link_libraries(${LIBUSB_LIBRARIES})
-
 # portaudio
 pkg_check_modules(PORTAUDIO portaudio-2.0)
 if(PORTAUDIO_FOUND)
@@ -60,6 +54,17 @@ if (APTX_FOUND)
     add_compile_definitions(HAVE_APTX)
 endif()
 
+# lc3plus
+pkg_check_modules(LC3PLUS LC3plus)
+if(LC3PLUS_FOUND)
+	message("HAVE_LC3PLUS")
+	include_directories(${LC3PLUS_INCLUDE_DIRS})
+	link_directories(${LC3PLUS_LIBRARY_DIRS})
+	link_libraries(${LC3PLUS_LIBRARIES})
+	add_definitions(${LC3PLUS_CFLAGS})
+	add_compile_definitions(HAVE_LC3PLUS)
+endif()
+
 # enable optional features
 add_compile_definitions(ENABLE_TESTING_SUPPORT)
 
@@ -67,7 +72,7 @@ add_compile_definitions(ENABLE_TESTING_SUPPORT)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
-include_directories(.)
+include_directories(include)
 
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
@@ -100,7 +105,7 @@ file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
 file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
-file(GLOB SOURCES_MAIN      "main.c")
+file(GLOB SOURCES_MAIN      "main.c" "btstack_lc3plus_fraunhofer.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 
@@ -128,15 +133,11 @@ set(SOURCES
 )
 list(SORT SOURCES)
 
-# Enable ASAN
-add_compile_options( -g -fsanitize=address)
-add_link_options(       -fsanitize=address)
-
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
 # create targets for all examples
-file(GLOB EXAMPLES_C    "le_audio_*.c")
+file(GLOB EXAMPLES_C    "le_audio_*.c" "lc3_*.c")
 list(SORT EXAMPLES_C)
 file(GLOB EXAMPLES_GATT "*.gatt")
 
@@ -158,5 +159,5 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 		message("LE Audio Tool: ${EXAMPLE}")
 	endif()
 	add_executable(${EXAMPLE} ${EXAMPLE_FILE} )
-	target_link_libraries(${EXAMPLE} btstack)
+	target_link_libraries(${EXAMPLE} btstack m pthread)
 endforeach(EXAMPLE_FILE)

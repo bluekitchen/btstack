@@ -55,14 +55,13 @@
 #include "hci.h"
 
 #ifdef HAVE_POSIX_FILE_IO
+#include "tinydir.h"
 #include <ctype.h>
-#include <dirent.h>
-#include <fcntl.h>
-#include <unistd.h>
 #endif
 
-#ifdef _WIN32
-#include <Windows.h>
+#ifdef _MSC_VER
+// ignore deprecated warning for fopen
+#pragma warning(disable : 4996)
 #endif
 
 // assert outgoing and incoming hci packet buffers can hold max hci command resp. event packet
@@ -106,7 +105,7 @@ static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer)
 
 static const char * hcd_file_path;
 static const char * hcd_folder_path = ".";
-static int hcd_fd;
+static FILE * hcd_file;
 static char matched_file[1000];
 
 
@@ -118,16 +117,16 @@ static void chipset_init(const void * config){
     }
     send_download_command = 1;
     init_script_offset = 0;
-    hcd_fd = -1;
+    hcd_file = NULL;
 }
 
 static const uint8_t download_command[] = {0x2e, 0xfc, 0x00};
 
 static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
-    if (hcd_fd < 0){
+    if (hcd_file == NULL){
         log_info("chipset-bcm: open file %s", hcd_file_path);
-        hcd_fd = open(hcd_file_path, O_RDONLY);
-        if (hcd_fd < 0){
+        hcd_file = fopen(hcd_file_path, "rb");
+        if (hcd_file == NULL){
             log_error("chipset-bcm: can't open file %s", hcd_file_path);
             return BTSTACK_CHIPSET_NO_INIT_SCRIPT;
         }
@@ -143,14 +142,15 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     // read next command, but skip download command
     do {
         // read command
-        int res = read(hcd_fd, hci_cmd_buffer, 3);
-        if (res == 0){
-            log_info("chipset-bcm: end of file, size %u", init_script_offset);
-            close(hcd_fd);
-            return BTSTACK_CHIPSET_DONE;
-        }
-        if (res < 0){
-            log_error("chipset-bcm: read error at %u", init_script_offset);
+        size_t bytes_read = fread(hci_cmd_buffer, 1, 3, hcd_file);
+        if (bytes_read < 3){
+            if (feof(hcd_file)) {
+                log_info("chipset-bcm: end of file, size %u", init_script_offset);
+            } else {
+                log_error("chipset-bcm: read error at %u", init_script_offset);
+            }
+            fclose(hcd_file);
+            hcd_file = NULL;
             return BTSTACK_CHIPSET_DONE;
         }
         init_script_offset += 3;
@@ -158,10 +158,12 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
         // read parameters
         int param_len = hci_cmd_buffer[2];
         if (param_len){
-            res = read(hcd_fd, &hci_cmd_buffer[3], param_len);
+            bytes_read = fread(&hci_cmd_buffer[3], 1, param_len, hcd_file);
         }
-        if (res < 0){
+        if (bytes_read < param_len){
             log_error("chipset-bcm: read error at %u", init_script_offset);
+            fclose(hcd_file);
+            hcd_file = NULL;
             return BTSTACK_CHIPSET_DONE;
         }
         init_script_offset += param_len;
@@ -209,7 +211,7 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
     // construct short variant without revision info
     char filename_short[MAX_DEVICE_NAME_LEN+5];
     strcpy(filename_short, device_name);
-    int len = strlen(filename_short);
+    uint16_t len = (uint16_t) strlen(filename_short);
     while (len > 3){
         char c = filename_short[len-1];
         if (isdigit(c) == 0) break;
@@ -222,25 +224,28 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
     log_info("chipset-bcm: looking for %s and %s", filename_short, filename_complete);
 
     // find in folder
-    DIR *dirp = opendir(hcd_folder_path);
-    int match_short = 0;
-    int match_complete = 0;
-    if (!dirp){
+    tinydir_dir dir = { 0 };
+    int res = tinydir_open(&dir, hcd_folder_path);
+    if (res < 0){
         log_error("chipset-bcm: could not get directory for %s", hcd_folder_path);
         return;
     }
-    while (true){
-        struct dirent *dp = readdir(dirp);
-        if (!dp) break;
-        if (equal_ignore_case(filename_complete, dp->d_name)){
+
+    int match_short = 0;
+    int match_complete = 0;
+    while (dir.has_next) {
+        tinydir_file file;
+        tinydir_readfile(&dir, &file);
+        tinydir_next(&dir);
+        if (equal_ignore_case(filename_complete, file.name)){
             match_complete = 1;
             continue;
         }
-        if (equal_ignore_case(filename_short, dp->d_name)){
-            match_short = 1;            
+        if (equal_ignore_case(filename_short, file.name)){
+            match_short = 1;
         }
     }
-    closedir(dirp);
+    tinydir_close(&dir);
     if (match_complete){
         sprintf(matched_file, "%s/%s", hcd_folder_path, filename_complete);
         hcd_file_path = matched_file;

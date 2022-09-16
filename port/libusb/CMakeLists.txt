@@ -5,6 +5,7 @@ SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(BTstack-libusb)
 
+SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
 # pkgconfig
 find_package(PkgConfig REQUIRED)
@@ -46,7 +47,8 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
 	# using Visual Studio C++
 endif()
 
-# to find generated .h from .gatt files
+# to generate .h from .gatt files
+find_package (Python REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
@@ -179,11 +181,13 @@ set (LWIP_EXAMPLES pan_lwip_http_server)
 # create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-	set (SOURCE_FILES ${EXAMPLE_FILE})
+
+	# get c file
+	set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
 
 	# add lwip sources for lwip examples
 	if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
-		list(APPEND SOURCE_FILES ${SOURCES_LWIP})
+		list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
 	endif()
 
 	# add GATT DB creation
@@ -191,14 +195,14 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 		message("example ${EXAMPLE} -- with GATT DB")
 		add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-			DEPENDS ${CMAKE_SOURCE_DIR}/../../example/${EXAMPLE}.gatt
-			COMMAND ${CMAKE_SOURCE_DIR}/../../tool/compile_gatt.py
-			ARGS ${CMAKE_SOURCE_DIR}/../../example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+			DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
+			COMMAND ${Python_EXECUTABLE}
+			ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 		)
-		list(APPEND SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
+		list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
 	else()
 		message("example ${EXAMPLE}")
 	endif()
-	add_executable(${EXAMPLE} ${SOURCE_FILES} )
+	add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
 	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE_FILE)

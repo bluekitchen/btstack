@@ -344,7 +344,7 @@ static bool usb_is_vmware_bluetooth_adapter(const char * device_path){
 static bool usb_device_path_match(const char * device_path, uint16_t vendor_id, uint16_t product_id){
     // construct pid/vid substring
     char substring[20];
-    sprintf(substring, "vid_%04x&pid_%04x", vendor_id, product_id);
+    sprintf_s(substring, sizeof(substring), "vid_%04x&pid_%04x", vendor_id, product_id);
     const char * pos = strstr(device_path, substring);
     log_info("check %s in %s -> %p", substring, device_path, pos);
     return (pos > 0);
@@ -547,7 +547,7 @@ static void usb_process_event_in(btstack_data_source_t *ds, btstack_data_source_
     }
 
     // notify uppper
-    packet_handler(HCI_EVENT_PACKET, hci_event_in_buffer, bytes_read);
+    packet_handler(HCI_EVENT_PACKET, hci_event_in_buffer, (uint16_t) bytes_read);
 
 	// re-submit transfer
 	usb_submit_event_in_transfer();
@@ -581,7 +581,7 @@ static void usb_process_acl_in(btstack_data_source_t *ds, btstack_data_source_ca
     }
 
     // notify uppper
-    packet_handler(HCI_ACL_DATA_PACKET, hci_acl_in_buffer, bytes_read);
+    packet_handler(HCI_ACL_DATA_PACKET, hci_acl_in_buffer, (uint16_t) bytes_read);
 
 	// re-submit transfer
 	usb_submit_acl_in_transfer();
@@ -727,7 +727,7 @@ static void usb_process_sco_in(btstack_data_source_t *ds,  btstack_data_source_c
             USBD_ISO_PACKET_DESCRIPTOR * packet_descriptor = &hci_sco_packet_descriptors[transfer_index * NUM_ISO_PACKETS + i];
             if (packet_descriptor->Length){
                 uint8_t * iso_data = &hci_sco_in_buffer[transfer_index * SCO_PACKET_SIZE + packet_descriptor->Offset];
-                uint16_t  iso_len  = packet_descriptor->Length; 
+                uint16_t  iso_len  = (uint16_t) packet_descriptor->Length;
                 sco_handle_data(iso_data, iso_len);
             }
         }

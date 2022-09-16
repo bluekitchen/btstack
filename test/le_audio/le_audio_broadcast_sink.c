@@ -68,13 +68,15 @@
 #include "hci_cmd.h"
 #include "btstack_lc3.h"
 #include "btstack_lc3_google.h"
+#include "btstack_lc3plus_fraunhofer.h"
+
+#ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
+#endif
 
 // max config
 #define MAX_NUM_BIS 2
 #define MAX_SAMPLES_PER_FRAME 480
-
-#define DUMP_LEN_LC3_FRAMES 1000
 
 // playback
 #define MAX_NUM_LC3_FRAMES   5
@@ -94,18 +96,14 @@
 
 static void show_usage(void);
 
-static const char * filename_lc3 = "le_audio_broadcast_sink.lc3";
 static const char * filename_wav = "le_audio_broadcast_sink.wav";
 
 static enum {
     APP_W4_WORKING,
     APP_W4_BROADCAST_ADV,
     APP_W4_PA_AND_BIG_INFO,
-    APP_CREATE_BIG_SYNC,
     APP_W4_BIG_SYNC_ESTABLISHED,
-    APP_SET_ISO_PATHS,
     APP_STREAMING,
-    APP_TERMINATE_BIG,
     APP_IDLE
 } app_state = APP_W4_WORKING;
 
@@ -116,8 +114,8 @@ static bool have_base;
 static bool have_big_info;
 
 uint32_t last_samples_report_ms;
-uint32_t samples_received;
-uint32_t samples_dropped;
+uint16_t samples_received;
+uint16_t samples_dropped;
 uint16_t frames_per_second[MAX_NUM_BIS];
 
 // remote info
@@ -127,37 +125,58 @@ static bd_addr_type_t remote_type;
 static uint8_t remote_sid;
 static bool count_mode;
 static bool pts_mode;
+static bool nrf5340_audio_demo;
+
 
 // broadcast info
 static const uint8_t    big_handle = 1;
 static hci_con_handle_t sync_handle;
 static hci_con_handle_t bis_con_handles[MAX_NUM_BIS];
 static unsigned int     next_bis_index;
+static uint8_t          encryption;
+static uint8_t          broadcast_code [] = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
 
 // analysis
+static bool     last_packet_received_big;
+static uint16_t last_packet_sequence_big;
+static bool     last_packet_received[MAX_NUM_BIS];
 static uint16_t last_packet_sequence[MAX_NUM_BIS];
 static uint32_t last_packet_time_ms[MAX_NUM_BIS];
-static uint8_t last_packet_prefix[MAX_NUM_BIS * PACKET_PREFIX_LEN];
+static uint8_t  last_packet_prefix[MAX_NUM_BIS * PACKET_PREFIX_LEN];
+
+// BIG Sync
+static le_audio_big_sync_t        big_sync_storage;
+static le_audio_big_sync_params_t big_sync_params;
 
 // lc3 writer
-static int dump_file;
 static uint32_t lc3_frames;
 
 // lc3 codec config
-static uint32_t sampling_frequency_hz;
+static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
 static uint8_t  num_bis;
 
 // lc3 decoder
+static bool request_lc3plus_decoder = false;
+static bool use_lc3plus_decoder = false;
 static const btstack_lc3_decoder_t * lc3_decoder;
-static btstack_lc3_decoder_google_t decoder_contexts[MAX_NUM_BIS];
 static int16_t pcm[MAX_NUM_BIS * MAX_SAMPLES_PER_FRAME];
+
+static btstack_lc3_decoder_google_t google_decoder_contexts[MAX_NUM_BIS];
+#ifdef HAVE_LC3PLUS
+static btstack_lc3plus_fraunhofer_decoder_t fraunhofer_decoder_contexts[MAX_NUM_BIS];
+#endif
+static void * decoder_contexts[MAX_NR_BIS];
 
 // playback
 static uint8_t playback_buffer_storage[PLAYBACK_BUFFER_SIZE];
 static btstack_ring_buffer_t playback_buffer;
+
+static btstack_timer_source_t next_packet_timer;
+static uint16_t               cached_iso_sdu_len;
+static bool                   have_pcm[MAX_NUM_BIS];
 
 static void le_audio_broadcast_sink_playback(int16_t * buffer, uint16_t num_samples){
     // called from lower-layer but guaranteed to be on main thread
@@ -185,52 +204,56 @@ static void le_audio_broadcast_sink_playback(int16_t * buffer, uint16_t num_samp
     btstack_assert(bytes_read == bytes_needed);
 }
 
-static void open_lc3_file(void) {
-    // open lc3 file
-    int oflags = O_WRONLY | O_CREAT | O_TRUNC;
-    dump_file = open(filename_lc3, oflags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (dump_file < 0) {
-        printf("failed to open file %s, errno = %d\n", filename_lc3, errno);
-        return;
-    }
-
-    printf("LC3 binary file: %s\n", filename_lc3);
-
-    // calc bps
-    uint16_t frame_duration_100us = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 75 : 100;
-    uint32_t bits_per_second = (uint32_t) octets_per_frame * num_bis * 8 * 10000 / frame_duration_100us;
-
-    // write header for floating point implementation
-    uint8_t header[18];
-    little_endian_store_16(header, 0, 0xcc1c);
-    little_endian_store_16(header, 2, sizeof(header));
-    little_endian_store_16(header, 4, sampling_frequency_hz / 100);
-    little_endian_store_16(header, 6, bits_per_second / 100);
-    little_endian_store_16(header, 8, num_bis);
-    little_endian_store_16(header, 10, frame_duration_100us * 10);
-    little_endian_store_16(header, 12, 0);
-    little_endian_store_32(header, 14, DUMP_LEN_LC3_FRAMES * number_samples_per_frame);
-    write(dump_file, header, sizeof(header));
-}
-
 static void setup_lc3_decoder(void){
     uint8_t channel;
     for (channel = 0 ; channel < num_bis ; channel++){
-        btstack_lc3_decoder_google_t * decoder_context = &decoder_contexts[channel];
-        lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
+        // pick decoder
+        void * decoder_context = NULL;
+#ifdef HAVE_LC3PLUS
+        if (use_lc3plus_decoder){
+            decoder_context = &fraunhofer_decoder_contexts[channel];
+            lc3_decoder = btstack_lc3plus_fraunhofer_decoder_init_instance(decoder_context);
+        }
+        else
+#endif
+        {
+            decoder_context = &google_decoder_contexts[channel];
+            lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
+        }
+        decoder_contexts[channel] = decoder_context;
         lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration);
     }
-    number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(&decoder_contexts[0]);
+    number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(decoder_contexts[0]);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
 }
 
 static void close_files(void){
+#ifdef HAVE_POSIX_FILE_IO
     printf("Close files\n");
-    close(dump_file);
     wav_writer_close();
+#endif
+    const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
+    if (sink != NULL){
+        sink->stop_stream();
+        sink->close();
+    }
 }
 
 static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size){
+    // nRF534_audio quirk - no BASE in periodic advertisement
+    if (nrf5340_audio_demo){
+        // hard coded config LC3
+        // default: mono bitrate 96000, 10 ms with USB audio source, 120 octets per frame
+        count_mode = 0;
+        pts_mode   = 0;
+        num_bis    = 1;
+        sampling_frequency_hz = 48000;
+        frame_duration = BTSTACK_LC3_FRAME_DURATION_10000US;
+        octets_per_frame = 120;
+        have_base = true;
+        return;
+    }
+
     // periodic advertisement contains the BASE
     // TODO: BASE might be split across multiple advertisements
     const uint8_t * adv_data = hci_subevent_le_periodic_advertising_report_get_data(packet);
@@ -246,7 +269,8 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
     ad_context_t context;
     for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
         uint8_t data_type = ad_iterator_get_data_type(&context);
-        uint8_t data_size = ad_iterator_get_data_len(&context);
+        // TODO: avoid out-of-bounds read
+        // uint8_t data_size = ad_iterator_get_data_len(&context);
         const uint8_t * data = ad_iterator_get_data(&context);
         uint16_t uuid;
         switch (data_type){
@@ -256,7 +280,8 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                     have_base = true;
                     // Level 1: Group Level
                     const uint8_t * base_data = &data[2];
-                    uint16_t base_len = data_size - 2;
+                    // TODO: avoid out-of-bounds read
+                    // uint16_t base_len = data_size - 2;
                     printf("BASE:\n");
                     uint32_t presentation_delay = little_endian_read_24(base_data, 0);
                     printf("- presentation delay: %"PRIu32" us\n", presentation_delay);
@@ -287,7 +312,7 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                                     sampling_frequency_index = codec_specific_configuration[codec_offset+1];
                                     // TODO: check range
                                     sampling_frequency_hz = sampling_frequency_map[sampling_frequency_index - 1];
-                                    printf("    - sampling frequency[%u]: %"PRIu32"\n", i, sampling_frequency_hz);
+                                    printf("    - sampling frequency[%u]: %u\n", i, sampling_frequency_hz);
                                     break;
                                 case 0x02: // 0 = 7.5, 1 = 10 ms
                                     frame_duration_index =  codec_specific_configuration[codec_offset+1];
@@ -333,6 +358,10 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
 static void handle_big_info(const uint8_t * packet, uint16_t size){
     printf("BIG Info advertising report\n");
     sync_handle = hci_subevent_le_biginfo_advertising_report_get_sync_handle(packet);
+    encryption = hci_subevent_le_biginfo_advertising_report_get_encryption(packet);
+    if (encryption) {
+        printf("Stream is encrypted\n");
+    }
     have_big_info = true;
 }
 
@@ -340,17 +369,19 @@ static void enter_create_big_sync(void){
     // stop scanning
     gap_stop_scan();
 
+    // switch to lc3plus if requested and possible
+    use_lc3plus_decoder = request_lc3plus_decoder && (frame_duration == BTSTACK_LC3_FRAME_DURATION_10000US);
+
     // init decoder
     setup_lc3_decoder();
 
-    printf("Configure: %u channels, sampling rate %u, samples per frame %u\n", num_bis, sampling_frequency_hz, number_samples_per_frame);
+    printf("Configure: %u channels, sampling rate %u, samples per frame %u, lc3plus %u\n", num_bis, sampling_frequency_hz, number_samples_per_frame, use_lc3plus_decoder);
 
-    // create lc3 file
-    open_lc3_file();
-
+#ifdef HAVE_POSIX_FILE_IO
     // create wav file
     printf("WAV file: %s\n", filename_wav);
     wav_writer_open(filename_wav, num_bis, sampling_frequency_hz);
+#endif
 
     // init playback buffer
     btstack_ring_buffer_init(&playback_buffer, playback_buffer_storage, PLAYBACK_BUFFER_SIZE);
@@ -359,7 +390,7 @@ static void enter_create_big_sync(void){
     // PTS 8.2 sends stereo at half speed for stereo, for now playback at half speed
     const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
     if (sink != NULL){
-        uint32_t playback_speed;
+        uint16_t playback_speed;
         if ((num_bis > 1) && pts_mode){
             playback_speed = sampling_frequency_hz / num_bis;
             printf("PTS workaround: playback at %u hz\n", playback_speed);
@@ -370,22 +401,50 @@ static void enter_create_big_sync(void){
         sink->start_stream();
     }
 
-    app_state = APP_CREATE_BIG_SYNC;
+    big_sync_params.big_handle = big_handle;
+    big_sync_params.sync_handle = sync_handle;
+    big_sync_params.encryption = encryption;
+    if (encryption) {
+        memcpy(big_sync_params.broadcast_code, &broadcast_code[0], 16);
+    } else {
+        memset(big_sync_params.broadcast_code, 0, 16);
+    }
+    big_sync_params.mse = 0;
+    big_sync_params.big_sync_timeout_10ms = 100;
+    big_sync_params.num_bis = num_bis;
+    uint8_t i;
+    printf("BIG Create Sync for BIS: ");
+    for (i=0;i<num_bis;i++){
+        big_sync_params.bis_indices[i] = i + 1;
+        printf("%u ", big_sync_params.bis_indices[i]);
+    }
+    printf("\n");
+    app_state = APP_W4_BIG_SYNC_ESTABLISHED;
+    gap_big_sync_create(&big_sync_storage, &big_sync_params);
+}
+
+static void start_scanning() {
+    app_state = APP_W4_BROADCAST_ADV;
+    have_base = false;
+    have_big_info = false;
+    gap_set_scan_params(1, 0x30, 0x30, 0);
+    gap_start_scan();
+    printf("Start scan..\n");
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
-    unsigned int i;
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
-                    if (app_state != APP_W4_WORKING) break;
-                    app_state = APP_W4_BROADCAST_ADV;
-                    gap_set_scan_params(1, 0x30, 0x30, 0);
-                    gap_start_scan();
-                    printf("Start scan..\n");
+                    app_state = APP_IDLE;
+#ifdef ENABLE_DEMO_MODE
+                    start_scanning();
+#else
+                    show_usage();
+#endif
                     break;
                 case HCI_STATE_OFF:
                     printf("Goodbye\n");
@@ -423,6 +482,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         size = btstack_min(sizeof(remote_name) - 1, size);
                         memcpy(remote_name, data, size);
                         remote_name[size] = 0;
+                        // support for nRF5340 Audio DK
+                        if (strncmp("NRF5340", remote_name, 7) == 0){
+                            nrf5340_audio_demo = true;
+                            found = true;
+                        }
                         break;
                     default:
                         break;
@@ -449,7 +513,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
-                    printf("Periodic advertising sync established\n");
+                    sync_handle = hci_subevent_le_periodic_advertising_sync_establishment_get_sync_handle(packet);
+                    printf("Periodic advertising sync with handle 0x%04x established\n", sync_handle);
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT:
                     if (have_base) break;
@@ -465,61 +530,131 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         enter_create_big_sync();
                     }
                     break;
-                case HCI_SUBEVENT_LE_BIG_SYNC_ESTABLISHED:
-                    printf("BIG Sync Established\n");
-                    if (app_state == APP_W4_BIG_SYNC_ESTABLISHED){
-                        gap_stop_scan();
-                        gap_periodic_advertising_terminate_sync(sync_handle);
-                        // update num_bis
-                        num_bis = packet[16];
-                        for (i=0;i<num_bis;i++){
-                            bis_con_handles[i] = little_endian_read_16(packet, 17 + 2*i);
+                case HCI_SUBEVENT_LE_BIG_SYNC_LOST:
+                    printf("BIG Sync Lost\n");
+                    {
+                        const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
+                        if (sink != NULL) {
+                            sink->stop_stream();
+                            sink->close();
                         }
-                        next_bis_index = 0;
-                        app_state = APP_SET_ISO_PATHS;
                     }
+                    // start over
+                    start_scanning();
                     break;
                 default:
                     break;
             }
-        default:
             break;
-    }
-
-    if (!hci_can_send_command_packet_now()) return;
-
-    const uint8_t broadcast_code[16] = { 0 };
-    uint8_t bis_array[MAX_NUM_BIS];
-    switch(app_state){
-        case APP_CREATE_BIG_SYNC:
-            app_state = APP_W4_BIG_SYNC_ESTABLISHED;
-            printf("BIG Create Sync for BIS: ");
-            for (i=0;i<num_bis;i++){
-                bis_array[i] = i + 1;
-                printf("%u ", bis_array[i]);
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_BIG_SYNC_CREATED: {
+                    printf("BIG Sync created with BIS Connection handles: ");
+                    uint8_t i;
+                    for (i=0;i<num_bis;i++){
+                        bis_con_handles[i] = gap_subevent_big_sync_created_get_bis_con_handles(packet, i);
+                        printf("0x%04x ", bis_con_handles[i]);
+                    }
+                    app_state = APP_STREAMING;
+                    last_packet_received_big = false;
+                    last_samples_report_ms = btstack_run_loop_get_time_ms();
+                    memset(last_packet_sequence, 0, sizeof(last_packet_sequence));
+                    memset(last_packet_received, 0, sizeof(last_packet_received));
+                    memset(pcm, 0, sizeof(pcm));
+                    printf("Start receiving\n");
+                    break;
+                }
+                case GAP_SUBEVENT_BIG_SYNC_STOPPED:
+                    printf("BIG Sync stopped, big_handle 0x%02x\n", gap_subevent_big_sync_stopped_get_big_handle(packet));
+                    break;
+                default:
+                    break;
             }
-            printf("\n");
-            hci_send_cmd(&hci_le_big_create_sync, big_handle, sync_handle, 0, broadcast_code, 0, 100, num_bis, bis_array);
-            break;
-        case APP_SET_ISO_PATHS:
-            hci_send_cmd(&hci_le_setup_iso_data_path, bis_con_handles[next_bis_index++], 1, 0, 0, 0, 0, 0, 0, NULL);
-            if (next_bis_index == num_bis){
-                app_state = APP_STREAMING;
-                last_samples_report_ms = btstack_run_loop_get_time_ms();
-            }
-            break;
-        case APP_TERMINATE_BIG:
-            hci_send_cmd(&hci_le_big_terminate_sync, big_handle);
-            app_state = APP_IDLE;
-            printf("Shutdown...\n");
-            hci_power_control(HCI_POWER_OFF);
             break;
         default:
             break;
     }
 }
 
+static void store_samples_in_ringbuffer(void){
+    // check if we have all channels
+    uint8_t bis_channel;
+    for (bis_channel = 0; bis_channel < num_bis ; bis_channel++){
+        if (have_pcm[bis_channel] == false) return;
+    }
+#ifdef HAVE_POSIX_FILE_IO
+    // write wav samples
+    wav_writer_write_int16(num_bis * number_samples_per_frame, pcm);
+#endif
+    // store samples in playback buffer
+    uint32_t bytes_to_store = num_bis * number_samples_per_frame * 2;
+    samples_received += number_samples_per_frame;
+    if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
+        btstack_ring_buffer_write(&playback_buffer, (uint8_t *) pcm, bytes_to_store);
+    } else {
+        printf("Samples dropped\n");
+        samples_dropped += number_samples_per_frame;
+    }
+    // reset
+    for (bis_channel = 0; bis_channel < num_bis ; bis_channel++){
+        have_pcm[bis_channel] = false;
+    }
+}
+
+static void plc_do(uint8_t bis_channel) {// inject packet
+    uint8_t tmp_BEC_detect;
+    uint8_t BFI = 1;
+    (void) lc3_decoder->decode_signed_16(decoder_contexts[bis_channel], NULL, cached_iso_sdu_len, BFI,
+                                         &pcm[bis_channel], num_bis,
+                                         &tmp_BEC_detect);
+
+    printf("PLC channel %u - packet sequence %u\n", bis_channel,  last_packet_sequence[bis_channel]);
+
+    have_pcm[bis_channel] = true;
+    store_samples_in_ringbuffer();
+}
+
+static void plc_missing(uint16_t packet_sequence_number) {
+    while (btstack_time16_delta(packet_sequence_number, last_packet_sequence_big) > 1){
+        uint8_t i;
+        for (i=0;i<num_bis;i++){
+            // deal with first packet missing. inject silent samples, pcm buffer is memset to zero at start
+            if (last_packet_received[i] == false){
+                printf("PLC Missing: very first packet BIS %u missing\n", i);
+                have_pcm[i] = true;
+                store_samples_in_ringbuffer();
+
+                last_packet_received[i] = true;
+                last_packet_sequence[i] = last_packet_sequence_big;
+                continue;
+            }
+
+            // missing packet if big sequence counter is higher than bis sequence counter
+            if (btstack_time16_delta(last_packet_sequence_big, last_packet_sequence[i]) > 0) {
+                plc_do(i);
+                last_packet_sequence[i] = last_packet_sequence_big;
+            }
+        }
+        last_packet_sequence_big++;
+    }
+}
+
+static void plc_timeout(btstack_timer_source_t * timer) {
+    if (app_state != APP_STREAMING) return;
+
+    // Restart timer. This will loose sync with ISO interval, but if we stop caring if we loose that many packets
+    uint32_t frame_duration_ms = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8 : 10;
+    btstack_run_loop_set_timer(timer, frame_duration_ms);
+    btstack_run_loop_set_timer_handler(timer, plc_timeout);
+    btstack_run_loop_add_timer(timer);
+
+    // assume no packet received in iso interval
+    plc_missing(last_packet_sequence_big + 1);
+}
+
 static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    if (app_state != APP_STREAMING) return;
 
     uint16_t header = little_endian_read_16(packet, 0);
     hci_con_handle_t con_handle = header & 0x0fff;
@@ -533,6 +668,8 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         uint32_t time_stamp = little_endian_read_32(packet, offset);
         offset += 4;
     }
+
+    uint32_t receive_time_ms = btstack_run_loop_get_time_ms();
 
     uint16_t packet_sequence_number = little_endian_read_16(packet, offset);
     offset += 2;
@@ -550,12 +687,11 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     if (count_mode){
         // check for missing packet
         uint16_t last_seq_no = last_packet_sequence[bis_channel];
-        uint32_t now = btstack_run_loop_get_time_ms();
         bool packet_missed = (last_seq_no != 0) && ((last_seq_no + 1) != packet_sequence_number);
         if (packet_missed){
             // print last packet
             printf("\n");
-            printf("%04x %10u %u ", last_seq_no, last_packet_time_ms[bis_channel], bis_channel);
+            printf("%04x %10"PRIu32" %u ", last_seq_no, last_packet_time_ms[bis_channel], bis_channel);
             printf_hexdump(&last_packet_prefix[num_bis*PACKET_PREFIX_LEN], PACKET_PREFIX_LEN);
             last_seq_no++;
 
@@ -567,64 +703,62 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             printf(ANSI_COLOR_RESET);
 
             // print current packet
-            printf("%04x %10u %u ", packet_sequence_number, now, bis_channel);
+            printf("%04x %10"PRIu32" %u ", packet_sequence_number, receive_time_ms, bis_channel);
             printf_hexdump(&packet[offset], PACKET_PREFIX_LEN);
         }
 
         // cache current packet
-        last_packet_time_ms[bis_channel] = now;
-        last_packet_sequence[bis_channel] = packet_sequence_number;
         memcpy(&last_packet_prefix[num_bis*PACKET_PREFIX_LEN], &packet[offset], PACKET_PREFIX_LEN);
 
     } else {
 
-        if ((packet_sequence_number & 0x7c) == 0) {
-            printf("%04x %10u %u ", packet_sequence_number, btstack_run_loop_get_time_ms(), bis_channel);
-            printf_hexdump(&packet[offset], iso_sdu_length);
-        }
-
-        if (lc3_frames < DUMP_LEN_LC3_FRAMES) {
-            // store len header only for first bis
-            if (bis_channel == 0) {
-                uint8_t len_header[2];
-                little_endian_store_16(len_header, 0, num_bis * iso_sdu_length);
-                write(dump_file, len_header, 2);
+        if (last_packet_received[bis_channel]) {
+            int16_t packet_sequence_delta = btstack_time16_delta(packet_sequence_number,
+                                                                 last_packet_sequence[bis_channel]);
+            if (packet_sequence_delta < 1) {
+                // drop delayed packet that had already been generated by PLC
+                printf("Dropping delayed packet. Current sequence number %u, last received or generated by PLC: %u\n",
+                       packet_sequence_number, last_packet_sequence[bis_channel]);
+                return;
             }
-
-            // store single channel codec frame
-            write(dump_file, &packet[offset], iso_sdu_length);
+        } else {
+            if (!last_packet_received_big) {
+                // track sequence number of very first received packet
+                last_packet_received_big = true;
+                last_packet_sequence_big = packet_sequence_number;
+            }
+            printf("BIS %u, first packet seq number %u\n", bis_channel, packet_sequence_number);
+            last_packet_received[bis_channel] = true;
         }
+
+        // assert no channel is more than one packet behind
+        plc_missing(packet_sequence_number);
 
         // decode codec frame
         uint8_t tmp_BEC_detect;
         uint8_t BFI = 0;
-        (void) lc3_decoder->decode_signed_16(&decoder_contexts[bis_channel], &packet[offset], iso_sdu_length, BFI,
+        (void) lc3_decoder->decode_signed_16(decoder_contexts[bis_channel], &packet[offset], iso_sdu_length, BFI,
                                    &pcm[bis_channel], num_bis,
                                    &tmp_BEC_detect);
-
-        // process complete iso frame
-        if ((bis_channel + 1) == num_bis) {
-            // write wav samples
-            wav_writer_write_int16(num_bis * number_samples_per_frame, pcm);
-            // store samples in playback buffer
-            uint32_t bytes_to_store = num_bis * number_samples_per_frame * 2;
-            samples_received += number_samples_per_frame;
-            if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
-                btstack_ring_buffer_write(&playback_buffer, (uint8_t *) pcm, bytes_to_store);
-            } else {
-                samples_dropped += number_samples_per_frame;
-            }
-        }
-
-        log_info("Samples in playback buffer %5u", btstack_ring_buffer_bytes_available(&playback_buffer) / (num_bis * 2));
+        have_pcm[bis_channel] = true;
+        store_samples_in_ringbuffer();
 
         lc3_frames++;
         frames_per_second[bis_channel]++;
 
+        // PLC
+        cached_iso_sdu_len = iso_sdu_length;
+        uint32_t frame_duration_ms = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8 : 10;
+        uint32_t timeout_ms = frame_duration_ms * 5 / 2;
+        btstack_run_loop_remove_timer(&next_packet_timer);
+        btstack_run_loop_set_timer(&next_packet_timer, timeout_ms);
+        btstack_run_loop_set_timer_handler(&next_packet_timer, plc_timeout);
+        btstack_run_loop_add_timer(&next_packet_timer);
+
         uint32_t time_ms = btstack_run_loop_get_time_ms();
-        if (btstack_time_delta(time_ms, last_samples_report_ms) > 1000){
+        if (btstack_time_delta(time_ms, last_samples_report_ms) >= 1000){
             last_samples_report_ms = time_ms;
-            printf("LC3 Frames: %4u - ", lc3_frames / num_bis);
+            printf("LC3 Frames: %4u - ", (int) (lc3_frames / num_bis));
             uint8_t i;
             for (i=0;i<num_bis;i++){
                 printf("%u ", frames_per_second[i]);
@@ -634,21 +768,48 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             samples_received = 0;
             samples_dropped  =  0;
         }
-
-        if (lc3_frames == DUMP_LEN_LC3_FRAMES){
-            close_files();
-        }
     }
+
+    last_packet_time_ms[bis_channel]  = receive_time_ms;
+    last_packet_sequence[bis_channel] = packet_sequence_number;
 }
 
 static void show_usage(void){
     printf("\n--- LE Audio Broadcast Sink Test Console ---\n");
+    printf("s - start scanning\n");
+#ifdef HAVE_LC3PLUS
+    printf("q - use LC3plus decoder if 10 ms ISO interval is used\n");
+#endif
+    printf("t - terminate BIS streams\n");
     printf("x - close files and exit\n");
     printf("---\n");
 }
 
 static void stdin_process(char c){
     switch (c){
+        case 's':
+            if (app_state != APP_IDLE) break;
+            start_scanning();
+            break;
+#ifdef HAVE_LC3PLUS
+        case 'q':
+            printf("Use LC3plus decoder for 10 ms ISO interval...\n");
+            request_lc3plus_decoder = true;
+            break;
+#endif
+        case 't':
+            switch (app_state){
+                case APP_STREAMING:
+                case APP_W4_BIG_SYNC_ESTABLISHED:
+                    app_state = APP_IDLE;
+                    close_files();
+                    printf("Terminate BIG SYNC\n");
+                    gap_big_sync_terminate(big_handle);
+                    break;
+                default:
+                    break;
+            }
+            break;
         case 'x':
             close_files();
             printf("Shutdown...\n");

@@ -21,7 +21,7 @@
 #include "bluetooth_gatt.h"
 
 #include "ble/gatt-service/battery_service_server.h"
-#include "battery_service_profile.h"
+#include "battery_service_server_test.h"
 #include "mock_att_server.h"
 
 static uint8_t battery_level = 100;

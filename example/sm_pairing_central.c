@@ -213,10 +213,6 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             // general gatt client request to trigger mandatory authentication
             // gatt_client_discover_primary_services(&hci_packet_handler, con_handle);
             break;
-        case HCI_EVENT_ENCRYPTION_CHANGE: 
-            con_handle = hci_event_encryption_change_get_connection_handle(packet);
-            printf("Connection encrypted: %u\n", hci_event_encryption_change_get_encryption_enabled(packet));
-            break;
         case GATT_EVENT_QUERY_COMPLETE:
             status = gatt_event_query_complete_get_att_status(packet);
             switch (status){

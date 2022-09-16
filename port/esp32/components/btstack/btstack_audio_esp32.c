@@ -52,15 +52,37 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+
+#include "driver/gpio.h"
 #include "driver/i2s.h"
+
 #include <string.h>
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
 #include "driver/i2c.h"
-#include "driver/gpio.h"
 #include "es8388.h"
 #define IIC_DATA                    (GPIO_NUM_18)
 #define IIC_CLK                     (GPIO_NUM_23)
+#endif
+
+#if CONFIG_IDF_TARGET_ESP32C3
+// Arbitrary choice - Strapping Pins 2,8,9 are used as outputs
+#define BTSTACK_AUDIO_I2S_BCK GPIO_NUM_2
+#define BTSTACK_AUDIO_I2S_WS  GPIO_NUM_8
+#define BTSTACK_AUDIO_I2S_OUT GPIO_NUM_9
+#define BTSTACK_AUDIO_I2S_IN  GPIO_NUM_10
+#elif CONFIG_IDF_TARGET_ESP32S3
+// ESP32-S3-Korvo-2 V3.0
+#define BTSTACK_AUDIO_I2S_BCK GPIO_NUM_9
+#define BTSTACK_AUDIO_I2S_WS  GPIO_NUM_45
+#define BTSTACK_AUDIO_I2S_OUT GPIO_NUM_8
+#define BTSTACK_AUDIO_I2S_IN  GPIO_NUM_10
+#else
+// ESP32-LyraT V4
+#define BTSTACK_AUDIO_I2S_BCK GPIO_NUM_5
+#define BTSTACK_AUDIO_I2S_WS  GPIO_NUM_25
+#define BTSTACK_AUDIO_I2S_OUT GPIO_NUM_26
+#define BTSTACK_AUDIO_I2S_IN  GPIO_NUM_35
 #endif
 
 // prototypes
@@ -200,7 +222,7 @@ static void btstack_audio_esp32_init(void){
 
     if (btstack_audio_esp32_sink_state != BTSTACK_AUDIO_ESP32_OFF){
         i2s_mode |= I2S_MODE_TX; // playback
-        i2s_data_out_pin = GPIO_NUM_26;
+        i2s_data_out_pin = BTSTACK_AUDIO_I2S_OUT;
         if (btstack_audio_esp32_i2s_samplerate != 0){
             btstack_assert(btstack_audio_esp32_i2s_samplerate == btstack_audio_esp32_sink_samplerate);
         }
@@ -209,7 +231,7 @@ static void btstack_audio_esp32_init(void){
 
     if (btstack_audio_esp32_source_state != BTSTACK_AUDIO_ESP32_OFF){
         i2s_mode |= I2S_MODE_RX; // recording
-        i2s_data_in_pin = GPIO_NUM_35;
+        i2s_data_in_pin = BTSTACK_AUDIO_I2S_OUT;
         if (btstack_audio_esp32_i2s_samplerate != 0){
             btstack_assert(btstack_audio_esp32_i2s_samplerate == btstack_audio_esp32_source_samplerate);
         }
@@ -231,8 +253,8 @@ static void btstack_audio_esp32_init(void){
 
     i2s_pin_config_t pins =
     {
-        .bck_io_num           = GPIO_NUM_5,
-        .ws_io_num            = GPIO_NUM_25,
+        .bck_io_num           = BTSTACK_AUDIO_I2S_BCK,
+        .ws_io_num            = BTSTACK_AUDIO_I2S_WS,
         .data_out_num         = i2s_data_out_pin,
         .data_in_num          = i2s_data_in_pin
     };

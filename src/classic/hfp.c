@@ -94,6 +94,8 @@ static btstack_context_callback_registration_t hfp_sdp_query_request;
 
 
 
+// custom commands
+static btstack_linked_list_t hfp_custom_commands_ag;
 
 // prototypes
 static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
@@ -234,10 +236,10 @@ const char * hfp_ag_feature(int index){
     return hfp_ag_features[index];
 }
 
-int send_str_over_rfcomm(uint16_t cid, char * command){
+int send_str_over_rfcomm(uint16_t cid, const char * command){
     if (!rfcomm_can_send_packet_now(cid)) return 1;
     log_info("HFP_TX %s", command);
-    int err = rfcomm_send(cid, (uint8_t*) command, strlen(command));
+    int err = rfcomm_send(cid, (uint8_t*) command, (uint16_t) strlen(command));
     if (err){
         log_error("rfcomm_send -> error 0x%02x \n", err);
     } 
@@ -473,7 +475,7 @@ void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subt
 #else
     uint8_t event[40];
 #endif
-    uint16_t string_len = btstack_min(strlen(value), sizeof(event) - 6);
+    uint16_t string_len = btstack_min((uint16_t) strlen(value), sizeof(event) - 6);
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 4 + string_len;
     event[2] = event_subtype;
@@ -699,7 +701,7 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
 
     // 0x0100 "Service Name"
     de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-    de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
+    de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
 }
 
 static void hfp_handle_slc_setup_error(hfp_connection_t * hfp_connection, uint8_t status){
@@ -1146,7 +1148,28 @@ static hfp_command_entry_t hfp_hf_commmand_table[] = {
     { "RING",   HFP_CMD_RING },
 };
 
+static const hfp_custom_at_command_t * hfp_custom_command_lookup(const char * text){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hfp_custom_commands_ag);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        hfp_custom_at_command_t *at_command = (hfp_custom_at_command_t *) btstack_linked_list_iterator_next(&it);
+        int match = strcmp(text, at_command->command);
+        if (match == 0) {
+            return at_command;
+        }
+    }
+    return NULL;
+}
+
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
+
+    // check for custom commands, AG only
+    if (isHandsFree == 0) {
+        const hfp_custom_at_command_t * custom_at_command = hfp_custom_command_lookup(line_buffer);
+        if (custom_at_command != NULL){
+            return HFP_CMD_CUSTOM_MESSAGE;
+        }
+    }
 
     // table lookup based on role
     uint16_t num_entries;
@@ -1209,7 +1232,7 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
     return (byte == '\n') || (byte == '\r');
 }
 
-static void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
+void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
     hfp_connection->line_size = 0;
     // we don't set the first byte to '\0' to allow access to last argument e.g. in hfp_hf_handle_rfcommand
 }
@@ -1312,8 +1335,15 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
 
             log_info("command string '%s', handsfree %u -> cmd id %u", (char *)hfp_connection->line_buffer, isHandsFree, hfp_connection->command);
 
+            // store command id for custom command and just store rest of line
+            if (hfp_connection->command == HFP_CMD_CUSTOM_MESSAGE){
+                const hfp_custom_at_command_t * at_command = hfp_custom_command_lookup((const char *)hfp_connection->line_buffer);
+                hfp_connection->ag_custom_at_command_id = at_command->command_id;
+                hfp_connection->parser_state = HFP_PARSER_CUSTOM_COMMAND;
+                return true;
+            }
+
             // next state
-            hfp_connection->found_equal_sign = false;
             hfp_parser_reset_line_buffer(hfp_connection);
             hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
 
@@ -1425,6 +1455,7 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                     hfp_connection->ag_indicators_nr = hfp_connection->parser_item_index;
                     break;
                 case HFP_CMD_AG_SENT_CLIP_INFORMATION:
+                case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
                     // track if last argument exists
                     hfp_connection->clip_have_alpha = hfp_connection->line_size != 0;
                     break;
@@ -1437,6 +1468,10 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS){
                 hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
             }
+            return true;
+
+        case HFP_PARSER_CUSTOM_COMMAND:
+            hfp_parser_store_byte(hfp_connection, byte);
             return true;
 
         default:
@@ -1452,6 +1487,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
     }
     // reset parser state on end-of-line
     if (hfp_parser_is_end_of_line(byte)){
+        hfp_connection->found_equal_sign = false;
         hfp_connection->parser_item_index = 0;
         hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
     }
@@ -1583,7 +1619,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             break;
         case HFP_CMD_AVAILABLE_CODECS:
             log_info("Parsed codec %s\n", hfp_connection->line_buffer);
-            hfp_connection->remote_codecs[hfp_connection->parser_item_index] = (uint16_t)btstack_atoi((char*)hfp_connection->line_buffer);
+            hfp_connection->remote_codecs[hfp_connection->parser_item_index] = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
             hfp_next_codec_index(hfp_connection);
             hfp_connection->remote_codecs_nr = hfp_connection->parser_item_index;
             break;
@@ -1975,6 +2011,7 @@ void hfp_deinit(void){
     hfp_hf_rfcomm_packet_handler = NULL;
     hfp_ag_rfcomm_packet_handler = NULL;
     hfp_sco_establishment_active = NULL;
+    hfp_custom_commands_ag = NULL;
     (void) memset(&hfp_sdp_query_context, 0, sizeof(hfp_sdp_query_context_t));
     (void) memset(&hfp_sdp_query_request, 0, sizeof(btstack_context_callback_registration_t));
 }
@@ -2048,4 +2085,8 @@ void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size){
     printable[i] = 0;
     log_info("%s: '%s'", tag, printable);
 #endif
+}
+
+void hfp_register_custom_ag_command(hfp_custom_at_command_t * custom_at_command){
+    btstack_linked_list_add(&hfp_custom_commands_ag, (btstack_linked_item_t *) custom_at_command);
 }

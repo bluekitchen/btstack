@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- *  Copyright 2021 Google, Inc.
+ *  Copyright 2022 Google LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -54,10 +54,14 @@ typedef struct lc3_spec_side {
  * spec            Context of analysis
  * x               Spectral coefficients, scaled as output
  * xq, side        Return quantization data
+ *
+ * The spectral coefficients `xq` storage is :
+ *   b0       0:positive or zero  1:negative
+ *   b15..b1  Absolute value
  */
 void lc3_spec_analyze(enum lc3_dt dt, enum lc3_srate sr,
     int nbytes, bool pitch, const lc3_tns_data_t *tns,
-    lc3_spec_analysis_t *spec, float *x, int16_t *xq, lc3_spec_side_t *side);
+    lc3_spec_analysis_t *spec, float *x, uint16_t *xq, lc3_spec_side_t *side);
 
 /**
  * Put spectral quantization side data
@@ -75,10 +79,14 @@ void lc3_spec_put_side(lc3_bits_t *bits,
  * nbytes          and size of the frame
  * xq, side        Quantization data
  * x               Scaled spectral coefficients
+ *
+ * The spectral coefficients `xq` storage is :
+ *   b0       0:positive or zero  1:negative
+ *   b15..b1  Absolute value
  */
 void lc3_spec_encode(lc3_bits_t *bits,
     enum lc3_dt dt, enum lc3_srate sr, enum lc3_bandwidth bw, int nbytes,
-    const int16_t *xq, const lc3_spec_side_t *side, const float *x);
+    const uint16_t *xq, const lc3_spec_side_t *side, const float *x);
 
 
 /* ----------------------------------------------------------------------------

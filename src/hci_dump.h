@@ -83,10 +83,10 @@ typedef struct {
     // log packet
     void (*log_packet)(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len);
     // log message
-    void (*log_message)(const char * format, va_list argptr);
+    void (*log_message)(int log_level, const char * format, va_list argptr);
 #ifdef __AVR__ \
     // log message - AVR
-    void (*log_message_P)(PGM_P * format, va_list argptr);
+    void (*log_message_P)(int log_level, PGM_P * format, va_list argptr);
 #endif
 } hci_dump_t;
 

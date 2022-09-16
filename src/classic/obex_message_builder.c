@@ -220,14 +220,14 @@ uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t b
     return ERROR_CODE_SUCCESS;
 }
 uint8_t obex_message_builder_header_add_name(uint8_t * buffer, uint16_t buffer_len, const char * name){
-    uint16_t name_len = strlen(name);
+    uint16_t name_len = (uint16_t) strlen(name);
     return obex_message_builder_header_add_name_prefix(buffer, buffer_len, name, name_len);
 }
 
 uint8_t obex_message_builder_header_add_type(uint8_t * buffer, uint16_t buffer_len, const char * type){
     uint8_t header[3];
     header[0] = OBEX_HEADER_TYPE;
-    int len_incl_zero = strlen(type) + 1;
+    int len_incl_zero = (uint16_t) strlen(type) + 1;
     big_endian_store_16(header, 1, 1 + 2 + len_incl_zero);
 
     uint8_t status = obex_message_builder_packet_append(buffer, buffer_len, &header[0], sizeof(header));

@@ -54,6 +54,16 @@ extern "C" {
 #include "classic/btstack_link_key_db.h"
 #endif
 
+// BIG has up to 2 BIS (stereo)
+#ifndef MAX_NR_BIS
+#define MAX_NR_BIS 2
+#endif
+
+// CIG usually has up to 2 CIS (stereo)
+#ifndef MAX_NR_CIS
+#define MAX_NR_CIS 2
+#endif
+
 typedef enum {
 
 	// MITM protection not required
@@ -181,6 +191,138 @@ typedef struct {
     uint8_t   state;
     uint8_t   tasks;
 } le_advertising_set_t;
+
+// Isochronous Streams
+
+// -- Broadcast Isochronous Group BIG
+
+typedef struct {
+    uint8_t  big_handle;
+    uint8_t  advertising_handle;
+    uint8_t  num_bis;
+    uint32_t sdu_interval_us;
+    uint16_t max_sdu;
+    uint16_t max_transport_latency_ms;
+    uint8_t  rtn;
+    uint8_t  phy;
+    uint8_t  packing;
+    uint8_t  framing;
+    uint8_t  encryption;
+    uint8_t  broadcast_code[16];
+} le_audio_big_params_t;
+
+typedef struct {
+    uint8_t  big_handle;
+    uint8_t  sync_handle;
+    uint8_t  encryption;
+    uint8_t  broadcast_code[16];
+    uint8_t  mse;
+    uint16_t big_sync_timeout_10ms;
+    uint8_t  num_bis;
+    uint8_t bis_indices[MAX_NR_BIS];
+} le_audio_big_sync_params_t;
+
+typedef enum {
+    LE_AUDIO_BIG_STATE_CREATE,
+    LE_AUDIO_BIG_STATE_W4_ESTABLISHED,
+    LE_AUDIO_BIG_STATE_SETUP_ISO_PATH,
+    LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH,
+    LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH_THEN_TERMINATE,
+    LE_AUDIO_BIG_STATE_SETUP_ISO_PATHS_FAILED,
+    LE_AUDIO_BIG_STATE_ACTIVE,
+    LE_AUDIO_BIG_STATE_TERMINATE,
+    LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED,
+    LE_AUDIO_BIG_STATE_W4_TERMINATED,
+} le_audio_big_state_t;
+
+typedef struct {
+	btstack_linked_item_t item;
+    uint8_t big_handle;
+    le_audio_big_state_t state;
+    union {
+        uint8_t next_bis;
+        uint8_t status;
+    } state_vars;
+    uint8_t num_bis;
+    hci_con_handle_t bis_con_handles[MAX_NR_BIS];
+    const le_audio_big_params_t * params;
+    // request to send
+    bool can_send_now_requested;
+    // previous and current timestamp of number completed event to track ISO intervals
+    bool     num_completed_timestamp_previous_valid;
+    bool     num_completed_timestamp_current_valid;
+    uint32_t num_completed_timestamp_previous_ms;
+    uint32_t num_completed_timestamp_current_ms;
+
+} le_audio_big_t;
+
+typedef struct {
+    btstack_linked_item_t  item;
+    uint8_t big_handle;
+    le_audio_big_state_t   state;
+    union {
+        uint8_t next_bis;
+        uint8_t status;
+    } state_vars;
+    uint8_t num_bis;
+    hci_con_handle_t bis_con_handles[MAX_NR_BIS];
+    const le_audio_big_sync_params_t * params;
+} le_audio_big_sync_t;
+
+// -- Connected Isochronuous Group CIG
+
+typedef enum {
+    LE_AUDIO_CIG_STATE_CREATE,
+    LE_AUDIO_CIG_STATE_W4_ESTABLISHED,
+    LE_AUDIO_CIG_STATE_W4_CIS_REQUEST,
+    LE_AUDIO_CIG_STATE_CREATE_CIS,
+    LE_AUDIO_CIG_STATE_W4_CREATE_CIS,
+    LE_AUDIO_CIG_STATE_SETUP_ISO_PATH,
+    LE_AUDIO_CIG_STATE_W4_SETUP_ISO_PATH,
+    LE_AUDIO_CIG_STATE_ACTIVE,
+    LE_AUDIO_CIG_STATE_REMOVE,
+} le_audio_cig_state_t;
+
+typedef struct {
+    uint8_t  cis_id;
+    uint16_t max_sdu_c_to_p;
+    uint16_t max_sdu_p_to_c;
+    uint8_t phy_c_to_p;
+    uint8_t phy_p_to_c;
+    uint8_t rtn_c_to_p;
+    uint8_t rtn_p_to_c;
+} le_audio_cis_params_t;
+
+typedef struct {
+    uint8_t  cig_id;
+    uint32_t sdu_interval_c_to_p;
+    uint32_t sdu_interval_p_to_c;
+    uint8_t worst_case_sca;
+    uint8_t packing;
+    uint8_t framing;
+    uint16_t max_transport_latency_c_to_p;
+    uint16_t max_transport_latency_p_to_c;
+    uint8_t num_cis;
+    le_audio_cis_params_t cis_params[MAX_NR_CIS];
+} le_audio_cig_params_t;
+
+typedef struct {
+    btstack_linked_item_t item;
+    uint8_t cig_id;
+    le_audio_cig_params_t * params;
+    le_audio_cig_state_t state;
+    union {
+        uint8_t next_cis;
+        uint8_t status;
+    } state_vars;
+    uint8_t num_cis;
+    hci_con_handle_t cis_con_handles[MAX_NR_CIS];
+    hci_con_handle_t acl_con_handles[MAX_NR_CIS];
+    bool cis_setup_active[MAX_NR_CIS];
+    bool cis_established[MAX_NR_CIS];
+    // request to send
+    bool can_send_now_requested;
+} le_audio_cig_t;
 
 /* API_START */
 
@@ -442,6 +584,12 @@ void gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t sca
 void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
 
 /**
+ * @brief Set duplicate filter for LE Scan
+ * @param enabled if enabled, only one advertisements per BD_ADDR is reported, default: false
+ */
+void gap_set_scan_duplicate_filter(bool enabled);
+
+/**
  * @brief Start LE Scan 
  */
 void gap_start_scan(void);
@@ -625,12 +773,117 @@ uint8_t gap_periodic_advertising_start(uint8_t advertising_handle, bool include_
 uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle);
 
 /**
+ * @brief Set Default Periodic Advertising Sync Transfer Parameters
+ * @note The parameters are used for all subsequent connections over the LE transport.
+ *       If mode != 0, an HCI_LE_Periodic_Advertising_Sync_Transfer_Received event will be emitted by the Controller
+ * @param mode 0 = ignore (default), 1 = periodic advertising events disabled
+ *             2 = periodic advertising events enabled with duplicate filtering
+ *             3 = periodic advertising events enabled with duplicate filtering
+ * @return status
+ * @param skip The number of periodic advertising packets that can be skipped after a successful receive
+ * @param sync_timeout Range: 0x000A to 0x4000, Time = N*10 ms, Time Range: 100 ms to 163.84 s
+ * @param cte_type  bit 0 = Do not sync to packets with an AoA Constant Tone Extension
+ *                  bit 1 = Do not sync to packets with an AoD Constant Tone Extension with 1 μs slots
+ *                  bit 2 = Do not sync to packets with an AoD Constant Tone Extension with 2 μs slots
+ *                  bit 3 = Do not sync to packets without a Constant Tone Extension
+ */
+uint8_t gap_periodic_advertising_sync_transfer_set_default_parameters(uint8_t mode, uint16_t skip, uint16_t sync_timeout, uint8_t cte_type);
+
+/**
+ * @brief Send Periodic Advertising Sync Transfer to connected device
+ * @param con_handle of connected device
+ * @param service_data 16-bit data to trasnfer to remote host
+ * @param sync_handle of periodic advertising train to transfer
+ * @return
+ */
+uint8_t gap_periodic_advertising_sync_transfer_send(hci_con_handle_t con_handle, uint16_t service_data, hci_con_handle_t sync_handle);
+
+/**
  * @brief Remove advertising set from Controller
  * @param advertising_handle
  * @return status
- * @events: GAP_SUBEVENT_ADVERTISING_SET_REMOVED
+ * @events GAP_SUBEVENT_ADVERTISING_SET_REMOVED
  */
 uint8_t gap_extended_advertising_remove(uint8_t advertising_handle);
+
+/**
+ * @brief Create Broadcast Isochronous Group (BIG)
+ * @param storage to use by stack, needs to stay valid until adv set is removed with gap_big_terminate
+ * @param big_params
+ * @return status
+ * @events GAP_SUBEVENT_BIG_CREATED unless interrupted by call to gap_big_terminate
+ */
+uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_params);
+
+/**
+ * @brief Terminate Broadcast Isochronous Group (BIG)
+ * @param big_handle
+ * @return status
+ * @events: GAP_SUBEVENT_BIG_TERMINATED
+ */
+uint8_t gap_big_terminate(uint8_t big_handle);
+
+/**
+ * @brief Synchronize to Broadcast Isochronous Group (BIG)
+ * @param storage to use by stack, needs to stay valid until adv set is removed with gap_big_terminate
+ * @param big_sync_params
+ * @return status
+ * @events GAP_SUBEVENT_BIG_SYNC_CREATED unless interrupted by call to gap_big_sync_terminate
+ */
+uint8_t gap_big_sync_create(le_audio_big_sync_t * storage, le_audio_big_sync_params_t * big_sync_params);
+
+/**
+ * @brief Stop synchronizing to Broadcast Isochronous Group (BIG). Triggers GAP_SUBEVENT_BIG_SYNC_STOPPED
+ * @note Also used to stop synchronizing before BIG Sync was established
+ * @param big_handle
+ * @return status
+ * @events GAP_SUBEVENT_BIG_SYNC_STOPPED
+ */
+uint8_t gap_big_sync_terminate(uint8_t big_handle);
+
+/**
+ * @brief Create Connected Isochronous Group (CIG)
+ * @param storage to use by stack, needs to stay valid until CIG removed with gap_cig_remove
+ * @param cig_params
+ * @return status
+ * @events GAP_SUBEVENT_CIG_CREATED unless interrupted by call to gap_cig_remove
+ */
+uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_params);
+
+/**
+ * @brief Remove Connected Isochronous Group (CIG)
+ * @param cig_handle
+ * @return status
+ * @events GAP_SUBEVENT_CIG_TERMINATED
+ */
+uint8_t gap_cig_remove(uint8_t cig_handle);
+
+/**
+ * @brief Create Connected Isochronous Streams (CIS)
+ * @note number of CIS from cig_params in gap_cig_create is used
+ * @param cig_handle
+ * @param cis_con_handles array of CIS Connection Handles
+ * @param acl_con_handles array of ACL Connection Handles
+ * @return status
+ * @events GAP_SUBEVENT_CIS_CREATED unless interrupted by call to gap_cig_remove
+ */
+uint8_t gap_cis_create(uint8_t cig_handle, hci_con_handle_t cis_con_handles [], hci_con_handle_t acl_con_handles []);
+
+/**
+ * @brief Accept Connected Isochronous Stream (CIS)
+ * @param cis_con_handle
+ * @return status
+ * @events GAP_SUBEVENT_CIS_CREATED
+ */
+uint8_t gap_cis_accept(hci_con_handle_t cis_con_handle);
+
+/**
+ * @brief Reject Connected Isochronous Stream (CIS)
+ * @param cis_con_handle
+ * @return status
+ * @events GAP_SUBEVENT_CIS_CREATED
+ */
+uint8_t gap_cis_reject(hci_con_handle_t cis_con_handle);
 
 /**
  * @brief Set connection parameters for outgoing connections

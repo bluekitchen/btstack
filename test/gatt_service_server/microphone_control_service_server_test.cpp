@@ -21,7 +21,7 @@
 #include "bluetooth_gatt.h"
 
 #include "ble/gatt-service/microphone_control_service_server.h"
-#include "microphone_control_service_profile.h"
+#include "microphone_control_service_server_test.h"
 #include "mock_att_server.h"
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);

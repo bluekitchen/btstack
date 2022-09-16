@@ -11,6 +11,7 @@
 #define HAVE_BTSTACK_STDIN
 #define HAVE_EMBEDDED_TIME_MS
 #define HAVE_HAL_AUDIO
+#define HAVE_HAL_AUDIO_SINK_STEREO_ONLY
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
@@ -23,7 +24,6 @@
 #define ENABLE_LOG_ERROR
 #define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SCO_OVER_HCI
-#define ENABLE_SCO_STEREO_PLAYBACK
 #define ENABLE_SEGGER_RTT
 
 // BTstack configuration. buffers, sizes, ...

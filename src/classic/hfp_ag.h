@@ -73,7 +73,7 @@ void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
  * @brief Set up HFP Audio Gateway (AG) device without additional supported features.
  * @param rfcomm_channel_nr
  */
-void hfp_ag_init(uint16_t rfcomm_channel_nr);
+void hfp_ag_init(uint8_t rfcomm_channel_nr);
 
 /**
  * @brief Set codecs. 
@@ -115,6 +115,12 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
  * @param callback
  */
 void hfp_ag_register_packet_handler(btstack_packet_handler_t callback);
+
+/**
+ * @brief Register custom AT command.
+ * @param hfp_custom_at_command (with 'AT+' prefix)
+ */
+void hfp_ag_register_custom_at_command(hfp_custom_at_command_t * custom_at_command);
 
 /**
  * @brief Enable/Disable in-band ring tone.
@@ -189,22 +195,22 @@ void hfp_ag_join_held_call(void);
  */
 void hfp_ag_terminate_call(void);
 
-/*
+/**
  * @brief Put incoming call on hold.
  */
 void hfp_ag_hold_incoming_call(void);
 
-/*
+/**
  * @brief Accept the held incoming call.
  */
 void hfp_ag_accept_held_incoming_call(void);
 
-/*
+/**
  * @brief Reject the held incoming call.
  */
 void hfp_ag_reject_held_incoming_call(void);
 
-/*
+/**
  * @brief Set microphone gain. 
  *
  * @param acl_handle
@@ -215,7 +221,7 @@ void hfp_ag_reject_held_incoming_call(void);
  */
 uint8_t hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain);
 
-/*
+/**
  * @brief Set speaker gain.
  *
  * @param acl_handle
@@ -226,7 +232,7 @@ uint8_t hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain);
  */
 uint8_t hfp_ag_set_speaker_gain(hci_con_handle_t acl_handle, int gain);
 
-/*
+/**
  * @brief Set battery level.
  *
  * @param battery_level Valid range: [0,5]
@@ -236,17 +242,17 @@ uint8_t hfp_ag_set_speaker_gain(hci_con_handle_t acl_handle, int gain);
  */
 uint8_t hfp_ag_set_battery_level(int battery_level);
 
-/*
+/**
  * @brief Clear last dialed number.
  */
 void hfp_ag_clear_last_dialed_number(void);
 
-/*
+/**
  * @brief Set last dialed number.
  */
 void hfp_ag_set_last_dialed_number(const char * number);
 
-/*
+/**
  * @brief Notify the HF that an incoming call is waiting 
  * during an ongoing call. The notification will be sent only if the HF has
  * has previously enabled the "Call Waiting notification" in the AG. 
@@ -260,7 +266,7 @@ uint8_t hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle);
 
 // Voice Recognition
 
-/*
+/**
  * @brief Activate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED event with status ERROR_CODE_SUCCESS 
  * if successful. Prerequisite is established SLC.
  *
@@ -271,7 +277,7 @@ uint8_t hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Deactivate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED event with status ERROR_CODE_SUCCESS 
  * if successful. Prerequisite is established SLC.
  *
@@ -282,7 +288,7 @@ uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Notify HF that sound will be played and HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND event with status ERROR_CODE_SUCCESS 
  * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED.
  *
@@ -294,7 +300,7 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_ag_enhanced_voice_recognition_report_sending_audio(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Notify HF that AG is ready for input and emit HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT event with status ERROR_CODE_SUCCESS 
  * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED.
  *
@@ -306,7 +312,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_report_sending_audio(hci_con_handle_t 
  */
 uint8_t hfp_ag_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Notify that AG is processing input and emit HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT event with status ERROR_CODE_SUCCESS 
  * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED.
  *
@@ -318,7 +324,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_
  */
 uint8_t hfp_ag_enhanced_voice_recognition_report_processing_input(hci_con_handle_t acl_handle);
 
-/*
+/**
  * @brief Send enhanced audio recognition message and HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT event with status ERROR_CODE_SUCCESS 
  * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED.
  *
@@ -331,7 +337,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_report_processing_input(hci_con_handle
  */
 uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state, hfp_voice_recognition_message_t msg);
 
-/*
+/**
  * @brief Send a phone number back to the HF.
  *
  * @param acl_handle
@@ -340,7 +346,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
  */
 uint8_t hfp_ag_send_phone_number_for_voice_tag(hci_con_handle_t acl_handle, const char * phone_number);
 
-/*
+/**
  * @brief Reject sending a phone number to the HF.
  *
  * @param acl_handle
@@ -393,7 +399,7 @@ void hfp_ag_outgoing_call_established(void);
  */
 void hfp_ag_call_dropped(void);
 
-/*
+/**
  * @brief Set network registration status.  
  * @param status 0 - not registered, 1 - registered 
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
@@ -402,7 +408,7 @@ void hfp_ag_call_dropped(void);
  */
 uint8_t hfp_ag_set_registration_status(int registration_status);
 
-/*
+/**
  * @brief Set network signal strength.
  *
  * @param signal_strength [0-5]
@@ -412,7 +418,7 @@ uint8_t hfp_ag_set_registration_status(int registration_status);
  */
 uint8_t hfp_ag_set_signal_strength(int signal_strength);
 
-/*
+/**
  * @brief Set roaming status.
  *
  * @param roaming_status 0 - no roaming, 1 - roaming active
@@ -422,14 +428,14 @@ uint8_t hfp_ag_set_signal_strength(int signal_strength);
  */
 uint8_t hfp_ag_set_roaming_status(int roaming_status);
 
-/*
+/**
  * @brief Set subcriber number information, e.g. the phone number 
  * @param numbers
  * @param numbers_count
  */
 void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count);
 
-/*
+/**
  * @brief Called by cellular unit after a DTMF code was transmitted, so that the next one can be emitted.
  *
  * @param acl_handle 
@@ -472,6 +478,28 @@ uint8_t hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle);
  *              - ERROR_CODE_COMMAND_DISALLOWED if extended audio gateway error report is disabled
  */
 uint8_t hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, hfp_cme_error_t error);
+
+/**
+ * @brief Send unsolicited result code (most likely a response to a vendor-specific command not part of standard HFP).
+ * @note  Emits HFP_SUBEVENT_COMPLETE when result code was sent
+ *
+ * @param unsolicited_result_code to send
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if extended audio gateway error report is disabled
+ */
+uint8_t hfp_ag_send_unsolicited_result_code(hci_con_handle_t acl_handle, const char * unsolicited_result_code);
+
+/**
+ * @brief Send result code for AT command received via HFP_SUBEVENT_CUSTOM_AT_COMMAND
+ * @note  Emits HFP_SUBEVENT_COMPLETE when result code was sent
+ *
+ * @param ok for OK, or ERROR
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if extended audio gateway error report is disabled
+ */
+uint8_t hfp_ag_send_command_result_code(hci_con_handle_t acl_handle, bool ok);
 
 /**
  * @brief De-Init HFP AG

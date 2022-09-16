@@ -2183,7 +2183,7 @@ const hci_cmd_t hci_le_accept_cis_request = {
  * @param connection_handle
  */
 const hci_cmd_t hci_le_reject_cis_request = {
-    HCI_OPCODE_HCI_LE_REJECT_CIS_REQUEST, "H"
+    HCI_OPCODE_HCI_LE_REJECT_CIS_REQUEST, "H1"
 };
 
 /**

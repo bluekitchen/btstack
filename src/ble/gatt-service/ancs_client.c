@@ -329,7 +329,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
         case HCI_EVENT_LE_META:
             switch (packet[2]) {
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    gc_handle = little_endian_read_16(packet, 4);
+                    gc_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                     log_info("Connection handle 0x%04x, request encryption", gc_handle);
 
                     // we need to be paired to enable notifications
@@ -342,9 +342,10 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             }
             return;
 
-        case HCI_EVENT_ENCRYPTION_CHANGE: 
-            if (gc_handle != little_endian_read_16(packet, 3)) return;
-            connection_encrypted = packet[5];
+        case HCI_EVENT_ENCRYPTION_CHANGE:
+        case HCI_EVENT_ENCRYPTION_CHANGE_V2:
+            if (gc_handle != hci_event_encryption_change_get_connection_handle(packet)) return;
+            connection_encrypted = hci_event_encryption_change_get_encryption_enabled(packet);
             log_info("Encryption state change: %u", connection_encrypted);
             if (!connection_encrypted) return;
             if (tc_state != TC_W4_ENCRYPTED_CONNECTION) return;

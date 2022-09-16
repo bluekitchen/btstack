@@ -1002,10 +1002,11 @@ typedef uint8_t sm_key_t[16];
 #define BTSTACK_EVENT_POWERON_FAILED                       0x62u
 
 /**
- * @format 1
+ * @format 11
  * @param discoverable
+ * @param connectable
  */
-#define BTSTACK_EVENT_DISCOVERABLE_ENABLED                 0x66u
+#define BTSTACK_EVENT_SCAN_MODE_CHANGED                    0x66u
 
 // Daemon Events
 
@@ -1103,8 +1104,21 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_TRANSPORT_PACKET_SENT                    0x6Eu
 
 /**
- * @format B
- * @param handle
+ * @format 11H
+ * @param big_handle
+ * @param bis_index
+ * @param con_handle
+ */
+#define HCI_EVENT_BIS_CAN_SEND_NOW                         0x6Bu
+
+/**
+ * @format H
+ * @param cis_con_handle
+ */
+#define HCI_EVENT_CIS_CAN_SEND_NOW                         0x6Cu
+
+/**
+ * @format
  */
 #define HCI_EVENT_SCO_CAN_SEND_NOW                         0x6Fu
 
@@ -1153,7 +1167,7 @@ typedef uint8_t sm_key_t[16];
  * @param handle
  * @param interval_min
  * @param interval_max
- * @param latencey
+ * @param latency
  * @param timeout_multiplier
  */
 #define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST    0x76u
@@ -1874,6 +1888,58 @@ typedef uint8_t sm_key_t[16];
  */
 #define GAP_SUBEVENT_ADVERTISING_SET_REMOVED                     0x01u
 
+/**
+ * @format 1111C
+ * @param subevent_code
+ * @param status
+ * @param big_handle
+ * @param num_bis
+ * @param bis_con_handles
+ */
+#define GAP_SUBEVENT_BIG_CREATED                                 0x02u
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param big_handle
+ */
+#define GAP_SUBEVENT_BIG_TERMINATED                              0x03u
+
+/**
+ * @format 1111C
+ * @param subevent_code
+ * @param status
+ * @param big_handle
+ * @param num_bis
+ * @param bis_con_handles
+ */
+#define GAP_SUBEVENT_BIG_SYNC_CREATED                            0x04u
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param big_handle
+ */
+#define GAP_SUBEVENT_BIG_SYNC_STOPPED                            0x05u
+
+/**
+ * @format 1111C
+ * @param subevent_code
+ * @param status
+ * @param cig_id
+ * @param num_cis
+ * @param cis_con_handles
+ */
+#define GAP_SUBEVENT_CIG_CREATED                                 0x06u
+
+/**
+ * @format 111H
+ * @param subevent_code
+ * @param status
+ * @param cig_id
+ * @param cis_con_handle
+ */
+#define GAP_SUBEVENT_CIS_CREATED                                 0x07u
 
 /** HSP Subevent */
 
@@ -2304,6 +2370,15 @@ typedef uint8_t sm_key_t[16];
  * @param value
  */
 #define HFP_SUBEVENT_HF_INDICATOR                                    0x27u
+
+/**
+ * @format 1H2T
+ * @param subevent_code
+ * @param acl_handle
+ * @param command_id
+ * @param command_string
+ */
+#define HFP_SUBEVENT_CUSTOM_AT_COMMAND                               0x28u
 
 
 // ANCS Client
