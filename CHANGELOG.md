@@ -243,6 +243,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: support BIG with gap_big_create and gap_big_terminate
 - GAP: support BIG Sync gap_big_sync_create and gap_big_sync_terminate
 - GAP: support Periodic Advertisement Sync Transfer
+- PBAP Server profile and PBAP Server demo
+- OPP Client profile and OPP Client demo
 - port: CMake build files in all windows-* ports allow to use Visual Studio 2022
 - embedded audio: mono audio is played on both channels if HAVE_HAL_AUDIO_SINK_STEREO_ONLY is defined
 - Support for ESP32-C3 and ESP32-S3
