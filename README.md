@@ -87,14 +87,14 @@ For information on Apple's MFi/iAP2 and Find My profiles, please <a href="mailto
 | Broadcom USB Dongles                 | Dual mode        | USB            | Yes              | bcm            |                                                |
 | CSR UART                             | Dual mode        | H4, H5, BCSP   | No (didn't work) | csr            |                                                |
 | CSR USB Dongles                      | Dual mode        | USB            | Yes              | csr            |                                                |
-| Cypress CYW20704                     | Dual mode        | H4, H5, USB    | Probably         | bcm            |                                                |
+| Cypress CYW20704/20707               | Dual mode        | H4, H5, USB    | Probably         | bcm            |                                                |
 | Cypress CYW20819                     | Dual mode        | H4, H5, USB    | Probably         | bcm            | Keep CTS high during power cycle               |
 | Cypress CYW43xxx                     | Dual mode + Wifi | H4, H5         | Don't know       | bcm            | Bluetooth + Wifi Combo Controller              |
 | Cypress PSoC 4                       | LE               | H4             | n.a.             |                | HCI Firmware part of PSoC Creator kit examples |
 | Dialog Semiconductor DA145xx         | LE               | H4, SPI        | n.a.             | da14581        | Official HCI firmware used                     |
 | Dialog Semiconductor DA1469x         | LE               | H4, SPI        | n.a              |                | HCI Firmware part of DA1469x SDK               |
-| Espressif ESP32                      | Dual mode + Wifi | VHCI           | Yes              |                | SoC with Bluetooth and Wifi                    |
-| Espressif ESP32-S3, ESP32-C3         | LE + Wifi        | VHCI           | Yes              |                | SoC with Bluetooth and Wifi                    |
+| Espressif ESP32                      | Dual mode + Wifi | VHCI, H4       | Yes              |                | SoC with Bluetooth and Wifi                    |
+| Espressif ESP32-S3, ESP32-C3         | LE + Wifi        | VHCI, H4       | Yes              |                | SoC with Bluetooth and Wifi                    |
 | EM 9301, 9304                        | LE               | SPI            | n.a.             | em9301         | Custom HCI SPI implementation                  |
 | Intel Dual Wireless 3165, 8260, 8265 | Dual mode        | USB            | Probably         | intel          | Firmware size: 400 kB                          |
 | Nordic nRF                           | LE               | H4             | n.a.             |                | Requires custom HCI firmware                   |
