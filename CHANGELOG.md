@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+### Fixed
+### Changed
+
+## Release v1.5.4
+
+### Added
 - HFP HF: send custom AT command with hfp_hf_send_at_command
 - HFP HF: terminate held calls with hfp_hf_terminate_held_calls
 - HFP HF: provide Call Waiting information alpha field
@@ -18,8 +24,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: allow to enable duplicate filter for LE scanning with gap_set_scan_duplicate_filter
 - GAP: support BIG with gap_big_create and gap_big_terminate
 - GAP: support BIG Sync gap_big_sync_create and gap_big_sync_terminate
+- GAP: support Periodic Advertisement Sync Transfer
 - port: CMake build files in all windows-* ports allow to use Visual Studio 2022
 - embedded audio: mono audio is played on both channels if HAVE_HAL_AUDIO_SINK_STEREO_ONLY is defined
+- Support for ESP32-C3 and ESP32-S3
  
 ### Fixed
 - HCI: only add paired LE devices with IRK to resolving list
