@@ -121,7 +121,7 @@ ENABLE_CLASSIC_OOB_PAIRING       | Enable support for classic Out-of-Band (OOB) 
 ENABLE_A2DP_EXPLICIT_CONFIG      | Let application configure stream endpoint (skip auto-config of SBC endpoint)
 ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION | allow accept or reject of stream start on A2DP_SUBEVENT_START_STREAM_REQUESTED
 ENABLE_LE_WHITELIST_TOUCH_AFTER_RESOLVING_LIST_UPDATE | Enable Workaround for Controller bug.
-
+ENABLE_CONTROLLER_DUMP_PACKETS   | Dump number of packets in Controller per type for debugging
 
 Notes:
 
