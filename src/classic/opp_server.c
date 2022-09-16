@@ -425,9 +425,6 @@ static void opp_server_parser_callback_connect(void * user_data, uint8_t header_
     // opp_server_t * opp_server = (opp_server_t *) user_data;
 
     switch (header_id) {
-        case OBEX_HEADER_TARGET:
-            // TODO: verify target
-            break;
         default:
             break;
     }
