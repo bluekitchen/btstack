@@ -369,6 +369,7 @@ LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BU
 EXAMPLES += 				\
 	audio_duplex            \
 	a2dp_sink_demo			\
+	headset_demo			\
 	a2dp_source_demo        \
 	ancs_client_demo		\
 	dut_mode_classic        \

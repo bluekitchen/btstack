@@ -40,7 +40,7 @@ static const hci_transport_config_uart_t config = {
     0,
     1,
     NULL
-};
+}; 
 
 // hal_time_ms.h
 #include "hal_time_ms.h"
