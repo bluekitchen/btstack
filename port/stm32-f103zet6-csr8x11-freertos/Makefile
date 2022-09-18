@@ -404,6 +404,7 @@ EXAMPLES += 				\
 	spp_counter 			\
 	spp_streamer			\
 	spp_streamer_client     \
+	nordic_dfu_demo			\
 
 
 GATT_FILES = \
@@ -419,6 +420,7 @@ GATT_FILES = \
 	sm_pairing_central.gatt \
 	spp_and_gatt_counter.gatt \
 	spp_and_gatt_streamer.gatt \
+	nordic_dfu_demo.gatt	   \
 
 # SBC codec
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc

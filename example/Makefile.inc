@@ -200,6 +200,7 @@ EXAMPLES_CLASSIC_ONLY =     \
 	gap_link_keys           \
 	hfp_ag_demo             \
 	hfp_hf_demo             \
+	headset_demo			\
 	hid_host_demo           \
 	hid_keyboard_demo       \
 	hid_mouse_demo          \
@@ -237,6 +238,7 @@ EXAMPLES_LE_ONLY=           		\
 	mesh_node_demo          		\
 	nordic_spp_le_counter   		\
 	nordic_spp_le_streamer  		\
+	nordic_dfu_demo					\
 	sm_pairing_central      		\
 	sm_pairing_peripheral   		\
 	ublox_spp_le_counter    		\
@@ -264,6 +266,7 @@ EXAMPLES_GATT_FILES =           		\
 	le_data_channel_server.gatt 		\
 	nordic_spp_le_counter.gatt  		\
 	nordic_spp_le_streamer.gatt 		\
+	nordic_dfu_demo.gatt				\
 	sm_pairing_central.gatt     		\
 	sm_pairing_peripheral.gatt  		\
 	spp_and_gatt_counter.gatt   		\

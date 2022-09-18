@@ -17,5 +17,3 @@ rd /Q /S project\EWARMv7\settings
 del /Q build\*.d
 del /Q build\*.o
 del /Q build\*.lst
-
-
