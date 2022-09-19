@@ -259,7 +259,7 @@ static void setup_lc3_encoder(void){
     for (channel = 0 ; channel < num_channels ; channel++){
         btstack_lc3_encoder_google_t * context = &encoder_contexts[channel];
         lc3_encoder = btstack_lc3_encoder_google_init_instance(context);
-        lc3_encoder->configure(context, sampling_frequency_hz, frame_duration);
+        lc3_encoder->configure(context, sampling_frequency_hz, frame_duration, octets_per_frame);
     }
     number_samples_per_frame = lc3_encoder->get_number_samples_per_frame(&encoder_contexts[0]);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
@@ -317,7 +317,7 @@ static void generate_audio(void){
 
 static void encode(uint8_t channel){
     // encode as lc3
-    lc3_encoder->encode_signed_16(&encoder_contexts[channel], &pcm[channel], num_channels, &iso_payload[channel * MAX_LC3_FRAME_BYTES], octets_per_frame);
+    lc3_encoder->encode_signed_16(&encoder_contexts[channel], &pcm[channel], num_channels, &iso_payload[channel * MAX_LC3_FRAME_BYTES]);
 }
 
 static void send_iso_packet(uint8_t cis_index){

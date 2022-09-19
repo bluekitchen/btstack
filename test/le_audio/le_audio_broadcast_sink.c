@@ -221,7 +221,7 @@ static void setup_lc3_decoder(void){
             lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
         }
         decoder_contexts[channel] = decoder_context;
-        lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration);
+        lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration, octets_per_frame);
     }
     number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(decoder_contexts[0]);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
@@ -604,7 +604,7 @@ static void store_samples_in_ringbuffer(void){
 static void plc_do(uint8_t bis_channel) {// inject packet
     uint8_t tmp_BEC_detect;
     uint8_t BFI = 1;
-    (void) lc3_decoder->decode_signed_16(decoder_contexts[bis_channel], NULL, cached_iso_sdu_len, BFI,
+    (void) lc3_decoder->decode_signed_16(decoder_contexts[bis_channel], NULL, BFI,
                                          &pcm[bis_channel], num_bis,
                                          &tmp_BEC_detect);
 
@@ -737,7 +737,7 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         // decode codec frame
         uint8_t tmp_BEC_detect;
         uint8_t BFI = 0;
-        (void) lc3_decoder->decode_signed_16(decoder_contexts[bis_channel], &packet[offset], iso_sdu_length, BFI,
+        (void) lc3_decoder->decode_signed_16(decoder_contexts[bis_channel], &packet[offset], BFI,
                                    &pcm[bis_channel], num_bis,
                                    &tmp_BEC_detect);
         have_pcm[bis_channel] = true;

@@ -59,7 +59,7 @@ static uint16_t lc3_frame_duration_in_us(btstack_lc3_frame_duration_t frame_dura
 
 /* Decoder implementation */
 
-static uint8_t lc3plus_fraunhofer_decoder_configure(void * context, uint32_t sample_rate, btstack_lc3_frame_duration_t frame_duration){
+static uint8_t lc3plus_fraunhofer_decoder_configure(void * context, uint32_t sample_rate, btstack_lc3_frame_duration_t frame_duration, uint16_t octets_per_frame){
     btstack_lc3plus_fraunhofer_decoder_t * instance = (btstack_lc3plus_fraunhofer_decoder_t *) context;
     LC3PLUS_Dec * decoder = (LC3PLUS_Dec*) instance->decoder;
 
@@ -72,6 +72,7 @@ static uint8_t lc3plus_fraunhofer_decoder_configure(void * context, uint32_t sam
     // store config
     instance->sample_rate = sample_rate;
     instance->frame_duration = frame_duration;
+    instance->octetes_per_frame = octets_per_frame;
 
     LC3PLUS_Error error;
     error = lc3plus_dec_init(decoder, sample_rate, 1, LC3PLUS_PLC_ADVANCED, 0);
@@ -94,7 +95,7 @@ static uint16_t lc3plus_fraunhofer_decoder_get_number_samples_per_frame(void * c
     return lc3plus_dec_get_output_samples(decoder);
 }
 
-static uint8_t lc3plus_fraunhofer_decoder_decode_signed_16(void * context, const uint8_t *bytes, uint16_t byte_count, uint8_t BFI, int16_t* pcm_out, uint16_t stride, uint8_t * BEC_detect){
+static uint8_t lc3plus_fraunhofer_decoder_decode_signed_16(void * context, const uint8_t *bytes, uint8_t BFI, int16_t* pcm_out, uint16_t stride, uint8_t * BEC_detect){
     btstack_lc3plus_fraunhofer_decoder_t * instance = (btstack_lc3plus_fraunhofer_decoder_t *) context;
     LC3PLUS_Dec * decoder = (LC3PLUS_Dec*) instance->decoder;
 
@@ -103,6 +104,7 @@ static uint8_t lc3plus_fraunhofer_decoder_decode_signed_16(void * context, const
     output_samples[0] = pcm_out;
 
     // trigger plc if BFI by passing 0 valid input bytes
+    uint16_t byte_count = instance->octetes_per_frame;
     if (BFI != 0){
         byte_count = 0;
     }
@@ -123,7 +125,7 @@ static uint8_t lc3plus_fraunhofer_decoder_decode_signed_16(void * context, const
     }
 }
 
-static uint8_t lc3plus_fraunhofer_decoder_decode_signed_24(void * context, const uint8_t *bytes, uint16_t byte_count, uint8_t BFI, int32_t* pcm_out, uint16_t stride, uint8_t * BEC_detect) {
+static uint8_t lc3plus_fraunhofer_decoder_decode_signed_24(void * context, const uint8_t *bytes, uint8_t BFI, int32_t* pcm_out, uint16_t stride, uint8_t * BEC_detect) {
     btstack_lc3plus_fraunhofer_decoder_t * instance = (btstack_lc3plus_fraunhofer_decoder_t *) context;
     LC3PLUS_Dec * decoder = (LC3PLUS_Dec*) instance->decoder;
 
@@ -132,6 +134,7 @@ static uint8_t lc3plus_fraunhofer_decoder_decode_signed_24(void * context, const
     output_samples[0] = pcm_out;
 
     // trigger plc if BFI by passing 0 valid input bytes
+    uint16_t byte_count = instance->octetes_per_frame;
     if (BFI != 0){
         byte_count = 0;
     }
@@ -167,7 +170,7 @@ const btstack_lc3_decoder_t * btstack_lc3plus_fraunhofer_decoder_init_instance(b
 
 /* Encoder implementation */
 
-static uint8_t lc3plus_fraunhofer_encoder_configure(void * context, uint32_t sample_rate, btstack_lc3_frame_duration_t frame_duration){
+static uint8_t lc3plus_fraunhofer_encoder_configure(void * context, uint32_t sample_rate, btstack_lc3_frame_duration_t frame_duration, uint16_t octets_per_frame){
     btstack_lc3plus_fraunhofer_encoder_t * instance = (btstack_lc3plus_fraunhofer_encoder_t *) context;
     return ERROR_CODE_COMMAND_DISALLOWED;
 }

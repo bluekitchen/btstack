@@ -51,6 +51,7 @@ typedef struct {
     lc3_decoder_t                   decoder;    // pointer
     uint32_t                        sample_rate;
     btstack_lc3_frame_duration_t    frame_duration;
+    uint16_t                        octets_per_frame;
 } btstack_lc3_decoder_google_t;
 
 typedef struct {
@@ -58,6 +59,7 @@ typedef struct {
     lc3_encoder_t                   encoder;    // pointer
     uint32_t                        sample_rate;
     btstack_lc3_frame_duration_t    frame_duration;
+    uint16_t                        octets_per_frame;
 } btstack_lc3_encoder_google_t;
 
 /**
