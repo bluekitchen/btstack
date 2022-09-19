@@ -166,6 +166,23 @@ typedef enum {
 #define HCI_EVENT_PACKET        0x04
 #define HCI_ISO_DATA_PACKET     0x05
 
+/**
+ * Other assigned numbers, Assigned_Numbers_Host Controller Interface.pdf
+ */
+
+typedef enum {
+    HCI_AUDIO_CODING_FORMAT_U_LAW_LOG = 0x00,
+    HCI_AUDIO_CODING_FORMAT_A_LAW_LOG,
+    HCI_AUDIO_CODING_FORMAT_CVSD,
+    HCI_AUDIO_CODING_FORMAT_TRANSPARENT, // Indicates that the controller does not do any transcoding or resampling. This is also used for test mode.
+    HCI_AUDIO_CODING_FORMAT_LINEAR_PCM,
+    HCI_AUDIO_CODING_FORMAT_MSBC,
+    HCI_AUDIO_CODING_FORMAT_LC3,
+    HCI_AUDIO_CODING_FORMAT_G_729A, 
+    HCI_AUDIO_CODING_FORMAT_RFU,
+    HCI_AUDIO_CODING_FORMAT_VENDOR_SPECIFIC = 0xFF
+} hci_audio_coding_format_t;
+
 /** 
  * HCI Layer
  */
