@@ -6,6 +6,9 @@ SRC_BLE_GATT_SERVICE_FILES = \
     battery_service_client.c \
     battery_service_server.c \
     bond_management_service_server.c \
+    broadcast_audio_scan_service_client.c \
+    broadcast_audio_scan_service_util.c \
+    broadcast_audio_scan_service_server.c \
     cycling_power_service_server.c \
     cycling_speed_and_cadence_service_server.c \
     device_information_service_client.c \

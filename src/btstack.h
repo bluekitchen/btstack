@@ -87,6 +87,8 @@
 #include "ble/gatt-service/battery_service_client.h"
 #include "ble/gatt-service/battery_service_server.h"
 #include "ble/gatt-service/bond_management_service_server.h"
+#include "ble/gatt-service/broadcast_audio_scan_service_client.h"
+#include "ble/gatt-service/broadcast_audio_scan_service_server.h"
 #include "ble/gatt-service/cycling_power_service_server.h"
 #include "ble/gatt-service/cycling_speed_and_cadence_service_server.h"
 #include "ble/gatt-service/device_information_service_client.h"
