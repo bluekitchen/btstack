@@ -93,6 +93,13 @@
 #endif
 #endif
 
+#ifndef MAX_NR_CONTROLLER_ACL_BUFFERS
+#define MAX_NR_CONTROLLER_ACL_BUFFERS 255
+#endif
+#ifndef MAX_NR_CONTROLLER_SCO_PACKETS
+#define MAX_NR_CONTROLLER_SCO_PACKETS 255
+#endif
+
 #if defined(ENABLE_SCO_OVER_HCI) && defined(ENABLE_SCO_OVER_PCM)
 #error "SCO data can either be routed over HCI or over PCM, but not over both. Please only enable ENABLE_SCO_OVER_HCI or ENABLE_SCO_OVER_PCM."
 #endif
@@ -2629,8 +2636,8 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                 hci_stack->acl_data_packet_length = btstack_min(acl_len, HCI_ACL_PAYLOAD_SIZE);
                 hci_stack->sco_data_packet_length = btstack_min(sco_len, HCI_ACL_PAYLOAD_SIZE);
 
-                hci_stack->acl_packets_total_num = (uint8_t) little_endian_read_16(packet, 9);
-                hci_stack->sco_packets_total_num = (uint8_t) little_endian_read_16(packet, 11);
+                hci_stack->acl_packets_total_num = (uint8_t) btstack_min(little_endian_read_16(packet,  9), MAX_NR_CONTROLLER_ACL_BUFFERS);
+                hci_stack->sco_packets_total_num = (uint8_t) btstack_min(little_endian_read_16(packet, 11), MAX_NR_CONTROLLER_SCO_PACKETS);
 
                 log_info("hci_read_buffer_size: ACL size module %u -> used %u, count %u / SCO size %u, count %u",
                          acl_len, hci_stack->acl_data_packet_length, hci_stack->acl_packets_total_num,
