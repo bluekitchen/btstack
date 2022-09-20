@@ -185,11 +185,11 @@ static uint16_t lc3plus_fraunhofer_encoder_get_number_samples_per_frame(void * c
     return 0;
 }
 
-static uint8_t lc3plus_fraunhofer_encoder_encode_signed_16(void * context, const int16_t* pcm_in, uint16_t stride, uint8_t *bytes, uint16_t byte_count){
+static uint8_t lc3plus_fraunhofer_encoder_encode_signed_16(void * context, const int16_t* pcm_in, uint16_t stride, uint8_t *bytes){
     return ERROR_CODE_COMMAND_DISALLOWED;
 }
 
-static uint8_t lc3plus_fraunhofer_encoder_encode_signed_24(void * context, const int32_t* pcm_in, uint16_t stride, uint8_t *bytes, uint16_t byte_count) {
+static uint8_t lc3plus_fraunhofer_encoder_encode_signed_24(void * context, const int32_t* pcm_in, uint16_t stride, uint8_t *bytes) {
     return ERROR_CODE_COMMAND_DISALLOWED;
 }
 
