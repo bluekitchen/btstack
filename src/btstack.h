@@ -94,6 +94,8 @@
 #include "ble/gatt-service/heart_rate_service_server.h"
 #include "ble/gatt-service/hids_client.h"
 #include "ble/gatt-service/hids_device.h"
+#include "ble/gatt-service/le_audio.h"
+#include "ble/gatt-service/le_audio_util.h"
 #include "ble/gatt-service/microphone_control_service_client.h"
 #include "ble/gatt-service/microphone_control_service_server.h"
 #include "ble/gatt-service/scan_parameters_service_client.h"

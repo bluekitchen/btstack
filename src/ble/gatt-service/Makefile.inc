@@ -13,6 +13,7 @@ SRC_BLE_GATT_SERVICE_FILES = \
     heart_rate_service_server.c \
     hids_client.c \
     hids_device.c \
+    le_audio_util.c \
     mesh_provisioning_service_server.c \
     mesh_proxy_service_server.c \
     microphone_control_service_server.c \
