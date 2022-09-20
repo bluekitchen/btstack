@@ -95,7 +95,7 @@ void tx_power_service_server_init(int8_t tx_power_level_dBm){
 
 	// get service handle range
 	uint16_t start_handle = 0;
-	uint16_t end_handle   = 0xfff;
+	uint16_t end_handle   = 0xffff;
 	bool service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_TX_POWER, &start_handle, &end_handle);
 	btstack_assert(service_found);
 	UNUSED(service_found);
