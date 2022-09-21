@@ -106,6 +106,7 @@ int main (int argc, const char * argv[]){
     // get wav config
     uint32_t sampling_frequency_hz = wav_reader_get_sampling_rate();
     uint8_t  num_channels = wav_reader_get_num_channels();
+    uint16_t number_samples_per_frame = btstack_lc3_samples_per_frame(sampling_frequency_hz, frame_duration);
 
     // init decoder
     uint8_t channel;
@@ -114,11 +115,10 @@ int main (int argc, const char * argv[]){
     for (channel = 0 ; channel < num_channels ; channel++){
         btstack_lc3_encoder_google_t * encoder_context = &encoder_contexts[channel];
         lc3_encoder = btstack_lc3_encoder_google_init_instance(encoder_context);
-        lc3_encoder->configure(encoder_context, sampling_frequency_hz, frame_duration);
+        lc3_encoder->configure(encoder_context, sampling_frequency_hz, frame_duration, number_samples_per_frame);
     }
     uint32_t bitrate_per_channel = lc3_encoder->get_bitrate_for_number_of_octets(&encoder_contexts[0], bytes_per_frame);
     uint32_t bitrate = bitrate_per_channel * num_channels;
-    uint16_t number_samples_per_frame = lc3_encoder->get_number_samples_per_frame(&encoder_contexts[0]);
 
     if (number_samples_per_frame > MAX_SAMPLES_PER_FRAME) return -10;
 
@@ -163,7 +163,7 @@ int main (int argc, const char * argv[]){
 
         // encode frame by frame
         for (channel = 0; channel < num_channels ; channel++){
-            status = lc3_encoder->encode_signed_16(&encoder_contexts[channel], &samples_buffer[channel], num_channels, write_buffer, bytes_per_frame);
+            status = lc3_encoder->encode_signed_16(&encoder_contexts[channel], &samples_buffer[channel], num_channels, write_buffer);
             if (status != ERROR_CODE_SUCCESS){
                 printf("Error %u\n", status);
                 break;

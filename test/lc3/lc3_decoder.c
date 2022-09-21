@@ -131,6 +131,8 @@ int main (int argc, const char * argv[]){
             return -10;
     }
 
+    uint16_t number_samples_per_frame = btstack_lc3_samples_per_frame(sample_rate_hz, duration2);
+
     // init decoder
     uint8_t channel;
     btstack_lc3_decoder_google_t decoder_contexts[MAX_NUM_CHANNELS];
@@ -138,12 +140,11 @@ int main (int argc, const char * argv[]){
     for (channel = 0 ; channel < num_channels ; channel++){
         btstack_lc3_decoder_google_t * decoder_context = &decoder_contexts[channel];
         lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
-        lc3_decoder->configure(decoder_context, sample_rate_hz, duration2);
+        lc3_decoder->configure(decoder_context, sample_rate_hz, duration2, number_samples_per_frame);
     }
 
     uint32_t bitrate_per_channel = bitrate / num_channels;
     uint16_t bytes_per_frame          = lc3_decoder->get_number_octets_for_bitrate(&decoder_contexts[0], bitrate_per_channel);
-    uint16_t number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(&decoder_contexts[0]);
 
     // fix bitrate for 8_1
     if ((sample_rate_hz == 8000) && (bitrate_per_channel == 27700)){
@@ -212,7 +213,7 @@ int main (int argc, const char * argv[]){
             uint8_t tmp_BEC_detect;
             uint8_t BFI = 0;
 
-            uint8_t status = lc3_decoder->decode_signed_16(&decoder_contexts[channel], read_buffer, bytes_per_frame, BFI, &pcm[channel], num_channels, &tmp_BEC_detect);
+            uint8_t status = lc3_decoder->decode_signed_16(&decoder_contexts[channel], read_buffer, BFI, &pcm[channel], num_channels, &tmp_BEC_detect);
             if (status != ERROR_CODE_SUCCESS){
                 printf("Error %u\n", status);
                 done = true;
