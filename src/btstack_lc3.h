@@ -155,6 +155,21 @@ typedef struct {
 
 } btstack_lc3_encoder_t;
 
+/**
+ * @brief Map enum to ISO Interval in us
+ * @param frame_duration enum
+ * @return frame_duratoin in us
+ */
+uint16_t btstack_lc3_frame_duration_in_us(btstack_lc3_frame_duration_t frame_duration);
+
+/**
+ * @bbrief Calculate number of samples per ISO Interval
+ * @param sample_rate
+ * @param frame_duration
+ * @return
+ */
+uint16_t btstack_lc3_samples_per_frame(uint32_t sample_rate, btstack_lc3_frame_duration_t frame_duration);
+
 /* API_END */
 
 #if defined __cplusplus
