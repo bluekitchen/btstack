@@ -117,10 +117,30 @@ int main (int argc, const char * argv[]){
         lc3_encoder = btstack_lc3_encoder_google_init_instance(encoder_context);
         lc3_encoder->configure(encoder_context, sampling_frequency_hz, frame_duration, number_samples_per_frame);
     }
-    uint32_t bitrate_per_channel = lc3_encoder->get_bitrate_for_number_of_octets(&encoder_contexts[0], bytes_per_frame);
-    uint32_t bitrate = bitrate_per_channel * num_channels;
 
     if (number_samples_per_frame > MAX_SAMPLES_PER_FRAME) return -10;
+
+    // calc bitrate from num octets
+    uint32_t bitrate_per_channel = ((uint32_t) bytes_per_frame * 80000) / (btstack_lc3_frame_duration_in_us(frame_duration) / 100);
+    // fix bitrate for 8_1
+    if ((sampling_frequency_hz == 8000) && (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US)) {
+        bitrate_per_channel = 27734;
+    }
+    // fix bitrate for 441_1 and 441_2
+    if (sampling_frequency_hz == 44100){
+        switch(frame_duration){
+            case BTSTACK_LC3_FRAME_DURATION_7500US:
+                bitrate_per_channel = 95060;
+                break;
+            case BTSTACK_LC3_FRAME_DURATION_10000US:
+                bitrate_per_channel = 95500;
+                break;
+            default:
+                btstack_unreachable();
+                break;
+        }
+    }
+    uint32_t bitrate = bitrate_per_channel * num_channels;
 
     // create lc3 file and write header for floating point implementation
     FILE * lc3_file = fopen(lc3_filename, "wb");
