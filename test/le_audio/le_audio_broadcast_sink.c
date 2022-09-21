@@ -52,6 +52,7 @@
 #include <inttypes.h>
 #include <fcntl.h>        // open
 #include <errno.h>
+#include <ble/gatt-service/broadcast_audio_scan_service_server.h>
 
 #include "ad_parser.h"
 #include "bluetooth_data_types.h"
@@ -115,6 +116,11 @@ static const uint8_t adv_data[] = {
        // name
         5, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'S', 'i', 'n', 'k'
 };
+
+#define BASS_NUM_CLIENTS 1
+#define BASS_NUM_SOURCES 1
+static bass_server_source_t bass_sources[BASS_NUM_SOURCES];
+static bass_remote_client_t bass_clients[BASS_NUM_CLIENTS];
 
 //
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -847,6 +853,11 @@ static void stdin_process(char c){
 
     }
 }
+static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+
+}
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -859,6 +870,10 @@ int btstack_main(int argc, const char * argv[]){
 
     // register for ISO Packet
     hci_register_iso_packet_handler(&iso_packet_handler);
+
+    // setup BASS Server
+    broadcast_audio_scan_service_server_init(BASS_NUM_SOURCES, bass_sources, BASS_NUM_CLIENTS, bass_clients);
+    broadcast_audio_scan_service_server_register_packet_handler(&bass_packet_handler);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
