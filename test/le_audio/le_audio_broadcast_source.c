@@ -92,9 +92,15 @@ static const le_extended_advertising_parameters_t extended_params = {
         .scan_request_notification_enable = 0,
 };
 
+// Random Broadcast ID, valid for lifetime of BIG
+#define BROADCAST_ID (0x112233u)
+
 static const uint8_t extended_adv_data[] = {
         // 16 bit service data, ORG_BLUETOOTH_SERVICE_BASIC_AUDIO_ANNOUNCEMENT_SERVICE, Broadcast ID
-        6, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID, 0x52, 0x18, 0x30, 0x5d, 0x9b,
+        6, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID, 0x52, 0x18,
+        BROADCAST_ID >> 16,
+        (BROADCAST_ID >> 8) & 0xff,
+        BROADCAST_ID & 0xff,
         // name
 #ifdef PTS_MODE
         7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'P', 'T', 'S', '-', 'x', 'x'

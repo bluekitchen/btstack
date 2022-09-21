@@ -466,6 +466,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             bool found = false;
             remote_name[0] = '\0';
             uint16_t uuid;
+            uint32_t broadcast_id;
             for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
                 uint8_t data_type = ad_iterator_get_data_type(&context);
                 uint8_t size = ad_iterator_get_data_len(&context);
@@ -474,6 +475,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
                         uuid = little_endian_read_16(data, 0);
                         if (uuid == ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE){
+                            broadcast_id = little_endian_read_24(data, 2);
                             found = true;
                         }
                         break;
@@ -497,7 +499,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             remote_sid = gap_event_extended_advertising_report_get_advertising_sid(packet);
             pts_mode = strncmp("PTS-", remote_name, 4) == 0;
             count_mode = strncmp("COUNT", remote_name, 5) == 0;
-            printf("Remote Broadcast sink found, addr %s, name: '%s' (pts-mode: %u, count: %u)\n", bd_addr_to_str(remote), remote_name, pts_mode, count_mode);
+            printf("Broadcast sink found, addr %s, name: '%s' (pts-mode: %u, count: %u), Broadcast_ID 0%06x\n", bd_addr_to_str(remote), remote_name, pts_mode, count_mode, broadcast_id);
             // ignore other advertisements
             gap_whitelist_add(remote_type, remote);
             gap_set_scan_params(1, 0x30, 0x30, 1);
