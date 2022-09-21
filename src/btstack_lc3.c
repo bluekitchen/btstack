@@ -53,7 +53,6 @@ uint16_t btstack_lc3_frame_duration_in_us(btstack_lc3_frame_duration_t frame_dur
         case BTSTACK_LC3_FRAME_DURATION_10000US:
             return 10000;
         default:
-            btstack_assert(false);
             return 0;
     }
 }

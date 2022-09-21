@@ -223,7 +223,7 @@ static void setup_lc3_decoder(void){
         decoder_contexts[channel] = decoder_context;
         lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration, octets_per_frame);
     }
-    number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(decoder_contexts[0]);
+    number_samples_per_frame = btstack_lc3_samples_per_frame(sampling_frequency_hz, frame_duration);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
 }
 

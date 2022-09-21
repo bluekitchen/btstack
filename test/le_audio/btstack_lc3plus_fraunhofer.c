@@ -84,17 +84,6 @@ static uint8_t lc3plus_fraunhofer_decoder_configure(void * context, uint32_t sam
     return ERROR_CODE_SUCCESS;
 }
 
-static uint16_t lc3plus_fraunhofer_decoder_get_number_octets_for_bitrate(void * context, uint32_t bitrate){
-    btstack_assert(false);
-    return 0;
-}
-
-static uint16_t lc3plus_fraunhofer_decoder_get_number_samples_per_frame(void * context){
-    btstack_lc3plus_fraunhofer_decoder_t * instance = (btstack_lc3plus_fraunhofer_decoder_t *) context;
-    LC3PLUS_Dec * decoder = (LC3PLUS_Dec*) instance->decoder;
-    return lc3plus_dec_get_output_samples(decoder);
-}
-
 static uint8_t lc3plus_fraunhofer_decoder_decode_signed_16(void * context, const uint8_t *bytes, uint8_t BFI, int16_t* pcm_out, uint16_t stride, uint8_t * BEC_detect){
     btstack_lc3plus_fraunhofer_decoder_t * instance = (btstack_lc3plus_fraunhofer_decoder_t *) context;
     LC3PLUS_Dec * decoder = (LC3PLUS_Dec*) instance->decoder;
@@ -157,8 +146,6 @@ static uint8_t lc3plus_fraunhofer_decoder_decode_signed_24(void * context, const
 
 static const btstack_lc3_decoder_t btstack_l3cplus_fraunhofer_decoder_instance = {
         lc3plus_fraunhofer_decoder_configure,
-        lc3plus_fraunhofer_decoder_get_number_octets_for_bitrate,
-        lc3plus_fraunhofer_decoder_get_number_samples_per_frame,
         lc3plus_fraunhofer_decoder_decode_signed_16,
         lc3plus_fraunhofer_decoder_decode_signed_24
 };
@@ -175,16 +162,6 @@ static uint8_t lc3plus_fraunhofer_encoder_configure(void * context, uint32_t sam
     return ERROR_CODE_COMMAND_DISALLOWED;
 }
 
-static uint32_t lc3plus_fraunhofer_encoder_get_bitrate_for_number_of_octets(void * context, uint16_t number_of_octets){
-    btstack_assert(false);
-    return 0;
-}
-
-static uint16_t lc3plus_fraunhofer_encoder_get_number_samples_per_frame(void * context){
-    btstack_assert(false);
-    return 0;
-}
-
 static uint8_t lc3plus_fraunhofer_encoder_encode_signed_16(void * context, const int16_t* pcm_in, uint16_t stride, uint8_t *bytes){
     return ERROR_CODE_COMMAND_DISALLOWED;
 }
@@ -195,8 +172,6 @@ static uint8_t lc3plus_fraunhofer_encoder_encode_signed_24(void * context, const
 
 static const btstack_lc3_encoder_t btstack_l3cplus_fraunhofer_encoder_instance = {
         lc3plus_fraunhofer_encoder_configure,
-        lc3plus_fraunhofer_encoder_get_bitrate_for_number_of_octets,
-        lc3plus_fraunhofer_encoder_get_number_samples_per_frame,
         lc3plus_fraunhofer_encoder_encode_signed_16,
         lc3plus_fraunhofer_encoder_encode_signed_24
 };

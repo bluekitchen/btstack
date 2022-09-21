@@ -234,7 +234,7 @@ static void setup_lc3_encoder(void){
         lc3_encoder = btstack_lc3_encoder_google_init_instance(context);
         lc3_encoder->configure(context, sampling_frequency_hz, frame_duration, octets_per_frame);
     }
-    number_samples_per_frame = lc3_encoder->get_number_samples_per_frame(&encoder_contexts[0]);
+    number_samples_per_frame = btstack_lc3_samples_per_frame(sampling_frequency_hz, frame_duration);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
     printf("LC3 Encoder config: %u hz, frame duration %s ms, num samples %u, num octets %u\n",
            sampling_frequency_hz, frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
@@ -260,7 +260,7 @@ static void setup_lc3_decoder(void){
             decoder_contexts[channel] = decoder_context;
             lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration, octets_per_frame);
         }
-    number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(decoder_contexts[0]);
+    number_samples_per_frame = btstack_lc3_samples_per_frame(sampling_frequency_hz, frame_duration);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
 }
 

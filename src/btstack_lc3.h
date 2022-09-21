@@ -65,21 +65,6 @@ typedef struct {
     uint8_t (*configure)(void * context, uint32_t sample_rate, btstack_lc3_frame_duration_t frame_duration, uint16_t octets_per_frame);
 
     /**
-     * Get number of octets per LC3 frame for bitrate
-     * @param context
-     * @param bitrate
-     * @return octets_per_frame
-     */
-    uint16_t (*get_number_octets_for_bitrate)(void * context, uint32_t bitrate);
-
-    /**
-     * Get number of samples per LC3 frame
-     * @param context
-     * @return number of samples
-     */
-    uint16_t (*get_number_samples_per_frame)(void * context);
-
-    /**
      * Decode LC3 Frame into signed 16-bit samples
      * @param context
      * @param bytes
@@ -119,21 +104,6 @@ typedef struct {
     uint8_t (*configure)(void * context, uint32_t sample_rate, btstack_lc3_frame_duration_t frame_duration, uint16_t octets_per_frame);
 
     /**
-     * Get bitrate from number of octets per LC3 frame
-     * @param context
-     * @param number_of_octets
-     * @return bitrate
-     */
-    uint32_t (*get_bitrate_for_number_of_octets)(void * context, uint16_t number_of_octets);
-
-    /**
-     * Get number of samples per LC3 frame
-     * @param context
-    * @return number of samples
-    */
-    uint16_t (*get_number_samples_per_frame)(void * context);
-
-    /**
      * Encode LC3 Frame with 16-bit signed PCM samples
      * @param context
      * @param pcm_in buffer for decoded PCM samples
@@ -158,7 +128,7 @@ typedef struct {
 /**
  * @brief Map enum to ISO Interval in us
  * @param frame_duration enum
- * @return frame_duratoin in us
+ * @return frame_duratoin in us or 0 for invalid frame_duration enum
  */
 uint16_t btstack_lc3_frame_duration_in_us(btstack_lc3_frame_duration_t frame_duration);
 

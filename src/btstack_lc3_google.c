@@ -79,24 +79,6 @@ static uint8_t lc3_decoder_google_configure(void * context, uint32_t sample_rate
     return ERROR_CODE_SUCCESS;
 }
 
-static uint16_t lc3_decoder_google_get_number_octets_for_bitrate(void * context, uint32_t bitrate){
-    btstack_lc3_decoder_google_t * instance = (btstack_lc3_decoder_google_t *) context;
-    uint16_t duration_us = lc3_frame_duration_in_us(instance->frame_duration);
-    if (duration_us == 0){
-        return 0;
-    }
-    return lc3_frame_bytes(duration_us, bitrate);
-}
-
-static uint16_t lc3_decoder_google_get_number_samples_per_frame(void * context){
-    btstack_lc3_decoder_google_t * instance = (btstack_lc3_decoder_google_t *) context;
-    uint16_t duration_us = lc3_frame_duration_in_us(instance->frame_duration);
-    if (duration_us == 0){
-        return 0;
-    }
-    return lc3_frame_samples(duration_us, instance->sample_rate);
-}
-
 static uint8_t
 lc3_decoder_google_decode(void *context, const uint8_t *bytes, uint8_t BFI, enum lc3_pcm_format fmt, void *pcm_out,
                           uint16_t stride, uint8_t *BEC_detect) {
@@ -133,8 +115,6 @@ static uint8_t lc3_decoder_google_decode_signed_24(void * context, const uint8_t
 
 static const btstack_lc3_decoder_t btstack_l3c_decoder_google_instance = {
     lc3_decoder_google_configure,
-    lc3_decoder_google_get_number_octets_for_bitrate,
-    lc3_decoder_google_get_number_samples_per_frame,
     lc3_decoder_google_decode_signed_16,
     lc3_decoder_google_decode_signed_24
 };
@@ -170,25 +150,6 @@ static uint8_t lc3_encoder_google_configure(void * context, uint32_t sample_rate
     return ERROR_CODE_SUCCESS;
 }
 
-static uint32_t lc3_encoder_google_get_bitrate_for_number_of_octets(void * context, uint16_t number_of_octets){
-    btstack_lc3_encoder_google_t * instance = (btstack_lc3_encoder_google_t *) context;
-    // map frame duration
-    uint16_t duration_us = lc3_frame_duration_in_us(instance->frame_duration);
-    if (duration_us == 0){
-        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
-    }
-    return lc3_resolve_bitrate(duration_us, number_of_octets);
-}
-
-static uint16_t lc3_encoder_google_get_number_samples_per_frame(void * context){
-    btstack_lc3_encoder_google_t * instance = (btstack_lc3_encoder_google_t *) context;
-    // map frame duration
-    uint16_t duration_us = lc3_frame_duration_in_us(instance->frame_duration);
-    if (duration_us == 0){
-        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
-    }
-    return lc3_frame_samples(duration_us, instance->sample_rate);
-}
 static uint8_t
 lc3_encoder_google_encode_signed(void *context, enum lc3_pcm_format fmt, const void *pcm_in, uint16_t stride, uint8_t *bytes) {
     btstack_lc3_encoder_google_t * instance = (btstack_lc3_encoder_google_t *) context;
@@ -211,8 +172,6 @@ static uint8_t lc3_encoder_google_encode_signed_24(void * context, const int32_t
 
 static const btstack_lc3_encoder_t btstack_l3c_encoder_google_instance = {
         lc3_encoder_google_configure,
-        lc3_encoder_google_get_bitrate_for_number_of_octets,
-        lc3_encoder_google_get_number_samples_per_frame,
         lc3_encoder_google_encode_signed_16,
         lc3_encoder_google_encode_signed_24
 };
