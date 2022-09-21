@@ -50,7 +50,10 @@
 #define BROADCAST_AUDIO_SCAN_SERVICE_SERVER_H
 
 #include <stdint.h>
+
+#include "btstack_defines.h"
 #include "le_audio.h"
+
 #include "broadcast_audio_scan_service_util.h"
 
 #if defined __cplusplus

@@ -45,6 +45,8 @@
 
 #include <stdint.h>
 
+#include "bluetooth.h"
+
 #if defined __cplusplus
 extern "C" {
 #endif

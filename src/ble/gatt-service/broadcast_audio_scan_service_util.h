@@ -40,6 +40,8 @@
 #define BROADCAST_AUDIO_SCAN_SERVICE_UTIL_H
 
 #include <stdint.h>
+
+#include "btstack_bool.h"
 #include "le_audio.h"
 
 #if defined __cplusplus

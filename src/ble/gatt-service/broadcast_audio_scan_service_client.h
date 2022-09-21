@@ -44,8 +44,10 @@
 #define BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_H
 
 #include <stdint.h>
+#include "ble/gatt_client.h"
+#include "ble/gatt-service/broadcast_audio_scan_service_util.h"
+#include "btstack_defines.h"
 #include "le_audio.h"
-#include "broadcast_audio_scan_service_util.h"
 
 #if defined __cplusplus
 extern "C" {
