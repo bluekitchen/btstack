@@ -107,6 +107,15 @@ static enum {
     APP_IDLE
 } app_state = APP_W4_WORKING;
 
+static const uint8_t adv_data[] = {
+        // 16 bit service data, ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE, Broadcast ID
+        6, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID,
+            ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE & 0xff, ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE >> 8,
+            0x30, 0x5d, 0x9b,
+       // name
+        5, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'S', 'i', 'n', 'k'
+};
+
 //
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -430,6 +439,18 @@ static void start_scanning() {
     gap_set_scan_params(1, 0x30, 0x30, 0);
     gap_start_scan();
     printf("Start scan..\n");
+}
+
+static void setup_advertising() {
+    // setup advertisements
+    uint16_t adv_int_min = 0x00A0;
+    uint16_t adv_int_max = 0x00A0;
+    uint8_t adv_type = 0;
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    gap_advertisements_set_data(sizeof(adv_data), (uint8_t*) adv_data);
+    gap_advertisements_enable(1);
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
