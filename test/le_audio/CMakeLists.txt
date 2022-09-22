@@ -144,6 +144,7 @@ file(GLOB EXAMPLES_GATT "*.gatt")
 # create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
+	set(SOURCE_FILES ${EXAMPLE_FILE})
 
 	# add GATT DB creation
 	if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
@@ -158,6 +159,6 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	else()
 		message("LE Audio Tool: ${EXAMPLE}")
 	endif()
-	add_executable(${EXAMPLE} ${EXAMPLE_FILE} )
+	add_executable(${EXAMPLE} ${SOURCE_FILES} )
 	target_link_libraries(${EXAMPLE} btstack m pthread)
 endforeach(EXAMPLE_FILE)
