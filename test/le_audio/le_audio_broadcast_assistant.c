@@ -52,6 +52,7 @@
 
 #include "ad_parser.h"
 #include "ble/gatt-service/broadcast_audio_scan_service_client.h"
+#include "ble/sm.h"
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
 #include "btstack_audio.h"
@@ -62,6 +63,7 @@
 #include "btstack_util.h"
 #include "gap.h"
 #include "hci.h"
+#include "l2cap.h"
 
 static void show_usage(void);
 
@@ -76,6 +78,7 @@ static enum {
 
 //
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 static bool have_scan_delegator;
 static bool have_broadcast_source;
@@ -237,7 +240,7 @@ static void start_scanning() {
 }
 
 static void have_base_and_big_info(void){
-    printf("Ready to stream!\n");
+    printf("Connecting to Scan Delegator/Sink!\n");
 
     // todo: connect to scan delegator
     app_state = APP_W4_SCAN_DELEGATOR_CONNECTION;
@@ -330,7 +333,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         {
             if (app_state != APP_W4_BROADCAST_SINK_AND_SCAN_DELEGATOR_ADV) break;
 
-            gap_event_extended_advertising_report_get_address(packet, broadcast_source);
             uint8_t adv_size = gap_event_extended_advertising_report_get_data_length(packet);
             const uint8_t * adv_data = gap_event_extended_advertising_report_get_data(packet);
 
@@ -371,7 +373,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         break;
                 }
             }
+
             if ((found_scan_delegator == false) && (found_broadcast_source == false)) break;
+
             if ((have_scan_delegator == false) && found_scan_delegator){
                 have_scan_delegator = true;
                 gap_event_extended_advertising_report_get_address(packet, scan_delegator);
@@ -395,11 +399,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 } else {
                     broadcast_source_name[0] = 0;
                 }
-                printf("Broadcast sink found, addr %s, name: '%s'\n", bd_addr_to_str(broadcast_source), broadcast_source_name);
+                printf("Broadcast source found, addr %s, name: '%s'\n", bd_addr_to_str(broadcast_source), broadcast_source_name);
                 gap_whitelist_add(broadcast_source_type, broadcast_source);
             }
 
-            if ((have_broadcast_source && have_scan_delegator) == false) break;
+             if ((have_broadcast_source && have_scan_delegator) == false) break;
+//            if (have_broadcast_source == false) break;
 
             printf("Start Periodic Advertising Sync\n");
 
@@ -460,6 +465,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             }
             break;
+        case SM_EVENT_JUST_WORKS_REQUEST:
+            printf("Just Works requested\n");
+            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+            break;
         default:
             break;
     }
@@ -491,12 +500,20 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     (void) argv;
     (void) argc;
-    
+
+    l2cap_init();
+    sm_init();
+    gatt_client_init();
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    broadcast_audio_scan_service_client_init(&packet_handler);
+    // register for SM events
+    sm_event_callback_registration.callback = &packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
+
+    broadcast_audio_scan_service_client_init(&bass_packet_handler);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
