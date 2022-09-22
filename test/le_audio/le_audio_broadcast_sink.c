@@ -48,13 +48,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <inttypes.h>
-#include <fcntl.h>        // open
-#include <errno.h>
-#include <ble/gatt-service/broadcast_audio_scan_service_server.h>
 
 #include "ad_parser.h"
+#include "ble/gatt-service/broadcast_audio_scan_service_server.h"
+#include "ble/att_server.h"
+#include "ble/sm.h"
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
@@ -70,6 +69,9 @@
 #include "btstack_lc3.h"
 #include "btstack_lc3_google.h"
 #include "btstack_lc3plus_fraunhofer.h"
+#include "l2cap.h"
+
+#include "le_audio_broadcast_sink.h"
 
 #ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
@@ -108,7 +110,28 @@ static enum {
     APP_IDLE
 } app_state = APP_W4_WORKING;
 
-static const uint8_t adv_data[] = {
+static const uint8_t adv_sid = 0;
+static le_advertising_set_t le_advertising_set;
+static uint8_t adv_handle = 0;
+
+static const le_extended_advertising_parameters_t extended_params = {
+        .advertising_event_properties = 1,  // connectable
+        .primary_advertising_interval_min = 0x4b0, // 750 ms
+        .primary_advertising_interval_max = 0x4b0, // 750 ms
+        .primary_advertising_channel_map = 7,
+        .own_address_type = 0,
+        .peer_address_type = 0,
+        .peer_address =  { 0 },
+        .advertising_filter_policy = 0,
+        .advertising_tx_power = 10, // 10 dBm
+        .primary_advertising_phy = 1, // LE 1M PHY
+        .secondary_advertising_max_skip = 0,
+        .secondary_advertising_phy = 1, // LE 1M PHY
+        .advertising_sid = adv_sid,
+        .scan_request_notification_enable = 0,
+};
+
+static const uint8_t extended_adv_data[] = {
         // 16 bit service data, ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE, Broadcast ID
         6, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID,
             ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE & 0xff, ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE >> 8,
@@ -124,6 +147,7 @@ static bass_remote_client_t bass_clients[BASS_NUM_CLIENTS];
 
 //
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 static bool have_base;
 static bool have_big_info;
@@ -448,15 +472,9 @@ static void start_scanning() {
 }
 
 static void setup_advertising() {
-    // setup advertisements
-    uint16_t adv_int_min = 0x00A0;
-    uint16_t adv_int_max = 0x00A0;
-    uint8_t adv_type = 0;
-    bd_addr_t null_addr;
-    memset(null_addr, 0, 6);
-    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-    gap_advertisements_set_data(sizeof(adv_data), (uint8_t*) adv_data);
-    gap_advertisements_enable(1);
+    gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
+    gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
+    gap_extended_advertising_start(adv_handle, 0, 0);
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -599,6 +617,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 default:
                     break;
             }
+            break;
+        case SM_EVENT_JUST_WORKS_REQUEST:
+            printf("Just Works requested\n");
+            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
             break;
         default:
             break;
@@ -863,13 +885,23 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     (void) argv;
     (void) argc;
-    
+
+    l2cap_init();
+    sm_init();
+
+    // setup ATT server
+    att_server_init(profile_data, NULL, NULL);
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // register for ISO Packet
     hci_register_iso_packet_handler(&iso_packet_handler);
+
+    // register for SM events
+    sm_event_callback_registration.callback = &packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
 
     // setup BASS Server
     broadcast_audio_scan_service_server_init(BASS_NUM_SOURCES, bass_sources, BASS_NUM_CLIENTS, bass_clients);
