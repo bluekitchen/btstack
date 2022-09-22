@@ -63,5 +63,5 @@ uint16_t btstack_lc3_samples_per_frame(uint32_t sample_rate, btstack_lc3_frame_d
         sample_rate = 48000;
     }
     // assume sample rate is x 1000 hz
-    return (sample_rate / 1000) * (btstack_lc3_frame_duration_in_us(frame_duration) / 100);
+    return (sample_rate / 1000) * (btstack_lc3_frame_duration_in_us(frame_duration) / 100) / 10;
 }
