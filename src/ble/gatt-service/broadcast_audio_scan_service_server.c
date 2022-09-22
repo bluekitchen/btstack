@@ -532,8 +532,8 @@ void broadcast_audio_scan_service_server_init(const uint8_t sources_num, bass_se
     
     uint16_t start_handle = 0;
     uint16_t end_handle   = 0xffff;
-    int service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE, &start_handle, &end_handle);
-    btstack_assert(service_found != 0);
+    bool service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE, &start_handle, &end_handle);
+    btstack_assert(service_found);
 
     UNUSED(service_found);
 
