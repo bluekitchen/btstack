@@ -3149,6 +3149,9 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 	conn->con_handle             = hci_subevent_le_connection_complete_get_connection_handle(packet);
 	conn->le_connection_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
 
+    // workaround: PAST doesn't work without LE Read Remote Features on PacketCraft Controller with LMP 568B
+    conn->gap_connection_tasks = GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
+
 #ifdef ENABLE_LE_PERIPHERAL
 	if (packet[6] == HCI_ROLE_SLAVE){
 		hci_update_advertisements_enabled_for_current_roles();
@@ -6917,6 +6920,13 @@ static bool hci_run_general_pending_commands(void){
                 hci_send_cmd(&hci_read_rssi, connection->con_handle);
                 return true;
             }
+#ifdef ENABLE_BLE
+            if (connection->gap_connection_tasks & GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES){
+                connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
+                hci_send_cmd(&hci_le_read_remote_used_features, connection->con_handle);
+                return true;
+            }
+#endif
         }
 
 #ifdef ENABLE_BLE
