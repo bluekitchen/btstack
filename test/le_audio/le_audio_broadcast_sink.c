@@ -559,6 +559,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {
+                case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED:
+                    printf("Periodic advertising sync trasnfer received\n");
+                    app_state = APP_W4_PA_AND_BIG_INFO;
+                    break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
                     sync_handle = hci_subevent_le_periodic_advertising_sync_establishment_get_sync_handle(packet);
                     printf("Periodic advertising sync with handle 0x%04x established\n", sync_handle);
