@@ -213,7 +213,7 @@ int main(int argc, const char * argv[]){
 	    
 
     // pre-select serial device
-    config.device_name = "/dev/tty.usbmodemD5D5237DC25B1"; // BL654 with PTS Firmware
+    config.device_name = "/dev/tty.usbmodemEA7EB9D612C31"; // BL654 with PTS Firmware
 
     // accept path from command line
     bool second_device = false;
@@ -227,8 +227,11 @@ int main(int argc, const char * argv[]){
 
     // log into file using HCI_DUMP_BTSNOOP format
     char * pklg_path = "/tmp/hci_dump.btsnoop";
-    if (second_device){
-        pklg_path = "/tmp/hci_dump2.btsnoop";
+    if (strcmp(config.device_name, "/dev/tty.usbmodemEF437DF524C51") == 0){
+        pklg_path = "/tmp/hci_dump_source.btsnoop";
+    }
+    if (strcmp(config.device_name, "/dev/tty.usbmodemE6589B44933B1") == 0){
+        pklg_path = "/tmp/hci_dump_sink.btsnoop";
     }
     hci_dump_posix_fs_open(pklg_path, HCI_DUMP_BTSNOOP);
     const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
