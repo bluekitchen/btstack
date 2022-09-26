@@ -193,7 +193,7 @@ bool bass_util_add_source_buffer_in_valid_range(uint8_t *buffer, uint16_t buffer
 void bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t * source_data){
     UNUSED(buffer_size);
     uint8_t pos = 0;
-    source_data->pa_sync_state = (le_audio_pa_sync_state_t)buffer[pos++];
+    source_data->pa_sync     = (le_audio_pa_sync_t)buffer[pos++];
     source_data->pa_interval = little_endian_read_16(buffer, pos);
     pos += 2;
     
