@@ -4198,14 +4198,14 @@ typedef uint8_t sm_key_t[16];
  * @param coding_format
  * @param company_id
  * @param vendor_specific_codec_id
- * @param codec_configuration_mask
+ * @param specific_codec_configuration_mask
  * @param sampling_frequency_index
  * @param frame_duration_index
  * @param audio_channel_allocation_mask
  * @param octets_per_frame 
  * @param frame_blocks_per_sdu 
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION_RECEIVED         0x32u
+#define GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION_REQUEST                  0x32u
 
 /**
  * @format 1H1113112123
@@ -4222,7 +4222,7 @@ typedef uint8_t sm_key_t[16];
  * @param max_transport_latency
  * @param presentation_delay_us
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION_RECEIVED           0x033u
+#define GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION                           0x033u
 
 /**
  * @format 1H1122JV3JV1JV2JV2JV
@@ -4247,7 +4247,7 @@ typedef uint8_t sm_key_t[16];
  * @param vendor_specific_metadata_value_length
  * @param vendor_specific_metadata_value
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_METADATA_RECEIVED                     0x34u
+#define GATTSERVICE_SUBEVENT_ASCS_METADATA                                     0x34u
 
 /**
  * @format 1H1
@@ -4487,6 +4487,31 @@ typedef uint8_t sm_key_t[16];
  * @param ascs_cid
 */
 #define GATTSERVICE_SUBEVENT_ASCS_DISCONNECTED                                   0x58u
+
+/**
+ * @format 1H111123333122111421
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+ * @param framing
+ * @param preferred_phy
+ * @param preferred_retransmission_number
+ * @param max_transport_latency
+ * @param presentation_delay_min
+ * @param presentation_delay_max
+ * @param preferred_presentation_delay_min
+ * @param preferred_presentation_delay_max
+ * @param coding_format
+ * @param company_id
+ * @param vendor_specific_codec_id
+ * @param specific_codec_configuration_mask
+ * @param sampling_frequency_index
+ * @param frame_duration_index
+ * @param audio_channel_allocation_mask
+ * @param octets_per_frame 
+ * @param frame_blocks_per_sdu 
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION                             0x59u
 
 // MAP Meta Event Group
 
