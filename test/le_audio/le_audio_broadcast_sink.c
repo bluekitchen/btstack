@@ -151,6 +151,8 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 static bool have_base;
 static bool have_big_info;
+static bool have_past;
+static bool standalone_mode;
 
 uint32_t last_samples_report_ms;
 uint16_t samples_received;
@@ -560,7 +562,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED:
-                    printf("Periodic advertising sync trasnfer received\n");
+                    printf("Periodic advertising sync transfer received\n");
+                    broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
                     app_state = APP_W4_PA_AND_BIG_INFO;
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
@@ -568,6 +571,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("Periodic advertising sync with handle 0x%04x established\n", sync_handle);
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT:
+                    if (app_state != APP_W4_PA_AND_BIG_INFO) break;
                     if (have_base) break;
                     handle_periodic_advertisement(packet, size);
                     if (have_base & have_big_info){
@@ -575,6 +579,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;
                 case HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT:
+                    if (app_state != APP_W4_PA_AND_BIG_INFO) break;
                     if (have_big_info) break;
                     handle_big_info(packet, size);
                     if (have_base & have_big_info){
@@ -591,6 +596,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         }
                     }
                     // start over
+                    if (!standalone_mode) break;
                     start_scanning();
                     break;
                 default:
@@ -613,6 +619,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     memset(last_packet_received, 0, sizeof(last_packet_received));
                     memset(pcm, 0, sizeof(pcm));
                     printf("Start receiving\n");
+
+                    // update BIS Sync state
+                    bass_sources[0].data.subgroups[0].bis_sync_state = 1;
+                    broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
                     break;
                 }
                 case GAP_SUBEVENT_BIG_SYNC_STOPPED:
@@ -844,6 +854,7 @@ static void stdin_process(char c){
     switch (c){
         case 's':
             if (app_state != APP_IDLE) break;
+            standalone_mode = true;
             start_scanning();
             break;
 #ifdef HAVE_LC3PLUS
@@ -882,7 +893,32 @@ static void stdin_process(char c){
 static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
     UNUSED(channel);
-
+    btstack_assert (packet_type == HCI_EVENT_PACKET);
+    btstack_assert(hci_event_packet_get_type(packet) == HCI_EVENT_GATTSERVICE_META);
+    printf("BASS Event 0x%02x: ", hci_event_gattservice_meta_get_subevent_code(packet));
+    printf_hexdump(packet, size);
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED:
+            printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED, source_id 0x%04x, pa_sync %u\n",
+                   gattservice_subevent_bass_source_added_get_source_id(packet),
+                   gattservice_subevent_bass_source_added_get_pa_sync(packet));
+            printf("Request SyncInfo\n");
+            broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST);
+            break;
+        case GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED:
+            printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED, source_id 0x%04x, pa_sync %u\n",
+                   gattservice_subevent_bass_source_added_get_source_id(packet),
+                   gattservice_subevent_bass_source_added_get_pa_sync(packet));
+            // handle 'bis sync == 0'
+            printf("PA Sync %u, bis_sync[0] = %u\n", bass_sources[0].data.pa_sync, bass_sources[0].data.subgroups[0].bis_sync);
+            if (bass_sources[0].data.subgroups[0].bis_sync == 0){
+                printf("Simulate BIS Sync has stopped\n");
+                bass_sources[0].data.subgroups[0].bis_sync_state = 0;
+                broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
+            }
+        default:
+            break;
+    }
 }
 
 int btstack_main(int argc, const char * argv[]);
