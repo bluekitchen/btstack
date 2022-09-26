@@ -142,6 +142,7 @@ static const uint8_t extended_adv_data[] = {
 
 #define BASS_NUM_CLIENTS 1
 #define BASS_NUM_SOURCES 1
+static bass_source_data_t   bass_source_new;
 static bass_server_source_t bass_sources[BASS_NUM_SOURCES];
 static bass_remote_client_t bass_clients[BASS_NUM_CLIENTS];
 
@@ -327,10 +328,16 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                     uint32_t presentation_delay = little_endian_read_24(base_data, 0);
                     printf("- presentation delay: %"PRIu32" us\n", presentation_delay);
                     uint8_t num_subgroups = base_data[3];
+                    // Cache in new source struct
+                    bass_source_new.subgroups_num = num_subgroups;
                     printf("- num subgroups: %u\n", num_subgroups);
                     uint8_t i;
                     uint16_t offset = 4;
                     for (i=0;i<num_subgroups;i++){
+
+                        // Cache in new source struct
+                        bass_source_new.subgroups[i].bis_sync = 0;
+
                         // Level 2: Subgroup Level
                         num_bis = base_data[offset++];
                         printf("  - num bis[%u]: %u\n", i, num_bis);
@@ -380,6 +387,12 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                         for (k=0;k<num_bis;k++){
                             // Level 3: BIS Level
                             uint8_t bis_index = base_data[offset++];
+
+                            // Cache in new source struct
+                            bass_source_new.subgroups[i].bis_sync_state |=  1 << bis_index;
+                            bass_source_new.subgroups[i].metadata_length = 0;
+                            memset(&bass_source_new.subgroups[i].metadata, 0, sizeof(le_audio_metadata_t));
+
                             printf("    - bis index[%u][%u]: %u\n", i, k, bis_index);
                             uint8_t codec_specific_configuration_length2 = base_data[offset++];
                             const uint8_t * codec_specific_configuration2 = &base_data[offset];
@@ -394,6 +407,10 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                 break;
         }
     }
+
+    // add source
+    uint8_t source_index = 0;
+    broadcast_audio_scan_service_server_add_source(bass_source_new, &source_index);
 }
 
 static void handle_big_info(const uint8_t * packet, uint16_t size){
@@ -556,6 +573,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             app_state = APP_W4_PA_AND_BIG_INFO;
             printf("Start Periodic Advertising Sync\n");
             gap_periodic_advertising_create_sync(0x01, remote_sid, remote_type, remote, 0, 1000, 0);
+
+            // setup bass source info
+            bass_source_new.address_type = remote_type;
+            memcpy(bass_source_new.address, remote, 6);
+            bass_source_new.adv_sid = remote_sid;
+            bass_source_new.broadcast_id = broadcast_id;
+            bass_source_new.pa_sync = LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE;
+            bass_source_new.pa_interval = gap_event_extended_advertising_report_get_periodic_advertising_interval(packet);
+            // bass_source_new.subgroups_num set in BASE parser
+            // bass_source_new.subgroup[i].* set in BASE parser
             break;
         }
 
@@ -569,6 +596,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
                     sync_handle = hci_subevent_le_periodic_advertising_sync_establishment_get_sync_handle(packet);
                     printf("Periodic advertising sync with handle 0x%04x established\n", sync_handle);
+                    broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
+                    app_state = APP_W4_PA_AND_BIG_INFO;
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT:
                     if (app_state != APP_W4_PA_AND_BIG_INFO) break;
