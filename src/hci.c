@@ -4145,6 +4145,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
                     break;
                 case HCI_SUBEVENT_LE_TERMINATE_BIG_COMPLETE:
+                    hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
                     big = hci_big_for_handle(hci_subevent_le_terminate_big_complete_get_big_handle(packet));
                     if (big != NULL){
                         // finalize associated ISO streams
@@ -4170,6 +4171,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
                     break;
                 case HCI_SUBEVENT_LE_BIG_SYNC_ESTABLISHED:
+                    hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
                     big_sync = hci_big_sync_for_handle(packet[4]);
                     if (big_sync != NULL){
                         uint8_t status = packet[3];
@@ -4198,6 +4200,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
                     break;
                 case HCI_SUBEVENT_LE_BIG_SYNC_LOST:
+                    hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
                     big_sync = hci_big_sync_for_handle(packet[4]);
                     if (big_sync != NULL){
                         uint8_t big_handle = packet[4];
