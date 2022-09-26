@@ -73,6 +73,14 @@ typedef enum {
 } bass_role_t;
 
 typedef struct {
+    // BIS_Sync parameter
+    // 4-octet bitfield. Shall not exist if Num_Subgroups = 0
+    // Bit 0-30 = BIS_index[1-31] 0x00000000:
+    // - 0b0 = Do not synchronize to BIS_index[x] 0xxxxxxxxx:
+    // - 0b1 = Synchronize to BIS_index[x]
+    // 0xFFFFFFFF: No preference
+    uint32_t bis_sync;
+
     // 4-octet bitfield. Shall not exist if num_subgroups = 0
     // Bit 0-30 = BIS_index[1-31] 
     // 0x00000000: 0 = Not synchronized to BIS_index[x] 

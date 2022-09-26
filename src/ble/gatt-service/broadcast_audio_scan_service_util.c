@@ -201,7 +201,7 @@ void bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t b
     uint8_t i;
     for (i = 0; i < source_data->subgroups_num; i++){
         // bis_sync
-        source_data->subgroups[i].bis_sync_state = little_endian_read_32(buffer, pos);
+        source_data->subgroups[i].bis_sync = little_endian_read_32(buffer, pos);
         pos += 4;
        
         uint8_t metadata_bytes_read = le_audio_metadata_parse_tlv(&buffer[pos], buffer_size - pos, &source_data->subgroups[i].metadata);

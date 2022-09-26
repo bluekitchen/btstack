@@ -157,7 +157,7 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                     for (i=0;i<num_subgroups;i++){
 
                         // Cache in new source struct
-                        bass_source_new.subgroups[i].bis_sync_state = 0;
+                        bass_source_new.subgroups[i].bis_sync = 0;
 
                         // Level 2: Subgroup Level
                         num_bis = base_data[offset++];
