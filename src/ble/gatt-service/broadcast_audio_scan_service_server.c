@@ -212,11 +212,11 @@ static void bass_emit_source_state_changed(uint8_t subevent_id, hci_con_handle_t
 }
 
 static void bass_emit_source_added(hci_con_handle_t con_handle, bass_server_source_t * source){
-    bass_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED, con_handle, source->source_id, source->pa_sync);
+    bass_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED, con_handle, source->source_id, source->data.pa_sync);
 }
 
 static void bass_emit_source_modified(hci_con_handle_t con_handle, bass_server_source_t * source){
-    bass_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED, con_handle, source->source_id, source->pa_sync);
+    bass_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED, con_handle, source->source_id, source->data.pa_sync);
 }
 
 static void bass_emit_source_deleted(hci_con_handle_t con_handle, bass_server_source_t * source){
@@ -331,7 +331,7 @@ static void bass_reset_source(bass_server_source_t * source){
     memset(source->data.address, 0, sizeof(source->data.address));
     source->data.adv_sid = 0;
     source->data.broadcast_id = 0;
-    source->pa_sync = LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA;
+    source->data.pa_sync = LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA;
     source->data.pa_sync_state = LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA;
     source->big_encryption = LE_AUDIO_BIG_ENCRYPTION_NOT_ENCRYPTED;
     memset(source->bad_code, 0, sizeof(source->bad_code));

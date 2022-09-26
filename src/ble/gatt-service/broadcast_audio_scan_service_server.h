@@ -70,7 +70,6 @@ typedef struct {
     uint8_t  source_id; 
     bool     in_use;
 
-    le_audio_pa_sync_t pa_sync;
     le_audio_big_encryption_t big_encryption;
     uint8_t  bad_code[16];
 
