@@ -2201,7 +2201,7 @@ const hci_cmd_t hci_le_reject_cis_request = {
  * @param broadcast_code
  */
 const hci_cmd_t hci_le_create_big = {
-    HCI_OPCODE_HCI_LE_CREATE_BIG, "11132211111P"
+    HCI_OPCODE_HCI_LE_CREATE_BIG, "11132211111K"
 };
 
 /**
@@ -2223,7 +2223,7 @@ const hci_cmd_t hci_le_create_big = {
  * @param broadcast_code
  */
 const hci_cmd_t hci_le_create_big_test = {
-    HCI_OPCODE_HCI_LE_CREATE_BIG_TEST, "111321221111111P"
+    HCI_OPCODE_HCI_LE_CREATE_BIG_TEST, "111321221111111K"
 };
 
 /**
@@ -2246,7 +2246,7 @@ const hci_cmd_t hci_le_terminate_big = {
  */
 
 const hci_cmd_t hci_le_big_create_sync = {
-    HCI_OPCODE_HCI_LE_BIG_CREATE_SYNC, "1H1P12a[1]"
+    HCI_OPCODE_HCI_LE_BIG_CREATE_SYNC, "1H1K12a[1]"
 };
 
 /**
