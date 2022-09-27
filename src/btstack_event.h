@@ -14779,6 +14779,16 @@ static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_frame_bl
 }
 
 /**
+ * @brief Get field pacs_cid from event GATTSERVICE_SUBEVENT_PACS_DISCONNECTED
+ * @param event packet
+ * @return pacs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_pacs_disconnected_get_pacs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid

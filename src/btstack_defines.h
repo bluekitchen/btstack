@@ -4513,6 +4513,13 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION                             0x59u
 
+/**
+ * @format 12
+ * @param subevent_code
+ * @param pacs_cid
+*/
+#define GATTSERVICE_SUBEVENT_PACS_DISCONNECTED                                    0x5Au
+
 // MAP Meta Event Group
 
 /**
