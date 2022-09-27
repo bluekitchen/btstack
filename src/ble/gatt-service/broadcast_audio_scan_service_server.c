@@ -223,7 +223,7 @@ static void bass_emit_source_deleted(hci_con_handle_t con_handle, bass_server_so
     bass_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SOURCE_DELETED, con_handle, source->source_id, LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA);
 }
 
-static void bass_emit_broadcast_code(hci_con_handle_t con_handle, uint8_t source_id, uint8_t * broadcast_code){
+static void bass_emit_broadcast_code(hci_con_handle_t con_handle, uint8_t source_id, const uint8_t * broadcast_code){
     btstack_assert(bass_event_callback != NULL);
     
     uint8_t event[22];
@@ -234,7 +234,7 @@ static void bass_emit_broadcast_code(hci_con_handle_t con_handle, uint8_t source
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = source_id;
-    reverse_bytes(&broadcast_code[1], &event[pos], 16);
+    reverse_128(broadcast_code, &event[pos]);
     pos += 16;
     (*bass_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -410,6 +410,7 @@ static int broadcast_audio_scan_service_write_callback(hci_con_handle_t con_hand
         uint16_t remote_data_size = client->long_write_value_size - 1;
         
         bass_server_source_t * source;
+        uint8_t broadcast_code[16];
         switch (opcode){
             case BASS_OPCODE_REMOTE_SCAN_STOPPED:
                 if (remote_data_size != 1){
@@ -460,7 +461,8 @@ static int broadcast_audio_scan_service_write_callback(hci_con_handle_t con_hand
                 if (source == NULL){
                     return BASS_ERROR_CODE_INVALID_SOURCE_ID;
                 }
-                bass_emit_broadcast_code(con_handle, source->source_id, &remote_data[1]);
+                reverse_128(&remote_data[1], broadcast_code);
+                bass_emit_broadcast_code(con_handle, source->source_id, broadcast_code);
                 break;
 
             case BASS_OPCODE_REMOVE_SOURCE:
