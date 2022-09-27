@@ -4153,7 +4153,7 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_BASS_REMOTE_SCAN_STARTED                          0x27u
 
 /**
- * @format 1H1P
+ * @format 1H1K
  * @param subevent_code
  * @param con_handle
  * @param source_id

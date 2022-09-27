@@ -13143,27 +13143,27 @@ static inline hci_con_handle_t gattservice_subevent_bass_remote_scan_started_get
  * @return con_handle
  * @note: btstack_type H
  */
-//  static inline hci_con_handle_t gattservice_subevent_bass_broadcast_code_get_con_handle(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline hci_con_handle_t gattservice_subevent_bass_broadcast_code_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field source_id from event GATTSERVICE_SUBEVENT_BASS_BROADCAST_CODE
  * @param event packet
  * @return source_id
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_broadcast_code_get_source_id(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_broadcast_code_get_source_id(const uint8_t * event){
+    return event[5];
+}
 /**
  * @brief Get field broadcast_code from event GATTSERVICE_SUBEVENT_BASS_BROADCAST_CODE
  * @param event packet
- * @return broadcast_code
- * @note: btstack_type P
+ * @param Pointer to storage for broadcast_code
+ * @note: btstack_type K
  */
-//  static inline const uint8_t * gattservice_subevent_bass_broadcast_code_get_broadcast_code(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline void gattservice_subevent_bass_broadcast_code_get_broadcast_code(const uint8_t * event, uint8_t * broadcast_code){
+    reverse_bytes(&event[6], broadcast_code, 16);
+}
 
 /**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED
