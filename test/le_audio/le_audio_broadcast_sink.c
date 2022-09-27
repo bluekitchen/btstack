@@ -153,7 +153,9 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 static bool have_base;
 static bool have_big_info;
 static bool have_past;
+static bool have_broadcast_code;
 static bool standalone_mode;
+static uint32_t bis_sync_mask;
 
 uint32_t last_samples_report_ms;
 uint16_t samples_received;
@@ -176,7 +178,7 @@ static hci_con_handle_t sync_handle;
 static hci_con_handle_t bis_con_handles[MAX_NUM_BIS];
 static unsigned int     next_bis_index;
 static uint8_t          encryption;
-static uint8_t          broadcast_code [] = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+static uint8_t          broadcast_code[16];
 
 static btstack_timer_source_t broadcast_sink_pa_sync_timer;
 
@@ -332,6 +334,7 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                     uint8_t num_subgroups = base_data[3];
                     // Cache in new source struct
                     bass_source_new.subgroups_num = num_subgroups;
+                    bass_sources[0].data.subgroups_num = num_subgroups;
                     printf("- num subgroups: %u\n", num_subgroups);
                     uint8_t i;
                     uint16_t offset = 4;
@@ -390,10 +393,8 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                             // Level 3: BIS Level
                             uint8_t bis_index = base_data[offset++];
 
-                            // Cache in new source struct
-                            bass_source_new.subgroups[i].bis_sync_state |=  1 << bis_index;
-                            bass_source_new.subgroups[i].metadata_length = 0;
-                            memset(&bass_source_new.subgroups[i].metadata, 0, sizeof(le_audio_metadata_t));
+                            // collect bis sync mask
+                            bis_sync_mask |=  1 << bis_index;
 
                             printf("    - bis index[%u][%u]: %u\n", i, k, bis_index);
                             uint8_t codec_specific_configuration_length2 = base_data[offset++];
@@ -409,10 +410,6 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                 break;
         }
     }
-
-    // add source
-    uint8_t source_index = 0;
-    broadcast_audio_scan_service_server_add_source(bass_source_new, &source_index);
 }
 
 static void handle_big_info(const uint8_t * packet, uint16_t size){
@@ -420,7 +417,9 @@ static void handle_big_info(const uint8_t * packet, uint16_t size){
     sync_handle = hci_subevent_le_biginfo_advertising_report_get_sync_handle(packet);
     encryption = hci_subevent_le_biginfo_advertising_report_get_encryption(packet);
     if (encryption) {
-        printf("Stream is encrypted\n");
+        printf("Stream is encrypted, request Broadcast Code\n");
+        bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED;
+        broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
     }
     have_big_info = true;
 }
@@ -583,8 +582,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             bass_source_new.broadcast_id = broadcast_id;
             bass_source_new.pa_sync = LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE;
             bass_source_new.pa_interval = gap_event_extended_advertising_report_get_periodic_advertising_interval(packet);
-            // bass_source_new.subgroups_num set in BASE parser
-            // bass_source_new.subgroup[i].* set in BASE parser
             break;
         }
 
@@ -599,6 +596,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
                     sync_handle = hci_subevent_le_periodic_advertising_sync_establishment_get_sync_handle(packet);
                     printf("Periodic advertising sync with handle 0x%04x established\n", sync_handle);
+                    // add source
+                    uint8_t source_index = 0;
+                    broadcast_audio_scan_service_server_add_source(bass_source_new, &source_index);
                     broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
                     app_state = APP_W4_PA_AND_BIG_INFO;
                     break;
@@ -606,7 +606,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (app_state != APP_W4_PA_AND_BIG_INFO) break;
                     if (have_base) break;
                     handle_periodic_advertisement(packet, size);
-                    if (have_base & have_big_info){
+                    if (have_base && have_big_info && ((encryption == false) || have_broadcast_code)){
                         enter_create_big_sync();
                     }
                     break;
@@ -614,7 +614,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (app_state != APP_W4_PA_AND_BIG_INFO) break;
                     if (have_big_info) break;
                     handle_big_info(packet, size);
-                    if (have_base & have_big_info){
+                    if (have_base && have_big_info && ((encryption == false) || have_broadcast_code)){
                         enter_create_big_sync();
                     }
                     break;
@@ -644,6 +644,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         bis_con_handles[i] = gap_subevent_big_sync_created_get_bis_con_handles(packet, i);
                         printf("0x%04x ", bis_con_handles[i]);
                     }
+                    printf("\n");
                     app_state = APP_STREAMING;
                     last_packet_received_big = false;
                     last_samples_report_ms = btstack_run_loop_get_time_ms();
@@ -653,7 +654,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("Start receiving\n");
 
                     // update BIS Sync state
-                    bass_sources[0].data.subgroups[0].bis_sync_state = 1;
+                    bass_sources[0].data.subgroups[0].bis_sync_state = bis_sync_mask;
                     broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
                     break;
                 }
@@ -877,6 +878,7 @@ static void show_usage(void){
 #ifdef HAVE_LC3PLUS
     printf("q - use LC3plus decoder if 10 ms ISO interval is used\n");
 #endif
+    printf("e - set broadcast code to 0x11111111111111111111111111111111\n");
     printf("t - terminate BIS streams\n");
     printf("x - close files and exit\n");
     printf("---\n");
@@ -888,6 +890,11 @@ static void stdin_process(char c){
             if (app_state != APP_IDLE) break;
             standalone_mode = true;
             start_scanning();
+            break;
+        case 'e':
+            printf("Set broadcast code to 0x11111111111111111111111111111111\n");
+            memset(broadcast_code, 0x11, 16);
+            have_broadcast_code = true;
             break;
 #ifdef HAVE_LC3PLUS
         case 'q':
@@ -963,6 +970,16 @@ static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t 
                 bass_sources[0].data.subgroups[0].bis_sync_state = 0;
                 broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
             }
+            break;
+        case GATTSERVICE_SUBEVENT_BASS_BROADCAST_CODE:
+            gattservice_subevent_bass_broadcast_code_get_broadcast_code(packet, broadcast_code);
+            printf("GATTSERVICE_SUBEVENT_BASS_BROADCAST_CODE received: ");
+            printf_hexdump(broadcast_code, 16);
+            bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_DECRYPTING;
+            if (have_base && have_big_info){
+                enter_create_big_sync();
+            }
+            break;
         default:
             break;
     }
