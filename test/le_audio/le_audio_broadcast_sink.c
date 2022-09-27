@@ -105,6 +105,7 @@ static enum {
     APP_W4_WORKING,
     APP_W4_BROADCAST_ADV,
     APP_W4_PA_AND_BIG_INFO,
+    APP_W4_BROADCAST_CODE,
     APP_W4_BIG_SYNC_ESTABLISHED,
     APP_STREAMING,
     APP_IDLE
@@ -334,15 +335,10 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                     uint8_t num_subgroups = base_data[3];
                     // Cache in new source struct
                     bass_source_new.subgroups_num = num_subgroups;
-                    bass_sources[0].data.subgroups_num = num_subgroups;
                     printf("- num subgroups: %u\n", num_subgroups);
                     uint8_t i;
                     uint16_t offset = 4;
                     for (i=0;i<num_subgroups;i++){
-
-                        // Cache in new source struct
-                        bass_source_new.subgroups[i].bis_sync = 0;
-
                         // Level 2: Subgroup Level
                         num_bis = base_data[offset++];
                         printf("  - num bis[%u]: %u\n", i, num_bis);
@@ -392,9 +388,12 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                         for (k=0;k<num_bis;k++){
                             // Level 3: BIS Level
                             uint8_t bis_index = base_data[offset++];
+                            if ((bis_index == 0) || (bis_index > 30)){
+                                continue;
+                            }
 
                             // collect bis sync mask
-                            bis_sync_mask |=  1 << bis_index;
+                            bis_sync_mask |=  1 << (bis_index - 1);
 
                             printf("    - bis index[%u][%u]: %u\n", i, k, bis_index);
                             uint8_t codec_specific_configuration_length2 = base_data[offset++];
@@ -417,9 +416,7 @@ static void handle_big_info(const uint8_t * packet, uint16_t size){
     sync_handle = hci_subevent_le_biginfo_advertising_report_get_sync_handle(packet);
     encryption = hci_subevent_le_biginfo_advertising_report_get_encryption(packet);
     if (encryption) {
-        printf("Stream is encrypted, request Broadcast Code\n");
-        bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED;
-        broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
+        printf("Stream is encrypted\n");
     }
     have_big_info = true;
 }
@@ -495,6 +492,26 @@ static void setup_advertising() {
     gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
     gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
     gap_extended_advertising_start(adv_handle, 0, 0);
+}
+
+static void got_base_and_big_info() {
+    // add source
+    if (standalone_mode) {
+        printf("BASS: add Broadcast Source\n");
+        // add source
+        uint8_t source_index = 0;
+        broadcast_audio_scan_service_server_add_source(bass_source_new, &source_index);
+        broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
+    }
+
+    if ((encryption == false) || have_broadcast_code){
+        enter_create_big_sync();
+    } else {
+        printf("BASS: request Broadcast Code\n");
+        bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED;
+        broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
+        app_state = APP_W4_BROADCAST_CODE;
+    }
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -588,6 +605,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED:
+                    // PAST implies broadcast source has been added by client
                     printf("Periodic advertising sync transfer received\n");
                     btstack_run_loop_remove_timer(&broadcast_sink_pa_sync_timer);
                     broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
@@ -596,26 +614,22 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
                     sync_handle = hci_subevent_le_periodic_advertising_sync_establishment_get_sync_handle(packet);
                     printf("Periodic advertising sync with handle 0x%04x established\n", sync_handle);
-                    // add source
-                    uint8_t source_index = 0;
-                    broadcast_audio_scan_service_server_add_source(bass_source_new, &source_index);
-                    broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
                     app_state = APP_W4_PA_AND_BIG_INFO;
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT:
                     if (app_state != APP_W4_PA_AND_BIG_INFO) break;
                     if (have_base) break;
                     handle_periodic_advertisement(packet, size);
-                    if (have_base && have_big_info && ((encryption == false) || have_broadcast_code)){
-                        enter_create_big_sync();
+                    if (have_base && have_big_info){
+                        got_base_and_big_info();
                     }
                     break;
                 case HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT:
                     if (app_state != APP_W4_PA_AND_BIG_INFO) break;
                     if (have_big_info) break;
                     handle_big_info(packet, size);
-                    if (have_base && have_big_info && ((encryption == false) || have_broadcast_code)){
-                        enter_create_big_sync();
+                    if (have_base && have_big_info){
+                        got_base_and_big_info();
                     }
                     break;
                 case HCI_SUBEVENT_LE_BIG_SYNC_LOST:
