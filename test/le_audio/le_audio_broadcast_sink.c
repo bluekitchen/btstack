@@ -133,10 +133,9 @@ static const le_extended_advertising_parameters_t extended_params = {
 };
 
 static const uint8_t extended_adv_data[] = {
-        // 16 bit service data, ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE, Broadcast ID
-        6, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID,
+        // 16 bit service data, ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE,
+        3, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID,
             ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE & 0xff, ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE >> 8,
-            0x30, 0x5d, 0x9b,
        // name
         5, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'S', 'i', 'n', 'k'
 };
