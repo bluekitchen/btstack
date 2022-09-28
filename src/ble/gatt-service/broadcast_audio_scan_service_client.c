@@ -174,14 +174,75 @@ static void bass_client_emit_receive_state(bass_client_connection_t * connection
 }
 
 static bool bass_client_remote_broadcast_receive_state_buffer_valid(uint8_t *buffer, uint16_t buffer_size){
-    if (buffer_size < 1){ 
-        log_info("Add Source opcode, buffer too small");
+    // minimal with zero subgroups
+    if (buffer_size < 15){
         return false;
     }
-    uint8_t pos = 0;
+
+    uint16_t pos = 0;
+
     // source_id
     pos++;
-    return bass_util_add_source_buffer_in_valid_range(buffer+pos, buffer_size-pos);
+
+    // addr type
+    uint8_t adv_type = buffer[pos++];
+    if (adv_type > (uint8_t)BD_ADDR_TYPE_LE_RANDOM){
+        log_info("Unexpected adv_type 0x%02X", adv_type);
+        return false;
+    }
+
+    // address
+    pos += 6;
+
+    // advertising_sid Range: 0x00-0x0F
+    uint8_t advertising_sid = buffer[pos++];
+    if (advertising_sid > 0x0F){
+        log_info("Advertising sid out of range 0x%02X", advertising_sid);
+        return false;
+    }
+
+    // broadcast_id
+    pos += 3;
+
+    // pa_sync_state
+    uint8_t pa_sync_state = buffer[pos++];
+    if (pa_sync_state >= (uint8_t)LE_AUDIO_PA_SYNC_STATE_RFU){
+        log_info("Unexpected pa_sync_state 0x%02X", pa_sync_state);
+        return false;
+    }
+
+    // big_encryption
+    le_audio_big_encryption_t big_encryption = (le_audio_big_encryption_t) buffer[pos++];
+    if (big_encryption == LE_AUDIO_BIG_ENCRYPTION_BAD_CODE){
+        // Bad Code
+        pos += 16;
+    }
+
+    // num subgroups
+    uint8_t num_subgroups = buffer[pos++];
+    if (num_subgroups > BASS_SUBGROUPS_MAX_NUM){
+        log_info("Number of subgroups %u exceedes maximum %u", num_subgroups, BASS_SUBGROUPS_MAX_NUM);
+        return false;
+    }
+
+    uint8_t i;
+    uint32_t mask_total = 0;
+    for (i = 0; i < num_subgroups; i++) {
+        // check if we can read bis_sync_state + meta_data_length
+        // bis_sync_state
+        pos += 4;
+        // meta_data_length
+        if (pos >= buffer_size){
+            return false;
+        }
+        uint8_t metadata_length = buffer[pos++];
+        if ((pos + metadata_length) > buffer_size){
+            return false;
+        }
+        // metadata
+        pos += metadata_length;
+    }
+    return true;
 }
 
 static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -638,6 +699,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (connection->receive_states_instances_num < connection->max_receive_states_num){
                         connection->receive_states[connection->receive_states_instances_num].receive_state_value_handle = characteristic.value_handle;
                         connection->receive_states[connection->receive_states_instances_num].receive_state_properties = characteristic.properties;
+                        connection->receive_states_instances_num++;
                     } else {
                         log_info("Found more BASS receive_states chrs then it can be stored. ");
                     }
