@@ -273,6 +273,8 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             }
             printf("BASS client connected, cid 0x%02x\n", bass_cid);
 
+            if ((have_big_info == false) || (have_base == false)) break;
+
             // setup bass source info
             bass_source_new.address_type = broadcast_source_type;
             memcpy(bass_source_new.address, broadcast_source, 6);
@@ -477,6 +479,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void show_usage(void){
     printf("\n--- LE Audio Broadcast Assistant Test Console ---\n");
     printf("s - start scanning for LE Broadcast Source & Scan Delegator\n");
+    printf("c - connect to Scan Delegator\n");
     printf("---\n");
 }
 
@@ -485,6 +488,14 @@ static void stdin_process(char c){
         case 's':
             if (app_state != APP_IDLE) break;
             start_scanning();
+            break;
+        case 'c':
+            if (have_scan_delegator == false){
+                printf("No scan delegator found yet\n");
+                break;
+            }
+            app_state = APP_W4_SCAN_DELEGATOR_CONNECTION;
+            gap_connect(scan_delegator, scan_delegator_type);
             break;
         case '\n':
         case '\r':
