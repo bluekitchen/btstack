@@ -84,6 +84,7 @@ static bool have_scan_delegator;
 static bool have_broadcast_source;
 static bool have_base;
 static bool have_big_info;
+static bool manual_mode;
 
 // broadcast sink info
 static char broadcast_source_name[20];
@@ -260,6 +261,23 @@ static void handle_big_info(const uint8_t * packet, uint16_t size){
     }
     have_big_info = true;
 }
+
+static void add_source() {// setup bass source info
+    printf("BASS Client: add source\n");
+
+    bass_source_new.address_type = broadcast_source_type;
+    memcpy(bass_source_new.address, broadcast_source, 6);
+    bass_source_new.adv_sid = broadcast_source_sid;
+    bass_source_new.broadcast_id = broadcast_id;
+    bass_source_new.pa_sync = LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE;
+    bass_source_new.pa_interval = broadcast_source_pa_interval;
+    // bass_source_new.subgroups_num set in BASE parser
+    // bass_source_new.subgroup[i].* set in BASE parser
+
+    // add bass source
+    broadcast_audio_scan_service_client_add_source(bass_cid, &bass_source_new);
+}
+
 static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -278,19 +296,9 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             printf("BASS client connected, cid 0x%02x\n", bass_cid);
 
             if ((have_big_info == false) || (have_base == false)) break;
+            if (manual_mode) return;
+            add_source();
 
-            // setup bass source info
-            bass_source_new.address_type = broadcast_source_type;
-            memcpy(bass_source_new.address, broadcast_source, 6);
-            bass_source_new.adv_sid = broadcast_source_sid;
-            bass_source_new.broadcast_id = broadcast_id;
-            bass_source_new.pa_sync = LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE;
-            bass_source_new.pa_interval = broadcast_source_pa_interval;
-            // bass_source_new.subgroups_num set in BASE parser
-            // bass_source_new.subgroup[i].* set in BASE parser
-
-            // add bass source
-            broadcast_audio_scan_service_client_add_source(bass_cid, &bass_source_new);
             break;
         case GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE:
             if (gattservice_subevent_bass_source_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
@@ -489,9 +497,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 static void show_usage(void){
     printf("\n--- LE Audio Broadcast Assistant Test Console ---\n");
-    printf("s - start scanning for LE Broadcast Source & Scan Delegator\n");
-    printf("c - connect to Scan Delegator\n");
+    printf("s - setup LE Broadcast Sink with Broadcast Source via Scan Delegator\n");
+    printf("c - scan and connect to Scan Delegator\n");
+    printf("a - add source\n");
     printf("m - modify source to PA Sync = 0, bis sync = 0\n");
+    printf("r - remove source\n");
     printf("---\n");
 }
 
@@ -499,20 +509,25 @@ static void stdin_process(char c){
     switch (c){
         case 's':
             if (app_state != APP_IDLE) break;
+            manual_mode = false;
             start_scanning();
             break;
         case 'c':
-            if (have_scan_delegator == false){
-                printf("No scan delegator found yet\n");
-                break;
-            }
-            app_state = APP_W4_SCAN_DELEGATOR_CONNECTION;
-            gap_connect(scan_delegator, scan_delegator_type);
+            manual_mode = true;
+            start_scanning();
+            break;
+        case 'a':
+            add_source();
             break;
         case 'm':
-            bass_sources[0].data.pa_sync = LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA;
-            bass_sources[0].data.subgroups[0].bis_sync_state = 0;
-            broadcast_audio_scan_service_client_modify_source(bass_cid, 0, &bass_sources[0].data);
+            memcpy(&bass_source_new, &bass_sources[0].data, sizeof(bass_source_data_t));
+            bass_source_new.pa_sync = LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA;
+            bass_source_new.subgroups[0].bis_sync_state = 0;
+            broadcast_audio_scan_service_client_modify_source(bass_cid, bass_source_id, &bass_source_new);
+            break;
+        case 'r':
+            broadcast_audio_scan_service_client_delete_source(bass_cid, bass_source_id);
+            break;
         case '\n':
         case '\r':
             break;
