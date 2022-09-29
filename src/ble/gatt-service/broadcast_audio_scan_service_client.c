@@ -226,7 +226,6 @@ static bool bass_client_remote_broadcast_receive_state_buffer_valid(uint8_t *buf
     }
 
     uint8_t i;
-    uint32_t mask_total = 0;
     for (i = 0; i < num_subgroups; i++) {
         // check if we can read bis_sync_state + meta_data_length
         // bis_sync_state
