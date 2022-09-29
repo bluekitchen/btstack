@@ -99,6 +99,7 @@ static hci_con_handle_t sync_handle;
 static uint8_t          encryption;
 static uint8_t          broadcast_code [] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8, };
 static uint8_t          num_bis;
+static uint32_t         bis_sync_mask;
 static uint32_t         sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t octets_per_frame;
@@ -215,7 +216,8 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                             // double check message
 
                             // Cache in new source struct
-                            bass_source_new.subgroups[i].bis_sync_state |=  1 << (bis_index-1);
+                            bis_sync_mask |= 1 << (bis_index-1);
+
                             bass_source_new.subgroups[i].metadata_length = 0;
                             memset(&bass_source_new.subgroups[i].metadata, 0, sizeof(le_audio_metadata_t));
 
@@ -263,8 +265,7 @@ static void handle_big_info(const uint8_t * packet, uint16_t size){
 }
 
 static void add_source() {// setup bass source info
-    printf("BASS Client: add source\n");
-
+    printf("BASS Client: add source with BIS Sync 0x%04x\n", bass_source_new.subgroups[0].bis_sync_state);
     bass_source_new.address_type = broadcast_source_type;
     memcpy(bass_source_new.address, broadcast_source, 6);
     bass_source_new.adv_sid = broadcast_source_sid;
@@ -297,8 +298,10 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
 
             if ((have_big_info == false) || (have_base == false)) break;
             if (manual_mode) return;
-            add_source();
 
+            bass_source_new.subgroups[0].bis_sync_state = bis_sync_mask;
+            bass_source_new.subgroups[0].bis_sync       = bis_sync_mask;
+            add_source();
             break;
         case GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE:
             if (gattservice_subevent_bass_source_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
@@ -499,8 +502,9 @@ static void show_usage(void){
     printf("\n--- LE Audio Broadcast Assistant Test Console ---\n");
     printf("s - setup LE Broadcast Sink with Broadcast Source via Scan Delegator\n");
     printf("c - scan and connect to Scan Delegator\n");
-    printf("a - add source\n");
-    printf("m - modify source to PA Sync = 0, bis sync = 0\n");
+    printf("a - add source with BIS Sync 0x%08x\n", bis_sync_mask);
+    printf("A - add source with BIS Sync 0x00000000 (do not sync)\n");
+    printf("m - modify source to PA Sync = 0, bis sync = 0x00000000\n");
     printf("b - send Broadcast Code: ");
     printf_hexdump(broadcast_code, sizeof(broadcast_code));
     printf("r - remove source\n");
@@ -519,6 +523,13 @@ static void stdin_process(char c){
             start_scanning();
             break;
         case 'a':
+            bass_source_new.subgroups[0].bis_sync_state = bis_sync_mask;
+            bass_source_new.subgroups[0].bis_sync       = bis_sync_mask;
+            add_source();
+            break;
+        case 'A':
+            bass_source_new.subgroups[0].bis_sync_state = 0;
+            bass_source_new.subgroups[0].bis_sync       = 0;
             add_source();
             break;
         case 'm':
