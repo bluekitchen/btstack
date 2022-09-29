@@ -79,6 +79,7 @@ typedef struct {
     // - 0b0 = Do not synchronize to BIS_index[x] 0xxxxxxxxx:
     // - 0b1 = Synchronize to BIS_index[x]
     // 0xFFFFFFFF: No preference
+    // written by client into control point
     uint32_t bis_sync;
 
     // 4-octet bitfield. Shall not exist if num_subgroups = 0
@@ -86,6 +87,7 @@ typedef struct {
     // 0x00000000: 0 = Not synchronized to BIS_index[x] 
     // 0xxxxxxxxx: 1 = Synchronized to BIS_index[x] 
     // 0xFFFFFFFF: Failed to sync to BIG
+    // state send to client by server
     uint32_t bis_sync_state;
 
     uint8_t  metadata_length;
@@ -98,8 +100,8 @@ typedef struct {
     bd_addr_t address;
     uint8_t   adv_sid;
     uint32_t  broadcast_id;
-    le_audio_pa_sync_state_t pa_sync_state;
-    le_audio_pa_sync_t pa_sync;
+    le_audio_pa_sync_t       pa_sync;       // written by client into control point
+    le_audio_pa_sync_state_t pa_sync_state; // state send to client by server
     uint16_t  pa_interval;
     
     uint8_t  subgroups_num;
@@ -108,17 +110,22 @@ typedef struct {
 } bass_source_data_t;
 
 // offset gives position into fully serialized BASS record
-uint16_t bass_util_copy_source_common_data_to_buffer(bass_source_data_t * data, uint16_t *source_offset, uint16_t buffer_offset, uint8_t * buffer, uint16_t buffer_size);
+uint16_t bass_util_copy_source_common_data_to_buffer(const bass_source_data_t * data, uint16_t *source_offset, uint16_t buffer_offset, uint8_t * buffer, uint16_t buffer_size);
 
-uint16_t bass_util_copy_source_metadata_to_buffer(bass_source_data_t * data, uint16_t *source_offset, uint16_t buffer_offset, uint8_t * buffer, uint16_t buffer_size);
+uint16_t
+bass_util_store_source_subgroups_into_buffer(const bass_source_data_t *data, bool use_state_fields, uint16_t *source_offset,
+                                             uint16_t buffer_offset, uint8_t *buffer, uint16_t buffer_size);
 
 bool bass_util_pa_sync_state_and_subgroups_in_valid_range(uint8_t *buffer, uint16_t buffer_size);
 
 bool bass_util_add_source_buffer_in_valid_range(uint8_t *buffer, uint16_t buffer_size);
 
-void bass_util_get_source_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t * source_data);
+void bass_util_get_source_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
+                                      bool use_state_fields);
 
-void bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t * source_data);
+void
+bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
+                                                bool use_state_fields);
 
 /* API_END */
 

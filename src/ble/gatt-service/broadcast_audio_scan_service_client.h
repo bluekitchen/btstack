@@ -142,10 +142,10 @@ typedef struct {
     gatt_client_notification_t notification_listener;
     
     // used for adding and modifying source
-    bass_source_data_t * receive_state_data;
-    uint8_t receive_state_source_id;
+    const bass_source_data_t * control_point_operation_data;
+    uint8_t control_point_operation_source_id;
     // used for setting the broadcast code
-    uint8_t * broadcast_code;
+    const uint8_t * broadcast_code;
 } bass_client_connection_t;
 
 /**
@@ -159,13 +159,13 @@ uint8_t broadcast_audio_scan_service_client_scanning_started(uint16_t bass_cid);
 
 uint8_t broadcast_audio_scan_service_client_scanning_stopped(uint16_t bass_cid);
 
-uint8_t broadcast_audio_scan_service_client_add_source(uint16_t bass_cid, bass_source_data_t * source_data);
+uint8_t broadcast_audio_scan_service_client_add_source(uint16_t bass_cid, const bass_source_data_t * add_source_data);
 
-uint8_t broadcast_audio_scan_service_client_modify_source(uint16_t bass_cid, uint8_t source_id, bass_source_data_t * source_data);
+uint8_t broadcast_audio_scan_service_client_modify_source(uint16_t bass_cid, uint8_t source_id, const bass_source_data_t * modify_source_data);
 
-uint8_t broadcast_audio_scan_service_client_set_broadcast_code(uint16_t bass_cid, uint8_t source_id, uint8_t * broadcast_code);
+uint8_t broadcast_audio_scan_service_client_set_broadcast_code(uint16_t bass_cid, uint8_t source_id, const uint8_t * broadcast_code);
 
-uint8_t broadcast_audio_scan_service_client_delete_source(uint16_t bass_cid, uint8_t source_id);
+uint8_t broadcast_audio_scan_service_client_remove_source(uint16_t bass_cid, uint8_t source_id);
 
 
 /**

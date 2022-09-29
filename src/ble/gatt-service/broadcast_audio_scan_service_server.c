@@ -269,7 +269,9 @@ static uint16_t bass_server_copy_source_to_buffer(bass_server_source_t * source,
         source_offset += 16;
     }
 
-    stored_bytes += bass_util_copy_source_metadata_to_buffer(&source->data, &source_offset, buffer_offset, buffer, buffer_size);
+    stored_bytes += bass_util_store_source_subgroups_into_buffer(&source->data, true, &source_offset, buffer_offset,
+                                                                 buffer,
+                                                                 buffer_size);
     return stored_bytes;
 }
 
@@ -306,7 +308,7 @@ static void bass_server_add_source_from_buffer(uint8_t *buffer, uint16_t buffer_
     source->update_counter = bass_get_next_update_counter();
     source->in_use = true;
 
-    bass_util_get_source_from_buffer(buffer, buffer_size, &source->data);
+    bass_util_get_source_from_buffer(buffer, buffer_size, &source->data, false);
 }
 
 static bool bass_pa_synchronized(bass_server_source_t * source){
@@ -447,7 +449,7 @@ static int broadcast_audio_scan_service_write_callback(hci_con_handle_t con_hand
                 if (source == NULL){
                     return BASS_ERROR_CODE_INVALID_SOURCE_ID;
                 }
-                bass_util_get_pa_info_and_subgroups_from_buffer(remote_data+1, remote_data_size-1, &source->data);
+                bass_util_get_pa_info_and_subgroups_from_buffer(remote_data + 1, remote_data_size - 1, &source->data,false);
                 bass_emit_source_modified(con_handle, source);
                 // server needs to trigger notification
                 break;

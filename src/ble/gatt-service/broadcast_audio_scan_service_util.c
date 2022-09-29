@@ -56,7 +56,7 @@
 #endif
 
 // offset gives position into fully serialized bass record
-uint16_t bass_util_copy_source_common_data_to_buffer(bass_source_data_t * data, uint16_t *source_offset, uint16_t buffer_offset, uint8_t * buffer, uint16_t buffer_size){
+uint16_t bass_util_copy_source_common_data_to_buffer(const bass_source_data_t * data, uint16_t *source_offset, uint16_t buffer_offset, uint8_t * buffer, uint16_t buffer_size){
     uint16_t stored_bytes = 0;
     uint8_t  field_data[16];
 
@@ -80,7 +80,9 @@ uint16_t bass_util_copy_source_common_data_to_buffer(bass_source_data_t * data, 
 }
 
 // offset gives position into fully serialized bass record
-uint16_t bass_util_copy_source_metadata_to_buffer(bass_source_data_t * data, uint16_t *source_offset, uint16_t buffer_offset, uint8_t * buffer, uint16_t buffer_size){
+uint16_t
+bass_util_store_source_subgroups_into_buffer(const bass_source_data_t *data, bool use_state_fields, uint16_t *source_offset,
+                                             uint16_t buffer_offset, uint8_t *buffer, uint16_t buffer_size) {
     uint16_t stored_bytes = 0;
     uint8_t  field_data[16];
     
@@ -88,16 +90,15 @@ uint16_t bass_util_copy_source_metadata_to_buffer(bass_source_data_t * data, uin
     stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, *source_offset, buffer, buffer_size, buffer_offset);
     (*source_offset)++;
 
-    if (data->subgroups_num == 0){
-        return stored_bytes;
-    }
-
     uint8_t i;
     for (i = 0; i < data->subgroups_num; i++){
         bass_subgroup_t subgroup = data->subgroups[i];
 
-        little_endian_store_32(field_data, 0, subgroup.bis_sync_state);
-
+        if (use_state_fields) {
+            little_endian_store_32(field_data, 0, subgroup.bis_sync_state);
+        } else {
+            little_endian_store_32(field_data, 0, subgroup.bis_sync);
+        }
         stored_bytes += le_audio_virtual_memcpy_helper(field_data, 4, *source_offset, buffer, buffer_size, buffer_offset);
         (*source_offset) += 4;
         stored_bytes += le_audio_virtual_memcpy_metadata(&subgroup.metadata, subgroup.metadata_length, source_offset, buffer, buffer_size, buffer_offset);
@@ -190,18 +191,28 @@ bool bass_util_add_source_buffer_in_valid_range(uint8_t *buffer, uint16_t buffer
     return bass_util_pa_sync_state_and_subgroups_in_valid_range(buffer+pos, buffer_size-pos);
 }
 
-void bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t * source_data){
+void
+bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
+                                                bool use_state_fields) {
     UNUSED(buffer_size);
     uint8_t pos = 0;
-    source_data->pa_sync     = (le_audio_pa_sync_t)buffer[pos++];
+    if (use_state_fields){
+        source_data->pa_sync_state = (le_audio_pa_sync_state_t)buffer[pos++];
+    } else {
+        source_data->pa_sync       = (le_audio_pa_sync_t)buffer[pos++];
+    }
     source_data->pa_interval = little_endian_read_16(buffer, pos);
     pos += 2;
     
     source_data->subgroups_num = buffer[pos++];
     uint8_t i;
     for (i = 0; i < source_data->subgroups_num; i++){
-        // bis_sync
-        source_data->subgroups[i].bis_sync = little_endian_read_32(buffer, pos);
+        // bis_sync / state
+        if (use_state_fields){
+            source_data->subgroups[i].bis_sync_state = little_endian_read_32(buffer, pos);
+        } else {
+            source_data->subgroups[i].bis_sync = little_endian_read_32(buffer, pos);
+        }
         pos += 4;
        
         uint8_t metadata_bytes_read = le_audio_metadata_parse_tlv(&buffer[pos], buffer_size - pos, &source_data->subgroups[i].metadata);
@@ -210,7 +221,8 @@ void bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t b
     }
 }
 
-void bass_util_get_source_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t * source_data){
+void bass_util_get_source_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
+                                      bool use_state_fields) {
     UNUSED(buffer_size);
     uint8_t pos = 0;
     
@@ -224,5 +236,5 @@ void bass_util_get_source_from_buffer(uint8_t *buffer, uint16_t buffer_size, bas
     source_data->broadcast_id = little_endian_read_24(buffer, pos);
     pos += 3;
 
-    bass_util_get_pa_info_and_subgroups_from_buffer(buffer+pos, buffer_size-pos, source_data);
+    bass_util_get_pa_info_and_subgroups_from_buffer(buffer + pos, buffer_size - pos, source_data, use_state_fields);
 }

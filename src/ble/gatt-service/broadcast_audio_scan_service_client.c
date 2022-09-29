@@ -268,7 +268,7 @@ static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channe
             return;
         }
         source->source_id = value[0];
-        bass_util_get_source_from_buffer(value + 1, value_length - 1, &source->data);
+        bass_util_get_source_from_buffer(value + 1, value_length - 1, &source->data, true);
         bass_client_emit_receive_state(connection, source->source_id);
     }
 }
@@ -301,7 +301,7 @@ static bool bass_client_register_notification(bass_client_connection_t * connect
 }
 
 static uint16_t bass_client_prepare_add_source_buffer(bass_client_connection_t * connection){
-    bass_source_data_t * receive_state = connection->receive_state_data;
+    const bass_source_data_t * receive_state = connection->control_point_operation_data;
 
     uint16_t  buffer_offset = connection->buffer_offset;
     uint8_t * buffer        = connection->buffer;
@@ -328,13 +328,15 @@ static uint16_t bass_client_prepare_add_source_buffer(bass_client_connection_t *
     stored_bytes += le_audio_virtual_memcpy_helper(field_data, 2, source_offset, buffer, buffer_size, buffer_offset);
     source_offset += 2;
 
-    stored_bytes += bass_util_copy_source_metadata_to_buffer(receive_state, &source_offset, buffer_offset, buffer, buffer_size);
+    stored_bytes += bass_util_store_source_subgroups_into_buffer(receive_state, false, &source_offset, buffer_offset,
+                                                                 buffer,
+                                                                 buffer_size);
     
     return stored_bytes;
 }
 
 static uint16_t bass_client_prepare_modify_source_buffer(bass_client_connection_t * connection){
-    bass_source_data_t * receive_state = connection->receive_state_data;
+    const bass_source_data_t * receive_state = connection->control_point_operation_data;
 
     uint16_t  buffer_offset = connection->buffer_offset;
     uint8_t * buffer        = connection->buffer;
@@ -351,7 +353,7 @@ static uint16_t bass_client_prepare_modify_source_buffer(bass_client_connection_
     stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size, buffer_offset);
     source_offset++;
     
-    field_data[0] = connection->receive_state_source_id;
+    field_data[0] = connection->control_point_operation_source_id;
     stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size, buffer_offset);
     source_offset++;
 
@@ -363,11 +365,13 @@ static uint16_t bass_client_prepare_modify_source_buffer(bass_client_connection_
     stored_bytes += le_audio_virtual_memcpy_helper(field_data, 2, source_offset, buffer, buffer_size, buffer_offset);
     source_offset += 2;
 
-    stored_bytes += bass_util_copy_source_metadata_to_buffer(receive_state, &source_offset, buffer_offset, buffer, buffer_size);
+    stored_bytes += bass_util_store_source_subgroups_into_buffer(receive_state, false, &source_offset, buffer_offset,
+                                                                 buffer,
+                                                                 buffer_size);
     return stored_bytes;
 }
 
-static uint16_t bass_client_receive_state_len(bass_source_data_t * source_data){
+static uint16_t bass_client_receive_state_len(const bass_source_data_t * source_data){
     uint16_t source_len = 0;
     // opcode(1), address_type(1), address(6), adv_sid(1), broadcast_id(3), pa_sync(1), subgroups_num(1)
     source_len = 1 + 1 + 6 + 1 + 3 + 1 + 1;
@@ -438,7 +442,7 @@ static void bass_client_run_for_connection(bass_client_connection_t * connection
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_MODIFY_SOURCE:
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("    MODIFY SOURCE [%d]:\n", connection->receive_state_source_id);
+            printf("    MODIFY SOURCE [%d]:\n", connection->control_point_operation_source_id);
 #endif    
             connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_MODIFY_SOURCE;
             stored_bytes = bass_client_prepare_modify_source_buffer(connection);
@@ -451,11 +455,11 @@ static void bass_client_run_for_connection(bass_client_connection_t * connection
         
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_REMOVE_SOURCE:
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("    REMOVE SOURCE  [%d]:\n", connection->receive_state_source_id);
+            printf("    REMOVE SOURCE  [%d]:\n", connection->control_point_operation_source_id);
 #endif    
             connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_REMOVE_SOURCE;
             value[0] = BASS_OPCODE_REMOVE_SOURCE;
-            value[1] = connection->receive_state_source_id;
+            value[1] = connection->control_point_operation_source_id;
             // see GATT_EVENT_QUERY_COMPLETE for end of write
             status = gatt_client_write_value_of_characteristic(
                 &handle_gatt_client_event, connection->con_handle, 
@@ -465,12 +469,12 @@ static void bass_client_run_for_connection(bass_client_connection_t * connection
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_SET_BROADCAST_CODE:
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("    SET BROADCAST CODE [%d]:\n", connection->receive_state_source_id);
+            printf("    SET BROADCAST CODE [%d]:\n", connection->control_point_operation_source_id);
 #endif    
             connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_SET_BROADCAST_CODE;
             value[0] = BASS_OPCODE_SET_BROADCAST_CODE;
-            value[1] = connection->receive_state_source_id;
-            reverse_128(&value[2], connection->broadcast_code);
+            value[1] = connection->control_point_operation_source_id;
+            reverse_128(connection->broadcast_code, &value[2]);
 
             // see GATT_EVENT_QUERY_COMPLETE for end of write
             status = gatt_client_write_value_of_characteristic(
@@ -619,18 +623,18 @@ static bool bass_client_handle_query_complete(bass_client_connection_t * connect
         
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_MODIFY_SOURCE:
             connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED;
-            bass_client_emit_source_operation_complete(connection, status, BASS_OPCODE_MODIFY_SOURCE, connection->receive_state_source_id);
+            bass_client_emit_source_operation_complete(connection, status, BASS_OPCODE_MODIFY_SOURCE, connection->control_point_operation_source_id);
             break;
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_REMOVE_SOURCE:
             connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED;
-            bass_client_reset_source(bass_get_source_for_source_id(connection, connection->receive_state_source_id));
-            bass_client_emit_source_operation_complete(connection, status, BASS_OPCODE_REMOVE_SOURCE, connection->receive_state_source_id);
+            bass_client_reset_source(bass_get_source_for_source_id(connection, connection->control_point_operation_source_id));
+            bass_client_emit_source_operation_complete(connection, status, BASS_OPCODE_REMOVE_SOURCE, connection->control_point_operation_source_id);
             break;
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_SET_BROADCAST_CODE:
             connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED;
-            bass_client_emit_source_operation_complete(connection, status, BASS_OPCODE_SET_BROADCAST_CODE, connection->receive_state_source_id);
+            bass_client_emit_source_operation_complete(connection, status, BASS_OPCODE_SET_BROADCAST_CODE, connection->control_point_operation_source_id);
             break;
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED:
@@ -845,7 +849,7 @@ uint8_t broadcast_audio_scan_service_client_scanning_stopped(uint16_t bass_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t broadcast_audio_scan_service_client_add_source(uint16_t bass_cid, bass_source_data_t * receive_state){
+uint8_t broadcast_audio_scan_service_client_add_source(uint16_t bass_cid, const bass_source_data_t * add_source_data){
     bass_client_connection_t * connection = bass_get_client_for_cid(bass_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -855,15 +859,15 @@ uint8_t broadcast_audio_scan_service_client_add_source(uint16_t bass_cid, bass_s
     }
 
     connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_ADD_SOURCE;
-    connection->receive_state_data = receive_state;
+    connection->control_point_operation_data = add_source_data;
     connection->buffer_offset = 0;
-    connection->data_size = bass_client_receive_state_len(receive_state);
+    connection->data_size = bass_client_receive_state_len(add_source_data);
 
     bass_client_run_for_connection(connection);
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t broadcast_audio_scan_service_client_modify_source(uint16_t bass_cid, uint8_t source_id, bass_source_data_t * source_data){
+uint8_t broadcast_audio_scan_service_client_modify_source(uint16_t bass_cid, uint8_t source_id, const bass_source_data_t * modify_source_data){
     bass_client_connection_t * connection = bass_get_client_for_cid(bass_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -873,16 +877,16 @@ uint8_t broadcast_audio_scan_service_client_modify_source(uint16_t bass_cid, uin
     }
 
     connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_MODIFY_SOURCE;
-    connection->receive_state_data = source_data;
-    connection->receive_state_source_id = source_id;
+    connection->control_point_operation_data = modify_source_data;
+    connection->control_point_operation_source_id = source_id;
     connection->buffer_offset = 0;
-    connection->data_size = bass_client_receive_state_len(source_data);
+    connection->data_size = bass_client_receive_state_len(modify_source_data);
 
     bass_client_run_for_connection(connection);
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t broadcast_audio_scan_service_client_delete_source(uint16_t bass_cid, uint8_t source_id){
+uint8_t broadcast_audio_scan_service_client_remove_source(uint16_t bass_cid, uint8_t source_id){
     bass_client_connection_t * connection = bass_get_client_for_cid(bass_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -892,13 +896,13 @@ uint8_t broadcast_audio_scan_service_client_delete_source(uint16_t bass_cid, uin
     }
 
     connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_REMOVE_SOURCE;
-    connection->receive_state_source_id = source_id;
+    connection->control_point_operation_source_id = source_id;
 
     bass_client_run_for_connection(connection);
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t broadcast_audio_scan_service_client_set_broadcast_code(uint16_t bass_cid, uint8_t source_id, uint8_t * broadcast_code){
+uint8_t broadcast_audio_scan_service_client_set_broadcast_code(uint16_t bass_cid, uint8_t source_id, const uint8_t * broadcast_code){
     bass_client_connection_t * connection = bass_get_client_for_cid(bass_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -908,7 +912,7 @@ uint8_t broadcast_audio_scan_service_client_set_broadcast_code(uint16_t bass_cid
     }
 
     connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_SET_BROADCAST_CODE;
-    connection->receive_state_source_id = source_id;
+    connection->control_point_operation_source_id = source_id;
     connection->broadcast_code = broadcast_code;
 
     bass_client_run_for_connection(connection);

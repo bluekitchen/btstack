@@ -539,7 +539,7 @@ static void stdin_process(char c){
             broadcast_audio_scan_service_client_modify_source(bass_cid, bass_source_id, &bass_source_new);
             break;
         case 'r':
-            broadcast_audio_scan_service_client_delete_source(bass_cid, bass_source_id);
+            broadcast_audio_scan_service_client_remove_source(bass_cid, bass_source_id);
             break;
         case 'b':
             // send broadcast code
