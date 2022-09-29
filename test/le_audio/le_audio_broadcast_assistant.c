@@ -501,6 +501,8 @@ static void show_usage(void){
     printf("c - scan and connect to Scan Delegator\n");
     printf("a - add source\n");
     printf("m - modify source to PA Sync = 0, bis sync = 0\n");
+    printf("b - send Broadcast Code: ");
+    printf_hexdump(broadcast_code, sizeof(broadcast_code));
     printf("r - remove source\n");
     printf("---\n");
 }
@@ -527,6 +529,10 @@ static void stdin_process(char c){
             break;
         case 'r':
             broadcast_audio_scan_service_client_delete_source(bass_cid, bass_source_id);
+            break;
+        case 'b':
+            // send broadcast code
+            broadcast_audio_scan_service_client_set_broadcast_code(bass_cid, bass_source_id, &broadcast_code);
             break;
         case '\n':
         case '\r':
