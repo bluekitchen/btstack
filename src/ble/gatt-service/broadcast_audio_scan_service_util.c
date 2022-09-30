@@ -193,10 +193,10 @@ bool bass_util_add_source_buffer_in_valid_range(uint8_t *buffer, uint16_t buffer
 
 void
 bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
-                                                bool use_state_fields) {
+                                                bool is_broadcast_receive_state) {
     UNUSED(buffer_size);
     uint8_t pos = 0;
-    if (use_state_fields){
+    if (is_broadcast_receive_state){
         source_data->pa_sync_state = (le_audio_pa_sync_state_t)buffer[pos++];
     } else {
         source_data->pa_sync       = (le_audio_pa_sync_t)buffer[pos++];
@@ -208,7 +208,7 @@ bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t buffer
     uint8_t i;
     for (i = 0; i < source_data->subgroups_num; i++){
         // bis_sync / state
-        if (use_state_fields){
+        if (is_broadcast_receive_state){
             source_data->subgroups[i].bis_sync_state = little_endian_read_32(buffer, pos);
         } else {
             source_data->subgroups[i].bis_sync = little_endian_read_32(buffer, pos);
@@ -222,7 +222,7 @@ bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t buffer
 }
 
 void bass_util_get_source_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
-                                      bool use_state_fields) {
+                                      bool is_broadcast_receive_state) {
     UNUSED(buffer_size);
     uint8_t pos = 0;
     
@@ -236,5 +236,5 @@ void bass_util_get_source_from_buffer(uint8_t *buffer, uint16_t buffer_size, bas
     source_data->broadcast_id = little_endian_read_24(buffer, pos);
     pos += 3;
 
-    bass_util_get_pa_info_and_subgroups_from_buffer(buffer + pos, buffer_size - pos, source_data, use_state_fields);
+    bass_util_get_pa_info_and_subgroups_from_buffer(buffer + pos, buffer_size - pos, source_data, is_broadcast_receive_state);
 }

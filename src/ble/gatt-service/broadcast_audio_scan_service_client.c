@@ -268,7 +268,7 @@ static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channe
             return;
         }
         source->source_id = value[0];
-        bass_util_get_source_from_buffer(value + 1, value_length - 1, &source->data, true);
+        bass_util_get_source_from_buffer(&value[1], value_length - 1, &source->data, true);
         bass_client_emit_receive_state(connection, source->source_id);
     }
 }

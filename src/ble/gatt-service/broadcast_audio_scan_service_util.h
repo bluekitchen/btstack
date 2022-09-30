@@ -121,11 +121,11 @@ bool bass_util_pa_sync_state_and_subgroups_in_valid_range(uint8_t *buffer, uint1
 bool bass_util_add_source_buffer_in_valid_range(uint8_t *buffer, uint16_t buffer_size);
 
 void bass_util_get_source_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
-                                      bool use_state_fields);
+                                      bool is_broadcast_receive_state);
 
 void
 bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
-                                                bool use_state_fields);
+                                                bool is_broadcast_receive_state);
 
 /* API_END */
 
