@@ -41,6 +41,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "hci_cmd.h"
 #include "btstack_run_loop.h"
@@ -55,13 +56,6 @@
 #include "classic/sdp_util.h"
 #include "classic/opp_server.h"
 
-// max app params for vcard listing and phonebook response:
-// - NewMissedCalls
-// - DatabaseIdentifier
-// - PrimaryFolderVersion,
-// - SecondaryFolderVersion
-#define OPP_SERVER_MAX_APP_PARAMS_LEN ((4*2) + 2 + OPP_DATABASE_IDENTIFIER_LEN + (2*OPP_FOLDER_VERSION_LEN))
-
 typedef enum {
     OPP_SERVER_STATE_W4_OPEN,
     OPP_SERVER_STATE_W4_CONNECT_OPCODE,
@@ -73,6 +67,9 @@ typedef enum {
     OPP_SERVER_STATE_W4_USER_DATA,
     OPP_SERVER_STATE_W4_GET_OPCODE,
     OPP_SERVER_STATE_W4_GET_REQUEST,
+    OPP_SERVER_STATE_W4_PUT_OPCODE,
+    OPP_SERVER_STATE_W4_PUT_REQUEST,
+    OPP_SERVER_STATE_SEND_PUT_RESPONSE,
     OPP_SERVER_STATE_SEND_INTERNAL_RESPONSE,
     OPP_SERVER_STATE_SEND_USER_RESPONSE,
     OPP_SERVER_STATE_SEND_DISCONNECT_RESPONSE,
@@ -111,19 +108,6 @@ typedef struct {
         char name[OPP_SERVER_MAX_NAME_LEN];
         char type[OPP_SERVER_MAX_TYPE_LEN];
         uint32_t continuation;
-        obex_app_param_parser_t app_param_parser;
-        uint8_t app_param_buffer[8];
-        struct {
-            char search_value[OPP_SERVER_MAX_SEARCH_VALUE_LEN];    // has trailing zero
-            uint32_t property_selector;
-            uint32_t vcard_selector;
-            uint16_t max_list_count;
-            uint16_t list_start_offset;
-            uint8_t reset_new_missed_calls;
-            uint8_t vcard_selector_operator;
-            uint8_t order;
-            uint8_t search_property;
-        } app_params;
     } request;
     // response
     struct {
@@ -133,10 +117,26 @@ typedef struct {
 
 static opp_server_t opp_server_singleton;
 
-// 796135f0-f0c5-11d8-0966- 0800200c9a66
-static const uint8_t opp_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
-
 static void opp_server_handle_get_request(opp_server_t * opp_server);
+static void opp_server_build_response(opp_server_t * opp_server);
+
+static void opp_client_emit_pull_object_data_event(opp_server_t * context,uint32_t cur_position, uint16_t buf_size){
+    uint8_t event[11];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_OPP_META;
+    pos++;  // skip len
+    event[pos++] = OPP_SUBEVENT_PULL_OBJECT_DATA;
+    little_endian_store_16(event,pos,context->opp_cid);
+    pos+=2;
+    little_endian_store_32(event,pos,cur_position);
+    pos+=4;
+    little_endian_store_16(event,pos,buf_size);
+    pos+=2;
+    event[1] = pos - 2;
+    if (pos != sizeof(event)) log_error("opp_client_emit_pull_object_data_event size %u", pos);
+    (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, context->opp_cid, &event[0], pos);
+}
+
 
 static opp_server_t * opp_server_for_goep_cid(uint16_t goep_cid){
     // TODO: check goep_cid after incoming connection -> accept/reject is implemented and state has been setup
@@ -279,12 +279,6 @@ static void opp_server_add_application_parameters(const opp_server_t * opp_serve
     }
 }
 
-static void opp_server_default_headers(opp_server_t * opp_server){
-    (void) memset(&opp_server->request, 0, sizeof(opp_server->request));
-    opp_server->request.app_params.max_list_count    = 0xffffU;
-    opp_server->request.app_params.vcard_selector    = 0xffffffffUL;
-    opp_server->request.app_params.property_selector = 0xffffffffUL;
-}
 static void opp_server_reset_response(opp_server_t * opp_server){
     (void) memset(&opp_server->response, 0, sizeof(opp_server->response));
 }
@@ -292,12 +286,12 @@ static void opp_server_reset_response(opp_server_t * opp_server){
 static void opp_server_operation_complete(opp_server_t * opp_server){
     opp_server->state = OPP_SERVER_STATE_CONNECTED;
     opp_server->srm_state = SRM_DISABLED;
-    opp_server_default_headers(opp_server);
     opp_server_reset_response(opp_server);
 }
 
 static void opp_server_handle_can_send_now(opp_server_t * opp_server){
     uint8_t response_code;
+    log_info ("opp_server->state: %d\n", opp_server->state);
     switch (opp_server->state){
         case OPP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR:
             // prepare response
@@ -308,9 +302,9 @@ static void opp_server_handle_can_send_now(opp_server_t * opp_server){
             goep_server_execute(opp_server->goep_cid, OBEX_RESP_BAD_REQUEST);
             break;
         case OPP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS:
+            log_info ("can_send: response success\n");
             // prepare response
             goep_server_response_create_connect(opp_server->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
-            goep_server_header_add_who(opp_server->goep_cid, opp_uuid);
             // next state
             opp_server_operation_complete(opp_server);
             // send packet
@@ -366,6 +360,22 @@ static void opp_server_handle_can_send_now(opp_server_t * opp_server){
             (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
             break;
         }
+        case OPP_SERVER_STATE_SEND_PUT_RESPONSE:
+        {
+            // next state
+            response_code = opp_server->response.code;
+            if (response_code == OBEX_RESP_CONTINUE){
+                opp_server_reset_response(opp_server);
+                opp_server_build_response(opp_server);
+                // next state
+                opp_server->state = OPP_SERVER_STATE_W4_PUT_OPCODE;
+            } else {
+                opp_server_operation_complete(opp_server);
+            }
+            // send packet
+            goep_server_execute(opp_server->goep_cid, response_code);
+            break;
+        }
         default:
             break;
     }
@@ -384,13 +394,15 @@ static void opp_server_packet_handler_hci(uint8_t *packet, uint16_t size){
                     goep_server_accept_connection(goep_subevent_incoming_connection_get_goep_cid(packet));
                     break;
                 case GOEP_SUBEVENT_CONNECTION_OPENED:
+                    log_info ("GOEP opened\n");
                     goep_cid = goep_subevent_connection_opened_get_goep_cid(packet);
                     opp_server = opp_server_for_goep_cid(goep_cid);
                     btstack_assert(opp_server != NULL);
                     status = goep_subevent_connection_opened_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS){
-                        // TODO: report failed outgoing connection
+                        log_info("opp: connection failed %u", status);
                     } else {
+                        log_info("opp: connection established");
                         opp_server->goep_cid = goep_cid;
                         goep_subevent_connection_opened_get_bd_addr(packet, opp_server->bd_addr);
                         opp_server->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
@@ -453,12 +465,16 @@ static void opp_server_parser_callback_get(void * user_data, uint8_t header_id, 
                     }
                 }
                 opp_server->request.name[total_len / 2] = 0;
+                log_info ("received OPP header name: %s\n",
+                          opp_server->request.name);
             }
             break;
         case OBEX_HEADER_TYPE:
             if (total_len < OPP_SERVER_MAX_TYPE_LEN){
                 memcpy(&opp_server->request.type[data_offset], data_buffer, data_len);
                 opp_server->request.type[total_len] = 0;
+                log_info ("received OPP header type: %s\n",
+                          opp_server->request.type);
             }
             break;
         default:
@@ -469,23 +485,21 @@ static void opp_server_parser_callback_get(void * user_data, uint8_t header_id, 
 static void opp_server_handle_get_request(opp_server_t * opp_server){
     opp_server_handle_srm_headers(opp_server);
 
-    // MaxListCount == 0 -> query size
-    if (opp_server->request.app_params.max_list_count == 0){
-        opp_server->state = OPP_SERVER_STATE_W4_USER_DATA;
-        uint8_t event[11];
-        uint16_t pos = 0;
-        event[pos++] = HCI_EVENT_OPP_META;
-        event[pos++] = sizeof(event) - 2;
-        (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
-        return;
-    }
-
-    // emit pull ( phonebook, vcard_listing, vcard)
-    uint8_t event[2 + 20 + OPP_SERVER_MAX_NAME_LEN + OPP_SERVER_MAX_SEARCH_VALUE_LEN];
-    uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_OPP_META;
     opp_server->state = OPP_SERVER_STATE_W4_USER_DATA;
-    (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opcode){
+    opp_server_handle_srm_headers(opp_server);
+
+    log_info ("handle put request");
+    // emit received opp data
+    opp_server->state = OPP_SERVER_STATE_SEND_PUT_RESPONSE;
+    opp_client_emit_pull_object_data_event (opp_server, 0, 0);
+
+    // (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+
+    opp_server->response.code = opcode & OBEX_OPCODE_FINAL_BIT_MASK ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE;
+    goep_server_request_can_send_now(opp_server->goep_cid);
 }
 
 static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *packet, uint16_t size){
@@ -499,7 +513,6 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
             break;
         case OPP_SERVER_STATE_W4_CONNECT_OPCODE:
             opp_server->state = OPP_SERVER_STATE_W4_CONNECT_REQUEST;
-            opp_server_default_headers(opp_server);
             obex_parser_init_for_request(&opp_server->obex_parser, &opp_server_parser_callback_connect, (void*) opp_server);
 
             /* fall through */
@@ -509,19 +522,24 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
                 obex_parser_operation_info_t op_info;
                 obex_parser_get_operation_info(&opp_server->obex_parser, &op_info);
+                log_info ("op_info.opcode: %d\n", op_info.opcode);
                 bool ok = true;
                 // check opcode
                 if (op_info.opcode != OBEX_OPCODE_CONNECT){
                     ok = false;
                 }
+                log_info ("ok: %d\n", ok);
                 // TODO: check Target
                 if (ok == false){
+                    log_info ("considered error\n");
                     // send bad request response
                     opp_server->state = OPP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR;
                 } else {
+                    log_info ("considered success\n");
                     // send connect response
                     opp_server->state = OPP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS;
                 }
+                log_info ("opp_server->state (a): %d\n", opp_server->state);
                 goep_server_request_can_send_now(opp_server->goep_cid);
             }
             break;
@@ -531,6 +549,8 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
             switch (opcode){
                 case OBEX_OPCODE_GET:
                 case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
+                case OBEX_OPCODE_PUT:
+                case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
                     opp_server->state = OPP_SERVER_STATE_W4_REQUEST;
                     obex_parser_init_for_request(&opp_server->obex_parser, &opp_server_parser_callback_get, (void*) opp_server);
                     break;
@@ -553,10 +573,15 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
                 obex_parser_operation_info_t op_info;
                 obex_parser_get_operation_info(&opp_server->obex_parser, &op_info);
+                log_info ("W4_Request: opcode: %d\n", op_info.opcode);
                 switch (op_info.opcode){
                     case OBEX_OPCODE_GET:
                     case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
                         opp_server_handle_get_request(opp_server);
+                        break;
+                    case OBEX_OPCODE_PUT:
+                    case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
+                        opp_server_handle_put_request(opp_server, op_info.opcode);
                         break;
                     case OBEX_OPCODE_DISCONNECT:
                         opp_server->state = OPP_SERVER_STATE_SEND_DISCONNECT_RESPONSE;
@@ -590,6 +615,37 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                 switch((op_info.opcode & 0x7f)){
                     case OBEX_OPCODE_GET:
                         opp_server_handle_get_request(opp_server);
+                        break;
+                    case (OBEX_OPCODE_ABORT & 0x7f):
+                        opp_server->response.code = OBEX_RESP_SUCCESS;
+                        opp_server->state = OPP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+                        goep_server_request_can_send_now(opp_server->goep_cid);
+                        break;
+                    default:
+                        // send bad request response
+                        opp_server->state = OPP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+                        opp_server->response.code = OBEX_RESP_BAD_REQUEST;
+                        goep_server_request_can_send_now(opp_server->goep_cid);
+                        break;
+                }
+            }
+            break;
+
+        case OPP_SERVER_STATE_W4_PUT_OPCODE:
+            opp_server->state = OPP_SERVER_STATE_W4_PUT_REQUEST;
+            obex_parser_init_for_request(&opp_server->obex_parser, &opp_server_parser_callback_get, (void*) opp_server);
+
+            /* fall through */
+
+        case OPP_SERVER_STATE_W4_PUT_REQUEST:
+            obex_srm_init(&opp_server->obex_srm);
+            parser_state = obex_parser_process_data(&opp_server->obex_parser, packet, size);
+            if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
+                obex_parser_operation_info_t op_info;
+                obex_parser_get_operation_info(&opp_server->obex_parser, &op_info);
+                switch((op_info.opcode & 0x7f)){
+                    case OBEX_OPCODE_PUT:
+                        opp_server_handle_put_request(opp_server, op_info.opcode);
                         break;
                     case (OBEX_OPCODE_ABORT & 0x7f):
                         opp_server->response.code = OBEX_RESP_SUCCESS;
@@ -655,7 +711,7 @@ static bool opp_server_valid_header_for_request(opp_server_t * opp_server){
 
 }
 
-void opp_server_build_response(opp_server_t * opp_server){
+static void opp_server_build_response(opp_server_t * opp_server){
     if (opp_server->response.code == 0){
         // set interim response code
         opp_server->response.code = OBEX_RESP_SUCCESS;
