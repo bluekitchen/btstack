@@ -138,7 +138,7 @@ static void opp_client_emit_connected_event(opp_client_t * context, uint8_t stat
     pos += 2;
     event[pos++] = context->incoming;
     event[1] = pos - 2;
-    if (pos != sizeof(event)) log_error("goep_client_emit_connected_event size %u", pos);
+    if (pos != sizeof(event)) log_error("opp_client_emit_connected_event size %u", pos);
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }
 
@@ -168,7 +168,7 @@ static void opp_client_emit_push_object_data_event(opp_client_t * context,uint32
     little_endian_store_16(event,pos,buf_size);
     pos+=2;
     event[1] = pos - 2;
-    if (pos != sizeof(event)) log_error("opp_client_emit_connection_closed_event size %u", pos);
+    if (pos != sizeof(event)) log_error("opp_client_push_object_data_event size %u", pos);
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }
 
