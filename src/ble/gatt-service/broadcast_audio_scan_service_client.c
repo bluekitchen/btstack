@@ -936,7 +936,28 @@ const bass_source_data_t * broadcast_audio_scan_service_client_get_source_data(u
     if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED){
         return NULL;
     }
-    return (const bass_source_data_t *) bass_get_source_for_source_id(connection, source_id);
+    return (const bass_source_data_t *) &bass_get_source_for_source_id(connection, source_id)->data;
+}
+
+uint8_t broadcast_audio_scan_service_client_get_encryption_state(uint16_t bass_cid, uint8_t source_id,
+                                                                 le_audio_big_encryption_t * out_big_encryption, uint8_t * out_bad_code){
+    btstack_assert(out_big_encryption != NULL);
+    btstack_assert(out_bad_code != NULL);
+
+    bass_client_connection_t * connection = bass_get_client_for_cid(bass_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    bass_client_source_t * source = bass_get_source_for_source_id(connection, source_id);
+    if (source == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    *out_big_encryption = source->big_encryption;
+    memcpy(out_bad_code, source->bad_code, 16);
+    return ERROR_CODE_SUCCESS;
 }
 
 void broadcast_audio_scan_service_client_deinit(uint16_t bass_cid){

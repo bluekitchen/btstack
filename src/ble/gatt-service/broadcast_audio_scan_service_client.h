@@ -226,6 +226,17 @@ uint8_t broadcast_audio_scan_service_client_remove_source(uint16_t bass_cid, uin
 const bass_source_data_t * broadcast_audio_scan_service_client_get_source_data(uint16_t bass_cid, uint8_t source_id);
 
 /**
+ * @param Get BIG Encryption and Bad Code from Broadcast Receive State of given Broadcast Source on service
+ * @param bass_cid
+ * @param source_id
+ * @param out_big_encryption
+ * @param out_bad_code 16-byte buffer
+ * @return status
+ */
+uint8_t broadcast_audio_scan_service_client_get_encryption_state(uint16_t bass_cid, uint8_t source_id,
+                                                                 le_audio_big_encryption_t * out_big_encryption, uint8_t * out_bad_code);
+
+/**
  * @brief Deinit Broadcast Audio Scan Service Client
  */
 void broadcast_audio_scan_service_client_deinit(uint16_t bass_cid);
