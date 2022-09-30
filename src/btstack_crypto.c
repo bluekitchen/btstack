@@ -496,6 +496,7 @@ static void btstack_crypto_log_ec_publickey(const uint8_t * ec_q){
 static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
     if (btstack_crypto_ecc_p256_key_generation_state != ECC_P256_KEY_GENERATION_ACTIVE) return 0;
     log_info("sm_generate_f_rng: size %u - offset %u", (int) size, btstack_crypto_ecc_p256_random_offset);
+    btstack_assert((btstack_crypto_ecc_p256_random_offset + size) <= btstack_crypto_ecc_p256_random_len);
     uint16_t remaining_size = size;
     uint8_t * buffer_ptr = buffer;
     while (remaining_size) {
@@ -941,7 +942,7 @@ static void btstack_crypto_run(void){
 #ifdef USE_SOFTWARE_ECC_P256_IMPLEMENTATION
                         log_info("start ecc random");
                         btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_GENERATING_RANDOM;
-                        btstack_crypto_ecc_p256_random_offset = 0;
+                        btstack_crypto_ecc_p256_random_len = 0;
                         btstack_crypto_wait_for_hci_result = true;
                         hci_send_cmd(&hci_le_rand);
 #else
@@ -1003,8 +1004,8 @@ static void btstack_crypto_handle_random_data(const uint8_t * data, uint16_t len
             break;
 #ifdef ENABLE_ECC_P256
         case BTSTACK_CRYPTO_ECC_P256_GENERATE_KEY:
-            (void)memcpy(&btstack_crypto_ecc_p256_random[btstack_crypto_ecc_p256_random_len],
-			 data, 8);
+            btstack_assert((btstack_crypto_ecc_p256_random_len + 8) <= 64u);
+            (void)memcpy(&btstack_crypto_ecc_p256_random[btstack_crypto_ecc_p256_random_len], data, 8);
             btstack_crypto_ecc_p256_random_len += 8u;
             if (btstack_crypto_ecc_p256_random_len >= 64u) {
                 btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_ACTIVE;
@@ -1235,7 +1236,6 @@ void btstack_crypto_aes128_cmac_zero(btstack_crypto_aes128_cmac_t * request, uin
 void btstack_crypto_ecc_p256_generate_key(btstack_crypto_ecc_p256_t * request, uint8_t * public_key, void (* callback)(void * arg), void * callback_arg){
     // reset key generation
     if (btstack_crypto_ecc_p256_key_generation_state == ECC_P256_KEY_GENERATION_DONE){
-        btstack_crypto_ecc_p256_random_len = 0;
         btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_IDLE;
     }
     request->btstack_crypto.context_callback.callback  = callback;
