@@ -196,14 +196,19 @@ bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t buffer
                                                 bool is_broadcast_receive_state) {
     UNUSED(buffer_size);
     uint8_t pos = 0;
+    // for Broadcast Receive state, we have BIG_Encryption + Bad_Code, while for Add/Modify we have PA_Interval
     if (is_broadcast_receive_state){
         source_data->pa_sync_state = (le_audio_pa_sync_state_t)buffer[pos++];
+        le_audio_big_encryption_t big_encryption = (le_audio_big_encryption_t) buffer[pos++];
+        if (big_encryption == LE_AUDIO_BIG_ENCRYPTION_BAD_CODE){
+            pos += 16;
+        }
     } else {
         source_data->pa_sync       = (le_audio_pa_sync_t)buffer[pos++];
+        source_data->pa_interval = little_endian_read_16(buffer, pos);
+        pos += 2;
     }
-    source_data->pa_interval = little_endian_read_16(buffer, pos);
-    pos += 2;
-    
+
     source_data->subgroups_num = buffer[pos++];
     uint8_t i;
     for (i = 0; i < source_data->subgroups_num; i++){

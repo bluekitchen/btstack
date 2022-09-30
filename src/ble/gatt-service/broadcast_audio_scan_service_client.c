@@ -269,6 +269,15 @@ static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channe
         }
         source->source_id = value[0];
         bass_util_get_source_from_buffer(&value[1], value_length - 1, &source->data, true);
+
+        // get big encryption + bad code
+        source->big_encryption = (le_audio_big_encryption_t) value[13];
+        if (source->big_encryption == LE_AUDIO_BIG_ENCRYPTION_BAD_CODE){
+            reverse_128(&value[14], source->bad_code);
+        } else {
+            memset(source->bad_code, 0, 16);
+        }
+
         bass_client_emit_receive_state(connection, source->source_id);
     }
 }
