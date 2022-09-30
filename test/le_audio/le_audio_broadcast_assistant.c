@@ -56,6 +56,7 @@
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
 #include "btstack_audio.h"
+#include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_lc3.h"
 #include "btstack_run_loop.h"
@@ -320,6 +321,8 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             // store source_id
             bass_source_id = gattservice_subevent_bass_notification_complete_get_source_id(packet);
             printf("BASS client notification, source_id = 0x%02x\n", bass_source_id);
+            source_data = broadcast_audio_scan_service_client_get_source_data(bass_cid, bass_source_id);
+            btstack_assert(source_data != NULL);
 
             switch (source_data->pa_sync_state){
                 case LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST:
