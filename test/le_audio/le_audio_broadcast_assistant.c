@@ -333,8 +333,16 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
             }
 
-            // TODO: get access to BIG_Encryption field to send Broadcast Code on request
-
+            // check if Broadcast Code is requested
+            if (manual_mode == false){
+                le_audio_big_encryption_t big_encryption;
+                uint8_t bad_code[16];
+                broadcast_audio_scan_service_client_get_encryption_state(bass_cid, bass_source_id, &big_encryption, bad_code);
+                if (big_encryption == LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED){
+                    printf("LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED -> send Broadcast Code\n");
+                    broadcast_audio_scan_service_client_set_broadcast_code(bass_cid, bass_source_id, broadcast_code);
+                }
+            }
             break;
         default:
             break;
