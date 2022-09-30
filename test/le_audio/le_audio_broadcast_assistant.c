@@ -286,6 +286,8 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
+    const bass_source_data_t * source_data;
+
     switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
         case GATTSERVICE_SUBEVENT_BASS_CONNECTED:
             if (gattservice_subevent_bass_connected_get_status(packet) != ERROR_CODE_SUCCESS){
@@ -319,13 +321,20 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             bass_source_id = gattservice_subevent_bass_notification_complete_get_source_id(packet);
             printf("BASS client notification, source_id = 0x%02x\n", bass_source_id);
 
-            // TODO: avoid accessing internal data structures
-            if (bass_sources[0].data.pa_sync_state == LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST){
-                // start pa sync
-                printf("LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST -> Start PAST\n");
-                uint16_t service_data = 0x100; // bass_source_id;
-                gap_periodic_advertising_sync_transfer_send(scan_delegator_handle, service_data, sync_handle);
+            switch (source_data->pa_sync_state){
+                case LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST:
+                    // start pa sync transfer
+                    printf("LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST -> Start PAST\n");
+                     // TODO: unclear why this needs to be shifted for PAST with TS to get test green
+                    uint16_t service_data = bass_source_id << 8;
+                    gap_periodic_advertising_sync_transfer_send(scan_delegator_handle, service_data, sync_handle);
+                    break;
+                default:
+                    break;
             }
+
+            // TODO: get access to BIG_Encryption field to send Broadcast Code on request
+
             break;
         default:
             break;
@@ -541,8 +550,7 @@ static void stdin_process(char c){
             broadcast_audio_scan_service_client_remove_source(bass_cid, bass_source_id);
             break;
         case 'b':
-            // send broadcast code
-            broadcast_audio_scan_service_client_set_broadcast_code(bass_cid, bass_source_id, &broadcast_code);
+            broadcast_audio_scan_service_client_set_broadcast_code(bass_cid, bass_source_id, broadcast_code);
             break;
         case '\n':
         case '\r':
