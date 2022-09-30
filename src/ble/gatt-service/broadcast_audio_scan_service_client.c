@@ -919,6 +919,17 @@ uint8_t broadcast_audio_scan_service_client_set_broadcast_code(uint16_t bass_cid
     return ERROR_CODE_SUCCESS;
 }
 
+const bass_source_data_t * broadcast_audio_scan_service_client_get_source_data(uint16_t bass_cid, uint8_t source_id){
+    bass_client_connection_t * connection = bass_get_client_for_cid(bass_cid);
+    if (connection == NULL){
+        return NULL;
+    }
+    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED){
+        return NULL;
+    }
+    return (const bass_source_data_t *) bass_get_source_for_source_id(connection, source_id);
+}
+
 void broadcast_audio_scan_service_client_deinit(uint16_t bass_cid){
     bass_client_connection_t * connection = bass_get_client_for_cid(bass_cid);
     if (connection == NULL){

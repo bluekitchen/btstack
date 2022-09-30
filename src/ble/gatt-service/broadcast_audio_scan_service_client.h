@@ -150,23 +150,79 @@ typedef struct {
 
 /**
  * @brief Init Broadcast Audio Scan Service Client
+ * @param packet_handler for events
  */
 void    broadcast_audio_scan_service_client_init(btstack_packet_handler_t packet_handler);
 
+/**
+ * @brief Connect to BASS Service on remote device
+ * @note GATTSERVICE_SUBEVENT_BASS_CONNECTED will be emitted
+ * @param connection struct provided by user, needs to stay valid until disconnect event is received
+ * @param sources buffer to store information on Broadcast Sources on the service
+ * @param num_sources
+ * @param con_handle to connect to
+ * @param bass_cid connection id for this connection for other functions
+ * @return status
+ */
 uint8_t broadcast_audio_scan_service_client_connect(bass_client_connection_t * connection, bass_client_source_t * sources, uint8_t num_sources, hci_con_handle_t con_handle, uint16_t * bass_cid);
 
+/**
+ * @brief Notify BASS Service that scanning has started
+ * @param bass_cid
+ * @return status
+ */
 uint8_t broadcast_audio_scan_service_client_scanning_started(uint16_t bass_cid);
 
+/**
+ * @brief Notify BASS Service that scanning has stopped
+ * @note emits GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE
+ * @param bass_cid
+ * @return status
+ */
 uint8_t broadcast_audio_scan_service_client_scanning_stopped(uint16_t bass_cid);
 
+/**
+ * @brief Add Broadcast Source on service
+ * @note GATTSERVICE_SUBEVENT_BASS_NOTIFICATION_COMPLETE will contain source_id for other functions
+ * @param bass_cid
+ * @param add_source_data data to add, needs to stay valid until GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE
+ * @return status
+ */
 uint8_t broadcast_audio_scan_service_client_add_source(uint16_t bass_cid, const bass_source_data_t * add_source_data);
 
+/**
+ * @brief Modify information about Broadcast Source on service
+ * @param bass_cid
+ * @param source_id
+ * @param modify_source_data data to modify, needs to stay valid until GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE
+ * @return status
+ */
 uint8_t broadcast_audio_scan_service_client_modify_source(uint16_t bass_cid, uint8_t source_id, const bass_source_data_t * modify_source_data);
 
+/**
+ * @brief Set Broadcast Code for a Broadcast Source to allow remote do decrypt audio stream
+ * @param bass_cid
+ * @param source_id
+ * @param broadcast_code
+ * @return status
+ */
 uint8_t broadcast_audio_scan_service_client_set_broadcast_code(uint16_t bass_cid, uint8_t source_id, const uint8_t * broadcast_code);
 
+/**
+ * @brief Remove information about Broadcast Source
+ * @param bass_cid
+ * @param source_id
+ * @return status
+ */
 uint8_t broadcast_audio_scan_service_client_remove_source(uint16_t bass_cid, uint8_t source_id);
 
+/**
+ * @param Provide read-only access to Broadcast Receive State of given Broadcast Source on service
+ * @param bass_cid
+ * @param source_id
+ * @return pointer to source data or NULL, if source_id not found
+ */
+const bass_source_data_t * broadcast_audio_scan_service_client_get_source_data(uint16_t bass_cid, uint8_t source_id);
 
 /**
  * @brief Deinit Broadcast Audio Scan Service Client
