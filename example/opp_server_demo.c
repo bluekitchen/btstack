@@ -92,14 +92,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                    opp_subevent_operation_completed_get_status(packet));
                             break;
                         default:
+                            log_info("[+] OPP event packet of type %d\n", hci_event_opp_meta_get_subevent_code(packet));
                             break;
                     }
                     break;
                 default:
+                    log_info ("[-] hci event packet of type %d\n", hci_event_packet_get_type(packet));
                     break;
             }
             break;
         default:
+            log_info ("[-] packet of type %d\n", packet_type);
             break;
     }
 }
