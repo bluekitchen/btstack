@@ -37,7 +37,7 @@
 
 #define BTSTACK_FILE__ "mesh_provisioning_service_server.c"
 
-#include "ble/gatt-service/mesh_provisioning_service_server.h"
+#include "mesh/gatt-service/mesh_provisioning_service_server.h"
 
 #include "ble/att_db.h"
 #include "ble/att_server.h"

@@ -4,6 +4,7 @@ VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/src/mesh
+VPATH += ${BTSTACK_ROOT}/src/mesh/gatt-service
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce

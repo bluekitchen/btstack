@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 ### Changed
+- Mesh: move GATT Services into src/mesh/gatt-service
 
 ## Release v1.5.4
 

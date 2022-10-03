@@ -21,16 +21,17 @@ link_directories(${LIBUSB_LIBRARY_DIRS})
 link_libraries(${LIBUSB_LIBRARIES})
 
 include_directories(../../3rd-party/micro-ecc)
+include_directories(../../3rd-party/rijndael)
 include_directories(../../3rd-party/tinydir)
+include_directories(../../3rd-party/lc3-google/include/)
 include_directories(../../src)
 include_directories(../../platform/posix)
-include_directories(../../3rd-party/rijndael)
 include_directories(.)
 
 file(GLOB SOURCES_SRC       "../../src/*.c"                     "../../src/*.h" "../../example/sco_demo_util.c" "../../example/sco_demo_util.h")
 file(GLOB SOURCES_BLE       "../../src/ble/*.c"                 "../../src/ble/*.h")
 file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c"    "../../src/ble/gatt-service/*.h")
-file(GLOB SOURCES_MESH      "../../src/mesh/*.c"                "../../src/mesh/*.h" )
+file(GLOB SOURCES_MESH      "../../src/mesh/*.c"                "../../src/mesh/*.h"   "../../src/mesh/gatt-service/*.c")
 file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c"  "../../3rd-party/micro-ecc/uECC.h")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c"          "../../platform/posix/*.h")
 file(GLOB SOURCES_LIBUSB    "../../platform/libusb/*.c"         "../../platform/libusb/*.h")
@@ -101,6 +102,7 @@ add_executable(mesh_message_test
 ../../src/btstack_crypto.c
 ../../src/btstack_linked_list.c
 ../../src/hci_dump.c
+../../platform/posix/hci_dump_posix_fs.c
 ../../src/hci_cmd.c
 ../../3rd-party/micro-ecc/uECC.c
 ../../3rd-party/rijndael/rijndael.c
@@ -122,6 +124,7 @@ mock.c
 ../../src/btstack_linked_list.c
 ../../src/hci_cmd.c
 ../../src/hci_dump.c
+../../platform/posix/hci_dump_posix_fs.c
 )
 
 message("example provisioning_provisioner_test")
@@ -138,6 +141,7 @@ mock.c
 ../../src/btstack_linked_list.c
 ../../src/hci_cmd.c
 ../../src/hci_dump.c
+../../platform/posix/hci_dump_posix_fs.c
 )
 
 message("example mesh_configuration_composition_data_message_test")

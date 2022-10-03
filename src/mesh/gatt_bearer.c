@@ -39,19 +39,19 @@
 
 #include <string.h>
 
-#include "ble/gatt-service/mesh_proxy_service_server.h"
 #include "ble/att_server.h"
-#include "mesh/gatt_bearer.h"
 #include "ble/core.h"
 #include "bluetooth.h"
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
-#include "btstack_util.h"
+#include "btstack_event.h"
+#include "btstack_event.h"
 #include "btstack_run_loop.h"
-#include "btstack_event.h"
+#include "btstack_util.h"
 #include "gap.h"
-#include "btstack_event.h"
+#include "mesh/gatt-service/mesh_proxy_service_server.h"
+#include "mesh/gatt_bearer.h"
 #include "provisioning.h"
 
 #define NUM_TYPES 3

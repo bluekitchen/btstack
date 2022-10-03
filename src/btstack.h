@@ -106,8 +106,8 @@
 #include "ble/gatt-service/volume_control_service_server.h"
 #include "ble/gatt-service/volume_offset_control_service_server.h"
 #ifdef ENABLE_MESH
-#include "ble/gatt-service/mesh_provisioning_service_server.h"
-#include "ble/gatt-service/mesh_proxy_service_server.h"
+#include "mesh/gatt-service/mesh_provisioning_service_server.h"
+#include "mesh/gatt-service/mesh_proxy_service_server.h"
 #endif
 #include "ble/gatt_client.h"
 #include "ble/le_device_db.h"
@@ -157,11 +157,11 @@
 #endif
 
 #ifdef ENABLE_MESH
-#include "ble/gatt-service/mesh_provisioning_service_server.h"
-#include "ble/gatt-service/mesh_proxy_service_server.h"
 #include "mesh/adv_bearer.h"
 #include "mesh/beacon.h"
 #include "mesh/gatt_bearer.h"
+#include "mesh/gatt-service/mesh_provisioning_service_server.h"
+#include "mesh/gatt-service/mesh_proxy_service_server.h"
 #include "mesh/mesh.h"
 #include "mesh/mesh_access.h"
 #include "mesh/mesh_configuration_client.h"
