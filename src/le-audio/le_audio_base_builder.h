@@ -33,11 +33,10 @@
  * @title Broadcast Audio Source Endpoint AD Builder
  */
 
-#ifndef BASE_BUILDER_H
-#define BASE_BUILDER_H
+#ifndef LE_AUDIO_BASE_BUILDER_H
+#define LE_AUDIO_BASE_BUILDER_H
 
 #include <stdint.h>
-#include "btstack_lc3.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -49,7 +48,7 @@ typedef struct {
     uint16_t len;
     uint16_t subgroup_offset;
     uint16_t bis_offset;
-} base_builder_t;
+} le_audio_base_builder_t;
 
 /**
  * Initialize BASE
@@ -58,7 +57,7 @@ typedef struct {
  * @param size of buffer
  * @param presentation_delay_us
  */
-void le_audio_base_builder_init(base_builder_t * builder, uint8_t * buffer, uint16_t size, uint32_t presentation_delay_us);
+void le_audio_base_builder_init(le_audio_base_builder_t * builder, uint8_t * buffer, uint16_t size, uint32_t presentation_delay_us);
 
 /**
  * Add subgroup to current BASE
@@ -69,7 +68,7 @@ void le_audio_base_builder_init(base_builder_t * builder, uint8_t * buffer, uint
  * @param metadata_length
  * @param metadata
  */
-void le_audio_base_builder_add_subgroup(base_builder_t * builder,
+void le_audio_base_builder_add_subgroup(le_audio_base_builder_t * builder,
                                         const uint8_t * codec_id,
                                         uint8_t codec_specific_configuration_length, const uint8_t * codec_specific_configuration,
                                         uint8_t metadata_length, const uint8_t * metadata);
@@ -81,7 +80,7 @@ void le_audio_base_builder_add_subgroup(base_builder_t * builder,
  * @param codec_specific_configuration_length
  * @param codec_specific_configuration
  */
-void le_audio_base_builder_add_bis(base_builder_t * builder,
+void le_audio_base_builder_add_bis(le_audio_base_builder_t * builder,
                                    uint8_t bis_index,
                                    uint8_t codec_specific_configuration_length,
                                    const uint8_t * codec_specific_configuration);
@@ -91,10 +90,10 @@ void le_audio_base_builder_add_bis(base_builder_t * builder,
  * @param builder
  * @return
  */
-uint16_t le_audio_base_builder_get_ad_data_size(const base_builder_t * builder);
+uint16_t le_audio_base_builder_get_ad_data_size(const le_audio_base_builder_t * builder);
 
 #if defined __cplusplus
 }
 #endif
 
-#endif // BASE_BUILDER_H
+#endif // LE_AUDIO_BASE_BUILDER_H

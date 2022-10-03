@@ -485,7 +485,7 @@ static void start_broadcast() {// use values from table
     uint8_t bis_codec_specific_configuration_2[] = {
             0x05, 0x03, 0x02, 0x00, 0x00, 0x00
     };
-    base_builder_t builder;
+    le_audio_base_builder_t builder;
     le_audio_base_builder_init(&builder, period_adv_data, sizeof(period_adv_data), 40);
     le_audio_base_builder_add_subgroup(&builder, codec_id,
                                        sizeof(subgroup_codec_specific_configuration),

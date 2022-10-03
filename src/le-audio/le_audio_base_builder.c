@@ -29,7 +29,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "base_builder.c"
+#define BTSTACK_FILE__ "le_audio_base_builder.c"
 
 /**
  * @title Broadcast Audio Source Endpoint AD Builder
@@ -44,10 +44,10 @@
 #include "btstack_debug.h"
 #include "le-audio/le_audio_base_builder.h"
 
-void le_audio_base_builder_init(base_builder_t * builder, uint8_t  * buffer, uint16_t size, uint32_t presentation_delay_us){
+void le_audio_base_builder_init(le_audio_base_builder_t * builder, uint8_t  * buffer, uint16_t size, uint32_t presentation_delay_us){
     btstack_assert(size >= 8);
     // default init
-    memset(builder, 0, sizeof(base_builder_t));
+    memset(builder, 0, sizeof(le_audio_base_builder_t));
     builder->buffer = buffer;
     builder->size = size;
     builder->len = 0;
@@ -61,7 +61,7 @@ void le_audio_base_builder_init(base_builder_t * builder, uint8_t  * buffer, uin
     builder->subgroup_offset = builder->len;
 }
 
-void le_audio_base_builder_add_subgroup(base_builder_t * builder,
+void le_audio_base_builder_add_subgroup(le_audio_base_builder_t * builder,
                                         const uint8_t * codec_id,
                                         uint8_t codec_specific_configuration_length, const uint8_t * codec_specific_configuration,
                                         uint8_t metadata_length, const uint8_t * metadata){
@@ -94,7 +94,7 @@ void le_audio_base_builder_add_subgroup(base_builder_t * builder,
  * @param codec_specific_configuration_length
  * @param codec_specific_configuration
  */
-void le_audio_base_builder_add_bis(base_builder_t * builder,
+void le_audio_base_builder_add_bis(le_audio_base_builder_t * builder,
                                    uint8_t bis_index,
                                    uint8_t codec_specific_configuration_length,
                                    const uint8_t * codec_specific_configuration){
@@ -115,6 +115,6 @@ void le_audio_base_builder_add_bis(base_builder_t * builder,
     builder->buffer[0] = builder->len - 1;
 }
 
-uint16_t le_audio_base_builder_get_ad_data_size(const base_builder_t * builder){
+uint16_t le_audio_base_builder_get_ad_data_size(const le_audio_base_builder_t * builder){
     return builder->len;
 }
