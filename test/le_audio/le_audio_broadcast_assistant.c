@@ -65,6 +65,7 @@
 #include "gap.h"
 #include "hci.h"
 #include "l2cap.h"
+#include "le-audio/le_audio_base_parser.h"
 
 static void show_usage(void);
 
@@ -133,108 +134,92 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
         return;
     }
 
-    ad_context_t context;
-    for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
-        uint8_t data_type = ad_iterator_get_data_type(&context);
-        // TODO: avoid out-of-bounds read
-        // uint8_t data_size = ad_iterator_get_data_len(&context);
-        const uint8_t * data = ad_iterator_get_data(&context);
-        uint16_t uuid;
-        switch (data_type){
-            case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
-                uuid = little_endian_read_16(data, 0);
-                if (uuid == ORG_BLUETOOTH_SERVICE_BASIC_AUDIO_ANNOUNCEMENT_SERVICE){
-                    have_base = true;
-                    // Level 1: Group Level
-                    const uint8_t * base_data = &data[2];
-                    // TODO: avoid out-of-bounds read
-                    // uint16_t base_len = data_size - 2;
-                    printf("BASE:\n");
-                    uint32_t presentation_delay = little_endian_read_24(base_data, 0);
-                    printf("- presentation delay: %"PRIu32" us\n", presentation_delay);
-                    uint8_t num_subgroups = base_data[3];
-                    // Cache in new source struct
-                    bass_source_data.subgroups_num = num_subgroups;
-                    printf("- num subgroups: %u\n", num_subgroups);
-                    uint8_t i;
-                    uint16_t offset = 4;
-                    for (i=0;i<num_subgroups;i++){
+    le_audio_base_parser_t parser;
+    bool ok = le_audio_base_parser_init(&parser, adv_data, adv_size);
+    if (ok == false){
+        return;
+    }
+    have_base = true;
 
-                        // Cache in new source struct
-                        bass_source_data.subgroups[i].bis_sync = 0;
+    printf("BASE:\n");
+    uint32_t presentation_delay = le_audio_base_parser_get_presentation_delay(&parser);
+    printf("- presentation delay: %"PRIu32" us\n", presentation_delay);
+    uint8_t num_subgroups = le_audio_base_parser_get_num_subgroups(&parser);
+    // Cache in new source struct
+    bass_source_data.subgroups_num = num_subgroups;
+    printf("- num subgroups: %u\n", num_subgroups);
+    uint8_t i;
+    for (i=0;i<num_subgroups;i++){
 
-                        // Level 2: Subgroup Level
-                        num_bis = base_data[offset++];
-                        printf("  - num bis[%u]: %u\n", i, num_bis);
-                        // codec_id: coding format = 0x06, vendor and coded id = 0
-                        offset += 5;
-                        uint8_t codec_specific_configuration_length = base_data[offset++];
-                        const uint8_t * codec_specific_configuration = &base_data[offset];
-                        printf("  - codec specific config[%u]: ", i);
-                        printf_hexdump(codec_specific_configuration, codec_specific_configuration_length);
-                        // parse config to get sampling frequency and frame duration
-                        uint8_t codec_offset = 0;
-                        while ((codec_offset + 1) < codec_specific_configuration_length){
-                            uint8_t ltv_len = codec_specific_configuration[codec_offset++];
-                            uint8_t ltv_type = codec_specific_configuration[codec_offset];
-                            const uint32_t sampling_frequency_map[] = { 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000, 176400, 192000, 384000 };
-                            uint8_t sampling_frequency_index;
-                            uint8_t frame_duration_index;
-                            switch (ltv_type){
-                                case 0x01: // sampling frequency
-                                    sampling_frequency_index = codec_specific_configuration[codec_offset+1];
-                                    // TODO: check range
-                                    sampling_frequency_hz = sampling_frequency_map[sampling_frequency_index - 1];
-                                    printf("    - sampling frequency[%u]: %u\n", i, sampling_frequency_hz);
-                                    break;
-                                case 0x02: // 0 = 7.5, 1 = 10 ms
-                                    frame_duration_index =  codec_specific_configuration[codec_offset+1];
-                                    frame_duration = (frame_duration_index == 0) ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
-                                    printf("    - frame duration[%u]: %s ms\n", i, (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? "7.5" : "10");
-                                    break;
-                                case 0x04:  // octets per coding frame
-                                    octets_per_frame = little_endian_read_16(codec_specific_configuration, codec_offset+1);
-                                    printf("    - octets per codec frame[%u]: %u\n", i, octets_per_frame);
-                                    break;
-                                default:
-                                    break;
-                            }
-                            codec_offset += ltv_len;
-                        }
-                        //
-                        offset += codec_specific_configuration_length;
-                        uint8_t metadata_length = base_data[offset++];
-                        const uint8_t * meta_data = &base_data[offset];
-                        offset += metadata_length;
-                        printf("  - meta data[%u]: ", i);
-                        printf_hexdump(meta_data, metadata_length);
-                        uint8_t k;
-                        for (k=0;k<num_bis;k++){
-                            // Level 3: BIS Level
-                            uint8_t bis_index = base_data[offset++];
+        // Cache in new source struct
+        bass_source_data.subgroups[i].bis_sync = 0;
 
-                            // check value
-                            // double check message
-
-                            // Cache in new source struct
-                            bis_sync_mask |= 1 << (bis_index-1);
-
-                            bass_source_data.subgroups[i].metadata_length = 0;
-                            memset(&bass_source_data.subgroups[i].metadata, 0, sizeof(le_audio_metadata_t));
-
-                            printf("    - bis index[%u][%u]: %u\n", i, k, bis_index);
-                            uint8_t codec_specific_configuration_length2 = base_data[offset++];
-                            const uint8_t * codec_specific_configuration2 = &base_data[offset];
-                            printf("    - codec specific config[%u][%u]: ", i, k);
-                            printf_hexdump(codec_specific_configuration2, codec_specific_configuration_length2);
-                            offset += codec_specific_configuration_length2;
-                        }
-                    }
-                }
-                break;
-            default:
-                break;
+        // Level 2: Subgroup Level
+        num_bis = le_audio_base_parser_subgroup_get_num_bis(&parser);
+        printf("  - num bis[%u]: %u\n", i, num_bis);
+        uint8_t codec_specific_configuration_length = le_audio_base_parser_bis_get_codec_specific_configuration_length(&parser);
+        const uint8_t * codec_specific_configuration = le_audio_base_parser_subgroup_get_codec_specific_configuration(&parser);
+        printf("  - codec specific config[%u]: ", i);
+        printf_hexdump(codec_specific_configuration, codec_specific_configuration_length);
+        // parse config to get sampling frequency and frame duration
+        uint8_t codec_offset = 0;
+        while ((codec_offset + 1) < codec_specific_configuration_length){
+            uint8_t ltv_len = codec_specific_configuration[codec_offset++];
+            uint8_t ltv_type = codec_specific_configuration[codec_offset];
+            const uint32_t sampling_frequency_map[] = { 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000, 176400, 192000, 384000 };
+            uint8_t sampling_frequency_index;
+            uint8_t frame_duration_index;
+            switch (ltv_type){
+                case 0x01: // sampling frequency
+                    sampling_frequency_index = codec_specific_configuration[codec_offset+1];
+                    // TODO: check range
+                    sampling_frequency_hz = sampling_frequency_map[sampling_frequency_index - 1];
+                    printf("    - sampling frequency[%u]: %u\n", i, sampling_frequency_hz);
+                    break;
+                case 0x02: // 0 = 7.5, 1 = 10 ms
+                    frame_duration_index =  codec_specific_configuration[codec_offset+1];
+                    frame_duration = (frame_duration_index == 0) ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
+                    printf("    - frame duration[%u]: %s ms\n", i, (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? "7.5" : "10");
+                    break;
+                case 0x04:  // octets per coding frame
+                    octets_per_frame = little_endian_read_16(codec_specific_configuration, codec_offset+1);
+                    printf("    - octets per codec frame[%u]: %u\n", i, octets_per_frame);
+                    break;
+                default:
+                    break;
+            }
+            codec_offset += ltv_len;
         }
+        uint8_t metadata_length = le_audio_base_parser_subgroup_get_metadata_length(&parser);
+        const uint8_t * meta_data = le_audio_base_subgroup_parser_get_metadata(&parser);
+        printf("  - meta data[%u]: ", i);
+        printf_hexdump(meta_data, metadata_length);
+        uint8_t k;
+        for (k=0;k<num_bis;k++){
+            // Level 3: BIS Level
+            uint8_t bis_index = le_audio_base_parser_bis_get_index(&parser);
+
+            // check value
+            // double check message
+
+            // Cache in new source struct
+            bis_sync_mask |= 1 << (bis_index-1);
+
+            bass_source_data.subgroups[i].metadata_length = 0;
+            memset(&bass_source_data.subgroups[i].metadata, 0, sizeof(le_audio_metadata_t));
+
+            printf("    - bis index[%u][%u]: %u\n", i, k, bis_index);
+            codec_specific_configuration_length = le_audio_base_parser_bis_get_codec_specific_configuration_length(&parser);
+            codec_specific_configuration = le_audio_base_bis_parser_get_codec_specific_configuration(&parser);
+            printf("    - codec specific config[%u][%u]: ", i, k);
+            printf_hexdump(codec_specific_configuration, codec_specific_configuration_length);
+
+            // parse next BIS
+            le_audio_base_parser_bis_next(&parser);
+        }
+
+        // parse next subgroup
+        le_audio_base_parser_subgroup_next(&parser);
     }
 }
 
