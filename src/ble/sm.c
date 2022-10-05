@@ -1530,7 +1530,23 @@ static void sm_store_bonding_information(sm_connection_t * sm_conn){
     }
 }
 
+static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
+    sm_conn->sm_pairing_failed_reason = reason;
+    sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+}
+
+static uint8_t sm_key_distribution_validate_received(sm_connection_t * sm_conn){
+    return 0;
+}
+
 static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
+
+    // abort pairing if received keys are not valid
+    uint8_t reason = sm_key_distribution_validate_received(sm_conn);
+    if (reason != 0){
+        sm_pairing_error(sm_conn, reason);
+        return;
+    }
 
     // only store pairing information if both sides are bondable, i.e., the bonadble flag is set
     bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq)
@@ -1542,11 +1558,6 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
     } else {
         log_info("Ignoring received keys, bonding not enabled");
     }
-}
-
-static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
-    sm_conn->sm_pairing_failed_reason = reason;
-    sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
 }
 
 static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
