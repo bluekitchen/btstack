@@ -40,6 +40,9 @@
 
 #define ENABLE_SCO_OVER_HCI
 
+// mainly needed for AVRCP Browsing, can be removed otherwise to reduce code size
+#define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+
 // work around to link layer issues in ESP32
 // https://github.com/espressif/esp-idf/issues/5494
 #define ENABLE_CLASSIC_LEGACY_CONNECTIONS_FOR_SCO_DEMOS
