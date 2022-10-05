@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 ### Changed
 - Mesh: move GATT Services into src/mesh/gatt-service
+- SM: delete bonding information for existing device with BD_ADDR, on new pairing with different IRK
 
 ## Release v1.5.4
 

@@ -1535,7 +1535,35 @@ static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
     sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
 }
 
+static int sm_lookup_by_address(sm_connection_t * sm_conn){
+    int i;
+    for (i=0; i < le_device_db_max_count(); i++){
+        bd_addr_t address;
+        int address_type = BD_ADDR_TYPE_UNKNOWN;
+        le_device_db_info(i, &address_type, address, NULL);
+        // skip unused entries
+        if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
+        if ((address_type == BD_ADDR_TYPE_LE_PUBLIC) && (memcmp(address, setup->sm_peer_address, 6) == 0)){
+            return i;
+        }
+    }
+    return -1;
+}
+
 static uint8_t sm_key_distribution_validate_received(sm_connection_t * sm_conn){
+    // if identity is provided, abort if we have bonding with same address but different irk
+    if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
+        int index = sm_lookup_by_address(sm_conn);
+        if (index >= 0){
+            sm_key_t irk;
+            le_device_db_info(index, NULL, NULL, irk);
+            if (memcmp(irk, setup->sm_peer_irk, 16) != 0){
+                // IRK doesn't match, delete bonding information
+                log_info("New IRK for %s (type %u) does not match stored IRK -> delete bonding information", bd_addr_to_str(sm_conn->sm_peer_address), sm_conn->sm_peer_addr_type);
+                le_device_db_remove(index);
+            }
+        }
+    }
     return 0;
 }
 
