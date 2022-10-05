@@ -66,6 +66,10 @@
 #include "btstack_stdin.h"
 #endif
 
+#ifndef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+#error "AVRCP Browsing requires L2CAP ERTM, please add ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE to your btstack_config.h"
+#endif
+
 #define AVRCP_BROWSING_ENABLED 
 
 #define AVRCP_BROWSING_MAX_PLAYERS                  10
