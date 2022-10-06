@@ -51,16 +51,18 @@ extern "C" {
 /* API_START */
 
 typedef struct {
-    uint32_t                        sample_rate;
     btstack_lc3_frame_duration_t    frame_duration;
-    uint16_t                        octetes_per_frame;
+    uint16_t                        octets_per_frame;
+    uint32_t                        sample_rate;
+    // decoder must be 4-byte aligned
     uint8_t                         decoder[LC3PLUS_DEC_MAX_SIZE];
 } btstack_lc3plus_fraunhofer_decoder_t;
 
 typedef struct {
-    uint32_t                        sample_rate;
     btstack_lc3_frame_duration_t    frame_duration;
-    uint16_t                        octetes_per_frame;
+    uint16_t                        octets_per_frame;
+    uint32_t                        sample_rate;
+    // encoder must be 4-byte aligned
     uint8_t                         encoder[LC3PLUS_ENC_MAX_SIZE];
 } btstack_lc3plus_fraunhofer_encoder_t;
 

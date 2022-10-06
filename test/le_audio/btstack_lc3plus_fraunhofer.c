@@ -72,7 +72,7 @@ static uint8_t lc3plus_fraunhofer_decoder_configure(void * context, uint32_t sam
     // store config
     instance->sample_rate = sample_rate;
     instance->frame_duration = frame_duration;
-    instance->octetes_per_frame = octets_per_frame;
+    instance->octets_per_frame = octets_per_frame;
 
     LC3PLUS_Error error;
     error = lc3plus_dec_init(decoder, sample_rate, 1, LC3PLUS_PLC_ADVANCED, 0);
@@ -93,7 +93,7 @@ static uint8_t lc3plus_fraunhofer_decoder_decode_signed_16(void * context, const
     output_samples[0] = pcm_out;
 
     // trigger plc if BFI by passing 0 valid input bytes
-    uint16_t byte_count = instance->octetes_per_frame;
+    uint16_t byte_count = instance->octets_per_frame;
     if (BFI != 0){
         byte_count = 0;
     }
@@ -123,7 +123,7 @@ static uint8_t lc3plus_fraunhofer_decoder_decode_signed_24(void * context, const
     output_samples[0] = pcm_out;
 
     // trigger plc if BFI by passing 0 valid input bytes
-    uint16_t byte_count = instance->octetes_per_frame;
+    uint16_t byte_count = instance->octets_per_frame;
     if (BFI != 0){
         byte_count = 0;
     }
