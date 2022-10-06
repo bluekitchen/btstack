@@ -337,11 +337,12 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
     uint8_t i;
     for (i=0;i<num_subgroups;i++){
         // Level 2: Subgroup Level
+        printf("  - Subgroup %u\n", i);
         num_bis = le_audio_base_parser_subgroup_get_num_bis(&parser);
-        printf("  - num bis[%u]: %u\n", i, num_bis);
-        uint8_t codec_specific_configuration_length = le_audio_base_parser_bis_get_codec_specific_configuration_length(&parser);
+        printf("    - num bis[%u]: %u\n", i, num_bis);
+        uint8_t codec_specific_configuration_length = le_audio_base_parser_subgroup_get_codec_specific_configuration_length(&parser);
         const uint8_t * codec_specific_configuration = le_audio_base_parser_subgroup_get_codec_specific_configuration(&parser);
-        printf("  - codec specific config[%u]: ", i);
+        printf("    - codec specific config[%u]: ", i);
         printf_hexdump(codec_specific_configuration, codec_specific_configuration_length);
         // parse config to get sampling frequency and frame duration
         uint8_t codec_offset = 0;
@@ -356,16 +357,16 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                     sampling_frequency_index = codec_specific_configuration[codec_offset+1];
                     // TODO: check range
                     sampling_frequency_hz = sampling_frequency_map[sampling_frequency_index - 1];
-                    printf("    - sampling frequency[%u]: %u\n", i, sampling_frequency_hz);
+                    printf("      - sampling frequency[%u]: %u\n", i, sampling_frequency_hz);
                     break;
                 case 0x02: // 0 = 7.5, 1 = 10 ms
                     frame_duration_index =  codec_specific_configuration[codec_offset+1];
                     frame_duration = (frame_duration_index == 0) ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
-                    printf("    - frame duration[%u]: %s ms\n", i, (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? "7.5" : "10");
+                    printf("      - frame duration[%u]: %s ms\n", i, (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? "7.5" : "10");
                     break;
                 case 0x04:  // octets per coding frame
                     octets_per_frame = little_endian_read_16(codec_specific_configuration, codec_offset+1);
-                    printf("    - octets per codec frame[%u]: %u\n", i, octets_per_frame);
+                    printf("      - octets per codec frame[%u]: %u\n", i, octets_per_frame);
                     break;
                 default:
                     break;
@@ -374,10 +375,11 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
         }
         uint8_t metadata_length = le_audio_base_parser_subgroup_get_metadata_length(&parser);
         const uint8_t * meta_data = le_audio_base_subgroup_parser_get_metadata(&parser);
-        printf("  - meta data[%u]: ", i);
+        printf("    - meta data[%u]: ", i);
         printf_hexdump(meta_data, metadata_length);
         uint8_t k;
         for (k=0;k<num_bis;k++){
+            printf("      - BIS %u\n", k);
             // Level 3: BIS Level
             uint8_t bis_index =  le_audio_base_parser_bis_get_index(&parser);
             if ((bis_index == 0) || (bis_index > 30)){
@@ -390,10 +392,10 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
             bass_source_new.subgroups[i].metadata_length = 0;
             memset(&bass_source_new.subgroups[i].metadata, 0, sizeof(le_audio_metadata_t));
 
-            printf("    - bis index[%u][%u]: %u\n", i, k, bis_index);
+            printf("        - bis index[%u][%u]: %u\n", i, k, bis_index);
             codec_specific_configuration_length = le_audio_base_parser_bis_get_codec_specific_configuration_length(&parser);
             codec_specific_configuration = le_audio_base_bis_parser_get_codec_specific_configuration(&parser);
-            printf("    - codec specific config[%u][%u]: ", i, k);
+            printf("        - codec specific config[%u][%u]: ", i, k);
             printf_hexdump(codec_specific_configuration, codec_specific_configuration_length);
             // parse next BIS
             le_audio_base_parser_bis_next(&parser);
