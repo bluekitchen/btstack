@@ -120,7 +120,7 @@ static opp_server_t opp_server_singleton;
 static void opp_server_handle_get_request(opp_server_t * opp_server);
 static void opp_server_build_response(opp_server_t * opp_server);
 
-static void opp_client_emit_pull_object_data_event(opp_server_t * context,uint32_t cur_position, uint16_t buf_size){
+static void opp_server_emit_pull_object_data_event(opp_server_t * context,uint32_t cur_position, uint16_t buf_size){
     uint8_t event[11];
     int pos = 0;
     event[pos++] = HCI_EVENT_OPP_META;
@@ -133,7 +133,7 @@ static void opp_client_emit_pull_object_data_event(opp_server_t * context,uint32
     little_endian_store_16(event,pos,buf_size);
     pos+=2;
     event[1] = pos - 2;
-    if (pos != sizeof(event)) log_error("opp_client_emit_pull_object_data_event size %u", pos);
+    if (pos != sizeof(event)) log_error("opp_server_emit_pull_object_data_event size %u", pos);
     (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, context->opp_cid, &event[0], pos);
 }
 
@@ -476,7 +476,18 @@ static void opp_server_parser_callback_get(void * user_data, uint8_t header_id, 
                           opp_server->request.type);
             }
             break;
+        case OBEX_HEADER_BODY:
+            log_info ("received BODY data: %d bytes\n", data_len);
+            break;
+        case OBEX_HEADER_END_OF_BODY:
+            log_info ("received END_OF_BODY data: %d bytes\n", data_len);
+            break;
+        case OBEX_HEADER_LENGTH:
+            log_info ("length of data: %d\n",
+                      big_endian_read_32 (data_buffer, 0));
+            break;
         default:
+            log_info ("received unhandled OPP header type %d\n", header_id);
             break;
     }
 }
@@ -493,7 +504,7 @@ static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opc
     log_info ("handle put request");
     // emit received opp data
     opp_server->state = OPP_SERVER_STATE_SEND_PUT_RESPONSE;
-    opp_client_emit_pull_object_data_event (opp_server, 0, 0);
+    opp_server_emit_pull_object_data_event (opp_server, 0, 0);
 
     // (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 
@@ -548,8 +559,13 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
             switch (opcode){
                 case OBEX_OPCODE_GET:
                 case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
+                    log_info ("handling GET\n");
+                    opp_server->state = OPP_SERVER_STATE_W4_REQUEST;
+                    obex_parser_init_for_request(&opp_server->obex_parser, &opp_server_parser_callback_get, (void*) opp_server);
+                    break;
                 case OBEX_OPCODE_PUT:
                 case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
+                    log_info ("handling PUT\n");
                     opp_server->state = OPP_SERVER_STATE_W4_REQUEST;
                     obex_parser_init_for_request(&opp_server->obex_parser, &opp_server_parser_callback_get, (void*) opp_server);
                     break;
