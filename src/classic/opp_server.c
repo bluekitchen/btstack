@@ -365,8 +365,7 @@ static void opp_server_handle_can_send_now(opp_server_t * opp_server){
             // next state
             response_code = opp_server->response.code;
             if (response_code == OBEX_RESP_CONTINUE){
-                opp_server_reset_response(opp_server);
-                opp_server_build_response(opp_server);
+                goep_server_response_create_general(opp_server->goep_cid);
                 // next state
                 opp_server->state = OPP_SERVER_STATE_W4_PUT_OPCODE;
             } else {
