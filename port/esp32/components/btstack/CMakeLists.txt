@@ -51,6 +51,7 @@ set(priv_include_dirs
 set(priv_requires
         "nvs_flash"
         "bt"
+        "driver"
         "lwip"
         )
 
