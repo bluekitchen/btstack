@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 ### Fixed
+- ESP32: fix init for BR/EDR Only mode
+ 
 ### Changed
 
 ## Release v1.5.4
