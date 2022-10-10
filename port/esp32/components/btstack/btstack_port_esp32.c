@@ -260,7 +260,7 @@ static int transport_open(void){
 #if CONFIG_IDF_TARGET_ESP32
 #if CONFIG_BTDM_CTRL_MODE_BTDM
     bt_mode = ESP_BT_MODE_BTDM;
-#elif BTDM_CTRL_MODE_BR_EDR_ONLY
+#elif CONFIG_BTDM_CTRL_MODE_BR_EDR_ONLY
     bt_mode = ESP_BT_MODE_CLASSIC_BT;
 #endif
 #endif

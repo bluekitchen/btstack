@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Service: Broadcast Audio Scamn Service Server and Client (BASS 1.0)
 
 ### Fixed
+- ESP32: fix init for BR/EDR Only mode
+ 
 ### Changed
 - Mesh: move GATT Services into src/mesh/gatt-service
 - SM: delete bonding information for existing device with BD_ADDR, on new pairing with different IRK
