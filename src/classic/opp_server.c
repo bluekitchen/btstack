@@ -477,10 +477,9 @@ static void opp_server_parser_callback_get(void * user_data, uint8_t header_id, 
             }
             break;
         case OBEX_HEADER_BODY:
-            log_info ("received BODY data: %d bytes\n", data_len);
-            break;
         case OBEX_HEADER_END_OF_BODY:
-            log_info ("received END_OF_BODY data: %d bytes\n", data_len);
+            log_info ("received (END_OF_)BODY data: %d bytes\n", data_len);
+            (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->goep_cid, (uint8_t *) data_buffer, data_len);
             break;
         case OBEX_HEADER_LENGTH:
             log_info ("length of data: %d\n",

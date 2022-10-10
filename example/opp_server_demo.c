@@ -69,6 +69,7 @@ static const uint8_t supported_formats[] = { 1, 2, 3, 4, 5, 6};
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
+    int i;
     uint8_t status;
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -99,6 +100,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 default:
                     log_info ("[-] hci event packet of type %d\n", hci_event_packet_get_type(packet));
                     break;
+            }
+            break;
+        case OPP_DATA_PACKET:
+            for (i=0;i<size;i++){
+                printf("%c", packet[i]);
             }
             break;
         default:
