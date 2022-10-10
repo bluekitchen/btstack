@@ -463,7 +463,7 @@ static uint8_t l2cap_ertm_send(l2cap_channel_t * channel, const uint8_t * data, 
     if (len > effective_mps){
         // fragmentation needed.
         l2cap_segmentation_and_reassembly_t sar =  L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU;
-        int chunk_len;
+        uint16_t chunk_len = 0;
         while (len){
             switch (sar){
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
