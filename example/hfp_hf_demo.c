@@ -452,6 +452,7 @@ static void stdin_process(char c){
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     UNUSED(channel);
     uint8_t status;
+    bd_addr_t event_addr;
 
     switch (packet_type){
 
@@ -465,6 +466,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(event) != HCI_STATE_WORKING) break;
                     dump_supported_codecs();
+                    break;
+
+                case HCI_EVENT_PIN_CODE_REQUEST:
+                    // inform about pin code request
+                    printf("Pin code request - using '0000'\n");
+                    hci_event_pin_code_request_get_bd_addr(event, event_addr);
+                    gap_pin_code_response(event_addr, "0000");
                     break;
 
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
