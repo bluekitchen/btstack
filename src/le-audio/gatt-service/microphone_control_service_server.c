@@ -50,8 +50,8 @@
 #include "btstack_debug.h"
 #include "btstack_defines.h"
 
-#include "ble/gatt-service/microphone_control_service_server.h"
-#include "ble/gatt-service/audio_input_control_service_server.h"
+#include "le-audio/gatt-service/microphone_control_service_server.h"
+#include "le-audio/gatt-service/audio_input_control_service_server.h"
 
 static btstack_context_callback_registration_t  mc_mute_callback;
 static att_service_handler_t       microphone_control;

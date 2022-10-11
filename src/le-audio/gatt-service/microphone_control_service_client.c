@@ -48,7 +48,7 @@
 #include <string.h>
 
 
-#include "ble/gatt-service/microphone_control_service_client.h"
+#include "le-audio/gatt-service/microphone_control_service_client.h"
 
 #include "btstack_memory.h"
 #include "ble/core.h"

@@ -47,9 +47,9 @@
 #include "btstack_event.h"
 #include "btstack_util.h"
 
-#include "ble/gatt-service/broadcast_audio_scan_service_util.h"
-#include "ble/gatt-service/le_audio.h"
-#include "ble/gatt-service/le_audio_util.h"
+#include "le-audio/gatt-service/broadcast_audio_scan_service_util.h"
+#include "le-audio/le_audio.h"
+#include "le-audio/le_audio_util.h"
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>

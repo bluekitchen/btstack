@@ -52,7 +52,7 @@
 #include <stdint.h>
 
 #include "btstack_defines.h"
-#include "le_audio.h"
+#include "le-audio/le_audio.h"
 
 #include "broadcast_audio_scan_service_util.h"
 

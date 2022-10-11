@@ -45,9 +45,9 @@
 
 #include <stdint.h>
 #include "ble/gatt_client.h"
-#include "ble/gatt-service/broadcast_audio_scan_service_util.h"
 #include "btstack_defines.h"
-#include "le_audio.h"
+#include "le-audio/le_audio.h"
+#include "le-audio/gatt-service/broadcast_audio_scan_service_util.h"
 
 #if defined __cplusplus
 extern "C" {

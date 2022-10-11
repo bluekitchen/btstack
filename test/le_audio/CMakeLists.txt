@@ -98,6 +98,7 @@ file(GLOB SOURCES_SRC       "../../src/*.c" "../../src/*.cpp" "../../example/sco
 file(GLOB SOURCES_BLE       "../../src/ble/*.c")
 file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c")
 file(GLOB SOURCES_CLASSIC   "../../src/classic/*.c")
+file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-service/*.c")
 file(GLOB SOURCES_MESH      "../../src/mesh/*.c")
 file(GLOB SOURCES_MD5       "../../3rd-party/md5/md5.c")
 file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")
@@ -105,7 +106,7 @@ file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
 file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
-file(GLOB SOURCES_MAIN      "../../src/le-audio/le_audio_base_builder.c"  "../../src/le-audio/le_audio_base_parser.c" "main.c" "btstack_lc3plus_fraunhofer.c")
+file(GLOB SOURCES_MAIN      "main.c" "btstack_lc3plus_fraunhofer.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 
@@ -125,6 +126,7 @@ set(SOURCES
 	${SOURCES_SRC}
 	${SOURCES_BLE}
 	${SOURCES_GATT}
+	${SOURCES_LE_AUDIO}
 	${SOURCES_MESH}
 	${SOURCES_CLASSIC} 
 	${SOURCES_UECC}

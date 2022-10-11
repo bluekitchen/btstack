@@ -51,7 +51,6 @@
 #include <inttypes.h>
 
 #include "ad_parser.h"
-#include "ble/gatt-service/broadcast_audio_scan_service_client.h"
 #include "ble/sm.h"
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
@@ -65,6 +64,7 @@
 #include "gap.h"
 #include "hci.h"
 #include "l2cap.h"
+#include "le-audio/gatt-service/broadcast_audio_scan_service_client.h"
 #include "le-audio/le_audio_base_parser.h"
 
 static void show_usage(void);

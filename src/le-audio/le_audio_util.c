@@ -39,7 +39,7 @@
 
 #include "btstack_util.h"
 #include "btstack_debug.h"
-#include "ble/gatt-service/le_audio_util.h"
+#include "le-audio/le_audio_util.h"
 
 // help with buffer == NULL
 uint16_t le_audio_virtual_memcpy_helper(

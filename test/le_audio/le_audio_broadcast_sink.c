@@ -51,7 +51,6 @@
 #include <inttypes.h>
 
 #include "ad_parser.h"
-#include "ble/gatt-service/broadcast_audio_scan_service_server.h"
 #include "ble/att_server.h"
 #include "ble/sm.h"
 #include "bluetooth_data_types.h"
@@ -71,6 +70,7 @@
 #include "btstack_lc3plus_fraunhofer.h"
 #include "l2cap.h"
 #include "le-audio/le_audio_base_parser.h"
+#include "le-audio/gatt-service/broadcast_audio_scan_service_server.h"
 
 #include "le_audio_broadcast_sink.h"
 

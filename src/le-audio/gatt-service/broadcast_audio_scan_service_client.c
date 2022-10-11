@@ -46,8 +46,8 @@
 #include "btstack_util.h"
 #include "btstack_memory.h"
 
-#include "ble/gatt-service/le_audio_util.h"
-#include "ble/gatt-service/broadcast_audio_scan_service_client.h"
+#include "le-audio/le_audio_util.h"
+#include "le-audio/gatt-service/broadcast_audio_scan_service_client.h"
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>

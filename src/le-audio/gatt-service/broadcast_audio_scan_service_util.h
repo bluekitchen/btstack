@@ -42,7 +42,7 @@
 #include <stdint.h>
 
 #include "btstack_bool.h"
-#include "le_audio.h"
+#include "le-audio/le_audio.h"
 
 #if defined __cplusplus
 extern "C" {

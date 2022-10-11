@@ -51,6 +51,7 @@
 #include "classic/rfcomm.h"
 #include "btstack_event.h"
 #include "classic/goep_client.h"
+#include "classic/pbap.h"
 #include "classic/pbap_client.h"
 
 #include "btstack_stdin.h"
