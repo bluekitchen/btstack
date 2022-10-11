@@ -12,6 +12,7 @@ CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
+VPATH += ${BTSTACK_ROOT}/src/le-audio/gatt-service
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/test/mock
