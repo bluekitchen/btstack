@@ -1567,7 +1567,7 @@ static uint8_t sm_key_distribution_validate_received(sm_connection_t * sm_conn){
             if (memcmp(irk, setup->sm_peer_irk, 16) != 0){
                 // IRK doesn't match, delete bonding information
                 log_info("New IRK for %s (type %u) does not match stored IRK -> delete bonding information", bd_addr_to_str(sm_conn->sm_peer_address), sm_conn->sm_peer_addr_type);
-                le_device_db_remove(index);
+                sm_remove_le_device_db_entry(index);
             }
         }
     }
