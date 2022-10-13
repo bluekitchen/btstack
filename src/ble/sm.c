@@ -1550,6 +1550,13 @@ static int sm_lookup_by_address(sm_connection_t * sm_conn){
     return -1;
 }
 
+static void sm_remove_le_device_db_entry(uint16_t i) {
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+    hci_remove_le_device_db_entry_from_resolving_list(i);
+#endif
+    le_device_db_remove(i);
+}
+
 static uint8_t sm_key_distribution_validate_received(sm_connection_t * sm_conn){
     // if identity is provided, abort if we have bonding with same address but different irk
     if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
@@ -5283,10 +5290,7 @@ void gap_delete_bonding(bd_addr_type_t address_type, bd_addr_t address){
         // skip unused entries
         if (entry_address_type == (int) BD_ADDR_TYPE_UNKNOWN) continue;
         if ((entry_address_type == (int) address_type) && (memcmp(entry_address, address, 6) == 0)){
-#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
-            hci_remove_le_device_db_entry_from_resolving_list(i);
-#endif
-            le_device_db_remove(i);
+            sm_remove_le_device_db_entry(i);
             break;
         }
     }
