@@ -2218,15 +2218,13 @@ static bool sm_run_csrk(void){
         }
     }
 
-    // -- Continue with CSRK device lookup by public or resolvable private address
+    // -- Continue with device lookup by public or resolvable private address
     if (!sm_address_resolution_idle()){
-        log_info("LE Device Lookup: device %u/%u", sm_address_resolution_test, le_device_db_max_count());
         while (sm_address_resolution_test < le_device_db_max_count()){
             int addr_type = BD_ADDR_TYPE_UNKNOWN;
             bd_addr_t addr;
             sm_key_t irk;
             le_device_db_info(sm_address_resolution_test, &addr_type, addr, irk);
-            log_info("device type %u, addr: %s", addr_type, bd_addr_to_str(addr));
 
             // skip unused entries
             if (addr_type == BD_ADDR_TYPE_UNKNOWN){
@@ -2234,8 +2232,10 @@ static bool sm_run_csrk(void){
                 continue;
             }
 
+            log_info("LE Device Lookup: device %u of %u", sm_address_resolution_test, le_device_db_max_count());
+
             if ((sm_address_resolution_addr_type == addr_type) && (memcmp(addr, sm_address_resolution_address, 6) == 0)){
-                log_info("LE Device Lookup: found CSRK by { addr_type, address} ");
+                log_info("LE Device Lookup: found by { addr_type, address} ");
                 sm_address_resolution_handle_event(ADDRESS_RESOLUTION_SUCCEEDED);
                 break;
             }
