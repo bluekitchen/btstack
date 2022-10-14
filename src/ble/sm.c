@@ -1551,10 +1551,12 @@ static int sm_lookup_by_address(sm_connection_t * sm_conn){
 }
 
 static void sm_remove_le_device_db_entry(uint16_t i) {
-#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
-    hci_remove_le_device_db_entry_from_resolving_list(i);
-#endif
     le_device_db_remove(i);
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+    // to remove an entry from the resolving list requires its identity address, which was already deleted
+    // fully reload resolving list instead
+    gap_load_resolving_list_from_le_device_db();
+#endif
 }
 
 static uint8_t sm_key_distribution_validate_received(sm_connection_t * sm_conn){
@@ -4574,6 +4576,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;
 #endif
 
+        case SM_PH2_W4_CONNECTION_ENCRYPTED:
         case SM_PH3_RECEIVE_KEYS:
             switch(sm_pdu_code){
                 case SM_CODE_ENCRYPTION_INFORMATION:
