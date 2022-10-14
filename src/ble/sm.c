@@ -2246,6 +2246,12 @@ static bool sm_run_csrk(void){
                 continue;
             }
 
+            // skip AH if no IRK
+            if (sm_is_null_key(irk)){
+                sm_address_resolution_test++;
+                continue;
+            }
+
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
 
             log_info("LE Device Lookup: calculate AH");
