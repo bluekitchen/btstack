@@ -154,11 +154,14 @@ typedef struct {
 } media_codec_configuration_sbc_t;
 
 typedef struct {
-    media_codec_configuration_sbc_t sbc_configuration;
-    uint8_t media_sbc_codec_configuration[4];
-    uint16_t a2dp_cid;
+    // stream endpoint (static)
     uint8_t  a2dp_local_seid;
-    uint16_t avrcp_cid;
+    uint8_t  media_sbc_codec_configuration[4];
+    // connection info (dynamic)
+    bd_addr_t addr;
+    uint16_t  a2dp_cid;
+    uint16_t  avrcp_cid;
+    media_codec_configuration_sbc_t sbc_configuration;
 } source_connection_t;
 static source_connection_t source_connection;
 
@@ -814,7 +817,8 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             break;
         }  
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
-            a2dp_subevent_stream_established_get_bd_addr(packet, address);
+            a2dp_subevent_stream_established_get_bd_addr(packet, connection->addr);
+
             status = a2dp_subevent_stream_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("A2DP  Sink      : Streaming connection failed, status 0x%02x\n", status);
