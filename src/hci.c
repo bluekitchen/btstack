@@ -4884,15 +4884,15 @@ static void hci_run(void){
 
                         // check state
                         if (connection->state == SENT_DISCONNECT) return;
-                        connection->state = SENT_DISCONNECT;
+                        //connection->state = SENT_DISCONNECT;
 
                         log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, con_handle);
 
                         // cancel all l2cap connections right away instead of waiting for disconnection complete event ...
-                        hci_emit_disconnection_complete(con_handle, 0x16); // terminated by local host
+                        //hci_emit_disconnection_complete(con_handle, 0x16); // terminated by local host
 
                         // ... which would be ignored anyway as we shutdown (free) the connection now
-                        hci_shutdown_connection(connection);
+                        //hci_shutdown_connection(connection);
 
                         // finally, send the disconnect command
                         hci_send_cmd(&hci_disconnect, con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);

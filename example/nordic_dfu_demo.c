@@ -72,17 +72,54 @@
 #define REPORT_INTERVAL_MS 3000
 #define MAX_NR_CONNECTIONS 3 
 
-const uint8_t adv_data[] = {
+uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
     2, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
     // Name
-    15, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'n', 'R', 'F', ' ', 'D', 'F', 'U', ' ', 'T', 'a', 'r', 'g', 'e', 't',
+    9, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'D', 'f', 'u', '0', '0', '0', '0', '0',
     // UUID ...
     //17, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS, 0x9e, 0xca, 0xdc, 0x24, 0xe, 0xe5, 0xa9, 0xe0, 0x93, 0xf3, 0xa3, 0xb5, 0x1, 0x0, 0x40, 0x6e,
     // UUID DFU
     3, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, 0x59, 0xfe,
+    8, BLUETOOTH_DATA_TYPE_LE_BLUETOOTH_DEVICE_ADDRESS, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 };
 const uint8_t adv_data_len = sizeof(adv_data);
+
+const uint8_t bootloader_profile_data[] =
+{
+    // ATT DB Version
+    1,
+
+    // 0x0001 PRIMARY_SERVICE-GAP_SERVICE
+    0x0a, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00, 0x28, 0x00, 0x18, 
+    // 0x0002 CHARACTERISTIC-GAP_DEVICE_NAME-READ
+    0x0d, 0x00, 0x02, 0x00, 0x02, 0x00, 0x03, 0x28, 0x02, 0x03, 0x00, 0x00, 0x2a, 
+    // 0x0003 VALUE-GAP_DEVICE_NAME-READ-'nRF DFU Target'
+    // READ_ANYBODY
+    0x16, 0x00, 0x02, 0x00, 0x03, 0x00, 0x00, 0x2a, 0x6e, 0x52, 0x46, 0x20, 0x44, 0x46, 0x55, 0x20, 0x54, 0x61, 0x72, 0x67, 0x65, 0x74, 
+    //Nordic DFU service
+
+    // 0x0004 PRIMARY_SERVICE-FE59
+    0x0a, 0x00, 0x02, 0x00, 0x04, 0x00, 0x00, 0x28, 0x59, 0xfe, 
+    // 0x0005 CHARACTERISTIC-8EC90001-F315-4F60-9FB8-838830DAEA50-READ | WRITE | NOTIFY | DYNAMIC
+    0x1b, 0x00, 0x02, 0x00, 0x05, 0x00, 0x03, 0x28, 0x1a, 0x06, 0x00, 0x50, 0xea, 0xda, 0x30, 0x88, 0x83, 0xb8, 0x9f, 0x60, 0x4f, 0x15, 0xf3, 0x01, 0x00, 0xc9, 0x8e, 
+    // 0x0006 VALUE-8EC90001-F315-4F60-9FB8-838830DAEA50-READ | WRITE | NOTIFY | DYNAMIC-''
+    // READ_ANYBODY, WRITE_ANYBODY
+    0x16, 0x00, 0x0a, 0x03, 0x06, 0x00, 0x50, 0xea, 0xda, 0x30, 0x88, 0x83, 0xb8, 0x9f, 0x60, 0x4f, 0x15, 0xf3, 0x01, 0x00, 0xc9, 0x8e, 
+    // 0x0007 CLIENT_CHARACTERISTIC_CONFIGURATION
+    // READ_ANYBODY, WRITE_ANYBODY
+    0x0a, 0x00, 0x0e, 0x01, 0x07, 0x00, 0x02, 0x29, 0x00, 0x00, 
+    // 0x0008 CHARACTERISTIC-8EC90002-F315-4F60-9FB8-838830DAEA50-READ | WRITE | WRITE_WITHOUT_RESPONSE |DYNAMIC
+    0x1b, 0x00, 0x02, 0x00, 0x08, 0x00, 0x03, 0x28, 0x0e, 0x09, 0x00, 0x50, 0xea, 0xda, 0x30, 0x88, 0x83, 0xb8, 0x9f, 0x60, 0x4f, 0x15, 0xf3, 0x02, 0x00, 0xc9, 0x8e, 
+    // 0x0009 VALUE-8EC90002-F315-4F60-9FB8-838830DAEA50-READ | WRITE | WRITE_WITHOUT_RESPONSE |DYNAMIC-''
+    // READ_ANYBODY, WRITE_ANYBODY
+    0x16, 0x00, 0x0e, 0x03, 0x09, 0x00, 0x50, 0xea, 0xda, 0x30, 0x88, 0x83, 0xb8, 0x9f, 0x60, 0x4f, 0x15, 0xf3, 0x02, 0x00, 0xc9, 0x8e, 
+    //CHARACTERISTIC,  8EC90003-F315-4F60-9FB8-838830DAEA50, READ | WRITE | INDICATE | DYNAMIC
+
+    // END
+    0x00, 0x00, 
+}; // total size 89 bytes 
+
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -91,7 +128,27 @@ static uint8_t pkt_char_value[256] = {0};
 static uint8_t buttonless_char_value[16] = {0};
 static int     ctr_point_notification_enabled;
 static int     buttonless_indication_enabled;
+static uint8_t buttonless_cmd_code;
+static uint8_t bootloader_name[8] = {'D', 'f', 'u', '0', '0', '0', '0', '0'};
+static uint8_t bootloader_name_length = 8;
+static bd_addr_t le_public_addr = {0};
+
 static hci_con_handle_t att_con_handle;
+
+static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
+
+static void set_up_advertisement(uint8_t adv_data_length, uint8_t *adv_data)
+{
+    uint16_t adv_int_min = 0x0030;
+    uint16_t adv_int_max = 0x0030;
+    uint8_t adv_type = 0;
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+    gap_advertisements_enable(1);
+}
 
 /* LISTING_END(tracking): Tracking throughput */
 
@@ -102,6 +159,14 @@ static hci_con_handle_t att_con_handle;
  */
 
 /* LISTING_START(packetHandler): Packet Handler */
+#if 0
+static uint8_t adv[25] = {};
+uint8_t i = 0;
+static uint8_t le_set_randon_addr[9] = {
+    0x05, 0x20, 0x06, 0x00
+};
+#endif
+
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -115,8 +180,20 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
             if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
-                printf("To start the streaming, please run nRF Toolbox -> UART to connect.\n");
-            } 
+                memcpy(&adv_data[5], bootloader_name, bootloader_name_length);
+                memcpy(&adv_data[adv_data_len - sizeof(le_public_addr)], le_public_addr, sizeof(le_public_addr));
+                set_up_advertisement(adv_data_len, adv_data);
+            } else if (btstack_event_state_get_state(packet) == HCI_STATE_OFF) {
+                hci_power_control(HCI_POWER_ON);
+            }
+            break;
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            //hci_power_control(HCI_POWER_OFF);
+            break;
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_BD_ADDR) {
+                memcpy(le_public_addr, &packet[6], sizeof(bd_addr_t));
+            }
             break;
         case HCI_EVENT_LE_META:
             switch (hci_event_le_meta_get_subevent_code(packet)) {
@@ -169,6 +246,18 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             break;
         case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
             break;
+        case ATT_EVENT_CAN_SEND_NOW:
+            if (buttonless_indication_enabled) {
+                uint8_t rsp[3] = {0x20, 0x01, 0x01};
+                rsp[1] = buttonless_cmd_code;
+                att_server_indicate(att_con_handle, ATT_CHARACTERISTIC_8EC90003_F315_4F60_9FB8_838830DAEA50_01_VALUE_HANDLE, 
+                    &rsp, sizeof(rsp));
+                if (buttonless_cmd_code == 0x01) {
+                    hci_power_control(HCI_POWER_OFF);
+                    att_server_init(bootloader_profile_data, att_read_callback, att_write_callback);
+                }
+            }
+            break;
         case ATT_EVENT_DISCONNECTED:
             break;
         default:
@@ -176,6 +265,7 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     }
 }
 /* LISTING_END */
+
 
 /*
  * @section ATT Read
@@ -242,9 +332,17 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
         case ATT_CHARACTERISTIC_8EC90003_F315_4F60_9FB8_838830DAEA50_01_VALUE_HANDLE:
             printf("Write on buttonless characteristic: ");
             printf_hexdump(buffer, buffer_size);
+            buttonless_cmd_code = buffer[0];
+            if (buttonless_cmd_code == 0x02) {
+                bootloader_name_length = buffer[1];
+                memcpy(&bootloader_name, &buffer[2], bootloader_name_length);
+            }
+            if (buttonless_indication_enabled) {
+                att_server_request_can_send_now_event(att_con_handle);
+            }
             return 0;
         case ATT_CHARACTERISTIC_8EC90003_F315_4F60_9FB8_838830DAEA50_01_CLIENT_CONFIGURATION_HANDLE:
-            buttonless_indication_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
+            buttonless_indication_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION;
             att_con_handle = connection_handle;
             return 0;
         default:
@@ -277,15 +375,7 @@ int btstack_main(void){
     att_server_register_packet_handler(att_packet_handler);
 
     // setup advertisements
-    uint16_t adv_int_min = 0x0030;
-    uint16_t adv_int_max = 0x0030;
-    uint8_t adv_type = 0;
-    bd_addr_t null_addr;
-    memset(null_addr, 0, 6);
-    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
-    gap_advertisements_enable(1);
-
+    //set_up_advertisement(adv_data_len, adv_data);
     // turn on!
 	hci_power_control(HCI_POWER_ON);
 	    

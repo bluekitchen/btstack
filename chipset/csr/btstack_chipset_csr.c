@@ -95,14 +95,16 @@ static const uint16_t init_script_size = sizeof(init_script);
 //
 static uint32_t init_script_offset  = 0;
 static hci_transport_config_uart_t * hci_transport_config_uart = NULL;
-static int       set_bd_addr;
-static bd_addr_t bd_addr;
+static int       set_bd_addr = 1;
+static bd_addr_t bd_addr = {0xAA, 0xBB, 0xCC, 0xDD, 0xE0, 0xF0};
 
 void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer);
 
 static void chipset_init(const void * config){
     init_script_offset = 0;
     hci_transport_config_uart = NULL;
+
+    bd_addr[5] += 1;
     // check for hci_transport_config_uart_t
     if (!config) return;
     if (((hci_transport_config_t*)config)->type != HCI_TRANSPORT_CONFIG_UART) return;
@@ -176,6 +178,10 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     }
 }
 
+void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer)
+{
+
+}
 
 static const btstack_chipset_t btstack_chipset_csr = {
     "CSR",
