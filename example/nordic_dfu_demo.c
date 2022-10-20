@@ -114,7 +114,6 @@ const uint8_t bootloader_profile_data[] =
     // 0x0009 VALUE-8EC90002-F315-4F60-9FB8-838830DAEA50-READ | WRITE | WRITE_WITHOUT_RESPONSE |DYNAMIC-''
     // READ_ANYBODY, WRITE_ANYBODY
     0x16, 0x00, 0x0e, 0x03, 0x09, 0x00, 0x50, 0xea, 0xda, 0x30, 0x88, 0x83, 0xb8, 0x9f, 0x60, 0x4f, 0x15, 0xf3, 0x02, 0x00, 0xc9, 0x8e, 
-    //CHARACTERISTIC,  8EC90003-F315-4F60-9FB8-838830DAEA50, READ | WRITE | INDICATE | DYNAMIC
 
     // END
     0x00, 0x00, 
@@ -131,7 +130,7 @@ static int     buttonless_indication_enabled;
 static uint8_t buttonless_cmd_code;
 static uint8_t bootloader_name[8] = {'D', 'f', 'u', '0', '0', '0', '0', '0'};
 static uint8_t bootloader_name_length = 8;
-static bd_addr_t le_public_addr = {0};
+static bd_addr_t le_public_addr = {0xAA, 0xBB, 0xCC, 0xDD, 0xE0, 0xF0};
 
 static hci_con_handle_t att_con_handle;
 
@@ -159,13 +158,6 @@ static void set_up_advertisement(uint8_t adv_data_length, uint8_t *adv_data)
  */
 
 /* LISTING_START(packetHandler): Packet Handler */
-#if 0
-static uint8_t adv[25] = {};
-uint8_t i = 0;
-static uint8_t le_set_randon_addr[9] = {
-    0x05, 0x20, 0x06, 0x00
-};
-#endif
 
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -184,15 +176,16 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 memcpy(&adv_data[adv_data_len - sizeof(le_public_addr)], le_public_addr, sizeof(le_public_addr));
                 set_up_advertisement(adv_data_len, adv_data);
             } else if (btstack_event_state_get_state(packet) == HCI_STATE_OFF) {
+                le_public_addr[5] += 1;
+                chipset_set_bd_addr_command(le_public_addr);
                 hci_power_control(HCI_POWER_ON);
             }
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            //hci_power_control(HCI_POWER_OFF);
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_BD_ADDR) {
-                memcpy(le_public_addr, &packet[6], sizeof(bd_addr_t));
+                //memcpy(le_public_addr, &packet[6], sizeof(bd_addr_t));
             }
             break;
         case HCI_EVENT_LE_META:
@@ -374,8 +367,8 @@ int btstack_main(void){
     // register for ATT events
     att_server_register_packet_handler(att_packet_handler);
 
-    // setup advertisements
-    //set_up_advertisement(adv_data_len, adv_data);
+    // setup public addr
+    chipset_set_bd_addr_command(le_public_addr);
     // turn on!
 	hci_power_control(HCI_POWER_ON);
 	    
