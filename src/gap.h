@@ -619,7 +619,7 @@ gap_random_address_type_t gap_random_address_get_mode(void);
 /** 
  * @brief Sets a fixed random address for advertising
  * @param addr
- * @note Sets random address mode to type off
+ * @note Sets random address mode to type static
  */
 void gap_random_address_set(const bd_addr_t addr);
 
