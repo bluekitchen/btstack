@@ -386,23 +386,23 @@ static void handle_pcm_data(int16_t * data, int num_audio_frames, int num_channe
     }
 }
 
-static int media_processing_init(media_codec_configuration_sbc_t configuration){
+static int media_processing_init(media_codec_configuration_sbc_t * configuration){
     if (media_initialized) return 0;
 
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
 
 #ifdef STORE_TO_WAV_FILE
-    wav_writer_open(wav_filename, configuration.num_channels, configuration.sampling_frequency);
+    wav_writer_open(wav_filename, configuration->num_channels, configuration->sampling_frequency);
 #endif
 
     btstack_ring_buffer_init(&sbc_frame_ring_buffer, sbc_frame_storage, sizeof(sbc_frame_storage));
     btstack_ring_buffer_init(&decoded_audio_ring_buffer, decoded_audio_storage, sizeof(decoded_audio_storage));
-    btstack_resample_init(&resample_instance, configuration.num_channels);
+    btstack_resample_init(&resample_instance, configuration->num_channels);
 
     // setup audio playback
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (audio){
-        audio->init(NUM_CHANNELS, configuration.sampling_frequency, &playback_handler);
+        audio->init(NUM_CHANNELS, configuration->sampling_frequency, &playback_handler);
     }
 
     audio_stream_started = 0;
@@ -870,7 +870,7 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
                 media_processing_close();
             }
             // prepare media processing
-            media_processing_init(a2dp_conn->sbc_configuration);
+            media_processing_init(&a2dp_conn->sbc_configuration);
             // audio stream is started when buffer reaches minimal level
             break;
         
