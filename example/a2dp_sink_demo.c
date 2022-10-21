@@ -625,11 +625,11 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     uint8_t  avrcp_subevent_value[256];
     uint8_t play_status;
 
-    a2dp_sink_demo_avrcp_connection_t * connection = &a2dp_sink_demo_avrcp_connection;
+    a2dp_sink_demo_avrcp_connection_t * avrcp_connection = &a2dp_sink_demo_avrcp_connection;
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
-    if (connection->avrcp_cid == 0) return;
+    if (avrcp_connection->avrcp_cid == 0) return;
 
     memset(avrcp_subevent_value, 0, sizeof(avrcp_subevent_value));
     switch (packet[2]){
@@ -638,7 +638,16 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             break;
         case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:
             printf("AVRCP Controller: Playback status changed %s\n", avrcp_play_status2str(avrcp_subevent_notification_playback_status_changed_get_play_status(packet)));
-            return;
+            play_status = avrcp_subevent_notification_playback_status_changed_get_play_status(packet);
+            switch (play_status){
+                case AVRCP_PLAYBACK_STATUS_PLAYING:
+                    avrcp_connection->playing = true;
+                    break;
+                default:
+                    avrcp_connection->playing = false;
+                    break;
+            }
+            printf("AVRCP Controller: Playback status changed %s\n", avrcp_play_status2str(play_status));            return;
         case AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED:
             printf("AVRCP Controller: Playing content changed\n");
             return;
@@ -695,16 +704,6 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
                 avrcp_subevent_play_status_get_song_length(packet), 
                 avrcp_subevent_play_status_get_song_position(packet),
                 avrcp_play_status2str(avrcp_subevent_play_status_get_play_status(packet)));
-            play_status = avrcp_subevent_notification_playback_status_changed_get_play_status(packet);
-            switch (play_status){
-                case AVRCP_PLAYBACK_STATUS_PLAYING:
-                    connection->playing = true;
-                    break;
-                default:
-                    connection->playing = false;
-                    break;
-            }
-            printf("AVRCP Controller: Playback status changed %s\n", avrcp_play_status2str(play_status));
             break;
         
         case AVRCP_SUBEVENT_OPERATION_COMPLETE:
