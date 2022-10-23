@@ -4896,6 +4896,7 @@ static void hci_run(void){
 
                         // finally, send the disconnect command
                         hci_send_cmd(&hci_disconnect, con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
+                        connection->state = SENT_DISCONNECT;
                         return;
                     }
 
