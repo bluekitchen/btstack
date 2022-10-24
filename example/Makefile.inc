@@ -89,7 +89,6 @@ GATT_CLIENT += \
 	device_information_service_client.c 	\
 	scan_parameters_service_client.c 	    \
 	hids_client.c 	    					\
-	microphone_control_service_client.c    \
 
 PAN += \
 	pan.c \
