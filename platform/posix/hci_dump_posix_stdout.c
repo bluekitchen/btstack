@@ -82,6 +82,12 @@ static void hci_dump_posix_stdout_packet(uint8_t packet_type, uint8_t in, uint8_
             printf("EVT <= ");
             break;
         case HCI_ACL_DATA_PACKET:
+#ifdef HCI_DUMP_STDOUT_MAX_SIZE_ACL
+            if (len > HCI_DUMP_STDOUT_MAX_SIZE_ACL){
+                printf("LOG -- ACL %s, size %u\n", in ? "in" : "out", len);
+                return;
+            }
+#endif
             if (in) {
                 printf("ACL <= ");
             } else {
@@ -89,6 +95,12 @@ static void hci_dump_posix_stdout_packet(uint8_t packet_type, uint8_t in, uint8_
             }
             break;
         case HCI_SCO_DATA_PACKET:
+#ifdef HCI_DUMP_STDOUT_MAX_SIZE_SCO
+            if (len > HCI_DUMP_STDOUT_MAX_SIZE_SCO){
+                printf("LOG -- SCO %s, size %u\n", in ? "in" : "out", len);
+                return;
+            }
+#endif
             if (in) {
                 printf("SCO <= ");
             } else {
@@ -96,6 +108,12 @@ static void hci_dump_posix_stdout_packet(uint8_t packet_type, uint8_t in, uint8_
             }
             break;
         case HCI_ISO_DATA_PACKET:
+#ifdef HCI_DUMP_STDOUT_MAX_SIZE_ISO
+            if (len > HCI_DUMP_STDOUT_MAX_SIZE_ISO){
+                printf("LOG -- ISO %s, size %u\n", in ? "in" : "out", len);
+                return;
+            }
+#endif
             if (in) {
                 printf("ISO <= ");
             } else {

@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
-- GATT Service: Broadcast Audio Scamn Service Server and Client (BASS 1.0)
+- GATT Service: Broadcast Audio Scan Service Server and Client (BASS 1.0)
+- hci_dump_stdout: allow to truncate ACL, SCO and ISO packets with HCI_DUMP_STDOUT_MAX_SIZE_*
 
 ### Fixed
 - ESP32: fix init for BR/EDR Only mode

@@ -216,6 +216,15 @@ If implemented, bonding information is stored in Non-volatile memory. For Classi
 | NVM_NUM_DEVICE_DB_ENTRIES | Max number of LE Device DB entries that can be stored                                        |
 | NVN_NUM_GATT_SERVER_CCC   | Max number of 'Client Characteristic Configuration' values that can be stored by GATT Server |
 
+### HCI Dump Stdout directives {#sec:hciDumpStdout}
+
+Allow to truncate HCI ACL and SCO packets to reduce console output for debugging audio applications.
+
+| \#define                     | Description                               |
+|------------------------------|-------------------------------------------|
+| HCI_DUMP_STDOUT_MAX_SIZE_ACL | Max size of ACL packets to log via stdout |
+| HCI_DUMP_STDOUT_MAX_SIZE_SCO | Max size of SCO packets to log via stdout |
+| HCI_DUMP_STDOUT_MAX_SIZE_ISO | Max size of ISO packets to log via stdout |
 
 ### SEGGER Real Time Transfer (RTT) directives {#sec:rttConfiguration}
 
