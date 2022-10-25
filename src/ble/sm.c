@@ -1535,7 +1535,7 @@ static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
     sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
 }
 
-static int sm_lookup_by_address(sm_connection_t * sm_conn){
+static int sm_lookup_by_address(void) {
     int i;
     for (i=0; i < le_device_db_max_count(); i++){
         bd_addr_t address;
@@ -1562,7 +1562,7 @@ static void sm_remove_le_device_db_entry(uint16_t i) {
 static uint8_t sm_key_distribution_validate_received(sm_connection_t * sm_conn){
     // if identity is provided, abort if we have bonding with same address but different irk
     if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
-        int index = sm_lookup_by_address(sm_conn);
+        int index = sm_lookup_by_address();
         if (index >= 0){
             sm_key_t irk;
             le_device_db_info(index, NULL, NULL, irk);

@@ -271,6 +271,16 @@ static const char * default_classic_name = "BTstack 00:00:00:00:00:00";
 static uint8_t disable_l2cap_timeouts = 0;
 #endif
 
+static bool btstack_is_null(uint8_t * data, uint16_t size){
+    uint16_t i;
+    for (i=0; i < size ; i++){
+        if (data[i] != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // reset connection state on create and on reconnect
 // don't overwrite addr, con handle, role
 static void hci_connection_init(hci_connection_t * conn){
@@ -3194,16 +3204,6 @@ static bool hci_ssp_security_level_possible_for_io_cap(gap_security_level_t leve
         if (io_cap_local  == SSP_IO_CAPABILITY_DISPLAY_ONLY)       return false;
     }
     // LEVEL 2 requires SSP, which is a given
-    return true;
-}
-
-static bool btstack_is_null(uint8_t * data, uint16_t size){
-    uint16_t i;
-    for (i=0; i < size ; i++){
-        if (data[i] != 0) {
-            return false;
-        }
-    }
     return true;
 }
 
