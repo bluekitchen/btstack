@@ -1350,7 +1350,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
 bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle){
     bool in_group    = false;
     uint16_t prev_handle = 0;
-    uint16_t service_start;
+    uint16_t service_start = 0;
 
     uint8_t attribute_value[2];
     int attribute_len = sizeof(attribute_value);

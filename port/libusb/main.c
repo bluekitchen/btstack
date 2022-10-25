@@ -50,6 +50,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <hci_dump_posix_stdout.h>
 
 #include "btstack_config.h"
 
