@@ -39,6 +39,7 @@
 
 #include <fcntl.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "btstack_chipset_intel_firmware.h"
 
@@ -182,7 +183,7 @@ static void state_machine(uint8_t * packet);
 // read data from fw file and send it via intel_secure + update state
 static int intel_send_fragment(uint8_t fragment_type, uint8_t len){
     size_t res = fread(fw_buffer, 1, len, fw_file);
-    log_info("offset %6u, read %3u -> res %d", fw_offset, len, res);
+    log_info("offset %6" PRId32 ", read %3u -> res %" PRId32 "", (int32_t)fw_offset, len, (int32_t)res);
     fw_offset += res;
     state++;
     return transport_send_intel_secure(fragment_type, fw_buffer, len);
@@ -194,12 +195,12 @@ static int intel_send_ddc(void){
     size_t res;
     // read len
     res = fread(fw_buffer, 1, 1, fw_file);
-    log_info("offset %6u, read 1 -> res %d", fw_offset, res);
+    log_info("offset %6" PRId32 ", read 1 -> res %" PRId32 "", (int32_t)fw_offset, (int32_t)res);
     if (res == 0) return -1;
     uint8_t len = fw_buffer[0];
     fw_offset += 1;
     res = fread(&fw_buffer[1], 1, len, fw_file);
-    log_info("offset %6u, read %u -> res %d", fw_offset, 1, res);
+    log_info("offset %6" PRId32 ", read %u -> res %" PRId32 "", (int32_t)fw_offset, 1, (int32_t)res);
     return transport_send_intel_ddc(fw_buffer, 1 + len);
 }
 
@@ -329,7 +330,7 @@ static void state_machine(uint8_t * packet){
         case 6:
             // skip 4 bytes
             res = fread(fw_buffer, 1, 4, fw_file);
-            log_info("read res %d", res);
+            log_info("read res %d", (int)res);
             fw_offset += res;
 
             // send signature / part 1 - offset 388
@@ -346,7 +347,7 @@ static void state_machine(uint8_t * packet){
             buffer_offset = 0;
             do {
                 res = fread(&fw_buffer[buffer_offset], 1, 3, fw_file);
-                log_info("fw_offset %6u, buffer_offset %u, read %3u -> res %d", fw_offset, buffer_offset, 3, res);
+                log_info("fw_offset %6" PRId32 ", buffer_offset %" PRId32 ", read %3u -> res %" PRId32 "", (int32_t)fw_offset, (int32_t)buffer_offset, 3, (int32_t)res);
                 fw_offset += res;
                 if (res == 0 ){
                     // EOF
