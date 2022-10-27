@@ -88,9 +88,10 @@
 #define MAX_SAMPLES_PER_FRAME 480
 
 // playback
-#define MAX_NUM_LC3_FRAMES   5
+#define MAX_NUM_LC3_FRAMES   3
 #define MAX_BYTES_PER_SAMPLE 4
 #define PLAYBACK_BUFFER_SIZE (MAX_NUM_LC3_FRAMES * MAX_SAMPLES_PER_FRAME * MAX_BYTES_PER_SAMPLE)
+#define PLAYBACK_START_MS 30
 
 // analysis
 #define PACKET_PREFIX_LEN 10
@@ -113,7 +114,8 @@ static enum {
     APP_W4_CIG_COMPLETE,
     APP_W4_CIS_CREATED,
     APP_STREAMING,
-    APP_IDLE
+    APP_IDLE,
+    APP_SHUTDOWN
 } app_state = APP_W4_WORKING;
 
 //
@@ -174,6 +176,8 @@ static btstack_lc3plus_fraunhofer_decoder_t fraunhofer_decoder_contexts[MAX_CHAN
 static void * decoder_contexts[MAX_NR_BIS];
 
 // playback
+static uint16_t playback_start_threshold_bytes;
+static bool     playback_active;
 static uint8_t playback_buffer_storage[PLAYBACK_BUFFER_SIZE];
 static btstack_ring_buffer_t playback_buffer;
 
@@ -185,28 +189,31 @@ static uint16_t               cached_iso_sdu_len;
 
 static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_samples){
     // called from lower-layer but guaranteed to be on main thread
-    uint32_t bytes_needed = num_samples * num_channels * 2;
-
-    static bool underrun = true;
-
     log_info("Playback: need %u, have %u", num_samples, btstack_ring_buffer_bytes_available(&playback_buffer) / (num_channels * 2));
 
-    if (bytes_needed > btstack_ring_buffer_bytes_available(&playback_buffer)){
-        memset(buffer, 0, bytes_needed);
-        if (underrun == false){
-            log_info("Playback underrun");
-            underrun = true;
+    uint32_t bytes_needed = num_samples * num_channels * 2;
+    if (playback_active == false){
+        if (btstack_ring_buffer_bytes_available(&playback_buffer) >= playback_start_threshold_bytes) {
+            log_info("Playback started");
+            playback_active = true;
         }
-        return;
+    } else {
+        if (bytes_needed > btstack_ring_buffer_bytes_available(&playback_buffer)) {
+            log_info("Playback underrun");
+            // empty buffer
+            uint32_t bytes_read;
+            btstack_ring_buffer_read(&playback_buffer, (uint8_t *) buffer, bytes_needed, &bytes_read);
+            playback_active = false;
+        }
     }
 
-    if (underrun){
-        underrun = false;
-        log_info("Playback started");
+    if (playback_active){
+        uint32_t bytes_read;
+        btstack_ring_buffer_read(&playback_buffer, (uint8_t *) buffer, bytes_needed, &bytes_read);
+        btstack_assert(bytes_read == bytes_needed);
+    } else {
+        memset(buffer, 0, bytes_needed);
     }
-    uint32_t bytes_read;
-    btstack_ring_buffer_read(&playback_buffer, (uint8_t *) buffer, bytes_needed, &bytes_read);
-    btstack_assert(bytes_read == bytes_needed);
 }
 
 static void setup_lc3_decoder(void){
@@ -259,12 +266,16 @@ static void enter_streaming(void){
     // init playback buffer
     btstack_ring_buffer_init(&playback_buffer, playback_buffer_storage, PLAYBACK_BUFFER_SIZE);
 
+    // calc start threshold in bytes for PLAYBACK_START_MS
+    playback_start_threshold_bytes = (sampling_frequency_hz / 1000 * PLAYBACK_START_MS) * num_channels * 2;
+
     // start playback
     const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
     if (sink != NULL){
         sink->init(num_channels, sampling_frequency_hz, le_audio_connection_sink_playback);
         sink->start_stream();
     }
+
 }
 
 static void start_scanning() {
@@ -681,6 +692,7 @@ static void stdin_process(char c){
             break;
 #endif
             case 'x':
+            app_state = APP_SHUTDOWN;
             close_files();
             printf("Shutdown...\n");
             hci_power_control(HCI_POWER_OFF);
