@@ -63,6 +63,8 @@ C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_client.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/nordic_dfu_service_server.c
+C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/nordic_spp_service_server.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt_client.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/le_device_db_memory.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/le_device_db_tlv.c
@@ -404,6 +406,7 @@ EXAMPLES += 				\
 	spp_counter 			\
 	spp_streamer			\
 	spp_streamer_client     \
+	nordic_spp_le_counter	\
 	nordic_dfu_demo			\
 
 
@@ -420,6 +423,7 @@ GATT_FILES = \
 	sm_pairing_central.gatt \
 	spp_and_gatt_counter.gatt \
 	spp_and_gatt_streamer.gatt \
+	nordic_spp_le_counter.gatt	\
 	nordic_dfu_demo.gatt	   \
 
 # SBC codec

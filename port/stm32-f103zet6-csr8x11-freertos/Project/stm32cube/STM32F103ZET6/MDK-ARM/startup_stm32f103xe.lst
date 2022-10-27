@@ -558,12 +558,11 @@ ARM Macro Assembler    Page 9
               00000000 
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M3 --apcs=interw
 ork --depend=stm32f103zet6\startup_stm32f103xe.d -ostm32f103zet6\startup_stm32f
-103xe.o -IF:\study_material\work_project\bt_stack_bluekitchen\bluekitchen\btsta
-ck\port\stm32-f103zet6-csr8x11-freertos\Project\stm32cube\STM32F103ZET6\MDK-ARM
-\RTE\_STM32F103ZET6 -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0\CMSIS\Include -IC:\Ke
-il_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.1.0\Device\Include --predefine="__UVISION_V
-ERSION SETA 522" --predefine="_RTE_ SETA 1" --predefine="STM32F10X_HD SETA 1" -
--list=startup_stm32f103xe.lst startup_stm32f103xe.s
+103xe.o -I.\RTE\_STM32F103ZET6 -IC:\Users\heye\AppData\Local\Arm\Packs\ARM\CMSI
+S\5.8.0\CMSIS\Core\Include -IC:\Users\heye\AppData\Local\Arm\Packs\Keil\STM32F1
+xx_DFP\2.3.0\Device\Include --predefine="__EVAL SETA 1" --predefine="__UVISION_
+VERSION SETA 536" --predefine="_RTE_ SETA 1" --predefine="STM32F10X_HD SETA 1" 
+--predefine="_RTE_ SETA 1" --list=startup_stm32f103xe.lst startup_stm32f103xe.s
 
 
 
@@ -1460,4 +1459,4 @@ Symbol: __use_two_region_memory
       None
 Comment: __use_two_region_memory unused
 3 symbols
-426 symbols in table
+427 symbols in table

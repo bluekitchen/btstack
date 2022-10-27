@@ -22,6 +22,6 @@
 "stm32f103zet6\stm32f1xx_hal_exti.o"
 "stm32f103zet6\system_stm32f1xx.o"
 --strict --scatter "STM32F103ZET6\STM32F103ZET6.sct"
---summary_stderr --info summarysizes --map --xref --callgraph --symbols
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
 --list "STM32F103ZET6.map" -o STM32F103ZET6\STM32F103ZET6.axf

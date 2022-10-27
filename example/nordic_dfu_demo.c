@@ -61,7 +61,7 @@
 #include <string.h>
 
 #include "btstack.h"
-//#include "ble/gatt-service/nordic_dfu_service.h"
+#include "ble/gatt-service/nordic_dfu_service_server.h"
 #include "nordic_dfu_demo.h"
 
 uint8_t adv_data[] = {
@@ -343,6 +343,16 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 }
 /* LISTING_END */
 
+static void nordic_dfu_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    hci_con_handle_t con_handle;
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            break;
+        default:
+            break;
+    }
+}
+
 int btstack_main(void);
 int btstack_main(void){
     // register for HCI events
@@ -358,13 +368,17 @@ int btstack_main(void){
     sm_init();
 
     // setup ATT server
-    att_server_init(profile_data, att_read_callback, att_write_callback);
+    att_server_init(profile_data, NULL, NULL);
     
+    // setup nordic dfu server
+    nordic_dfu_service_server_init(nordic_dfu_packet_handler);
+
     // register for ATT events
     att_server_register_packet_handler(att_packet_handler);
 
     // setup public addr
     chipset_set_bd_addr_command(le_public_addr);
+
     // turn on!
 	hci_power_control(HCI_POWER_ON);
 	    
