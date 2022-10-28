@@ -4478,6 +4478,9 @@ static void hci_state_reset(void){
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
     }
 #endif
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+    hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION;
+#endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
     hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_INVALID;

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - ESP32: fix init for BR/EDR Only mode
+- GAP: reload LE Resolving List after power-cycle 
  
 ### Changed
 - Mesh: move GATT Services into src/mesh/gatt-service
