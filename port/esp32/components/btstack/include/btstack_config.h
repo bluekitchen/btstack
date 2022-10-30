@@ -47,6 +47,11 @@
 // https://github.com/espressif/esp-idf/issues/5494
 #define ENABLE_CLASSIC_LEGACY_CONNECTIONS_FOR_SCO_DEMOS
 
+// support CTKD if LE is available, too
+#ifdef ENABLE_BLE
+#define ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+#endif
+
 #define NVM_NUM_LINK_KEYS 16
 
 #endif
