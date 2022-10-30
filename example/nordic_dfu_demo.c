@@ -61,7 +61,7 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "ble/gatt-service/nordic_dfu_service_server.h"
+#include "nrf_dfu_ble.h"
 #include "nordic_dfu_demo.h"
 
 uint8_t adv_data[] = {
@@ -371,7 +371,7 @@ int btstack_main(void){
     att_server_init(profile_data, NULL, NULL);
     
     // setup nordic dfu server
-    nordic_dfu_service_server_init(nordic_dfu_packet_handler);
+    nrf_dfu_ble_init(nordic_dfu_packet_handler);
 
     // register for ATT events
     att_server_register_packet_handler(att_packet_handler);

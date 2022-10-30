@@ -28,13 +28,15 @@ OPT = -O0
 # compile variables
 ######################################
 
-BR_EDR_ENABLE = y
+BR_EDR_ENABLE = n
 
 BLE_ENABLE = y
 
 EXAMPLE_PLUS_ENABLE = y
 
 FREERTOS_ENABLE = n
+
+3RD_PARTY_ENABLE = n
 
 AT_CMD_ENABLE = n
 
@@ -63,7 +65,7 @@ C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_client.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c
-C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/nordic_dfu_service_server.c
+#C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/nordic_dfu_service_server.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt-service/nordic_spp_service_server.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/gatt_client.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/le_device_db_memory.c
@@ -130,6 +132,7 @@ else
 	C_SOURCES += ${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c
 endif
 
+ifeq (${3RD_PARTY_ENABLE}, y)
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c
@@ -163,15 +166,23 @@ C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/altcp_proxyconnec
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/fs.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c
+endif
+
+VPATH += ${BTSTACK_ROOT}/example/nordic_dfu
+C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_ble.c
+C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_req_handler.c
+C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_settings.c
+#C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_flash.c
+#C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_validation.c
+C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_handling_error.c
+C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/crc32.c
+
+
+
+C_SOURCES += ${BTSTACK_ROOT}/example/sco_demo_util.c
 C_SOURCES += ${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c
 C_SOURCES += ${BTSTACK_ROOT}/platform/lwip/bnep_lwip.c
 C_SOURCES += ${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c
-C_SOURCES += ${BTSTACK_ROOT}/example/sco_demo_util.c
-#C_SOURCES += ${BTSTACK_ROOT}/example/gap_le_advertisements.c
-#C_SOURCES += ${BTSTACK_ROOT}/example/gap_link_keys.c
-#C_SOURCES += ${BTSTACK_ROOT}/example/hid_mouse_demo.c
-#C_SOURCES += ${BTSTACK_ROOT}/example/gatt_device_information_query.c
-#C_SOURCES += ${BTSTACK_ROOT}/example/gatt_counter.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_audio.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_crypto.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_hid_parser.c
@@ -337,6 +348,7 @@ C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip/port
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/csr
 C_INCLUDES += -I${BTSTACK_ROOT}/tool
+C_INCLUDES += -I${BTSTACK_ROOT}/example/nordic_dfu
 
 C_INCLUDES += -I Port
 C_INCLUDES += -I Src
@@ -368,7 +380,7 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
-EXAMPLES += 				\
+#EXAMPLES += 				\
 	audio_duplex            \
 	a2dp_sink_demo			\
 	headset_demo			\
@@ -410,7 +422,7 @@ EXAMPLES += 				\
 	nordic_dfu_demo			\
 
 
-GATT_FILES = \
+#GATT_FILES = \
 	ancs_client_demo.gatt \
 	gatt_counter.gatt \
 	gatt_streamer_server.gatt \
@@ -425,6 +437,9 @@ GATT_FILES = \
 	spp_and_gatt_streamer.gatt \
 	nordic_spp_le_counter.gatt	\
 	nordic_dfu_demo.gatt	   \
+
+EXAMPLES = nordic_dfu_demo
+GATT_FILES = nordic_dfu_demo.gatt
 
 # SBC codec
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc

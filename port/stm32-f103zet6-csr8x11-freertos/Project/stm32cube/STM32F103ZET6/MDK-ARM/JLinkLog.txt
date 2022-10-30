@@ -1,67 +1,33 @@
-T219C 000:036.635   SEGGER J-Link V7.22b Log File
-T219C 000:036.734   DLL Compiled: Jun 17 2021 17:22:49
-T219C 000:036.754   Logging started @ 2022-10-27 12:37
-T219C 000:036.773 - 36.782ms
-T219C 000:036.795 JLINK_SetWarnOutHandler(...)
-T219C 000:036.814 - 0.029ms
-T219C 000:036.834 JLINK_OpenEx(...)
-T219C 000:038.107   Firmware: J-Link ARM-OB STM32 compiled Aug 22 2012 19:52:04
-T219C 000:038.600   Firmware: J-Link ARM-OB STM32 compiled Aug 22 2012 19:52:04
-T219C 000:041.271   Hardware: V7.00
-T219C 000:041.313   S/N: 20090928
-T219C 000:041.347   OEM: SEGGER
-T219C 000:041.381   Feature(s): RDI,FlashDL,FlashBP,JFlash,GDBFull
-T219C 000:042.777   TELNET listener socket opened on port 19021
-T219C 000:042.956   WEBSRV Starting webserver
-T219C 000:043.087   WEBSRV Webserver running on local port 19080
-T219C 000:043.119 - 6.294ms returns "O.K."
-T219C 000:043.145 JLINK_GetEmuCaps()
-T219C 000:043.165 - 0.028ms returns 0x88EA5833
-T219C 000:043.188 JLINK_TIF_GetAvailable(...)
-T219C 000:043.539 - 0.365ms
-T219C 000:043.566 JLINK_SetErrorOutHandler(...)
-T219C 000:043.585 - 0.028ms
-T219C 000:043.613 JLINK_ExecCommand("ProjectFile = "D:\study_material\bluekitchen\source_code\bluekitchen\port\stm32-f103zet6-csr8x11-freertos\Project\stm32cube\STM32F103ZET6\MDK-ARM\JLinkSettings.ini"", ...). 
-T219C 000:049.708 - 6.109ms returns 0x00
-T219C 000:051.909 JLINK_ExecCommand("Device = STM32F103ZE", ...). 
-T219C 000:053.990   Device "STM32F103ZE" selected.
-T219C 000:054.334 - 2.408ms returns 0x00
-T219C 000:054.363 JLINK_GetHardwareVersion()
-T219C 000:054.383 - 0.029ms returns 70000
-T219C 000:054.404 JLINK_GetDLLVersion()
-T219C 000:054.422 - 0.028ms returns 72202
-T219C 000:054.442 JLINK_GetOEMString(...)
-T219C 000:054.461 JLINK_GetFirmwareString(...)
-T219C 000:054.482 - 0.030ms
-T219C 000:059.878 JLINK_GetDLLVersion()
-T219C 000:059.905 - 0.036ms returns 72202
-T219C 000:059.925 JLINK_GetCompileDateTime()
-T219C 000:059.944 - 0.028ms
-T219C 000:061.684 JLINK_GetFirmwareString(...)
-T219C 000:061.708 - 0.033ms
-T219C 000:063.471 JLINK_GetHardwareVersion()
-T219C 000:063.495 - 0.033ms returns 70000
-T219C 000:065.236 JLINK_GetSN()
-T219C 000:065.261 - 0.034ms returns 20090928
-T219C 000:066.979 JLINK_GetOEMString(...)
-T219C 000:070.434 JLINK_TIF_Select(JLINKARM_TIF_SWD)
-T219C 000:071.409 - 0.987ms returns 0x00
-T219C 000:071.433 JLINK_HasError()
-T219C 000:071.456 JLINK_SetSpeed(5000)
-T219C 000:071.757 - 0.319ms
-T219C 000:071.791 JLINK_GetId()
-T219C 000:074.477   InitTarget() start
-T219C 000:074.511    J-Link Script File: Executing InitTarget()
-T219C 000:079.965   Can not attach to CPU. Trying connect under reset.
-T219C 000:136.730   Connecting to CPU via connect under reset failed.
-T219C 000:189.874   InitTarget() end
-T219C 000:254.255   InitTarget() start
-T219C 000:254.297    J-Link Script File: Executing InitTarget()
-T219C 000:260.075   Can not attach to CPU. Trying connect under reset.
-T219C 000:316.727   Connecting to CPU via connect under reset failed.
-T219C 000:370.140   InitTarget() end
-T219C 000:370.180 - 298.397ms returns 0x00000000
-T219C 001:353.386 JLINK_Close()
-T219C 001:367.699 - 14.336ms
-T219C 001:367.732   
-T219C 001:367.752   Closed
+
+T3E04 000:043 SEGGER J-Link V6.12a Log File (0000ms, 0014ms total)
+T3E04 000:043 DLL Compiled: Dec  2 2016 16:44:26 (0000ms, 0014ms total)
+T3E04 000:043 Logging started @ 2022-10-29 11:49 (0000ms, 0014ms total)
+T3E04 000:043 JLINK_SetWarnOutHandler(...) (0000ms, 0014ms total)
+T3E04 000:044 JLINK_OpenEx(...)
+Firmware: J-Link ARM-OB STM32 compiled Aug 22 2012 19:52:04
+Hardware: V7.00
+S/N: 20090928
+Feature(s): RDI,FlashDL,FlashBP,JFlash,GDBFullWEBSRV Webserver running on local port 19080 (0009ms, 0024ms total)
+T3E04 000:044   returns O.K. (0009ms, 0024ms total)
+T3E04 000:053 JLINK_GetEmuCaps()  returns 0x88EA5833 (0000ms, 0024ms total)
+T3E04 000:053 JLINK_TIF_GetAvailable(...) (0000ms, 0024ms total)
+T3E04 000:053 JLINK_SetErrorOutHandler(...) (0000ms, 0024ms total)
+T3E04 000:053 JLINK_ExecCommand("ProjectFile = "D:\study_material\bluekitchen\source_code\bluekitchen\port\stm32-f103zet6-csr8x11-freertos\Project\stm32cube\STM32F103ZET6\MDK-ARM\JLinkSettings.ini"", ...). C:\Program Files (x86)\SEGGER\JLink_V612a\JLinkDevices.xml evaluated successfully.  returns 0x00 (0067ms, 0091ms total)
+T3E04 000:124 JLINK_ExecCommand("Device = STM32F103ZE", ...). Device "STM32F103ZE" selected.  returns 0x00 (0003ms, 0094ms total)
+T3E04 000:127 JLINK_ExecCommand("DisableConnectionTimeout", ...).   returns 0x01 (0000ms, 0094ms total)
+T3E04 000:127 JLINK_GetHardwareVersion()  returns 0x11170 (0000ms, 0094ms total)
+T3E04 000:127 JLINK_GetDLLVersion()  returns 61201 (0000ms, 0094ms total)
+T3E04 000:127 JLINK_GetFirmwareString(...) (0000ms, 0094ms total)
+T3E04 000:134 JLINK_GetDLLVersion()  returns 61201 (0000ms, 0094ms total)
+T3E04 000:134 JLINK_GetCompileDateTime() (0000ms, 0094ms total)
+T3E04 000:136 JLINK_GetFirmwareString(...) (0000ms, 0094ms total)
+T3E04 000:138 JLINK_GetHardwareVersion()  returns 0x11170 (0000ms, 0094ms total)
+T3E04 000:147 JLINK_TIF_Select(JLINKARM_TIF_SWD)  returns 0x00 (0001ms, 0095ms total)
+T3E04 000:148 JLINK_SetSpeed(1000) (0000ms, 0095ms total)
+T3E04 000:148 JLINK_GetId() >0x108 TIF> >0x108 TIF>STM32 (connect): Can not attach to CPU. Trying connect under reset. >0x108 TIF> >0x108 TIF>
+  ***** Error: STM32: Connecting to CPU via connect under reset failed. >0x0D TIF> >0x0D TIF> >0x0D TIF> >0x0D TIF> >0x0D TIF> >0x0D TIF> >0x0D TIF> >0x0D TIF> >0x0D TIF> >0x0D TIF> >0x108 TIF> >0x108 TIF>STM32 (connect): Can not attach to CPU. Trying connect under reset. >0x108 TIF> >0x108 TIF>
+  ***** Error: 
+STM32: Connecting to CPU via connect under reset failed.  returns 0x00000000 (0688ms, 0783ms total)
+T3E04 001:558 JLINK_Close() (0011ms, 0794ms total)
+T3E04 001:558  (0012ms, 0795ms total)
+T3E04 001:558 Closed (0012ms, 0795ms total)
