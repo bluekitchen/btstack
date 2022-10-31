@@ -5369,9 +5369,7 @@ static void hci_host_num_completed_packets(void){
 static void hci_halting_timeout_handler(btstack_timer_source_t * ds){
     UNUSED(ds);
     hci_stack->substate = HCI_HALTING_CLOSE;
-    // allow packet handlers to defer final shutdown
-    hci_emit_state();
-    hci_run();
+    hci_halting_run();
 }   
 
 static bool hci_run_acl_fragments(void){
