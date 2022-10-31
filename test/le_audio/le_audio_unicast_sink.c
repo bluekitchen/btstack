@@ -76,7 +76,7 @@
 #include "wav_util.h"
 #endif
 
-#define DEBUG_PLC
+//#define DEBUG_PLC
 #ifdef DEBUG_PLC
 #define printf_plc(...) printf(__VA_ARGS__)
 #else
@@ -88,10 +88,10 @@
 #define MAX_SAMPLES_PER_FRAME 480
 
 // playback
-#define MAX_NUM_LC3_FRAMES   3
+#define MAX_NUM_LC3_FRAMES   15
 #define MAX_BYTES_PER_SAMPLE 4
 #define PLAYBACK_BUFFER_SIZE (MAX_NUM_LC3_FRAMES * MAX_SAMPLES_PER_FRAME * MAX_BYTES_PER_SAMPLE)
-#define PLAYBACK_START_MS 30
+#define PLAYBACK_START_MS (MAX_NUM_LC3_FRAMES * 20 / 3)
 
 // analysis
 #define PACKET_PREFIX_LEN 10
@@ -120,11 +120,6 @@ static enum {
 
 //
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-uint32_t last_samples_report_ms;
-uint32_t samples_received;
-uint32_t samples_dropped;
-uint16_t frames_per_second[MAX_CHANNELS];
 
 // remote info
 static char             remote_name[20];
@@ -181,6 +176,12 @@ static bool     playback_active;
 static uint8_t playback_buffer_storage[PLAYBACK_BUFFER_SIZE];
 static btstack_ring_buffer_t playback_buffer;
 
+// statistics
+static uint32_t samples_received;
+static uint32_t samples_played;
+static uint32_t samples_dropped;
+static uint32_t last_samples_report_ms;
+
 // PLC state
 #define PLC_GUARD_MS 1
 
@@ -191,6 +192,8 @@ static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_sam
     // called from lower-layer but guaranteed to be on main thread
     log_info("Playback: need %u, have %u", num_samples, btstack_ring_buffer_bytes_available(&playback_buffer) / (num_channels * 2));
 
+    samples_played += num_samples;
+
     uint32_t bytes_needed = num_samples * num_channels * 2;
     if (playback_active == false){
         if (btstack_ring_buffer_bytes_available(&playback_buffer) >= playback_start_threshold_bytes) {
@@ -200,6 +203,7 @@ static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_sam
     } else {
         if (bytes_needed > btstack_ring_buffer_bytes_available(&playback_buffer)) {
             log_info("Playback underrun");
+            printf("Playback Underrun\n");
             // empty buffer
             uint32_t bytes_read;
             btstack_ring_buffer_read(&playback_buffer, (uint8_t *) buffer, bytes_needed, &bytes_read);
@@ -350,13 +354,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (hci_event_disconnection_complete_get_connection_handle(packet) == remote_handle){
                 printf("Disconnected, back to scanning\n");
+                // close files
+                close_files();
                 // stop playback
                 const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
                 if (sink != NULL){
                     sink->stop_stream();
                 }
-
-                start_scanning();
+                if (app_state != APP_SHUTDOWN){
+                    start_scanning();
+                }
             }
             break;
         case GAP_EVENT_ADVERTISING_REPORT:
@@ -640,7 +647,6 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         log_info("Samples in playback buffer %5u", btstack_ring_buffer_bytes_available(&playback_buffer) / (num_channels * 2));
 
         lc3_frames++;
-        frames_per_second[cis_channel]++;
 
         // PLC
         cached_iso_sdu_len = iso_sdu_length;
@@ -651,18 +657,11 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         btstack_run_loop_set_timer_handler(&next_packet_timer, plc_timeout);
         btstack_run_loop_add_timer(&next_packet_timer);
 
-        uint32_t time_ms = btstack_run_loop_get_time_ms();
-        if (btstack_time_delta(time_ms, last_samples_report_ms) > 1000){
-            last_samples_report_ms = time_ms;
-            printf("LC3 Frames: %4u - ", lc3_frames / num_channels);
-            uint8_t i;
-            for (i=0; i < num_channels; i++){
-                printf("%u ", frames_per_second[i]);
-                frames_per_second[i] = 0;
-            }
-            printf(" frames per second, dropped %u of %u\n", samples_dropped, samples_received);
+        if (samples_received >= sampling_frequency_hz){
+            printf("LC3 Frames: %4u - samples received %5u, played %5u, dropped %5u\n", lc3_frames, samples_received, samples_played, samples_dropped);
             samples_received = 0;
             samples_dropped  =  0;
+            samples_played = 0;
         }
 
         last_packet_time_ms[cis_channel]  = receive_time_ms;
