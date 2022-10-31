@@ -249,7 +249,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
                 uint16_t manufacturer   = little_endian_read_16(packet, 10);
-                uint16_t lmp_subversion = little_endian_read_16(packet, 12);
+                //uint16_t lmp_subversion = little_endian_read_16(packet, 12);
                 // assert manufacturer is TI
                 if (manufacturer != BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
                     printf("ERROR: Expected Bluetooth Chipset from CSR but got manufacturer 0x%04x\n", manufacturer);

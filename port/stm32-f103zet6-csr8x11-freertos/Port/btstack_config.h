@@ -12,7 +12,7 @@
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
-//#define ENABLE_CLASSIC
+#define ENABLE_CLASSIC
 //#define ENABLE_BTSTACK_ASSERT
 
 #define ENABLE_LE_CENTRAL

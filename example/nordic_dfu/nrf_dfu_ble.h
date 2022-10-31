@@ -51,21 +51,32 @@
 extern "C" {
 #endif
 
-
-#define NORDIC_DFU_SERVICE_EVT_CHANGE_BOOTLOADER_NAME
-
-#define NORDIC_DFU_SERVICE_EVT_ENTER_BOOTLOADER_MODE
-
-#define NORDIC_DFU_SERVICE_EVT_IMG_RECEIVED
-
-#define NORDIC_DFU_SERVICE_EVT_IMG_RECEIVE_COMPLETE
-
 #define GATT_MAX_MTU_SIZE          247
 #define GATT_HEADER_LEN            3                                                       /**< GATT header length. */
 #define GATT_PAYLOAD(mtu)          ((mtu) - GATT_HEADER_LEN)                               /**< Length of the ATT payload for a given ATT MTU. */
 #define MAX_DFU_PKT_LEN            (GATT_MAX_MTU_SIZE - GATT_HEADER_LEN)                   /**< Maximum length (in bytes) of the DFU Packet characteristic (3 bytes are used for the GATT opcode and handle). */
 #define MAX_RESPONSE_LEN           17                                                      /**< Maximum length (in bytes) of the response to a Control Point command. */
 #define RESPONSE_HEADER_LEN        3                                                       /**< The length of the header of a response. I.E. the index of the opcode-specific payload. */
+
+#define NRF_DFU_BUTTONLESS_RSP     0x20
+
+typedef enum {
+    NRF_DFU_EVT_CHANGE_BOOTLOADER_NAME = 0,
+    NRF_DFU_EVT_ENTER_BOOTLOADER_MODE
+} nrf_dfu_ble_evt_t;
+
+typedef void (*nrf_dfu_ble_packet_handler_t)(nrf_dfu_ble_evt_t evt, uint8_t *packet, uint16_t size);
+
+typedef enum {
+    NRF_DFU_BUT_CMD_ENTR_BOOTLOADER = 0x01,
+    NRF_DFU_BUT_CMD_CHANGE_BOOTLOADER_NAME = 0x02
+} nrf_dfu_buttonless_cmd_code_t;
+
+typedef struct {
+    uint8_t rsp_code;
+    uint8_t cmd_code;
+    uint8_t result;
+} __attribute__((packed)) nrf_dfu_buttonless_rsp_t;
 
 typedef struct {
   uint16_t value_handle;       /**< Handle to the characteristic value. */
@@ -75,7 +86,7 @@ typedef struct {
 } nrf_dfu_cha_handles_t;
 
 typedef struct {
-    uint16_t service_handle;
+    hci_con_handle_t con_handle;
     nrf_dfu_cha_handles_t dfu_ctrl_pt_handles;
     nrf_dfu_cha_handles_t dfu_pkt_handles;
     nrf_dfu_cha_handles_t dfu_buttonless_handles;
@@ -94,7 +105,7 @@ typedef struct {
  * @brief Init NRF DFU Service Server with ATT DB
  * @param packet_handler for events and data from dfu controller
  */
-void nrf_dfu_ble_init(btstack_packet_handler_t packet_handler);
+void nrf_dfu_ble_init(nrf_dfu_ble_packet_handler_t packet_handler);
 
 
 

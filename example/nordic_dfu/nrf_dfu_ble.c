@@ -46,6 +46,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "btstack_defines.h"
 #include "ble/att_db.h"
@@ -64,7 +65,7 @@ typedef struct {
 	uint16_t att_handle;
 	uint8_t is_notify_en;
     hci_con_handle_t con_handle;
-	uint8_t data[256];
+	uint8_t data[64];
 	uint32_t size;
 } nrf_dfu_notify_request_context_t;
 
@@ -72,14 +73,13 @@ typedef struct {
 	uint16_t att_handle;
 	uint8_t is_indicate_en;
     hci_con_handle_t con_handle;
-	uint8_t data[256];
+	uint8_t data[64];
 	uint32_t size;
 } nrf_dfu_indicate_request_context_t;
 
-static btstack_packet_handler_t client_packet_handler;
+static nrf_dfu_ble_packet_handler_t dfu_packet_handler;
 static att_service_handler_t  nrf_dfu_service;
 static btstack_context_callback_registration_t send_request;
-static hci_con_handle_t con_handle = HCI_CON_HANDLE_INVALID;
 
 static nrf_dfu_ble_t dfu_ble;
 static uint16_t m_pkt_notif_target;            /**< Number of packets of firmware data to be received before transmitting the next Packet Receipt Notification to the DFU Controller. */
@@ -90,39 +90,11 @@ static uint8_t  dfu_is_buttonless_indicate_enabled;
 static uint8_t  dfu_ctrl_point_value[32]  = {0};
 static uint8_t  dfu_data_point_value[256] = {0};
 static uint8_t  dfu_buttonless_value[16]  = {0};
+static uint8_t  dfu_buttonless_bootloader_name[8];
 
 static uint32_t on_ctrl_pt_write(nrf_dfu_ble_t * p_dfu, uint8_t *data, uint32_t size);
 static void on_packet_write(nrf_dfu_ble_t * p_dfu, uint8_t *data, uint32_t size);
 static void on_buttonless_write(nrf_dfu_ble_t * p_dfu, uint8_t *data, uint32_t size);
-
-static void nrf_dfu_ble_emit_state(hci_con_handle_t con_handle, bool enabled){
-	uint8_t event[5];
-	uint8_t pos = 0;
-	event[pos++] = HCI_EVENT_GATTSERVICE_META;
-	event[pos++] = sizeof(event) - 2;
-	event[pos++] = enabled ? GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED : GATTSERVICE_SUBEVENT_SPP_SERVICE_DISCONNECTED;
-	little_endian_store_16(event,pos, (uint16_t) con_handle);
-	pos += 2;
-	(*client_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
-}
-
-static void nrf_dfu_ble_notify_request_cb(void *context) {
-	if (NULL == context)
-		return;
-
-	nrf_dfu_notify_request_context_t *req_context = (nrf_dfu_notify_request_context_t *)context;
-	if (req_context->is_notify_en)
-		att_server_notify(req_context->con_handle, req_context->att_handle, req_context->data, req_context->size);
-}
-
-static void nrf_dfu_ble_indicate_request_cb(void *context) {
-	if (NULL == context)
-		return;
-
-	nrf_dfu_indicate_request_context_t *req_context = (nrf_dfu_indicate_request_context_t *)context;
-	if (req_context->is_indicate_en)
-		att_server_indicate(req_context->con_handle, req_context->att_handle, req_context->data, req_context->size);
-}
 
 static uint16_t nrf_dfu_ble_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 	UNUSED(con_handle);
@@ -130,17 +102,16 @@ static uint16_t nrf_dfu_ble_read_callback(hci_con_handle_t con_handle, uint16_t 
 	UNUSED(buffer_size);
 
 	if (attribute_handle == dfu_ble.dfu_ctrl_pt_handles.value_handle) {
-
+        return att_read_callback_handle_blob((const uint8_t *)dfu_ctrl_point_value, sizeof(dfu_ctrl_point_value), offset, buffer, buffer_size);
 	} else if (attribute_handle == dfu_ble.dfu_ctrl_pt_handles.cccd_handle) {
-
+        return 0;
 	} else if (attribute_handle == dfu_ble.dfu_pkt_handles.value_handle) {
-
+        return att_read_callback_handle_blob((const uint8_t *)dfu_data_point_value, sizeof(dfu_data_point_value), offset, buffer, buffer_size);
 	} else if (attribute_handle == dfu_ble.dfu_buttonless_handles.value_handle) {
-
+        return att_read_callback_handle_blob((const uint8_t *)dfu_buttonless_value, sizeof(dfu_buttonless_value), offset, buffer, buffer_size);
 	} else if (attribute_handle == dfu_ble.dfu_buttonless_handles.cccd_handle) {
-
+        return 0;
 	}
-
 	return 0;
 }
 
@@ -149,6 +120,7 @@ static int nrf_dfu_ble_write_callback(hci_con_handle_t con_handle, uint16_t attr
 	UNUSED(offset);
 	UNUSED(buffer_size);
 
+    dfu_ble.con_handle = con_handle;
 
 	if (attribute_handle == dfu_ble.dfu_ctrl_pt_handles.value_handle) {
         on_ctrl_pt_write(&dfu_ble, buffer, buffer_size);
@@ -156,13 +128,11 @@ static int nrf_dfu_ble_write_callback(hci_con_handle_t con_handle, uint16_t attr
 		dfu_is_ctrl_pt_notify_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
 	} else if (attribute_handle == dfu_ble.dfu_pkt_handles.value_handle) {
         on_packet_write(&dfu_ble, buffer, buffer_size);
-		(*client_packet_handler)(RFCOMM_DATA_PACKET, (uint16_t) con_handle, buffer, buffer_size);
 	} else if (attribute_handle == dfu_ble.dfu_buttonless_handles.value_handle) {
 		on_buttonless_write(&dfu_ble, buffer, buffer_size);
 	} else if (attribute_handle == dfu_ble.dfu_buttonless_handles.cccd_handle) {
 		dfu_is_buttonless_indicate_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION;
 	}
-
 	return 0;
 }
 
@@ -170,19 +140,19 @@ static int nrf_dfu_ble_write_callback(hci_con_handle_t con_handle, uint16_t attr
  * @brief Init nrf DFU Service Server with ATT DB
  * @param callback for events and data from dfu controller
  */
-void nrf_dfu_ble_init(btstack_packet_handler_t packet_handler) {
+void nrf_dfu_ble_init(nrf_dfu_ble_packet_handler_t packet_handler) {
 	static const uint16_t dfu_profile_uuid16      = 0xFE59;
 	static const uint8_t dfu_ctrl_point_uuid128[] = { 0x8E, 0xC9, 0x00, 0x01, 0xF3, 0x15, 0x4F, 0x60, 0x9F, 0xB8, 0x83, 0x88, 0x30, 0xDA, 0xEA, 0x50 };
 	static const uint8_t dfU_data_point_uuid128[] = { 0x8E, 0xC9, 0x00, 0x02, 0xF3, 0x15, 0x4F, 0x60, 0x9F, 0xB8, 0x83, 0x88, 0x30, 0xDA, 0xEA, 0x50 };
 	static const uint8_t dfu_buttonless_uuid128[] = { 0x8E, 0xC9, 0x00, 0x03, 0xF3, 0x15, 0x4F, 0x60, 0x9F, 0xB8, 0x83, 0x88, 0x30, 0xDA, 0xEA, 0x50 };
 
-	client_packet_handler = packet_handler;
+	dfu_packet_handler = packet_handler;
 
 	// get service handle range
 	uint16_t start_handle = 0;
 	uint16_t end_handle   = 0xffff;
 	int service_found = gatt_server_get_handle_range_for_service_with_uuid16(dfu_profile_uuid16, &start_handle, &end_handle);
-	btstack_assert(service_found != 0);
+	ASSERT(service_found != 0);
 	UNUSED(service_found);
 
 	// get characteristic value handle and client configuration handle
@@ -228,7 +198,6 @@ void nrf_dfu_ble_indicate_request(void (*cb)(void *context), void *context, hci_
 	att_server_request_to_send_indication(&send_request, con_handle);
 }
 
-
 /**@brief Function for encoding the beginning of a response.
  *
  * @param[inout] p_buffer  The buffer to encode into.
@@ -245,7 +214,6 @@ static uint32_t response_prepare(uint8_t * p_buffer, uint8_t op_code, uint8_t re
     p_buffer[2] = result;
     return RESPONSE_HEADER_LEN;
 }
-
 
 /**@brief Function for encoding a select object response into a buffer.
  *
@@ -268,7 +236,6 @@ static uint32_t response_select_obj_add(uint8_t  * p_buffer,
     offset         += uint32_encode(crc,       &p_buffer[RESPONSE_HEADER_LEN + offset]);
     return offset;
 }
-
 
 /**@brief Function for encoding a CRC response into a buffer.
  *
@@ -302,17 +269,29 @@ static uint32_t response_ext_err_payload_add(uint8_t * p_buffer, uint8_t result,
     return 1;
 }
 
-static ret_code_t response_send(uint8_t * p_buf, uint16_t len)
-{
-    static nrf_dfu_notify_request_context_t dfu_notify_req_context;
+static void nrf_dfu_req_response_send_cb(void *context) {
+	if (NULL == context)
+		return;
 
-    memset(&dfu_notify_req_context, 0, sizeof(nrf_dfu_notify_request_context_t));
-    dfu_notify_req_context.att_handle = dfu_ble.dfu_ctrl_pt_handles.value_handle;
-    dfu_notify_req_context.is_notify_en = dfu_is_ctrl_pt_notify_enabled;
-    memcpy(dfu_notify_req_context.data, p_buf, len);
-    dfu_notify_req_context.size = len;
-    dfu_notify_req_context.con_handle = con_handle;
-    nrf_dfu_ble_notify_request(nrf_dfu_ble_notify_request_cb, &dfu_notify_req_context, dfu_notify_req_context.con_handle);
+	nrf_dfu_notify_request_context_t *req_context = (nrf_dfu_notify_request_context_t *)context;
+	if (req_context->is_notify_en)
+		att_server_notify(req_context->con_handle, req_context->att_handle, req_context->data, req_context->size);
+
+    free((void *)req_context);
+}
+
+static ret_code_t nrf_dfu_req_response_send(uint8_t * p_buf, uint16_t len)
+{
+    nrf_dfu_notify_request_context_t *context;
+
+    context = (nrf_dfu_notify_request_context_t *)malloc(sizeof(nrf_dfu_notify_request_context_t));
+    memset(context, 0, sizeof(nrf_dfu_notify_request_context_t));
+    context->att_handle = dfu_ble.dfu_ctrl_pt_handles.value_handle;
+    context->is_notify_en = dfu_is_ctrl_pt_notify_enabled;
+    memcpy(context->data, p_buf, len);
+    context->size = len;
+    context->con_handle = dfu_ble.con_handle;
+    nrf_dfu_ble_notify_request(nrf_dfu_req_response_send_cb, context, context->con_handle);
     return 0;
 }
 
@@ -349,7 +328,7 @@ static void nrf_dfu_req_handler_callback(nrf_dfu_response_t * p_res, void * p_co
             len += response_ext_err_payload_add(buffer, p_res->result, len);
         }
 
-        (void) response_send(buffer, len);
+        (void) nrf_dfu_req_response_send(buffer, len);
         return;
     }
 
@@ -383,7 +362,7 @@ static void nrf_dfu_req_handler_callback(nrf_dfu_response_t * p_res, void * p_co
         } break;
     }
 
-    (void) response_send(buffer, len);
+    (void) nrf_dfu_req_response_send(buffer, len);
 }
 
 static void on_flash_write(void * p_buf)
@@ -485,7 +464,55 @@ static void on_packet_write(nrf_dfu_ble_t * p_dfu, uint8_t *data, uint32_t size)
     }
 }
 
+static void nrf_dfu_buttonless_response_send_cb(void *context) {
+    if (NULL == context)
+        return;
+
+    nrf_dfu_indicate_request_context_t *req_context = (nrf_dfu_indicate_request_context_t *)context;
+    if (req_context->is_indicate_en) {
+        att_server_indicate(req_context->con_handle, req_context->att_handle, req_context->data, req_context->size);
+        if (req_context->data[1] == NRF_DFU_BUT_CMD_CHANGE_BOOTLOADER_NAME) {
+            dfu_packet_handler(NRF_DFU_EVT_CHANGE_BOOTLOADER_NAME, dfu_buttonless_bootloader_name, sizeof(dfu_buttonless_bootloader_name));
+        } else if (req_context->data[1] == NRF_DFU_BUT_CMD_ENTR_BOOTLOADER) {
+            dfu_packet_handler(NRF_DFU_EVT_ENTER_BOOTLOADER_MODE, NULL, 0);
+        }
+    }
+    free((void *)req_context);
+}
+
+static void nrf_dfu_buttonless_response_send(uint8_t * p_buf, uint16_t len)
+{
+    nrf_dfu_indicate_request_context_t *context;
+
+    context = (nrf_dfu_indicate_request_context_t *)malloc(sizeof(nrf_dfu_indicate_request_context_t));
+    memset(context, 0, sizeof(nrf_dfu_indicate_request_context_t));
+    context->att_handle = dfu_ble.dfu_buttonless_handles.value_handle;
+    context->is_indicate_en = dfu_is_buttonless_indicate_enabled;
+    memcpy(context->data, p_buf, len);
+    context->size = len;
+    context->con_handle = dfu_ble.con_handle;
+    nrf_dfu_ble_indicate_request(nrf_dfu_buttonless_response_send_cb, context, context->con_handle);
+}
+
 static void on_buttonless_write(nrf_dfu_ble_t * p_dfu, uint8_t *data, uint32_t size)
 {
+    nrf_dfu_buttonless_rsp_t rsp = {
+        .rsp_code = NRF_DFU_BUTTONLESS_RSP,
+        .cmd_code = 0,
+        .result = NRF_DFU_RES_CODE_SUCCESS
+    };
 
+    UNUSED(p_dfu);
+    if (NULL == data || 0 == size) {
+        NRF_LOG_ERROR("Invalid param");
+        return;
+    }
+
+    if (data[0] == NRF_DFU_BUT_CMD_ENTR_BOOTLOADER) {
+        rsp.cmd_code = NRF_DFU_BUT_CMD_ENTR_BOOTLOADER;
+    } else if (data[0] == NRF_DFU_BUT_CMD_CHANGE_BOOTLOADER_NAME) {
+        memcpy(dfu_buttonless_bootloader_name, &data[2], data[1]);
+        rsp.cmd_code = NRF_DFU_BUT_CMD_CHANGE_BOOTLOADER_NAME;
+    }
+    nrf_dfu_buttonless_response_send((uint8_t *)&rsp, sizeof(nrf_dfu_buttonless_rsp_t));
 }

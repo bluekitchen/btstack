@@ -50,7 +50,9 @@
 #define NRF_LOG_H_
 
 #include "sdk_config.h"
-#include "stdio.h"
+#include <stdio.h>
+#include <stdio.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

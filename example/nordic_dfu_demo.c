@@ -112,26 +112,17 @@ const uint8_t bootloader_profile_data[] =
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static uint8_t ctr_point_char_value[32] = {0};
-static uint8_t pkt_char_value[256] = {0};
-static uint8_t buttonless_char_value[16] = {0};
-static int     ctr_point_notification_enabled;
-static int     buttonless_indication_enabled;
-static uint8_t buttonless_cmd_code;
 static uint8_t bootloader_name[8] = {'D', 'f', 'u', '0', '0', '0', '0', '0'};
-static uint8_t bootloader_name_length = 8;
-static bd_addr_t le_public_addr = {0xAA, 0xBB, 0xCC, 0xDD, 0xE0, 0xF0};
 
-static hci_con_handle_t att_con_handle;
+static bd_addr_t le_public_addr = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xF0};
 
-static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
-static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
+static hci_con_handle_t con_handle;
 
 __attribute__((weak)) void chipset_set_bd_addr_command(bd_addr_t addr);
 
 void chipset_set_bd_addr_command(bd_addr_t addr)
 {
-    addr;
+    addr = addr;
 }
 
 static void set_up_advertisement(uint8_t adv_data_length, uint8_t *adv_data)
@@ -159,9 +150,8 @@ static void set_up_advertisement(uint8_t adv_data_length, uint8_t *adv_data)
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    
+
     uint16_t conn_interval;
-    hci_con_handle_t con_handle;
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
@@ -169,7 +159,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
             if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
-                memcpy(&adv_data[5], bootloader_name, bootloader_name_length);
+                memcpy(&adv_data[5], bootloader_name, sizeof(bootloader_name));
                 set_up_advertisement(adv_data_len, adv_data);
             } else if (btstack_event_state_get_state(packet) == HCI_STATE_OFF) {
                 le_public_addr[5] += 1;
@@ -178,6 +168,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             }
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = HCI_CON_HANDLE_INVALID;
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_BD_ADDR) {
@@ -227,25 +218,12 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     
     if (packet_type != HCI_EVENT_PACKET) return;
 
-    int mtu;
-    
     switch (hci_event_packet_get_type(packet)) {
         case ATT_EVENT_CONNECTED:
-            // setup new 
             break;
         case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
             break;
         case ATT_EVENT_CAN_SEND_NOW:
-            if (buttonless_indication_enabled) {
-                uint8_t rsp[3] = {0x20, 0x01, 0x01};
-                rsp[1] = buttonless_cmd_code;
-                att_server_indicate(att_con_handle, ATT_CHARACTERISTIC_8EC90003_F315_4F60_9FB8_838830DAEA50_01_VALUE_HANDLE, 
-                    &rsp, sizeof(rsp));
-                if (buttonless_cmd_code == 0x01) {
-                    hci_power_control(HCI_POWER_OFF);
-                    att_server_init(bootloader_profile_data, att_read_callback, att_write_callback);
-                }
-            }
             break;
         case ATT_EVENT_DISCONNECTED:
             break;
@@ -255,98 +233,17 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 }
 /* LISTING_END */
 
+static void nordic_dfu_packet_handler(nrf_dfu_ble_evt_t evt, uint8_t *packet, uint16_t size) {
+    printf("%s evt:%d \n", __func__, evt);
 
-/*
- * @section ATT Read
- *
- * @text The ATT Server handles all reads to constant data. For dynamic data like the custom characteristic, the registered
- * att_read_callback is called. To handle long characteristics and long reads, the att_read_callback is first called
- * with buffer == NULL, to request the total value length. Then it will be called again requesting a chunk of the value.
- * See Listing attRead.
- */
-
-/* LISTING_START(attRead): ATT Read */
-
-// ATT Client Read Callback for Dynamic Data
-// - if buffer == NULL, don't copy data, just return size of value
-// - if buffer != NULL, copy data and return number bytes copied
-// @param offset defines start of attribute value
-static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-    UNUSED(connection_handle);
-
-    switch (att_handle){
-        case ATT_CHARACTERISTIC_8EC90001_F315_4F60_9FB8_838830DAEA50_01_VALUE_HANDLE:
-            return att_read_callback_handle_blob((const uint8_t *)ctr_point_char_value, sizeof(ctr_point_char_value), offset, buffer, buffer_size);
-        case ATT_CHARACTERISTIC_8EC90002_F315_4F60_9FB8_838830DAEA50_01_VALUE_HANDLE:
-            return att_read_callback_handle_blob((const uint8_t *)pkt_char_value, sizeof(pkt_char_value), offset, buffer, buffer_size);
-        case ATT_CHARACTERISTIC_8EC90003_F315_4F60_9FB8_838830DAEA50_01_VALUE_HANDLE:
-            return att_read_callback_handle_blob((const uint8_t *)buttonless_char_value, sizeof(buttonless_char_value), offset, buffer, buffer_size);
-        default:
-            return 0;
-    }
-    return 0;
-}
-/* LISTING_END */
-
-
-/*
- * @section ATT Write
- *
- * @text The only valid ATT write in this example is to the Client Characteristic Configuration, which configures notification
- * and indication. If the ATT handle matches the client configuration handle, the new configuration value is stored and used
- * in the heartbeat handler to decide if a new value should be sent. See Listing attWrite.
- */
-
-/* LISTING_START(attWrite): ATT Write */
-static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    UNUSED(transaction_mode);
-    UNUSED(offset);
-    UNUSED(buffer_size);
-
-    if (transaction_mode == ATT_TRANSACTION_MODE_CANCEL) return 0;
-
-    switch (att_handle){
-        case ATT_CHARACTERISTIC_8EC90001_F315_4F60_9FB8_838830DAEA50_01_VALUE_HANDLE:
-            printf("Write on control point characteristic: ");
-            printf_hexdump(buffer, buffer_size);
-            return 0;
-        case ATT_CHARACTERISTIC_8EC90001_F315_4F60_9FB8_838830DAEA50_01_CLIENT_CONFIGURATION_HANDLE:
-            ctr_point_notification_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
-            att_con_handle = connection_handle;
-            return 0;
-        case ATT_CHARACTERISTIC_8EC90002_F315_4F60_9FB8_838830DAEA50_01_VALUE_HANDLE:
-            printf("Write on packet characteristic: ");
-            printf_hexdump(buffer, buffer_size);
-            return 0;
-        case ATT_CHARACTERISTIC_8EC90003_F315_4F60_9FB8_838830DAEA50_01_VALUE_HANDLE:
-            printf("Write on buttonless characteristic: ");
-            printf_hexdump(buffer, buffer_size);
-            buttonless_cmd_code = buffer[0];
-            if (buttonless_cmd_code == 0x02) {
-                bootloader_name_length = buffer[1];
-                memcpy(&bootloader_name, &buffer[2], bootloader_name_length);
-            }
-            if (buttonless_indication_enabled) {
-                att_server_request_can_send_now_event(att_con_handle);
-            }
-            return 0;
-        case ATT_CHARACTERISTIC_8EC90003_F315_4F60_9FB8_838830DAEA50_01_CLIENT_CONFIGURATION_HANDLE:
-            buttonless_indication_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION;
-            att_con_handle = connection_handle;
-            return 0;
-        default:
-            printf("WRITE Callback, handle %04x, mode %u, offset %u, data: ", connection_handle, transaction_mode, offset);
-            printf_hexdump(buffer, buffer_size);
-            return 0;
-    }
-
-}
-/* LISTING_END */
-
-static void nordic_dfu_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
-    hci_con_handle_t con_handle;
-    switch (packet_type){
-        case HCI_EVENT_PACKET:
+    switch (evt) {
+        case NRF_DFU_EVT_CHANGE_BOOTLOADER_NAME:
+            printf("new bootloader name:%s \n", (char *)packet);
+            memcpy(&bootloader_name, packet, size);
+            break;
+        case NRF_DFU_EVT_ENTER_BOOTLOADER_MODE:
+            hci_power_control(HCI_POWER_OFF);
+            att_server_init(bootloader_profile_data, NULL, NULL);
             break;
         default:
             break;
