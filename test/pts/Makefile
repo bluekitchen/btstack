@@ -120,6 +120,7 @@ CFLAGS += -I${BTSTACK_ROOT}/port/libusb
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
+VPATH += ${BTSTACK_ROOT}/src/ble/le_audio
 VPATH += ${BTSTACK_ROOT}/src/ble/mesh
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
