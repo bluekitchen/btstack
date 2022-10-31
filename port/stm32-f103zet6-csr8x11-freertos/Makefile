@@ -28,7 +28,7 @@ OPT = -O0
 # compile variables
 ######################################
 
-BR_EDR_ENABLE = Y
+BR_EDR_ENABLE = y
 
 BLE_ENABLE = y
 

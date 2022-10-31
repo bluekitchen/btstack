@@ -271,7 +271,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-#if 0
+#if 1
 static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 static hal_flash_bank_stm32_t   hal_flash_bank_context;
 
@@ -301,7 +301,7 @@ void port_main(void){
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
     hci_set_chipset(btstack_chipset_csr_instance());
 
-#if 0
+#if 1
     // setup TLV Flash Sector implementation
     const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_stm32_init_instance(
     		&hal_flash_bank_context,
