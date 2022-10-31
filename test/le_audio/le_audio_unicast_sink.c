@@ -140,16 +140,6 @@ static hci_con_handle_t cis_con_handles[MAX_CHANNELS];
 static bool cis_established[MAX_CHANNELS];
 static unsigned int     next_cis_index;
 
-// analysis
-static bool     last_packet_received[MAX_CHANNELS];
-static uint16_t last_packet_sequence[MAX_CHANNELS];
-static uint32_t last_packet_time_ms[MAX_CHANNELS];
-static uint8_t last_packet_prefix[MAX_CHANNELS * PACKET_PREFIX_LEN];
-
-// lc3 writer
-static int dump_file;
-static uint32_t lc3_frames;
-
 // lc3 codec config
 static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
@@ -176,6 +166,12 @@ static uint8_t playback_buffer_storage[PLAYBACK_BUFFER_SIZE];
 static btstack_ring_buffer_t playback_buffer;
 
 // statistics
+static bool     last_packet_received[MAX_CHANNELS];
+static uint16_t last_packet_sequence[MAX_CHANNELS];
+static uint32_t last_packet_time_ms[MAX_CHANNELS];
+static uint8_t last_packet_prefix[MAX_CHANNELS * PACKET_PREFIX_LEN];
+
+static uint32_t lc3_frames;
 static uint32_t samples_received;
 static uint32_t samples_played;
 static uint32_t samples_dropped;
@@ -245,7 +241,6 @@ static void setup_lc3_decoder(void){
 static void close_files(void){
 #ifdef HAVE_POSIX_FILE_IO
     printf("Close files\n");
-    close(dump_file);
     wav_writer_close();
 #endif
 }
