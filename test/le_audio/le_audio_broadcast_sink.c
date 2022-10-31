@@ -904,7 +904,6 @@ static void show_usage(void){
 #endif
     printf("e - set broadcast code to 0x11111111111111111111111111111111\n");
     printf("t - terminate BIS streams\n");
-    printf("x - close files and exit\n");
     printf("---\n");
 }
 
@@ -938,11 +937,6 @@ static void stdin_process(char c){
                 default:
                     break;
             }
-            break;
-        case 'x':
-            close_files();
-            printf("Shutdown...\n");
-            hci_power_control(HCI_POWER_OFF);
             break;
         case '\n':
         case '\r':

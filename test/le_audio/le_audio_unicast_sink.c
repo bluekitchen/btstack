@@ -115,7 +115,6 @@ static enum {
     APP_W4_CIS_CREATED,
     APP_STREAMING,
     APP_IDLE,
-    APP_SHUTDOWN
 } app_state = APP_W4_WORKING;
 
 //
@@ -361,9 +360,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 if (sink != NULL){
                     sink->stop_stream();
                 }
-                if (app_state != APP_SHUTDOWN){
-                    start_scanning();
-                }
+                start_scanning();
             }
             break;
         case GAP_EVENT_ADVERTISING_REPORT:
@@ -671,7 +668,6 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
 static void show_usage(void){
     printf("\n--- LE Audio Unicast Sink Test Console ---\n");
-    printf("x - close files and exit\n");
     printf("s - start scanning\n");
 #ifdef HAVE_LC3PLUS
     printf("q - use LC3plus decoder if 10 ms ISO interval is used\n");
@@ -690,12 +686,6 @@ static void stdin_process(char c){
             request_lc3plus_decoder = true;
             break;
 #endif
-            case 'x':
-            app_state = APP_SHUTDOWN;
-            close_files();
-            printf("Shutdown...\n");
-            hci_power_control(HCI_POWER_OFF);
-            break;
         case '\n':
         case '\r':
             break;

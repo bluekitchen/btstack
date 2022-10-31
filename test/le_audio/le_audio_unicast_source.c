@@ -180,7 +180,6 @@ static enum {
     APP_IDLE,
     APP_W4_CIS_COMPLETE,
     APP_STREAMING,
-    APP_W4_POWER_OFF,
 } app_state = APP_W4_WORKING;
 
 // enumerate default codec configs
@@ -555,20 +554,6 @@ static void stdin_process(char c){
                 menu_variant = 0;
             }
             print_config();
-            break;
-        case 'x':
-#ifdef COUNT_MODE
-            printf("Send statistic:\n");
-            {
-                uint16_t i;
-                for (i=0;i<MAX_PACKET_INTERVAL_BINS_MS;i++){
-                    printf("%2u: %5u\n", i, send_time_bins[i]);
-                }
-            }
-#endif
-            printf("Shutdown...\n");
-            app_state = APP_W4_POWER_OFF;
-            hci_power_control(HCI_POWER_OFF);
             break;
         case 's':
             if (app_state != APP_IDLE){
