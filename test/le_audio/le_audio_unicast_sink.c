@@ -353,6 +353,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (hci_event_disconnection_complete_get_connection_handle(packet) == remote_handle){
                 printf("Disconnected, back to scanning\n");
+                // stop timer
+                btstack_run_loop_remove_timer(&next_packet_timer);
                 // close files
                 close_files();
                 // stop playback

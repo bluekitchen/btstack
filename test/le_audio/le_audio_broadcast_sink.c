@@ -669,6 +669,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 }
                 case GAP_SUBEVENT_BIG_SYNC_STOPPED:
                     printf("BIG Sync stopped, big_handle 0x%02x\n", gap_subevent_big_sync_stopped_get_big_handle(packet));
+                    btstack_run_loop_remove_timer(&next_packet_timer);
                     break;
                 default:
                     break;
@@ -930,6 +931,7 @@ static void stdin_process(char c){
                 case APP_STREAMING:
                 case APP_W4_BIG_SYNC_ESTABLISHED:
                     app_state = APP_IDLE;
+                    btstack_run_loop_remove_timer(&next_packet_timer);
                     close_files();
                     printf("Terminate BIG SYNC\n");
                     gap_big_sync_terminate(big_handle);
