@@ -55,6 +55,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/errno.h>
 #include <sys/select.h>
 #include <sys/time.h>
 #include <time.h>
@@ -208,21 +209,25 @@ static void btstack_run_loop_posix_execute(void) {
         }
                 
         // wait for ready FDs
-        select( highest_fd+1 , &descriptors_read, &descriptors_write, NULL, timeout);
-
-        btstack_run_loop_posix_data_sources_modified = 0;
-        btstack_linked_list_iterator_init(&it, &btstack_run_loop_base_data_sources);
-        while (btstack_linked_list_iterator_has_next(&it) && !btstack_run_loop_posix_data_sources_modified){
-            btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
-            log_debug("btstack_run_loop_posix_execute: check ds %p with fd %u\n", ds, ds->source.fd);
-            if (FD_ISSET(ds->source.fd, &descriptors_read)) {
-                log_debug("btstack_run_loop_posix_execute: process read ds %p with fd %u\n", ds, ds->source.fd);
-                ds->process(ds, DATA_SOURCE_CALLBACK_READ);
-            }
-            if (btstack_run_loop_posix_data_sources_modified) break;
-            if (FD_ISSET(ds->source.fd, &descriptors_write)) {
-                log_debug("btstack_run_loop_posix_execute: process write ds %p with fd %u\n", ds, ds->source.fd);
-                ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
+        int res = select( highest_fd+1 , &descriptors_read, &descriptors_write, NULL, timeout);
+        if (res < 0){
+            log_error("btstack_run_loop_posix_execute: select -> errno %u", errno);
+        }
+        if (res > 0){
+            btstack_run_loop_posix_data_sources_modified = 0;
+            btstack_linked_list_iterator_init(&it, &btstack_run_loop_base_data_sources);
+            while (btstack_linked_list_iterator_has_next(&it) && !btstack_run_loop_posix_data_sources_modified){
+                btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
+                log_debug("btstack_run_loop_posix_execute: check ds %p with fd %u\n", ds, ds->source.fd);
+                if (FD_ISSET(ds->source.fd, &descriptors_read)) {
+                    log_debug("btstack_run_loop_posix_execute: process read ds %p with fd %u\n", ds, ds->source.fd);
+                    ds->process(ds, DATA_SOURCE_CALLBACK_READ);
+                }
+                if (btstack_run_loop_posix_data_sources_modified) break;
+                if (FD_ISSET(ds->source.fd, &descriptors_write)) {
+                    log_debug("btstack_run_loop_posix_execute: process write ds %p with fd %u\n", ds, ds->source.fd);
+                    ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
+                }
             }
         }
         log_debug("btstack_run_loop_posix_execute: after ds check\n");
