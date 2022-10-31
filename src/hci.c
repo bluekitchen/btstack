@@ -5170,13 +5170,20 @@ static void hci_halting_run(void) {
             if (connection) {
                 hci_con_handle_t con_handle = (uint16_t) connection->con_handle;
 
-                // check state
-                if (connection->state == SENT_DISCONNECT) return;
-                connection->state = SENT_DISCONNECT;
+                log_info("HCI_STATE_HALTING, connection %p, handle %u, state %u", connection, con_handle, connection->state);
 
-                log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, con_handle);
+                // check state
+                switch(connection->state) {
+                    case SENT_DISCONNECT:
+                    case RECEIVED_DISCONNECTION_COMPLETE:
+                        // wait until connection is gone
+                        return;
+                    default:
+                        break;
+                }
 
                 // finally, send the disconnect command
+                connection->state = SENT_DISCONNECT;
                 hci_send_cmd(&hci_disconnect, con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
                 return;
             }
