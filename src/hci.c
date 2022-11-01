@@ -3470,6 +3470,16 @@ static void event_handler(uint8_t *packet, uint16_t size){
             addr_type = BD_ADDR_TYPE_ACL;
             conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
             if (conn) {
+                switch (conn->state){
+                    // expected states
+                    case ACCEPTED_CONNECTION_REQUEST:
+                    case SENT_CREATE_CONNECTION:
+                        break;
+                    // unexpected state -> ignore
+                    default:
+                        // don't forward event to app
+                        return;
+                }
                 if (!packet[2]){
                     conn->state = OPEN;
                     conn->con_handle = little_endian_read_16(packet, 3);
