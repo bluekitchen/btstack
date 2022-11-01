@@ -2642,10 +2642,12 @@ static void sm_run(void){
             return;
         }
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
         // assert that sm cmac engine is ready
         if (sm_cmac_ready() == false){
             break;
         }
+#endif
 
         int key_distribution_flags;
         UNUSED(key_distribution_flags);
