@@ -74,7 +74,7 @@
 static uint32_t m_firmware_start_addr;          /**< Start address of the current firmware image. */
 static uint32_t m_firmware_size_req;            /**< The size of the entire firmware image. Defined by the init command. */
 
-static nrf_dfu_observer_t m_observer;
+//static nrf_dfu_observer_t m_observer;
 
 #if 0
 static void on_dfu_complete(nrf_fstorage_evt_t * p_evt)
@@ -229,7 +229,7 @@ static void on_abort_request(nrf_dfu_request_t * p_req, nrf_dfu_response_t * p_r
     UNUSED_PARAMETER(p_res);
     NRF_LOG_DEBUG("Handle NRF_DFU_OP_ABORT");
 
-    m_observer(NRF_DFU_EVT_DFU_ABORTED);
+    //m_observer(NRF_DFU_EVT_DFU_ABORTED);
 }
 
 
@@ -261,9 +261,9 @@ static void on_cmd_obj_create_request(nrf_dfu_request_t * p_req, nrf_dfu_respons
 
     NRF_LOG_DEBUG("Handle NRF_DFU_OP_OBJECT_CREATE (command)");
 
-    m_observer(NRF_DFU_EVT_DFU_STARTED);
+    //m_observer(NRF_DFU_EVT_DFU_STARTED);
 
-    nrf_dfu_result_t ret_val;
+    nrf_dfu_result_t ret_val = NRF_DFU_RES_CODE_SUCCESS;
 #ifdef NRF_DFU_VALIDATION
     ret_val = nrf_dfu_validation_init_cmd_create(p_req->create.object_size);
 #endif
@@ -630,7 +630,7 @@ static bool on_data_obj_execute_request(nrf_dfu_request_t * p_req, nrf_dfu_respo
 #if 0
     on_data_obj_execute_request_sched(p_req, 0);
 
-    m_observer(NRF_DFU_EVT_OBJECT_RECEIVED);
+    //m_observer(NRF_DFU_EVT_OBJECT_RECEIVED);
 #endif
     return false;
 }
@@ -803,7 +803,7 @@ static void nrf_dfu_req_handler_req_process(nrf_dfu_request_t * p_req)
 
         if (response.result != NRF_DFU_RES_CODE_SUCCESS)
         {
-            m_observer(NRF_DFU_EVT_DFU_FAILED);
+            //m_observer(NRF_DFU_EVT_DFU_FAILED);
         }
     }
 }
@@ -868,7 +868,7 @@ ret_code_t nrf_dfu_req_handler_init(nrf_dfu_observer_t observer)
         }
     }
 
-    m_observer = observer;
+    //m_observer = observer;
 
     /* Initialize extended error handling with "No error" as the most recent error. */
     result = ext_error_set(NRF_DFU_EXT_ERROR_NO_ERROR);
