@@ -37,6 +37,7 @@
 
 #define BTSTACK_FILE__ "mesh_access.c"
 
+#include <inttypes.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -786,7 +787,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
     }
 
     uint16_t len = mesh_pdu_len(pdu);
-    printf("MESH Access Message, Opcode = %x: ", opcode);
+    printf("MESH Access Message, Opcode = %08" PRIx32 ": ", opcode);
     printf_hexdump(mesh_pdu_data(pdu), len);
 
     uint16_t src = mesh_pdu_src(pdu);

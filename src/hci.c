@@ -2518,7 +2518,7 @@ static void hci_handle_remote_features_page_2(hci_connection_t * conn, const uin
 static void hci_handle_remote_features_received(hci_connection_t * conn){
     conn->bonding_flags &= ~BONDING_REMOTE_FEATURES_QUERY_ACTIVE;
     conn->bonding_flags |= BONDING_RECEIVED_REMOTE_FEATURES;
-    log_info("Remote features %02x, bonding flags %x", conn->remote_supported_features[0], conn->bonding_flags);
+    log_info("Remote features %02x, bonding flags %" PRIx32, conn->remote_supported_features[0], conn->bonding_flags);
     if (conn->bonding_flags & BONDING_DEDICATED){
         conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
     }
@@ -2607,7 +2607,7 @@ static void hci_store_local_supported_commands(const uint8_t * packet){
             hci_stack->local_supported_commands |= (1LU << i);
         }
     }
-    log_info("Local supported commands summary %04x", hci_stack->local_supported_commands);
+    log_info("Local supported commands summary %08" PRIx32, hci_stack->local_supported_commands);
 }
 
 static void handle_command_complete_event(uint8_t * packet, uint16_t size){

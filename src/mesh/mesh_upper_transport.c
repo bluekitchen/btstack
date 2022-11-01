@@ -35,28 +35,21 @@
  *
  */
 
-#include <stdarg.h>
-#include "btstack_tlv.h"
-#include "mesh/mesh_foundation.h"
-#include "mesh_upper_transport.h"
-#include "mesh/mesh.h"
-#include "mesh/mesh_proxy.h"
-#include "mesh/mesh_node.h"
-
 #define BTSTACK_FILE__ "mesh_upper_transport.c"
 
-#include "mesh/mesh_upper_transport.h"
-
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "btstack_bool.h"
+#include "btstack_tlv.h"
 #include "btstack_util.h"
 #include "btstack_memory.h"
 #include "btstack_debug.h"
-#include "btstack_bool.h"
 
-#include "mesh/beacon.h"
+#include "mesh/mesh_foundation.h"
+#include "mesh_upper_transport.h"
 #include "mesh/mesh_iv_index_seq_number.h"
 #include "mesh/mesh_keys.h"
 #include "mesh/mesh_lower_transport.h"
@@ -745,7 +738,7 @@ static void mesh_upper_transport_send_access(mesh_upper_transport_pdu_t * upper_
     UNUSED(payload_len);
     
     // Dump PDU
-    printf("[+] Upper transport, send upper (un)segmented Access PDU - dest %04x, seq %06x\n", upper_pdu->dst, upper_pdu->seq);
+    printf("[+] Upper transport, send upper (un)segmented Access PDU - dest %04x, seq %06" PRIx32 "\n", upper_pdu->dst, upper_pdu->seq);
     mesh_print_hex("Access Payload", incoming_pdu_singleton.access.data, upper_pdu->len);
 
     // setup nonce - uses dst, so after pseudo address translation
@@ -779,7 +772,7 @@ static void mesh_upper_transport_send_unsegmented_control_pdu(mesh_network_pdu_t
     mesh_network_pdu_set_seq(network_pdu, seq);
     // Dump PDU
     uint8_t opcode = network_pdu->data[9];
-    printf("[+] Upper transport, send unsegmented Control PDU %p - seq %06x opcode %02x\n", network_pdu, seq, opcode);
+    printf("[+] Upper transport, send unsegmented Control PDU %p - seq %06" PRIx32 " opcode %02x\n", network_pdu, seq, opcode);
     mesh_print_hex("Access Payload", &network_pdu->data[10], network_pdu->len - 10);
 
     // send

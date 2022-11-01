@@ -37,6 +37,7 @@
 
 #define BTSTACK_FILE__ "mesh_configuration_server.c"
 
+#include <inttypes.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -1732,7 +1733,7 @@ config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
 
 static void config_heartbeat_publication_emit(mesh_heartbeat_publication_t * mesh_heartbeat_publication){
 
-    printf("CONFIG_SERVER_HEARTBEAT: Emit (dest %04x, count %u, period %u ms)\n",
+    printf("CONFIG_SERVER_HEARTBEAT: Emit (dest %04x, count %u, period %" PRIu32 " ms)\n",
         mesh_heartbeat_publication->destination, 
         mesh_heartbeat_publication->count, 
         mesh_heartbeat_publication->period_ms);
@@ -1852,7 +1853,7 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     if (network_key == NULL){
         status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
     } else {
-        printf("MESH config_heartbeat_publication_set, destination %x, count = %x, period = %u s\n",
+        printf("MESH config_heartbeat_publication_set, destination %x, count = %x, period = %" PRIu32 " s\n",
             requested_publication.destination, requested_publication.count, requested_publication.period_ms);
 
         // stop timer if active
@@ -2016,7 +2017,7 @@ static uint32_t config_heartbeat_subscription_get_period_remaining_s(mesh_heartb
     if (time_since_start_s < period_s){
         period_remaining_s = period_s - time_since_start_s;
     }
-    printf("Heartbeat: time since start %d s, period %u s, period remaining %u s\n", time_since_start_s, period_s, period_remaining_s);
+    printf("Heartbeat: time since start %" PRId32 " s, period %" PRIu32 " s, period remaining %" PRIu32 " s\n", time_since_start_s, period_s, period_remaining_s);
     return period_remaining_s;
 }
 

@@ -41,6 +41,7 @@
  *  rfcomm.c
  */
 
+#include <inttypes.h>
 #include <string.h> // memcpy
 #include <stdint.h>
 
@@ -1769,7 +1770,7 @@ static int rfcomm_channel_ready_for_open(rfcomm_channel_t *channel){
     // log_info("rfcomm_channel_ready_for_open state %u, flags needed %04x, current %04x, rf credits %u, l2cap credits %u ", channel->state, RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_RSP|RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_RSP|RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS, channel->state_var, channel->credits_outgoing, channel->multiplexer->l2cap_credits);
     // if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_RSP) == 0) return 0;
     // if (channel->credits_outgoing == 0) return 0;
-    log_info("rfcomm_channel_ready_for_open state %u, flags needed %04x, current %04x, rf credits %u",
+    log_info("rfcomm_channel_ready_for_open state %u, flags needed %04x, current %08" PRIx32 ", rf credits %u",
          channel->state, RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_RSP, channel->state_var, channel->credits_outgoing);
     if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_RSP) == 0) return 0;
     if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS) == 0) return 0;
@@ -1778,7 +1779,7 @@ static int rfcomm_channel_ready_for_open(rfcomm_channel_t *channel){
 }
 
 static int rfcomm_channel_ready_for_incoming_dlc_setup(rfcomm_channel_t * channel){
-    log_info("rfcomm_channel_ready_for_incoming_dlc_setup state var %04x", channel->state_var);
+    log_info("rfcomm_channel_ready_for_incoming_dlc_setup state var %08" PRIx32, channel->state_var);
     // Client accept and SABM/UA is required, PN RSP is needed if PN was received
     if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_CLIENT_ACCEPTED) == 0) return 0;
     if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_RCVD_SABM      ) == 0) return 0;

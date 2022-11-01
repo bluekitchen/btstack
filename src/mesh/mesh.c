@@ -37,6 +37,7 @@
 
 #define BTSTACK_FILE__ "mesh.c"
 
+#include <inttypes.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -1150,7 +1151,7 @@ static int mesh_node_startup_from_tlv(void){
         }
 
         // dump into packet log
-        hci_dump_log(HCI_DUMP_LOG_LEVEL_INFO, "mesh-iv-index: %08x",  iv_index);
+        hci_dump_log(HCI_DUMP_LOG_LEVEL_INFO, "mesh-iv-index: %08" PRIx32,  iv_index);
         mesh_log_key("mesh-devkey",  0xffff, persistent_provisioning_data.device_key);
 
     } else {
