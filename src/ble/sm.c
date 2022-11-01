@@ -2651,9 +2651,6 @@ static void sm_run(void){
 #endif
 
         log_info("sm_run: state %u", connection->sm_engine_state);
-        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, connection->sm_cid)) {
-            log_info("sm_run // cannot send");
-        }
         switch (connection->sm_engine_state){
 
             // secure connections, initiator + responding states
