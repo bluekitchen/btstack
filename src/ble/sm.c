@@ -2642,6 +2642,11 @@ static void sm_run(void){
             return;
         }
 
+        // assert that sm cmac engine is ready
+        if (sm_cmac_ready() == false){
+            break;
+        }
+
         int key_distribution_flags;
         UNUSED(key_distribution_flags);
 #ifdef ENABLE_LE_PERIPHERAL
@@ -2656,42 +2661,34 @@ static void sm_run(void){
             // secure connections, initiator + responding states
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             case SM_SC_W2_CMAC_FOR_CONFIRMATION:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CMAC_FOR_CONFIRMATION;
                 sm_sc_calculate_local_confirm(connection);
                 break;
             case SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CMAC_FOR_CHECK_CONFIRMATION;
                 sm_sc_calculate_remote_confirm(connection);
                 break;
             case SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F6_FOR_DHKEY_CHECK;
                 sm_sc_calculate_f6_for_dhkey_check(connection);
                 break;
             case SM_SC_W2_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK;
                 sm_sc_calculate_f6_to_verify_dhkey_check(connection);
                 break;
             case SM_SC_W2_CALCULATE_F5_SALT:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_SALT;
                 f5_calculate_salt(connection);
                 break;
             case SM_SC_W2_CALCULATE_F5_MACKEY:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_MACKEY;
                 f5_calculate_mackey(connection);
                 break;
             case SM_SC_W2_CALCULATE_F5_LTK:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_LTK;
                 f5_calculate_ltk(connection);
                 break;
             case SM_SC_W2_CALCULATE_G2:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_G2;
                 g2_calculate(connection);
                 break;
