@@ -56,6 +56,7 @@
 #include "driver/gpio.h"
 #include "driver/i2s.h"
 
+#include <inttypes.h>
 #include <string.h>
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
@@ -263,7 +264,7 @@ static void btstack_audio_esp32_init(void){
     btstack_audio_esp32_set_i2s0_mclk();
 #endif
 
-    log_info("i2s init mode 0x%02x, samplerate %u", i2s_mode, btstack_audio_esp32_sink_samplerate);
+    log_info("i2s init mode 0x%02x, samplerate %" PRIu32, i2s_mode, btstack_audio_esp32_sink_samplerate);
 
     i2s_driver_install(BTSTACK_AUDIO_I2S_NUM, &config, DMA_BUFFER_COUNT, &btstack_audio_esp32_i2s_event_queue);
     i2s_set_pin(BTSTACK_AUDIO_I2S_NUM, &pins);
