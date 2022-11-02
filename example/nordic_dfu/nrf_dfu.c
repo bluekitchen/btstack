@@ -42,37 +42,14 @@
 #include "nrf_dfu_utils.h"
 #include "nrf_dfu_transport.h"
 #include "nrf_dfu_req_handler.h"
+#include "nrf_dfu_ble.h"
 #include "nrf_log.h"
 
-static nrf_dfu_observer_t m_user_observer;                          //<! Observer callback set by the user.
-
-
-
-/**
- * @brief This function calls the user's observer (@ref m_observer) after it is done handling the event.
- */
-static void dfu_observer(nrf_dfu_evt_type_t event)
-{
-    switch (event)
-    {
-        case NRF_DFU_EVT_DFU_COMPLETED:
-        case NRF_DFU_EVT_DFU_ABORTED:
-#ifndef NRF_DFU_NO_TRANSPORT
-            UNUSED_RETURN_VALUE(nrf_dfu_transports_close(NULL));
-#endif
-            break;
-        default:
-            break;
-    }
-
-    /* Call user's observer if present. */
-    if (m_user_observer)
-    {
-        m_user_observer(event);
-    }
-}
-
-
+static nrf_dfu_observer_t m_user_observer; //<! Observer callback set by the user.
+static nrf_dfu_transport_t m_dfu_tran = {
+    .init_func = nrf_dfu_ble_init,
+    .close_func = NULL,
+};
 
 uint32_t nrf_dfu_init(nrf_dfu_observer_t observer)
 {
@@ -80,19 +57,17 @@ uint32_t nrf_dfu_init(nrf_dfu_observer_t observer)
 
     m_user_observer = observer;
 
-    NRF_LOG_INFO("Entering DFU mode.");
+    NRF_LOG_INFO("Entering DFU mode in application.");
 
-    dfu_observer(NRF_DFU_EVT_DFU_INITIALIZED);
+    m_user_observer(NRF_DFU_EVT_DFU_INITIALIZED, NULL, 0);
 
     // Initializing transports
-    ret_val = nrf_dfu_transports_init(dfu_observer);
+    ret_val = nrf_dfu_transports_init(observer, &m_dfu_tran);
     if (ret_val != NRF_SUCCESS)
     {
         NRF_LOG_ERROR("Could not initalize DFU transport: 0x%08x", ret_val);
         return ret_val;
     }
 
-    ret_val = nrf_dfu_req_handler_init(dfu_observer);
-
-    return ret_val;
+    return nrf_dfu_req_handler_init(observer);
 }

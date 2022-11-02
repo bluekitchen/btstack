@@ -52,7 +52,6 @@
 #define NRF_DFU_TRANSPORT_H__
 
 #include <stdint.h>
-#include "nrf_section.h"
 #include "nrf_dfu_types.h"
 
 #ifdef __cplusplus
@@ -105,7 +104,7 @@ struct nrf_dfu_transport_s
  *                          Any other error code indicates that at least one DFU
  *                          transport could not be initialized.
  */
-uint32_t nrf_dfu_transports_init(nrf_dfu_observer_t observer);
+uint32_t nrf_dfu_transports_init(nrf_dfu_observer_t observer, nrf_dfu_transport_t *p_dfu_tran);
 
 /** @brief Function for closing down all (with optional exception) the registered DFU transports.
  *

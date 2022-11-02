@@ -60,6 +60,7 @@
 #include "nrf_dfu_req_handler.h"
 #include "nrf_dfu_handling_error.h"
 #include "nrf_assert.h"
+#include "nrf_dfu_validation.h"
 
 typedef struct {
 	uint16_t att_handle;
@@ -77,7 +78,7 @@ typedef struct {
 	uint32_t size;
 } nrf_dfu_indicate_request_context_t;
 
-static nrf_dfu_ble_packet_handler_t dfu_packet_handler;
+static nrf_dfu_observer_t m_dfu_observer;
 static att_service_handler_t  nrf_dfu_service;
 static btstack_context_callback_registration_t send_request;
 
@@ -136,17 +137,39 @@ static int nrf_dfu_ble_write_callback(hci_con_handle_t con_handle, uint16_t attr
 	return 0;
 }
 
+/** 
+ * @brief Queue send request. When called, one packet can be send via nrf_dfu_ble_send below
+ * @param request
+ * @param con_handle
+ */
+static void nrf_dfu_ble_notify_request(void (*cb)(void *context), void *context, hci_con_handle_t con_handle) {
+	send_request.callback = cb;
+	send_request.context = context;
+	att_server_request_to_send_notification(&send_request, con_handle);
+}
+
+/** 
+ * @brief Queue send request. When called, one packet can be send via nrf_dfu_ble_send below
+ * @param request
+ * @param con_handle
+ */
+static void nrf_dfu_ble_indicate_request(void (*cb)(void *context), void *context, hci_con_handle_t con_handle) {
+	send_request.callback = cb;
+	send_request.context = context;
+	att_server_request_to_send_indication(&send_request, con_handle);
+}
+
 /**
  * @brief Init nrf DFU Service Server with ATT DB
  * @param callback for events and data from dfu controller
  */
-void nrf_dfu_ble_init(nrf_dfu_ble_packet_handler_t packet_handler) {
+uint32_t nrf_dfu_ble_init(nrf_dfu_observer_t observer) {
 	static const uint16_t dfu_profile_uuid16      = 0xFE59;
 	static const uint8_t dfu_ctrl_point_uuid128[] = { 0x8E, 0xC9, 0x00, 0x01, 0xF3, 0x15, 0x4F, 0x60, 0x9F, 0xB8, 0x83, 0x88, 0x30, 0xDA, 0xEA, 0x50 };
 	static const uint8_t dfU_data_point_uuid128[] = { 0x8E, 0xC9, 0x00, 0x02, 0xF3, 0x15, 0x4F, 0x60, 0x9F, 0xB8, 0x83, 0x88, 0x30, 0xDA, 0xEA, 0x50 };
 	static const uint8_t dfu_buttonless_uuid128[] = { 0x8E, 0xC9, 0x00, 0x03, 0xF3, 0x15, 0x4F, 0x60, 0x9F, 0xB8, 0x83, 0x88, 0x30, 0xDA, 0xEA, 0x50 };
 
-	dfu_packet_handler = packet_handler;
+	m_dfu_observer = observer;
 
 	// get service handle range
 	uint16_t start_handle = 0;
@@ -174,28 +197,8 @@ void nrf_dfu_ble_init(nrf_dfu_ble_packet_handler_t packet_handler) {
 	nrf_dfu_service.read_callback  = &nrf_dfu_ble_read_callback;
 	nrf_dfu_service.write_callback = &nrf_dfu_ble_write_callback;
 	att_server_register_service_handler(&nrf_dfu_service);
-}
 
-/** 
- * @brief Queue send request. When called, one packet can be send via nrf_dfu_ble_send below
- * @param request
- * @param con_handle
- */
-void nrf_dfu_ble_notify_request(void (*cb)(void *context), void *context, hci_con_handle_t con_handle) {
-	send_request.callback = cb;
-	send_request.context = context;
-	att_server_request_to_send_notification(&send_request, con_handle);
-}
-
-/** 
- * @brief Queue send request. When called, one packet can be send via nrf_dfu_ble_send below
- * @param request
- * @param con_handle
- */
-void nrf_dfu_ble_indicate_request(void (*cb)(void *context), void *context, hci_con_handle_t con_handle) {
-	send_request.callback = cb;
-	send_request.context = context;
-	att_server_request_to_send_indication(&send_request, con_handle);
+    return NRF_SUCCESS;
 }
 
 /**@brief Function for encoding the beginning of a response.
@@ -277,6 +280,7 @@ static void nrf_dfu_req_response_send_cb(void *context) {
 	if (req_context->is_notify_en)
 		att_server_notify(req_context->con_handle, req_context->att_handle, req_context->data, req_context->size);
 
+    NRF_LOG_DEBUG("Freeing req context:%p", req_context);
     free((void *)req_context);
 }
 
@@ -472,11 +476,12 @@ static void nrf_dfu_buttonless_response_send_cb(void *context) {
     if (req_context->is_indicate_en) {
         att_server_indicate(req_context->con_handle, req_context->att_handle, req_context->data, req_context->size);
         if (req_context->data[1] == NRF_DFU_BUT_CMD_CHANGE_BOOTLOADER_NAME) {
-            dfu_packet_handler(NRF_DFU_EVT_CHANGE_BOOTLOADER_NAME, dfu_buttonless_bootloader_name, sizeof(dfu_buttonless_bootloader_name));
+            m_dfu_observer(NRF_DFU_EVT_CHANGE_BOOTLOADER_NAME, dfu_buttonless_bootloader_name, sizeof(dfu_buttonless_bootloader_name));
         } else if (req_context->data[1] == NRF_DFU_BUT_CMD_ENTR_BOOTLOADER) {
-            dfu_packet_handler(NRF_DFU_EVT_ENTER_BOOTLOADER_MODE, NULL, 0);
+            m_dfu_observer(NRF_DFU_EVT_ENTER_BOOTLOADER_MODE, NULL, 0);
         }
     }
+    NRF_LOG_DEBUG("Freeing req context:%p", req_context);
     free((void *)req_context);
 }
 

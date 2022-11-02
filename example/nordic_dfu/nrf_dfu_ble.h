@@ -46,7 +46,7 @@
 #include <stdint.h>
 #include "bluetooth.h"
 #include "btstack_defines.h"
-
+#include "nrf_dfu_types.h"
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -59,13 +59,6 @@ extern "C" {
 #define RESPONSE_HEADER_LEN        3                                                       /**< The length of the header of a response. I.E. the index of the opcode-specific payload. */
 
 #define NRF_DFU_BUTTONLESS_RSP     0x20
-
-typedef enum {
-    NRF_DFU_EVT_CHANGE_BOOTLOADER_NAME = 0,
-    NRF_DFU_EVT_ENTER_BOOTLOADER_MODE
-} nrf_dfu_ble_evt_t;
-
-typedef void (*nrf_dfu_ble_packet_handler_t)(nrf_dfu_ble_evt_t evt, uint8_t *packet, uint16_t size);
 
 typedef enum {
     NRF_DFU_BUT_CMD_ENTR_BOOTLOADER = 0x01,
@@ -105,9 +98,7 @@ typedef struct {
  * @brief Init NRF DFU Service Server with ATT DB
  * @param packet_handler for events and data from dfu controller
  */
-void nrf_dfu_ble_init(nrf_dfu_ble_packet_handler_t packet_handler);
-
-
+uint32_t nrf_dfu_ble_init(nrf_dfu_observer_t observer);
 
 /* API_END */
 

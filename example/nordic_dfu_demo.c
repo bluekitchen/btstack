@@ -63,6 +63,7 @@
 #include "btstack.h"
 #include "nrf_dfu_ble.h"
 #include "nordic_dfu_demo.h"
+#include "nrf_dfu.h"
 
 uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
@@ -233,7 +234,7 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 }
 /* LISTING_END */
 
-static void nordic_dfu_packet_handler(nrf_dfu_ble_evt_t evt, uint8_t *packet, uint16_t size) {
+static void nordic_dfu_evt_observer(nrf_dfu_evt_type_t evt, uint8_t *packet, uint32_t size) {
     printf("%s evt:%d \n", __func__, evt);
 
     switch (evt) {
@@ -268,7 +269,7 @@ int btstack_main(void){
     att_server_init(profile_data, NULL, NULL);
     
     // setup nordic dfu server
-    nrf_dfu_ble_init(nordic_dfu_packet_handler);
+    nrf_dfu_init(nordic_dfu_evt_observer);
 
     // register for ATT events
     att_server_register_packet_handler(att_packet_handler);

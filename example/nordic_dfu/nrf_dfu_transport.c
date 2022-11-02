@@ -40,51 +40,35 @@
 #include "nrf_dfu_transport.h"
 #include "nrf_log.h"
 
+static nrf_dfu_transport_t *m_dfu_tran;
 
-#define DFU_TRANS_SECTION_ITEM_GET(i)       NRF_SECTION_ITEM_GET(dfu_trans, nrf_dfu_transport_t, (i))
-#define DFU_TRANS_SECTION_ITEM_COUNT        NRF_SECTION_ITEM_COUNT(dfu_trans, nrf_dfu_transport_t)
-
-NRF_SECTION_DEF(dfu_trans, const nrf_dfu_transport_t);
-
-
-uint32_t nrf_dfu_transports_init(nrf_dfu_observer_t observer)
+uint32_t nrf_dfu_transports_init(nrf_dfu_observer_t observer, nrf_dfu_transport_t *p_dfu_tran)
 {
-    uint32_t const num_transports = DFU_TRANS_SECTION_ITEM_COUNT;
     uint32_t ret_val = NRF_SUCCESS;
 
-    NRF_LOG_DEBUG("Initializing transports (found: %d)", num_transports);
+    if (NULL == p_dfu_tran || NULL == observer) {
+        NRF_LOG_ERROR("Initializing transports fail!");
+        return NRF_ERROR_INVALID_PARAM;
+    }
 
-    for (uint32_t i = 0; i < num_transports; i++)
-    {
-        nrf_dfu_transport_t * const trans = DFU_TRANS_SECTION_ITEM_GET(i);
-        ret_val = trans->init_func(observer);
-        if (ret_val != NRF_SUCCESS)
-        {
-            NRF_LOG_DEBUG("Failed to initialize transport %d, error %d", i, ret_val);
-            break;
-        }
+    m_dfu_tran = p_dfu_tran;
+    NRF_LOG_DEBUG("Initializing transports (found: %x)", m_dfu_tran);
+
+    if (m_dfu_tran->init_func) {
+        ret_val = m_dfu_tran->init_func(observer);
     }
 
     return ret_val;
 }
 
-
 uint32_t nrf_dfu_transports_close(nrf_dfu_transport_t const * p_exception)
 {
-    uint32_t const num_transports = DFU_TRANS_SECTION_ITEM_COUNT;
     uint32_t ret_val = NRF_SUCCESS;
 
-    NRF_LOG_DEBUG("Shutting down transports (found: %d)", num_transports);
+    NRF_LOG_DEBUG("Shutting down transports (found: %x)", m_dfu_tran);
 
-    for (uint32_t i = 0; i < num_transports; i++)
-    {
-        nrf_dfu_transport_t * const trans = DFU_TRANS_SECTION_ITEM_GET(i);
-        ret_val = trans->close_func(p_exception);
-        if (ret_val != NRF_SUCCESS)
-        {
-            NRF_LOG_DEBUG("Failed to shutdown transport %d, error %d", i, ret_val);
-            break;
-        }
+    if (m_dfu_tran->close_func) {
+        ret_val = m_dfu_tran->close_func(p_exception);
     }
 
     return ret_val;

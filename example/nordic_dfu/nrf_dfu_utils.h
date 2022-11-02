@@ -57,6 +57,15 @@ extern "C"
 {
 #endif
 
+/**@brief Macro for increasing a number to the nearest (larger) multiple of another number.
+ *
+ * @param[in]  alignment  The number to align to.
+ * @param[in]  number     The number to align (increase).
+ *
+ * @return The aligned (increased) @p number.
+ */
+#define ALIGN_NUM(alignment, number) (((number) - 1) + (alignment) - (((number) - 1) % (alignment)))
+
 /**@brief Function for encoding a uint16 value.
  *
  * @param[in]   value            Value to be encoded.

@@ -52,6 +52,7 @@
 #include "sdk_config.h"
 #include <stdio.h>
 #include <stdio.h>
+#include "btstack_debug.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -100,10 +101,10 @@ extern "C" {
  *  @details This macro is compiled only if @ref NRF_LOG_LEVEL includes debug logs.
  */
 
-#define NRF_LOG_ERROR(format, ...)         {printf(format, ## __VA_ARGS__);printf("\n");}
-#define NRF_LOG_WARNING(format, ...)       {printf(format, ## __VA_ARGS__);printf("\n");}
-#define NRF_LOG_INFO(format, ...)          {printf(format, ## __VA_ARGS__);printf("\n");}
-#define NRF_LOG_DEBUG(format, ...)         {printf(format, ## __VA_ARGS__);printf("\n");}
+#define NRF_LOG_ERROR(format, ...)         log_error(format, ## __VA_ARGS__)
+#define NRF_LOG_WARNING(format, ...)       log_error(format, ## __VA_ARGS__)
+#define NRF_LOG_INFO(format, ...)          log_info (format, ## __VA_ARGS__)
+#define NRF_LOG_DEBUG(format, ...)         log_debug(format, ## __VA_ARGS__)
 
 /** @def NRF_LOG_INST_ERROR
  *  @brief Macro for logging error messages for a given module instance. It takes a printf-like, formatted

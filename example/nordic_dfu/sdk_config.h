@@ -48,6 +48,10 @@
 #endif
 // <h> nRF_ANT 
 
+#define NRF_DFU_VALIDATION_EN   1
+#define NRF_DFU_FLASH           0
+
+
 #define NRF52_SERIES
 
 #define NRF_DFU_SETTINGS_VERSION    0x00000001
@@ -60,6 +64,26 @@
 
 #ifndef NRF_DFU_SETTINGS_COMPATIBILITY_MODE
 #define NRF_DFU_SETTINGS_COMPATIBILITY_MODE 1
+#endif
+
+#ifndef NRF_DFU_IN_APP
+#define NRF_DFU_IN_APP 0
+#endif
+
+#ifndef NRF_DFU_SINGLE_BANK_APP_UPDATES
+#define NRF_DFU_SINGLE_BANK_APP_UPDATES 1
+#endif
+
+#ifndef NRF_DFU_FORCE_DUAL_BANK_APP_UPDATES
+#define NRF_DFU_FORCE_DUAL_BANK_APP_UPDATES 0
+#endif
+
+// <i> Save DFU progress to flash so that it can be resumed if interrupted, instead of being restarted.
+// <i> Keep this setting disabled to maximize transfer speed and minimize flash wear.
+// <i> The init packet is always saved in flash, regardless of this setting.
+
+#ifndef NRF_DFU_SAVE_PROGRESS_IN_FLASH
+#define NRF_DFU_SAVE_PROGRESS_IN_FLASH 0
 #endif
 
 //==========================================================
@@ -8645,7 +8669,7 @@
 // <4=> Debug 
 
 #ifndef NRF_LOG_DEFAULT_LEVEL
-#define NRF_LOG_DEFAULT_LEVEL 3
+#define NRF_LOG_DEFAULT_LEVEL 4
 #endif
 
 // <q> NRF_LOG_DEFERRED  - Enable deffered logger.

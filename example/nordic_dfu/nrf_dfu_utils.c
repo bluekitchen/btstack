@@ -44,6 +44,7 @@
 #include "crc32.h"
 #include "nrf_log.h"
 #include "nrf_dfu_validation.h"
+#include "nrf_assert.h"
 
 void nrf_dfu_bank_invalidate(nrf_dfu_bank_t * const p_bank)
 {
@@ -59,13 +60,16 @@ void nrf_dfu_bank_invalidate(nrf_dfu_bank_t * const p_bank)
 void nrf_dfu_softdevice_invalidate(void)
 {
     static const uint32_t all_zero = 0UL;
+    ret_code_t err_code = NRF_SUCCESS;
 
     if (SD_PRESENT && !NRF_DFU_IN_APP)
     {
-        ret_code_t err_code = nrf_dfu_flash_store(SD_MAGIC_NUMBER_ABS_OFFSET_GET(MBR_SIZE), &all_zero, 4, NULL);
+#if NRF_DFU_FLASH
+        err_code = nrf_dfu_flash_store(SD_MAGIC_NUMBER_ABS_OFFSET_GET(MBR_SIZE), &all_zero, 4, NULL);
+#endif
         if (err_code != NRF_SUCCESS)
         {
-            NRF_LOG_ERROR("Could not invalidate SoftDevice.")
+            NRF_LOG_ERROR("Could not invalidate SoftDevice.");
         }
         else
         {

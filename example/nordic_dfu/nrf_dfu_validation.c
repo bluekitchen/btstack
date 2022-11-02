@@ -42,7 +42,7 @@
 #include "nrf_dfu_settings.h"
 #include "nrf_dfu_utils.h"
 #include "nrf_dfu_flash.h"
-//#include "nrf_bootloader_info.h"
+#include "nrf_bootloader_info.h"
 #include "pb.h"
 #include "pb_common.h"
 #include "pb_decode.h"
@@ -53,12 +53,9 @@
 #include "nrf_assert.h"
 #include "nrf_dfu_validation.h"
 #include "nrf_dfu_ver_validation.h"
-#include "nrf_strerror.h"
+//#include "nrf_strerror.h"
 
-#define NRF_LOG_MODULE_NAME nrf_dfu_validation
 #include "nrf_log.h"
-#include "nrf_log_ctrl.h"
-NRF_LOG_MODULE_REGISTER();
 
 #ifndef DFU_REQUIRES_SOFTDEVICE
 #if !defined(BLE_STACK_SUPPORT_REQD) && !defined(ANT_STACK_SUPPORT_REQD)
@@ -70,16 +67,20 @@ NRF_LOG_MODULE_REGISTER();
 
 #define EXT_ERR(err) (nrf_dfu_result_t)((uint32_t)NRF_DFU_RES_CODE_EXT_ERROR + (uint32_t)err)
 
+#define NRF_DFU_VALIDATION_CRYPTO_EN  0
 /* Whether a complete init command has been received and prevalidated, but the firmware
  * is not yet fully transferred. This value will also be correct after reset.
  */
+ 
 static bool               m_valid_init_cmd_present = false;
+
 static dfu_packet_t       m_packet                 = DFU_PACKET_INIT_DEFAULT;
 static uint8_t*           m_init_packet_data_ptr   = 0;
 static uint32_t           m_init_packet_data_len   = 0;
+static dfu_init_command_t const * mp_init = NULL;
 static pb_istream_t       m_pb_stream;
 
-static dfu_init_command_t const * mp_init = NULL;
+#if NRF_DFU_VALIDATION_CRYPTO_EN
 
 __ALIGN(4) extern const uint8_t pk[64];
 
@@ -104,6 +105,8 @@ static nrf_crypto_hash_sha256_digest_t              m_fw_hash;
 /** @brief Whether nrf_crypto and local keys have been initialized.
  */
 static bool                                         m_crypto_initialized = false;
+
+#endif
 
 /** @brief Flag used by parser code to indicate that the init command has been found to be invalid.
  */
@@ -204,6 +207,7 @@ static bool stored_init_cmd_decode(void)
     return true;
 }
 
+#if NRF_DFU_VALIDATION_CRYPTO_EN
 
 static void crypto_init(void)
 {
@@ -231,13 +235,16 @@ static void crypto_init(void)
 
     m_crypto_initialized = true;
 }
-
+#endif
 
 void nrf_dfu_validation_init(void)
 {
     // If the command is stored to flash, init command was valid.
-    if ((s_dfu_settings.progress.command_size != 0) &&
-         stored_init_cmd_decode())
+    if ((s_dfu_settings.progress.command_size != 0)
+#if NRF_DFU_VALIDATION_CRYPTO_EN
+        && stored_init_cmd_decode()
+#endif
+    )
     {
         m_valid_init_cmd_present = true;
     }
@@ -314,6 +321,7 @@ bool nrf_dfu_validation_init_cmd_present(void)
 }
 
 
+#if NRF_DFU_VALIDATION_CRYPTO_EN
 // Function determines if init command signature is obligatory.
 static bool signature_required(dfu_fw_type_t fw_type_to_be_updated)
 {
@@ -399,7 +407,7 @@ static nrf_dfu_result_t nrf_dfu_validation_signature_check(dfu_signature_type_t 
         NRF_LOG_HEXDUMP_DEBUG(m_sig_hash, hash_len);
         NRF_LOG_DEBUG("Public Key:");
         NRF_LOG_HEXDUMP_DEBUG(pk, sizeof(pk));
-        NRF_LOG_FLUSH();
+        //NRF_LOG_FLUSH();
 
         return NRF_DFU_RES_CODE_INVALID_OBJECT;
     }
@@ -407,7 +415,7 @@ static nrf_dfu_result_t nrf_dfu_validation_signature_check(dfu_signature_type_t 
     NRF_LOG_INFO("Image verified");
     return NRF_DFU_RES_CODE_SUCCESS;
 }
-
+#endif
 
 // Function to calculate the total size of the firmware(s) in the update.
 static nrf_dfu_result_t update_data_size_get(dfu_init_command_t const * p_init, uint32_t * p_size)
@@ -543,7 +551,7 @@ nrf_dfu_result_t nrf_dfu_validation_prevalidate(void)
         p_signature    =  m_packet.signed_command.signature.bytes;
         signature_len  =  m_packet.signed_command.signature.size;
     }
-
+#if NRF_DFU_VALIDATION_CRYPTO_EN
     // Validate signature.
     if (signature_required(p_command->init.type))
     {
@@ -553,12 +561,12 @@ nrf_dfu_result_t nrf_dfu_validation_prevalidate(void)
                                                      m_init_packet_data_ptr,
                                                      m_init_packet_data_len);
     }
-
     // Validate versions.
     if (ret_val == NRF_DFU_RES_CODE_SUCCESS)
     {
         ret_val = nrf_dfu_ver_validation_check(&p_command->init);
     }
+#endif
 
     if (ret_val != NRF_DFU_RES_CODE_SUCCESS)
     {
@@ -570,12 +578,12 @@ nrf_dfu_result_t nrf_dfu_validation_prevalidate(void)
     return ret_val;
 }
 
-
 nrf_dfu_result_t nrf_dfu_validation_init_cmd_execute(uint32_t * p_dst_data_addr,
                                                      uint32_t * p_data_len)
 {
     nrf_dfu_result_t ret_val = NRF_DFU_RES_CODE_SUCCESS;
 
+#if 1
     if (s_dfu_settings.progress.command_offset != s_dfu_settings.progress.command_size)
     {
         // The object wasn't the right (requested) size.
@@ -601,7 +609,7 @@ nrf_dfu_result_t nrf_dfu_validation_init_cmd_execute(uint32_t * p_dst_data_addr,
         {
             ret_val = update_data_size_get(mp_init, p_data_len);
         }
-
+        NRF_LOG_DEBUG("Firmware size:0x%x", *p_data_len);
         // Get address where to flash the binary.
         if (ret_val == NRF_DFU_RES_CODE_SUCCESS)
         {
@@ -623,11 +631,12 @@ nrf_dfu_result_t nrf_dfu_validation_init_cmd_execute(uint32_t * p_dst_data_addr,
         NRF_LOG_ERROR("Failed to decode init packet");
         ret_val = NRF_DFU_RES_CODE_INVALID_OBJECT;
     }
-
+#endif
     return ret_val;
 }
 
 
+#if NRF_DFU_VALIDATION_CRYPTO_EN
 // Function to check the hash received in the init command against the received firmware.
 // little_endian specifies the endianness of @p p_hash.
 static bool nrf_dfu_validation_hash_ok(uint8_t const * p_hash, uint32_t src_addr, uint32_t data_len, bool little_endian)
@@ -943,7 +952,7 @@ static bool postvalidate_sd_bl(dfu_init_command_t const  * p_init,
 
     return true;
 }
-
+#endif
 
 bool nrf_dfu_validation_boot_validate(boot_validation_t const * p_validation, uint32_t data_addr, uint32_t data_len)
 {
@@ -961,12 +970,12 @@ bool nrf_dfu_validation_boot_validate(boot_validation_t const * p_validation, ui
             if (crc != current_crc)
             {
                 // CRC does not match with what is stored.
-                NRF_LOG_DEBUG("CRC check of app failed. Return %d", NRF_DFU_DEBUG);
-                return NRF_DFU_DEBUG;
+                NRF_LOG_DEBUG("CRC check of app failed. Return %d", false);
+                return false;
             }
             return true;
         }
-
+#if NRF_DFU_VALIDATION_CRYPTO_EN
         case VALIDATE_SHA256:
             return nrf_dfu_validation_hash_ok(p_validation->bytes, data_addr, data_len, false);
 
@@ -980,7 +989,7 @@ bool nrf_dfu_validation_boot_validate(boot_validation_t const * p_validation, ui
                                             data_len);
             return (res_code == NRF_DFU_RES_CODE_SUCCESS);
         }
-
+#endif
         default:
             ASSERT(false);
             return false;
@@ -991,6 +1000,8 @@ bool nrf_dfu_validation_boot_validate(boot_validation_t const * p_validation, ui
 nrf_dfu_result_t postvalidate(uint32_t data_addr, uint32_t data_len, bool is_trusted)
 {
     nrf_dfu_result_t           ret_val = NRF_DFU_RES_CODE_SUCCESS;
+
+#if NRF_DFU_VALIDATION_CRYPTO_EN
     dfu_init_command_t const * p_init  = mp_init;
 
     if (!fw_hash_ok(p_init, data_addr, data_len))
@@ -1064,7 +1075,7 @@ nrf_dfu_result_t postvalidate(uint32_t data_addr, uint32_t data_len, bool is_tru
         nrf_dfu_settings_progress_reset();
         s_dfu_settings.progress.update_start_address = data_addr;
     }
-
+#endif
     return ret_val;
 }
 

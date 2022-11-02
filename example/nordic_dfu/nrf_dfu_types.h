@@ -79,7 +79,7 @@ extern "C" {
 #elif defined(NRF52_SERIES)
     #define CODE_PAGE_SIZE            (MBR_PAGE_SIZE_IN_WORDS * sizeof(uint32_t))
 #else
-    #define CODE_PAGE_SIZE             0xFF
+    #define CODE_PAGE_SIZE            (1024 * 2)
 #endif
 
 /** @brief  Maximum size of a data object.*/
@@ -216,6 +216,8 @@ typedef struct
 typedef enum
 {
     NRF_DFU_EVT_DFU_INITIALIZED,        /**< Starting DFU. */
+    NRF_DFU_EVT_CHANGE_BOOTLOADER_NAME, /**< Change DFU bootloader name. */
+    NRF_DFU_EVT_ENTER_BOOTLOADER_MODE,  /**< Enter DUF bootloader mode. */
     NRF_DFU_EVT_TRANSPORT_ACTIVATED,    /**< Transport activated (e.g. BLE connected, USB plugged in). */
     NRF_DFU_EVT_TRANSPORT_DEACTIVATED,  /**< Transport deactivated (e.g. BLE disconnected, USB plugged out). */
     NRF_DFU_EVT_DFU_STARTED,            /**< DFU process started. */
@@ -228,7 +230,7 @@ typedef enum
 /**
  * @brief Function for notifying DFU state.
  */
-typedef void (*nrf_dfu_observer_t)(nrf_dfu_evt_type_t notification);
+typedef void (*nrf_dfu_observer_t)(nrf_dfu_evt_type_t evt, uint8_t *data, uint32_t size);
 
 #define NRF_DFU_PEER_DATA_LEN 64 /**< The length in bytes of nrf_dfu_peer_data_t expected by tools manipulating the settings page. Do not change without changing the settings page version. */
 #define NRF_DFU_ADV_NAME_LEN  28 /**< The length in bytes of nrf_dfu_adv_name_t expected by tools manipulating the settings page. Do not change without changing the settings page version. */
