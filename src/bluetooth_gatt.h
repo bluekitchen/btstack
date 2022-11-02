@@ -60,7 +60,8 @@
 #define ORG_BLUETOOTH_SERVICE_WEIGHT_SCALE                                                                            0x181D // Weight Scale
 
 /**
- * Assigned numbers, manually added from btprodspecificationrefs.blob.core.windows.net/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf
+ * Assigned numbers, manually added from:
+ * btprodspecificationrefs.blob.core.windows.net/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf
  * and processed with tool: bluetooth_gatt_process_uuid_list.py
  */
 #define ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL                                                                     0x1843 // Audio Input Control
@@ -315,7 +316,7 @@
 
 /**
  * Assigned numbers, manually added from:
- *  https://btprodspecificationrefs.blob.core.windows.net/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf
+ * btprodspecificationrefs.blob.core.windows.net/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf
  * and processed with tool: bluetooth_gatt_process_uuid_list.py
  */
 
