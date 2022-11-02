@@ -219,7 +219,6 @@ static void hci_trigger_remote_features_for_connection(hci_connection_t * connec
 #endif
 
 #ifdef ENABLE_BLE
-static void hci_whitelist_free(void);
 #ifdef ENABLE_LE_CENTRAL
 // called from test/ble_client/advertising_data_parser.c
 void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
@@ -8406,17 +8405,6 @@ static void hci_whitelist_clear(void){
         }
         // directly remove entry from whitelist
         btstack_linked_list_iterator_remove(&it);
-        btstack_memory_whitelist_entry_free(entry);
-    }
-}
-
-// free all entries unconditionally
-static void hci_whitelist_free(void){
-    btstack_linked_list_iterator_t lit;
-    btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
-    while (btstack_linked_list_iterator_has_next(&lit)){
-        whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&lit);
-        btstack_linked_list_remove(&hci_stack->le_whitelist, (btstack_linked_item_t *) entry);
         btstack_memory_whitelist_entry_free(entry);
     }
 }
