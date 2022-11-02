@@ -229,7 +229,6 @@ static bool hci_run_general_gap_le(void);
 #endif
 #ifdef ENABLE_LE_PERIPHERAL
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-static void hci_periodic_advertiser_list_free(void);
 static le_advertising_set_t * hci_advertising_set_for_handle(uint8_t advertising_handle);
 #endif /* ENABLE_LE_EXTENDED_ADVERTISING */
 #endif /* ENABLE_LE_PERIPHERAL */
@@ -4915,7 +4914,18 @@ static void hci_power_enter_halting_state(void){
         }
     }
 #ifdef ENABLE_LE_PERIODIC_ADVERTISING
-    hci_periodic_advertiser_list_free();
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_periodic_advertiser_list);
+    const uint8_t mask = LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER | LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER;
+    while (btstack_linked_list_iterator_has_next(&it)){
+        periodic_advertiser_list_entry_t * entry = (periodic_advertiser_list_entry_t*) btstack_linked_list_iterator_next(&it);
+        if ((entry->state & mask) == LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER) {
+            btstack_linked_list_iterator_remove(&it);
+            btstack_memory_periodic_advertiser_list_entry_free(entry);
+        } else {
+            entry->state |= LE_PERIODIC_ADVERTISER_LIST_ENTRY_ADD_TO_CONTROLLER;
+            continue;
+        }
+    }
 #endif
 #endif
     // see hci_run
@@ -9178,17 +9188,6 @@ static void hci_periodic_advertiser_list_clear(void){
         }
         // directly remove entry from whitelist
         btstack_linked_list_iterator_remove(&it);
-        btstack_memory_periodic_advertiser_list_entry_free(entry);
-    }
-}
-
-// free all entries unconditionally
-static void hci_periodic_advertiser_list_free(void){
-    btstack_linked_list_iterator_t lit;
-    btstack_linked_list_iterator_init(&lit, &hci_stack->le_periodic_advertiser_list);
-    while (btstack_linked_list_iterator_has_next(&lit)){
-        periodic_advertiser_list_entry_t * entry = (periodic_advertiser_list_entry_t*) btstack_linked_list_iterator_next(&lit);
-        btstack_linked_list_remove(&hci_stack->le_periodic_advertiser_list, (btstack_linked_item_t *) entry);
         btstack_memory_periodic_advertiser_list_entry_free(entry);
     }
 }

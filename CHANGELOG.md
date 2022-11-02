@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Mesh: move GATT Services into src/mesh/gatt-service
 - LE Audio: move GATT Services into src/le-audio/gatt-service
 - SM: delete bonding information for existing device with BD_ADDR, on new pairing with different IRK
+- GAP: reload LE Filterlist and Periodic Advertiser List after power-cycle
 
 ## Release v1.5.4
 
