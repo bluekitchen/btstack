@@ -4903,7 +4903,18 @@ static void hci_power_enter_initializing_state(void){
 
 static void hci_power_enter_halting_state(void){
 #ifdef ENABLE_BLE
-    hci_whitelist_free();
+    // drop entries scheduled for removal, mark others for re-adding
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_whitelist);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&it);
+        if ((entry->state & (LE_WHITELIST_REMOVE_FROM_CONTROLLER | LE_WHITELIST_ADD_TO_CONTROLLER)) == LE_WHITELIST_REMOVE_FROM_CONTROLLER){
+            btstack_linked_list_iterator_remove(&it);
+            btstack_memory_whitelist_entry_free(entry);
+        } else {
+            entry->state = LE_WHITELIST_ADD_TO_CONTROLLER;
+        }
+    }
 #ifdef ENABLE_LE_PERIODIC_ADVERTISING
     hci_periodic_advertiser_list_free();
 #endif
