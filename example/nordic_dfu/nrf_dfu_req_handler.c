@@ -523,6 +523,12 @@ static void on_data_obj_write_request(nrf_dfu_request_t * p_req, nrf_dfu_respons
      */
     p_res->write.crc    = s_dfu_settings.progress.firmware_image_crc;
     p_res->write.offset = s_dfu_settings.progress.firmware_image_offset;
+
+    /* If a callback to free the request payload buffer was provided, invoke it now. */
+    if (p_req->callback.write)
+    {
+        p_req->callback.write((void*)p_req->write.p_data);
+    }
 }
 
 

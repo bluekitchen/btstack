@@ -308,7 +308,7 @@ static ret_code_t settings_write(void                   * p_dst,
                                  nrf_dfu_flash_callback_t callback,
                                  nrf_dfu_settings_t     * p_dfu_settings_buffer)
 {
-    ret_code_t err_code;
+    ret_code_t err_code = NRF_SUCCESS;
 
     if (memcmp(p_dst, p_src, sizeof(nrf_dfu_settings_t)) == 0)
     {
