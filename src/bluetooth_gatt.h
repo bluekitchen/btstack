@@ -16,8 +16,7 @@
 #define ORG_BLUETOOTH_ATTRIBUTE_GATT_SECONDARY_SERVICE_DECLARATION                                                    0x2801 // Secondary Service
 
 /**
- * Assigned numbers from:
- *  https://www.bluetooth.com/specifications/gatt/services
+ * Assigned numbers from www.bluetooth.com/specifications/gatt/services
  */
 #define ORG_BLUETOOTH_SERVICE_ALERT_NOTIFICATION                                                                      0x1811 // Alert Notification Service
 #define ORG_BLUETOOTH_SERVICE_AUTOMATION_IO                                                                           0x1815 // Automation IO
@@ -61,8 +60,7 @@
 #define ORG_BLUETOOTH_SERVICE_WEIGHT_SCALE                                                                            0x181D // Weight Scale
 
 /**
- * Assigned numbers, manually added from:
- *  https://btprodspecificationrefs.blob.core.windows.net/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf
+ * Assigned numbers, manually added from btprodspecificationrefs.blob.core.windows.net/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf
  * and processed with tool: bluetooth_gatt_process_uuid_list.py
  */
 #define ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL                                                                     0x1843 // Audio Input Control
