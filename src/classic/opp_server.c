@@ -120,23 +120,6 @@ static opp_server_t opp_server_singleton;
 static void opp_server_handle_get_request(opp_server_t * opp_server);
 static void opp_server_build_response(opp_server_t * opp_server);
 
-static void opp_server_emit_pull_object_data_event(opp_server_t * context,uint32_t cur_position, uint16_t buf_size){
-    uint8_t event[11];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_OPP_META;
-    pos++;  // skip len
-    event[pos++] = OPP_SUBEVENT_PULL_OBJECT_DATA;
-    little_endian_store_16(event,pos,context->opp_cid);
-    pos+=2;
-    little_endian_store_32(event,pos,cur_position);
-    pos+=4;
-    little_endian_store_16(event,pos,buf_size);
-    pos+=2;
-    event[1] = pos - 2;
-    if (pos != sizeof(event)) log_error("opp_server_emit_pull_object_data_event size %u", pos);
-    (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, context->opp_cid, &event[0], pos);
-}
-
 
 static opp_server_t * opp_server_for_goep_cid(uint16_t goep_cid){
     // TODO: check goep_cid after incoming connection -> accept/reject is implemented and state has been setup
@@ -493,6 +476,29 @@ static void opp_server_parser_callback_get(void * user_data, uint8_t header_id, 
 
 static void opp_server_handle_get_request(opp_server_t * opp_server){
     opp_server_handle_srm_headers(opp_server);
+    if (strcmp("text/x-vcard", opp_server->request.type) != 0 ||
+        opp_server->request.name[0] != '\0') {
+        // wrong default object request
+        if (opp_server->request.name[0] != '\0') {
+            printf ("forbidden\n");
+            opp_server->response.code = OBEX_RESP_FORBIDDEN;
+        } else {
+            printf ("wrong type\n");
+            opp_server->response.code = OBEX_RESP_BAD_REQUEST;
+        }
+        opp_server->state = OPP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+        goep_server_request_can_send_now(opp_server->goep_cid);
+        return;
+    }
+
+    uint8_t event[2+3];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_OPP_META;
+    event[pos++] = 0;
+    event[pos++] = OPP_SUBEVENT_PULL_DEFAULT_OBJECT;
+    little_endian_store_16(event, pos, opp_server->opp_cid);
+    pos += 2;
+    (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 
     opp_server->state = OPP_SERVER_STATE_W4_USER_DATA;
 }
@@ -503,7 +509,6 @@ static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opc
     log_info ("handle put request");
     // emit received opp data
     opp_server->state = OPP_SERVER_STATE_SEND_PUT_RESPONSE;
-    // opp_server_emit_pull_object_data_event (opp_server, 0, 0);
 
     // (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 
