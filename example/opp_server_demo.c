@@ -71,9 +71,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     int i;
     uint8_t status;
+    bd_addr_t event_addr;
+
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
+                case HCI_EVENT_PIN_CODE_REQUEST:
+                    // inform about pin code request
+                    printf("Pin code request - using '0000'\n");
+                    hci_event_pin_code_request_get_bd_addr(packet, event_addr);
+                    gap_pin_code_response(event_addr, "0000");
+                    break;
                 case HCI_EVENT_OPP_META:
                     switch (hci_event_opp_meta_get_subevent_code(packet)){
                         case OPP_SUBEVENT_CONNECTION_OPENED:
