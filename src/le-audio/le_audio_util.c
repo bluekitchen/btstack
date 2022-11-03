@@ -42,7 +42,7 @@
 #include "le-audio/le_audio_util.h"
 
 // help with buffer == NULL
-uint16_t le_audio_virtual_memcpy_helper(
+uint16_t le_audio_util_virtual_memcpy_helper(
     const uint8_t * field_data, uint16_t field_len, uint16_t field_offset,
     uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset){
 
@@ -53,14 +53,15 @@ uint16_t le_audio_virtual_memcpy_helper(
     return btstack_virtual_memcpy(field_data, field_len, field_offset, buffer, buffer_size, buffer_offset);
 }
 
-uint16_t le_audio_virtual_memcpy_metadata(const le_audio_metadata_t * metadata, uint8_t metadata_length, uint16_t * records_offset, uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset){
+uint16_t le_audio_util_metadata_virtual_memcpy(const le_audio_metadata_t * metadata, uint8_t metadata_length, uint16_t * records_offset, uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset){
     uint16_t metadata_type;
     uint8_t  field_data[7];
     uint16_t stored_bytes = 0;
 
     uint16_t metadata_length_pos = *records_offset;
     field_data[0] = 0;
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, *records_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, *records_offset, buffer, buffer_size,
+                                                        buffer_offset);
     *records_offset += 1;
 
     if (metadata_length == 0){
@@ -77,64 +78,86 @@ uint16_t le_audio_virtual_memcpy_metadata(const le_audio_metadata_t * metadata, 
                 case LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS:
                     field_data[0] += 2;
                     little_endian_store_16(field_data, 2, metadata->preferred_audio_contexts_mask);
-                    stored_bytes += le_audio_virtual_memcpy_helper(field_data, field_data[0] + 1, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, field_data[0] + 1, *records_offset,
+                                                                        buffer, buffer_size, buffer_offset);
                     *records_offset += field_data[0] + 1;
                     break;
                 case LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS:
                     field_data[0] += 2;
                     little_endian_store_16(field_data, 2, metadata->streaming_audio_contexts_mask);
-                    stored_bytes += le_audio_virtual_memcpy_helper(field_data, field_data[0] + 1, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, field_data[0] + 1, *records_offset,
+                                                                        buffer, buffer_size, buffer_offset);
                     *records_offset += field_data[0] + 1;
                     break;
                 case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO:
                     field_data[0] += metadata->program_info_length;
-                    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 2, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 2, *records_offset, buffer,
+                                                                        buffer_size, buffer_offset);
                     *records_offset += 2;
-                    stored_bytes += le_audio_virtual_memcpy_helper(metadata->program_info, metadata->program_info_length, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(metadata->program_info,
+                                                                        metadata->program_info_length, *records_offset,
+                                                                        buffer, buffer_size, buffer_offset);
                     *records_offset += metadata->program_info_length;
                     break;
                 case LE_AUDIO_METADATA_TYPE_LANGUAGE:
                     field_data[0] += 3;
                     little_endian_store_24(field_data, 2, metadata->language_code);
-                    stored_bytes += le_audio_virtual_memcpy_helper(field_data, field_data[0] + 1, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, field_data[0] + 1, *records_offset,
+                                                                        buffer, buffer_size, buffer_offset);
                     *records_offset += field_data[0] + 1;
                     break;
                 case LE_AUDIO_METADATA_TYPE_CCID_LIST:
                     field_data[0] += metadata->ccids_num;
-                    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 2, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 2, *records_offset, buffer,
+                                                                        buffer_size, buffer_offset);
                     *records_offset += 2;
-                    stored_bytes += le_audio_virtual_memcpy_helper(metadata->ccids, metadata->ccids_num, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(metadata->ccids, metadata->ccids_num,
+                                                                        *records_offset, buffer, buffer_size,
+                                                                        buffer_offset);
                     *records_offset += metadata->ccids_num;
                     break;
                 case LE_AUDIO_METADATA_TYPE_PARENTAL_RATING:
                     field_data[0] += 1;
                     field_data[2] = (uint8_t) metadata->parental_rating;
-                    stored_bytes += le_audio_virtual_memcpy_helper(field_data, field_data[0] + 1, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, field_data[0] + 1, *records_offset,
+                                                                        buffer, buffer_size, buffer_offset);
                     *records_offset += field_data[0] + 1;
                     break;
                 case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO_URI:
                     field_data[0] += metadata->program_info_uri_length;
-                    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 2, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 2, *records_offset, buffer,
+                                                                        buffer_size, buffer_offset);
                     *records_offset += 2;
-                    stored_bytes += le_audio_virtual_memcpy_helper(metadata->program_info_uri, metadata->program_info_uri_length, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(metadata->program_info_uri,
+                                                                        metadata->program_info_uri_length,
+                                                                        *records_offset, buffer, buffer_size,
+                                                                        buffer_offset);
                     *records_offset += metadata->program_info_uri_length;
                     break;
                 case LE_AUDIO_METADATA_TYPE_MAPPED_EXTENDED_METADATA_BIT_POSITION:
                     field_data[0] += 2 + metadata->extended_metadata_length;
                     field_data[1] = LE_AUDIO_METADATA_TYPE_EXTENDED_METADATA;
                     little_endian_store_16(field_data, 2, metadata->extended_metadata_type);
-                    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 4, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 4, *records_offset, buffer,
+                                                                        buffer_size, buffer_offset);
                     *records_offset += 4;
-                    stored_bytes += le_audio_virtual_memcpy_helper(metadata->extended_metadata, metadata->extended_metadata_length, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(metadata->extended_metadata,
+                                                                        metadata->extended_metadata_length,
+                                                                        *records_offset, buffer, buffer_size,
+                                                                        buffer_offset);
                     *records_offset += metadata->extended_metadata_length;
                     break;
                 case LE_AUDIO_METADATA_TYPE_MAPPED_VENDOR_SPECIFIC_METADATA_BIT_POSITION:
                     field_data[0] += 2 + metadata->vendor_specific_metadata_length;
                     field_data[1] = LE_AUDIO_METADATA_TYPE_VENDOR_SPECIFIC_METADATA;
                     little_endian_store_16(field_data, 2, metadata->vendor_specific_company_id);
-                    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 4, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 4, *records_offset, buffer,
+                                                                        buffer_size, buffer_offset);
                     *records_offset += 4;
-                    stored_bytes += le_audio_virtual_memcpy_helper(metadata->vendor_specific_metadata, metadata->vendor_specific_metadata_length, *records_offset, buffer, buffer_size, buffer_offset);
+                    stored_bytes += le_audio_util_virtual_memcpy_helper(metadata->vendor_specific_metadata,
+                                                                        metadata->vendor_specific_metadata_length,
+                                                                        *records_offset, buffer, buffer_size,
+                                                                        buffer_offset);
                     *records_offset += metadata->vendor_specific_metadata_length;
                     break;
                 default:
@@ -145,12 +168,12 @@ uint16_t le_audio_virtual_memcpy_metadata(const le_audio_metadata_t * metadata, 
     }
 
     field_data[0] =  *records_offset - metadata_length_pos - 1;
-    le_audio_virtual_memcpy_helper(field_data, 1, metadata_length_pos, buffer, buffer_size, buffer_offset);
+    le_audio_util_virtual_memcpy_helper(field_data, 1, metadata_length_pos, buffer, buffer_size, buffer_offset);
     return stored_bytes;
 }
 
 
-uint16_t le_audio_metadata_parse_tlv(uint8_t * buffer, uint8_t buffer_size, le_audio_metadata_t * metadata){
+uint16_t le_audio_util_metadata_parse(uint8_t * buffer, uint8_t buffer_size, le_audio_metadata_t * metadata){
     // parse config to get sampling frequency and frame duration
     uint8_t offset = 0;
     uint8_t metadata_config_lenght = buffer[offset++];
@@ -226,7 +249,7 @@ uint16_t le_audio_metadata_parse_tlv(uint8_t * buffer, uint8_t buffer_size, le_a
     return offset;
 }
 
-uint16_t le_audio_copy_metadata_to_event_buffer(le_audio_metadata_t * metadata, uint8_t * event, uint16_t event_size){
+uint16_t le_audio_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_t * event, uint16_t event_size){
     uint8_t pos = 0;
     
     event[pos++] = (uint8_t)metadata->metadata_mask;

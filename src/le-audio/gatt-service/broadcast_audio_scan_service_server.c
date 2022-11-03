@@ -250,22 +250,26 @@ static uint16_t bass_server_copy_source_to_buffer(bass_server_source_t * source,
         return 0;
     }
     field_data[0] = source->source_id;
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     source_offset++;
 
     stored_bytes += bass_util_copy_source_common_data_to_buffer(&source->data, &source_offset, buffer_offset, buffer, buffer_size);
 
     field_data[0] = (uint8_t)source->data.pa_sync_state;
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     source_offset++;
 
     field_data[0] = (uint8_t)source->big_encryption;
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     source_offset++;
 
     if (source->big_encryption == LE_AUDIO_BIG_ENCRYPTION_BAD_CODE){
         reverse_128(source->bad_code, &field_data[0]);
-        stored_bytes += le_audio_virtual_memcpy_helper(field_data, 16, source_offset, buffer, buffer_size, buffer_offset);
+        stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 16, source_offset, buffer, buffer_size,
+                                                            buffer_offset);
         source_offset += 16;
     }
 

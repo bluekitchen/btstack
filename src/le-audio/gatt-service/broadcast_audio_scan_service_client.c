@@ -324,17 +324,20 @@ static uint16_t bass_client_prepare_add_source_buffer(bass_client_connection_t *
     memset(buffer, 0, buffer_size);
 
     field_data[0] = (uint8_t)BASS_OPCODE_ADD_SOURCE;
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     source_offset++;
 
     stored_bytes += bass_util_copy_source_common_data_to_buffer(receive_state, &source_offset, buffer_offset, buffer, buffer_size);
 
     field_data[0] = (uint8_t)receive_state->pa_sync;
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     source_offset++;
 
     little_endian_store_16(field_data, 0, receive_state->pa_interval);
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 2, source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 2, source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     source_offset += 2;
 
     stored_bytes += bass_util_store_source_subgroups_into_buffer(receive_state, false, &source_offset, buffer_offset,
@@ -359,19 +362,23 @@ static uint16_t bass_client_prepare_modify_source_buffer(bass_client_connection_
     memset(buffer, 0, buffer_size);
 
     field_data[0] = (uint8_t)BASS_OPCODE_MODIFY_SOURCE;
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     source_offset++;
     
     field_data[0] = connection->control_point_operation_source_id;
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     source_offset++;
 
     field_data[0] = (uint8_t)receive_state->pa_sync;
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     source_offset++;
 
     little_endian_store_16(field_data, 0, receive_state->pa_interval);
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 2, source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 2, source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     source_offset += 2;
 
     stored_bytes += bass_util_store_source_subgroups_into_buffer(receive_state, false, &source_offset, buffer_offset,

@@ -50,15 +50,15 @@
 extern "C" {
 #endif
 
-uint16_t le_audio_virtual_memcpy_helper(
+uint16_t le_audio_util_virtual_memcpy_helper(
     const uint8_t * field_data, uint16_t field_len, uint16_t field_offset,
     uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset);
 
-uint16_t le_audio_virtual_memcpy_metadata(const le_audio_metadata_t * metadata, uint8_t metadata_length, uint16_t * records_offset, uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset);
+uint16_t le_audio_util_metadata_virtual_memcpy(const le_audio_metadata_t * metadata, uint8_t metadata_length, uint16_t * records_offset, uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset);
 
-uint16_t le_audio_metadata_parse_tlv(uint8_t * buffer, uint8_t buffer_size, le_audio_metadata_t * metadata);
+uint16_t le_audio_util_metadata_parse(uint8_t * buffer, uint8_t buffer_size, le_audio_metadata_t * metadata);
 
-uint16_t le_audio_copy_metadata_to_event_buffer(le_audio_metadata_t * metadata, uint8_t * event, uint16_t event_size);
+uint16_t le_audio_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_t * event, uint16_t event_size);
 
 #if defined __cplusplus
 }

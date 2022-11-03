@@ -61,19 +61,23 @@ uint16_t bass_util_copy_source_common_data_to_buffer(const bass_source_data_t * 
     uint8_t  field_data[16];
 
     field_data[0] = (uint8_t)data->address_type;
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, *source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, *source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     (*source_offset)++;
     
     reverse_bd_addr(data->address, &field_data[0]);
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 6, *source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 6, *source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     (*source_offset) += 6;
 
     field_data[0] = data->adv_sid;
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, *source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, *source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     (*source_offset)++;
 
     little_endian_store_24(field_data, 0, data->broadcast_id);
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 3, *source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 3, *source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     (*source_offset) += 3;
 
     return stored_bytes;
@@ -87,7 +91,8 @@ bass_util_store_source_subgroups_into_buffer(const bass_source_data_t *data, boo
     uint8_t  field_data[16];
     
     field_data[0] = (uint8_t)data->subgroups_num;
-    stored_bytes += le_audio_virtual_memcpy_helper(field_data, 1, *source_offset, buffer, buffer_size, buffer_offset);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, *source_offset, buffer, buffer_size,
+                                                        buffer_offset);
     (*source_offset)++;
 
     uint8_t i;
@@ -99,9 +104,11 @@ bass_util_store_source_subgroups_into_buffer(const bass_source_data_t *data, boo
         } else {
             little_endian_store_32(field_data, 0, subgroup.bis_sync);
         }
-        stored_bytes += le_audio_virtual_memcpy_helper(field_data, 4, *source_offset, buffer, buffer_size, buffer_offset);
+        stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 4, *source_offset, buffer, buffer_size,
+                                                            buffer_offset);
         (*source_offset) += 4;
-        stored_bytes += le_audio_virtual_memcpy_metadata(&subgroup.metadata, subgroup.metadata_length, source_offset, buffer, buffer_size, buffer_offset);
+        stored_bytes += le_audio_util_metadata_virtual_memcpy(&subgroup.metadata, subgroup.metadata_length,
+                                                              source_offset, buffer, buffer_size, buffer_offset);
     }
     return stored_bytes;
 }
@@ -220,7 +227,8 @@ bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t buffer
         }
         pos += 4;
        
-        uint8_t metadata_bytes_read = le_audio_metadata_parse_tlv(&buffer[pos], buffer_size - pos, &source_data->subgroups[i].metadata);
+        uint8_t metadata_bytes_read = le_audio_util_metadata_parse(&buffer[pos], buffer_size - pos,
+                                                                   &source_data->subgroups[i].metadata);
         source_data->subgroups[i].metadata_length = metadata_bytes_read - 1;
         pos += metadata_bytes_read;
     }
