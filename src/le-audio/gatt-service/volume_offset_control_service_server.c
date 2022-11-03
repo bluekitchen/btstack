@@ -173,8 +173,8 @@ static bool vocs_set_volume_offset(volume_offset_control_service_server_t * vocs
 }
 
 static bool vocs_set_audio_location(volume_offset_control_service_server_t * vocs, uint32_t audio_location){
-    if (audio_location == VOCS_AUDIO_LOCATION_NOT_ALLOWED) return false;
-    if (audio_location >= VOCS_AUDIO_LOCATION_RFU) return false;
+    if (audio_location == LE_AUDIO_LOCATION_MASK_NOT_ALLOWED) return false;
+    if ( (audio_location & LE_AUDIO_LOCATION_MASK_RFU) != 0) return false;
 
     vocs->info->audio_location = audio_location;
     return true;
