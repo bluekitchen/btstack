@@ -89,8 +89,8 @@ static int sim1_selected;
 
 static void select_phonebook(const char * phonebook){
     phonebook_name = phonebook;
-    sprintf(phonebook_path, "%s%s.vcf", sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook);
-    sprintf(phonebook_folder, "%s%s",   sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook);
+    snprintf(phonebook_path, sizeof(phonebook_path), "%s%s.vcf", sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook);
+    snprintf(phonebook_folder, sizeof(phonebook_path), "%s%s",   sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook);
     printf("[-] Phonebook name   '%s'\n", phonebook_name);
     printf("[-] Phonebook folder '%s'\n", phonebook_folder);
     printf("[-] Phonebook path   '%s'\n", phonebook_path);
