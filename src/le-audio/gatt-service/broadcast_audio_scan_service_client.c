@@ -268,7 +268,7 @@ static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channe
             return;
         }
         source->source_id = value[0];
-        bass_util_get_source_from_buffer(&value[1], value_length - 1, &source->data, true);
+        bass_util_source_data_parse(&value[1], value_length - 1, &source->data, true);
 
         // get big encryption + bad code
         source->big_encryption = (le_audio_big_encryption_t) value[13];
@@ -328,7 +328,8 @@ static uint16_t bass_client_prepare_add_source_buffer(bass_client_connection_t *
                                                         buffer_offset);
     source_offset++;
 
-    stored_bytes += bass_util_copy_source_common_data_to_buffer(receive_state, &source_offset, buffer_offset, buffer, buffer_size);
+    stored_bytes += bass_util_source_data_header_virtual_memcpy(receive_state, &source_offset, buffer_offset, buffer,
+                                                                buffer_size);
 
     field_data[0] = (uint8_t)receive_state->pa_sync;
     stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, source_offset, buffer, buffer_size,
@@ -340,9 +341,9 @@ static uint16_t bass_client_prepare_add_source_buffer(bass_client_connection_t *
                                                         buffer_offset);
     source_offset += 2;
 
-    stored_bytes += bass_util_store_source_subgroups_into_buffer(receive_state, false, &source_offset, buffer_offset,
-                                                                 buffer,
-                                                                 buffer_size);
+    stored_bytes += bass_util_source_data_subgroups_virtual_memcpy(receive_state, false, &source_offset, buffer_offset,
+                                                                   buffer,
+                                                                   buffer_size);
     
     return stored_bytes;
 }
@@ -381,9 +382,9 @@ static uint16_t bass_client_prepare_modify_source_buffer(bass_client_connection_
                                                         buffer_offset);
     source_offset += 2;
 
-    stored_bytes += bass_util_store_source_subgroups_into_buffer(receive_state, false, &source_offset, buffer_offset,
-                                                                 buffer,
-                                                                 buffer_size);
+    stored_bytes += bass_util_source_data_subgroups_virtual_memcpy(receive_state, false, &source_offset, buffer_offset,
+                                                                   buffer,
+                                                                   buffer_size);
     return stored_bytes;
 }
 

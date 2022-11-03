@@ -110,22 +110,20 @@ typedef struct {
 } bass_source_data_t;
 
 // offset gives position into fully serialized BASS record
-uint16_t bass_util_copy_source_common_data_to_buffer(const bass_source_data_t * data, uint16_t *source_offset, uint16_t buffer_offset, uint8_t * buffer, uint16_t buffer_size);
+uint16_t bass_util_source_data_header_virtual_memcpy(const bass_source_data_t * data, uint16_t *source_offset, uint16_t buffer_offset, uint8_t * buffer, uint16_t buffer_size);
 
-uint16_t
-bass_util_store_source_subgroups_into_buffer(const bass_source_data_t *data, bool use_state_fields, uint16_t *source_offset,
-                                             uint16_t buffer_offset, uint8_t *buffer, uint16_t buffer_size);
+uint16_t bass_util_source_data_subgroups_virtual_memcpy(const bass_source_data_t *data, bool use_state_fields, uint16_t *source_offset,
+                                                        uint16_t buffer_offset, uint8_t *buffer, uint16_t buffer_size);
 
 bool bass_util_pa_sync_state_and_subgroups_in_valid_range(uint8_t *buffer, uint16_t buffer_size);
 
-bool bass_util_add_source_buffer_in_valid_range(uint8_t *buffer, uint16_t buffer_size);
+bool bass_util_source_buffer_in_valid_range(uint8_t *buffer, uint16_t buffer_size);
 
-void bass_util_get_source_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
+void bass_util_source_data_parse(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
+                                 bool is_broadcast_receive_state);
+
+void bass_util_pa_info_and_subgroups_parse(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
                                       bool is_broadcast_receive_state);
-
-void
-bass_util_get_pa_info_and_subgroups_from_buffer(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
-                                                bool is_broadcast_receive_state);
 
 /* API_END */
 
