@@ -108,16 +108,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case OPP_SUBEVENT_CONNECTION_CLOSED:
                             printf("[+] Connection closed\n");
                             break;
-                        case OPP_SUBEVENT_PULL_OBJECT_DATA:
-                            cur_pos = opp_subevent_push_object_data_get_cur_position(packet);
-                            bufsize = opp_subevent_push_object_data_get_buf_size(packet);
-                            cur_size = sizeof (default_object_vcard) - 1;
-                            opp_server_send_pull_response (opp_cid, cur_size - cur_pos < bufsize ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE, cur_pos, cur_size - cur_pos > bufsize ?  bufsize : cur_size - cur_pos, default_object_vcard + cur_pos);
-
-                            printf("[+] ... pull data requested, offset %u, bufsize %u, pushing %u bytes\n",
-                                   cur_pos, bufsize, cur_size);
-
-                            break;
                         case OPP_SUBEVENT_OPERATION_COMPLETED:
                             printf("[+] Operation complete, status 0x%02x\n",
                                    opp_subevent_operation_completed_get_status(packet));

@@ -364,8 +364,8 @@ static void opp_server_handle_can_send_now(opp_server_t * opp_server){
         {
             // next state
             response_code = opp_server->response.code;
+            goep_server_response_create_general(opp_server->goep_cid);
             if (response_code == OBEX_RESP_CONTINUE){
-                goep_server_response_create_general(opp_server->goep_cid);
                 // next state
                 opp_server->state = OPP_SERVER_STATE_W4_PUT_OPCODE;
             } else {
@@ -503,7 +503,7 @@ static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opc
     log_info ("handle put request");
     // emit received opp data
     opp_server->state = OPP_SERVER_STATE_SEND_PUT_RESPONSE;
-    opp_server_emit_pull_object_data_event (opp_server, 0, 0);
+    // opp_server_emit_pull_object_data_event (opp_server, 0, 0);
 
     // (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 
