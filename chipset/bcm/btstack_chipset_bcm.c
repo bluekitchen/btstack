@@ -247,12 +247,16 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
     }
     tinydir_close(&dir);
     if (match_complete){
-        sprintf(matched_file, "%s/%s", hcd_folder_path, filename_complete);
+        btstack_strcpy(matched_file, sizeof(matched_file), hcd_folder_path);
+        btstack_strcat(matched_file, sizeof(matched_file), "/");
+        btstack_strcat(matched_file, sizeof(matched_file), filename_complete);
         hcd_file_path = matched_file;
         return;
     }
     if (match_short){
-        sprintf(matched_file, "%s/%s", hcd_folder_path, filename_short);
+        btstack_strcpy(matched_file, sizeof(matched_file), hcd_folder_path);
+        btstack_strcat(matched_file, sizeof(matched_file), "/");
+        btstack_strcat(matched_file, sizeof(matched_file), filename_short);
         hcd_file_path = matched_file;
         return;
     }
