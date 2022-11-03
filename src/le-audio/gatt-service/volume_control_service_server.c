@@ -54,14 +54,16 @@
 #include "le-audio/gatt-service/audio_input_control_service_server.h"
 #include "le-audio/gatt-service/volume_offset_control_service_server.h"
 
-#define VCS_CMD_RELATIVE_VOLUME_DOWN                0x00
-#define VCS_CMD_RELATIVE_VOLUME_UP                  0x01
-#define VCS_CMD_UNMUTE_RELATIVE_VOLUME_DOWN         0x02
-#define VCS_CMD_UNMUTE_RELATIVE_VOLUME_UP           0x03
-#define VCS_CMD_SET_ABSOLUTE_VOLUME                 0x04
-#define VCS_CMD_UNMUTE                              0x05
-#define VCS_CMD_MUTE                                0x06
-
+typedef enum {
+    VCS_OPCODE_RELATIVE_VOLUME_DOWN = 0x00,
+    VCS_OPCODE_RELATIVE_VOLUME_UP,
+    VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_DOWN,
+    VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_UP,
+    VCS_OPCODE_SET_ABSOLUTE_VOLUME,
+    VCS_OPCODE_UNMUTE,
+    VCS_OPCODE_MUTE,
+    VCS_OPCODE_RFU
+} vcs_opcode_t;
 
 #define VCS_TASK_SEND_VOLUME_SETTING                0x01
 #define VCS_TASK_SEND_VOLUME_FLAGS                  0x02
@@ -238,7 +240,7 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
             return VOLUME_CONTROL_OPCODE_NOT_SUPPORTED;
         }
 
-        uint8_t cmd = buffer[0];
+        vcs_opcode_t opcode = (vcs_opcode_t)buffer[0];
         uint8_t change_counter = buffer[1];
 
         if (change_counter != vcs_volume_state_change_counter){
@@ -248,37 +250,37 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
         uint8_t    volume_setting = vcs_volume_state_volume_setting;
         vcs_mute_t mute = vcs_volume_state_mute;
 
-        switch (cmd){
-            case VCS_CMD_RELATIVE_VOLUME_DOWN:  
+        switch (opcode){
+            case VCS_OPCODE_RELATIVE_VOLUME_DOWN:  
                 volume_control_service_volume_down();
                 break;
 
-            case VCS_CMD_RELATIVE_VOLUME_UP:
+            case VCS_OPCODE_RELATIVE_VOLUME_UP:
                 volume_control_service_volume_up();
                 break;
 
-            case VCS_CMD_UNMUTE_RELATIVE_VOLUME_DOWN:
+            case VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_DOWN:
                 volume_control_service_volume_down();
                 volume_control_service_unmute();
                 break;
 
-            case VCS_CMD_UNMUTE_RELATIVE_VOLUME_UP:     
+            case VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_UP:     
                 volume_control_service_volume_up();
                 volume_control_service_unmute();
                 break;
 
-            case VCS_CMD_SET_ABSOLUTE_VOLUME: 
+            case VCS_OPCODE_SET_ABSOLUTE_VOLUME: 
                 if (buffer_size != 3){
                     return VOLUME_CONTROL_OPCODE_NOT_SUPPORTED;
                 }
                 vcs_volume_state_volume_setting = buffer[2];
                 break;
             
-            case VCS_CMD_UNMUTE:                    
+            case VCS_OPCODE_UNMUTE:                    
                 volume_control_service_unmute();
                 break;
 
-            case VCS_CMD_MUTE:                          
+            case VCS_OPCODE_MUTE:                          
                 volume_control_service_mute();
                 break;
 
@@ -369,9 +371,7 @@ static void volume_control_init_included_aics_services(uint16_t vcs_start_handle
     }
 }
 
-static void volume_control_init_included_vocs_services(uint16_t vcs_start_handle, uint16_t vcs_end_handle, uint8_t vocs_info_num, vocs_info_t * vocs_info){
-    uint16_t start_handle = vcs_start_handle + 1;
-    uint16_t end_handle = vcs_end_handle - 1;
+static void volume_control_init_included_vocs_services(uint16_t start_handle, uint16_t end_handle, uint8_t vocs_info_num, vocs_info_t * vocs_info){
     vocs_services_num = 0;
 
     // include and enumerate AICS services
