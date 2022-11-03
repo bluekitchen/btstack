@@ -65,12 +65,24 @@ static uint8_t service_buffer[150];
 
 static const uint8_t supported_formats[] = { 1, 2, 3, 4, 5, 6};
 
+static const uint8_t default_object_vcard[] =
+    "BEGIN:VCARD\n"
+    "VERSION:3.0\n"
+    "N:Doe;John;\n"
+    "FN:John Doe\n"
+    "END:VCARD\n";
+
+
+
 // packet handler
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     int i;
     uint8_t status;
+    uint32_t cur_pos;
+    uint16_t bufsize;
+    uint32_t cur_size;
     bd_addr_t event_addr;
 
     switch (packet_type){
@@ -95,6 +107,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         case OPP_SUBEVENT_CONNECTION_CLOSED:
                             printf("[+] Connection closed\n");
+                            break;
+                        case OPP_SUBEVENT_PULL_OBJECT_DATA:
+                            cur_pos = opp_subevent_push_object_data_get_cur_position(packet);
+                            bufsize = opp_subevent_push_object_data_get_buf_size(packet);
+                            cur_size = sizeof (default_object_vcard) - 1;
+                            opp_server_send_pull_response (opp_cid, cur_size - cur_pos < bufsize ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE, cur_pos, cur_size - cur_pos > bufsize ?  bufsize : cur_size - cur_pos, default_object_vcard + cur_pos);
+
+                            printf("[+] ... pull data requested, offset %u, bufsize %u, pushing %u bytes\n",
+                                   cur_pos, bufsize, cur_size);
+
                             break;
                         case OPP_SUBEVENT_OPERATION_COMPLETED:
                             printf("[+] Operation complete, status 0x%02x\n",
