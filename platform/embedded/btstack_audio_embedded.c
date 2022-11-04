@@ -44,10 +44,11 @@
  *
  */
 
+#include "btstack_config.h"
+
 // allow to compile all files in embedded folder even if there's no audio support
 #ifdef HAVE_HAL_AUDIO
 
-#include "btstack_config.h"
 #include "btstack_debug.h"
 #include "btstack_audio.h"
 #include "btstack_run_loop_embedded.h"
