@@ -143,7 +143,7 @@ uint8_t opp_server_connect( bd_addr_t addr, uint16_t * out_cid);
  * @param opp_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_BUSY if in a wrong state.
  */
-uint8_t opp_server_disconnect(uint16_t pbap_cid);
+uint8_t opp_server_disconnect(uint16_t opp_cid);
 
 /**
  * @brief Get max opp size for current response, given already set headers
@@ -151,7 +151,7 @@ uint8_t opp_server_disconnect(uint16_t pbap_cid);
  * @param response_code, see obex.h
  * @return max body size or zero if connection invalid
  */
-uint16_t opp_server_get_max_body_size(uint16_t pbap_cid);
+uint16_t opp_server_get_max_body_size(uint16_t opp_cid);
 
 /**
  * @brief Send response to OPP_SUBEVENT_PULL including optional headers
