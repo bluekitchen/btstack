@@ -2702,7 +2702,6 @@ static void sm_run(void){
             case SM_INITIATOR_PH4_HAS_LTK: {
 				sm_reset_setup();
 				sm_load_security_info(connection);
-                sm_reencryption_started(connection);
 
                 sm_key_t peer_ltk_flipped;
                 reverse_128(setup->sm_peer_ltk, peer_ltk_flipped);
@@ -2711,19 +2710,23 @@ static void sm_run(void){
                 uint32_t rand_high = big_endian_read_32(setup->sm_peer_rand, 0);
                 uint32_t rand_low  = big_endian_read_32(setup->sm_peer_rand, 4);
                 hci_send_cmd(&hci_le_start_encryption, connection->sm_handle,rand_low, rand_high, setup->sm_peer_ediv, peer_ltk_flipped);
+
+                // notify after sending
+                sm_reencryption_started(connection);
                 return;
             }
 
 			case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
 				sm_reset_setup();
 				sm_init_setup(connection);
-				sm_timeout_start(connection);
-				sm_pairing_started(connection);
 
                 sm_pairing_packet_set_code(setup->sm_m_preq, SM_CODE_PAIRING_REQUEST);
                 connection->sm_engine_state = SM_INITIATOR_PH1_W4_PAIRING_RESPONSE;
                 sm_send_connectionless(connection, (uint8_t*) &setup->sm_m_preq, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
+
+                // notify after sending
+                sm_pairing_started(connection);
                 break;
 #endif
 
@@ -2924,7 +2927,6 @@ static void sm_run(void){
                 }
 
 				sm_init_setup(connection);
-                sm_pairing_started(connection);
 
 				// recover pairing request
 				(void)memcpy(&setup->sm_m_preq, &connection->sm_m_preq, sizeof(sm_pairing_packet_t));
@@ -2937,6 +2939,8 @@ static void sm_run(void){
                     }
 #endif
 				if (err != 0){
+                    // emit pairing started/failed sequence
+                    sm_pairing_started(connection);
                     sm_pairing_error(connection, err);
 					sm_trigger_run();
 					break;
@@ -2979,6 +2983,10 @@ static void sm_run(void){
 
                 sm_send_connectionless(connection, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
+
+                // notify after sending
+                sm_pairing_started(connection);
+
                 // SC Numeric Comparison will trigger user response after public keys & nonces have been exchanged
                 if (!setup->sm_use_secure_connections || (setup->sm_stk_generation_method == JUST_WORKS)){
                     sm_trigger_user_response(connection);
