@@ -373,7 +373,8 @@ static void opp_server_packet_handler_hci(uint8_t *packet, uint16_t size){
             switch (hci_event_goep_meta_get_subevent_code(packet)){
                 case GOEP_SUBEVENT_INCOMING_CONNECTION:
                     // TODO: check if resources available
-                    goep_server_accept_connection(goep_subevent_incoming_connection_get_goep_cid(packet));
+                    goep_cid = goep_subevent_incoming_connection_get_goep_cid(packet);
+                    goep_server_accept_connection(goep_cid);
                     break;
                 case GOEP_SUBEVENT_CONNECTION_OPENED:
                     log_info ("GOEP opened\n");
@@ -462,7 +463,7 @@ static void opp_server_parser_callback_get(void * user_data, uint8_t header_id, 
         case OBEX_HEADER_BODY:
         case OBEX_HEADER_END_OF_BODY:
             log_info ("received (END_OF_)BODY data: %d bytes\n", data_len);
-            (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->goep_cid, (uint8_t *) data_buffer, data_len);
+            (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->opp_cid, (uint8_t *) data_buffer, data_len);
             break;
         case OBEX_HEADER_LENGTH:
             log_info ("length of data: %d\n",
