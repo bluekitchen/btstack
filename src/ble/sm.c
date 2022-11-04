@@ -3236,32 +3236,26 @@ static void sm_run(void){
                 sm_ctkd_start_from_br_edr(connection);
                 continue;
             case SM_SC_W2_CALCULATE_ILK_USING_H6:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
                 h6_calculate_ilk_from_le_ltk(connection);
                 break;
             case SM_SC_W2_CALCULATE_BR_EDR_LINK_KEY:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_BR_EDR_LINK_KEY;
                 h6_calculate_br_edr_link_key(connection);
                 break;
             case SM_SC_W2_CALCULATE_ILK_USING_H7:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
                 h7_calculate_ilk_from_le_ltk(connection);
                 break;
             case SM_BR_EDR_W2_CALCULATE_ILK_USING_H6:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_ILK;
                 h6_calculate_ilk_from_br_edr(connection);
                 break;
             case SM_BR_EDR_W2_CALCULATE_LE_LTK:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_LE_LTK;
                 h6_calculate_le_ltk(connection);
                 break;
             case SM_BR_EDR_W2_CALCULATE_ILK_USING_H7:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_ILK;
                 h7_calculate_ilk_from_br_edr(connection);
                 break;
