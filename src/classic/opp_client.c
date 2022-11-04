@@ -94,7 +94,7 @@ typedef struct {
 
 typedef struct opp_client {
     opp_state_t state;
-    uint16_t  cid;
+    uint16_t  opp_cid;
     bd_addr_t bd_addr;
     hci_con_handle_t con_handle;
     uint8_t   incoming;
@@ -129,7 +129,7 @@ static void opp_client_emit_connected_event(opp_client_t * context, uint8_t stat
     event[pos++] = HCI_EVENT_OPP_META;
     pos++;  // skip len
     event[pos++] = OPP_SUBEVENT_CONNECTION_OPENED;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event,pos,context->opp_cid);
     pos+=2;
     event[pos++] = status;
     (void)memcpy(&event[pos], context->bd_addr, 6);
@@ -139,7 +139,7 @@ static void opp_client_emit_connected_event(opp_client_t * context, uint8_t stat
     event[pos++] = context->incoming;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("opp_client_emit_connected_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    context->client_handler(HCI_EVENT_PACKET, context->opp_cid, &event[0], pos);
 }
 
 static void opp_client_emit_connection_closed_event(opp_client_t * context){
@@ -148,11 +148,11 @@ static void opp_client_emit_connection_closed_event(opp_client_t * context){
     event[pos++] = HCI_EVENT_OPP_META;
     pos++;  // skip len
     event[pos++] = OPP_SUBEVENT_CONNECTION_CLOSED;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event,pos,context->opp_cid);
     pos+=2;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("opp_client_emit_connection_closed_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    context->client_handler(HCI_EVENT_PACKET, context->opp_cid, &event[0], pos);
 }
 
 static void opp_client_emit_push_object_data_event(opp_client_t * context,uint32_t cur_position, uint16_t buf_size){
@@ -161,7 +161,7 @@ static void opp_client_emit_push_object_data_event(opp_client_t * context,uint32
     event[pos++] = HCI_EVENT_OPP_META;
     pos++;  // skip len
     event[pos++] = OPP_SUBEVENT_PUSH_OBJECT_DATA;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event,pos,context->opp_cid);
     pos+=2;
     little_endian_store_32(event,pos,cur_position);
     pos+=4;
@@ -169,7 +169,7 @@ static void opp_client_emit_push_object_data_event(opp_client_t * context,uint32
     pos+=2;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("opp_client_push_object_data_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    context->client_handler(HCI_EVENT_PACKET, context->opp_cid, &event[0], pos);
 }
 
 static void opp_client_emit_operation_complete_event(opp_client_t * context, uint8_t status){
@@ -178,12 +178,12 @@ static void opp_client_emit_operation_complete_event(opp_client_t * context, uin
     event[pos++] = HCI_EVENT_OPP_META;
     pos++;  // skip len
     event[pos++] = OPP_SUBEVENT_OPERATION_COMPLETED;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event,pos,context->opp_cid);
     pos+=2;
     event[pos++]= status;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("opp_client_emit_can_send_now_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    context->client_handler(HCI_EVENT_PACKET, context->opp_cid, &event[0], pos);
 }
 
 static void obex_srm_init(obex_srm_t * obex_srm){
@@ -217,7 +217,7 @@ static void opp_client_parser_callback_get_operation(void * user_data, uint8_t h
         case OBEX_HEADER_END_OF_BODY:
             switch(opp_client->state){
                 case OPP_W4_GET_DEFAULT_OBJECT:
-                    client->client_handler(OPP_DATA_PACKET, client->cid, (uint8_t *) data_buffer, data_len);
+                    client->client_handler(OPP_DATA_PACKET, client->opp_cid, (uint8_t *) data_buffer, data_len);
                     break;
 
                 default:
@@ -563,7 +563,7 @@ static void opp_client_packet_handler(uint8_t packet_type, uint16_t channel, uin
 
 static void opp_client_reset_state(void) {
     opp_client->state = OPP_INIT;
-    opp_client->cid = 1;
+    opp_client->opp_cid = 1;
 }
 
 void opp_client_init(void){
@@ -584,7 +584,7 @@ uint8_t opp_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uin
     opp_client->client_handler = handler;
 
     uint8_t err = goep_client_create_connection(&opp_client_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_OBEX_OBJECT_PUSH, &opp_client->goep_cid);
-    *out_cid = opp_client->cid;
+    *out_cid = opp_client->opp_cid;
     if (err) return err;
     return ERROR_CODE_SUCCESS;
 }

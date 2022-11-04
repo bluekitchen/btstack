@@ -113,7 +113,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                    opp_subevent_operation_completed_get_status(packet));
                             break;
                         case OPP_SUBEVENT_PULL_DEFAULT_OBJECT:
-#warning opp_cid vs. goep_cid ?
                             opp_server_send_pull_response (opp_cid, OBEX_RESP_SUCCESS,
                                                            0, sizeof (default_object_vcard) - 1, default_object_vcard);
                             break;
