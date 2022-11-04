@@ -495,6 +495,8 @@ static void opp_server_handle_get_request(opp_server_t * opp_server){
         return;
     }
 
+    ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_USER_DATA);
+
     uint8_t event[2+3];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_OPP_META;
@@ -503,8 +505,6 @@ static void opp_server_handle_get_request(opp_server_t * opp_server){
     little_endian_store_16(event, pos, opp_server->opp_cid);
     pos += 2;
     (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
-
-    ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_USER_DATA);
 }
 
 static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opcode){
