@@ -6023,7 +6023,7 @@ static bool hci_run_general_gap_le(void){
                     advertising_set->scan_data_pos += data_to_upload;
                 }
                 hci_stack->le_advertising_set_in_current_command = advertising_set->advertising_handle;
-                hci_send_cmd(&hci_le_set_extended_scan_response_data, operation, 0x03, 0x01, data_to_upload, &advertising_set->scan_data[pos]);
+                hci_send_cmd(&hci_le_set_extended_scan_response_data, advertising_set->advertising_handle, operation, 0x01, data_to_upload, &advertising_set->scan_data[pos]);
                 return true;
             }
 #ifdef ENABLE_LE_PERIODIC_ADVERTISING
