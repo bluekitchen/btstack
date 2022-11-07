@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - ESP32: fix init for BR/EDR Only mode
 - GAP: reload LE Resolving List after power-cycle 
+- GAP: seting LE Scan Response for data that needs to be fragmented  
 - SM: fix pairing process with active ATT communication
  
 ### Changed
