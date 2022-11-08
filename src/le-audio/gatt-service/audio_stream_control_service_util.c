@@ -76,7 +76,7 @@ uint16_t ascs_util_qos_configuration_parse(const uint8_t * buffer, uint8_t buffe
     qos_config->max_sdu = little_endian_read_16(buffer, offset);
     offset += 2;
     qos_config->retransmission_number = buffer[offset++];                  
-    qos_config->max_transport_latency = little_endian_read_16(buffer, offset);
+    qos_config->max_transport_latency_ms = little_endian_read_16(buffer, offset);
     offset += 2;
     qos_config->presentation_delay_us = little_endian_read_24(buffer, offset);
     offset += 3;
@@ -300,7 +300,7 @@ uint16_t ascs_util_qos_configuration_serialize(ascs_qos_configuration_t * qos_co
     little_endian_store_16(event, pos, qos_configuration->max_sdu);
     pos += 2;
     event[pos++] = qos_configuration->retransmission_number;
-    little_endian_store_16(event, pos, qos_configuration->max_transport_latency);
+    little_endian_store_16(event, pos, qos_configuration->max_transport_latency_ms);
     pos += 2;
     little_endian_store_24(event, pos, qos_configuration->presentation_delay_us);
     pos += 3;
