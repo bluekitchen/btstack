@@ -4588,12 +4588,23 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_ASCS_CLIENT_STOP_READY                            0x38u
 
 /**
+ * @format 1H1111
+ * @param subevent_code
+ * @param con_handle
+ * @param opcode
+ * @param ase_id
+ * @param response_code
+ * @param reason
+*/ 
+#define GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION                      0x39u
+
+/**
  * @format 1H1
  * @param subevent_code
  * @param con_handle
  * @param ase_id
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASED                              0x39u
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASED                              0x41u
 
 /**
  * @format 1H41
