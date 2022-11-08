@@ -65,12 +65,19 @@ static uint8_t service_buffer[150];
 
 static const uint8_t supported_formats[] = { 1, 2, 3, 4, 5, 6};
 
-static const uint8_t default_object_vcard[] =
+static const char *default_object_vcards[] = {
     "BEGIN:VCARD\n"
     "VERSION:3.0\n"
     "N:Doe;John;\n"
     "FN:John Doe\n"
-    "END:VCARD\n";
+    "END:VCARD\n",
+
+    "BEGIN:VCARD\n"
+    "VERSION:3.0\n"
+    "N:Doe;John;\n"
+    "FN:John Doe and a full number of bytes\n"
+    "END:VCARD\n",
+};
 
 
 
@@ -105,13 +112,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case OPP_SUBEVENT_CONNECTION_CLOSED:
                             printf("[+] Connection closed\n");
                             break;
-                        case OPP_SUBEVENT_OPERATION_COMPLETED:
-                            printf("[+] Operation complete, status 0x%02x\n",
-                                   opp_subevent_operation_completed_get_status(packet));
+                        case OPP_SUBEVENT_PUSH_OBJECT:
+                            printf("PUSH: \"%.*s\" (%.*s)\n",
+                                   packet[5], &packet[6],
+                                   packet[6+packet[5]], &packet[7+packet[5]]);
                             break;
                         case OPP_SUBEVENT_PULL_DEFAULT_OBJECT:
                             opp_server_send_pull_response (opp_cid, OBEX_RESP_SUCCESS,
-                                                           0, sizeof (default_object_vcard) - 1, default_object_vcard);
+                                                           0, sizeof (default_object_vcards[0]) - 1, default_object_vcards[0]);
+                            break;
+                        case OPP_SUBEVENT_OPERATION_COMPLETED:
+                            printf("[+] Operation complete, status 0x%02x\n",
+                                   opp_subevent_operation_completed_get_status(packet));
                             break;
 
                         default:
@@ -128,6 +140,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             for (i=0;i<size;i++){
                 printf("%c", packet[i]);
             }
+            printf ("\n");
             break;
         default:
             log_info ("[-] packet of type %d\n", packet_type);
