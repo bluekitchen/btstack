@@ -119,7 +119,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         case OPP_SUBEVENT_PULL_DEFAULT_OBJECT:
                             opp_server_send_pull_response (opp_cid, OBEX_RESP_SUCCESS,
-                                                           0, sizeof (default_object_vcards[0]) - 1, default_object_vcards[0]);
+                                                           0, sizeof (default_object_vcards[0]) - 1, (uint8_t *) default_object_vcards[0]);
                             break;
                         case OPP_SUBEVENT_OPERATION_COMPLETED:
                             printf("[+] Operation complete, status 0x%02x\n",
