@@ -80,9 +80,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     int i;
     uint8_t status;
-    uint32_t cur_pos;
-    uint16_t bufsize;
-    uint32_t cur_size;
     bd_addr_t event_addr;
 
     switch (packet_type){
