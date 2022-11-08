@@ -514,7 +514,24 @@ static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opc
     // emit received opp data
     ENTER_STATE (opp_server, OPP_SERVER_STATE_SEND_PUT_RESPONSE);
 
-    // (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    uint8_t event[2+3+OPP_SERVER_MAX_NAME_LEN+OPP_SERVER_MAX_TYPE_LEN];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_OPP_META;
+    event[pos++] = 0;
+    event[pos++] = OPP_SUBEVENT_PUSH_OBJECT;
+    little_endian_store_16 (event, pos, opp_server->opp_cid);
+    pos += 2;
+    int name_len = btstack_min (OPP_SERVER_MAX_NAME_LEN, (uint16_t) strlen(opp_server->request.name));
+    event[pos++] = name_len;
+    (void) memcpy (&event[pos], opp_server->request.name, name_len);
+    pos += name_len;
+    int type_len = btstack_min (OPP_SERVER_MAX_TYPE_LEN, (uint16_t) strlen(opp_server->request.type));
+    event[pos++] = type_len;
+    (void) memcpy (&event[pos], opp_server->request.type, type_len);
+    pos += type_len;
+    event[1] = pos - 2;
+
+    (*opp_server_user_packet_handler) (HCI_EVENT_PACKET, 0, event, pos);
 
     opp_server->response.code = opcode & OBEX_OPCODE_FINAL_BIT_MASK ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE;
     goep_server_request_can_send_now(opp_server->goep_cid);
