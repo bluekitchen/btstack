@@ -152,10 +152,10 @@ typedef struct {
     uint8_t  cis_id;
     uint32_t sdu_interval;                              // 0x0000FF–0x0FFFFF
     uint8_t  framing;                                   // 0 - unframed, 1 - framed
-    uint8_t  phy;                                       // see LEA_PHY_* in le_audio.h
+    uint8_t  phy;                                       // see LE_AUDIO_SERVER_PHY_MASK_* in le_audio.h
     uint16_t max_sdu;                                   // 0x00–0xFFF
     uint8_t  retransmission_number;                     // 0x00–0xFF
-    uint16_t max_transport_latency;                     // 0x0005–0x0FA0
+    uint16_t max_transport_latency_ms;                  // 0x0005–0x0FA0
     uint32_t presentation_delay_us;                     // 3 byte, microsec
 } ascs_qos_configuration_t;
 
