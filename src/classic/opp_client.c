@@ -59,6 +59,8 @@
 #include "classic/goep_client.h"
 #include "classic/opp_client.h"
 
+// TODO remove include and printf
+#include <stdio.h>
 
 typedef enum {
     OPP_INIT = 0,
