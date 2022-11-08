@@ -220,7 +220,11 @@ static void opp_client_parser_callback_get_operation(void * user_data, uint8_t h
                     client->client_handler(OPP_DATA_PACKET, client->opp_cid, (uint8_t *) data_buffer, data_len);
                     break;
 
+                case OPP_W4_PUT_OBJECT:
+                    break;
+
                 default:
+                    printf ("unexpected state: %d\n", opp_client->state);
                     btstack_unreachable();
                     break;
             }
