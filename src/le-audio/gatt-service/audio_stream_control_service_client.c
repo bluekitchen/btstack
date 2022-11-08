@@ -387,7 +387,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             (void)gatt_client_write_value_of_characteristic(
                 &handle_gatt_client_event,
                 connection->con_handle, 
-                connection->control_point_value_handle,
+                connection->control_point.value_handle,
                 value_length, 
                 ascs_client_value_buffer); 
             break;
@@ -521,8 +521,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
             switch (characteristic.uuid16){
                 case ORG_BLUETOOTH_CHARACTERISTIC_ASE_CONTROL_POINT:
-                    connection->control_point_value_handle = characteristic.value_handle;
+                    connection->control_point.value_handle = characteristic.value_handle;
+                    connection->control_point.properties = characteristic.properties;
+                    connection->control_point.end_handle = characteristic.end_handle;
+                    connection->control_point.uuid16     = characteristic.uuid16;
                     break;
+
                 case ORG_BLUETOOTH_CHARACTERISTIC_SOURCE_ASE:
                     if (connection->streamendpoints_instances_num < connection->max_streamendpoints_num){
                         connection->streamendpoints[connection->streamendpoints_instances_num].ase_characteristic->ase_characteristic_value_handle = characteristic.value_handle;
@@ -575,11 +579,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_client_configuration_handle = characteristic_descriptor.handle;
 
 #ifdef ENABLE_TESTING_SUPPORT
-                printf("    ASCS Characteristic Configuration Descriptor:  Handle 0x%04X, UUID 0x%04X\n", 
-                    characteristic_descriptor.handle,
-                    characteristic_descriptor.uuid16);
+            printf("    ASCS Characteristic Configuration Descriptor:  Handle 0x%04X, UUID 0x%04X\n", 
+                characteristic_descriptor.handle,
+                characteristic_descriptor.uuid16);
 #endif
-            }
             break;
         
 
