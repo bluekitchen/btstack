@@ -211,6 +211,25 @@ static uint16_t ascs_parse_ase(const uint8_t * value, uint16_t value_size, ascs_
     return pos;
 }
 
+static void handle_gatt_server_control_point_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type); 
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION){
+        return;
+    }
+
+    ascs_client_connection_t * connection = ascs_client_get_connection_for_con_handle(channel);
+    if (connection == NULL){
+        return;
+    }
+
+    uint16_t value_handle =  gatt_event_notification_get_value_handle(packet);
+    uint16_t value_length = gatt_event_notification_get_value_length(packet);
+    uint8_t * value = (uint8_t *)gatt_event_notification_get_value(packet);
+}
+
 static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
     UNUSED(channel);
@@ -322,6 +341,47 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
 
             break;
 
+        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_QUERY_CHARACTERISTIC_DESCRIPTOR:
+#ifdef ENABLE_TESTING_SUPPORT
+            printf("Read control point client characteristic descriptors [handle 0x%04X]:\n", connection->control_point.value_handle);
+#endif
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_CHARACTERISTIC_DESCRIPTOR_RESULT;
+            characteristic.value_handle = connection->control_point.value_handle;
+            characteristic.properties   = connection->control_point.properties;
+            characteristic.end_handle   = connection->control_point.end_handle;
+
+            (void) gatt_client_discover_characteristic_descriptors(&handle_gatt_client_event, connection->con_handle, &characteristic);
+            break;
+
+        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_REGISTER_NOTIFICATION:
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_NOTIFICATION_REGISTERED;
+    
+            characteristic.value_handle = connection->control_point.value_handle;
+            characteristic.properties   = connection->control_point.properties;
+            characteristic.end_handle   = connection->control_point.end_handle;
+
+            uint8_t status = gatt_client_write_client_characteristic_configuration(
+                        &handle_gatt_client_event, 
+                        connection->con_handle, 
+                        &characteristic, 
+                        GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+          
+            // notification supported, register for value updates
+            if (status == ERROR_CODE_SUCCESS){
+                gatt_client_listen_for_characteristic_value_updates(
+                    &connection->control_point.notification_listener, 
+                    &handle_gatt_server_control_point_notification, 
+                    connection->con_handle, &characteristic);
+            
+#ifdef ENABLE_TESTING_SUPPORT
+                printf("Registered control point notification [handle 0x%04X]\n", connection->control_point.value_handle);
+#endif          
+                return;  
+            } 
+            
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
+            break;
+
         case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS:
 #ifdef ENABLE_TESTING_SUPPORT
             printf("Read client characteristic descriptors [index %d]:\n", connection->streamendpoints_index);
@@ -399,14 +459,20 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
 }
 
 static bool ascs_client_handle_query_complete(ascs_client_connection_t * connection, uint8_t status){
-    switch (connection->state){
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
-            if (status != ATT_ERROR_SUCCESS){
+    if (status != ATT_ERROR_SUCCESS){
+        switch (connection->state){
+            case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
+            case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
                 ascs_client_emit_connection_established(connection, status);
                 ascs_client_finalize_connection(connection);
                 return false;
-            }
+            default:
+                break;
+        }
+    }
 
+    switch (connection->state){
+        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             if (connection->service_instances_num == 0){
                 ascs_client_emit_connection_established(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                 ascs_client_finalize_connection(connection);
@@ -418,12 +484,14 @@ static bool ascs_client_handle_query_complete(ascs_client_connection_t * connect
             break;
 
         case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
-            if (status != ATT_ERROR_SUCCESS){
-                ascs_client_emit_connection_established(connection, status);
-                ascs_client_finalize_connection(connection);
-                return false;
-            }
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_QUERY_CHARACTERISTIC_DESCRIPTOR;
+            break;
 
+        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_CHARACTERISTIC_DESCRIPTOR_RESULT:
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_REGISTER_NOTIFICATION;
+            break;
+
+        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_NOTIFICATION_REGISTERED:
             connection->streamendpoints_index = 0;
             connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
             break;
@@ -575,8 +643,23 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             btstack_assert(connection != NULL);
             gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &characteristic_descriptor);
             
-            if (characteristic_descriptor.uuid16 == ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION){
-                connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_client_configuration_handle = characteristic_descriptor.handle;
+            if (characteristic_descriptor.uuid16 != ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION){
+                break;
+            }
+            
+            switch (connection->state){
+                case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                    connection->control_point.client_configuration_handle = characteristic_descriptor.handle;
+                    break;
+
+                case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT:
+                    connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_client_configuration_handle = characteristic_descriptor.handle;
+                    break;
+
+                default:
+                    btstack_assert(false);
+                    break;
+            }
 
 #ifdef ENABLE_TESTING_SUPPORT
             printf("    ASCS Characteristic Configuration Descriptor:  Handle 0x%04X, UUID 0x%04X\n", 
