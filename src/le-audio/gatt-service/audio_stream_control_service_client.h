@@ -79,10 +79,11 @@ typedef enum {
 
 typedef struct {
     uint16_t value_handle;
-    uint16_t ccc_handle; 
+    uint16_t client_configuration_handle; 
     uint16_t properties;
     uint16_t uuid16; 
     uint16_t end_handle;
+    gatt_client_notification_t notification_listener;
 } ascs_client_characteristic_t;
 
 typedef struct {
@@ -104,7 +105,7 @@ typedef struct {
     uint8_t  max_streamendpoints_num;
     ascs_streamendpoint_t streamendpoints[ASCS_STREAMENDPOINTS_MAX_NUM];
 
-    uint16_t control_point_value_handle;
+    ascs_client_characteristic_t control_point;
 
     // used for notification registration and read/write requests
     uint8_t  streamendpoints_index;
