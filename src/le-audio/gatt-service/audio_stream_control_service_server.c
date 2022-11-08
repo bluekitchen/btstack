@@ -706,7 +706,7 @@ static void ascs_control_point_operation_prepare_response_for_qos_configuration(
         return;
     }
 
-    if (qos_config.max_transport_latency > streamendpoint->codec_configuration.max_transport_latency_ms){
+    if (qos_config.max_transport_latency_ms > streamendpoint->codec_configuration.max_transport_latency_ms){
         ascs_update_control_point_operation_response(client, ase_index, ASCS_ERROR_CODE_INVALID_CONFIGURATION_PARAMETER_VALUE, ASCS_REJECT_REASON_MAX_TRANSPORT_LATENCY);
         return;
     }
