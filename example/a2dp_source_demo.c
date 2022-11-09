@@ -326,7 +326,8 @@ static int a2dp_source_and_avrcp_services_init(void){
     hci_add_event_handler(&hci_event_callback_registration);
 
     a2dp_demo_hexcmod_configure_sample_rate(current_sample_rate);
-    
+    data_source = STREAM_MOD;
+
     // Parse human readable Bluetooth address.
     sscanf_bd_addr(device_addr_string, device_addr);
 
@@ -644,7 +645,6 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             
             a2dp_demo_hexcmod_configure_sample_rate(current_sample_rate);
             media_tracker.stream_opened = 1;
-            data_source = STREAM_MOD;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
 
