@@ -1,3 +1,0 @@
-#!/bin/sh
-PORT=$1
-sed -i "/CONFIG_ESPTOOLPY_PORT/c\CONFIG_ESPTOOLPY_PORT=\"$PORT\"" sdkconfig
