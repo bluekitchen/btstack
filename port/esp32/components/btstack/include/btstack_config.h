@@ -8,6 +8,7 @@
 #define BTSTACK_CONFIG_H
 
 // Port related features
+#define HAVE_ASSERT
 #define HAVE_BTSTACK_STDIN
 #define HAVE_EMBEDDED_TIME_MS
 #define HAVE_FREERTOS_INCLUDE_PREFIX
