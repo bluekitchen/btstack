@@ -68,7 +68,7 @@ TEST(LinkedList, AddExisting){
 }
 
 TEST(LinkedList, AddTailExisting){
-CHECK_EQUAL( false, btstack_linked_list_add_tail(&testList, &itemD));
+    CHECK_EQUAL( false, btstack_linked_list_add_tail(&testList, &itemD));
 }
 
 TEST(LinkedList, Iterator){
@@ -258,6 +258,52 @@ TEST(LinkedList, RemoveSecondAndThirdUsingListRemove){
     CHECK(btstack_linked_list_iterator_has_next(&it));
     item = btstack_linked_list_iterator_next(&it);
     CHECK_EQUAL(item, &itemD);
+    CHECK(!btstack_linked_list_iterator_has_next(&it));
+}
+
+TEST(LinkedList, RemoveAllUsingListRemove){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &testList);
+    btstack_linked_item_t * item;
+    CHECK(btstack_linked_list_iterator_has_next(&it));
+    item = btstack_linked_list_iterator_next(&it);
+    CHECK_EQUAL(item, &itemA);
+    btstack_linked_list_remove(&testList, &itemA);
+    CHECK(btstack_linked_list_iterator_has_next(&it));
+    item = btstack_linked_list_iterator_next(&it);
+    CHECK_EQUAL(item, &itemB);
+    btstack_linked_list_remove(&testList, &itemB);
+    CHECK(btstack_linked_list_iterator_has_next(&it));
+    item = btstack_linked_list_iterator_next(&it);
+    CHECK_EQUAL(item, &itemC);
+    btstack_linked_list_remove(&testList, &itemC);
+    CHECK(btstack_linked_list_iterator_has_next(&it));
+    item = btstack_linked_list_iterator_next(&it);
+    CHECK_EQUAL(item, &itemD);
+    btstack_linked_list_remove(&testList, &itemD);
+    CHECK(!btstack_linked_list_iterator_has_next(&it));
+}
+
+TEST(LinkedList, RemoveAllUsingIterator){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &testList);
+    btstack_linked_item_t * item;
+    CHECK(btstack_linked_list_iterator_has_next(&it));
+    item = btstack_linked_list_iterator_next(&it);
+    CHECK_EQUAL(item, &itemA);
+    btstack_linked_list_iterator_remove(&it);
+    CHECK(btstack_linked_list_iterator_has_next(&it));
+    item = btstack_linked_list_iterator_next(&it);
+    CHECK_EQUAL(item, &itemB);
+    btstack_linked_list_iterator_remove(&it);
+    CHECK(btstack_linked_list_iterator_has_next(&it));
+    item = btstack_linked_list_iterator_next(&it);
+    CHECK_EQUAL(item, &itemC);
+    btstack_linked_list_iterator_remove(&it);
+    CHECK(btstack_linked_list_iterator_has_next(&it));
+    item = btstack_linked_list_iterator_next(&it);
+    CHECK_EQUAL(item, &itemD);
+    btstack_linked_list_iterator_remove(&it);
     CHECK(!btstack_linked_list_iterator_has_next(&it));
 }
 
