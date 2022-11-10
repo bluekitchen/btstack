@@ -94,15 +94,12 @@ def create_examples(script_path, suffix):
         os.makedirs(apps_folder)
 
         # copy files
-        for item in ['sdkconfig', 'set_port.sh']:
+        for item in ['sdkconfig']:
             src = script_path + '/template/' + item
             if item == 'sdkconfig':
                 src = src + suffix
             dst = apps_folder + '/' + item
             shutil.copyfile(src, dst)
-
-        # mark set_port.sh as executable
-        os.chmod(apps_folder + '/set_port.sh', 0o755)
 
         # create Makefile file
         with open(apps_folder + "Makefile", "wt") as fout:
