@@ -160,9 +160,11 @@ static void btstack_audio_esp32_driver_timer_handler(btstack_timer_source_t * ts
         if( xQueueReceive( btstack_audio_esp32_i2s_event_queue, &i2s_event, 0) == false) break;
         switch (i2s_event.type){
             case I2S_EVENT_TX_DONE:
+                log_debug("I2S_EVENT_TX_DONE");
                 btstack_audio_esp32_sink_fill_buffer();
                 break;
             case I2S_EVENT_RX_DONE:
+                log_debug("I2S_EVENT_RX_DONE");
                 btstack_audio_esp32_source_process_buffer();
                 break;
             default:
@@ -310,7 +312,12 @@ static void btstack_audio_esp32_sink_fill_buffer(void){
     } else {
         memset(buffer, 0, sizeof(buffer));
     }
-    i2s_write(BTSTACK_AUDIO_I2S_NUM, buffer, DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO, &bytes_written, portMAX_DELAY);
+
+    i2s_write(BTSTACK_AUDIO_I2S_NUM, buffer, sizeof(buffer), &bytes_written, 0);
+    if (bytes_written != sizeof(buffer)){
+        log_error("i2s_write: only %u of %u!!!", (int) bytes_written, (int) sizeof(buffer));
+    }
+    btstack_assert(bytes_written == sizeof(buffer));
 }
 
 static int btstack_audio_esp32_sink_init(
@@ -319,7 +326,7 @@ static int btstack_audio_esp32_sink_init(
     void (*playback)(int16_t * buffer, uint16_t num_samples)){
 
     btstack_assert(playback != NULL);
-    btstack_assert(channels == 2);
+    btstack_assert((1 <= channels) && (channels <= 2));
 
     // store config
     btstack_audio_esp32_sink_playback_callback  = playback;
@@ -352,11 +359,9 @@ static void btstack_audio_esp32_sink_start_stream(void){
     // state
     btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_STREAMING;
 
-    // pre-fill HAL buffers
-    uint16_t i;
-    for (i=0;i<DMA_BUFFER_COUNT;i++){
-        btstack_audio_esp32_sink_fill_buffer();
-    }
+    // note: conceptually, it would make sense to pre-fill all I2S buffers and then feed new ones when they are
+    // marked as complete. However, it looks like we get additoinal events and then assert below, 
+    // so we just don't pre-fill them here
 
     btstack_audio_esp32_stream_start();
 }
@@ -400,7 +405,10 @@ const btstack_audio_sink_t * btstack_audio_esp32_sink_get_instance(void){
 static void btstack_audio_esp32_source_process_buffer(void){
     size_t bytes_read;
     uint8_t buffer[DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
-    i2s_read(BTSTACK_AUDIO_I2S_NUM, buffer, DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO, &bytes_read, portMAX_DELAY);
+
+    i2s_read(BTSTACK_AUDIO_I2S_NUM, buffer, sizeof(buffer), &bytes_read, 0);
+    btstack_assert(bytes_read == sizeof(buffer));
+
     int16_t * buffer16 = (int16_t *) buffer;
     if (btstack_audio_esp32_source_state == BTSTACK_AUDIO_ESP32_STREAMING) {
         // drop second channel if configured for mono
