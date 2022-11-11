@@ -5246,8 +5246,13 @@ static void hci_halting_run(void) {
             btstack_run_loop_add_timer(&hci_stack->timeout);
             break;
 
+        case HCI_HALTING_W4_CLOSE_TIMER:
+            // keep waiting
+            break;
+
         case HCI_HALTING_CLOSE:
             // close left over connections (that had not been properly closed before)
+            hci_stack->substate = HCI_HALTING_CLOSE_DISCARDING_CONNECTIONS;
             hci_discard_connections();
 
             log_info("HCI_STATE_HALTING, calling off");
@@ -5260,10 +5265,6 @@ static void hci_halting_run(void) {
             log_info("HCI_STATE_HALTING, done");
             break;
 
-        case HCI_HALTING_W4_CLOSE_TIMER:
-            // keep waiting
-
-            break;
         default:
             break;
     }

@@ -866,6 +866,7 @@ typedef enum hci_init_state{
     HCI_HALTING_DISCONNECT_ALL,
     HCI_HALTING_W4_CLOSE_TIMER,
     HCI_HALTING_CLOSE,
+    HCI_HALTING_CLOSE_DISCARDING_CONNECTIONS,
 
 } hci_substate_t;
 
