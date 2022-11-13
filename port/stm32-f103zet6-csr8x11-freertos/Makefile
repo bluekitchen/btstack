@@ -36,7 +36,7 @@ EXAMPLE_PLUS_ENABLE = y
 
 FREERTOS_ENABLE = n
 
-3RD_PARTY_ENABLE = n
+3RD_PARTY_ENABLE = y
 
 AT_CMD_ENABLE = n
 
@@ -391,7 +391,7 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
-#EXAMPLES += 				\
+EXAMPLES += 				\
 	audio_duplex            \
 	a2dp_sink_demo			\
 	headset_demo			\
@@ -433,7 +433,7 @@ LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BU
 	nordic_dfu_demo			\
 
 
-#GATT_FILES = \
+GATT_FILES = \
 	ancs_client_demo.gatt \
 	gatt_counter.gatt \
 	gatt_streamer_server.gatt \
@@ -449,8 +449,8 @@ LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BU
 	nordic_spp_le_counter.gatt	\
 	nordic_dfu_demo.gatt	   \
 
-EXAMPLES = nordic_dfu_demo
-GATT_FILES = nordic_dfu_demo.gatt
+#EXAMPLES = nordic_dfu_demo
+#GATT_FILES = nordic_dfu_demo.gatt
 
 # SBC codec
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc

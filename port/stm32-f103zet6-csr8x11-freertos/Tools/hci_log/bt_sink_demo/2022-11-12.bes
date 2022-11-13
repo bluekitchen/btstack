@@ -1,0 +1,141 @@
+[ESMDbInformation]
+{ID,Description,Value}
+[ESMConnect]
+{ID,ConnType,Parent,Statistics,StartFrame,EndFrame}
+1,ACL,-1,1,59,1459
+2,L2CAP,1,1,78,109
+3,L2CAP,1,2,120,1459
+4,L2CAP,1,3,130,1459
+5,A2DP,3,1,140,1459
+6,L2CAP,1,4,173,1459
+7,A2DP,6,2,180,1459
+[ESMACL]
+{ID,DeviceA,DeviceB,AddrType,Handle,Active,Errors,Interface}
+1,FF:FF:FF:FF:FF:FF,DC:52:85:93:8B:67,BR_EDR,4c,0,0,14
+[ESMSCO]
+{ID,Type,Air Mode,Handle,Active,Errors}
+[ESML2cap]
+{ID,SrcCID,DestCID,ExtFeat,Mode,TxMtu,RxMtu,LocalPSM,RemotePSM,DataTx,DataRx,TxMps,RxMps,TxWindow,RxWindow,NumRetran,Active,Errors}
+1,908,41,"",Basic,256,1691,0,1,0,0,0,0,0,0,0,0,1
+2,a08,42,"",Basic,1004,1691,0,25,0,0,0,0,0,0,0,0,0
+3,b09,43,"",Basic,672,1691,0,23,0,0,0,0,0,0,0,0,0
+4,c0a,44,"",Basic,1004,1691,0,25,0,0,0,0,0,0,0,0,2
+[ESMAudio]
+{ID,Signal ID,Source ID,Sink ID,ChannelType,StreamState,StateTimestamp,CodecType,Average Bitpool,Bitrate (Kbps),Optimal Bitrate (Kbps),NumFrames,StreamBytes,Errors}
+1,0,0,0,Signal,Closed,133127242695210000,"",0,0,0,44,138,1
+2,1,1,2,Stream,Closed,133127242695210000,SBC,53,261,327,6096,583576,102
+[ESMDevice]
+{ID,Address}
+1,FF:FF:FF:FF:FF:FF
+2,00:02:5B:00:A5:A5
+3,DC:52:85:93:8B:67
+[ESMEvent]
+{ID,ErrorID,Frames,Timestamp,SolutionID,ConnID,Detail}
+1,1005,4,133127234322920000,10004,-1,""
+2,1005,19,133127234332120000,10004,-1,""
+3,1006,109,133127234379210000,10012,2,""
+4,3017,217,133127238881800000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 5.
+5,3017,219,133127238885560000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 11.
+6,3017,221,133127238889230000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 24.
+7,3017,223,133127238892980000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 36.
+8,3017,225,133127238896640000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 52.
+9,3017,227,133127238900400000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 69.
+10,3017,229,133127238904050000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 84.
+11,3017,231,133127238907820000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 101.
+12,3017,233,133127238911440000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 117.
+13,3017,235,133127238915240000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 133.
+14,3017,237,133127238918860000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 149.
+15,3017,239,133127238922620000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 165.
+16,3017,241,133127238926380000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 181.
+17,3017,243,133127238930060000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 197.
+18,3017,245,133127238933830000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 213.
+19,3017,247,133127238937440000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 229.
+20,3017,249,133127238941220000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 245.
+21,3017,251,133127238944860000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 261.
+22,3017,253,133127238948640000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 277.
+23,3017,255,133127238952270000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 293.
+24,3017,257,133127238956050000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 309.
+25,3017,260,133127238959840000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 325.
+26,3017,263,133127238963640000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 341.
+27,3017,265,133127238967400000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 357.
+28,3017,267,133127238971040000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 373.
+29,3017,269,133127238974810000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 390.
+30,3017,308,133127239438140000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 6.
+31,3017,310,133127239441780000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 17.
+32,3017,312,133127239445580000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 29.
+33,3017,314,133127239449210000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 44.
+34,3017,318,133127239453170000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 59.
+35,3017,320,133127239456940000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 75.
+36,3017,322,133127239460570000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 92.
+37,3017,324,133127239464350000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 108.
+38,3017,326,133127239468100000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 125.
+39,3017,328,133127239471750000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 140.
+40,3017,330,133127239475530000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 156.
+41,3017,332,133127239479170000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 173.
+42,3017,334,133127239482950000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 189.
+43,3017,336,133127239486710000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 205.
+44,3017,338,133127239490390000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 221.
+45,3017,340,133127239494030000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 237.
+46,3017,342,133127239497800000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 253.
+47,3017,344,133127239501540000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 269.
+48,3017,345,133127239503370000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 282.
+49,3017,347,133127239507030000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 292.
+50,3017,349,133127239510800000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 308.
+51,3017,351,133127239514450000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 325.
+52,3017,353,133127239518260000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 340.
+53,3017,355,133127239521900000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 356.
+54,3017,357,133127239525690000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 373.
+55,3017,359,133127239529320000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 389.
+56,3017,394,133127239800440000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 5.
+57,3017,396,133127239804220000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 8.
+58,3017,398,133127239807940000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 21.
+59,3017,400,133127239811630000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 35.
+60,3017,402,133127239815270000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 49.
+61,3017,404,133127239819050000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 65.
+62,3017,408,133127239822700000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 82.
+63,3017,410,133127239826470000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 98.
+64,3017,412,133127239830240000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 114.
+65,3017,414,133127239833880000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 130.
+66,3017,416,133127239837670000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 146.
+67,3017,418,133127239841340000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 162.
+68,3017,420,133127239845110000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 178.
+69,3017,422,133127239848740000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 195.
+70,3017,424,133127239852520000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 210.
+71,3017,426,133127239856270000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 226.
+72,3017,428,133127239859930000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 241.
+73,3017,430,133127239863670000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 259.
+74,3017,432,133127239867330000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 275.
+75,3017,434,133127239871090000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 290.
+76,3017,436,133127239874750000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 306.
+77,3017,438,133127239878540000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 322.
+78,3017,440,133127239882310000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 338.
+79,3017,442,133127239886090000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 355.
+80,3017,444,133127239889730000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 370.
+81,3017,446,133127239893530000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 386.
+82,3017,448,133127239897190000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 403.
+83,3017,483,133127239973980000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 5.
+84,3017,484,133127239975790000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 10.
+85,3017,485,133127239977620000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 16.
+86,3017,486,133127239979590000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 22.
+87,3017,487,133127239981390000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 28.
+88,3017,488,133127239983200000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 34.
+89,3017,490,133127239985140000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 42.
+90,2020,493,133127239987880000,10001 10005 10006,6,ERROR: L2CAP data length error in previous or current reassembled SDU on CID: 0x0044.
+91,2020,494,133127239989560000,10001 10005 10006,6,ERROR: L2CAP data length error in previous or current reassembled SDU on CID: 0x0044.
+92,3017,494,133127239989560000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 50.
+93,3017,495,133127239991210000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 66.
+94,3017,496,133127239993180000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 74.
+95,3017,498,133127239996820000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 88.
+96,3017,500,133127240000600000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 102.
+97,3017,502,133127240004270000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 118.
+98,3017,504,133127240007920000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 134.
+99,3017,506,133127240011700000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 151.
+100,3017,508,133127240015450000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 166.
+101,3017,510,133127240019150000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 183.
+102,3017,512,133127240022790000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 197.
+103,3017,514,133127240026540000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 215.
+104,3017,516,133127240030290000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 231.
+105,3017,518,133127240033960000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 246.
+106,4,519,133127240035760000,20019,7,WARNING: AVDTP packet loss detected based on missing packet sequence number 260.
+393,3001,1459,133127242695210000,20004,5,""
+394,3003,1459,133127242695210000,20002,7,""

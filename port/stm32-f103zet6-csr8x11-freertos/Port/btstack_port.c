@@ -122,9 +122,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	if (huart == &huart2){
 		(*rx_done_handler)();
 	}
-    /*if (huart == &huart1){
+    if (huart == &huart1){
         stdin_rx_complete();
-    }*/
+    }
 }
 
 void hal_uart_dma_init(void){
