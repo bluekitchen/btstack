@@ -25,12 +25,12 @@
 
 // Enable Classic/LE based on esp-idf sdkconfig
 #include "sdkconfig.h"
-#if CONFIG_BT_SOC_SUPPORT_5_0
-// ESP32-C3 and ESP32-S3 with LE-only Controller
-#define ENABLE_BLE
-#else /* CONFIG_BT_SOC_SUPPORT_5_0 */
+#ifdef CONFIG_IDF_TARGET_ESP32
 // ESP32 as dual-mode Controller
 #define ENABLE_CLASSIC
+#define ENABLE_BLE
+#else /* CONFIG_IDF_TARGET_ESP32 */
+// ESP32-C3 and ESP32-S3 with LE-only Controller
 #define ENABLE_BLE
 #endif
 
