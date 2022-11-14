@@ -52,10 +52,7 @@
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
-static const char * device_addr_string = "C0:07:E8:D5:A0:12";
-static bd_addr_t    device_addr;
 static const char * bap_app_server_addr_string = "C0:07:E8:41:45:91";
-// static const char * bap_app_server_addr_string = "00:1A:7D:DA:71:07";
 
 static bd_addr_t        bap_app_server_addr;
 static hci_con_handle_t bap_app_client_con_handle;
@@ -82,17 +79,13 @@ static bd_addr_type_t remote_type;
 static uint8_t remote_sid;
 static bool count_mode;
 static bool pts_mode;
-static bool nrf5340_audio_demo;
 
 static char operation_cmd = 0;
 
 typedef enum {
     BAP_APP_CLIENT_STATE_IDLE = 0,
     BAP_APP_CLIENT_STATE_W4_GAP_CONNECTED,
-    
-    BAP_APP_CLIENT_STATE_W2_CONNECT_BASS,
     BAP_APP_CLIENT_STATE_W4_BASS_CONNECTED,
-    BAP_APP_CLIENT_STATE_W2_CONNECT_PACS,
     BAP_APP_CLIENT_STATE_W4_PACS_CONNECTED,
 
     BAP_APP_CLIENT_STATE_CONNECTED
@@ -339,17 +332,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
                         uuid = little_endian_read_16(data, 0);
                         if (uuid == ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE){
-                            found = true;
-                        }
-                        break;
-                    case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
-                    case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
-                        size = btstack_min(sizeof(remote_name) - 1, size);
-                        memcpy(remote_name, data, size);
-                        remote_name[size] = 0;
-                        // support for nRF5340 Audio DK
-                        if (strncmp("NRF5340", remote_name, 7) == 0){
-                            nrf5340_audio_demo = true;
                             found = true;
                         }
                         break;
@@ -879,7 +861,6 @@ int btstack_main(int argc, const char * argv[]){
     hci_add_event_handler(&hci_event_callback_registration);
 
     // parse human readable Bluetooth address
-    sscanf_bd_addr(device_addr_string, device_addr);
     sscanf_bd_addr(bap_app_server_addr_string, bap_app_server_addr);
     btstack_stdin_setup(stdin_process);
 
