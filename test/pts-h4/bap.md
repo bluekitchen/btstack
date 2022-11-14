@@ -23,21 +23,30 @@ Tool: pts-h4/bap_service_client_test
 - BAP/CL/CGGIT/CHA/BV-06-C:  c, p, h
 - BAP/UCL/CGGIT/SER/BV-01-C: c, p 
 ### ASCS Client
-- BAP/UCL/CGGIT/CHA/BV-01-C: 
-- BAP/UCL/CGGIT/CHA/BV-02-C: 
-- BAP/UCL/CGGIT/CHA/BV-03-C: 
+- BAP/UCL/CGGIT/CHA/BV-01-C: c, d, k, k
+- BAP/UCL/CGGIT/CHA/BV-02-C: c, d, k, k, k, k
+- BAP/UCL/CGGIT/CHA/BV-03-C: c, d, No, Yes, K
 
 
 ### PACS Client:
 - BAP/UCL/DISC/BV-01-C: c, p, i, e, C
 - BAP/UCL/DISC/BV-02-C: c, p, j, f, C
 ### ASCS Client:
-- BAP/UCL/DISC/BV-03-C: 
-- BAP/UCL/DISC/BV-04-C: 
+- BAP/UCL/DISC/BV-03-C: c, d, k, ctrl+c
+- BAP/UCL/DISC/BV-04-C: c, d, k, k, k, ctrl+c
 ### PACS Client:
 - BAP/UCL/DISC/BV-05-C: c, p, h, C
 - BAP/UCL/DISC/BV-06-C: c, p, g, C
 
+### ASCS Client:
+- BAP/UCL/SCC/BV-001-C: c, d, k, K
+- BAP/UCL/SCC/BV-035-C: c, d, k, K, l
+- BAP/UCL/SCC/BV-101-C: c, d, k, L, m, M, n
+
+### BASS Client:
+- BAP/BA/CGGIT/SER/BV-01-C  : c, b
+- BAP/BA/CGGIT/CHA/BV-01-C  : c, b
+- BAP/BA/CGGIT/CHA/BV-02-C  : c, b
 
 ## Unicast Server: pts/gatt_profiles_bap
 - BAP/USR/DISC/BV-01-C: // PTS tool log: Wait for Ext ADV event
