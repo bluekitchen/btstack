@@ -309,8 +309,12 @@ uint16_t ascs_util_qos_configuration_serialize(ascs_qos_configuration_t * qos_co
 
 uint16_t asce_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_t * value, uint16_t value_size){
     btstack_assert(value_size > 0);
-
     uint16_t pos = 0;
+
+    if (metadata == NULL){
+        value[pos++] = 0;
+        return pos;
+    }
 
     uint16_t meatadata_length_pos = pos;
     pos++;
