@@ -474,7 +474,7 @@ static void pacs_client_run_for_connection(pacs_client_connection_t * connection
             connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
             characteristic.value_handle = connection->pacs_characteristics[connection->pacs_characteristics_index].value_handle;
             characteristic.properties   = connection->pacs_characteristics[connection->pacs_characteristics_index].properties;
-            characteristic.end_handle   = connection->end_handle;
+            characteristic.end_handle   = connection->pacs_characteristics[connection->pacs_characteristics_index].end_handle;
 
             status = gatt_client_write_client_characteristic_configuration(
                         &handle_gatt_client_event, 
