@@ -142,12 +142,13 @@ static void ascs_client_emit_ase(ascs_client_connection_t * connection, ascs_str
         case ASCS_STATE_QOS_CONFIGURED:
             ascs_util_emit_qos_configuration(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->qos_configuration);
             break;
-        case ASCS_STATE_ENABLING:
-        case ASCS_STATE_STREAMING:
-        case ASCS_STATE_DISABLING:
-            ascs_util_emit_metadata(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->metadata);
-            break;
+        // case ASCS_STATE_ENABLING:
+        // case ASCS_STATE_STREAMING:
+        // case ASCS_STATE_DISABLING:
+        //     ascs_util_emit_metadata(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->metadata);
+        //     break;
         default:
+            ascs_util_emit_metadata(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->metadata);
             break;           
     }
 }
@@ -173,6 +174,23 @@ static void ascs_client_emit_disconnect(uint16_t cid){
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_ASCS_DISCONNECTED;
     little_endian_store_16(event, pos, cid);
+    (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void ascs_client_emit_control_point_operation(uint16_t cid, uint8_t opcode, uint8_t ase_id, uint8_t response_code, uint8_t reason){
+    uint8_t event[9];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION;
+    little_endian_store_16(event, pos, cid);
+    pos += 2;
+    event[pos++] = opcode;
+
+    event[pos++] = ase_id;
+    event[pos++] = response_code;
+    event[pos++] = reason;
+
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -206,6 +224,7 @@ static uint16_t ascs_parse_ase(const uint8_t * value, uint16_t value_size, ascs_
             pos += le_audio_util_metadata_parse((uint8_t *)&value[pos], value_size - pos, &streamendpoint->metadata);
             break;
         default:
+            pos += le_audio_util_metadata_parse((uint8_t *)&value[pos], value_size - pos, &streamendpoint->metadata);
             break;           
     }
     return pos;
@@ -226,8 +245,27 @@ static void handle_gatt_server_control_point_notification(uint8_t packet_type, u
     }
 
     uint16_t value_handle =  gatt_event_notification_get_value_handle(packet);
+    if (connection->control_point.value_handle != value_handle){
+        return;
+    }
+
     uint16_t value_length = gatt_event_notification_get_value_length(packet);
+    if (value_length < 5){
+        return;
+    }
+
     uint8_t * value = (uint8_t *)gatt_event_notification_get_value(packet);
+    
+    uint8_t  pos = 0;
+
+    uint8_t opcode  = value[pos++];
+    uint8_t ase_num = value[pos++]; // should be 1, as we send only single ASE operation
+    btstack_assert(ase_num == 1);
+
+    uint8_t ase_id = value[pos++];
+    uint8_t response_code = value[pos++];
+    uint8_t reason = value[pos++];
+    ascs_client_emit_control_point_operation(connection->con_handle, opcode, ase_id, response_code, reason);
 }
 
 static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
