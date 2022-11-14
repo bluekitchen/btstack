@@ -94,9 +94,10 @@ static void btstack_audio_esp32_source_process_buffer(void);
 
 #define DRIVER_POLL_INTERVAL_MS          5
 #define DMA_BUFFER_COUNT                 2
-#define DMA_BUFFER_SAMPLES               512
 #define BYTES_PER_SAMPLE_STEREO          4
 
+// one DMA buffer for max sample rate
+#define MAX_DMA_BUFFER_SAMPLES (48000 * 2 * DRIVER_POLL_INTERVAL_MS/ 1000)
 
 typedef enum {
     BTSTACK_AUDIO_ESP32_OFF = 0,
@@ -107,6 +108,7 @@ typedef enum {
 static bool btstack_audio_esp32_i2s_installed;
 static bool btstack_audio_esp32_i2s_streaming;
 static uint32_t btstack_audio_esp32_i2s_samplerate;
+static uint16_t btstack_audio_esp32_samples_per_dma_buffer;
 
 // timer to fill output ring buffer
 static btstack_timer_source_t  btstack_audio_esp32_driver_timer;
@@ -230,6 +232,7 @@ static void btstack_audio_esp32_init(void){
             btstack_assert(btstack_audio_esp32_i2s_samplerate == btstack_audio_esp32_sink_samplerate);
         }
         btstack_audio_esp32_i2s_samplerate = btstack_audio_esp32_sink_samplerate;
+        btstack_audio_esp32_samples_per_dma_buffer = btstack_audio_esp32_sink_samplerate * 2 * DRIVER_POLL_INTERVAL_MS / 1000;
     }
 
     if (btstack_audio_esp32_source_state != BTSTACK_AUDIO_ESP32_OFF){
@@ -239,7 +242,10 @@ static void btstack_audio_esp32_init(void){
             btstack_assert(btstack_audio_esp32_i2s_samplerate == btstack_audio_esp32_source_samplerate);
         }
         btstack_audio_esp32_i2s_samplerate = btstack_audio_esp32_source_samplerate;
+        btstack_audio_esp32_samples_per_dma_buffer = btstack_audio_esp32_source_samplerate * 2 * DRIVER_POLL_INTERVAL_MS / 1000;
     }
+
+    btstack_assert(btstack_audio_esp32_samples_per_dma_buffer <= MAX_DMA_BUFFER_SAMPLES);
 
     i2s_config_t config =
     {
@@ -248,8 +254,8 @@ static void btstack_audio_esp32_init(void){
         .bits_per_sample      = I2S_BITS_PER_SAMPLE_16BIT,
         .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT,
         .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-        .dma_buf_count        = DMA_BUFFER_COUNT,              // Number of DMA buffers. Max 128.
-        .dma_buf_len          = DMA_BUFFER_SAMPLES,            // Size of each DMA buffer in samples. Max 1024.
+        .dma_buf_count        = DMA_BUFFER_COUNT,                           // Number of DMA buffers. Max 128.
+        .dma_buf_len          = btstack_audio_esp32_samples_per_dma_buffer, // Size of each DMA buffer in samples. Max 1024.
         .use_apll             = true,
         .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
     };
@@ -266,7 +272,8 @@ static void btstack_audio_esp32_init(void){
     btstack_audio_esp32_set_i2s0_mclk();
 #endif
 
-    log_info("i2s init mode 0x%02x, samplerate %" PRIu32, i2s_mode, btstack_audio_esp32_sink_samplerate);
+    log_info("i2s init mode 0x%02x, samplerate %" PRIu32 ", samples per DMA buffer: %u", 
+        i2s_mode, btstack_audio_esp32_sink_samplerate, btstack_audio_esp32_samples_per_dma_buffer);
 
     i2s_driver_install(BTSTACK_AUDIO_I2S_NUM, &config, DMA_BUFFER_COUNT, &btstack_audio_esp32_i2s_event_queue);
     i2s_set_pin(BTSTACK_AUDIO_I2S_NUM, &pins);
@@ -297,14 +304,18 @@ static void btstack_audio_esp32_deinit(void){
 
 static void btstack_audio_esp32_sink_fill_buffer(void){
     size_t bytes_written;
-    uint8_t buffer[DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
+    uint8_t buffer[MAX_DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
+
+    btstack_assert(btstack_audio_esp32_samples_per_dma_buffer <= MAX_DMA_BUFFER_SAMPLES);
+
+    uint16_t data_len = btstack_audio_esp32_samples_per_dma_buffer * BYTES_PER_SAMPLE_STEREO;
     if (btstack_audio_esp32_sink_state == BTSTACK_AUDIO_ESP32_STREAMING){
-        (*btstack_audio_esp32_sink_playback_callback)((int16_t *) buffer, DMA_BUFFER_SAMPLES);
+        (*btstack_audio_esp32_sink_playback_callback)((int16_t *) buffer, btstack_audio_esp32_samples_per_dma_buffer);
         // duplicate samples for mono
         if (btstack_audio_esp32_sink_num_channels == 1){
             int16_t i;
             int16_t * buffer16 = (int16_t *) buffer;
-            for (i=DMA_BUFFER_SAMPLES-1;i >= 0; i--){
+            for (i=btstack_audio_esp32_samples_per_dma_buffer-1;i >= 0; i--){
                 buffer16[2*i  ] = buffer16[i];
                 buffer16[2*i+1] = buffer16[i];
             }
@@ -313,11 +324,11 @@ static void btstack_audio_esp32_sink_fill_buffer(void){
         memset(buffer, 0, sizeof(buffer));
     }
 
-    i2s_write(BTSTACK_AUDIO_I2S_NUM, buffer, sizeof(buffer), &bytes_written, 0);
-    if (bytes_written != sizeof(buffer)){
+    i2s_write(BTSTACK_AUDIO_I2S_NUM, buffer, data_len, &bytes_written, 0);
+    if (bytes_written != data_len){
         log_error("i2s_write: only %u of %u!!!", (int) bytes_written, (int) sizeof(buffer));
     }
-    btstack_assert(bytes_written == sizeof(buffer));
+    btstack_assert(bytes_written == data_len);
 }
 
 static int btstack_audio_esp32_sink_init(
@@ -404,21 +415,24 @@ const btstack_audio_sink_t * btstack_audio_esp32_sink_get_instance(void){
 
 static void btstack_audio_esp32_source_process_buffer(void){
     size_t bytes_read;
-    uint8_t buffer[DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
+    uint8_t buffer[MAX_DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
 
-    i2s_read(BTSTACK_AUDIO_I2S_NUM, buffer, sizeof(buffer), &bytes_read, 0);
-    btstack_assert(bytes_read == sizeof(buffer));
+    btstack_assert(btstack_audio_esp32_samples_per_dma_buffer <= MAX_DMA_BUFFER_SAMPLES);
+
+    uint16_t data_len = btstack_audio_esp32_samples_per_dma_buffer * BYTES_PER_SAMPLE_STEREO;
+    i2s_read(BTSTACK_AUDIO_I2S_NUM, buffer, data_len, &bytes_read, 0);
+    btstack_assert(bytes_read == data_len);
 
     int16_t * buffer16 = (int16_t *) buffer;
     if (btstack_audio_esp32_source_state == BTSTACK_AUDIO_ESP32_STREAMING) {
         // drop second channel if configured for mono
         if (btstack_audio_esp32_source_num_channels == 1){
             uint16_t i;
-            for (i=0;i<DMA_BUFFER_SAMPLES;i++){
+            for (i=0;i<btstack_audio_esp32_samples_per_dma_buffer;i++){
                 buffer16[i] = buffer16[2*i];
             }
         }
-        (*btstack_audio_esp32_source_recording_callback)(buffer16, DMA_BUFFER_SAMPLES);
+        (*btstack_audio_esp32_source_recording_callback)(buffer16, btstack_audio_esp32_samples_per_dma_buffer);
     }
 }
 
