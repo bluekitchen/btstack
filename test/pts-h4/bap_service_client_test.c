@@ -42,17 +42,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <btstack_lc3.h>
 
 #include "btstack.h"
 #include "btstack_config.h"
 
 #define BASS_CLIENT_NUM_SOURCES 3
 #define ASCS_CLIENT_NUM_STREAMENDPOINTS 4
+#define MAX_CHANNELS 2
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
-static const char * bap_app_server_addr_string = "C0:07:E8:41:45:91";
+static const char * bap_app_server_addr_string = "C007E823C547";
 
 static bd_addr_t        bap_app_server_addr;
 static hci_con_handle_t bap_app_client_con_handle;
@@ -82,13 +84,27 @@ static bool pts_mode;
 
 static char operation_cmd = 0;
 
+// CIG/CIS
+static le_audio_cig_t        cig;
+static le_audio_cig_params_t cig_params;
+static btstack_lc3_frame_duration_t cig_frame_duration;
+static uint8_t  cig_num_cis;
+static uint8_t  cis_num_channels;
+static uint16_t cis_sampling_frequency_hz;
+static uint16_t cis_octets_per_frame;
+static hci_con_handle_t cis_con_handles[MAX_CHANNELS];
+static bool cis_established[MAX_CHANNELS];
+static unsigned int     cis_setup_next_index;
+
 typedef enum {
     BAP_APP_CLIENT_STATE_IDLE = 0,
     BAP_APP_CLIENT_STATE_W4_GAP_CONNECTED,
     BAP_APP_CLIENT_STATE_W4_BASS_CONNECTED,
     BAP_APP_CLIENT_STATE_W4_PACS_CONNECTED,
-
-    BAP_APP_CLIENT_STATE_CONNECTED
+    BAP_APP_CLIENT_STATE_CONNECTED,
+    BAP_APP_W4_CIG_COMPLETE,
+    BAP_APP_W4_CIS_CREATED,
+    BAP_APP_STREAMING,
 } bap_app_client_state_t; 
 
 static bap_app_client_state_t bap_app_client_state = BAP_APP_CLIENT_STATE_IDLE;
@@ -268,6 +284,8 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     bd_addr_t addr;
     uint8_t status;
     uint8_t event = hci_event_packet_get_type(packet);
+    uint8_t i;
+    hci_con_handle_t  cis_handle;
     switch (event) {
         case SM_EVENT_JUST_WORKS_REQUEST:
             printf("Just Works requested\n");
@@ -368,9 +386,94 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             printf("BAP  Client: disconnected from %s\n", bd_addr_to_str(bap_app_server_addr));
             break;
 
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_CIG_CREATED:
+                    if (bap_app_client_state == BAP_APP_W4_CIG_COMPLETE){
+                        printf("CIS Connection Handles: ");
+                        for (i=0; i < cig_num_cis; i++){
+                            cis_con_handles[i] = gap_subevent_cig_created_get_cis_con_handles(packet, i);
+                            printf("0x%04x ", cis_con_handles[i]);
+                        }
+                        printf("\n");
+
+                        cis_setup_next_index = 0;
+                        printf("Create CIS\n");
+                        hci_con_handle_t acl_connection_handles[MAX_CHANNELS];
+                        for (i=0; i < cig_num_cis; i++){
+                            acl_connection_handles[i] = bap_app_client_con_handle;
+                        }
+                        gap_cis_create(cig_params.cig_id, cis_con_handles, acl_connection_handles);
+                        bap_app_client_state = BAP_APP_W4_CIS_CREATED;
+                    }
+                    break;
+                case GAP_SUBEVENT_CIS_CREATED:
+                    // only look for cis handle
+                    cis_handle = gap_subevent_cis_created_get_cis_con_handle(packet);
+                    for (i=0; i < cig_num_cis; i++){
+                        if (cis_handle == cis_con_handles[i]){
+                            cis_established[i] = true;
+                        }
+                    }
+                    // check for complete
+                    bool complete = true;
+                    for (i=0; i < cig_num_cis; i++) {
+                        complete &= cis_established[i];
+                    }
+                    if (complete) {
+                        printf("All CIS Established\n");
+                        cis_setup_next_index = 0;
+                        bap_app_client_state = BAP_APP_STREAMING;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+
         default:
             break;
     }
+}
+
+void bap_service_client_setup_cis(void){
+    uint8_t framed_pdus;
+    uint16_t frame_duration_us;
+    if (cis_sampling_frequency_hz == 44100){
+        framed_pdus = 1;
+        // same config as for 48k -> frame is longer by 48/44.1
+        frame_duration_us = cig_frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
+    } else {
+        framed_pdus = 0;
+        frame_duration_us = cig_frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
+    }
+
+    printf("Send: LE Set CIG Parameters\n");
+
+    uint8_t num_cis = 1;
+    cig_params.cig_id = 0;
+    cig_params.num_cis = 1;
+    cig_params.sdu_interval_c_to_p = frame_duration_us;
+    cig_params.sdu_interval_p_to_c = frame_duration_us;
+    cig_params.worst_case_sca = 0; // 251 ppm to 500 ppm
+    cig_params.packing = 0;        // sequential
+    cig_params.framing = framed_pdus;
+    cig_params.max_transport_latency_c_to_p = 40;
+    cig_params.max_transport_latency_p_to_c = 40;
+    uint8_t i;
+    for (i=0; i < num_cis; i++){
+        cig_params.cis_params[i].cis_id = i;
+        cig_params.cis_params[i].max_sdu_c_to_p = cis_num_channels * cis_octets_per_frame;
+        cig_params.cis_params[i].max_sdu_p_to_c = 0;
+        cig_params.cis_params[i].phy_c_to_p = 2;  // 2M
+        cig_params.cis_params[i].phy_p_to_c = 2;  // 2M
+        cig_params.cis_params[i].rtn_c_to_p = 2;
+        cig_params.cis_params[i].rtn_p_to_c = 2;
+    }
+
+    bap_app_client_state = BAP_APP_W4_CIG_COMPLETE;
+
+    gap_cig_create(&cig, &cig_params);
 }
 
 static void bass_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -662,6 +765,8 @@ static void show_usage(void){
     printf("q   - released, ASE index %d\n", ase_index);
     printf("Q   - update metadata, ASE index %d\n", ase_index);
 
+    printf("I   - setup ISO channel\n");
+
     printf(" \n");
     printf(" \n");
     printf("Ctrl-c - exit\n");
@@ -774,7 +879,12 @@ static void stdin_process(char cmd){
         
         case 'K':
             ase_index = 0;
-            printf("ASCS Client: Configure Codec [8kHz, 7500us], ASE index %d\n", ase_index);
+            printf("ASCS Client: Configure Codec [Mono, 8kHz, 7500us], ASE index %d\n", ase_index);
+            cig_frame_duration = BTSTACK_LC3_FRAME_DURATION_7500US;
+            cig_num_cis = 1;
+            cis_num_channels = 1;
+            cis_octets_per_frame = 26;
+            cis_sampling_frequency_hz = 8000;
             status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &codec_configuration_request_8kHz_7500us);
             break;
         case 'l':
@@ -784,7 +894,12 @@ static void stdin_process(char cmd){
         
         case 'L':
             ase_index = 0;
-            printf("ASCS Client: Configure Codec [16kHz, 10000us], ASE index %d\n", ase_index);
+            printf("ASCS Client: Configure Codec [Mono, 16kHz, 10000us, 40 octets], ASE index %d\n", ase_index);
+            cig_frame_duration = BTSTACK_LC3_FRAME_DURATION_10000US;
+            cig_num_cis = 1;
+            cis_num_channels = 1;
+            cis_octets_per_frame = 40;
+            cis_sampling_frequency_hz = 16000;
             status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &codec_configuration_request_16kHz_100000us);
             break;
         case 'm':
@@ -822,7 +937,11 @@ static void stdin_process(char cmd){
             printf("ASCS Client: Update metadata, ASE index %d\n", ase_index);
             status = audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_index, &metadata_update_request);
             break;
-        
+
+        case 'I':
+            printf("Setup ISO Channel (TODO: list config)\n");
+            bap_service_client_setup_cis();
+            break;
         case '\n':
         case '\r':
             break;
