@@ -153,14 +153,103 @@ static bass_source_data_t source_data1 = {
     
 };
 
-static ascs_client_codec_configuration_request_t codec_configuration_request = {
+static ascs_client_codec_configuration_request_t codec_configuration_request_8kHz_7500us = {
     LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY,
     LE_AUDIO_CLIENT_TARGET_PHY_BALANCED,
     HCI_AUDIO_CODING_FORMAT_LC3,
     0, 0, 
-    {0, 0, 0, 0, 0, 0}
+    {
+        // codec configuration mask
+        0x3E, 
+        // le_audio_codec_sampling_frequency_index_t
+        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ,
+        // le_audio_codec_frame_duration
+        LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US, 
+        // audio_channel_allocation_mask (4)
+        LE_AUDIO_LOCATION_MASK_FRONT_LEFT, 
+        // octets_per_codec_frame (2)
+        26, 
+        // codec_frame_blocks_per_sdu (1)
+        1
+    }
 };
 
+static ascs_client_codec_configuration_request_t codec_configuration_request_16kHz_100000us = {
+    LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY,
+    LE_AUDIO_CLIENT_TARGET_PHY_BALANCED,
+    HCI_AUDIO_CODING_FORMAT_LC3,
+    0, 0, 
+    {
+        // codec configuration mask
+        0x3E, 
+        // le_audio_codec_sampling_frequency_index_t
+        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_16000_HZ,
+        // le_audio_codec_frame_duration
+        LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US, 
+        // audio_channel_allocation_mask (4)
+        LE_AUDIO_LOCATION_MASK_FRONT_LEFT, 
+        // octets_per_codec_frame (2)
+        40, 
+        // codec_frame_blocks_per_sdu (1)
+        1
+    }
+};
+
+static ascs_qos_configuration_t qos_configuration_request_7500us = {
+    // cig_id
+    1,
+    // cis_id
+    1,
+    // sdu_interval
+    7500,
+    // framing (unframed)
+    0,
+    // phy
+    LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE,
+    // max_sdu
+    255,
+    // retransmission_number
+    2,
+    // max_transport_latency_ms
+    20,
+    // presentation_delay_us
+    40000
+};
+
+static ascs_qos_configuration_t qos_configuration_request_10000us = {
+    // cig_id
+    1,
+    // cis_id
+    1,
+    // sdu_interval
+    10000,
+    // framing (unframed)
+    0,
+    // phy
+    LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE,
+    // max_sdu
+    255,
+    // retransmission_number
+    2,
+    // max_transport_latency_ms
+    20,
+    // presentation_delay_us
+    40000
+};
+
+static le_audio_metadata_t metadata_update_request = {
+    (1 << LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS) & (1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS),
+    LE_AUDIO_CONTEXT_MASK_MEDIA,
+    LE_AUDIO_CONTEXT_MASK_MEDIA,
+    0, {},
+    0,
+    0, {},
+    0, 
+    0, {},
+    0,0,{},
+    0,0,{}
+};
+            
 static char * bass_opcode_str[] = {
     "REMOTE_SCAN_STOPPED",
     "REMOTE_SCAN_STARTED",
@@ -441,34 +530,6 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
         case GATTSERVICE_SUBEVENT_PACS_PACK_RECORD:
             printf("PACS Client: %s PAC Record\n", gattservice_subevent_pacs_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
             printf("      %s PAC Record DONE\n", gattservice_subevent_pacs_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
-            
- // * @param coding_format
- // * @param company_id
- // * @param vendor_specific_codec_id
- // * @param codec_capability_mask
- // * @param supported_sampling_frequencies_mask
- // * @param supported_frame_durations_mask
- // * @param supported_audio_channel_counts_mask
- // * @param supported_octets_per_frame_min_num 
- // * @param supported_octets_per_frame_max_num 
- // * @param supported_max_codec_frames_per_sdu 
- // * @param metadata_mask
- // * @param preferred_audio_contexts_mask
- // * @param streaming_audio_contexts_mask
- // * @param program_info_length
- // * @param program_info
- // * @param language_code
- // * @param ccids_num
- // * @param ccids
- // * @param parental_rating
- // * @param program_info_uri_length
- // * @param program_info_uri
- // * @param extended_metadata_type
- // * @param extended_metadata_value_length
- // * @param extended_metadata_value
- // * @param vendor_specific_metadata_type
- // * @param vendor_specific_metadata_value_length
-
             break;
         case GATTSERVICE_SUBEVENT_PACS_PACK_RECORD_DONE:
             printf("      %s PAC Record DONE\n", gattservice_subevent_pacs_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
@@ -489,6 +550,9 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     ascs_codec_configuration_t codec_configuration;
     uint8_t ase_id;
     hci_con_handle_t con_handle;
+    uint8_t ase_state;
+    uint8_t response_code;
+    uint8_t reason;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_ASCS_CONNECTED:
@@ -526,7 +590,7 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION:
-            ase_id = gattservice_subevent_ascs_codec_configuration_get_ase_id(packet);
+            ase_id     = gattservice_subevent_ascs_codec_configuration_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_codec_configuration_get_con_handle(packet);
 
             // codec id:
@@ -541,9 +605,32 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_codec_configuration_get_octets_per_frame(packet);
             codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_codec_configuration_get_frame_blocks_per_sdu(packet);
 
-            printf("ASCS Client: Codec Configuration ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
+            printf("ASCS Client: NOTIFICATION - Codec Configuration ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
             break;
 
+        case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION:
+            ase_id     = gattservice_subevent_ascs_qos_configuration_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_qos_configuration_get_con_handle(packet);
+
+            printf("ASCS Client: NOTIFICATION - QoS Configuration ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
+            break;
+
+        case GATTSERVICE_SUBEVENT_ASCS_METADATA:
+            ase_id     = gattservice_subevent_ascs_metadata_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_metadata_get_con_handle(packet);
+            ase_state  = gattservice_subevent_ascs_metadata_get_state(packet);
+            printf("ASCS Client: NOTIFICATION - ASE update ase_id %d, state %d, con_handle 0x%02x\n", ase_id, ase_state, con_handle);
+            break;
+
+        case GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION:
+            ase_id        = gattservice_subevent_ascs_control_point_operation_get_ase_id(packet);
+            con_handle    = gattservice_subevent_ascs_control_point_operation_get_con_handle(packet);
+            response_code = gattservice_subevent_ascs_control_point_operation_get_response_code(packet);
+            reason        = gattservice_subevent_ascs_control_point_operation_get_reason(packet);
+
+            printf("            OPERATION STATUS - ase_id %d, response [0x%02x, 0x%02x], con_handle 0x%02x\n", ase_id, response_code, reason, con_handle);
+            break;
+        
         default:
             break;
     }
@@ -580,7 +667,18 @@ static void show_usage(void){
     printf("\n--- ASCS Client Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("d   - connect to %s\n", bap_app_server_addr_string);    
     printf("k   - read ASE index %d\n", ase_index);
-    printf("K   - write ASE index 0\n");
+
+    printf("K   - configure Codec [8kHz, 7500us], ASE index %d\n", ase_index);
+    printf("l   - configure QoS 7500us, ASE index %d\n", ase_index);
+    printf("L   - configure Codec [16kHz, 10000us], ASE index %d\n", ase_index);
+    printf("m   - configure QoS 10000us, ASE index %d\n", ase_index);
+    printf("M   - enable, ASE index %d\n", ase_index);
+    printf("n   - start Ready, ASE index %d\n", ase_index);
+    printf("N   - stop Ready, ASE index %d\n", ase_index);
+    printf("r   - disable, ASE index %d\n", ase_index);
+    printf("R   - release, ASE index %d\n", ase_index);
+    printf("q   - released, ASE index %d\n", ase_index);
+    printf("Q   - update metadata, ASE index %d\n", ase_index);
 
     printf(" \n");
     printf(" \n");
@@ -694,8 +792,53 @@ static void stdin_process(char cmd){
         
         case 'K':
             ase_index = 0;
-            printf("ASCS Client: Write ASE with index %d\n", ase_index);
-            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &codec_configuration_request);
+            printf("ASCS Client: Configure Codec [8kHz, 7500us], ASE index %d\n", ase_index);
+            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &codec_configuration_request_8kHz_7500us);
+            break;
+        case 'l':
+            printf("ASCS Client: Configure QoS 7500us, ASE index %d\n", ase_index);
+            status = audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index, &qos_configuration_request_7500us);
+            break;
+        
+        case 'L':
+            ase_index = 0;
+            printf("ASCS Client: Configure Codec [16kHz, 10000us], ASE index %d\n", ase_index);
+            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &codec_configuration_request_16kHz_100000us);
+            break;
+        case 'm':
+            printf("ASCS Client: Configure QoS 10000us, ASE index %d\n", ase_index);
+            status = audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index, &qos_configuration_request_10000us);
+            break;
+        case 'M':
+            printf("ASCS Client: Enable, ASE index %d\n", ase_index);
+            status = audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_index);
+            break;
+        case 'n':
+            printf("ASCS Client: Start Ready, ASE index %d\n", ase_index);
+            status = audio_stream_control_service_client_streamendpoint_receiver_start_ready(ascs_cid, ase_index);
+            break;
+        case 'N':
+            printf("ASCS Client: Stop Ready, ASE index %d\n", ase_index);
+            status = audio_stream_control_service_client_streamendpoint_receiver_stop_ready(ascs_cid, ase_index);
+            break;
+
+        case 'r':
+            printf("ASCS Client: Disable, ASE index %d\n", ase_index);
+            status = audio_stream_control_service_client_streamendpoint_disable(ascs_cid, ase_index);
+            break;
+        case 'R':
+            printf("ASCS Client: Release, ASE index %d\n", ase_index);
+            status = audio_stream_control_service_client_streamendpoint_release(ascs_cid, ase_index, false);
+            break;
+
+        case 'q':
+            printf("ASCS Client: Released, ASE index %d\n", ase_index);
+            audio_stream_control_service_client_streamendpoint_released(ascs_cid, ase_index);
+            break;
+
+        case 'Q':
+            printf("ASCS Client: Update metadata, ASE index %d\n", ase_index);
+            status = audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_index, &metadata_update_request);
             break;
         
         case '\n':
