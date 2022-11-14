@@ -291,7 +291,7 @@ static bool bass_client_register_notification(bass_client_connection_t * connect
     gatt_client_characteristic_t characteristic;
     characteristic.value_handle = receive_state->receive_state_value_handle;
     characteristic.properties   = receive_state->receive_state_properties;
-    characteristic.end_handle   = connection->end_handle;
+    characteristic.end_handle   = receive_state->receive_state_end_handle;
 
     uint8_t status = gatt_client_write_client_characteristic_configuration(
                 &handle_gatt_client_event, 
@@ -526,7 +526,7 @@ static void bass_client_run_for_connection(bass_client_connection_t * connection
             connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT;
             characteristic.value_handle = connection->receive_states[connection->receive_states_index].receive_state_value_handle;
             characteristic.properties   = connection->receive_states[connection->receive_states_index].receive_state_properties;
-            characteristic.end_handle   = connection->end_handle;
+            characteristic.end_handle   = connection->receive_states[connection->receive_states_index].receive_state_end_handle;
 
             (void) gatt_client_discover_characteristic_descriptors(&handle_gatt_client_event, connection->con_handle, &characteristic);
             break;
@@ -719,6 +719,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (connection->receive_states_instances_num < connection->max_receive_states_num){
                         connection->receive_states[connection->receive_states_instances_num].receive_state_value_handle = characteristic.value_handle;
                         connection->receive_states[connection->receive_states_instances_num].receive_state_properties = characteristic.properties;
+                        connection->receive_states[connection->receive_states_index].receive_state_end_handle = characteristic.end_handle;
                         connection->receive_states_instances_num++;
                     } else {
                         log_info("Found more BASS receive_states chrs then it can be stored. ");

@@ -110,6 +110,7 @@ typedef struct {
     uint16_t receive_state_value_handle;
     uint16_t receive_state_ccc_handle;
     uint16_t receive_state_properties;
+    uint16_t receive_state_end_handle;
 } bass_client_source_t;
 
 
