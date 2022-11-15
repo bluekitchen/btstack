@@ -4556,11 +4556,10 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION_REQUEST                  0x32u
 
 /**
- * @format 1H11113112123
+ * @format 1H1113112123
  * @param subevent_code
  * @param con_handle
  * @param ase_id
- * @param state
  * @param cig_id
  * @param cis_id
  * @param sdu_interval
@@ -4574,11 +4573,10 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION                           0x033u
 
 /**
- * @format 1H11122JV3JV1JV2JV2JV
+ * @format 1H1122JV3JV1JV2JV2JV
  * @param subevent_code
  * @param con_handle
  * @param ase_id
- * @param state
  * @param metadata_mask
  * @param preferred_audio_contexts_mask
  * @param streaming_audio_contexts_mask
@@ -4863,11 +4861,10 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_NOT_CONFIGURED                   0x5Bu
 
 /**
- * @format 1H1111123333122111421
+ * @format 1H111123333122111421
  * @param subevent_code
  * @param con_handle
  * @param ase_id
- * @param state
  * @param framing
  * @param preferred_phy
  * @param preferred_retransmission_number
