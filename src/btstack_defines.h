@@ -4594,7 +4594,7 @@ typedef uint8_t sm_key_t[16];
  * @param response_code
  * @param reason
 */ 
-#define GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION                      0x39u
+#define GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE             0x39u
 
 /**
  * @format 1H1

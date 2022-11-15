@@ -708,11 +708,11 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("ASCS Client: METADATA UPDATE - ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION:
-            ase_id        = gattservice_subevent_ascs_control_point_operation_get_ase_id(packet);
-            con_handle    = gattservice_subevent_ascs_control_point_operation_get_con_handle(packet);
-            response_code = gattservice_subevent_ascs_control_point_operation_get_response_code(packet);
-            reason        = gattservice_subevent_ascs_control_point_operation_get_reason(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE:
+            ase_id        = gattservice_subevent_ascs_control_point_operation_response_get_ase_id(packet);
+            con_handle    = gattservice_subevent_ascs_control_point_operation_response_get_con_handle(packet);
+            response_code = gattservice_subevent_ascs_control_point_operation_response_get_response_code(packet);
+            reason        = gattservice_subevent_ascs_control_point_operation_response_get_reason(packet);
 
             printf("            OPERATION STATUS - ase_id %d, response [0x%02x, 0x%02x], con_handle 0x%02x\n", ase_id, response_code, reason, con_handle);
             break;

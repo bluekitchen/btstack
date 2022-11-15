@@ -176,12 +176,12 @@ static void ascs_client_emit_disconnect(uint16_t cid){
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void ascs_client_emit_control_point_operation(uint16_t cid, uint8_t opcode, uint8_t ase_id, uint8_t response_code, uint8_t reason){
+static void ascs_client_emit_control_point_operation_response(uint16_t cid, uint8_t opcode, uint8_t ase_id, uint8_t response_code, uint8_t reason){
     uint8_t event[9];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION;
+    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE;
     little_endian_store_16(event, pos, cid);
     pos += 2;
     event[pos++] = opcode;
@@ -277,7 +277,7 @@ static void handle_gatt_server_control_point_notification(uint8_t packet_type, u
     uint8_t ase_id = value[pos++];
     uint8_t response_code = value[pos++];
     uint8_t reason = value[pos++];
-    ascs_client_emit_control_point_operation(connection->con_handle, opcode, ase_id, response_code, reason);
+    ascs_client_emit_control_point_operation_response(connection->con_handle, opcode, ase_id, response_code, reason);
 }
 
 static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
