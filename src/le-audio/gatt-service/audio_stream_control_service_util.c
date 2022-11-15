@@ -59,7 +59,9 @@ static char * ase_state_name[] = {
     "RFU"
 };
 
-char * ascs_util_ase_state2str(uint8_t state_index){
+char * ascs_util_ase_state2str(ascs_state_t state){
+    uint8_t state_index = (uint8_t)state;
+
     if (state_index < 7){
         return ase_state_name[state_index];
     }

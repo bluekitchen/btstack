@@ -200,7 +200,7 @@ typedef struct {
     uint8_t  reason;
 } ascs_control_point_operation_response_t;
 
-char * ascs_util_ase_state2str(uint8_t state_index);
+char * ascs_util_ase_state2str(ascs_state_t state);
 
 uint16_t ascs_util_qos_configuration_parse(const uint8_t * buffer, uint8_t buffer_size, ascs_qos_configuration_t * qos_config);
 uint16_t ascs_util_codec_configuration_parse(const uint8_t * buffer, uint8_t buffer_size, ascs_codec_configuration_t * codec_config);
