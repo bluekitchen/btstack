@@ -674,16 +674,11 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("ASCS Client: disconnected, cid 0x%02x\n", gattservice_subevent_ascs_disconnected_get_ascs_cid(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_NOT_CONFIGURED:
-            con_handle = gattservice_subevent_ascs_streamendpoint_not_configured_get_con_handle(packet);
-            ase_id = gattservice_subevent_ascs_streamendpoint_not_configured_get_ase_id(packet);
-            printf("ASCS Client: Streamendpoint idle, ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
-            break;
 
         case GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION:
             ase_id     = gattservice_subevent_ascs_codec_configuration_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_codec_configuration_get_con_handle(packet);
-            ase_state =  (ascs_state_t)gattservice_subevent_ascs_codec_configuration_get_state(packet);
+            ase_state  =  (ascs_state_t)gattservice_subevent_ascs_codec_configuration_get_state(packet);
 
             // codec id:
             codec_configuration.coding_format =  gattservice_subevent_ascs_codec_configuration_get_coding_format(packet);;
@@ -714,15 +709,6 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             ase_state  = (ascs_state_t)gattservice_subevent_ascs_metadata_get_state(packet);
 
             printf("ASCS Client: ASE NOTIFICATION (%s) - ase_id %d, con_handle 0x%02x\n", ascs_util_ase_state2str(ase_state), ase_id, con_handle);
-
-            switch (ase_state){
-                case ASCS_STATE_ENABLING:
-                    printf("Setup ISO Channel (TODO: list config)\n");
-                    bap_service_client_setup_cis();
-                    break;
-                default:
-                    break;
-            }
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION:
@@ -734,6 +720,22 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("            OPERATION STATUS - ase_id %d, response [0x%02x, 0x%02x], con_handle 0x%02x\n", ase_id, response_code, reason, con_handle);
             break;
         
+        case GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE:
+            con_handle = gattservice_subevent_ascs_streamendpoint_state_get_con_handle(packet);
+            ase_id     = gattservice_subevent_ascs_streamendpoint_state_get_ase_id(packet);
+            ase_state  = gattservice_subevent_ascs_streamendpoint_state_get_state(packet);
+            
+            printf("ASCS Client: ASE STATE (%s) - ase_id %d, con_handle 0x%02x\n", ascs_util_ase_state2str(ase_state), ase_id, con_handle);
+            switch (ase_state){
+                case ASCS_STATE_ENABLING:
+                    printf("Setup ISO Channel (TODO: list config)\n");
+                    bap_service_client_setup_cis();
+                    break;
+                default:
+                    break;
+            }
+            break;
+
         default:
             break;
     }
