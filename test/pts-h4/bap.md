@@ -41,6 +41,7 @@ Tool: pts-h4/bap_service_client_test
 ### ASCS Client:
 - BAP/UCL/SCC/BV-001-C: c, d, k, K
 - BAP/UCL/SCC/BV-035-C: c, d, k, K, l
+- BAP/UCL/SCC/BV-101-C: c, d, k, L, m, M
 - BAP/UCL/SCC/BV-101-C: c, d, k, L, m, M, n
 
 ### BASS Client:
