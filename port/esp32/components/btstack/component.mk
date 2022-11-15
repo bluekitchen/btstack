@@ -42,6 +42,7 @@ COMPONENT_SRCDIRS := \
 	src/ble \
 	src/mesh \
 	src/ \
+	platform/embedded \
 	platform/freertos \
 	platform/lwip \
 	. \

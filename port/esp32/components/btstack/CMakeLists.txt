@@ -36,6 +36,7 @@ set(src_dirs "3rd-party/bluedroid/decoder/srce"
              "src/ble"
              "src/mesh"
              "src/"
+             "platform/embedded"
              "platform/freertos"
              "platform/lwip"
              ".")
