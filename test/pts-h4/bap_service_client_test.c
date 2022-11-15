@@ -715,6 +715,14 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
             printf("ASCS Client: ASE NOTIFICATION (%s) - ase_id %d, con_handle 0x%02x\n", ascs_util_ase_state2str(ase_state), ase_id, con_handle);
 
+            switch (ase_state){
+                case ASCS_STATE_ENABLING:
+                    printf("Setup ISO Channel (TODO: list config)\n");
+                    bap_service_client_setup_cis();
+                    break;
+                default:
+                    break;
+            }
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION:
@@ -774,8 +782,6 @@ static void show_usage(void){
     printf("R   - release, ASE index %d\n", ase_index);
     printf("q   - released, ASE index %d\n", ase_index);
     printf("Q   - update metadata, ASE index %d\n", ase_index);
-
-    printf("I   - setup ISO channel\n");
 
     printf(" \n");
     printf(" \n");
@@ -948,10 +954,6 @@ static void stdin_process(char cmd){
             status = audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_index, &metadata_update_request);
             break;
 
-        case 'I':
-            printf("Setup ISO Channel (TODO: list config)\n");
-            bap_service_client_setup_cis();
-            break;
         case '\n':
         case '\r':
             break;
