@@ -48,6 +48,24 @@
 #include "le-audio/le_audio_util.h"
 #include "le-audio/gatt-service/audio_stream_control_service_util.h"
 
+static char * ase_state_name[] = {
+    "IDLE",
+    "CODEC_CONFIGURED",
+    "QOS_CONFIGURED",
+    "ENABLING",
+    "STREAMING",
+    "DISABLING",
+    "RELEASING",
+    "RFU"
+};
+
+char * ascs_util_ase_state2str(uint8_t state_index){
+    if (state_index < 7){
+        return ase_state_name[state_index];
+    }
+    return ase_state_name[7];
+}
+
 static uint16_t ascs_util_get_value_size_for_codec_configuration_type(le_audio_codec_configuration_type_t codec_config_type){
     switch (codec_config_type){
         case LE_AUDIO_CODEC_CONFIGURATION_TYPE_SAMPLING_FREQUENCY:
@@ -382,6 +400,8 @@ void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callba
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+#include <stdio.h>
+
 void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, hci_con_handle_t con_handle, uint8_t ase_id, ascs_state_t state, le_audio_metadata_t * metadata){
     btstack_assert(ascs_event_callback != NULL);
 
@@ -399,6 +419,8 @@ void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, hci_c
     pos += 2;
     event[pos++] = ase_id;
     event[pos++] = (uint8_t)state;
-    pos += le_audio_util_metadata_serialize(metadata, &event[pos], sizeof(event) - pos);
+    uint16_t metadata_length = le_audio_util_metadata_serialize(metadata, &event[pos], sizeof(event) - pos);
+    pos += metadata_length;
+    
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
