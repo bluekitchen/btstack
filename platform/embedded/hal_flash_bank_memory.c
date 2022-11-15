@@ -42,6 +42,7 @@
 
 #include "stdint.h"
 #include "string.h"
+#include "inttypes.h"
 
 static uint32_t hal_flash_bank_memory_get_size(void * context){
 	hal_flash_bank_memory_t * self = (hal_flash_bank_memory_t *) context;
@@ -74,7 +75,7 @@ static void hal_flash_bank_memory_read(void * context, int bank, uint32_t offset
 static void hal_flash_bank_memory_write(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size){
 	hal_flash_bank_memory_t * self = (hal_flash_bank_memory_t *) context;
 
-	log_info("write offset %u, len %u", offset, size);
+	log_info("write offset %" PRIu32", len %" PRIu32, offset, size);
 	log_info_hexdump(data, size);
 
 	if (bank > 1) return;
@@ -90,7 +91,7 @@ static void hal_flash_bank_memory_write(void * context, int bank, uint32_t offse
 		}
 		// writing something other than 0x00 is only allowed once
 		if (self->banks[bank][offset] != 0xff && data[i] != 0x00){
-			log_error("Error: offset %u written twice. Data: 0x%02x!", offset+i, data[i]);
+			log_error("Error: offset %" PRIu32 " written twice. Data: 0x%02x!", offset+i, data[i]);
 		} else {
 			self->banks[bank][offset++] = data[i];
 		}
