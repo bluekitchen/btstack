@@ -134,15 +134,17 @@ static void ascs_client_emit_ase(ascs_client_connection_t * connection, ascs_str
         case ASCS_STATE_CODEC_CONFIGURED:
             ascs_util_emit_codec_configuration(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->codec_configuration);
             break;
-
+        
         case ASCS_STATE_QOS_CONFIGURED:
             ascs_util_emit_qos_configuration(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->qos_configuration);
             break;
+        
         case ASCS_STATE_ENABLING:
         case ASCS_STATE_STREAMING:
         case ASCS_STATE_DISABLING:
             ascs_util_emit_metadata(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->metadata);
             break;
+        
         default:
             break;           
     }
@@ -209,14 +211,14 @@ static uint16_t ascs_parse_ase(const uint8_t * value, uint16_t value_size, ascs_
     uint8_t cis_id;
 
     switch (streamendpoint->state){
-        case ASCS_STATE_IDLE:
-            break;
         case ASCS_STATE_CODEC_CONFIGURED:
             pos += ascs_util_codec_configuration_parse(&value[pos], value_size - pos, &streamendpoint->codec_configuration);
             break;
+        
         case ASCS_STATE_QOS_CONFIGURED:
             pos += ascs_util_qos_configuration_parse(&value[pos], value_size - pos, &streamendpoint->qos_configuration);
             break;
+        
         case ASCS_STATE_ENABLING:
         case ASCS_STATE_STREAMING:
         case ASCS_STATE_DISABLING:
@@ -233,6 +235,7 @@ static uint16_t ascs_parse_ase(const uint8_t * value, uint16_t value_size, ascs_
 
             pos += le_audio_util_metadata_parse((uint8_t *)&value[pos], value_size - pos, &streamendpoint->metadata);
             break;
+        
         default:
             break;           
     }
