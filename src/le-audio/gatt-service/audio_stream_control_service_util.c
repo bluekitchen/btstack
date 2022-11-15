@@ -373,7 +373,7 @@ uint16_t asce_util_codec_configuration_request_serialize(ascs_client_codec_confi
 void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_callback, hci_con_handle_t con_handle, uint8_t ase_id, ascs_state_t state, ascs_codec_configuration_t * codec_configuration){
     btstack_assert(ascs_event_callback != NULL);
     
-    uint8_t event[40];
+    uint8_t event[39];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
@@ -381,7 +381,6 @@ void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_call
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = ase_id;
-    event[pos++] = (uint8_t)state;
     pos += ascs_util_codec_configuration_serialize(codec_configuration, &event[pos], sizeof(event) - pos);
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
@@ -389,7 +388,7 @@ void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_call
 void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callback, hci_con_handle_t con_handle, uint8_t ase_id, ascs_state_t state, ascs_qos_configuration_t * qos_configuration){
     btstack_assert(ascs_event_callback != NULL);
     
-    uint8_t event[22];
+    uint8_t event[21];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
@@ -397,12 +396,10 @@ void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callba
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = ase_id;
-    event[pos++] = (uint8_t)state;
     pos += ascs_util_qos_configuration_serialize(qos_configuration, &event[pos], sizeof(event) - pos);
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-#include <stdio.h>
 
 void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, hci_con_handle_t con_handle, uint8_t ase_id, ascs_state_t state, le_audio_metadata_t * metadata){
     btstack_assert(ascs_event_callback != NULL);
@@ -420,7 +417,6 @@ void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, hci_c
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = ase_id;
-    event[pos++] = (uint8_t)state;
     uint16_t metadata_length = le_audio_util_metadata_serialize(metadata, &event[pos], sizeof(event) - pos);
     pos += metadata_length;
     
