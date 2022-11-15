@@ -142,13 +142,12 @@ static void ascs_client_emit_ase(ascs_client_connection_t * connection, ascs_str
         case ASCS_STATE_QOS_CONFIGURED:
             ascs_util_emit_qos_configuration(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->qos_configuration);
             break;
-        // case ASCS_STATE_ENABLING:
-        // case ASCS_STATE_STREAMING:
-        // case ASCS_STATE_DISABLING:
-        //     ascs_util_emit_metadata(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->metadata);
-        //     break;
-        default:
+        case ASCS_STATE_ENABLING:
+        case ASCS_STATE_STREAMING:
+        case ASCS_STATE_DISABLING:
             ascs_util_emit_metadata(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->metadata);
+            break;
+        default:
             break;           
     }
 }
@@ -208,6 +207,8 @@ static uint16_t ascs_parse_ase(const uint8_t * value, uint16_t value_size, ascs_
     if (value_size < pos){
         return pos;
     }
+    uint8_t cig_id;
+    uint8_t cis_id;
 
     switch (streamendpoint->state){
         case ASCS_STATE_IDLE:
@@ -221,10 +222,20 @@ static uint16_t ascs_parse_ase(const uint8_t * value, uint16_t value_size, ascs_
         case ASCS_STATE_ENABLING:
         case ASCS_STATE_STREAMING:
         case ASCS_STATE_DISABLING:
+            if ((value_size - pos) < 3){
+                return 0;
+            }
+            cig_id = value[pos++];
+            cis_id = value[pos++];
+            
+            if ( (cig_id != streamendpoint->qos_configuration.cig_id) ||
+                 (cig_id != streamendpoint->qos_configuration.cis_id) ){
+                return 0;
+            }
+
             pos += le_audio_util_metadata_parse((uint8_t *)&value[pos], value_size - pos, &streamendpoint->metadata);
             break;
         default:
-            pos += le_audio_util_metadata_parse((uint8_t *)&value[pos], value_size - pos, &streamendpoint->metadata);
             break;           
     }
     return pos;
