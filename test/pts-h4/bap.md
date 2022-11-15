@@ -42,7 +42,21 @@ Tool: pts-h4/bap_service_client_test
 - BAP/UCL/SCC/BV-001-C: c, d, k, K
 - BAP/UCL/SCC/BV-035-C: c, d, k, K, l
 - BAP/UCL/SCC/BV-101-C: c, d, k, L, m, M
-- BAP/UCL/SCC/BV-101-C: c, d, k, L, m, M, n
+- BAP/UCL/SCC/BV-102-C: c, d, k, L, m, M, n
+- BAP/UCL/SCC/BV-103-C: c, d, k, L, m, M, n, r, N
+- BAP/UCL/SCC/BV-104-C: c, d, k, L, m, M, r
+- BAP/UCL/SCC/BV-105-C: c, d, k, L, m, M, n, r, N
+- BAP/UCL/SCC/BV-106-C: c, d, k, L, R
+- BAP/UCL/SCC/BV-107-C: c, d, k, L, R
+- BAP/UCL/SCC/BV-108-C: c, d, k, L, m, R
+- BAP/UCL/SCC/BV-109-C: c, d, k, L, m, R
+- BAP/UCL/SCC/BV-110-C: c, d, k, L, m, M, R
+- BAP/UCL/SCC/BV-111-C: c, d, k, L, m, M, R
+- BAP/UCL/SCC/BV-112-C: c, d, k, L, m, M, n, R
+- BAP/UCL/SCC/BV-113-C: c, d, k, L, m, M, n, r, R
+- BAP/UCL/SCC/BV-115-C: c, d, k, L, m, M, Q
+- BAP/UCL/SCC/BV-116-C: c, d, k, L, m, M, Q
+- BAP/UCL/SCC/BV-117-C: c, d, k, L, m, M, n, Q
 
 ### BASS Client:
 - BAP/BA/CGGIT/SER/BV-01-C  : c, b
