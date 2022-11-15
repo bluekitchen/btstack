@@ -4827,7 +4827,7 @@ typedef uint8_t sm_key_t[16];
  * @param ase_id
  * @param state
 */
-#define GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_NOT_CONFIGURED                   0x5Bu
+#define GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE                            0x5Bu
 
 /**
  * @format 1H1111123333122111421

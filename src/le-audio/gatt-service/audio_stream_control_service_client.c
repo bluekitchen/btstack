@@ -111,18 +111,18 @@ static void ascs_client_finalize_connection(ascs_client_connection_t * connectio
     btstack_linked_list_remove(&ascs_connections, (btstack_linked_item_t*) connection);
 }
 
-static void ascs_client_emit_streamendpoint_idle(hci_con_handle_t con_handle, uint8_t ase_id){
+static void ascs_client_emit_streamendpoint_state(hci_con_handle_t con_handle, uint8_t ase_id, ascs_state_t state){
     btstack_assert(ascs_event_callback != NULL);
     uint8_t event[7];
     
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_NOT_CONFIGURED;
+    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = ase_id;
-    event[pos++] = (uint8_t)ASCS_STATE_IDLE;
+    event[pos++] = (uint8_t)state;
 
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
@@ -131,10 +131,6 @@ static void ascs_client_emit_ase(ascs_client_connection_t * connection, ascs_str
     uint8_t ase_id = streamendpoint->ase_characteristic->ase_id;
 
     switch (streamendpoint->state){
-        case ASCS_STATE_IDLE:
-            ascs_client_emit_streamendpoint_idle(connection->con_handle, ase_id);
-            break;
-
         case ASCS_STATE_CODEC_CONFIGURED:
             ascs_util_emit_codec_configuration(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->codec_configuration);
             break;
@@ -150,6 +146,8 @@ static void ascs_client_emit_ase(ascs_client_connection_t * connection, ascs_str
         default:
             break;           
     }
+
+    ascs_client_emit_streamendpoint_state(connection->con_handle, ase_id, streamendpoint->state);
 }
 
 static void ascs_client_emit_connection_established(ascs_client_connection_t * connection, uint8_t status){
