@@ -641,7 +641,7 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     ascs_codec_configuration_t codec_configuration;
     uint8_t ase_id;
     hci_con_handle_t con_handle;
-    uint8_t ase_state;
+    ascs_state_t ase_state;
     uint8_t response_code;
     uint8_t reason;
 
@@ -683,6 +683,7 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
         case GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION:
             ase_id     = gattservice_subevent_ascs_codec_configuration_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_codec_configuration_get_con_handle(packet);
+            ase_state =  (ascs_state_t)gattservice_subevent_ascs_codec_configuration_get_state(packet);
 
             // codec id:
             codec_configuration.coding_format =  gattservice_subevent_ascs_codec_configuration_get_coding_format(packet);;
@@ -696,21 +697,24 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_codec_configuration_get_octets_per_frame(packet);
             codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_codec_configuration_get_frame_blocks_per_sdu(packet);
 
-            printf("ASCS Client: NOTIFICATION - Codec Configuration ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
+            printf("ASCS Client: ASE NOTIFICATION (%s) - ase_id %d, con_handle 0x%02x\n", ascs_util_ase_state2str(ase_state), ase_id, con_handle);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION:
             ase_id     = gattservice_subevent_ascs_qos_configuration_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_qos_configuration_get_con_handle(packet);
+            ase_state = (ascs_state_t)gattservice_subevent_ascs_qos_configuration_get_state(packet);
 
-            printf("ASCS Client: NOTIFICATION - QoS Configuration ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
+            printf("ASCS Client: ASE NOTIFICATION (%s) - ase_id %d, con_handle 0x%02x\n", ascs_util_ase_state2str(ase_state), ase_id, con_handle);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_METADATA:
             ase_id     = gattservice_subevent_ascs_metadata_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_metadata_get_con_handle(packet);
-            ase_state  = gattservice_subevent_ascs_metadata_get_state(packet);
-            printf("ASCS Client: NOTIFICATION - ASE update ase_id %d, state %d, con_handle 0x%02x\n", ase_id, ase_state, con_handle);
+            ase_state  = (ascs_state_t)gattservice_subevent_ascs_metadata_get_state(packet);
+
+            printf("ASCS Client: ASE NOTIFICATION (%s) - ase_id %d, con_handle 0x%02x\n", ascs_util_ase_state2str(ase_state), ase_id, con_handle);
+
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION:
