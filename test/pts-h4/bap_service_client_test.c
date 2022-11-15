@@ -54,7 +54,7 @@
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
-static const char * bap_app_server_addr_string = "C007E823C547";
+static const char * bap_app_server_addr_string = "C007E8414591";
 
 static bd_addr_t        bap_app_server_addr;
 static hci_con_handle_t bap_app_client_con_handle;
@@ -451,7 +451,7 @@ void bap_service_client_setup_cis(void){
     printf("Send: LE Set CIG Parameters\n");
 
     uint8_t num_cis = 1;
-    cig_params.cig_id = 0;
+    cig_params.cig_id = 1;
     cig_params.num_cis = 1;
     cig_params.sdu_interval_c_to_p = frame_duration_us;
     cig_params.sdu_interval_p_to_c = frame_duration_us;
@@ -462,7 +462,7 @@ void bap_service_client_setup_cis(void){
     cig_params.max_transport_latency_p_to_c = 40;
     uint8_t i;
     for (i=0; i < num_cis; i++){
-        cig_params.cis_params[i].cis_id = i;
+        cig_params.cis_params[i].cis_id = 1+i;
         cig_params.cis_params[i].max_sdu_c_to_p = cis_num_channels * cis_octets_per_frame;
         cig_params.cis_params[i].max_sdu_p_to_c = 0;
         cig_params.cis_params[i].phy_c_to_p = 2;  // 2M
