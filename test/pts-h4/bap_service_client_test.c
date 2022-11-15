@@ -108,6 +108,7 @@ typedef enum {
 } bap_app_client_state_t; 
 
 static bap_app_client_state_t bap_app_client_state = BAP_APP_CLIENT_STATE_IDLE;
+static ascs_qos_configuration_t * bap_app_qos_configuration;
 
 static bass_source_data_t source_data1 = {
     // address_type, address
@@ -396,15 +397,8 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                             printf("0x%04x ", cis_con_handles[i]);
                         }
                         printf("\n");
-
-                        cis_setup_next_index = 0;
-                        printf("Create CIS\n");
-                        hci_con_handle_t acl_connection_handles[MAX_CHANNELS];
-                        for (i=0; i < cig_num_cis; i++){
-                            acl_connection_handles[i] = bap_app_client_con_handle;
-                        }
-                        gap_cis_create(cig_params.cig_id, cis_con_handles, acl_connection_handles);
-                        bap_app_client_state = BAP_APP_W4_CIS_CREATED;
+                        printf("ASCS Client: Configure QoS %u us, ASE index %d\n", cig_params.sdu_interval_p_to_c, ase_index);
+                        audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index, bap_app_qos_configuration);
                     }
                     break;
                 case GAP_SUBEVENT_CIS_CREATED:
@@ -436,7 +430,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     }
 }
 
-void bap_service_client_setup_cis(void){
+static void bap_service_client_setup_cig(void){
     uint8_t framed_pdus;
     uint16_t frame_duration_us;
     if (cis_sampling_frequency_hz == 44100){
@@ -448,7 +442,7 @@ void bap_service_client_setup_cis(void){
         frame_duration_us = cig_frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
     }
 
-    printf("Send: LE Set CIG Parameters\n");
+    printf("Create CIG\n");
 
     uint8_t num_cis = 1;
     cig_params.cig_id = 1;
@@ -474,6 +468,18 @@ void bap_service_client_setup_cis(void){
     bap_app_client_state = BAP_APP_W4_CIG_COMPLETE;
 
     gap_cig_create(&cig, &cig_params);
+}
+
+void bap_service_client_setup_cis(void){
+    uint8_t i;
+    cis_setup_next_index = 0;
+    printf("Create CIS\n");
+    hci_con_handle_t acl_connection_handles[MAX_CHANNELS];
+    for (i=0; i < cig_num_cis; i++){
+        acl_connection_handles[i] = bap_app_client_con_handle;
+    }
+    gap_cis_create(cig_params.cig_id, cis_con_handles, acl_connection_handles);
+    bap_app_client_state = BAP_APP_W4_CIS_CREATED;
 }
 
 static void bass_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -754,9 +760,9 @@ static void show_usage(void){
     printf("k   - read ASE index %d\n", ase_index);
 
     printf("K   - configure Codec [8kHz, 7500us], ASE index %d\n", ase_index);
-    printf("l   - configure QoS 7500us, ASE index %d\n", ase_index);
+    printf("l   - create CIG + configure QoS 7500us, ASE index %d\n", ase_index);
     printf("L   - configure Codec [16kHz, 10000us], ASE index %d\n", ase_index);
-    printf("m   - configure QoS 10000us, ASE index %d\n", ase_index);
+    printf("m   - create CIG + configure QoS 10000us, ASE index %d\n", ase_index);
     printf("M   - enable, ASE index %d\n", ase_index);
     printf("n   - start Ready, ASE index %d\n", ase_index);
     printf("N   - stop Ready, ASE index %d\n", ase_index);
@@ -887,11 +893,11 @@ static void stdin_process(char cmd){
             cis_sampling_frequency_hz = 8000;
             status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &codec_configuration_request_8kHz_7500us);
             break;
+
         case 'l':
-            printf("ASCS Client: Configure QoS 7500us, ASE index %d\n", ase_index);
-            status = audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index, &qos_configuration_request_7500us);
+            bap_app_qos_configuration = &qos_configuration_request_7500us;
+            bap_service_client_setup_cig();
             break;
-        
         case 'L':
             ase_index = 0;
             printf("ASCS Client: Configure Codec [Mono, 16kHz, 10000us, 40 octets], ASE index %d\n", ase_index);
@@ -903,8 +909,8 @@ static void stdin_process(char cmd){
             status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &codec_configuration_request_16kHz_100000us);
             break;
         case 'm':
-            printf("ASCS Client: Configure QoS 10000us, ASE index %d\n", ase_index);
-            status = audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index, &qos_configuration_request_10000us);
+            bap_app_qos_configuration = &qos_configuration_request_10000us;
+            bap_service_client_setup_cig();
             break;
         case 'M':
             printf("ASCS Client: Enable, ASE index %d\n", ase_index);
