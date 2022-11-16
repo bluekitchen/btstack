@@ -53,6 +53,7 @@
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
+static void show_usage(void);
 
 static const char * bap_app_server_addr_string = "C007E8414591";
 
@@ -105,9 +106,77 @@ typedef enum {
     BAP_APP_W4_CIG_COMPLETE,
     BAP_APP_W4_CIS_CREATED,
     BAP_APP_STREAMING,
+    BAP_APP_CLIENT_STATE_W4_GAP_DISCONNECTED,
 } bap_app_client_state_t; 
 
 static bap_app_client_state_t bap_app_client_state = BAP_APP_CLIENT_STATE_IDLE;
+
+// codec menu
+static uint8_t menu_sampling_frequency;
+static uint8_t menu_variant;
+static uint8_t num_channels;
+
+// enumerate default codec configs
+static struct {
+    uint16_t samplingrate_hz;
+    uint8_t  samplingrate_index;
+    uint8_t  num_variants;
+    struct {
+        const char * name;
+        btstack_lc3_frame_duration_t frame_duration;
+        uint16_t octets_per_frame;
+    } variants[6];
+} codec_configurations[] = {
+    {
+        8000, 0x01, 2,
+        {
+            {  "8_1",  BTSTACK_LC3_FRAME_DURATION_7500US, 26},
+            {  "8_2", BTSTACK_LC3_FRAME_DURATION_10000US, 30}
+        }
+    },
+    {
+       16000, 0x03, 2,
+       {
+            {  "16_1",  BTSTACK_LC3_FRAME_DURATION_7500US, 30},
+            {  "16_2", BTSTACK_LC3_FRAME_DURATION_10000US, 40}
+       }
+    },
+    {
+        24000, 0x05, 2,
+        {
+            {  "24_1",  BTSTACK_LC3_FRAME_DURATION_7500US, 45},
+            {  "24_2", BTSTACK_LC3_FRAME_DURATION_10000US, 60}
+       }
+    },
+    {
+        32000, 0x06, 2,
+        {
+            {  "32_1",  BTSTACK_LC3_FRAME_DURATION_7500US, 60},
+            {  "32_2", BTSTACK_LC3_FRAME_DURATION_10000US, 80}
+        }
+    },
+    {
+        44100, 0x07, 2,
+        {
+            { "441_1",  BTSTACK_LC3_FRAME_DURATION_7500US,  97},
+            { "441_2", BTSTACK_LC3_FRAME_DURATION_10000US, 130}
+        }
+    },
+    {
+        48000, 0x08, 6,
+        {
+            {  "48_1", BTSTACK_LC3_FRAME_DURATION_7500US, 75},
+            {  "48_2", BTSTACK_LC3_FRAME_DURATION_10000US, 100},
+            {  "48_3", BTSTACK_LC3_FRAME_DURATION_7500US, 90},
+            {  "48_4", BTSTACK_LC3_FRAME_DURATION_10000US, 120},
+            {  "48_5", BTSTACK_LC3_FRAME_DURATION_7500US, 117},
+            {  "48_6", BTSTACK_LC3_FRAME_DURATION_10000US, 155}
+        }
+    },
+};
+
+
+
 static ascs_qos_configuration_t * bap_app_qos_configuration;
 
 static bass_source_data_t source_data1 = {
@@ -162,6 +231,7 @@ static bass_source_data_t source_data1 = {
     }
     
 };
+
 
 static ascs_client_codec_configuration_request_t codec_configuration_request_8kHz_7500us = {
     LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY,
@@ -277,6 +347,16 @@ static char * bass_opcode2str(uint8_t opcode){
     return bass_opcode_str[(uint8_t)BASS_OPCODE_RFU];
 }
 
+static void bap_client_reset(void){
+    bap_app_client_state = BAP_APP_CLIENT_STATE_IDLE;
+    bap_app_client_con_handle = HCI_CON_HANDLE_INVALID;
+
+    num_channels = 2;
+    menu_sampling_frequency = 5;
+    menu_variant = 4;
+    ase_index = 0;
+}
+
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -288,6 +368,29 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     uint8_t i;
     hci_con_handle_t  cis_handle;
     switch (event) {
+        case BTSTACK_EVENT_STATE:
+            switch(btstack_event_state_get_state(packet)){
+                case HCI_STATE_WORKING:
+                    bap_client_reset();
+                    show_usage();
+                    printf("Please select sample frequency and variation\n");
+                    break;
+                case HCI_STATE_OFF:
+                    printf("Goodbye\n");
+                    exit(0);
+                    break;
+                default:
+                    printf("deal with %d\n", btstack_event_state_get_state(packet));
+                    break;
+            }
+            break;
+
+
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            bap_client_reset();
+            printf("BAP  Client: disconnected from %s\n", bd_addr_to_str(bap_app_server_addr));
+            break;
+
         case SM_EVENT_JUST_WORKS_REQUEST:
             printf("Just Works requested\n");
             sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
@@ -381,11 +484,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             }
             break;
 
-        case HCI_EVENT_DISCONNECTION_COMPLETE:
-            bap_app_client_con_handle = HCI_CON_HANDLE_INVALID;
-            bap_app_client_state      = BAP_APP_CLIENT_STATE_IDLE;
-            printf("BAP  Client: disconnected from %s\n", bd_addr_to_str(bap_app_server_addr));
-            break;
 
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
@@ -744,7 +842,8 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- BAP Client Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c   - connect to %s\n", bap_app_server_addr_string);       
+    printf("c   - connect to %s\n", bap_app_server_addr_string);    
+    printf("X   - disconnect from %s\n", bap_app_server_addr_string);       
     
     printf("\n--- BASS Client Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("b   - connect to %s\n", bap_app_server_addr_string);       
@@ -784,20 +883,93 @@ static void show_usage(void){
     printf("q   - released, ASE index %d\n", ase_index);
     printf("Q   - update metadata, ASE index %d\n", ase_index);
 
+    printf("u - toggle ASE index %d\n", ase_index);
+    printf("x - toggle channels\n");
+    printf("y - next sampling frequency\n");
+    printf("z - next codec variant\n");
+
     printf(" \n");
     printf(" \n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
 
+static void print_config(void) {
+    printf("Config '%s_%u': %u, %s ms, %u octets\n",
+           codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
+           num_channels,
+           codec_configurations[menu_sampling_frequency].samplingrate_hz,
+           codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
+           codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame);
+}
+
+
+static void print_ase_index(void) {
+    printf("ASE index %d\n", ase_index);
+}
+
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     operation_cmd = cmd;
+    print_config();
+    print_ase_index();
+
     switch (cmd){
         case 'c':
             printf("Connecting...\n");
             bap_app_client_state = BAP_APP_CLIENT_STATE_W4_GAP_CONNECTED;
             status = gap_connect(bap_app_server_addr, 0);
+            break;
+        
+        case 'X':
+            printf("Disconnect...\n");
+            bap_app_client_state = BAP_APP_CLIENT_STATE_W4_GAP_DISCONNECTED;
+            status = gap_disconnect(bap_app_client_con_handle);
+            break;
+
+        case 'u':
+            if (ase_index >= 3){
+                ase_index = 0;
+            } else {
+                ase_index++;
+            }
+            print_ase_index();
+            break;
+
+        case 'x':
+            if (bap_app_client_state != BAP_APP_CLIENT_STATE_IDLE){
+                printf("Codec configuration can only be changed in idle state\n");
+                break;
+            }
+            num_channels = 3 - num_channels;
+            print_config();
+            break;
+
+        case 'y':
+            if (bap_app_client_state != BAP_APP_CLIENT_STATE_IDLE){
+                printf("Codec configuration can only be changed in idle state\n");
+                break;
+            }
+            menu_sampling_frequency++;
+            if (menu_sampling_frequency >= 6){
+                menu_sampling_frequency = 0;
+            }
+            if (menu_variant >= codec_configurations[menu_sampling_frequency].num_variants){
+                menu_variant = 0;
+            }
+            print_config();
+            break;
+        
+        case 'z':
+            if (bap_app_client_state != BAP_APP_CLIENT_STATE_IDLE){
+                printf("Codec configuration can only be changed in idle state\n");
+                break;
+            }
+            menu_variant++;
+            if (menu_variant >= codec_configurations[menu_sampling_frequency].num_variants){
+                menu_variant = 0;
+            }
+            print_config();
             break;
 
         case 'b':
@@ -885,13 +1057,7 @@ static void stdin_process(char cmd){
 
         case 'k':
             printf("ASCS Client: Read ASE with index %d\n", ase_index);
-
             status = audio_stream_control_service_service_client_read_streamendpoint(ascs_cid, ase_index);
-            if (ase_index < 3){
-                ase_index++;
-            } else {
-                ase_index = 0;
-            }
             break;
         
         case 'K':
@@ -979,6 +1145,10 @@ int btstack_main(int argc, const char * argv[]){
 
     le_device_db_init();
     
+
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
@@ -989,8 +1159,6 @@ int btstack_main(int argc, const char * argv[]){
     published_audio_capabilities_service_client_init(&pacs_client_event_handler);
     audio_stream_control_service_client_init(&ascs_client_event_handler);
 
-    hci_event_callback_registration.callback = &hci_event_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
 
     // parse human readable Bluetooth address
     sscanf_bd_addr(bap_app_server_addr_string, bap_app_server_addr);
