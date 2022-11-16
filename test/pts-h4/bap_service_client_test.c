@@ -646,32 +646,34 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     uint8_t reason;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_ASCS_CONNECTED:
-            if (bap_app_client_con_handle != gattservice_subevent_ascs_connected_get_con_handle(packet)){
-                printf("ASCS Client: expected con handle 0x%02x, received 0x%02x\n", bap_app_client_con_handle, gattservice_subevent_ascs_connected_get_con_handle(packet));
+        case GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED:
+            if (bap_app_client_con_handle != gattservice_subevent_ascs_remote_server_connected_get_con_handle(packet)){
+                printf("ASCS Client: expected con handle 0x%02x, received 0x%02x\n", 
+                    bap_app_client_con_handle, 
+                    gattservice_subevent_ascs_remote_server_connected_get_con_handle(packet));
                 return;
             }
             
-            if (ascs_cid != gattservice_subevent_ascs_connected_get_ascs_cid(packet)){
+            if (ascs_cid != gattservice_subevent_ascs_remote_server_connected_get_ascs_cid(packet)){
                 return;
             }
 
             bap_app_client_state = BAP_APP_CLIENT_STATE_CONNECTED;
-            if (gattservice_subevent_ascs_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+            if (gattservice_subevent_ascs_remote_server_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 ascs_cid = 0;
                 printf("ASCS Client: connection failed, cid 0x%02x, con_handle 0x%02x, status 0x%02x\n", ascs_cid, bap_app_client_con_handle, 
-                    gattservice_subevent_ascs_connected_get_status(packet));
+                    gattservice_subevent_ascs_remote_server_connected_get_status(packet));
                 return;
             }
             printf("ASCS Client: connected, cid 0x%02x\n", ascs_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_DISCONNECTED:
-            if (ascs_cid != gattservice_subevent_ascs_disconnected_get_ascs_cid(packet)){
+        case GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_DISCONNECTED:
+            if (ascs_cid != gattservice_subevent_ascs_remote_server_disconnected_get_ascs_cid(packet)){
                 return;
             }
             ascs_cid = 0;
-            printf("ASCS Client: disconnected, cid 0x%02x\n", gattservice_subevent_ascs_disconnected_get_ascs_cid(packet));
+            printf("ASCS Client: disconnected, cid 0x%02x\n", gattservice_subevent_ascs_remote_server_disconnected_get_ascs_cid(packet));
             break;
 
 
