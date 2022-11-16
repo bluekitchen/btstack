@@ -157,7 +157,7 @@ static void ascs_client_emit_connection_established(ascs_client_connection_t * c
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CONNECTED;
+    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, connection->cid);
@@ -171,7 +171,7 @@ static void ascs_client_emit_disconnect(uint16_t cid){
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_DISCONNECTED;
+    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_DISCONNECTED;
     little_endian_store_16(event, pos, cid);
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
