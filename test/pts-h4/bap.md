@@ -23,8 +23,8 @@ Tool: pts-h4/bap_service_client_test
 - BAP/CL/CGGIT/CHA/BV-06-C:  c, p, h
 - BAP/UCL/CGGIT/SER/BV-01-C: c, p 
 ### ASCS Client
-- BAP/UCL/CGGIT/CHA/BV-01-C: c, d, k, k
-- BAP/UCL/CGGIT/CHA/BV-02-C: c, d, k, k, k, k
+- BAP/UCL/CGGIT/CHA/BV-01-C: c, d, u, k
+- BAP/UCL/CGGIT/CHA/BV-02-C: c, d, u, u, u, k
 - BAP/UCL/CGGIT/CHA/BV-03-C: c, d, No, Yes, K
 
 
@@ -32,8 +32,8 @@ Tool: pts-h4/bap_service_client_test
 - BAP/UCL/DISC/BV-01-C: c, p, i, e, C
 - BAP/UCL/DISC/BV-02-C: c, p, j, f, C
 ### ASCS Client:
-- BAP/UCL/DISC/BV-03-C: c, d, k, ctrl+c
-- BAP/UCL/DISC/BV-04-C: c, d, k, k, k, ctrl+c
+- BAP/UCL/DISC/BV-03-C: c, d, k, X
+- BAP/UCL/DISC/BV-04-C: c, d, u, u, k, X
 ### PACS Client:
 - BAP/UCL/DISC/BV-05-C: c, p, h, C
 - BAP/UCL/DISC/BV-06-C: c, p, g, C
