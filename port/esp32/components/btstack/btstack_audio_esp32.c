@@ -48,7 +48,6 @@
 #include "btstack_debug.h"
 #include "btstack_audio.h"
 #include "btstack_run_loop.h"
-#include "hal_audio.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"

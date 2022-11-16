@@ -45,7 +45,6 @@ dirs_to_copy = [
 '3rd-party/micro-ecc',
 '3rd-party/yxml',
 'platform/freertos',
-'platform/embedded',
 'platform/lwip',
 'tool'
 ]
@@ -53,6 +52,19 @@ dirs_to_copy = [
 for dir in dirs_to_copy:
 	print('- %s' % dir)
 	shutil.copytree(local_dir + '/../../' + dir, IDF_BTSTACK + '/' + dir)
+
+# manually prepare platform/embedded
+print('- platform/embedded')
+platform_embedded_path = IDF_BTSTACK + '/platform/embedded'
+os.makedirs(platform_embedded_path)
+platform_embedded_files_to_copy = [
+	'hal_time_ms.h',
+	'hal_uart_dma.h',
+	'hci_dump_embedded_stdout.h',
+	'hci_dump_embedded_stdout.c',
+]
+for file in platform_embedded_files_to_copy:
+	shutil.copy(local_dir+'/../../platform/embedded/'+file, platform_embedded_path)
 
 # create example/btstack
 create_examples.create_examples(local_dir, '')
