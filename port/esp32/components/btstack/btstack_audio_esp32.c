@@ -231,17 +231,17 @@ static void btstack_audio_esp32_init(void){
             btstack_assert(btstack_audio_esp32_i2s_samplerate == btstack_audio_esp32_sink_samplerate);
         }
         btstack_audio_esp32_i2s_samplerate = btstack_audio_esp32_sink_samplerate;
-        btstack_audio_esp32_samples_per_dma_buffer = btstack_audio_esp32_sink_samplerate * 2 * DRIVER_POLL_INTERVAL_MS / 1000;
+        btstack_audio_esp32_samples_per_dma_buffer = btstack_audio_esp32_i2s_samplerate * 2 * DRIVER_POLL_INTERVAL_MS / 1000;
     }
 
     if (btstack_audio_esp32_source_state != BTSTACK_AUDIO_ESP32_OFF){
         i2s_mode |= I2S_MODE_RX; // recording
-        i2s_data_in_pin = BTSTACK_AUDIO_I2S_OUT;
+        i2s_data_in_pin = BTSTACK_AUDIO_I2S_IN;
         if (btstack_audio_esp32_i2s_samplerate != 0){
             btstack_assert(btstack_audio_esp32_i2s_samplerate == btstack_audio_esp32_source_samplerate);
         }
         btstack_audio_esp32_i2s_samplerate = btstack_audio_esp32_source_samplerate;
-        btstack_audio_esp32_samples_per_dma_buffer = btstack_audio_esp32_source_samplerate * 2 * DRIVER_POLL_INTERVAL_MS / 1000;
+        btstack_audio_esp32_samples_per_dma_buffer = btstack_audio_esp32_i2s_samplerate * 2 * DRIVER_POLL_INTERVAL_MS / 1000;
     }
 
     btstack_assert(btstack_audio_esp32_samples_per_dma_buffer <= MAX_DMA_BUFFER_SAMPLES);
@@ -320,7 +320,7 @@ static void btstack_audio_esp32_sink_fill_buffer(void){
             }
         }
     } else {
-        memset(buffer, 0, sizeof(buffer));
+        memset(buffer, 0, data_len);
     }
 
     i2s_write(BTSTACK_AUDIO_I2S_NUM, buffer, data_len, &bytes_written, 0);
