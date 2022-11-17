@@ -176,9 +176,6 @@ static struct {
 };
 
 
-
-static ascs_qos_configuration_t * bap_app_qos_configuration;
-
 static bass_source_data_t source_data1 = {
     // address_type, address
      
@@ -234,90 +231,10 @@ static bass_source_data_t source_data1 = {
 
 
 
-static ascs_client_codec_configuration_request_t codec_configuration_request = {
-    LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY,
-    LE_AUDIO_CLIENT_TARGET_PHY_BALANCED,
-    HCI_AUDIO_CODING_FORMAT_LC3,
-    0, 0, {0,0,0,0,0,0}
-};
+static ascs_client_codec_configuration_request_t ascs_codec_configuration_request;
+static ascs_qos_configuration_t ascs_qos_configuration;
+static le_audio_metadata_t      ascs_metadata;
 
-
-static ascs_client_codec_configuration_request_t codec_configuration_request_16kHz_100000us = {
-    LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY,
-    LE_AUDIO_CLIENT_TARGET_PHY_BALANCED,
-    HCI_AUDIO_CODING_FORMAT_LC3,
-    0, 0, 
-    {
-        // codec configuration mask
-        0x3E, 
-        // le_audio_codec_sampling_frequency_index_t
-        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_16000_HZ,
-        // le_audio_codec_frame_duration
-        LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US, 
-        // audio_channel_allocation_mask (4)
-        LE_AUDIO_LOCATION_MASK_FRONT_LEFT, 
-        // octets_per_codec_frame (2)
-        40, 
-        // codec_frame_blocks_per_sdu (1)
-        1
-    }
-};
-
-static ascs_qos_configuration_t qos_configuration_request_7500us = {
-    // cig_id
-    1,
-    // cis_id
-    1,
-    // sdu_interval
-    7500,
-    // framing (unframed)
-    0,
-    // phy
-    LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE,
-    // max_sdu
-    255,
-    // retransmission_number
-    2,
-    // max_transport_latency_ms
-    20,
-    // presentation_delay_us
-    40000
-};
-
-static ascs_qos_configuration_t qos_configuration_request_10000us = {
-    // cig_id
-    1,
-    // cis_id
-    1,
-    // sdu_interval
-    10000,
-    // framing (unframed)
-    0,
-    // phy
-    LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE,
-    // max_sdu
-    255,
-    // retransmission_number
-    2,
-    // max_transport_latency_ms
-    20,
-    // presentation_delay_us
-    40000
-};
-
-static le_audio_metadata_t metadata_update_request = {
-    (1 << LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS) & (1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS),
-    LE_AUDIO_CONTEXT_MASK_MEDIA,
-    LE_AUDIO_CONTEXT_MASK_MEDIA,
-    0, {},
-    0,
-    0, {},
-    0, 
-    0, {},
-    0,0,{},
-    0,0,{}
-};
-            
 static char * bass_opcode_str[] = {
     "REMOTE_SCAN_STOPPED",
     "REMOTE_SCAN_STARTED",
@@ -477,6 +394,8 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             switch (hci_event_gap_meta_get_subevent_code(packet)){
                 case GAP_SUBEVENT_CIG_CREATED:
                     if (bap_app_client_state == BAP_APP_W4_CIG_COMPLETE){
+                        bap_app_client_state = BAP_APP_CLIENT_STATE_CONNECTED;
+
                         printf("CIS Connection Handles: ");
                         for (i=0; i < cig_num_cis; i++){
                             cis_con_handles[i] = gap_subevent_cig_created_get_cis_con_handles(packet, i);
@@ -484,7 +403,12 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         }
                         printf("\n");
                         printf("ASCS Client: Configure QoS %u us, ASE[%d]\n", cig_params.sdu_interval_p_to_c, ase_index);
-                        audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index, bap_app_qos_configuration);
+                        printf("       NOTE: Only one CIS supported\n");
+
+                        ascs_qos_configuration.cis_id = cig_params.cis_params[0].cis_id;
+                        ascs_qos_configuration.cig_id = gap_subevent_cig_created_get_cig_id(packet);
+                        
+                        audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index, &ascs_qos_configuration);
                     }
                     break;
                 case GAP_SUBEVENT_CIS_CREATED:
@@ -860,8 +784,7 @@ static void show_usage(void){
     printf("k   - read ASE[%d]\n", ase_index);
 
     printf("K   - configure codec\n");
-    printf("l   - create CIG + configure QoS 7500us, ASE[%d]\n", ase_index);
-    printf("m   - create CIG + configure QoS 10000us, ASE[%d]\n", ase_index);
+    printf("l   - create CIG + configure QoS\n");
     printf("M   - enable, ASE[%d]\n", ase_index);
     printf("n   - start Ready, ASE[%d]\n", ase_index);
     printf("N   - stop Ready, ASE[%d]\n", ase_index);
@@ -1060,6 +983,7 @@ static void stdin_process(char cmd){
             sc_config.codec_frame_blocks_per_sdu = 1;
 
             cis_octets_per_frame = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+            
             cis_sampling_frequency_hz =  codec_configurations[menu_sampling_frequency].samplingrate_hz;
             if (codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US){
                 cig_frame_duration = BTSTACK_LC3_FRAME_DURATION_10000US;
@@ -1067,19 +991,32 @@ static void stdin_process(char cmd){
             cig_num_cis = 1;
             cis_num_channels = 1;
             
-            codec_configuration_request.specific_codec_configuration = sc_config;
-            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &codec_configuration_request);
+            ascs_codec_configuration_request.target_latency = LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY;
+            ascs_codec_configuration_request.target_phy = LE_AUDIO_CLIENT_TARGET_PHY_BALANCED;
+            ascs_codec_configuration_request.coding_format = HCI_AUDIO_CODING_FORMAT_LC3;
+            ascs_codec_configuration_request.company_id = 0;
+            ascs_codec_configuration_request.vendor_specific_codec_id = 0;
+
+            ascs_codec_configuration_request.specific_codec_configuration = sc_config;
+            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
             break;
         
         case 'l':
-            bap_app_qos_configuration = &qos_configuration_request_7500us;
+            printf("ASCS Client: Configure QoS, ");
+            print_ase_index();
+            print_config();
+
+            ascs_qos_configuration.sdu_interval = codec_configurations[menu_sampling_frequency].samplingrate_hz;
+            ascs_qos_configuration.framing = 0;
+            ascs_qos_configuration.phy = LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE;
+            ascs_qos_configuration.max_sdu = 255;
+            ascs_qos_configuration.retransmission_number = 2;
+            ascs_qos_configuration.max_transport_latency_ms = 20;
+            ascs_qos_configuration.presentation_delay_us = 40000;
+
             bap_service_client_setup_cig();
             break;
        
-        case 'm':
-            bap_app_qos_configuration = &qos_configuration_request_10000us;
-            bap_service_client_setup_cig();
-            break;
         case 'M':
             printf("ASCS Client: Enable, ASE[%d]\n", ase_index);
             status = audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_index);
@@ -1109,7 +1046,11 @@ static void stdin_process(char cmd){
 
         case 'Q':
             printf("ASCS Client: Update metadata, ASE[%d]\n", ase_index);
-            status = audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_index, &metadata_update_request);
+            ascs_metadata.metadata_mask = (1 << LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS) & (1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS);
+            ascs_metadata.preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_MEDIA;
+            ascs_metadata.streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_MEDIA;
+
+            status = audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_index, &ascs_metadata);
             break;
 
         case '\n':
