@@ -238,22 +238,9 @@ static ascs_client_codec_configuration_request_t codec_configuration_request = {
     LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY,
     LE_AUDIO_CLIENT_TARGET_PHY_BALANCED,
     HCI_AUDIO_CODING_FORMAT_LC3,
-    0, 0, 
-    {
-        // codec configuration mask
-        0x3E, 0,0,0,0,0
-        // // le_audio_codec_sampling_frequency_index_t
-        // LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ,
-        // // le_audio_codec_frame_duration
-        // LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US, 
-        // // audio_channel_allocation_mask (4)
-        // LE_AUDIO_LOCATION_MASK_FRONT_LEFT, 
-        // // octets_per_codec_frame (2)
-        // 26, 
-        // // codec_frame_blocks_per_sdu (1)
-        // 1
-    }
+    0, 0, {0,0,0,0,0,0}
 };
+
 
 static ascs_client_codec_configuration_request_t codec_configuration_request_16kHz_100000us = {
     LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY,
@@ -368,6 +355,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     uint8_t event = hci_event_packet_get_type(packet);
     uint8_t i;
     hci_con_handle_t  cis_handle;
+    
     switch (event) {
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)){
@@ -381,7 +369,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     exit(0);
                     break;
                 default:
-                    printf("deal with %d\n", btstack_event_state_get_state(packet));
                     break;
             }
             break;
@@ -496,7 +483,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                             printf("0x%04x ", cis_con_handles[i]);
                         }
                         printf("\n");
-                        printf("ASCS Client: Configure QoS %u us, ASE index %d\n", cig_params.sdu_interval_p_to_c, ase_index);
+                        printf("ASCS Client: Configure QoS %u us, ASE[%d]\n", cig_params.sdu_interval_p_to_c, ase_index);
                         audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index, bap_app_qos_configuration);
                     }
                     break;
@@ -870,21 +857,20 @@ static void show_usage(void){
 
     printf("\n--- ASCS Client Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("d   - connect to %s\n", bap_app_server_addr_string);    
-    printf("k   - read ASE index %d\n", ase_index);
+    printf("k   - read ASE[%d]\n", ase_index);
 
-    printf("K   - configure Codec [8kHz, 7500us], ASE index %d\n", ase_index);
-    printf("l   - create CIG + configure QoS 7500us, ASE index %d\n", ase_index);
-    printf("L   - configure Codec [16kHz, 10000us], ASE index %d\n", ase_index);
-    printf("m   - create CIG + configure QoS 10000us, ASE index %d\n", ase_index);
-    printf("M   - enable, ASE index %d\n", ase_index);
-    printf("n   - start Ready, ASE index %d\n", ase_index);
-    printf("N   - stop Ready, ASE index %d\n", ase_index);
-    printf("r   - disable, ASE index %d\n", ase_index);
-    printf("R   - release, ASE index %d\n", ase_index);
-    printf("q   - released, ASE index %d\n", ase_index);
-    printf("Q   - update metadata, ASE index %d\n", ase_index);
+    printf("K   - configure codec\n");
+    printf("l   - create CIG + configure QoS 7500us, ASE[%d]\n", ase_index);
+    printf("m   - create CIG + configure QoS 10000us, ASE[%d]\n", ase_index);
+    printf("M   - enable, ASE[%d]\n", ase_index);
+    printf("n   - start Ready, ASE[%d]\n", ase_index);
+    printf("N   - stop Ready, ASE[%d]\n", ase_index);
+    printf("r   - disable, ASE[%d]\n", ase_index);
+    printf("R   - release, ASE[%d]\n", ase_index);
+    printf("q   - released, ASE[%d]\n", ase_index);
+    printf("Q   - update metadata, ASE[%d]\n", ase_index);
 
-    printf("u - toggle ASE index %d\n", ase_index);
+    printf("u - toggle ASE[%d]\n", ase_index);
     printf("x - toggle channels\n");
     printf("y - next sampling frequency\n");
     printf("z - next codec variant\n");
@@ -906,14 +892,14 @@ static void print_config(void) {
 
 
 static void print_ase_index(void) {
-    printf("ASE index %d\n", ase_index);
+    printf("ASE[%d]\n", ase_index);
 }
 
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     operation_cmd = cmd;
-    print_config();
-    print_ase_index();
+    
+    ascs_specific_codec_configuration_t sc_config;
 
     switch (cmd){
         case 'c':
@@ -1061,76 +1047,68 @@ static void stdin_process(char cmd){
             status = audio_stream_control_service_service_client_read_streamendpoint(ascs_cid, ase_index);
             break;
         
-        case 'K': {
-            ase_index = 0;
+        case 'K': 
+            printf("ASCS Client: Configure Codec, ");
+            print_ase_index();
+            print_config();
 
-            ascs_specific_codec_configuration_t sc_config;
             sc_config.codec_configuration_mask = 0x3E;
             sc_config.sampling_frequency_index = codec_configurations[menu_sampling_frequency].sampling_frequency_index;
             sc_config.frame_duration_index   =   codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index;
             sc_config.octets_per_codec_frame =   codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
-            
             sc_config.audio_channel_allocation_mask = LE_AUDIO_LOCATION_MASK_FRONT_LEFT;
             sc_config.codec_frame_blocks_per_sdu = 1;
 
-            printf("ASCS Client: Configure Codec [Mono, 8kHz, 7500us], ASE index %d\n", ase_index);
-            cig_frame_duration = BTSTACK_LC3_FRAME_DURATION_7500US;
+            cis_octets_per_frame = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+            cis_sampling_frequency_hz =  codec_configurations[menu_sampling_frequency].samplingrate_hz;
+            if (codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US){
+                cig_frame_duration = BTSTACK_LC3_FRAME_DURATION_10000US;
+            }
             cig_num_cis = 1;
             cis_num_channels = 1;
-            cis_octets_per_frame = 26;
-            cis_sampling_frequency_hz = 8000;
-
+            
             codec_configuration_request.specific_codec_configuration = sc_config;
             status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &codec_configuration_request);
             break;
-        }
+        
         case 'l':
             bap_app_qos_configuration = &qos_configuration_request_7500us;
             bap_service_client_setup_cig();
             break;
-        case 'L':
-            ase_index = 0;
-            printf("ASCS Client: Configure Codec [Mono, 16kHz, 10000us, 40 octets], ASE index %d\n", ase_index);
-            cig_frame_duration = BTSTACK_LC3_FRAME_DURATION_10000US;
-            cig_num_cis = 1;
-            cis_num_channels = 1;
-            cis_octets_per_frame = 40;
-            cis_sampling_frequency_hz = 16000;
-            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &codec_configuration_request_16kHz_100000us);
-            break;
+       
         case 'm':
             bap_app_qos_configuration = &qos_configuration_request_10000us;
             bap_service_client_setup_cig();
             break;
         case 'M':
-            printf("ASCS Client: Enable, ASE index %d\n", ase_index);
+            printf("ASCS Client: Enable, ASE[%d]\n", ase_index);
             status = audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_index);
             break;
         case 'n':
-            printf("ASCS Client: Start Ready, ASE index %d\n", ase_index);
+            printf("ASCS Client: Start Ready, ASE[%d]\n", ase_index);
             status = audio_stream_control_service_client_streamendpoint_receiver_start_ready(ascs_cid, ase_index);
             break;
         case 'N':
-            printf("ASCS Client: Stop Ready, ASE index %d\n", ase_index);
+            printf("ASCS Client: Stop Ready, ASE[%d]\n", ase_index);
             status = audio_stream_control_service_client_streamendpoint_receiver_stop_ready(ascs_cid, ase_index);
             break;
 
         case 'r':
-            printf("ASCS Client: Disable, ASE index %d\n", ase_index);
+            printf("ASCS Client: Disable, ASE[%d]\n", ase_index);
             status = audio_stream_control_service_client_streamendpoint_disable(ascs_cid, ase_index);
             break;
         case 'R':
-            printf("ASCS Client: Release, ASE index %d\n", ase_index);
+            printf("ASCS Client: Release, ASE[%d]\n", ase_index);
             status = audio_stream_control_service_client_streamendpoint_release(ascs_cid, ase_index, false);
             break;
 
         case 'q':
-            printf("ASCS Client: Released, ASE index %d\n", ase_index);
+            printf("ASCS Client: Released, ASE[%d]\n", ase_index);
             audio_stream_control_service_client_streamendpoint_released(ascs_cid, ase_index);
             break;
 
         case 'Q':
-            printf("ASCS Client: Update metadata, ASE index %d\n", ase_index);
+            printf("ASCS Client: Update metadata, ASE[%d]\n", ase_index);
             status = audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_index, &metadata_update_request);
             break;
 
@@ -1138,6 +1116,8 @@ static void stdin_process(char cmd){
         case '\r':
             break;
         default:
+            print_config();
+            print_ase_index();
             show_usage();
             break;
     }
@@ -1158,10 +1138,6 @@ int btstack_main(int argc, const char * argv[]){
 
     le_device_db_init();
     
-
-    hci_event_callback_registration.callback = &hci_event_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
@@ -1172,6 +1148,8 @@ int btstack_main(int argc, const char * argv[]){
     published_audio_capabilities_service_client_init(&pacs_client_event_handler);
     audio_stream_control_service_client_init(&ascs_client_event_handler);
 
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // parse human readable Bluetooth address
     sscanf_bd_addr(bap_app_server_addr_string, bap_app_server_addr);
