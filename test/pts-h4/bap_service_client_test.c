@@ -119,58 +119,58 @@ static uint8_t num_channels;
 // enumerate default codec configs
 static struct {
     uint16_t samplingrate_hz;
-    uint8_t  samplingrate_index;
+    le_audio_codec_sampling_frequency_index_t sampling_frequency_index;
     uint8_t  num_variants;
     struct {
         const char * name;
-        btstack_lc3_frame_duration_t frame_duration;
+        le_audio_codec_frame_duration_index_t frame_duration_index;
         uint16_t octets_per_frame;
     } variants[6];
 } codec_configurations[] = {
     {
-        8000, 0x01, 2,
+        8000, LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ, 2,
         {
-            {  "8_1",  BTSTACK_LC3_FRAME_DURATION_7500US, 26},
-            {  "8_2", BTSTACK_LC3_FRAME_DURATION_10000US, 30}
+            {  "8_1", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 26},
+            {  "8_2", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 30}
         }
     },
     {
-       16000, 0x03, 2,
+       16000, LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_16000_HZ, 2,
        {
-            {  "16_1",  BTSTACK_LC3_FRAME_DURATION_7500US, 30},
-            {  "16_2", BTSTACK_LC3_FRAME_DURATION_10000US, 40}
+            {  "16_1",  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 30},
+            {  "16_2",  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 40}
        }
     },
     {
-        24000, 0x05, 2,
+        24000, LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_24000_HZ, 2,
         {
-            {  "24_1",  BTSTACK_LC3_FRAME_DURATION_7500US, 45},
-            {  "24_2", BTSTACK_LC3_FRAME_DURATION_10000US, 60}
+            {  "24_1",  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 45},
+            {  "24_2",  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 60}
        }
     },
     {
-        32000, 0x06, 2,
+        32000, LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_32000_HZ, 2,
         {
-            {  "32_1",  BTSTACK_LC3_FRAME_DURATION_7500US, 60},
-            {  "32_2", BTSTACK_LC3_FRAME_DURATION_10000US, 80}
+            {  "32_1", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 60},
+            {  "32_2", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 80}
         }
     },
     {
-        44100, 0x07, 2,
+        44100, LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ, 2,
         {
-            { "441_1",  BTSTACK_LC3_FRAME_DURATION_7500US,  97},
-            { "441_2", BTSTACK_LC3_FRAME_DURATION_10000US, 130}
+            { "441_1", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,  97},
+            { "441_2", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 130}
         }
     },
     {
-        48000, 0x08, 6,
+        48000, LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, 6,
         {
-            {  "48_1", BTSTACK_LC3_FRAME_DURATION_7500US, 75},
-            {  "48_2", BTSTACK_LC3_FRAME_DURATION_10000US, 100},
-            {  "48_3", BTSTACK_LC3_FRAME_DURATION_7500US, 90},
-            {  "48_4", BTSTACK_LC3_FRAME_DURATION_10000US, 120},
-            {  "48_5", BTSTACK_LC3_FRAME_DURATION_7500US, 117},
-            {  "48_6", BTSTACK_LC3_FRAME_DURATION_10000US, 155}
+            {  "48_1", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 75},
+            {  "48_2", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 100},
+            {  "48_3", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 90},
+            {  "48_4", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 120},
+            {  "48_5", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 117},
+            {  "48_6", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 155}
         }
     },
 };
@@ -233,24 +233,25 @@ static bass_source_data_t source_data1 = {
 };
 
 
-static ascs_client_codec_configuration_request_t codec_configuration_request_8kHz_7500us = {
+
+static ascs_client_codec_configuration_request_t codec_configuration_request = {
     LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY,
     LE_AUDIO_CLIENT_TARGET_PHY_BALANCED,
     HCI_AUDIO_CODING_FORMAT_LC3,
     0, 0, 
     {
         // codec configuration mask
-        0x3E, 
-        // le_audio_codec_sampling_frequency_index_t
-        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ,
-        // le_audio_codec_frame_duration
-        LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US, 
-        // audio_channel_allocation_mask (4)
-        LE_AUDIO_LOCATION_MASK_FRONT_LEFT, 
-        // octets_per_codec_frame (2)
-        26, 
-        // codec_frame_blocks_per_sdu (1)
-        1
+        0x3E, 0,0,0,0,0
+        // // le_audio_codec_sampling_frequency_index_t
+        // LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ,
+        // // le_audio_codec_frame_duration
+        // LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US, 
+        // // audio_channel_allocation_mask (4)
+        // LE_AUDIO_LOCATION_MASK_FRONT_LEFT, 
+        // // octets_per_codec_frame (2)
+        // 26, 
+        // // codec_frame_blocks_per_sdu (1)
+        // 1
     }
 };
 
@@ -899,7 +900,7 @@ static void print_config(void) {
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
            num_channels,
            codec_configurations[menu_sampling_frequency].samplingrate_hz,
-           codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
+           codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US ? "7.5" : "10",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame);
 }
 
@@ -1060,17 +1061,29 @@ static void stdin_process(char cmd){
             status = audio_stream_control_service_service_client_read_streamendpoint(ascs_cid, ase_index);
             break;
         
-        case 'K':
+        case 'K': {
             ase_index = 0;
+
+            ascs_specific_codec_configuration_t sc_config;
+            sc_config.codec_configuration_mask = 0x3E;
+            sc_config.sampling_frequency_index = codec_configurations[menu_sampling_frequency].sampling_frequency_index;
+            sc_config.frame_duration_index   =   codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index;
+            sc_config.octets_per_codec_frame =   codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+            
+            sc_config.audio_channel_allocation_mask = LE_AUDIO_LOCATION_MASK_FRONT_LEFT;
+            sc_config.codec_frame_blocks_per_sdu = 1;
+
             printf("ASCS Client: Configure Codec [Mono, 8kHz, 7500us], ASE index %d\n", ase_index);
             cig_frame_duration = BTSTACK_LC3_FRAME_DURATION_7500US;
             cig_num_cis = 1;
             cis_num_channels = 1;
             cis_octets_per_frame = 26;
             cis_sampling_frequency_hz = 8000;
-            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &codec_configuration_request_8kHz_7500us);
-            break;
 
+            codec_configuration_request.specific_codec_configuration = sc_config;
+            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &codec_configuration_request);
+            break;
+        }
         case 'l':
             bap_app_qos_configuration = &qos_configuration_request_7500us;
             bap_service_client_setup_cig();
