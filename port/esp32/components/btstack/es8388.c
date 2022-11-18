@@ -219,8 +219,7 @@ int es8388_init(es8388_config_t *cfg)
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCPOWER, 0x09); //Power up ADC, Enable LIN&RIN, Power down MICBIAS, set int1lp to low power mode
 
     es8388_pa_power(true);
-    ESP_LOGE(ES8388_TAG, "init, out:%02x, in:%02x", cfg->dac_output, cfg->adc_input);
-    ESP_LOGE(ES8388_TAG, "res = %d", res);
+    ESP_LOGD(ES8388_TAG, "init, out:%02x, in:%02x -> %d", cfg->dac_output, cfg->adc_input, res);
     return res;
 }
 
