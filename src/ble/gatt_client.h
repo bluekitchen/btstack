@@ -272,7 +272,7 @@ void gatt_client_mtu_enable_auto_negotiation(uint8_t enabled);
 void gatt_client_send_mtu_negotiation(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
 
 /** 
- * @brief Returns if the GATT client is ready to receive a query. It is used with daemon. 
+ * @brief Returns 1 if the GATT client is ready to receive a query. It is used with daemon. 
  * @param  con_handle
  * @return is_ready_status     0 - if no GATT client for con_handle is found, or is not ready, otherwise 1
  */
