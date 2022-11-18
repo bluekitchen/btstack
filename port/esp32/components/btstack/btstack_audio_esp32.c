@@ -54,9 +54,12 @@
 
 #include "driver/gpio.h"
 #include "driver/i2s.h"
+#include "esp_log.h"
 
 #include <inttypes.h>
 #include <string.h>
+
+#define LOG_TAG "AUDIO"
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
 #include "driver/i2c.h"
@@ -300,34 +303,47 @@ static void btstack_audio_esp32_deinit(void){
 }
 
 // SINK Implementation
-
+// - with esp-idf v4.4.3, we occasionally get a TX_DONE but fail to write data without waiting for free buffers
+//   it's unclera why this happens. this code assumes that the TX_DONE event has been received prematurely and
+//   just retries the i2s_write the next time without blocking
+static uint8_t btstack_audio_esp32_sink_buffer[MAX_DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
+static bool btstack_audio_esp32_sink_buffer_ready;
 static void btstack_audio_esp32_sink_fill_buffer(void){
-    size_t bytes_written;
-    uint8_t buffer[MAX_DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
 
     btstack_assert(btstack_audio_esp32_samples_per_dma_buffer <= MAX_DMA_BUFFER_SAMPLES);
 
+    // fetch new data
+    size_t bytes_written;
     uint16_t data_len = btstack_audio_esp32_samples_per_dma_buffer * BYTES_PER_SAMPLE_STEREO;
-    if (btstack_audio_esp32_sink_state == BTSTACK_AUDIO_ESP32_STREAMING){
-        (*btstack_audio_esp32_sink_playback_callback)((int16_t *) buffer, btstack_audio_esp32_samples_per_dma_buffer);
-        // duplicate samples for mono
-        if (btstack_audio_esp32_sink_num_channels == 1){
-            int16_t i;
-            int16_t * buffer16 = (int16_t *) buffer;
-            for (i=btstack_audio_esp32_samples_per_dma_buffer-1;i >= 0; i--){
-                buffer16[2*i  ] = buffer16[i];
-                buffer16[2*i+1] = buffer16[i];
+    if (btstack_audio_esp32_sink_buffer_ready == false){
+        if (btstack_audio_esp32_sink_state == BTSTACK_AUDIO_ESP32_STREAMING){
+            (*btstack_audio_esp32_sink_playback_callback)((int16_t *) btstack_audio_esp32_sink_buffer, btstack_audio_esp32_samples_per_dma_buffer);
+            // duplicate samples for mono
+            if (btstack_audio_esp32_sink_num_channels == 1){
+                int16_t i;
+                int16_t * buffer16 = (int16_t *) btstack_audio_esp32_sink_buffer;
+                for (i=btstack_audio_esp32_samples_per_dma_buffer-1;i >= 0; i--){
+                    buffer16[2*i  ] = buffer16[i];
+                    buffer16[2*i+1] = buffer16[i];
+                }
             }
+            btstack_audio_esp32_sink_buffer_ready = true;
+        } else {
+            memset(btstack_audio_esp32_sink_buffer, 0, data_len);
         }
-    } else {
-        memset(buffer, 0, data_len);
     }
 
-    i2s_write(BTSTACK_AUDIO_I2S_NUM, buffer, data_len, &bytes_written, 0);
-    if (bytes_written != data_len){
-        log_error("i2s_write: only %u of %u!!!", (int) bytes_written, (int) sizeof(buffer));
+    i2s_write(BTSTACK_AUDIO_I2S_NUM, btstack_audio_esp32_sink_buffer, data_len, &bytes_written, 0);
+
+    // check if all data has been written. tolerate writing zero bytes (->retry), but assert on partial write
+    if (bytes_written == data_len){
+        btstack_audio_esp32_sink_buffer_ready = false;
+    } else if (bytes_written == 0){
+        ESP_LOGW(LOG_TAG, "i2s_write: couldn't write after I2S_EVENT_TX_DONE\n");
+    } else {
+        ESP_LOGE(LOG_TAG, "i2s_write: only %u of %u!!!\n", (int) bytes_written, data_len);
+        btstack_assert(false);
     }
-    btstack_assert(bytes_written == data_len);
 }
 
 static int btstack_audio_esp32_sink_init(
@@ -344,7 +360,7 @@ static int btstack_audio_esp32_sink_init(
     btstack_audio_esp32_sink_samplerate         = samplerate;
 
     btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_INITIALIZED;
-
+    
     // init i2s and codec
     btstack_audio_esp32_init();
     return 0;
@@ -369,7 +385,8 @@ static void btstack_audio_esp32_sink_start_stream(void){
 
     // state
     btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_STREAMING;
-
+    btstack_audio_esp32_sink_buffer_ready = false;
+    
     // note: conceptually, it would make sense to pre-fill all I2S buffers and then feed new ones when they are
     // marked as complete. However, it looks like we get additoinal events and then assert below, 
     // so we just don't pre-fill them here
