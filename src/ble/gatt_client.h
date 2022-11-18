@@ -522,7 +522,10 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
 uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t message_len, uint8_t * message);
 
 /** 
- * @brief Writes the characteristic value using the characteristic's value handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
+ * @brief Writes the characteristic value using the characteristic's value handle. 
+ * The GATT_EVENT_QUERY_COMPLETE event marks the end of write. 
+ * The write is successfully performed, if the event's att_status field is set to 
+ * ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
  * @param  value_handle
@@ -535,7 +538,7 @@ uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callb
 uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value);
 
 /** 
- * @brief Writes the characteristic value using the characteristic's value handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
+ * @brief Writes the characteristic value using the characteristic's value handle. The GATT_EVENT_QUERY_COMPLETE event marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
  * @param  value_handle
@@ -548,7 +551,7 @@ uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callb
 uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value);
 
 /** 
- * @brief Writes the characteristic value using the characteristic's value handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
+ * @brief Writes the characteristic value using the characteristic's value handle. The GATT_EVENT_QUERY_COMPLETE event marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
  * @param  value_handle
@@ -631,7 +634,7 @@ uint8_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handle(
 uint8_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t offset);
 
 /** 
- * @brief Writes the characteristic descriptor using its handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
+ * @brief Writes the characteristic descriptor using its handle. The GATT_EVENT_QUERY_COMPLETE event marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
  * @param  descriptor
@@ -644,7 +647,7 @@ uint8_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_
 uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor, uint16_t value_length, uint8_t * value);
 
 /** 
- * @brief Writes the characteristic descriptor using its handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
+ * @brief Writes the characteristic descriptor using its handle. The GATT_EVENT_QUERY_COMPLETE event marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
  * @param  descriptor_handle
@@ -657,7 +660,7 @@ uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t cal
 uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t value_length, uint8_t * value);
 
 /** 
- * @brief Writes the characteristic descriptor using its handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
+ * @brief Writes the characteristic descriptor using its handle. The GATT_EVENT_QUERY_COMPLETE event marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
  * @param  descriptor
@@ -670,7 +673,7 @@ uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btst
 uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor, uint16_t value_length, uint8_t * value);
 
 /** 
- * @brief Writes the characteristic descriptor using its handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
+ * @brief Writes the characteristic descriptor using its handle. The GATT_EVENT_QUERY_COMPLETE event marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
  * @param  descriptor_handle
@@ -683,7 +686,7 @@ uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_
 uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t value_length, uint8_t * value);
 
 /** 
- * @brief Writes the characteristic descriptor using its handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
+ * @brief Writes the characteristic descriptor using its handle. The GATT_EVENT_QUERY_COMPLETE event marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
  * @param  descriptor_handle
@@ -699,7 +702,7 @@ uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle
 /** 
  * @brief Writes the client characteristic configuration of the specified characteristic. It is used to subscribe for notifications or indications of the characteristic value. 
  * For notifications or indications specify: GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION resp. GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION as configuration value.
- * The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS 
+ * The GATT_EVENT_QUERY_COMPLETE event marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS 
  * (see bluetooth.h for ATT_ERROR codes).
  * @param  callback
  * @param  con_handle
