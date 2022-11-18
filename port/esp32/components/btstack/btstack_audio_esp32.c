@@ -352,6 +352,7 @@ static int btstack_audio_esp32_sink_init(
 
 static void btstack_audio_esp32_sink_set_volume(uint8_t gain) {
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+    if (!btstack_audio_esp32_es8388_initialized) return;
     uint8_t volume_0_100 = (uint8_t) ((((uint16_t) gain) * 100) / 128);
     es8388_set_volume( volume_0_100 );
 #else
@@ -456,6 +457,7 @@ static int btstack_audio_esp32_source_init(
 
 static void btstack_audio_esp32_source_set_gain(uint8_t gain) {
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+    if (!btstack_audio_esp32_es8388_initialized) return;
     // ES8388 supports 0..24 dB gain in 3 dB steps
     uint8_t gain_db = (uint8_t) ( ((uint16_t) gain) * 24 / 127);
     es8388_set_mic_gain( (es_codec_mic_gain_t) gain_db );
