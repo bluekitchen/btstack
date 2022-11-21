@@ -275,12 +275,19 @@ static usb_transfer_list_t *usb_transfer_list_alloc( int nbr, int iso_packets, i
 }
 
 static void usb_transfer_list_cancel( usb_transfer_list_t *list ) {
+#ifdef __APPLE__
+    // for darwin ignore all warnings
+    libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_ERROR);
+#endif
     for( int i=0; i<list->nbr; ++i ) {
         usb_transfer_list_entry_t *current = &list->entries[i];
         if( current->in_flight ) {
             libusb_cancel_transfer( current->t );
         }
     }
+#ifdef __APPLE__
+    libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_WARNING);
+#endif
 }
 
 static int usb_transfer_list_in_flight( usb_transfer_list_t *list ) {
