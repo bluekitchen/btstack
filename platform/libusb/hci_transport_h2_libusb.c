@@ -436,6 +436,12 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer) {
         if (r) {
             log_error("Error re-submitting transfer %d", r);
         }
+    } else if ( transfer->status == LIBUSB_TRANSFER_CANCELLED ) {
+        if(( transfer->endpoint == sco_in_addr) || (transfer->endpoint == sco_out_addr)) {
+            usb_transfer_list_release( sco_transfer_list, transfer );
+        } else {
+            usb_transfer_list_release( default_transfer_list, transfer );
+        }
     } else {
         log_info("async_callback. not data -> resubmit transfer, endpoint %x, status %x, length %u", transfer->endpoint, transfer->status, transfer->actual_length);
         // No usable data, just resubmit packet
