@@ -52,6 +52,7 @@
 #include "btstack_config.h"
 
 #include "ble/le_device_db_tlv.h"
+#include "btstack_audio.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -146,6 +147,11 @@ int main(int argc, const char * argv[]){
 
     // init HCI
     hci_init(hci_transport_usb_instance(), NULL);
+
+#ifdef HAVE_PORTAUDIO
+    btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
+#endif
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

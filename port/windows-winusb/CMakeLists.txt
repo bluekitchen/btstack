@@ -17,6 +17,20 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
 	# using Visual Studio C++
 endif()
 
+# pkgconfig
+find_package(PkgConfig REQUIRED)
+
+# portaudio
+pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
+if(PORTAUDIO_FOUND)
+	message("HAVE_PORTAUDIO")
+	include_directories(${PORTAUDIO_INCLUDE_DIRS})
+	link_directories(${PORTAUDIO_LIBRARY_DIRS})
+	link_libraries(${PORTAUDIO_LIBRARIES})
+	# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
+	SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
+endif()
+
 # to generate .h from .gatt files
 find_package (Python REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -51,11 +65,12 @@ file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_WINDOWS   "../../platform/windows/*.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
-file(GLOB SOURCES_PORT      "*.c")
+file(GLOB SOURCES_PORT      "main.c" "../../platform/posix/btstack_audio_portaudio.c")
 file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
 
 file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
 list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
+
 
 
 set(SOURCES

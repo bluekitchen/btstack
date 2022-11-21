@@ -46,6 +46,7 @@
 
 #include "ble/le_device_db_tlv.h"
 #include "bluetooth_company_id.h"
+#include "btstack_audio.h"
 #include "btstack_chipset_bcm.h"
 #include "btstack_chipset_cc256x.h"
 #include "btstack_chipset_csr.h"
@@ -252,6 +253,11 @@ int main(int argc, const char * argv[]){
     const btstack_uart_block_t * uart_driver = btstack_uart_block_windows_instance();
     const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
     hci_init(transport, (void*) &config);
+
+#ifdef HAVE_PORTAUDIO
+    btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
+#endif
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

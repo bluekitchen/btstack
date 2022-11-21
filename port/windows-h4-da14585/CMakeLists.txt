@@ -17,6 +17,20 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
 	# using Visual Studio C++
 endif()
 
+# pkgconfig
+find_package(PkgConfig REQUIRED)
+
+# portaudio
+pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
+if(PORTAUDIO_FOUND)
+	message("HAVE_PORTAUDIO")
+	include_directories(${PORTAUDIO_INCLUDE_DIRS})
+	link_directories(${PORTAUDIO_LIBRARY_DIRS})
+	link_libraries(${PORTAUDIO_LIBRARIES})
+	# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
+	SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
+endif()
+
 # to generate .h from .gatt files
 find_package (Python REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
