@@ -13,6 +13,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 message("${Qt5_DIR}")
 
+# pkgconfig
+find_package(PkgConfig QUIET)
+
+# portaudio
+if (PkgConfig_FOUND)
+    pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
+    if(PORTAUDIO_FOUND)
+        message("HAVE_PORTAUDIO")
+        include_directories(${PORTAUDIO_INCLUDE_DIRS})
+        link_directories(${PORTAUDIO_LIBRARY_DIRS})
+        link_libraries(${PORTAUDIO_LIBRARIES})
+        # CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
+        SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
+    endif()
+endif()
+
 find_package(Qt5Core)
 find_package(FindPython3)
 

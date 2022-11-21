@@ -18,17 +18,19 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 # pkgconfig
-find_package(PkgConfig REQUIRED)
+find_package(PkgConfig QUIET)
 
 # portaudio
-pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
-if(PORTAUDIO_FOUND)
-	message("HAVE_PORTAUDIO")
-	include_directories(${PORTAUDIO_INCLUDE_DIRS})
-	link_directories(${PORTAUDIO_LIBRARY_DIRS})
-	link_libraries(${PORTAUDIO_LIBRARIES})
-	# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
-	SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
+if (PkgConfig_FOUND)
+	pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
+	if(PORTAUDIO_FOUND)
+		message("HAVE_PORTAUDIO")
+		include_directories(${PORTAUDIO_INCLUDE_DIRS})
+		link_directories(${PORTAUDIO_LIBRARY_DIRS})
+		link_libraries(${PORTAUDIO_LIBRARIES})
+		# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
+		SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
+	endif()
 endif()
 
 # to generate .h from .gatt files
