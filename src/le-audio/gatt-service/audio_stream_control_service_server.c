@@ -281,6 +281,8 @@ static bool ascs_client_request_successfully_processed(ascs_remote_client_t * cl
 
 
 static void ascs_server_emit_remote_client_disconnected(hci_con_handle_t con_handle){
+    btstack_assert(ascs_event_callback != NULL);
+
     uint8_t event[5];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -292,6 +294,8 @@ static void ascs_server_emit_remote_client_disconnected(hci_con_handle_t con_han
 }
 
 static void ascs_server_emit_remote_client_connected(hci_con_handle_t con_handle, uint8_t status){
+    btstack_assert(ascs_event_callback != NULL);
+
     uint8_t event[6];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -304,6 +308,8 @@ static void ascs_server_emit_remote_client_connected(hci_con_handle_t con_handle
 }
 
 static void ascs_emit_client_request(hci_con_handle_t con_handle, uint8_t ase_id, uint8_t subevent_id){
+    btstack_assert(ascs_event_callback != NULL);
+
     uint8_t event[6];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -318,8 +324,8 @@ static void ascs_emit_client_request(hci_con_handle_t con_handle, uint8_t ase_id
 
 void ascs_server_emit_codec_configuration_request(hci_con_handle_t con_handle, uint8_t ase_id, ascs_client_codec_configuration_request_t * codec_configuration_request){
     btstack_assert(ascs_event_callback != NULL);
-    uint8_t event[23];
     
+    uint8_t event[23];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
