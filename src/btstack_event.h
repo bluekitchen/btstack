@@ -16122,6 +16122,35 @@ static inline uint16_t gattservice_subevent_pacs_disconnected_get_pacs_cid(const
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_CLIENT_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_csis_remote_client_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_CLIENT_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_csis_remote_client_connected_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_csis_remote_client_disconnected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_CONNECTED
  * @param event packet
  * @return con_handle
