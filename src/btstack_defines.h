@@ -4859,7 +4859,25 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param pacs_cid
 */
-#define GATTSERVICE_SUBEVENT_PACS_DISCONNECTED                                    0x5Du
+#define GATTSERVICE_SUBEVENT_PACS_DISCONNECTED                                   0x5Du
+
+
+// used by server
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_CLIENT_CONNECTED                        0x5Eu
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_CLIENT_DISCONNECTED                     0x5Fu
+
 
 /**
  * @format 1H1
@@ -4867,14 +4885,15 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_CONNECTED                              0x68u
+#define GATTSERVICE_SUBEVENT_AICS_SERVER_CONNECTED                               0x68u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param con_handle
 */
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_DISCONNECTED                           0x69u
+#define GATTSERVICE_SUBEVENT_AICS_SERVER_DISCONNECTED                            0x69u
+
 
 /**
  * @format 1H1
