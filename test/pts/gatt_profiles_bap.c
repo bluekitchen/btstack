@@ -489,7 +489,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             qos_configuration.phy = gattservice_subevent_ascs_qos_configuration_get_phy(packet);
             qos_configuration.max_sdu = gattservice_subevent_ascs_qos_configuration_get_max_sdu(packet);
             qos_configuration.retransmission_number = gattservice_subevent_ascs_qos_configuration_get_retransmission_number(packet);
-            qos_configuration.max_transport_latency = gattservice_subevent_ascs_qos_configuration_get_max_transport_latency(packet);
+            qos_configuration.max_transport_latency_ms = gattservice_subevent_ascs_qos_configuration_get_max_transport_latency(packet);
             qos_configuration.presentation_delay_us = gattservice_subevent_ascs_qos_configuration_get_presentation_delay_us(packet);
 
             printf("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d\n", ase_id);
