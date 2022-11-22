@@ -19,3 +19,5 @@ CHARACTERISTIC,  ORG_BLUETOOTH_CHARACTERISTIC_ASE_CONTROL_POINT  , DYNAMIC | WRI
 
 #import <media_control_service.gatt>
 #import <media_control_service.gatt>
+
+#import <coordinated_set_identification_service.gatt>
