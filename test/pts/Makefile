@@ -86,12 +86,13 @@ AVRCP += \
 SRC_BLE_GATT_SERVICE_FILES += \
 	audio_input_control_service_server.c \
 	audio_stream_control_service_server.c \
-	broadcast_audio_scan_service_util.c \
 	broadcast_audio_scan_service_server.c \
+	broadcast_audio_scan_service_util.c \
+	coordinated_set_identification_service.c \
+	media_control_service_server.c \
 	microphone_control_service_server.c \
 	published_audio_capabilities_service_server.c \
 	volume_control_service_server.c \
-	media_control_service_server.c \
 
 SRC_BLE_GATT_CLIENT_FILES += \
 	le_audio_util.c 					  \
