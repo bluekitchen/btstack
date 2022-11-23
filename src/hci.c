@@ -7185,9 +7185,30 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
                     break;
             }
             // track outgoing connection
-            hci_stack->outgoing_addr_type = (bd_addr_type_t) packet[8]; // peer addres type
+            hci_stack->outgoing_addr_type = (bd_addr_type_t) packet[8]; // peer address type
             reverse_bd_addr( &packet[9], hci_stack->outgoing_addr); // peer address
             break;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        case HCI_OPCODE_HCI_LE_EXTENDED_CREATE_CONNECTION:
+            // white list used?
+            initiator_filter_policy = packet[3];
+            switch (initiator_filter_policy) {
+                case 0:
+                    // whitelist not used
+                    hci_stack->le_connecting_state = LE_CONNECTING_DIRECT;
+                    break;
+                case 1:
+                    hci_stack->le_connecting_state = LE_CONNECTING_WHITELIST;
+                    break;
+                default:
+                    log_error("Invalid initiator_filter_policy in LE Create Connection %u", initiator_filter_policy);
+                    break;
+            }
+            // track outgoing connection
+            hci_stack->outgoing_addr_type = (bd_addr_type_t) packet[5]; // peer address type
+            reverse_bd_addr( &packet[6], hci_stack->outgoing_addr); // peer address
+            break;
+#endif
         case HCI_OPCODE_HCI_LE_CREATE_CONNECTION_CANCEL:
             hci_stack->le_connecting_state = LE_CONNECTING_CANCEL;
             break;
