@@ -6352,20 +6352,7 @@ static bool hci_run_general_gap_le(void){
         memset(null_addr, 0, 6);
         hci_stack->le_connection_own_addr_type =  hci_stack->le_own_addr_type;
         hci_get_own_address_for_addr_type(hci_stack->le_connection_own_addr_type, hci_stack->le_connection_own_address);
-        hci_send_cmd(&hci_le_create_connection,
-                     hci_stack->le_connection_scan_interval,    // scan interval: 60 ms
-                     hci_stack->le_connection_scan_window,    // scan interval: 30 ms
-                     1,         // use whitelist
-                     0,         // peer address type
-                     null_addr, // peer bd addr
-                     hci_stack->le_connection_own_addr_type,   // our addr type:
-                     hci_stack->le_connection_interval_min,    // conn interval min
-                     hci_stack->le_connection_interval_max,    // conn interval max
-                     hci_stack->le_connection_latency,         // conn latency
-                     hci_stack->le_supervision_timeout,        // conn latency
-                     hci_stack->le_minimum_ce_length,          // min ce length
-                     hci_stack->le_maximum_ce_length           // max ce length
-        );
+        hci_send_le_create_connection(1, 0, null_addr);
         return true;
     }
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
