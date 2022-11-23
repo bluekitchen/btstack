@@ -71,13 +71,11 @@ static uint16_t coordinated_set_size_handle;
 static uint16_t coordinated_set_size_configuration_handle;
 
 static csis_member_lock_t   member_lock;
-static csis_coordinator_t * lock_owner;
 
 static uint16_t member_lock_handle;
 static uint16_t member_lock_configuration_handle;
 
 static uint16_t member_rank_handle;
-
 
 static csis_coordinator_t * csis_get_coordinator_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
@@ -258,6 +256,9 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
 }
 
 static void csis_coordinator_reset(csis_coordinator_t * coordinator){
+    if (csis_get_lock_owner_coordinator() == coordinator){
+        member_lock = CSIS_MEMBER_UNLOCKED;
+    }
     memset(coordinator, 0, sizeof(csis_coordinator_t));
     coordinator->con_handle = HCI_CON_HANDLE_INVALID;
 }
@@ -282,7 +283,6 @@ static void coordinated_set_identification_service_packet_handler(uint8_t packet
             if (coordinator == NULL){
                 break;
             }
-
             csis_coordinator_reset(coordinator);
             csis_server_emit_coordinator_disconnected(con_handle);
             break;
@@ -344,4 +344,6 @@ void coordinated_set_identification_service_server_register_packet_handler(btsta
 }
 
 void coordinated_set_identification_service_server_deinit(void){
+    member_lock = CSIS_MEMBER_UNLOCKED;
+    csis_event_callback = NULL;
 }
