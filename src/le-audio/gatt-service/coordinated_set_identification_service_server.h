@@ -57,6 +57,7 @@ extern "C" {
  * 
  * To use with your application, add `#import <coordinated_set_identification_service.gatt>` to your .gatt file. 
  */
+#define CSIS_LOCK_TIMEOUT_MS            60000
 
 #define CSIS_LOCK_DENIED                0x80
 #define CSIS_LOCK_RELEASE_NOT_ALLOWED   0x81
@@ -67,13 +68,14 @@ extern "C" {
 typedef enum {
     CSIS_MEMBER_UNLOCKED = 0x01,
     CSIS_MEMBER_LOCKED,
-    CSIS_MEMBER_PROHIBITED,
+    CSIS_MEMBER_PROHIBITED
 } csis_member_lock_t;
 
 typedef enum {
     CSIS_SIRK_TYPE_PUBLIC = 0X01,
     CSIS_SIRK_TYPE_ENCRYPTED,
-    CSIS_SIRK_TYPE_OOB
+    CSIS_SIRK_TYPE_OOB,
+    CSIS_SIRK_TYPE_PROHIBITED
 } csis_sirk_type_t;
 
 typedef struct {
@@ -84,11 +86,14 @@ typedef struct {
     uint16_t coordinated_set_size_configuration;
 
     bool     is_lock_owner;
+    btstack_timer_source_t lock_timer;
 } csis_coordinator_t;
 /**
  * @brief Init Coordinated Set Identification Service Server with ATT DB
  */
 void coordinated_set_identification_service_server_init(const uint8_t clients_num, csis_coordinator_t * clients, uint8_t set_size);
+
+uint8_t coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t type, uint8_t * sirk);
 
 /**
  * @brief Register callback.

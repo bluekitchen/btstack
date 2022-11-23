@@ -63,8 +63,8 @@ static uint8_t                  csis_coordinators_max_num;
 static uint16_t sirk_handle;
 static uint16_t sirk_configuration_handle;
 
-static uint8_t sirk[16];
-static csis_sirk_type_t  sirk_type;
+static uint8_t           csis_sirk[16];
+static csis_sirk_type_t  csis_sirk_type;
 
 static uint8_t  coordinated_set_size;
 static uint16_t coordinated_set_size_handle;
@@ -159,7 +159,7 @@ static uint16_t coordinated_set_identification_service_read_callback(hci_con_han
     }
 
     if (attribute_handle == sirk_handle){
-        return att_read_callback_handle_blob(sirk, sizeof(sirk), offset, buffer, buffer_size);
+        return att_read_callback_handle_blob(csis_sirk, sizeof(csis_sirk), offset, buffer, buffer_size);
     }
 
     if (attribute_handle == coordinated_set_size_handle){
@@ -188,6 +188,25 @@ static csis_coordinator_t * csis_get_lock_owner_coordinator(void){
         }
     }
     return NULL;
+}
+
+static void csis_lock_timer_timeout_handler(btstack_timer_source_t * timer){
+    csis_coordinator_t * coordinator = (csis_coordinator_t *) btstack_run_loop_get_timer_context(timer);
+
+    coordinator->is_lock_owner = false;
+    member_lock = CSIS_MEMBER_UNLOCKED;
+    btstack_run_loop_remove_timer(&coordinator->lock_timer);
+}
+
+static void csis_lock_timer_start(csis_coordinator_t * coordinator){
+    if ( ((csis_coordinator_t *) btstack_run_loop_get_timer_context(&coordinator->lock_timer)) != NULL ){
+        return;
+    }
+
+    btstack_run_loop_set_timer_handler(&coordinator->lock_timer, csis_lock_timer_timeout_handler);
+    btstack_run_loop_set_timer_context(&coordinator->lock_timer, coordinator);
+    btstack_run_loop_set_timer(&coordinator->lock_timer, CSIS_LOCK_TIMEOUT_MS); 
+    btstack_run_loop_add_timer(&coordinator->lock_timer);
 }
 
 static int coordinated_set_identification_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
@@ -244,6 +263,7 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
                 }
                 member_lock = lock;
                 coordinator->is_lock_owner = true;
+                csis_lock_timer_start(coordinator);
                 break;
 
             default:
@@ -258,7 +278,9 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
 static void csis_coordinator_reset(csis_coordinator_t * coordinator){
     if (csis_get_lock_owner_coordinator() == coordinator){
         member_lock = CSIS_MEMBER_UNLOCKED;
+        btstack_run_loop_remove_timer(&coordinator->lock_timer);
     }
+
     memset(coordinator, 0, sizeof(csis_coordinator_t));
     coordinator->con_handle = HCI_CON_HANDLE_INVALID;
 }
@@ -341,6 +363,15 @@ void coordinated_set_identification_service_server_init(
 void coordinated_set_identification_service_server_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
     csis_event_callback = callback;
+}
+
+uint8_t coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t type, uint8_t * sirk){
+    if (type >= CSIS_SIRK_TYPE_PROHIBITED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    csis_sirk_type = type;
+    memcpy(csis_sirk, sirk, sizeof(csis_sirk));
+    return ERROR_CODE_SUCCESS;
 }
 
 void coordinated_set_identification_service_server_deinit(void){
