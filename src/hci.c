@@ -5585,7 +5585,8 @@ static void hci_le_scan_stop(void){
     }
 }
 
-static void hci_send_le_create_connection(const hci_connection_t *connection) {
+static void
+hci_send_le_create_connection(uint8_t initiator_filter_policy, bd_addr_type_t address_type, uint8_t *address) {
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     if (hci_extended_advertising_supported()) {
         uint16_t le_connection_scan_interval[1] = { hci_stack->le_connection_scan_interval };
@@ -5597,10 +5598,10 @@ static void hci_send_le_create_connection(const hci_connection_t *connection) {
         uint16_t le_minimum_ce_length[1]        = { hci_stack->le_minimum_ce_length };
         uint16_t le_maximum_ce_length[1]        = { hci_stack->le_maximum_ce_length };
         hci_send_cmd(&hci_le_extended_create_connection,
-                     0,         // don't use whitelist
+                     initiator_filter_policy,
                      hci_stack->le_connection_own_addr_type,   // our addr type:
-                     connection->address_type,      // peer address type
-                     connection->address,           // peer bd addr
+                     address_type,                  // peer address type
+                     address,                       // peer bd addr
                      1,                             // initiating PHY - 1M
                      le_connection_scan_interval,   // conn scan interval
                      le_connection_scan_window,     // conn scan windows
@@ -5616,17 +5617,17 @@ static void hci_send_le_create_connection(const hci_connection_t *connection) {
 #endif
     {
         hci_send_cmd(&hci_le_create_connection,
-                     hci_stack->le_connection_scan_interval,    // conn scan interval
-                     hci_stack->le_connection_scan_window,      // conn scan windows
-                     0,         // don't use whitelist
-                     connection->address_type, // peer address type
-                     connection->address,      // peer bd addr
-                     hci_stack->le_connection_own_addr_type,   // our addr type:
-                     hci_stack->le_connection_interval_min,    // conn interval min
-                     hci_stack->le_connection_interval_max,    // conn interval max
-                     hci_stack->le_connection_latency,         // conn latency
-                     hci_stack->le_supervision_timeout,        // conn latency
-                     hci_stack->le_minimum_ce_length,          // min ce length
+                     hci_stack->le_connection_scan_interval,  // conn scan interval
+                     hci_stack->le_connection_scan_window,    // conn scan windows
+                     initiator_filter_policy,                 // don't use whitelist
+                     address_type,                            // peer address type
+                     address,                                 // peer bd addr
+                     hci_stack->le_connection_own_addr_type,  // our addr type:
+                     hci_stack->le_connection_interval_min,   // conn interval min
+                     hci_stack->le_connection_interval_max,   // conn interval max
+                     hci_stack->le_connection_latency,        // conn latency
+                     hci_stack->le_supervision_timeout,       // conn latency
+                     hci_stack->le_minimum_ce_length,         // min ce length
                      hci_stack->le_maximum_ce_length          // max ce length
         );
     }
@@ -6679,7 +6680,7 @@ static bool hci_run_general_pending_commands(void){
                         log_info("sending hci_le_create_connection");
                         hci_stack->le_connection_own_addr_type =  hci_stack->le_own_addr_type;
                         hci_get_own_address_for_addr_type(hci_stack->le_connection_own_addr_type, hci_stack->le_connection_own_address);
-                        hci_send_le_create_connection(connection);
+                        hci_send_le_create_connection(0, connection->address_type, connection->address);
                         connection->state = SENT_CREATE_CONNECTION;
 #endif
 #endif
