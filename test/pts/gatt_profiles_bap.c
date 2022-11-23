@@ -46,6 +46,8 @@
 #include "gatt_profiles_bap.h"
 #include "btstack.h"
 
+#define CSIS_COORDINATORS_MAX_NUM  1 
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
@@ -274,6 +276,8 @@ static bass_source_data_t source_data1 = {
     
 };
 
+
+static csis_coordinator_t csis_coordiantors[CSIS_COORDINATORS_MAX_NUM];
 
 static uint8_t bad_code[] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8}; 
 static bass_remote_client_t bass_clients[BASS_NUM_CLIENTS];
@@ -787,6 +791,7 @@ int btstack_main(void)
     media_control_service_server_set_icon_url(media_player_id2, icon_url);
     media_control_service_server_set_track_title(media_player_id2, "");
 
+    coordinated_set_identification_service_server_init(CSIS_COORDINATORS_MAX_NUM, &csis_coordiantors[0], 1);
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
