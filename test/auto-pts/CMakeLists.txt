@@ -54,6 +54,7 @@ file(GLOB SOURCES_REALTEK   "../../chipset/realtek/*.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 file(GLOB SOURCES_STLC2500D "../../chipset/stlc2500d/*.c")
 file(GLOB SOURCES_TC2566X   "../../chipset/tc3566x/*.c")
+file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-service/*.c")
 
 # remove some
 file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
@@ -72,6 +73,7 @@ set(SOURCES
 	${SOURCES_BLE}
 	${SOURCES_GATT}
 	${SOURCES_UECC}
+	${SOURCES_LE_AUDIO}
 	${SOURCES_REALTEK}
 	${SOURCES_ZEPHYR}
 	${SOURCES_REALTEK}
