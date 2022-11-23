@@ -1,5 +1,5 @@
 r
 speed 4000
-loadfile ./build/nordic_dfu_demo.hex,0x08000000
+loadfile ./build/a2dp_sink_demo.hex,0x08000000
 r
 exit
