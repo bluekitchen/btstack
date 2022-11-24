@@ -1,14 +1,19 @@
-# BTstack Port for STM32 F4 Discovery Board with USB Bluetooth Controller
+# BTstack Port for STM32 F4 Discovery Board with CC256x
 
-This port uses the STM32 F4 Discovery Board with an USB Bluetooth Controller plugged into its USB UTG port.
-See [blog post](https://bluekitchen-gmbh.com/btstack-stm32-usb-port/) for details.
-
+This port uses the STM32 F4 Discovery Board with TI's CC256XEM ST Adapter Kit that allows to plug in a CC256xB or CC256xC Bluetooth module.
 STCubeMX was used to provide the HAL, initialize the device, and the Makefile. For easy development, Ozone project files are generated as well.
 
 ## Hardware
 
-STM32 Development kit with USB OTG adapter and USB CSR8510 Bluetooth Controller
+STM32 Development kit and adapter for CC256x module:
 - [STM32 F4 Discovery Board](http://www.st.com/en/evaluation-tools/stm32f4discovery.html)
+- [CC256xEM Bluetooth Adatper Kit for ST](https://store.ti.com/CC256XEM-STADAPT-CC256xEM-Bluetooth-Adapter-Kit-P45158.aspx)
+
+CC256x Bluetooth module:
+- [CC2564B Dual-mode Bluetooth® Controller Evaluation Module](https://store.ti.com/cc2564modnem.aspx)
+- [CC2564C Dual-mode Bluetooth® Controller Evaluation Module](https://store.ti.com/CC256XCQFN-EM-CC2564C-Dual-Mode-Bluetooth-Controller-Evaluation-Module-P51277.aspx)
+
+The module with the older CC2564B is around USD 20, while the one with the new CC2564C costs around USD 60. The projects are configured for the CC2564C. When using the CC2564B, *bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c* should be used as cc256x_init_script.
 
 ## Software
 
@@ -36,7 +41,7 @@ Just start Ozone and open the .jdebug file in the build folder. When compiled wi
 
 ## Debug output
 
-The debug output can send via SEGGER RTT.
+All debug output can be either send via SEGGER RTT or via USART2. To get the console from USART2, connect PA2 (USART2 TX) of the Discovery board to an USB-2-UART adapter and open a terminal at 115200.
 
 In src/btstack_config.h resp. in example/btstack_config.h of the generated projects, additional debug information can be enabled by uncommenting ENABLE_LOG_INFO.
 

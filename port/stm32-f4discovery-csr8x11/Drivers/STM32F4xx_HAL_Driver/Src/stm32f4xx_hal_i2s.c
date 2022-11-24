@@ -88,10 +88,6 @@
      (+) Pause the DMA Transfer using HAL_I2S_DMAPause()
      (+) Resume the DMA Transfer using HAL_I2S_DMAResume()
      (+) Stop the DMA Transfer using HAL_I2S_DMAStop()
-         In Slave mode, if HAL_I2S_DMAStop is used to stop the communication, an error
-         HAL_I2S_ERROR_BUSY_LINE_RX is raised as the master continue to transmit data.
-         In this case __HAL_I2S_FLUSH_RX_DR macro must be used to flush the remaining data 
-         inside DR register and avoid using DeInit/Init process for the next transfer.
 
    *** I2S HAL driver macros list ***
    ===================================
@@ -104,7 +100,6 @@
       (+) __HAL_I2S_DISABLE_IT : Disable the specified I2S interrupts
       (+) __HAL_I2S_GET_FLAG: Check whether the specified I2S flag is set or not
 
-      (+) __HAL_I2S_FLUSH_RX_DR: Read DR Register to Flush RX Data
     [..]
       (@) You can refer to the I2S HAL driver header file for more useful macros
 
@@ -118,14 +113,14 @@
           Use Functions HAL_I2S_RegisterCallback() to register an interrupt callback.
 
           Function HAL_I2S_RegisterCallback() allows to register following callbacks:
-            (++) TxCpltCallback        : I2S Tx Completed callback
-            (++) RxCpltCallback        : I2S Rx Completed callback
-            (++) TxRxCpltCallback      : I2S TxRx Completed callback
-            (++) TxHalfCpltCallback    : I2S Tx Half Completed callback
-            (++) RxHalfCpltCallback    : I2S Rx Half Completed callback
-            (++) ErrorCallback         : I2S Error callback
-            (++) MspInitCallback       : I2S Msp Init callback
-            (++) MspDeInitCallback     : I2S Msp DeInit callback
+            (+) TxCpltCallback        : I2S Tx Completed callback
+            (+) RxCpltCallback        : I2S Rx Completed callback
+            (+) TxRxCpltCallback      : I2S TxRx Completed callback
+            (+) TxHalfCpltCallback    : I2S Tx Half Completed callback
+            (+) RxHalfCpltCallback    : I2S Rx Half Completed callback
+            (+) ErrorCallback         : I2S Error callback
+            (+) MspInitCallback       : I2S Msp Init callback
+            (+) MspDeInitCallback     : I2S Msp DeInit callback
           This function takes as parameters the HAL peripheral handle, the Callback ID
           and a pointer to the user callback function.
 
@@ -135,16 +130,15 @@
           HAL_I2S_UnRegisterCallback takes as parameters the HAL peripheral handle,
           and the Callback ID.
           This function allows to reset following callbacks:
-            (++) TxCpltCallback        : I2S Tx Completed callback
-            (++) RxCpltCallback        : I2S Rx Completed callback
-            (++) TxRxCpltCallback      : I2S TxRx Completed callback
-            (++) TxHalfCpltCallback    : I2S Tx Half Completed callback
-            (++) RxHalfCpltCallback    : I2S Rx Half Completed callback
-            (++) ErrorCallback         : I2S Error callback
-            (++) MspInitCallback       : I2S Msp Init callback
-            (++) MspDeInitCallback     : I2S Msp DeInit callback
+            (+) TxCpltCallback        : I2S Tx Completed callback
+            (+) RxCpltCallback        : I2S Rx Completed callback
+            (+) TxRxCpltCallback      : I2S TxRx Completed callback
+            (+) TxHalfCpltCallback    : I2S Tx Half Completed callback
+            (+) RxHalfCpltCallback    : I2S Rx Half Completed callback
+            (+) ErrorCallback         : I2S Error callback
+            (+) MspInitCallback       : I2S Msp Init callback
+            (+) MspDeInitCallback     : I2S Msp DeInit callback
 
-       [..]
        By default, after the HAL_I2S_Init() and when the state is HAL_I2S_STATE_RESET
        all callbacks are set to the corresponding weak functions:
        examples HAL_I2S_MasterTxCpltCallback(), HAL_I2S_MasterRxCpltCallback().
@@ -154,7 +148,6 @@
        If MspInit or MspDeInit are not null, the HAL_I2S_Init()/ HAL_I2S_DeInit()
        keep and use the user MspInit/MspDeInit callbacks (registered beforehand) whatever the state.
 
-       [..]
        Callbacks can be registered/unregistered in HAL_I2S_STATE_READY state only.
        Exception done MspInit/MspDeInit functions that can be registered/unregistered
        in HAL_I2S_STATE_READY or HAL_I2S_STATE_RESET state,
@@ -163,8 +156,7 @@
        using HAL_I2S_RegisterCallback() before calling HAL_I2S_DeInit()
        or HAL_I2S_Init() function.
 
-       [..]
-       When the compilation define USE_HAL_I2S_REGISTER_CALLBACKS is set to 0 or
+       When The compilation define USE_HAL_I2S_REGISTER_CALLBACKS is set to 0 or
        not defined, the callback registering feature is not available
        and weak (surcharged) callbacks are used.
 
@@ -199,7 +191,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define I2S_TIMEOUT_FLAG          100U         /*!< Timeout 100 ms            */
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -437,7 +428,7 @@ HAL_StatusTypeDef HAL_I2S_Init(I2S_HandleTypeDef *hi2s)
     /* Write to SPIx I2SCFGR */
     SET_BIT(hi2s->Instance->I2SCFGR, SPI_I2SCFGR_ASTRTEN);
   }
-#endif /* SPI_I2SCFGR_ASTRTEN */
+#endif
 
 #if defined (SPI_I2S_FULLDUPLEX_SUPPORT)
 
@@ -570,8 +561,7 @@ __weak void HAL_I2S_MspDeInit(I2S_HandleTypeDef *hi2s)
   * @param  pCallback pointer to the Callback function
   * @retval HAL status
   */
-HAL_StatusTypeDef HAL_I2S_RegisterCallback(I2S_HandleTypeDef *hi2s, HAL_I2S_CallbackIDTypeDef CallbackID,
-                                           pI2S_CallbackTypeDef pCallback)
+HAL_StatusTypeDef HAL_I2S_RegisterCallback(I2S_HandleTypeDef *hi2s, HAL_I2S_CallbackIDTypeDef CallbackID, pI2S_CallbackTypeDef pCallback)
 {
   HAL_StatusTypeDef status = HAL_OK;
 
@@ -920,8 +910,7 @@ HAL_StatusTypeDef HAL_I2S_Transmit(I2S_HandleTypeDef *hi2s, uint16_t *pData, uin
   }
 
   /* Check if Slave mode is selected */
-  if (((tmpreg_cfgr & SPI_I2SCFGR_I2SCFG) == I2S_MODE_SLAVE_TX)
-      || ((tmpreg_cfgr & SPI_I2SCFGR_I2SCFG) == I2S_MODE_SLAVE_RX))
+  if (((tmpreg_cfgr & SPI_I2SCFGR_I2SCFG) == I2S_MODE_SLAVE_TX) || ((tmpreg_cfgr & SPI_I2SCFGR_I2SCFG) == I2S_MODE_SLAVE_RX))
   {
     /* Wait until Busy flag is reset */
     if (I2S_WaitFlagStateUntilTimeout(hi2s, I2S_FLAG_BSY, RESET, Timeout) != HAL_OK)
@@ -1230,10 +1219,7 @@ HAL_StatusTypeDef HAL_I2S_Transmit_DMA(I2S_HandleTypeDef *hi2s, uint16_t *pData,
   hi2s->hdmatx->XferErrorCallback = I2S_DMAError;
 
   /* Enable the Tx DMA Stream/Channel */
-  if (HAL_OK != HAL_DMA_Start_IT(hi2s->hdmatx,
-                                 (uint32_t)hi2s->pTxBuffPtr,
-                                 (uint32_t)&hi2s->Instance->DR,
-                                 hi2s->TxXferSize))
+  if (HAL_OK != HAL_DMA_Start_IT(hi2s->hdmatx, (uint32_t)hi2s->pTxBuffPtr, (uint32_t)&hi2s->Instance->DR, hi2s->TxXferSize))
   {
     /* Update SPI error code */
     SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_DMA);
@@ -1329,8 +1315,7 @@ HAL_StatusTypeDef HAL_I2S_Receive_DMA(I2S_HandleTypeDef *hi2s, uint16_t *pData, 
   }
 
   /* Enable the Rx DMA Stream/Channel */
-  if (HAL_OK != HAL_DMA_Start_IT(hi2s->hdmarx, (uint32_t)&hi2s->Instance->DR, (uint32_t)hi2s->pRxBuffPtr,
-                                 hi2s->RxXferSize))
+  if (HAL_OK != HAL_DMA_Start_IT(hi2s->hdmarx, (uint32_t)&hi2s->Instance->DR, (uint32_t)hi2s->pRxBuffPtr, hi2s->RxXferSize))
   {
     /* Update SPI error code */
     SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_DMA);
@@ -1460,9 +1445,6 @@ HAL_StatusTypeDef HAL_I2S_DMAResume(I2S_HandleTypeDef *hi2s)
   */
 HAL_StatusTypeDef HAL_I2S_DMAStop(I2S_HandleTypeDef *hi2s)
 {
-#if defined (SPI_I2S_FULLDUPLEX_SUPPORT)
-  uint32_t tickstart;
-#endif /* SPI_I2S_FULLDUPLEX_SUPPORT */
   HAL_StatusTypeDef errorcode = HAL_OK;
   /* The Lock is not implemented on this API to allow the user application
      to call the HAL SPI API under callbacks HAL_I2S_TxCpltCallback() or HAL_I2S_RxCpltCallback()
@@ -1470,180 +1452,46 @@ HAL_StatusTypeDef HAL_I2S_DMAStop(I2S_HandleTypeDef *hi2s)
      and the correspond call back is executed HAL_I2S_TxCpltCallback() or HAL_I2S_RxCpltCallback()
      */
 
-  if ((hi2s->Init.Mode == I2S_MODE_MASTER_TX) || (hi2s->Init.Mode == I2S_MODE_SLAVE_TX))
+  /* Disable the I2S Tx/Rx DMA requests */
+  CLEAR_BIT(hi2s->Instance->CR2, SPI_CR2_TXDMAEN);
+  CLEAR_BIT(hi2s->Instance->CR2, SPI_CR2_RXDMAEN);
+
+  /* Abort the I2S DMA tx Stream/Channel */
+  if (hi2s->hdmatx != NULL)
   {
-    /* Abort the I2S DMA tx Stream/Channel */
-    if (hi2s->hdmatx != NULL)
+    /* Disable the I2S DMA tx Stream/Channel */
+    if (HAL_OK != HAL_DMA_Abort(hi2s->hdmatx))
     {
-      /* Disable the I2S DMA tx Stream/Channel */
-      if (HAL_OK != HAL_DMA_Abort(hi2s->hdmatx))
-      {
-        SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_DMA);
-        errorcode = HAL_ERROR;
-      }
-    }
-
-    /* Wait until TXE flag is set */
-    if (I2S_WaitFlagStateUntilTimeout(hi2s, I2S_FLAG_TXE, SET, I2S_TIMEOUT_FLAG) != HAL_OK)
-    {
-      /* Set the error code */
-      SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_TIMEOUT);
-      hi2s->State = HAL_I2S_STATE_READY;
-      errorcode   = HAL_ERROR;
-    }
-
-    /* Wait until BSY flag is Reset */
-    if (I2S_WaitFlagStateUntilTimeout(hi2s, I2S_FLAG_BSY, RESET, I2S_TIMEOUT_FLAG) != HAL_OK)
-    {
-      /* Set the error code */
-      SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_TIMEOUT);
-      hi2s->State = HAL_I2S_STATE_READY;
-      errorcode   = HAL_ERROR;
-    }
-
-    /* Disable I2S peripheral */
-    __HAL_I2S_DISABLE(hi2s);
-
-    /* Clear UDR flag */
-    __HAL_I2S_CLEAR_UDRFLAG(hi2s);
-
-    /* Disable the I2S Tx DMA requests */
-    CLEAR_BIT(hi2s->Instance->CR2, SPI_CR2_TXDMAEN);
-
-#if defined (SPI_I2S_FULLDUPLEX_SUPPORT)
-
-    if (hi2s->State == HAL_I2S_STATE_BUSY_TX_RX)
-    {
-      /* Abort the I2S DMA rx Stream/Channel */
-      if (hi2s->hdmarx != NULL)
-      {
-        /* Disable the I2S DMA rx Stream/Channel */
-        if (HAL_OK != HAL_DMA_Abort(hi2s->hdmarx))
-        {
-          SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_DMA);
-          errorcode = HAL_ERROR;
-        }
-      }
-
-      /* Disable I2Sext peripheral */
-      __HAL_I2SEXT_DISABLE(hi2s);
-
-      /* Clear OVR flag */
-      __HAL_I2SEXT_CLEAR_OVRFLAG(hi2s);
-
-      /* Disable the I2SxEXT DMA request */
-      CLEAR_BIT(I2SxEXT(hi2s->Instance)->CR2, SPI_CR2_RXDMAEN);
-
-      if (hi2s->Init.Mode == I2S_MODE_SLAVE_TX)
-      {
-        /* Set the error code */
-        SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_BUSY_LINE_RX);
-
-        /* Set the I2S State ready */
-        hi2s->State = HAL_I2S_STATE_READY;
-        errorcode = HAL_ERROR;
-      }
-      else
-      {
-        /* Read DR to Flush RX Data */
-        READ_REG(I2SxEXT(hi2s->Instance)->DR);
-      }
-    }
-#endif /* SPI_I2S_FULLDUPLEX_SUPPORT */
-  }
-
-  else if ((hi2s->Init.Mode == I2S_MODE_MASTER_RX) || (hi2s->Init.Mode == I2S_MODE_SLAVE_RX))
-  {
-    /* Abort the I2S DMA rx Stream/Channel */
-    if (hi2s->hdmarx != NULL)
-    {
-      /* Disable the I2S DMA rx Stream/Channel */
-      if (HAL_OK != HAL_DMA_Abort(hi2s->hdmarx))
-      {
-        SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_DMA);
-        errorcode = HAL_ERROR;
-      }
-    }
-#if defined (SPI_I2S_FULLDUPLEX_SUPPORT)
-
-    if (hi2s->State == HAL_I2S_STATE_BUSY_TX_RX)
-    {
-      /* Abort the I2S DMA tx Stream/Channel */
-      if (hi2s->hdmatx != NULL)
-      {
-        /* Disable the I2S DMA tx Stream/Channel */
-        if (HAL_OK != HAL_DMA_Abort(hi2s->hdmatx))
-        {
-          SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_DMA);
-          errorcode = HAL_ERROR;
-        }
-      }
-
-      tickstart = HAL_GetTick();
-
-      /* Wait until TXE flag is set */
-      while (__HAL_I2SEXT_GET_FLAG(hi2s, I2S_FLAG_TXE) != SET)
-      {
-        if (((HAL_GetTick() - tickstart) > I2S_TIMEOUT_FLAG))
-        {
-          /* Set the error code */
-          SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_TIMEOUT);
-
-          /* Set the I2S State ready */
-          hi2s->State = HAL_I2S_STATE_READY;
-          errorcode   = HAL_ERROR;
-        }
-      }
-
-      /* Wait until BSY flag is Reset */
-      while (__HAL_I2SEXT_GET_FLAG(hi2s, I2S_FLAG_BSY) != RESET)
-      {
-        if (((HAL_GetTick() - tickstart) > I2S_TIMEOUT_FLAG))
-        {
-          /* Set the error code */
-          SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_TIMEOUT);
-
-          /* Set the I2S State ready */
-          hi2s->State = HAL_I2S_STATE_READY;
-          errorcode   = HAL_ERROR;
-        }
-      }
-
-      /* Disable I2Sext peripheral */
-      __HAL_I2SEXT_DISABLE(hi2s);
-
-      /* Clear UDR flag */
-      __HAL_I2SEXT_CLEAR_UDRFLAG(hi2s);
-
-      /* Disable the I2SxEXT DMA request */
-      CLEAR_BIT(I2SxEXT(hi2s->Instance)->CR2, SPI_CR2_TXDMAEN);
-    }
-#endif /* SPI_I2S_FULLDUPLEX_SUPPORT */
-
-    /* Disable I2S peripheral */
-    __HAL_I2S_DISABLE(hi2s);
-
-    /* Clear OVR flag */
-    __HAL_I2S_CLEAR_OVRFLAG(hi2s);
-
-    /* Disable the I2S Rx DMA request */
-    CLEAR_BIT(hi2s->Instance->CR2, SPI_CR2_RXDMAEN);
-
-    if (hi2s->Init.Mode == I2S_MODE_SLAVE_RX)
-    {
-      /* Set the error code */
-      SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_BUSY_LINE_RX);
-
-      /* Set the I2S State ready */
-      hi2s->State = HAL_I2S_STATE_READY;
+      SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_DMA);
       errorcode = HAL_ERROR;
     }
-    else
+  }
+
+  /* Abort the I2S DMA rx Stream/Channel */
+  if (hi2s->hdmarx != NULL)
+  {
+    /* Disable the I2S DMA rx Stream/Channel */
+    if (HAL_OK != HAL_DMA_Abort(hi2s->hdmarx))
     {
-      /* Read DR to Flush RX Data */
-      READ_REG((hi2s->Instance)->DR);
+      SET_BIT(hi2s->ErrorCode, HAL_I2S_ERROR_DMA);
+      errorcode = HAL_ERROR;
     }
   }
+#if defined (SPI_I2S_FULLDUPLEX_SUPPORT)
+  /* In case of Full-Duplex, disable the I2SxEXT Tx/Rx DMA requests*/
+  if (hi2s->State == HAL_I2S_STATE_BUSY_TX_RX)
+  {
+    /* Disable the I2SxEXT DMA requests */
+    CLEAR_BIT(I2SxEXT(hi2s->Instance)->CR2, SPI_CR2_TXDMAEN);
+    CLEAR_BIT(I2SxEXT(hi2s->Instance)->CR2, SPI_CR2_RXDMAEN);
+
+    /* Disable I2Sext peripheral */
+    __HAL_I2SEXT_DISABLE(hi2s);
+  }
+#endif /* SPI_I2S_FULLDUPLEX_SUPPORT */
+
+  /* Disable I2S peripheral */
+  __HAL_I2S_DISABLE(hi2s);
 
   hi2s->State = HAL_I2S_STATE_READY;
 
@@ -2048,8 +1896,7 @@ static void I2S_IRQHandler(I2S_HandleTypeDef *hi2s)
   * @param  Timeout Duration of the timeout
   * @retval HAL status
   */
-static HAL_StatusTypeDef I2S_WaitFlagStateUntilTimeout(I2S_HandleTypeDef *hi2s, uint32_t Flag, FlagStatus State,
-                                                       uint32_t Timeout)
+static HAL_StatusTypeDef I2S_WaitFlagStateUntilTimeout(I2S_HandleTypeDef *hi2s, uint32_t Flag, FlagStatus State, uint32_t Timeout)
 {
   uint32_t tickstart;
 

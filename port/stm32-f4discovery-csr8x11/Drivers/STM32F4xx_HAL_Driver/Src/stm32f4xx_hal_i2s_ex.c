@@ -52,10 +52,6 @@
          add his own code by customization of function pointer HAL_I2S_TxRxCpltCallback
      (+) In case of transfer Error, HAL_I2S_ErrorCallback() function is executed and user can
          add his own code by customization of function pointer HAL_I2S_ErrorCallback
-     (+) __HAL_I2SEXT_FLUSH_RX_DR: In Full-Duplex Slave mode, if HAL_I2S_DMAStop is used to stop the
-         communication, an error HAL_I2S_ERROR_BUSY_LINE_RX is raised as the master continue to transmit data.
-         In this case __HAL_I2SEXT_FLUSH_RX_DR macro must be used to flush the remaining data
-         inside I2Sx and I2Sx_ext DR registers and avoid using DeInit/Init process for the next transfer.
   @endverbatim
 
  Additional Figure: The Extended block uses the same clock sources as its master.
@@ -130,7 +126,7 @@ static void I2SEx_RxISR_I2SExt(I2S_HandleTypeDef *hi2s);
 static void I2SEx_TxISR_I2S(I2S_HandleTypeDef *hi2s);
 static void I2SEx_TxISR_I2SExt(I2S_HandleTypeDef *hi2s);
 static HAL_StatusTypeDef I2SEx_FullDuplexWaitFlagStateUntilTimeout(I2S_HandleTypeDef *hi2s, uint32_t Flag,
-                                                                   uint32_t State, uint32_t Timeout, I2S_UseTypeDef i2sUsed);
+    uint32_t State, uint32_t Timeout, I2S_UseTypeDef i2sUsed);
 /**
   * @}
   */
@@ -1092,7 +1088,7 @@ static void I2SEx_RxISR_I2SExt(I2S_HandleTypeDef *hi2s)
   * @retval HAL status
   */
 static HAL_StatusTypeDef I2SEx_FullDuplexWaitFlagStateUntilTimeout(I2S_HandleTypeDef *hi2s, uint32_t Flag,
-                                                                   uint32_t State, uint32_t Timeout, I2S_UseTypeDef i2sUsed)
+    uint32_t State, uint32_t Timeout, I2S_UseTypeDef i2sUsed)
 {
   uint32_t tickstart = HAL_GetTick();
 
