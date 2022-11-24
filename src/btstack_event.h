@@ -15214,6 +15214,15 @@ static inline uint16_t gattservice_subevent_ascs_remote_server_connected_get_asc
 static inline uint8_t gattservice_subevent_ascs_remote_server_connected_get_status(const uint8_t * event){
     return event[7];
 }
+/**
+ * @brief Get field num_streamendpoints from event GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED
+ * @param event packet
+ * @return num_streamendpoints
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ascs_remote_server_connected_get_num_streamendpoints(const uint8_t * event){
+    return event[8];
+}
 
 /**
  * @brief Get field ascs_cid from event GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_DISCONNECTED
