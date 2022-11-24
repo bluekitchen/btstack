@@ -967,7 +967,7 @@ static void stdin_process(char cmd){
 
         case 'k':
             printf("ASCS Client: Read ASE with index %d\n", ase_index);
-            status = audio_stream_control_service_service_client_read_streamendpoint(ascs_cid, ase_index);
+            status = audio_stream_control_service_client_read_streamendpoint(ascs_cid, ase_index);
             break;
         
         case 'K': 
