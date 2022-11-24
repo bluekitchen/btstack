@@ -171,7 +171,7 @@ uint8_t audio_stream_control_service_service_client_connect(ascs_client_connecti
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_service_client_read_streamendpoint(uint16_t ascs_cid, uint8_t streamendpoint_index);
+uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_cid, uint8_t streamendpoint_index);
 
 /**
  * @brief Request a codec configuration with the server. Codec configuration notifications are received via 
