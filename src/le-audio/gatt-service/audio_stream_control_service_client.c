@@ -831,7 +831,7 @@ static uint8_t ascs_client_connection_for_parameters_ready(uint16_t ascs_cid, ui
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t audio_stream_control_service_service_client_read_streamendpoint(uint16_t ascs_cid, uint8_t streamendpoint_index){
+uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_cid, uint8_t streamendpoint_index){
     ascs_client_connection_t * connection = NULL;
     uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, streamendpoint_index, false, &connection);
     if (status != ERROR_CODE_SUCCESS){
