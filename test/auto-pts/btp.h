@@ -66,6 +66,7 @@ extern "C" {
 #define BTP_SERVICE_ID_GATT     2
 #define BTP_SERVICE_ID_L2CAP    3
 #define BTP_SERVICE_ID_MESH     4
+#define BTP_SERVICE_ID_LE_AUDIO 7
 
 #define BTP_OP_ERROR                            0x00
 
@@ -269,5 +270,10 @@ extern "C" {
 #define BTP_MESH_EV_NET_RECV                    0x86
 #define BTP_MESH_EV_INVALID_BEARER              0x87
 #define BTP_MESH_EV_INCOMP_TIMER_EXP            0x88
+
+// LE Audio
+#define BTP_LE_AUDIO_OP_READ_SUPPOERTED_COMMANDS 0x01
+#define BTP_LE_AUDIO_OP_ASCS_CONNECT             0x02
+#define BTP_LE_AUDIO_OP_ASCS_CONFIGURE           0x03
 
 #endif
