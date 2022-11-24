@@ -129,6 +129,7 @@ static void ascs_client_emit_streamendpoint_state(hci_con_handle_t con_handle, u
 
 static void ascs_client_emit_ase(ascs_client_connection_t * connection, ascs_streamendpoint_t * streamendpoint){
     uint8_t ase_id = streamendpoint->ase_characteristic->ase_id;
+    ascs_client_emit_streamendpoint_state(connection->con_handle, ase_id, streamendpoint->state);
 
     switch (streamendpoint->state){
         case ASCS_STATE_CODEC_CONFIGURED:
@@ -148,12 +149,10 @@ static void ascs_client_emit_ase(ascs_client_connection_t * connection, ascs_str
         default:
             break;           
     }
-
-    ascs_client_emit_streamendpoint_state(connection->con_handle, ase_id, streamendpoint->state);
 }
 
 static void ascs_client_emit_connection_established(ascs_client_connection_t * connection, uint8_t status){
-    uint8_t event[8];
+    uint8_t event[9];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
@@ -163,6 +162,7 @@ static void ascs_client_emit_connection_established(ascs_client_connection_t * c
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
+    event[pos++] = connection->streamendpoints_instances_num;
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -778,7 +778,7 @@ uint8_t audio_stream_control_service_service_client_connect(ascs_client_connecti
     hci_con_handle_t con_handle, uint16_t * ascs_cid){
     
     if (ascs_client_get_connection_for_con_handle(con_handle) != NULL){
-        return ERROR_CODE_COMMAND_DISALLOWED;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
     uint16_t cid = ascs_client_get_next_cid();
