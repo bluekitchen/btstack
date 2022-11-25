@@ -129,8 +129,7 @@ static void ascs_client_emit_streamendpoint_state(hci_con_handle_t con_handle, u
 
 static void ascs_client_emit_ase(ascs_client_connection_t * connection, ascs_streamendpoint_t * streamendpoint){
     uint8_t ase_id = streamendpoint->ase_characteristic->ase_id;
-    ascs_client_emit_streamendpoint_state(connection->con_handle, ase_id, streamendpoint->state);
-
+    
     switch (streamendpoint->state){
         case ASCS_STATE_CODEC_CONFIGURED:
             ascs_util_emit_codec_configuration(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->codec_configuration);
@@ -149,6 +148,8 @@ static void ascs_client_emit_ase(ascs_client_connection_t * connection, ascs_str
         default:
             break;           
     }
+
+    ascs_client_emit_streamendpoint_state(connection->con_handle, ase_id, streamendpoint->state);
 }
 
 static void ascs_client_emit_connection_established(ascs_client_connection_t * connection, uint8_t status){
