@@ -131,11 +131,12 @@ static le_audio_metadata_t      ascs_metadata;
 // CIG/CIS
 static le_audio_cig_t        cig;
 static le_audio_cig_params_t cig_params;
-static btstack_lc3_frame_duration_t cig_frame_duration;
+static uint16_t cig_frame_duration_us;
+static uint8_t  cig_framed;
 static uint8_t  cig_num_cis;
 static uint8_t  cis_num_channels;
 static uint16_t cis_sampling_frequency_hz;
-static uint16_t cis_octets_per_frame;
+static uint16_t cis_max_octets_per_frame;
 static hci_con_handle_t cis_con_handles[MAX_CHANNELS];
 static bool cis_established[MAX_CHANNELS];
 static unsigned int     cis_setup_next_index;
@@ -270,6 +271,7 @@ static void le_device_delete_all(void){
 static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     hci_con_handle_t con_handle;
+    uint8_t i;
 
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -348,14 +350,14 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                             }
                         }
                         if (discoverable == false) {
-                            printf("Skip non-discoverable advertisement\n");
+                            MESSAGE("Skip non-discoverable advertisement");
                             break;
                         }
                     }
 
-                    printf("Advertisement event: evt-type %u, addr-type %u, addr %s, rssi %d, data[%u] ", event_type,
+                    MESSAGE("Advertisement event: evt-type %u, addr-type %u, addr %s, rssi %d, data[%u] ", event_type,
                        address_type, bd_addr_to_str(address), rssi, length);
-                    printf_hexdump(data, length);
+                    MESSAGE_HEXDUMP(data, length);
 
                     // max 255 bytes EIR data
                     uint8_t buffer[11 + 255];
@@ -393,7 +395,7 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     remote_addr_type       = 0;
                     memset(&remote_att_connection, 0, sizeof(att_connection_t));
                     hci_event_connection_complete_get_bd_addr(packet, remote_addr);
-                    printf("Connected Classic to %s with con handle 0x%04x\n", bd_addr_to_str(remote_addr), remote_handle);
+                    MESSAGE("Connected Classic to %s with con handle 0x%04x", bd_addr_to_str(remote_addr), remote_handle);
 
                     uint8_t buffer[13];
                     buffer[0] =  remote_addr_type;
@@ -414,7 +416,7 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                         break;
                     }
                     // assume remote device
-                    printf("Disconnected\n");
+                    MESSAGE("Disconnected");
                     uint8_t buffer[7];
                     buffer[0] =  remote_addr_type;
                     reverse_bd_addr(remote_addr, &buffer[1]);
@@ -458,11 +460,27 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                             little_endian_store_16(buffer, 11, supervision_timeout);
                             btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_CONNECTED, 0, sizeof(buffer), &buffer[0]);
                             break;
+
+                        case GAP_SUBEVENT_CIG_CREATED:
+                            MESSAGE("CIS Connection Handles: ");
+                            for (i = 0; i < cig_num_cis; i++) {
+                                cis_con_handles[i] = gap_subevent_cig_created_get_cis_con_handles(packet, i);
+                                MESSAGE("0x%04x ", cis_con_handles[i]);
+                            }
+                            MESSAGE("ASCS Client: Configure QoS %u us, ASE[%d]", cig_params.sdu_interval_p_to_c,
+                                   ase_index);
+                            MESSAGE("       NOTE: Only one CIS supported");
+
+                            ascs_qos_configuration.cis_id = cig_params.cis_params[0].cis_id;
+                            ascs_qos_configuration.cig_id = gap_subevent_cig_created_get_cig_id(packet);
+
+                            audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index,
+                                                                                             &ascs_qos_configuration);
+                            break;
                         default:
-                            break;                    
+                            break;
                     }
                     break;
-
                 default:
                     break;
             }
@@ -685,6 +703,33 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
     }
 }
 
+static void bap_service_client_setup_cig(void){
+    printf("Create CIG\n");
+
+    uint8_t num_cis = 1;
+    cig_params.cig_id = 1;
+    cig_params.num_cis = 1;
+    cig_params.sdu_interval_c_to_p = cig_frame_duration_us;
+    cig_params.sdu_interval_p_to_c = cig_frame_duration_us;
+    cig_params.worst_case_sca = 0; // 251 ppm to 500 ppm
+    cig_params.packing = 0;        // sequential
+    cig_params.framing = cig_framed;
+    cig_params.max_transport_latency_c_to_p = 40;
+    cig_params.max_transport_latency_p_to_c = 40;
+    uint8_t i;
+    for (i=0; i < num_cis; i++){
+        cig_params.cis_params[i].cis_id = 1+i;
+        cig_params.cis_params[i].max_sdu_c_to_p = cis_max_octets_per_frame;
+        cig_params.cis_params[i].max_sdu_p_to_c = 0;
+        cig_params.cis_params[i].phy_c_to_p = 2;  // 2M
+        cig_params.cis_params[i].phy_p_to_c = 2;  // 2M
+        cig_params.cis_params[i].rtn_c_to_p = 2;
+        cig_params.cis_params[i].rtn_p_to_c = 2;
+    }
+
+    gap_cig_create(&cig, &cig_params);
+}
+
 static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -704,15 +749,13 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             if (gattservice_subevent_ascs_remote_server_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 ascs_cid = 0;
                 // TODO send error response
-                printf("ASCS Client: connection failed, cid 0x%02x, con_handle 0x%02x, status 0x%02x\n", ascs_cid, remote_handle,
+                MESSAGE("ASCS Client: connection failed, cid 0x%02x, con_handle 0x%02x, status 0x%02x", ascs_cid, remote_handle,
                        gattservice_subevent_ascs_remote_server_connected_get_status(packet));
                 return;
             }
-            printf("ASCS Client: connected, cid 0x%02x\n", ascs_cid);
-            // btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONNECT, 0, 0, NULL);
-            // TODO: remove eventually
-            log_info("GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED");
-            audio_stream_control_service_client_read_streamendpoint(ascs_cid, 0);
+            MESSAGE("ASCS Client: connected, cid 0x%02x", ascs_cid);
+            btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONNECT, 0, 0, NULL);
+            MESSAGE("GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED");
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_DISCONNECTED:
@@ -720,7 +763,7 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                 return;
             }
             ascs_cid = 0;
-            printf("ASCS Client: disconnected, cid 0x%02x\n", gattservice_subevent_ascs_remote_server_disconnected_get_ascs_cid(packet));
+            MESSAGE("ASCS Client: disconnected, cid 0x%02x", gattservice_subevent_ascs_remote_server_disconnected_get_ascs_cid(packet));
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION:
@@ -739,15 +782,16 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_codec_configuration_get_octets_per_frame(packet);
             codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_codec_configuration_get_frame_blocks_per_sdu(packet);
 
-            printf("ASCS Client: CODEC CONFIGURATION - ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
-            btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONFIGURE, 0, 0, NULL);
+            MESSAGE("ASCS Client: CODEC CONFIGURATION - ase_id %d, con_handle 0x%02x", ase_id, con_handle);
+            btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC, 0, 0, NULL);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION:
             ase_id     = gattservice_subevent_ascs_qos_configuration_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_qos_configuration_get_con_handle(packet);
 
-            printf("ASCS Client: QOS CONFIGURATION - ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
+            MESSAGE("ASCS Client: QOS CONFIGURATION - ase_id %d, con_handle 0x%02x", ase_id, con_handle);
+            btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS, 0, 0, NULL);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_METADATA:
@@ -780,15 +824,6 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                     break;
                 default:
                     break;
-            }
-            // TODO: continue from open
-            response_service_id = BTP_SERVICE_ID_LE_AUDIO;
-            if (response_service_id == BTP_SERVICE_ID_LE_AUDIO){
-                if (response_op == BTP_LE_AUDIO_OP_ASCS_CONNECT){
-                    btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONNECT, 0, 0, NULL);
-                    response_service_id = 0;
-                    response_op = 0;
-                }
             }
             break;
 
@@ -1809,14 +1844,15 @@ static void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint1
                                                                     remote_handle, &ascs_cid);
             }
             break;
-        case BTP_LE_AUDIO_OP_ASCS_CONFIGURE:
+        case BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC:
             if (controller_index == 0){
-                uint8_t  ase_index         = data[0];
-                uint8_t  coding_format     = data[1];
-                uint32_t frequency_hz      = little_endian_read_32(data, 2);
-                uint16_t frame_duration_us = little_endian_read_16(data, 6);
-                uint16_t octets_per_frame  = little_endian_read_16(data, 8);
-                MESSAGE("BTP_LE_AUDIO_OP_ASCS_CONFIGURE ase %u, format %x, freq %u, duration %u, octets %u",
+                // ascs_cid in data[0]
+                uint8_t  ase_index         = data[1];
+                uint8_t  coding_format     = data[2];
+                uint32_t frequency_hz      = little_endian_read_32(data, 3);
+                uint16_t frame_duration_us = little_endian_read_16(data, 7);
+                uint16_t octets_per_frame  = little_endian_read_16(data, 9);
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC ase %u, format %x, freq %u, duration %u, octets %u",
                         ase_index, coding_format, frequency_hz, frame_duration_us, octets_per_frame);
 
                 ascs_specific_codec_configuration_t * sc_config = &ascs_codec_configuration_request.specific_codec_configuration;
@@ -1860,12 +1896,41 @@ static void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint1
                 audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
 
                 // also prepare CIG/CIS
-                cis_octets_per_frame      = octets_per_frame ;
                 cis_sampling_frequency_hz = frequency_hz;
-                cig_frame_duration        = frame_duration_us == 7500 ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
                 cig_num_cis               = 1;
                 cis_num_channels          = 1;
             }
+            break;
+        case BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS:
+            if (controller_index == 0){
+                // sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms
+            }
+                // ascs_cid in data[0]
+                uint8_t  ase_index                = data[1];
+                uint16_t sdu_interval_us          = little_endian_read_16(data, 2);
+                uint8_t  framing                  = data[4];
+                uint32_t max_sdu                  = little_endian_read_16(data, 5);
+                uint8_t  retransmission_number    = data[7];
+                uint8_t  max_transport_latency_ms = data[8];
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS ase %u, interval %u, framing %u, sdu_size %u, retrans %u, latency %u",
+                        ase_index, sdu_interval_us, framing, max_sdu, retransmission_number, max_transport_latency_ms);
+
+                ascs_qos_configuration.sdu_interval = sdu_interval_us;
+                ascs_qos_configuration.framing = framing;
+                ascs_qos_configuration.phy = LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE;
+                ascs_qos_configuration.max_sdu = max_sdu;
+                ascs_qos_configuration.retransmission_number = retransmission_number;
+                ascs_qos_configuration.max_transport_latency_ms = max_transport_latency_ms;
+                ascs_qos_configuration.presentation_delay_us = 40000;
+
+                // updaet CIG/CIS
+                cig_frame_duration_us = sdu_interval_us;
+                cig_framed = framing;
+                cis_max_octets_per_frame = max_sdu;
+                bap_service_client_setup_cig();
+                default:
+
+            break;
     }
 }
 
