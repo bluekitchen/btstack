@@ -110,6 +110,7 @@ typedef struct {
         uint8_t *payload_data;
         uint32_t payload_len;
         uint32_t continuation;
+        uint8_t  abort_response;
     } request;
     // response
     struct {
@@ -534,7 +535,11 @@ static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opc
 
     (*opp_server_user_packet_handler) (HCI_EVENT_PACKET, 0, event, pos);
 
-    opp_server->response.code = opcode & OBEX_OPCODE_FINAL_BIT_MASK ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE;
+    if (opp_server->request.abort_response == 0) {
+        opp_server->response.code = opcode & OBEX_OPCODE_FINAL_BIT_MASK ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE;
+    } else {
+        opp_server->response.code = opp_server->request.abort_response;
+    }
     goep_server_request_can_send_now(opp_server->goep_cid);
 }
 
@@ -623,8 +628,11 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                         break;
                     case OBEX_OPCODE_PUT:
                     case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
+                        opp_server->request.abort_response = 0;
                         opp_server_handle_put_request(opp_server, op_info.opcode);
-                        (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->opp_cid, (uint8_t *) opp_server->request.payload_data, opp_server->request.payload_len);
+                        if (opp_server->request.abort_response == 0) {
+                            (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->opp_cid, (uint8_t *) opp_server->request.payload_data, opp_server->request.payload_len);
+                        }
                         break;
                     case OBEX_OPCODE_DISCONNECT:
                         ENTER_STATE (opp_server, OPP_SERVER_STATE_SEND_DISCONNECT_RESPONSE);
@@ -689,7 +697,9 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                 switch((op_info.opcode & 0x7f)){
                     case OBEX_OPCODE_PUT:
                         opp_server_handle_put_request(opp_server, op_info.opcode);
-                        (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->opp_cid, (uint8_t *) opp_server->request.payload_data, opp_server->request.payload_len);
+                        if (opp_server->request.abort_response != 0) {
+                            (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->opp_cid, (uint8_t *) opp_server->request.payload_data, opp_server->request.payload_len);
+                        }
                         break;
                     case (OBEX_OPCODE_ABORT & 0x7f):
                         opp_server->response.code = OBEX_RESP_SUCCESS;
@@ -768,6 +778,12 @@ uint16_t opp_server_get_max_body_size(uint16_t opp_cid){
     }
     opp_server_build_response(opp_server);
     return goep_server_response_get_max_body_size(opp_server->goep_cid);
+}
+
+void opp_server_abort_request (uint16_t opp_cid, uint8_t response_code) {
+    opp_server_t * opp_server = opp_server_for_opp_cid(opp_cid);
+
+    opp_server->request.abort_response = response_code;
 }
 
 uint16_t opp_server_send_pull_response(uint16_t opp_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t * body){

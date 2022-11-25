@@ -64,6 +64,8 @@ static uint8_t service_buffer[150];
 // static uint32_t sdp_service_record_handle;
 
 static const uint8_t supported_formats[] = { 1, 2, 3, 4, 5, 6};
+static uint8_t handle_pull_default_object = 1;
+static uint8_t handle_push_object_response = OBEX_RESP_SUCCESS;
 
 static const char *default_object_vcards[] = {
     "BEGIN:VCARD\n"
@@ -79,6 +81,55 @@ static const char *default_object_vcards[] = {
     "END:VCARD\n",
 };
 
+#ifdef HAVE_BTSTACK_STDIN
+
+// Testing User Interface
+static void show_usage(void){
+    bd_addr_t iut_address;
+    gap_local_bd_addr(iut_address);
+
+    printf("\n--- Bluetooth OPP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("d - toggle availability of the default object\n");
+    printf("p - toggle acceptance of push requests\n");
+
+    printf("\n");
+}
+
+static void stdin_process(char c) {
+    log_info("stdin: %c", c);
+    switch (c) {
+        case '\n':
+        case '\r':
+            break;
+        case 'd':
+            handle_pull_default_object = !handle_pull_default_object;
+            printf ("[+] Default object (text/vcard) is now %savailable\n",
+                    handle_pull_default_object ? "" : "un");
+            break;
+        case 'p':
+            switch (handle_push_object_response) {
+                case OBEX_RESP_SUCCESS:
+                    handle_push_object_response = OBEX_RESP_UNSUPPORTED_MEDIA_TYPE;
+                    break;
+                case OBEX_RESP_UNSUPPORTED_MEDIA_TYPE:
+                    handle_push_object_response = OBEX_RESP_ENTITY_TOO_LARGE;
+                    break;
+                case OBEX_RESP_ENTITY_TOO_LARGE:
+                default:
+                    handle_push_object_response = OBEX_RESP_SUCCESS;
+                    break;
+            }
+            printf ("[+] pushing objects is now %s\n",
+                    handle_push_object_response == OBEX_RESP_ENTITY_TOO_LARGE ? "refused due to size" :
+                    handle_push_object_response == OBEX_RESP_UNSUPPORTED_MEDIA_TYPE ? "refused due to media type" :
+                    "allowed");
+            break;
+        default:
+            show_usage();
+            break;
+    }
+}
+#endif
 
 
 // packet handler
@@ -92,6 +143,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
+                case BTSTACK_EVENT_STATE:
+                    // BTstack activated, get started_
+                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
+#ifdef HAVE_BTSTACK_STDIN
+                        show_usage();
+#endif
+                    }
+                    break;
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
                     printf("Pin code request - using '0000'\n");
@@ -116,10 +175,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("PUSH: \"%.*s\" (%.*s)\n",
                                    packet[5], &packet[6],
                                    packet[6+packet[5]], &packet[7+packet[5]]);
+
+                            if (handle_push_object_response != OBEX_RESP_SUCCESS)
+                                opp_server_abort_request (opp_cid,
+                                                          handle_push_object_response);
+
                             break;
                         case OPP_SUBEVENT_PULL_DEFAULT_OBJECT:
-                            opp_server_send_pull_response (opp_cid, OBEX_RESP_SUCCESS,
-                                                           0, sizeof (default_object_vcards[0]) - 1, (uint8_t *) default_object_vcards[0]);
+                            if (handle_pull_default_object) {
+                                opp_server_send_pull_response (opp_cid, OBEX_RESP_SUCCESS,
+                                                               0, sizeof (default_object_vcards[0]) - 1, (uint8_t *) default_object_vcards[0]);
+                            } else {
+                                opp_server_send_pull_response (opp_cid, OBEX_RESP_NOT_FOUND,
+                                                               0, 0, NULL);
+                            }
                             break;
                         case OPP_SUBEVENT_OPERATION_COMPLETED:
                             printf("[+] Operation complete, status 0x%02x\n",
@@ -149,29 +218,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 
 
-#ifdef HAVE_BTSTACK_STDIN
-
-// Testing User Interface
-static void show_usage(void){
-    bd_addr_t iut_address;
-    gap_local_bd_addr(iut_address);
-
-    printf("\n--- Bluetooth OPP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("\n");
-}
-
-static void stdin_process(char c) {
-    log_info("stdin: %c", c);
-    switch (c) {
-        case '\n':
-        case '\r':
-            break;
-        default:
-            show_usage();
-            break;
-    }
-}
-#endif
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){

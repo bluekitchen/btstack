@@ -157,6 +157,13 @@ uint16_t opp_server_get_max_body_size(uint16_t opp_cid);
  * @brief Send response to OPP_SUBEVENT_PULL including optional headers
  * @param opp_cid
  * @param response_code, see obex.h
+ */
+void opp_server_abort_request(uint16_t opp_cid, uint8_t response_code);
+
+/**
+ * @brief Send response to OPP_SUBEVENT_PULL including optional headers
+ * @param opp_cid
+ * @param response_code, see obex.h
  * @param continuation - 0 if request complete, returned in next pull event
  * @param body_len
  * @param body
