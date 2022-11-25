@@ -229,8 +229,6 @@ static bass_source_data_t source_data1 = {
     
 };
 
-
-
 static ascs_client_codec_configuration_request_t ascs_codec_configuration_request;
 static ascs_qos_configuration_t ascs_qos_configuration;
 static le_audio_metadata_t      ascs_metadata;
@@ -798,6 +796,10 @@ static void show_usage(void){
     printf("y - next sampling frequency\n");
     printf("z - next codec variant\n");
 
+    printf("T - vendor specific codec\n");
+    printf("Y - vendor specific QoS\n");
+    printf("Z - vendor specific metadata\n");
+    
     printf(" \n");
     printf(" \n");
     printf("Ctrl-c - exit\n");
@@ -805,6 +807,7 @@ static void show_usage(void){
 }
 
 static void print_config(void) {
+    printf("ASE[%d]: ", ase_index);
     printf("Config '%s_%u': %u, %s ms, %u octets\n",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
            num_channels,
@@ -891,7 +894,7 @@ static void stdin_process(char cmd){
 
         case 'd':
             printf("ASCS: connect 0x%02x\n", bap_app_client_con_handle);
-            status = audio_stream_control_service_service_client_connect(&ascs_connection, 
+            status = audio_stream_control_service_client_connect(&ascs_connection, 
                 streamendpoint_characteristics, ASCS_CLIENT_NUM_STREAMENDPOINTS, bap_app_client_con_handle, &ascs_cid);
             break;
 
@@ -972,7 +975,6 @@ static void stdin_process(char cmd){
         
         case 'K': 
             printf("ASCS Client: Configure Codec, ");
-            print_ase_index();
             print_config();
 
             sc_config.codec_configuration_mask = 0x3E;
@@ -1003,7 +1005,6 @@ static void stdin_process(char cmd){
         
         case 'l':
             printf("ASCS Client: Configure QoS, ");
-            print_ase_index();
             print_config();
 
             ascs_qos_configuration.sdu_interval = codec_configurations[menu_sampling_frequency].samplingrate_hz;
@@ -1051,6 +1052,45 @@ static void stdin_process(char cmd){
             ascs_metadata.streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_MEDIA;
 
             status = audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_index, &ascs_metadata);
+            break;
+    
+        case 'T':
+            printf("Use vendor specific codec: 48000 Hz, 7.5 ms\n");
+            print_config();
+
+            sc_config.codec_configuration_mask = 0x0;
+            sc_config.sampling_frequency_index = codec_configurations[menu_sampling_frequency].sampling_frequency_index;
+            sc_config.frame_duration_index   =   codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index;
+            sc_config.octets_per_codec_frame =   codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+            sc_config.audio_channel_allocation_mask = LE_AUDIO_LOCATION_MASK_FRONT_LEFT;
+            sc_config.codec_frame_blocks_per_sdu = 1;
+
+            cis_octets_per_frame = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+            
+            cis_sampling_frequency_hz =  codec_configurations[menu_sampling_frequency].samplingrate_hz;
+            if (codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US){
+                cig_frame_duration = BTSTACK_LC3_FRAME_DURATION_10000US;
+            }
+            cig_num_cis = 1;
+            cis_num_channels = 1;
+            
+            ascs_codec_configuration_request.target_latency = LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY;
+            ascs_codec_configuration_request.target_phy = LE_AUDIO_CLIENT_TARGET_PHY_BALANCED;
+            ascs_codec_configuration_request.coding_format = HCI_AUDIO_CODING_FORMAT_VENDOR_SPECIFIC;
+            ascs_codec_configuration_request.company_id = 0;
+            ascs_codec_configuration_request.vendor_specific_codec_id = 1;
+
+            ascs_codec_configuration_request.specific_codec_configuration = sc_config;
+            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
+            
+            break;
+
+        case 'Y':
+            printf("Use vendor specific QoS\n");
+            break;
+
+        case 'Z':
+            printf("Use vendor specific metadata\n");
             break;
 
         case '\n':
