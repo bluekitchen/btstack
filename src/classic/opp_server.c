@@ -126,6 +126,7 @@ static void opp_server_build_response(opp_server_t * opp_server);
 static opp_server_t * opp_server_for_goep_cid(uint16_t goep_cid){
     // TODO: check goep_cid after incoming connection -> accept/reject is implemented and state has been setup
     // return opp_server_singleton.goep_cid == goep_cid ? &opp_server_singleton : NULL;
+    UNUSED(goep_cid);
     return &opp_server_singleton;
 }
 
@@ -255,12 +256,6 @@ static void opp_server_add_srm_headers(opp_server_t *opp_server){
             break;
         default:
             break;
-    }
-}
-
-static void opp_server_add_application_parameters(const opp_server_t * opp_server, uint8_t * application_parameters, uint16_t len){
-    if (len > 0){
-        goep_server_header_add_application_parameters(opp_server->goep_cid, application_parameters, len);
     }
 }
 
@@ -421,6 +416,9 @@ static void opp_server_packet_handler_hci(uint8_t *packet, uint16_t size){
 static void opp_server_parser_callback_connect(void * user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t * data_buffer, uint16_t data_len){
     UNUSED(total_len);
     UNUSED(data_offset);
+    UNUSED(user_data);
+    UNUSED(data_buffer);
+    UNUSED(data_len);
 
     // opp_server_t * opp_server = (opp_server_t *) user_data;
 
@@ -736,20 +734,14 @@ void opp_server_deinit(void){
 }
 
 uint8_t opp_connect(bd_addr_t addr, uint16_t * out_cid){
+    UNUSED(&addr);
+    UNUSED(out_cid);
     return ERROR_CODE_SUCCESS;
 }
 
 uint8_t opp_disconnect(uint16_t opp_cid){
+    UNUSED(opp_cid);
     return ERROR_CODE_SUCCESS;
-}
-
-// note: common code for next four setters
-static bool opp_server_valid_header_for_request(opp_server_t * opp_server){
-    if (opp_server->state != OPP_SERVER_STATE_W4_USER_DATA) {
-        return false;
-    }
-    return true;
-
 }
 
 static void opp_server_build_response(opp_server_t * opp_server){
