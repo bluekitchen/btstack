@@ -254,9 +254,9 @@ static void bap_client_reset(void){
     bap_app_client_state = BAP_APP_CLIENT_STATE_IDLE;
     bap_app_client_con_handle = HCI_CON_HANDLE_INVALID;
 
-    num_channels = 2;
-    menu_sampling_frequency = 5;
-    menu_variant = 4;
+    num_channels = 1;
+    menu_sampling_frequency = 0;
+    menu_variant = 0;
     ase_index = 0;
 }
 
@@ -748,6 +748,16 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+static void print_config(void) {
+    printf("ASE[%d]: ", ase_index);
+    printf("Config '%s_%u': %u, %s ms, %u octets\n",
+           codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
+           num_channels,
+           codec_configurations[menu_sampling_frequency].samplingrate_hz,
+           codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US ? "7.5" : "10",
+           codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame);
+}
+
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
@@ -778,6 +788,7 @@ static void show_usage(void){
     printf("j   - get source pacs\n");
 
     printf("\n--- ASCS Client Test Console %s ---\n", bd_addr_to_str(iut_address));
+    print_config();
     printf("d   - connect to %s\n", bap_app_server_addr_string);    
     printf("k   - read ASE[%d]\n", ase_index);
 
@@ -804,16 +815,6 @@ static void show_usage(void){
     printf(" \n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
-}
-
-static void print_config(void) {
-    printf("ASE[%d]: ", ase_index);
-    printf("Config '%s_%u': %u, %s ms, %u octets\n",
-           codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
-           num_channels,
-           codec_configurations[menu_sampling_frequency].samplingrate_hz,
-           codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US ? "7.5" : "10",
-           codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame);
 }
 
 
@@ -850,19 +851,11 @@ static void stdin_process(char cmd){
             break;
 
         case 'x':
-            if (bap_app_client_state != BAP_APP_CLIENT_STATE_IDLE){
-                printf("Codec configuration can only be changed in idle state\n");
-                break;
-            }
             num_channels = 3 - num_channels;
             print_config();
             break;
 
         case 'y':
-            if (bap_app_client_state != BAP_APP_CLIENT_STATE_IDLE){
-                printf("Codec configuration can only be changed in idle state\n");
-                break;
-            }
             menu_sampling_frequency++;
             if (menu_sampling_frequency >= 6){
                 menu_sampling_frequency = 0;
@@ -874,10 +867,6 @@ static void stdin_process(char cmd){
             break;
         
         case 'z':
-            if (bap_app_client_state != BAP_APP_CLIENT_STATE_IDLE){
-                printf("Codec configuration can only be changed in idle state\n");
-                break;
-            }
             menu_variant++;
             if (menu_variant >= codec_configurations[menu_sampling_frequency].num_variants){
                 menu_variant = 0;
@@ -1058,7 +1047,7 @@ static void stdin_process(char cmd){
             printf("Use vendor specific codec: 48000 Hz, 7.5 ms\n");
             print_config();
 
-            sc_config.codec_configuration_mask = 0x0;
+            sc_config.codec_configuration_mask = 0x1E;
             sc_config.sampling_frequency_index = codec_configurations[menu_sampling_frequency].sampling_frequency_index;
             sc_config.frame_duration_index   =   codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index;
             sc_config.octets_per_codec_frame =   codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
@@ -1078,7 +1067,7 @@ static void stdin_process(char cmd){
             ascs_codec_configuration_request.target_phy = LE_AUDIO_CLIENT_TARGET_PHY_BALANCED;
             ascs_codec_configuration_request.coding_format = HCI_AUDIO_CODING_FORMAT_VENDOR_SPECIFIC;
             ascs_codec_configuration_request.company_id = 0;
-            ascs_codec_configuration_request.vendor_specific_codec_id = 1;
+            ascs_codec_configuration_request.vendor_specific_codec_id = 0;
 
             ascs_codec_configuration_request.specific_codec_configuration = sc_config;
             status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
