@@ -697,7 +697,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                 switch((op_info.opcode & 0x7f)){
                     case OBEX_OPCODE_PUT:
                         opp_server_handle_put_request(opp_server, op_info.opcode);
-                        if (opp_server->request.abort_response != 0) {
+                        if (opp_server->request.abort_response == 0) {
                             (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->opp_cid, (uint8_t *) opp_server->request.payload_data, opp_server->request.payload_len);
                         }
                         break;
