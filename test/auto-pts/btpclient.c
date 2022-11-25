@@ -1803,19 +1803,21 @@ static void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint1
         case BTP_LE_AUDIO_OP_ASCS_CONNECT:
             MESSAGE("BTP_LE_AUDIO_OP_ASCS_CONNECT");
             if (controller_index == 0) {
-                audio_stream_control_service_service_client_connect(&ascs_connection,
+                audio_stream_control_service_client_connect(&ascs_connection,
                                                                     streamendpoint_characteristics,
                                                                     ASCS_CLIENT_NUM_STREAMENDPOINTS,
                                                                     remote_handle, &ascs_cid);
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_CONFIGURE:
-            MESSAGE("BTP_LE_AUDIO_OP_ASCS_CONFIGURE");
             if (controller_index == 0){
                 uint8_t  ase_index         = data[0];
                 uint8_t  coding_format     = data[1];
                 uint32_t frequency_hz      = little_endian_read_32(data, 2);
                 uint16_t frame_duration_us = little_endian_read_16(data, 6);
+                uint16_t octets_per_frame  = little_endian_read_16(data, 8);
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_CONFIGURE ase %u, format %x, freq %u, duration %u, octets %u",
+                        ase_index, coding_format, frequency_hz, frame_duration_us, octets_per_frame);
 
                 ascs_specific_codec_configuration_t * sc_config = &ascs_codec_configuration_request.specific_codec_configuration;
                 sc_config->codec_configuration_mask = coding_format == HCI_AUDIO_CODING_FORMAT_LC3 ? 0x3E : 0x1e;
@@ -1844,18 +1846,11 @@ static void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint1
                         break;
                 }
                 sc_config->sampling_frequency_index = frequency_index;
-                // TODO: update code after code was fixed
-                sc_config->frame_duration_index =  frame_duration_us == 7500 ? 0 : 1;
-                // LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US;
-                sc_config->octets_per_codec_frame =   26;
+                sc_config->frame_duration_index =  frame_duration_us == 7500
+                        ? LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US : LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US;
+                sc_config->octets_per_codec_frame = octets_per_frame;
                 sc_config->audio_channel_allocation_mask = LE_AUDIO_LOCATION_MASK_FRONT_LEFT;
                 sc_config->codec_frame_blocks_per_sdu = 1;
-
-                cis_octets_per_frame = sc_config->octets_per_codec_frame ;
-                cis_sampling_frequency_hz = frequency_hz;
-                cig_frame_duration = frame_duration_us == 7500 ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
-                cig_num_cis = 1;
-                cis_num_channels = 1;
 
                 ascs_codec_configuration_request.target_latency = LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY;
                 ascs_codec_configuration_request.target_phy = LE_AUDIO_CLIENT_TARGET_PHY_BALANCED;
@@ -1863,6 +1858,13 @@ static void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint1
                 ascs_codec_configuration_request.company_id = 0;
                 ascs_codec_configuration_request.vendor_specific_codec_id = 0;
                 audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
+
+                // also prepare CIG/CIS
+                cis_octets_per_frame      = octets_per_frame ;
+                cis_sampling_frequency_hz = frequency_hz;
+                cig_frame_duration        = frame_duration_us == 7500 ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
+                cig_num_cis               = 1;
+                cis_num_channels          = 1;
             }
     }
 }
