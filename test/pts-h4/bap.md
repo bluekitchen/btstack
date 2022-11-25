@@ -40,7 +40,8 @@ Tool: pts-h4/bap_service_client_test
 
 ### ASCS Client:
 - BAP/UCL/SCC/BV-001-C: c, d, k, K
-- BAP/UCL/SCC/BV-035-C: c, d, k, K, l
+- BAP/UCL/SCC/BV-033-C: y,y,y,y,y, z,z,z,z, c, d, k, T // NOTE: in PTS IXIT tab set value of the TSPX_Codec_ID to FF00000000
+- BAP/UCL/SCC/BV-033-C: c, d, k, K, l
 - BAP/UCL/SCC/BV-101-C: c, d, k, z, K, y, l, M
 - BAP/UCL/SCC/BV-102-C: c, d, k, z, K, y, l, M, n
 - BAP/UCL/SCC/BV-103-C: c, d, k, z, K, y, l, M, n, r, N
