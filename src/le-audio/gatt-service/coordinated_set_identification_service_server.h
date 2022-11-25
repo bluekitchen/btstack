@@ -87,11 +87,15 @@ typedef struct {
 
     bool     is_lock_owner;
     btstack_timer_source_t lock_timer;
+
+    uint8_t  scheduled_tasks;
+    btstack_context_callback_registration_t  scheduled_tasks_callback;
 } csis_coordinator_t;
 /**
  * @brief Init Coordinated Set Identification Service Server with ATT DB
  */
-void coordinated_set_identification_service_server_init(const uint8_t clients_num, csis_coordinator_t * clients, uint8_t set_size);
+void coordinated_set_identification_service_server_init(const uint8_t coordinators_num, csis_coordinator_t * coordinators, 
+    uint8_t coordinated_set_size, uint8_t member_rank);
 
 uint8_t coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t type, uint8_t * sirk);
 
