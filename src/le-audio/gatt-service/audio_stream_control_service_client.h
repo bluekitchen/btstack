@@ -174,8 +174,10 @@ uint8_t audio_stream_control_service_service_client_connect(ascs_client_connecti
 uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_cid, uint8_t streamendpoint_index);
 
 /**
- * @brief Request a codec configuration with the server. Codec configuration notifications are received via 
- * the GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION event.
+ * @brief Request a codec configuration with the server. 
+ * The GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE event informs on the status of the operation.
+ * Codec configuration notifications are received via the GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION event.
+ * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
  * 
  * @param  ascs_cid
  * @param  streamendpoint_index
@@ -189,8 +191,10 @@ uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_ci
 uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint16_t ascs_cid, uint8_t streamendpoint_index, ascs_client_codec_configuration_request_t * codec_configuration);
 
 /**
- * @brief Request a CIS configuration preference with the server and assign identifiers to the CIS. Quality of Service 
- * notifications are received via the GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION event.
+ * @brief Request a CIS configuration preference with the server and assign identifiers to the CIS. 
+ * The GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE event informs on the status of the operation.
+ * Quality of Service notifications are received via the GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION event.
+ * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
  * 
  * @param  ascs_cid
  * @param  streamendpoint_index
@@ -204,8 +208,10 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint1
 uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_t ascs_cid, uint8_t streamendpoint_index, ascs_qos_configuration_t * qos_configuration);
 
 /**
- * @brief Request the server to enable an ASE and to provide any Metadata applicable for that ASE. Notifications on Metadata
- * updates are received via the GATTSERVICE_SUBEVENT_ASCS_METADATA event.
+ * @brief Request the server to enable an ASE and to provide any Metadata applicable for that ASE. 
+ * The GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE event informs on the status of the operation.
+ * Notifications on Metadata updates are received via the GATTSERVICE_SUBEVENT_ASCS_METADATA event.
+ * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
  * 
  * @param  ascs_cid
  * @param  streamendpoint_index
@@ -219,6 +225,9 @@ uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_
 
 /**
  * @brief Inform the server acting as Audio Source that the client is ready to consume audio data transmitted by the server.
+ * The GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE event informs on the status of the operation.
+* The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
+ *
  * @param  ascs_cid
  * @param  streamendpoint_index
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
@@ -231,6 +240,9 @@ uint8_t audio_stream_control_service_client_streamendpoint_receiver_start_ready(
 
 /**
  * @brief Inform the server acting as Audio Source that the client is ready to stop consuming audio data transmitted by the server.
+ * The GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE event informs on the status of the operation.
+ * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
+ * 
  * @param  ascs_cid
  * @param  streamendpoint_index
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
@@ -243,6 +255,9 @@ uint8_t audio_stream_control_service_client_streamendpoint_receiver_stop_ready(u
 
 /**
  * @brief Request the server to release an ASE.
+ * The GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE event informs on the status of the operation.
+ * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
+ * 
  * @param  ascs_cid
  * @param  streamendpoint_index
  * @param  caching
@@ -256,6 +271,9 @@ uint8_t audio_stream_control_service_client_streamendpoint_release(uint16_t ascs
 
 /**
  * @brief Request the server to disable an ASE.
+ * The GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE event informs on the status of the operation.
+ * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
+ * 
  * @param  ascs_cid
  * @param  streamendpoint_index
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
@@ -269,6 +287,9 @@ uint8_t audio_stream_control_service_client_streamendpoint_disable(uint16_t ascs
 
 /**
  * @brief Inform the server that ASE is released.
+ * The GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE event informs on the status of the operation.
+ * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
+ *  
  * @param  ascs_cid
  * @param  streamendpoint_index
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
@@ -280,9 +301,11 @@ uint8_t audio_stream_control_service_client_streamendpoint_disable(uint16_t ascs
 uint8_t audio_stream_control_service_client_streamendpoint_released(uint16_t ascs_cid, uint8_t streamendpoint_index);
 
 /**
- * @brief Provide the server with Metadata to be applied to an ASE. Notifications on Metadata
- * updates are received via the GATTSERVICE_SUBEVENT_ASCS_METADATA event.
- * 
+ * @brief Provide the server with Metadata to be applied to an ASE. 
+ * The GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE event informs on the status of the operation.
+ * Notifications on Metadata updates are received via the GATTSERVICE_SUBEVENT_ASCS_METADATA event.
+ * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
+ *  
  * @param  ascs_cid
  * @param  streamendpoint_index
  * @param  metadata
