@@ -373,13 +373,13 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
     gatt_client_service_t service;
 
     switch (connection->state){
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE:
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE:
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
             gatt_client_discover_primary_services_by_uuid16(&handle_gatt_client_event, connection->con_handle, ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE);
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT;
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT;
             
             service.start_group_handle = connection->start_handle;
             service.end_group_handle = connection->end_handle;
@@ -392,11 +392,11 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
 
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_QUERY_CHARACTERISTIC_DESCRIPTOR:
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_QUERY_CHARACTERISTIC_DESCRIPTOR:
 #ifdef ENABLE_TESTING_SUPPORT
             printf("Read control point client characteristic descriptors [handle 0x%04X]:\n", connection->control_point.value_handle);
 #endif
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_CHARACTERISTIC_DESCRIPTOR_RESULT;
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_CHARACTERISTIC_DESCRIPTOR_RESULT;
             characteristic.value_handle = connection->control_point.value_handle;
             characteristic.properties   = connection->control_point.properties;
             characteristic.end_handle   = connection->control_point.end_handle;
@@ -404,8 +404,8 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             (void) gatt_client_discover_characteristic_descriptors(&handle_gatt_client_event, connection->con_handle, &characteristic);
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_REGISTER_NOTIFICATION:
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_NOTIFICATION_REGISTERED;
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_REGISTER_NOTIFICATION:
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_NOTIFICATION_REGISTERED;
     
             characteristic.value_handle = connection->control_point.value_handle;
             characteristic.properties   = connection->control_point.properties;
@@ -430,14 +430,14 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
                 return;  
             } 
             
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS:
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS:
 #ifdef ENABLE_TESTING_SUPPORT
             printf("Read client characteristic descriptors [index %d]:\n", connection->streamendpoints_index);
 #endif
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT;
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT;
             characteristic.value_handle = connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_value_handle;
             characteristic.properties   = connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_properties;
             characteristic.end_handle   = connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_end_handle;
@@ -445,11 +445,11 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             (void) gatt_client_discover_characteristic_descriptors(&handle_gatt_client_event, connection->con_handle, &characteristic);
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_CONFIGURATION:
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_CONFIGURATION:
 #ifdef ENABLE_TESTING_SUPPORT
             printf("Read client characteristic value [index %d, handle 0x%04X]:\n", connection->streamendpoints_index, connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_client_configuration_handle);
 #endif
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_CONFIGURATION_RESULT;
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_CONFIGURATION_RESULT;
 
             // result in GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
             (void) gatt_client_read_characteristic_descriptor_using_descriptor_handle(
@@ -458,8 +458,8 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
                 connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_client_configuration_handle);
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION:
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION:
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
     
             status = ascs_client_register_notification(connection);
             if (status == ERROR_CODE_SUCCESS){
@@ -473,16 +473,16 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             } 
             
             if (connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_client_configuration_handle != 0){
-                connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_CONFIGURATION;
+                connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_CONFIGURATION;
                 break;
             }
             
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
             ascs_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_ASE_READ:
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_ASE_READ;
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_READ:
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_READ;
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
                 &handle_gatt_client_event, 
@@ -490,8 +490,8 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
                 connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_value_handle);
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_ASE_WRITE:{
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN;
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE:{
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN;
 
             uint16_t value_length = asce_client_store_ase(connection, ascs_client_value_buffer, ascs_client_get_value_buffer_size(connection));
 
@@ -512,8 +512,8 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
 static bool ascs_client_handle_query_complete(ascs_client_connection_t * connection, uint8_t status){
     if (status != ATT_ERROR_SUCCESS){
         switch (connection->state){
-            case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
-            case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
+            case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
+            case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
                 ascs_client_emit_connection_established(connection, status);
                 ascs_client_finalize_connection(connection);
                 return false;
@@ -523,7 +523,7 @@ static bool ascs_client_handle_query_complete(ascs_client_connection_t * connect
     }
 
     switch (connection->state){
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             if (connection->service_instances_num == 0){
                 ascs_client_emit_connection_established(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                 ascs_client_finalize_connection(connection);
@@ -531,55 +531,55 @@ static bool ascs_client_handle_query_complete(ascs_client_connection_t * connect
             }
             connection->streamendpoints_index = 0;
             connection->streamendpoints_instances_num = 0;
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_QUERY_CHARACTERISTIC_DESCRIPTOR;
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_QUERY_CHARACTERISTIC_DESCRIPTOR;
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_CHARACTERISTIC_DESCRIPTOR_RESULT:
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_REGISTER_NOTIFICATION;
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_CHARACTERISTIC_DESCRIPTOR_RESULT:
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_REGISTER_NOTIFICATION;
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_NOTIFICATION_REGISTERED:
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_NOTIFICATION_REGISTERED:
             connection->streamendpoints_index = 0;
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT:
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT:
             if (connection->streamendpoints_index < (connection->streamendpoints_instances_num - 1)){
                 connection->streamendpoints_index++;
-                connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
+                connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
                 break;
             }
             connection->streamendpoints_index = 0;
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED:
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED:
             if (connection->streamendpoints_index < (connection->streamendpoints_instances_num - 1)){
                 connection->streamendpoints_index++;
-                connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
+                connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
                 break;
             }
 
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
             ascs_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_CONFIGURATION_RESULT:
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_CONNECTED;
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_CONFIGURATION_RESULT:
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
             ascs_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_ASE_READ:
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN:
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_READ:
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN:
             ascs_client_value_buffer_used = false;
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_CONNECTED:
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED:
             if (status != ATT_ERROR_SUCCESS){ 
                 break;
             }
@@ -699,11 +699,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             }
             
             switch (connection->state){
-                case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_CHARACTERISTIC_DESCRIPTOR_RESULT:
                     connection->control_point.client_configuration_handle = characteristic_descriptor.handle;
                     break;
 
-                case AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT:
+                case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT:
                     connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_client_configuration_handle = characteristic_descriptor.handle;
                     break;
 
@@ -724,7 +724,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             connection = ascs_client_get_connection_for_con_handle(gatt_event_characteristic_value_query_result_get_handle(packet));
             btstack_assert(connection != NULL);                
 
-            if (connection->state == AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_CONFIGURATION_RESULT){
+            if (connection->state == AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_CONFIGURATION_RESULT){
 #ifdef ENABLE_TESTING_SUPPORT
                 printf("    Received CCC value: ");
                 printf_hexdump(gatt_event_characteristic_value_query_result_get_value(packet),  gatt_event_characteristic_value_query_result_get_value_length(packet));
@@ -774,7 +774,7 @@ static void ascs_stream_endpoint_reset(ascs_streamendpoint_t * streamendpoint){
     streamendpoint->state = ASCS_STATE_IDLE;
 }
 
-uint8_t audio_stream_control_service_service_client_connect(ascs_client_connection_t * connection, 
+uint8_t audio_stream_control_service_client_connect(ascs_client_connection_t * connection, 
     ascs_streamendpoint_characteristic_t * streamendpoint_characteristics, uint8_t streamendpoint_characteristics_num,
     hci_con_handle_t con_handle, uint16_t * ascs_cid){
     
@@ -803,7 +803,7 @@ uint8_t audio_stream_control_service_service_client_connect(ascs_client_connecti
     connection->streamendpoints_instances_num = 0;
     connection->streamendpoints_index = 0;
 
-    connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
     btstack_linked_list_add(&ascs_connections, (btstack_linked_item_t *) connection);
 
     ascs_client_run_for_connection(connection);
@@ -819,7 +819,7 @@ static uint8_t ascs_client_connection_for_parameters_ready(uint16_t ascs_cid, ui
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_CONNECTED){
+    if (connection->state != AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     if (write_requested && ascs_client_value_buffer_used){
@@ -840,7 +840,7 @@ uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_ci
     }
     
     connection->streamendpoints_index = streamendpoint_index; 
-    connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_ASE_READ;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_READ;
 
     ascs_client_run_for_connection(connection);
     return ERROR_CODE_SUCCESS;
@@ -857,7 +857,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint1
     }
 
     ascs_client_value_buffer_used = true;
-    connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = streamendpoint_index;
     connection->command_opcode = ASCS_OPCODE_CONFIG_CODEC;
     connection->codec_configuration = codec_configuration;
@@ -883,7 +883,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_
     }
 
     ascs_client_value_buffer_used = true;
-    connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = streamendpoint_index;
     connection->command_opcode = ASCS_OPCODE_CONFIG_QOS;
     connection->qos_configuration = qos_configuration;
@@ -909,7 +909,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint1
     }
 
     ascs_client_value_buffer_used = true;
-    connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = streamendpoint_index;
     connection->command_opcode = ASCS_OPCODE_UPDATE_METADATA;
     connection->metadata = metadata;
@@ -931,7 +931,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_
     }
    
     ascs_client_value_buffer_used = true;
-    connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = streamendpoint_index;
     connection->command_opcode = ASCS_OPCODE_ENABLE;
 
@@ -952,7 +952,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_receiver_start_ready(
     }
 
     ascs_client_value_buffer_used = true;
-    connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = streamendpoint_index;
     connection->command_opcode = ASCS_OPCODE_RECEIVER_START_READY;
 
@@ -973,7 +973,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_receiver_stop_ready(u
     }
     
     ascs_client_value_buffer_used = true;
-    connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = streamendpoint_index;
     connection->command_opcode = ASCS_OPCODE_RECEIVER_STOP_READY;
 
@@ -995,7 +995,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_release(uint16_t ascs
     }
     
     ascs_client_value_buffer_used = true;
-    connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = streamendpoint_index;
     connection->command_opcode = ASCS_OPCODE_RELEASE;
     
@@ -1016,7 +1016,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_disable(uint16_t ascs
     }
     
     ascs_client_value_buffer_used = true;
-    connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = streamendpoint_index;
     connection->command_opcode = ASCS_OPCODE_DISABLE;
     
@@ -1036,7 +1036,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_released(uint16_t asc
         return status;
     }
 
-    connection->state = AUDIO_STREAM_CONTROL_SERVICE_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     ascs_client_value_buffer_used = true;
     connection->streamendpoints_index = streamendpoint_index;
     connection->command_opcode = ASCS_OPCODE_RELEASED;
