@@ -505,6 +505,18 @@ static void opp_client_packet_handler_goep(uint8_t *packet, uint16_t size){
                         opp_client->state = OPP_CONNECTED;
                         opp_client_emit_operation_complete_event(opp_client, OBEX_RESP_NOT_IMPLEMENTED);
                         break;
+                    case OBEX_RESP_NOT_FOUND:
+                        opp_client->state = OPP_CONNECTED;
+                        opp_client_emit_operation_complete_event(opp_client, OBEX_NOT_FOUND);
+                        break;
+                    case OBEX_RESP_UNAUTHORIZED:
+                    case OBEX_RESP_FORBIDDEN:
+                    case OBEX_RESP_NOT_ACCEPTABLE:
+                    case OBEX_RESP_UNSUPPORTED_MEDIA_TYPE:
+                    case OBEX_RESP_ENTITY_TOO_LARGE:
+                        opp_client->state = OPP_CONNECTED;
+                        opp_client_emit_operation_complete_event(opp_client, OBEX_NOT_ACCEPTABLE);
+                        break;
                     default:
                         log_info("unexpected obex response 0x%02x", op_info.response_code);
                         opp_client->state = OPP_CONNECTED;
