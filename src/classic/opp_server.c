@@ -107,6 +107,8 @@ typedef struct {
     struct {
         char name[OPP_SERVER_MAX_NAME_LEN];
         char type[OPP_SERVER_MAX_TYPE_LEN];
+        uint8_t *payload_data;
+        uint32_t payload_len;
         uint32_t continuation;
     } request;
     // response
@@ -466,7 +468,8 @@ static void opp_server_parser_callback_get(void * user_data, uint8_t header_id, 
         case OBEX_HEADER_BODY:
         case OBEX_HEADER_END_OF_BODY:
             log_info ("received (END_OF_)BODY data: %d bytes\n", data_len);
-            (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->opp_cid, (uint8_t *) data_buffer, data_len);
+            opp_server->request.payload_data = (uint8_t *) data_buffer;
+            opp_server->request.payload_len  = data_len;
             break;
         case OBEX_HEADER_LENGTH:
             log_info ("length of data: %d\n",
@@ -621,6 +624,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                     case OBEX_OPCODE_PUT:
                     case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
                         opp_server_handle_put_request(opp_server, op_info.opcode);
+                        (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->opp_cid, (uint8_t *) opp_server->request.payload_data, opp_server->request.payload_len);
                         break;
                     case OBEX_OPCODE_DISCONNECT:
                         ENTER_STATE (opp_server, OPP_SERVER_STATE_SEND_DISCONNECT_RESPONSE);
@@ -685,6 +689,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                 switch((op_info.opcode & 0x7f)){
                     case OBEX_OPCODE_PUT:
                         opp_server_handle_put_request(opp_server, op_info.opcode);
+                        (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->opp_cid, (uint8_t *) opp_server->request.payload_data, opp_server->request.payload_len);
                         break;
                     case (OBEX_OPCODE_ABORT & 0x7f):
                         opp_server->response.code = OBEX_RESP_SUCCESS;
