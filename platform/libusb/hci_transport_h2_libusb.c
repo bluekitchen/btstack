@@ -247,7 +247,7 @@ void usb_transfer_list_free( usb_transfer_list_t *list );
 
 static void usb_transfer_list_release( usb_transfer_list_t *list, struct libusb_transfer *transfer ) {
     usb_transfer_list_entry_t *current = (usb_transfer_list_entry_t*)transfer->user_data;
-    assert( current != NULL );
+    btstack_assert( current != NULL );
     current->in_flight = false;
     list_add( &current->list, &list->transfers );
 }
@@ -269,7 +269,7 @@ static usb_transfer_list_t *usb_transfer_list_alloc( int nbr, int iso_packets, i
         transfer->user_data = entry;
         entry->t = transfer;
         usb_transfer_list_release( list, transfer );
-        assert( entry->t->user_data != NULL );
+        btstack_assert( entry->t->user_data != NULL );
     }
     return list;
 }
@@ -314,7 +314,7 @@ static void usb_transfer_list_free_entry( struct libusb_transfer *transfer ) {
 void usb_transfer_list_free( usb_transfer_list_t *list ) {
     for( int i=0; i<list->nbr; ++i ) {
         usb_transfer_list_entry_t *entry = &list->entries[i];
-        assert( entry->in_flight == false );
+        btstack_assert( entry->in_flight == false );
         if( entry->t ) {
             usb_transfer_list_free_entry( entry->t );
         }
@@ -329,7 +329,7 @@ static list_head_t handle_packet_list = LIST_HEAD_INIT(handle_packet_list);
 
 static void enqueue_transfer(struct libusb_transfer *transfer) {
     usb_transfer_list_entry_t *current = (usb_transfer_list_entry_t*)transfer->user_data;
-    assert( current != NULL );
+    btstack_assert( current != NULL );
     list_add_tail( &current->list, &handle_packet_list );
 }
 
@@ -447,12 +447,11 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer) {
 #ifdef ENABLE_SCO_OVER_HCI
         if(( transfer->endpoint == sco_in_addr) || (transfer->endpoint == sco_out_addr)) {
             usb_transfer_list_release( sco_transfer_list, transfer );
-        } else {
+        } else
 #endif
+        {
             usb_transfer_list_release( default_transfer_list, transfer );
-#ifdef ENABLE_SCO_OVER_HCI
         }
-#endif
     } else {
         log_info("async_callback. not data -> resubmit transfer, endpoint %x, status %x, length %u", transfer->endpoint, transfer->status, transfer->actual_length);
         // No usable data, just resubmit packet
@@ -548,7 +547,6 @@ static void handle_isochronous_data(uint8_t * buffer, uint16_t size){
 static void handle_completed_transfer(struct libusb_transfer *transfer){
 
     int resubmit = 0;
-    assert(transfer->user_data != NULL );
     if (transfer->endpoint == event_in_addr) {
         packet_handler(HCI_EVENT_PACKET, transfer->buffer, transfer->actual_length);
         resubmit = 1;
@@ -960,7 +958,7 @@ static int usb_sco_start(void){
     int in_flight = usb_transfer_list_in_flight( sco_transfer_list );
     // there need to be at least SCO_IN_BUFFER_COUNT packets available to 
     // fill them in below
-    assert( in_flight <= SCO_OUT_BUFFER_COUNT );
+    btstack_assert( in_flight <= SCO_OUT_BUFFER_COUNT );
 #endif
 
     // incoming
@@ -1010,13 +1008,13 @@ void pollfd_added_cb(int fd, short events, void *user_data) {
     UNUSED(events);
     UNUSED(user_data);
     log_error("add fd: %d", fd);
-    assert(0);
+    btstack_assert(0);
 }
 
 void pollfd_remove_cb(int fd, void *user_data) {
     UNUSED(user_data);
     log_error("remove fd: %d", fd);
-    assert(0);
+    btstack_assert(0);
 }
 
 static int usb_open(void){
@@ -1390,7 +1388,6 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
     libusb_fill_control_transfer(transfer, handle, data, async_callback, user_data, 0);
 
     // submit transfer
-    assert( transfer->user_data != NULL );
     r = libusb_submit_transfer(transfer);
 
     if (r < 0) {
@@ -1418,7 +1415,6 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     libusb_fill_bulk_transfer(transfer, handle, acl_out_addr, data, size,
         async_callback, transfer->user_data, 0);
 
-    assert( transfer->user_data != NULL );
     r = libusb_submit_transfer(transfer);
 
     if (r < 0) {
