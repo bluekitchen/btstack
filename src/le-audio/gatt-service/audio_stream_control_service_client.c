@@ -481,6 +481,15 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             ascs_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
             break;
 
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_ID_READ:
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_ID_READ;
+
+            (void) gatt_client_read_value_of_characteristic_using_value_handle(
+                &handle_gatt_client_event, 
+                connection->con_handle, 
+                connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_value_handle);
+            break;
+
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_READ:
             connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_READ;
 
@@ -561,6 +570,17 @@ static bool ascs_client_handle_query_complete(ascs_client_connection_t * connect
             if (connection->streamendpoints_index < (connection->streamendpoints_instances_num - 1)){
                 connection->streamendpoints_index++;
                 connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
+                break;
+            }
+
+            connection->streamendpoints_index = 0;
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_ID_READ;
+            break;
+        
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_ID_READ:
+            if (connection->streamendpoints_index < (connection->streamendpoints_instances_num - 1)){
+                connection->streamendpoints_index++;
+                connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_ID_READ;
                 break;
             }
 
@@ -743,6 +763,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
             bytes_read = ascs_parse_ase(gatt_event_notification_get_value(packet), gatt_event_notification_get_value_length(packet), streamendpoint);
             
+            if (connection->state == AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_ID_READ){
+                break;
+            }
+
             if (bytes_read == gatt_event_characteristic_value_query_result_get_value_length(packet)){
                 ascs_client_emit_ase(connection, streamendpoint);
             }
