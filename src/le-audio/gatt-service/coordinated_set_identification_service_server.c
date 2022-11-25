@@ -324,6 +324,12 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
         return 0;
     }
     
+    if (attribute_handle == coordinated_set_size_handle){
+        csis_coordinated_set_size = buffer[0];
+        csis_server_set_callback(CSIS_TASK_SEND_COORDINATED_SET_SIZE);
+        return 0;
+    }
+    
     return 0;
 }
 
