@@ -172,9 +172,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("[+] Connection closed\n");
                             break;
                         case OPP_SUBEVENT_PUSH_OBJECT:
-                            printf("PUSH: \"%.*s\" (%.*s)\n",
-                                   packet[5], &packet[6],
-                                   packet[6+packet[5]], &packet[7+packet[5]]);
+                            uint32_t object_size;
+                            object_size = opp_subevent_push_object_get_object_length (packet);
+
+                            printf("PUSH: \"%.*s\" (%.*s, %d bytes)\n",
+                                   packet[9], &packet[10],
+                                   packet[10+packet[9]], &packet[11+packet[9]],
+                                   object_size);
 
                             if (handle_push_object_response != OBEX_RESP_SUCCESS)
                                 opp_server_abort_request (opp_cid,

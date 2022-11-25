@@ -107,6 +107,7 @@ typedef struct {
     struct {
         char name[OPP_SERVER_MAX_NAME_LEN];
         char type[OPP_SERVER_MAX_TYPE_LEN];
+        uint32_t length;
         uint8_t *payload_data;
         uint32_t payload_len;
         uint32_t continuation;
@@ -473,8 +474,8 @@ static void opp_server_parser_callback_get(void * user_data, uint8_t header_id, 
             opp_server->request.payload_len  = data_len;
             break;
         case OBEX_HEADER_LENGTH:
-            log_info ("length of data: %d\n",
-                      big_endian_read_32 (data_buffer, 0));
+            opp_server->request.length = big_endian_read_32 (data_buffer, 0);
+            log_info ("length of data: %d\n", opp_server->request.length);
             break;
         default:
             log_info ("received unhandled OPP header type %d\n", header_id);
@@ -523,6 +524,8 @@ static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opc
     event[pos++] = OPP_SUBEVENT_PUSH_OBJECT;
     little_endian_store_16 (event, pos, opp_server->opp_cid);
     pos += 2;
+    little_endian_store_32 (event, pos, opp_server->request.length);
+    pos += 4;
     int name_len = btstack_min (OPP_SERVER_MAX_NAME_LEN, (uint16_t) strlen(opp_server->request.name));
     event[pos++] = name_len;
     (void) memcpy (&event[pos], opp_server->request.name, name_len);
