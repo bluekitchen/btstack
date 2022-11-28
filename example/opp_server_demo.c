@@ -89,8 +89,8 @@ static void show_usage(void){
     gap_local_bd_addr(iut_address);
 
     printf("\n--- Bluetooth OPP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("d - toggle availability of the default object\n");
-    printf("p - toggle acceptance of push requests\n");
+    printf("d - toggle availability of the default object (current: %savailable)\n", handle_pull_default_object ? "" : "un");
+    printf("p - toggle acceptance of push requests (current: %02x)\n", handle_push_object_response);
 
     printf("\n");
 }
@@ -180,12 +180,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                    packet[10+packet[9]], &packet[11+packet[9]],
                                    object_size);
 
-                            if (handle_push_object_response != OBEX_RESP_SUCCESS)
-                                opp_server_abort_request (opp_cid,
-                                                          handle_push_object_response);
-
+                            if (handle_push_object_response != OBEX_RESP_SUCCESS){
+                                printf("PUSH: Rejected with reason 0x%02x\n", handle_push_object_response);
+                                opp_server_abort_request (opp_cid,handle_push_object_response);
+                            }
                             break;
                         case OPP_SUBEVENT_PULL_DEFAULT_OBJECT:
+                            printf("PULL: default object\n");
                             if (handle_pull_default_object) {
                                 opp_server_send_pull_response (opp_cid, OBEX_RESP_SUCCESS,
                                                                0, sizeof (default_object_vcards[0]) - 1, (uint8_t *) default_object_vcards[0]);
