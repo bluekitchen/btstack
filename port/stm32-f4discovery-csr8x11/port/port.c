@@ -41,7 +41,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static const hci_transport_config_uart_t config = {
 	HCI_TRANSPORT_CONFIG_UART,
     115200,
-    4000000,
+    0,
     1,
     NULL
 };
@@ -65,7 +65,7 @@ void hal_cpu_enable_irqs(void){
 
 void hal_cpu_enable_irqs_and_sleep(void){
 	__enable_irq();
-	__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+	//__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
 }
 
 // hal_stdin.h
@@ -101,7 +101,7 @@ static void dummy_handler(void){};
 static int hal_uart_needed_during_sleep;
 
 void hal_uart_dma_set_sleep(uint8_t sleep){
-
+#if 0
 	// RTS is on PD12 - manually set it during sleep
 	GPIO_InitTypeDef RTS_InitStruct;
 	RTS_InitStruct.Pin = GPIO_PIN_12;
@@ -122,6 +122,7 @@ void hal_uart_dma_set_sleep(uint8_t sleep){
 //		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
 //	}
 	hal_uart_needed_during_sleep = !sleep;
+#endif
 }
 
 // reset Bluetooth using n_shutdown
@@ -160,14 +161,16 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
 }
 
 void EXTI15_10_IRQHandler(void){
+#if 0
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_11);
 	if (cts_irq_handler){
 		(*cts_irq_handler)();
 	}
+#endif
 }
 
 void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
-
+#if 0
 	GPIO_InitTypeDef CTS_InitStruct = {
 		.Pin       = GPIO_PIN_11,
 		.Mode      = GPIO_MODE_AF_PP,
@@ -192,6 +195,7 @@ void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
 		log_info("disabled CTS irq");
 	}
     cts_irq_handler = the_irq_handler;
+#endif
 }
 
 int  hal_uart_dma_set_baud(uint32_t baud){
@@ -382,61 +386,3 @@ void port_main(void){
     // go
     btstack_run_loop_execute();
 }
-
-#if 0
-
-// Help with debugging hard faults - from FreeRTOS docu
-// https://www.freertos.org/Debugging-Hard-Faults-On-Cortex-M-Microcontrollers.html
-
-void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress );
-void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress ) {
-
-	/* These are volatile to try and prevent the compiler/linker optimising them
-	away as the variables never actually get used.  If the debugger won't show the
-	values of the variables, make them global my moving their declaration outside
-	of this function. */
-	volatile uint32_t r0;
-	volatile uint32_t r1;
-	volatile uint32_t r2;
-	volatile uint32_t r3;
-	volatile uint32_t r12;
-	volatile uint32_t lr; /* Link register. */
-	volatile uint32_t pc; /* Program counter. */
-	volatile uint32_t psr;/* Program status register. */
-
-    r0  = pulFaultStackAddress[ 0 ];
-    r1  = pulFaultStackAddress[ 1 ];
-    r2  = pulFaultStackAddress[ 2 ];
-    r3  = pulFaultStackAddress[ 3 ];
-
-    r12 = pulFaultStackAddress[ 4 ];
-    lr  = pulFaultStackAddress[ 5 ];
-    pc  = pulFaultStackAddress[ 6 ];
-    psr = pulFaultStackAddress[ 7 ];
-
-    /* When the following line is hit, the variables contain the register values. */
-    for( ;; );
-}
-
-/* The prototype shows it is a naked function - in effect this is just an
-assembly function. */
-void HardFault_Handler( void ) __attribute__( ( naked ) );
-
-/* The fault handler implementation calls a function called
-prvGetRegistersFromStack(). */
-void HardFault_Handler(void)
-{
-    __asm volatile
-    (
-        " tst lr, #4                                                \n"
-        " ite eq                                                    \n"
-        " mrseq r0, msp                                             \n"
-        " mrsne r0, psp                                             \n"
-        " ldr r1, [r0, #24]                                         \n"
-        " ldr r2, handler2_address_const                            \n"
-        " bx r2                                                     \n"
-        " handler2_address_const: .word prvGetRegistersFromStack    \n"
-    );
-}
-
-#endif

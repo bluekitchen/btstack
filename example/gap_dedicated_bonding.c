@@ -44,8 +44,7 @@
 
 #include "btstack.h"
 
-static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
-
+static bd_addr_t remote = {0xF2, 0x6F, 0xCE, 0x2E, 0x6D, 0x6B};
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){

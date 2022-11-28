@@ -59,7 +59,7 @@ void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
 
-#define USB_OTG_ENABLE  0
+#define USB_OTG_ENABLE  1
 
 #define CS_I2C_SPI_Pin GPIO_PIN_3
 #define CS_I2C_SPI_GPIO_Port GPIOE
