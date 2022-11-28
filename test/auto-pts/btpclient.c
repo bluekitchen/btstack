@@ -70,6 +70,7 @@
 
 //#define TEST_POWER_CYCLE
 
+static le_audio_role_t bap_get_ase_role(uint8_t ase_index);
 int btstack_main(int argc, const char * argv[]);
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -477,6 +478,17 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                             audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index,
                                                                                              &ascs_qos_configuration);
                             break;
+                        case GAP_SUBEVENT_CIS_CREATED:
+                            if (bap_get_ase_role(ase_index) == LE_AUDIO_ROLE_SOURCE){
+                                MESSAGE("CIS Established, remote role source");
+                            } else {
+                                MESSAGE("CIS Established, remote role sink");
+                            }
+                            if (response_op == BTP_LE_AUDIO_OP_ASCS_ENABLE){
+                                btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
+                                response_op = 0;
+                            }
+                            break;
                         default:
                             break;
                     }
@@ -703,6 +715,10 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
     }
 }
 
+static le_audio_role_t bap_get_ase_role(uint8_t ase_index){
+    return streamendpoint_characteristics[ase_index].role;
+}
+
 static void bap_service_client_setup_cig(void){
     printf("Create CIG\n");
 
@@ -720,7 +736,7 @@ static void bap_service_client_setup_cig(void){
     for (i=0; i < num_cis; i++){
         cig_params.cis_params[i].cis_id = 1+i;
         cig_params.cis_params[i].max_sdu_c_to_p = cis_max_octets_per_frame;
-        cig_params.cis_params[i].max_sdu_p_to_c = 0;
+        cig_params.cis_params[i].max_sdu_p_to_c = cis_max_octets_per_frame;
         cig_params.cis_params[i].phy_c_to_p = 2;  // 2M
         cig_params.cis_params[i].phy_p_to_c = 2;  // 2M
         cig_params.cis_params[i].rtn_c_to_p = 2;
@@ -728,6 +744,17 @@ static void bap_service_client_setup_cig(void){
     }
 
     gap_cig_create(&cig, &cig_params);
+}
+
+void bap_service_client_setup_cis(void){
+    uint8_t i;
+    cis_setup_next_index = 0;
+    printf("Create CIS\n");
+    hci_con_handle_t acl_connection_handles[MAX_CHANNELS];
+    for (i=0; i < cig_num_cis; i++){
+        acl_connection_handles[i] = remote_handle;
+    }
+    gap_cis_create(cig_params.cig_id, cis_con_handles, acl_connection_handles);
 }
 
 static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -791,7 +818,10 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             con_handle = gattservice_subevent_ascs_qos_configuration_get_con_handle(packet);
 
             MESSAGE("ASCS Client: QOS CONFIGURATION - ase_id %d, con_handle 0x%02x", ase_id, con_handle);
-            btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS, 0, 0, NULL);
+            if (response_op != 0){
+                btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
+                response_op = 0;
+            }
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_METADATA:
@@ -816,14 +846,63 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             ase_id     = gattservice_subevent_ascs_streamendpoint_state_get_ase_id(packet);
             ase_state  = gattservice_subevent_ascs_streamendpoint_state_get_state(packet);
 
-            printf("ASCS Client: ASE STATE (%s) - ase_id %d, con_handle 0x%02x\n", ascs_util_ase_state2str(ase_state), ase_id, con_handle);
-            switch (ase_state){
-                case ASCS_STATE_ENABLING:
-                    printf("Setup ISO Channel (TODO: list config)\n");
-                    // TODO bap_service_client_setup_cis();
-                    break;
-                default:
-                    break;
+            log_info("ASCS Client: ASE STATE (%s) - ase_id %d, con_handle 0x%02x", ascs_util_ase_state2str(ase_state), ase_id, con_handle);
+            // send done
+            if (response_service_id == BTP_SERVICE_ID_LE_AUDIO){
+                switch (response_op){
+                    case BTP_LE_AUDIO_OP_ASCS_ENABLE:
+                        switch (ase_state){
+                            case ASCS_STATE_ENABLING:
+                                log_info("Setup ISO Channel\n");
+                                bap_service_client_setup_cis();
+                                break;
+                            case ASCS_STATE_STREAMING:
+                                btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
+                                response_op = 0;
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case BTP_LE_AUDIO_OP_ASCS_RECEIVER_START_READY:
+                        switch (ase_state){
+                            case ASCS_STATE_STREAMING:
+                                btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
+                                response_op = 0;
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case BTP_LE_AUDIO_OP_ASCS_RECEIVER_STOP_READY:
+                        switch (ase_state){
+                            case ASCS_STATE_IDLE:
+                            case ASCS_STATE_QOS_CONFIGURED:
+                                btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
+                                response_op = 0;
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case BTP_LE_AUDIO_OP_ASCS_DISABLE:
+                        switch (ase_state){
+                            case ASCS_STATE_DISABLING:
+                            case ASCS_STATE_QOS_CONFIGURED:
+                                btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
+                                response_op = 0;
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case BTP_LE_AUDIO_OP_ASCS_RELEASE:
+                        btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
+                        response_op = 0;
+                        break;
+                    default:
+                        break;
+                }
             }
             break;
 
@@ -1903,8 +1982,6 @@ static void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint1
             break;
         case BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS:
             if (controller_index == 0){
-                // sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms
-            }
                 // ascs_cid in data[0]
                 uint8_t  ase_index                = data[1];
                 uint16_t sdu_interval_us          = little_endian_read_16(data, 2);
@@ -1923,13 +2000,54 @@ static void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint1
                 ascs_qos_configuration.max_transport_latency_ms = max_transport_latency_ms;
                 ascs_qos_configuration.presentation_delay_us = 40000;
 
-                // updaet CIG/CIS
+                // update CIG/CIS
                 cig_frame_duration_us = sdu_interval_us;
                 cig_framed = framing;
                 cis_max_octets_per_frame = max_sdu;
                 bap_service_client_setup_cig();
-                default:
-
+            }
+            break;
+        case BTP_LE_AUDIO_OP_ASCS_ENABLE:
+            if (controller_index == 0) {
+                // ascs_cid in data[0]
+                uint8_t  ase_index = data[1];
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_ENABLE ase %u", ase_index);
+                audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_index);
+            }
+            break;
+        case BTP_LE_AUDIO_OP_ASCS_RECEIVER_START_READY:
+            if (controller_index == 0) {
+                // ascs_cid in data[0]
+                uint8_t  ase_index = data[1];
+                MESSAGE("btstack: add le_audio tests ase %u", ase_index);
+                audio_stream_control_service_client_streamendpoint_receiver_start_ready(ascs_cid, ase_index);
+            }
+            break;
+        case BTP_LE_AUDIO_OP_ASCS_RECEIVER_STOP_READY:
+            if (controller_index == 0) {
+                // ascs_cid in data[0]
+                uint8_t  ase_index = data[1];
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_RECEIVER_STOP_READY ase %u", ase_index);
+                audio_stream_control_service_client_streamendpoint_receiver_stop_ready(ascs_cid, ase_index);
+            }
+            break;
+        case BTP_LE_AUDIO_OP_ASCS_DISABLE:
+            if (controller_index == 0) {
+                // ascs_cid in data[0]
+                uint8_t  ase_index = data[1];
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_DISABLE ase %u", ase_index);
+                audio_stream_control_service_client_streamendpoint_disable(ascs_cid, ase_index);
+            }
+            break;
+        case BTP_LE_AUDIO_OP_ASCS_RELEASE:
+            if (controller_index == 0) {
+                // ascs_cid in data[0]
+                uint8_t  ase_index = data[1];
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_RELEASE ase %u", ase_index);
+                audio_stream_control_service_client_streamendpoint_release(ascs_cid, ase_index, false);
+            }
+            break;
+        default:
             break;
     }
 }
