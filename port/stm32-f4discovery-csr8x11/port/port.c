@@ -32,7 +32,7 @@ extern UART_HandleTypeDef huart1;//system log uart
 extern UART_HandleTypeDef huart2;//hci log uart
 extern UART_HandleTypeDef huart3;//hci uart
 
-#define SYSTEM_LOG_UART	  huart2
+#define SYSTEM_LOG_UART	  huart1
 #define HCI_LOG_UART	  huart2
 #define HCI_DRIVER_UART	  huart3
 //
@@ -213,7 +213,71 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 }
 
 void hal_uart_dma_send_block_for_hci(const uint8_t *data, uint16_t size){
-	//HAL_UART_Transmit( &HCI_LOG_UART, (uint8_t *) data, size, HAL_MAX_DELAY );
+	HAL_UART_Transmit( &HCI_LOG_UART, (uint8_t *) data, size, HAL_MAX_DELAY );
+}
+
+void hci_log_through_frontline(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len)
+{
+typedef enum {
+    BT_HCI_LOG_CMD     = 0x01,
+    BT_HCI_LOG_ACL_OUT = 0x02,
+    BT_HCI_LOG_ACL_IN  = 0x04,
+    BT_HCI_LOG_EVT     = 0x08
+} bt_hci_log_type_t;
+
+#define BT_HCI_LOG_HEADER_LEGNTH 5 //header + direction + sizeof(log_length)
+#define BT_UART_CMD 0x01
+#define	BT_UART_ACL 0x02
+#define	BT_UART_EVT 0x04
+
+    bt_hci_log_type_t type;
+    uint16_t data_tatal_length = 0;
+    uint16_t index = 0, i = 0;
+    uint8_t *buf = NULL;
+    uint8_t check_sum = 0;
+
+    if (packet_type == BT_UART_EVT && packet[0] > 0x3e && packet[0] != 0xFF) {
+        return;
+    }
+
+    if (in == 0) {
+        if (packet_type == BT_UART_CMD) {
+            type = BT_HCI_LOG_CMD;
+        } else if (packet_type == BT_UART_ACL) {
+            type = BT_HCI_LOG_ACL_OUT;
+        } else {
+            return;
+        }
+    } else if (in == 1) {
+        if (packet_type == BT_UART_ACL) {
+            type = BT_HCI_LOG_ACL_IN;
+        } else if (packet_type == BT_UART_EVT) {
+            type = BT_HCI_LOG_EVT;
+        } else {
+            return;
+        }
+    }
+
+    data_tatal_length = BT_HCI_LOG_HEADER_LEGNTH + len + 1;//1:check sum
+    buf = (uint8_t *)malloc(data_tatal_length);
+    //BT_ASSERT(buf);
+
+    buf[index++] = 0xF5;
+    buf[index++] = 0x5A;
+    buf[index++] = type;
+    buf[index++] = len & 0xFF;
+    buf[index++] = (len >> 8) & 0xFF;
+    for (i = 0; i < len; index++, i++) {
+        buf[index] = packet[i];
+    }
+    for (i = 0; i < data_tatal_length - 1; i++) {
+        check_sum += buf[i];
+    }
+    buf[index] = check_sum;
+
+    hal_uart_dma_send_block_for_hci(buf, data_tatal_length);
+
+    free(buf);
 }
 
 #ifndef ENABLE_SEGGER_RTT
@@ -231,7 +295,6 @@ void hal_uart_dma_send_block_for_hci(const uint8_t *data, uint16_t size){
 #include <errno.h>
 int _write(int file, char *ptr, int len);
 int _write(int file, char *ptr, int len){
-#if 1
 	uint8_t cr = '\r';
 	int i;
 
@@ -246,9 +309,6 @@ int _write(int file, char *ptr, int len){
 	}
 	errno = EIO;
 	return -1;
-#else
-	return len;
-#endif
 }
 
 int _read(int file, char * ptr, int len){
@@ -257,8 +317,6 @@ int _read(int file, char * ptr, int len){
 	UNUSED(len);
 	return -1;
 }
-
-#endif
 
 int _close(int file){
 	UNUSED(file);
@@ -279,7 +337,7 @@ int _fstat(int file){
 	UNUSED(file);
 	return -1;
 }
-
+#endif
 
 // main.c
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -338,7 +396,7 @@ void port_main(void){
 
     // uncomment to enable packet logger
 #ifdef ENABLE_SEGGER_RTT
-    // hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
+    hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
 #else
     hci_dump_init(hci_dump_embedded_stdout_get_instance());
 #endif

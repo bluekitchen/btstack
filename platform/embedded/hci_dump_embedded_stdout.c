@@ -55,6 +55,10 @@
 
 static char log_message_buffer[256];
 
+__attribute__((weak)) void hci_log_through_frontline(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len)
+{
+}
+
 static void hci_dump_embedded_stdout_timestamp(void){
     uint32_t time_ms = btstack_run_loop_get_time_ms();
     int      seconds = time_ms / 1000u;
@@ -69,7 +73,7 @@ static void hci_dump_embedded_stdout_timestamp(void){
 
 static void hci_dump_embedded_stdout_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uint16_t len){
 
-    hci_log(packet_type, in, packet, len);
+    hci_log_through_frontline(packet_type, in, packet, len);
 
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
@@ -99,72 +103,6 @@ static void hci_dump_embedded_stdout_packet(uint8_t packet_type, uint8_t in, uin
             return;
     }
     printf_hexdump(packet, len);
-}
-
-extern void hal_uart_dma_send_block_for_hci(const uint8_t *data, uint16_t size);
-
-void hci_log(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len)
-{
-typedef enum {
-    BT_HCI_LOG_CMD     = 0x01,
-    BT_HCI_LOG_ACL_OUT = 0x02,
-    BT_HCI_LOG_ACL_IN  = 0x04,
-    BT_HCI_LOG_EVT     = 0x08
-} bt_hci_log_type_t;
-
-#define BT_HCI_LOG_HEADER_LEGNTH 5 //header + direction + sizeof(log_length)
-#define BT_UART_CMD 0x01
-#define	BT_UART_ACL 0x02
-#define	BT_UART_EVT 0x04
-
-    bt_hci_log_type_t type;
-    uint16_t data_tatal_length = 0;
-    uint16_t index = 0, i = 0;
-    uint8_t *buf = NULL;
-    uint8_t check_sum = 0;
-
-    if (packet_type == BT_UART_EVT && packet[0] > 0x3e && packet[0] != 0xFF) {
-        return;
-    }
-
-    if (in == 0) {
-        if (packet_type == BT_UART_CMD) {
-            type = BT_HCI_LOG_CMD;
-        } else if (packet_type == BT_UART_ACL) {
-            type = BT_HCI_LOG_ACL_OUT;
-        } else {
-            return;
-        }
-    } else if (in == 1) {
-        if (packet_type == BT_UART_ACL) {
-            type = BT_HCI_LOG_ACL_IN;
-        } else if (packet_type == BT_UART_EVT) {
-            type = BT_HCI_LOG_EVT;
-        } else {
-            return;
-        }
-    }
-
-    data_tatal_length = BT_HCI_LOG_HEADER_LEGNTH + len + 1;//1:check sum
-    buf = (uint8_t *)malloc(data_tatal_length);
-    //BT_ASSERT(buf);
-
-    buf[index++] = 0xF5;
-    buf[index++] = 0x5A;
-    buf[index++] = type;
-    buf[index++] = len & 0xFF;
-    buf[index++] = (len >> 8) & 0xFF;
-    for (i = 0; i < len; index++, i++) {
-        buf[index] = packet[i];
-    }
-    for (i = 0; i < data_tatal_length - 1; i++) {
-        check_sum += buf[i];
-    }
-    buf[index] = check_sum;
-
-    hal_uart_dma_send_block_for_hci(buf, data_tatal_length);
-
-    free(buf);
 }
 
 static void hci_dump_embedded_stdout_log_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {

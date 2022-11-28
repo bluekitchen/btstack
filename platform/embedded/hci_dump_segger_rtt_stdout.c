@@ -49,6 +49,10 @@
 
 #include "SEGGER_RTT.h"
 
+__attribute__((weak)) void hci_log_through_frontline(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len)
+{
+}
+
 static void hci_dump_segger_rtt_hexdump(const void *data, int size){
     char buffer[4];
     buffer[2] = ' ';
@@ -77,6 +81,9 @@ static void hci_dump_segger_rtt_stdout_timestamp(void){
 }
 
 static void hci_dump_segger_rtt_stdout_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uint16_t len){
+
+    hci_log_through_frontline(packet_type, in, packet, len);
+
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
             SEGGER_RTT_printf(0, "CMD => ");

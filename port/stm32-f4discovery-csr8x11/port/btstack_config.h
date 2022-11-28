@@ -63,7 +63,7 @@
 // Port related features
 #define HAVE_BTSTACK_STDIN
 #define HAVE_EMBEDDED_TIME_MS
-//#define HAVE_HAL_AUDIO
+#define HAVE_HAL_AUDIO
 //#define HAVE_POSIX_FILE_IO
 // BTstack features that can be enabled
 #define ENABLE_BLE
@@ -76,11 +76,8 @@
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 #define ENABLE_LOG_DEBUG
-//#define ENABLE_LOG_WARNNING
 #define ENABLE_PRINTF_HEXDUMP
-//#define ENABLE_SCO_OVER_HCI
-//#define ENABLE_SCO_STEREO_PLAYBACK
-//#define ENABLE_SEGGER_RTT
+#define ENABLE_SEGGER_RTT
 
 #ifdef ENABLE_CLASSIC
 #define ENABLE_HFP_WIDE_BAND_SPEECH

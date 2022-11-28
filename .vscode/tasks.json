@@ -7,7 +7,7 @@
             "label": "build",
             "type": "shell",
             "options": {
-                "cwd": "${workspaceRoot}/port/stm32-f103zet6-csr8x11-freertos"
+                "cwd": "${workspaceRoot}/port/stm32-f4discovery-csr8x11"
             },
             "command": "make -j4",
             "group": {
@@ -22,7 +22,7 @@
             "label": "Clean",
             "type": "shell",
             "options": {
-                "cwd": "${workspaceRoot}/port/stm32-f103zet6-csr8x11-freertos"
+                "cwd": "${workspaceRoot}/port/port/stm32-f4discovery-csr8x11"
             },
             "command": "make -f makefile clean",
             "group": {
@@ -35,14 +35,21 @@
             "label": "download",
             "type": "shell",
             "options": {
-                "cwd":  "${workspaceRoot}/port/stm32-f103zet6-csr8x11-freertos"
+                "cwd":  "${workspaceRoot}/port/stm32-f4discovery-csr8x11"
             },
-            "command": "JLink.exe -device stm32f103zet6 -speed 4000 -SI SWD -CommanderScript flash.jlink", //Detail description about jlink command, please refer:https://wiki.segger.com/J-Link_Commander
+            "command": "JLink.exe -device stm32f407vgt6 -speed 4000 -SI SWD -CommanderScript flash.jlink", //Detail description about jlink command, please refer:https://wiki.segger.com/J-Link_Commander
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
             "dependsOn": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "rtt",
+            "type": "shell",
+            "command": "JLinkRTTClient.ext",
+            "args": [],
             "problemMatcher": []
         }
     ]
