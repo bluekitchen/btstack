@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - ESP32: fix init for BR/EDR Only mode
 - GAP: reload LE Resolving List after power-cycle 
-- GAP: seting LE Scan Response for data that needs to be fragmented  
+- GAP: setting LE Scan Response for data that needs to be fragmented  
 - SM: fix pairing process with active ATT communication
  
 ### Changed
@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - LE Audio: move GATT Services into src/le-audio/gatt-service
 - SM: delete bonding information for existing device with BD_ADDR, on new pairing with different IRK
 - GAP: reload LE Filterlist and Periodic Advertiser List after power-cycle
+- libusb: improve implementation
 
 ## Release v1.5.4
 
