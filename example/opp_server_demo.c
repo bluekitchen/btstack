@@ -139,6 +139,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     int i;
     uint8_t status;
     bd_addr_t event_addr;
+    uint32_t object_size;
 
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -172,7 +173,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("[+] Connection closed\n");
                             break;
                         case OPP_SUBEVENT_PUSH_OBJECT:
-                            uint32_t object_size;
                             object_size = opp_subevent_push_object_get_object_length (packet);
 
                             printf("PUSH: \"%.*s\" (%.*s, %d bytes)\n",
