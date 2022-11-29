@@ -210,7 +210,7 @@ uint16_t ascs_util_codec_configuration_request_parse(uint8_t * buffer, uint8_t b
 }
 
 
-uint16_t ascs_util_specific_codec_configuration_serialize_using_mask(ascs_specific_codec_configuration_t * codec_configuration, uint8_t * tlv_buffer, uint16_t tlv_buffer_size){
+uint16_t ascs_util_specific_codec_configuration_serialize_using_tlv(ascs_specific_codec_configuration_t * codec_configuration, uint8_t * tlv_buffer, uint16_t tlv_buffer_size){
     btstack_assert(tlv_buffer_size > 18);
     uint16_t pos = 0;
     uint16_t remaining_bytes = tlv_buffer_size;
