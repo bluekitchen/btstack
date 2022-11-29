@@ -230,8 +230,9 @@ static bass_source_data_t source_data1 = {
 };
 
 static ascs_client_codec_configuration_request_t ascs_codec_configuration_request;
-static ascs_qos_configuration_t ascs_qos_configuration;
-static le_audio_metadata_t      ascs_metadata;
+static ascs_codec_configuration_t ascs_codec_configuration;
+static ascs_qos_configuration_t   ascs_qos_configuration;
+static le_audio_metadata_t        ascs_metadata;
 
 static char * bass_opcode_str[] = {
     "REMOTE_SCAN_STOPPED",
@@ -405,7 +406,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
                         ascs_qos_configuration.cis_id = cig_params.cis_params[0].cis_id;
                         ascs_qos_configuration.cig_id = gap_subevent_cig_created_get_cig_id(packet);
-                        
                         audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index, &ascs_qos_configuration);
                     }
                     break;
@@ -646,7 +646,6 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
-    ascs_codec_configuration_t codec_configuration;
     uint8_t ase_id;
     hci_con_handle_t con_handle;
     ascs_state_t ase_state;
@@ -689,19 +688,42 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             ase_id     = gattservice_subevent_ascs_codec_configuration_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_codec_configuration_get_con_handle(packet);
 
-            // codec id:
-            codec_configuration.coding_format =  gattservice_subevent_ascs_codec_configuration_get_coding_format(packet);;
-            codec_configuration.company_id = gattservice_subevent_ascs_codec_configuration_get_company_id(packet);
-            codec_configuration.vendor_specific_codec_id = gattservice_subevent_ascs_codec_configuration_get_vendor_specific_codec_id(packet);
+            ascs_codec_configuration.framing = gattservice_subevent_ascs_codec_configuration_get_framing(packet);                        
+            ascs_codec_configuration.preferred_phy = gattservice_subevent_ascs_codec_configuration_get_preferred_phy(packet);                  
+            ascs_codec_configuration.preferred_retransmission_number = gattservice_subevent_ascs_codec_configuration_get_preferred_retransmission_number(packet);
+            ascs_codec_configuration.max_transport_latency_ms = gattservice_subevent_ascs_codec_configuration_get_max_transport_latency(packet);       
+            ascs_codec_configuration.presentation_delay_min_us = gattservice_subevent_ascs_codec_configuration_get_presentation_delay_min(packet);      
+            ascs_codec_configuration.presentation_delay_max_us = gattservice_subevent_ascs_codec_configuration_get_presentation_delay_max(packet);      
+            ascs_codec_configuration.coding_format = gattservice_subevent_ascs_codec_configuration_get_coding_format(packet);                  
+            ascs_codec_configuration.company_id = gattservice_subevent_ascs_codec_configuration_get_company_id(packet);                     
+            ascs_codec_configuration.vendor_specific_codec_id = gattservice_subevent_ascs_codec_configuration_get_vendor_specific_codec_id(packet);       
+            ascs_codec_configuration.specific_codec_configuration.codec_configuration_mask = gattservice_subevent_ascs_codec_configuration_get_specific_codec_configuration_mask(packet);       
+            ascs_codec_configuration.specific_codec_configuration.sampling_frequency_index = gattservice_subevent_ascs_codec_configuration_get_sampling_frequency_index(packet);       
+            ascs_codec_configuration.specific_codec_configuration.frame_duration_index = gattservice_subevent_ascs_codec_configuration_get_frame_duration_index(packet);           
+            ascs_codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = gattservice_subevent_ascs_codec_configuration_get_audio_channel_allocation_mask(packet);  
+            ascs_codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_codec_configuration_get_octets_per_frame(packet);         
+            ascs_codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_codec_configuration_get_frame_blocks_per_sdu(packet); 
             
-            codec_configuration.specific_codec_configuration.codec_configuration_mask = gattservice_subevent_ascs_codec_configuration_get_specific_codec_configuration_mask(packet);
-            codec_configuration.specific_codec_configuration.sampling_frequency_index = gattservice_subevent_ascs_codec_configuration_get_sampling_frequency_index(packet);
-            codec_configuration.specific_codec_configuration.frame_duration_index = gattservice_subevent_ascs_codec_configuration_get_frame_duration_index(packet);
-            codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = gattservice_subevent_ascs_codec_configuration_get_audio_channel_allocation_mask(packet);
-            codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_codec_configuration_get_octets_per_frame(packet);
-            codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_codec_configuration_get_frame_blocks_per_sdu(packet);
-
             printf("ASCS Client: CODEC CONFIGURATION - ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
+            printf("    framing                             0x%0x\n" , ascs_codec_configuration.framing);                               
+            printf("    preferred_phy                       0x%0x\n" , ascs_codec_configuration.preferred_phy);                         
+            printf("    preferred_retransmission_number     0x%0x\n" , ascs_codec_configuration.preferred_retransmission_number);       
+            printf("    max_transport_latency_ms            0x%02x\n", ascs_codec_configuration.max_transport_latency_ms);              
+            printf("    presentation_delay_min_us           %u\n", ascs_codec_configuration.presentation_delay_min_us);             
+            printf("    presentation_delay_max_us           %u\n", ascs_codec_configuration.presentation_delay_max_us);             
+            printf("    preferred_presentation_delay_min_us %u\n", ascs_codec_configuration.preferred_presentation_delay_min_us);   
+            printf("    preferred_presentation_delay_max_us %u\n", ascs_codec_configuration.preferred_presentation_delay_max_us);   
+            printf("  Codec ID:\n");
+            printf("    coding_format                       0x%02x\n", ascs_codec_configuration.coding_format);                         
+            printf("    company_id                          0x%02x\n", ascs_codec_configuration.company_id);                            
+            printf("    vendor_specific_codec_id            0x%03x\n", ascs_codec_configuration.vendor_specific_codec_id);              
+            printf("  Codec Specific Configuration:\n");
+            printf("    codec_configuration_mask            0x%02x\n", ascs_codec_configuration.specific_codec_configuration.codec_configuration_mask);              
+            printf("    sampling_frequency_index            0x%02x\n", ascs_codec_configuration.specific_codec_configuration.sampling_frequency_index);              
+            printf("    frame_duration_index                0x%02x\n", ascs_codec_configuration.specific_codec_configuration.frame_duration_index);                  
+            printf("    audio_channel_allocation_mask       0x%02x\n", ascs_codec_configuration.specific_codec_configuration.audio_channel_allocation_mask);         
+            printf("    octets_per_codec_frame              0x%02x\n", ascs_codec_configuration.specific_codec_configuration.octets_per_codec_frame);                
+            printf("    codec_frame_blocks_per_sdu          0x%02x\n", ascs_codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu);            
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION:
@@ -709,6 +731,15 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             con_handle = gattservice_subevent_ascs_qos_configuration_get_con_handle(packet);
 
             printf("ASCS Client: QOS CONFIGURATION - ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
+            printf("    cig_id                              0x%0x\n",  gattservice_subevent_ascs_qos_configuration_get_cig_id(packet));
+            printf("    cis_id                              0x%0x\n",  gattservice_subevent_ascs_qos_configuration_get_cis_id(packet));
+            printf("    sdu_interval                        0x%04x\n", gattservice_subevent_ascs_qos_configuration_get_sdu_interval(packet));
+            printf("    framing                             0x%0x\n",  gattservice_subevent_ascs_qos_configuration_get_framing(packet));
+            printf("    phy                                 0x%0x\n",  gattservice_subevent_ascs_qos_configuration_get_phy(packet));
+            printf("    max_sdu                             0x%02x\n", gattservice_subevent_ascs_qos_configuration_get_max_sdu(packet));
+            printf("    retransmission_number               0x%0x\n",  gattservice_subevent_ascs_qos_configuration_get_retransmission_number(packet));
+            printf("    max_transport_latency               0x%02x\n", gattservice_subevent_ascs_qos_configuration_get_max_transport_latency(packet));
+            printf("    presentation_delay_us               0x%04x\n", gattservice_subevent_ascs_qos_configuration_get_presentation_delay_us(packet));
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_METADATA:
@@ -996,13 +1027,13 @@ static void stdin_process(char cmd){
             printf("ASCS Client: Configure QoS, ");
             print_config();
 
-            ascs_qos_configuration.sdu_interval = codec_configurations[menu_sampling_frequency].samplingrate_hz;
+            ascs_qos_configuration.sdu_interval = 10000;
             ascs_qos_configuration.framing = 0;
             ascs_qos_configuration.phy = LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE;
-            ascs_qos_configuration.max_sdu = 255;
+            ascs_qos_configuration.max_sdu = 40;
             ascs_qos_configuration.retransmission_number = 2;
-            ascs_qos_configuration.max_transport_latency_ms = 20;
-            ascs_qos_configuration.presentation_delay_us = 40000;
+            ascs_qos_configuration.max_transport_latency_ms = ascs_codec_configuration.max_transport_latency_ms;
+            ascs_qos_configuration.presentation_delay_us = (ascs_codec_configuration.presentation_delay_max_us + ascs_codec_configuration.presentation_delay_min_us)/2;
 
             bap_service_client_setup_cig();
             break;
