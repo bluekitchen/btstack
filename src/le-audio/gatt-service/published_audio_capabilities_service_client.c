@@ -422,6 +422,17 @@ static pacs_client_characteristic_t * pacs_client_get_query_characteristic(pacs_
     return NULL;
 }
 
+static void pacs_client_handle_notification_registered(pacs_client_connection_t * connection){
+    if (connection->pacs_characteristics_index < (connection->pacs_characteristics_num - 1)){
+        connection->pacs_characteristics_index++;
+        connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
+    } else {
+        connection->pacs_characteristics_index = 0;
+        connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_CONNECTED;
+        pacs_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+    }
+}
+
 static void pacs_client_run_for_connection(pacs_client_connection_t * connection){
     uint8_t status;
     gatt_client_characteristic_t characteristic;
@@ -486,24 +497,32 @@ static void pacs_client_run_for_connection(pacs_client_connection_t * connection
             break;
         
         case PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION:
-            connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
-            characteristic.value_handle = connection->pacs_characteristics[connection->pacs_characteristics_index].value_handle;
-            characteristic.properties   = connection->pacs_characteristics[connection->pacs_characteristics_index].properties;
-            characteristic.end_handle   = connection->pacs_characteristics[connection->pacs_characteristics_index].end_handle;
-
-            status = gatt_client_write_client_characteristic_configuration(
-                        &handle_gatt_client_event, 
-                        connection->con_handle, 
-                        &characteristic, 
-                        GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
-          
-            // notification supported, register for value updates
-            if (status == ERROR_CODE_SUCCESS){
-                gatt_client_listen_for_characteristic_value_updates(
-                    &connection->notification_listener, 
-                    &handle_gatt_server_notification, 
-                    connection->con_handle, &characteristic);
-            } 
+            // register for notification if supported
+            while (true){
+                characteristic.properties   = connection->pacs_characteristics[connection->pacs_characteristics_index].properties;
+                if ((characteristic.properties & ATT_PROPERTY_NOTIFY) != 0){
+                    // notification supported
+                    connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
+                    characteristic.value_handle = connection->pacs_characteristics[connection->pacs_characteristics_index].value_handle;
+                    characteristic.end_handle   = connection->pacs_characteristics[connection->pacs_characteristics_index].end_handle;
+                    // (re)register for generic listener instead of using one gatt_client_notification_t per characteristic
+                    gatt_client_listen_for_characteristic_value_updates(
+                            &connection->notification_listener,
+                            &handle_gatt_server_notification,
+                            connection->con_handle, NULL);
+                    (void) gatt_client_write_client_characteristic_configuration(
+                            &handle_gatt_client_event,
+                            connection->con_handle,
+                            &characteristic,
+                            GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    break;
+                } else {
+                    pacs_client_handle_notification_registered(connection);
+                    if (connection->state != PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION){
+                        break;
+                    }
+                }
+            }
             break;
             
         default:
@@ -586,14 +605,7 @@ static bool pacs_client_handle_query_complete(pacs_client_connection_t * connect
             break;
 
         case PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED:
-            if (connection->pacs_characteristics_index < (connection->pacs_characteristics_num - 1)){
-                connection->pacs_characteristics_index++;
-                connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
-                break;
-            }
-            connection->pacs_characteristics_index = 0;
-            connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_CONNECTED;
-            pacs_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+            pacs_client_handle_notification_registered(connection);
             break;
         
         default:
