@@ -233,7 +233,6 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             response_len = 0;
             btp_append_uint24(gattservice_subevent_ascs_codec_configuration_get_presentation_delay_min(packet));
             btp_append_uint24(gattservice_subevent_ascs_codec_configuration_get_presentation_delay_max(packet));
-            btp_append_uint32(gattservice_subevent_ascs_codec_configuration_get_audio_channel_allocation_mask(packet));
             btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC, 0, response_len, response_buffer);
             break;
 
