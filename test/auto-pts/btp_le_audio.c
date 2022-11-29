@@ -54,7 +54,7 @@
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-// LE Audio
+// ASCS
 static ascs_client_connection_t ascs_connection;
 static ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
 static uint16_t ascs_cid;
@@ -62,6 +62,12 @@ static uint8_t  ase_index = 0;
 static ascs_client_codec_configuration_request_t ascs_codec_configuration_request;
 static ascs_qos_configuration_t ascs_qos_configuration;
 static le_audio_metadata_t ascs_metadata;
+
+// PACS
+static uint16_t pacs_cid;
+static pacs_client_connection_t pacs_connection;
+static uint32_t pacs_audio_locations_sink;
+static uint32_t pacs_audio_locations_source;
 
 // CIG/CIS
 static le_audio_cig_t        cig;
@@ -118,8 +124,9 @@ static void bap_service_client_setup_cis(void){
     gap_cis_create(cig_params.cig_id, cis_con_handles, acl_connection_handles);
 }
 
+// HCI Handler
 
-static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     hci_con_handle_t con_handle;
     uint8_t i;
@@ -169,6 +176,7 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
     }
 }
 
+// ASCS
 void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -193,8 +201,8 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 return;
             }
             MESSAGE("ASCS Client: connected, cid 0x%02x", ascs_cid);
-            btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONNECT, 0, 0, NULL);
-            MESSAGE("GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED");
+
+            published_audio_capabilities_service_client_connect(&pacs_connection, remote_handle, &pacs_cid);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_DISCONNECTED:
@@ -327,6 +335,84 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     }
 }
 
+// PACS
+static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case GATTSERVICE_SUBEVENT_PACS_CONNECTED:
+            if (gattservice_subevent_pacs_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+                ascs_cid = 0;
+                // TODO send error response
+                MESSAGE("PACS Client: connection failed, cid 0x%02x, con_handle 0x%02x, status 0x%02x", pacs_cid, remote_handle,
+                        gattservice_subevent_pacs_connected_get_status(packet));
+                return;
+            }
+            MESSAGE("PACS client: connected, cid 0x%02x", pacs_cid);
+
+            // TODO: provide separate API for PACS
+            btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONNECT, 0, 0, NULL);
+            break;
+
+        case GATTSERVICE_SUBEVENT_PACS_DISCONNECTED:
+            pacs_cid = 0;
+            MESSAGE("PACS Client: disconnected\n");
+            break;
+
+        case GATTSERVICE_SUBEVENT_PACS_OPERATION_DONE:
+            if (gattservice_subevent_pacs_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
+                MESSAGE("      Operation successful");
+            } else {
+                MESSAGE("      Operation failed with status 0x%02X", gattservice_subevent_pacs_operation_done_get_status(packet));
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATIONS:
+                 MESSAGE("PACS Client: %s Audio Locations 0x%04x",
+                   gattservice_subevent_pacs_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source",
+                   gattservice_subevent_pacs_audio_locations_get_audio_location_mask(packet));
+                if (gattservice_subevent_pacs_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK){
+                    pacs_audio_locations_sink = gattservice_subevent_pacs_audio_locations_get_audio_location_mask(packet);
+                    published_audio_capabilities_service_client_get_source_audio_locations(pacs_cid);
+                } else {
+                    pacs_audio_locations_source = gattservice_subevent_pacs_audio_locations_get_audio_location_mask(packet);
+                    // continue ASCS Configure Codec operation
+                    ascs_codec_configuration_request.specific_codec_configuration.audio_channel_allocation_mask =
+                            pacs_audio_locations_sink | pacs_audio_locations_source;
+                    audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
+                }
+            break;
+
+        case GATTSERVICE_SUBEVENT_PACS_AVAILABLE_AUDIO_CONTEXTS:
+            MESSAGE("PACS Client: Available Audio Contexts");
+            MESSAGE("      Sink   0x%02X", gattservice_subevent_pacs_available_audio_contexts_get_sink_mask(packet));
+            MESSAGE("      Source 0x%02X", gattservice_subevent_pacs_available_audio_contexts_get_source_mask(packet));
+            break;
+
+        case GATTSERVICE_SUBEVENT_PACS_SUPPORTED_AUDIO_CONTEXTS:
+            MESSAGE("PACS Client: Supported Audio Contexts\n");
+            MESSAGE("      Sink   0x%02X\n", gattservice_subevent_pacs_supported_audio_contexts_get_sink_mask(packet));
+            MESSAGE("      Source 0x%02X\n", gattservice_subevent_pacs_supported_audio_contexts_get_source_mask(packet));
+            break;
+
+        case GATTSERVICE_SUBEVENT_PACS_PACK_RECORD:
+            MESSAGE("PACS Client: %s PAC Record\n", gattservice_subevent_pacs_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+            MESSAGE("      %s PAC Record DONE\n", gattservice_subevent_pacs_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+            break;
+        case GATTSERVICE_SUBEVENT_PACS_PACK_RECORD_DONE:
+            MESSAGE("      %s PAC Record DONE\n", gattservice_subevent_pacs_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+            break;
+
+        default:
+            break;
+    }
+}
+
+// BTP LE Audio
 void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data) {
     // provide op info for response
     response_len = 0;
@@ -398,12 +484,27 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 ascs_codec_configuration_request.coding_format = coding_format;
                 ascs_codec_configuration_request.company_id = 0;
                 ascs_codec_configuration_request.vendor_specific_codec_id = 0;
-                audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
 
                 // also prepare CIG/CIS
                 cis_sampling_frequency_hz = frequency_hz;
                 cig_num_cis               = 1;
                 cis_num_channels          = 1;
+
+                // perform PACS query to get audio channel allocation mask first
+                // audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
+
+                // TODO: published_audio_capabilities_service_client_get_sink_audio_locations does not return error if there's no sink audio location characteristic
+                uint8_t status;
+                if (pacs_connection.pacs_characteristics[(uint8_t)PACS_CLIENT_CHARACTERISTIC_INDEX_SINK_AUDIO_LOCATIONS].value_handle != 0){
+                    status = published_audio_capabilities_service_client_get_sink_audio_locations(pacs_cid);
+                } else {
+                    // assume at least sink or source audio location characteristic available
+                    status = published_audio_capabilities_service_client_get_source_audio_locations(pacs_cid);
+                }
+                if (status){
+                    MESSAGE("PACS Client error 0x%02x", status);
+                }
+                break;
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS:
@@ -480,9 +581,10 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
 
 void btp_le_audio_init(void){
     // register for HCI events
-    hci_event_callback_registration.callback = &btstack_packet_handler;
+    hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     audio_stream_control_service_client_init(&ascs_client_event_handler);
+    published_audio_capabilities_service_client_init(&pacs_client_event_handler);
 }
 
