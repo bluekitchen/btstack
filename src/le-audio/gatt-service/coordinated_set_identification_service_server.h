@@ -72,9 +72,8 @@ typedef enum {
 } csis_member_lock_t;
 
 typedef enum {
-    CSIS_SIRK_TYPE_PUBLIC = 0X01,
-    CSIS_SIRK_TYPE_ENCRYPTED,
-    CSIS_SIRK_TYPE_OOB,
+    CSIS_SIRK_TYPE_ENCRYPTED = 0x00,
+    CSIS_SIRK_TYPE_PUBLIC,
     CSIS_SIRK_TYPE_PROHIBITED
 } csis_sirk_type_t;
 
@@ -97,7 +96,12 @@ typedef struct {
 void coordinated_set_identification_service_server_init(const uint8_t coordinators_num, csis_coordinator_t * coordinators, 
     uint8_t coordinated_set_size, uint8_t member_rank);
 
-uint8_t coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t type, uint8_t * sirk);
+uint8_t coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t type, uint8_t * sirk, bool exposed_via_oob);
+
+uint8_t coordinated_set_identification_service_server_set_size(uint8_t coordinated_set_size);
+
+uint8_t coordinated_set_identification_service_server_set_rank(uint8_t member_rank);
+
 
 /**
  * @brief Register callback.
