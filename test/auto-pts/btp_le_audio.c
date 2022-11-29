@@ -222,7 +222,11 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_codec_configuration_get_frame_blocks_per_sdu(packet);
 
             MESSAGE("ASCS Client: CODEC CONFIGURATION - ase_id %d, con_handle 0x%02x", ase_id, con_handle);
-            btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC, 0, 0, NULL);
+            response_len = 0;
+            btp_append_uint24(gattservice_subevent_ascs_codec_configuration_get_presentation_delay_min(packet));
+            btp_append_uint24(gattservice_subevent_ascs_codec_configuration_get_presentation_delay_max(packet));
+            btp_append_uint32(gattservice_subevent_ascs_codec_configuration_get_audio_channel_allocation_mask(packet));
+            btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC, 0, response_len, response_buffer);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION:
