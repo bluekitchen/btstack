@@ -342,7 +342,33 @@ static bool ascs_client_register_notification(ascs_client_connection_t * connect
     return ERROR_CODE_SUCCESS;
 }
 
-uint16_t asce_client_store_ase(ascs_client_connection_t * connection, uint8_t * value, uint16_t value_size){
+static uint16_t asce_server_codec_configuration_request_serialize(ascs_client_codec_configuration_request_t * codec_configuration, uint8_t * value, uint16_t value_size){
+    btstack_assert(value_size > 6);
+
+    uint16_t pos = 0;
+
+    value[pos++] = (uint8_t)codec_configuration->target_latency;
+    value[pos++] = (uint8_t)codec_configuration->target_phy;
+    
+    value[pos++] = (uint8_t)codec_configuration->coding_format;
+    little_endian_store_16(value, pos, codec_configuration->company_id);
+    pos += 2;
+    little_endian_store_16(value, pos, codec_configuration->vendor_specific_codec_id);
+    pos += 2;
+
+    // reserve place for config length
+    uint16_t codec_config_length_pos = pos;
+    pos++;
+
+    uint8_t codec_config_length = ascs_util_specific_codec_configuration_serialize_using_mask(
+            &codec_configuration->specific_codec_configuration, &value[pos], value_size - pos);
+    value[codec_config_length_pos] = codec_config_length;
+    pos += codec_config_length;
+    return pos;
+}
+
+
+static uint16_t ascs_client_serialize_ase(ascs_client_connection_t * connection, uint8_t * value, uint16_t value_size){
     UNUSED(value_size);
     uint16_t pos = 0;
 
@@ -352,7 +378,7 @@ uint16_t asce_client_store_ase(ascs_client_connection_t * connection, uint8_t * 
 
     switch (connection->command_opcode){
         case ASCS_OPCODE_CONFIG_CODEC:
-            pos += asce_util_codec_configuration_request_serialize(connection->codec_configuration, &value[pos], value_size - pos);
+            pos += asce_server_codec_configuration_request_serialize(connection->codec_configuration, &value[pos], value_size - pos);
             break;
         case ASCS_OPCODE_CONFIG_QOS:
             pos += ascs_util_qos_configuration_serialize(connection->qos_configuration, &value[pos], value_size - pos);
@@ -502,7 +528,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE:{
             connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN;
 
-            uint16_t value_length = asce_client_store_ase(connection, ascs_client_value_buffer, ascs_client_get_value_buffer_size(connection));
+            uint16_t value_length = ascs_client_serialize_ase(connection, ascs_client_value_buffer, ascs_client_get_value_buffer_size(connection));
 
             (void)gatt_client_write_value_of_characteristic(
                 &handle_gatt_client_event,
