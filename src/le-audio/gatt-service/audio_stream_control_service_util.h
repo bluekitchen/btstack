@@ -207,7 +207,7 @@ uint16_t ascs_util_codec_configuration_parse(const uint8_t * buffer, uint8_t buf
 uint16_t ascs_util_specific_codec_configuration_parse(const uint8_t * buffer, uint16_t buffer_size, ascs_specific_codec_configuration_t * codec_configuration);
 uint16_t ascs_util_codec_configuration_request_parse(uint8_t * buffer, uint8_t buffer_size, ascs_client_codec_configuration_request_t * codec_config);
 
-uint16_t ascs_util_specific_codec_configuration_serialize_using_mask(ascs_specific_codec_configuration_t * codec_configuration, uint8_t * tlv_buffer, uint16_t tlv_buffer_size);
+uint16_t ascs_util_specific_codec_configuration_serialize_using_tlv(ascs_specific_codec_configuration_t * codec_configuration, uint8_t * tlv_buffer, uint16_t tlv_buffer_size);
 
 uint16_t ascs_util_codec_configuration_serialize(ascs_codec_configuration_t * codec_configuration, uint8_t * event, uint16_t event_size);
 uint16_t ascs_util_specific_codec_configuration_serialize(ascs_specific_codec_configuration_t * specific_codec_configuration, uint8_t * event, uint16_t event_size);
