@@ -63,6 +63,15 @@ extern hci_con_handle_t remote_handle;
 
 #define MESSAGE(format, ...) log_info(format, ## __VA_ARGS__); printf(format "\n", ## __VA_ARGS__)
 
+void btp_append_uint8(uint8_t uint);
+void btp_append_uint16(uint16_t uint);
+void btp_append_uint24(uint32_t uint);
+void btp_append_uint32(uint32_t uint);
+void btp_append_blob(uint16_t len, const uint8_t * data);
+void btp_append_uuid(uint16_t uuid16, const uint8_t * uuid128);
+void btp_append_service(gatt_client_service_t * service);
+void btp_append_remote_address(void);
+
 void btp_send(uint8_t service_id, uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
 
 #if defined __cplusplus

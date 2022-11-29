@@ -535,24 +535,37 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 static void btp_append_assert(uint16_t num_bytes_to_append){
     btstack_assert((response_len + num_bytes_to_append) <= sizeof(response_buffer));
 }
-static void btp_append_uint8(uint8_t uint){
+
+void btp_append_uint8(uint8_t uint){
     btp_append_assert(1);
     response_buffer[response_len++] = uint;
 }
 
-static void btp_append_uint16(uint16_t uint){
+void btp_append_uint16(uint16_t uint){
     btp_append_assert(2);
     little_endian_store_16(response_buffer, response_len, uint);
     response_len += 2;
 }
 
-static void btp_append_blob(uint16_t len, const uint8_t * data){
+void btp_append_uint24(uint32_t uint){
+    btp_append_assert(3);
+    little_endian_store_24(response_buffer, response_len, uint);
+    response_len += 3;
+}
+
+void btp_append_uint32(uint32_t uint){
+    btp_append_assert(4);
+    little_endian_store_32(response_buffer, response_len, uint);
+    response_len += 4;
+}
+
+void btp_append_blob(uint16_t len, const uint8_t * data){
     btp_append_assert(len);
     memcpy(&response_buffer[response_len], data, len);
     response_len += len;
 }
 
-static void btp_append_uuid(uint16_t uuid16, const uint8_t * uuid128){
+void btp_append_uuid(uint16_t uuid16, const uint8_t * uuid128){
     if (uuid16 == 0){
         btp_append_uint8(16);
         btp_append_assert(16);
@@ -564,13 +577,13 @@ static void btp_append_uuid(uint16_t uuid16, const uint8_t * uuid128){
     }
 }
 
-static void btp_append_service(gatt_client_service_t * service){
+void btp_append_service(gatt_client_service_t * service){
     btp_append_uint16(service->start_group_handle);
     btp_append_uint16(service->end_group_handle);
     btp_append_uuid(service->uuid16, service->uuid128);
 }
 
-static void btp_append_remote_address(void) {
+void btp_append_remote_address(void) {
     btp_append_uint8(remote_addr_type);
     btp_append_assert(6);
     reverse_bd_addr(remote_addr, &response_buffer[response_len]);
