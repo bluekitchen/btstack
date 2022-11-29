@@ -94,9 +94,9 @@ set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
 
 # target btpclient-usb
-add_executable(btpclient-usb btpclient.c ../../port/libusb/main.c btp_socket.c)
+add_executable(btpclient-usb btpclient.c ../../port/libusb/main.c btp_socket.c btp_le_audio.c)
 target_link_libraries(btpclient-usb btstack)
 
 # target btpclient-h4
-add_executable(btpclient-h4 btpclient.c ../../port/posix-h4/main.c btp_socket.c)
+add_executable(btpclient-h4 btpclient.c ../../port/posix-h4/main.c btp_socket.c btp_le_audio.c)
 target_link_libraries(btpclient-h4 btstack)
