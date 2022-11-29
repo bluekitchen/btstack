@@ -57,6 +57,7 @@
 #define CSIS_TASK_SEND_SIRK                         0x01
 #define CSIS_TASK_SEND_COORDINATED_SET_SIZE         0x02
 #define CSIS_TASK_SEND_MEMBER_LOCK                  0x04
+#define CSIS_TASK_SEND_MEMBER_RANK                  0x08
 
 
 static att_service_handler_t    coordinated_set_identification_service;
@@ -68,6 +69,7 @@ static uint8_t                  csis_coordinators_max_num;
 static uint16_t sirk_handle;
 static uint16_t sirk_configuration_handle;
 
+static bool              csis_sirk_exposed_via_oob;
 static uint8_t           csis_sirk[16];
 static csis_sirk_type_t  csis_sirk_type;
 
@@ -165,7 +167,10 @@ static uint16_t coordinated_set_identification_service_read_callback(hci_con_han
     }
 
     if (attribute_handle == sirk_handle){
-        return att_read_callback_handle_blob(csis_sirk, sizeof(csis_sirk), offset, buffer, buffer_size);
+        uint8_t value[17];
+        value[1] = (uint8_t)csis_sirk_type;
+        memcpy(value, csis_sirk, sizeof(csis_sirk));
+        return att_read_callback_handle_blob(value, sizeof(value), offset, buffer, buffer_size);
     }
 
     if (attribute_handle == coordinated_set_size_handle){
@@ -202,6 +207,18 @@ static void csis_server_can_send_now(void * context){
         coordinator->scheduled_tasks &= ~CSIS_TASK_SEND_MEMBER_LOCK;
         uint8_t value[1];
         value[0] = csis_member_lock;
+        att_server_notify(coordinator->con_handle, member_lock_handle, &value[0], sizeof(value));
+    
+    } else if ((coordinator->scheduled_tasks & CSIS_TASK_SEND_COORDINATED_SET_SIZE) != 0) {
+        coordinator->scheduled_tasks &= ~CSIS_TASK_SEND_COORDINATED_SET_SIZE;
+        uint8_t value[1];
+        value[0] = csis_coordinated_set_size;
+        att_server_notify(coordinator->con_handle, member_lock_handle, &value[0], sizeof(value));
+    
+    } else if ((coordinator->scheduled_tasks & CSIS_TASK_SEND_MEMBER_RANK) != 0) {
+        coordinator->scheduled_tasks &= ~CSIS_TASK_SEND_MEMBER_RANK;
+        uint8_t value[1];
+        value[0] = csis_member_rank;
         att_server_notify(coordinator->con_handle, member_lock_handle, &value[0], sizeof(value));
     }
 
@@ -329,7 +346,7 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
         csis_server_set_callback(CSIS_TASK_SEND_COORDINATED_SET_SIZE);
         return 0;
     }
-    
+
     return 0;
 }
 
@@ -426,12 +443,32 @@ void coordinated_set_identification_service_server_register_packet_handler(btsta
     csis_event_callback = callback;
 }
 
-uint8_t coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t type, uint8_t * sirk){
+uint8_t coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t type, uint8_t * sirk, bool exposed_via_oob){
     if (type >= CSIS_SIRK_TYPE_PROHIBITED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
+    csis_sirk_exposed_via_oob = exposed_via_oob;
     csis_sirk_type = type;
     memcpy(csis_sirk, sirk, sizeof(csis_sirk));
+    csis_server_set_callback(CSIS_TASK_SEND_SIRK);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t coordinated_set_identification_service_server_set_size(uint8_t coordinated_set_size){
+    if (coordinated_set_size == 0){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    csis_coordinated_set_size = coordinated_set_size;
+    csis_server_set_callback(CSIS_TASK_SEND_COORDINATED_SET_SIZE);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t coordinated_set_identification_service_server_set_rank(uint8_t member_rank){
+    if (member_rank == 0){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    csis_member_rank = member_rank;
+    csis_server_set_callback(CSIS_TASK_SEND_MEMBER_RANK);
     return ERROR_CODE_SUCCESS;
 }
 
