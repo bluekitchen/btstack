@@ -63,6 +63,7 @@ PTS IXIT Configuration:
 - BAP/UCL/SCC/BV-116-C: c, d, z, K, y, l, M, Q
 - BAP/UCL/SCC/BV-117-C: c, d, z, K, y, l, M, n, Q
 
+- BAP/UCL/PD/BV-01-C: c, d, x, y, K, l, 
 ### BASS Client:
 - BAP/BA/CGGIT/SER/BV-01-C  : c, b
 - BAP/BA/CGGIT/CHA/BV-01-C  : c, b
