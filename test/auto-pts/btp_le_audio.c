@@ -363,6 +363,10 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
                         response_op = 0;
                         break;
+                    case BTP_LE_AUDIO_OP_ASCS_UPDATE_METADATA:
+                        btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
+                        response_op = 0;
+                        break;
                     default:
                         break;
                 }
@@ -468,7 +472,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
     response_service_id = BTP_SERVICE_ID_LE_AUDIO;
     response_op = opcode;
     switch (opcode) {
-        case BTP_LE_AUDIO_OP_READ_SUPPOERTED_COMMANDS:
+        case BTP_LE_AUDIO_OP_READ_SUPPORTED_COMMANDS:
             MESSAGE("BTP_LE_AUDIO_OP_READ_SUPPOERTED_COMMANDS");
             if (controller_index == BTP_INDEX_NON_CONTROLLER) {
                 uint8_t commands = 0;
@@ -621,6 +625,17 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 uint8_t  ase_index = data[1];
                 MESSAGE("BTP_LE_AUDIO_OP_ASCS_RELEASE ase %u", ase_index);
                 audio_stream_control_service_client_streamendpoint_release(ascs_cid, ase_index, false);
+            }
+            break;
+        case BTP_LE_AUDIO_OP_ASCS_UPDATE_METADATA:
+            if (controller_index == 0){
+                // ascs_cid in data[0]
+                uint8_t  ase_index = data[1];
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_UPDATE_METADATA ase %u", ase_index);
+                ascs_metadata.metadata_mask = (1 << LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS) & (1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS);
+                ascs_metadata.preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_MEDIA;
+                ascs_metadata.streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_MEDIA;
+                audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_index, &ascs_metadata);
             }
             break;
         default:
