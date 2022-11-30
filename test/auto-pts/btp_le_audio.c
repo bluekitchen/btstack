@@ -375,15 +375,21 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                    gattservice_subevent_pacs_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source",
                    gattservice_subevent_pacs_audio_locations_get_audio_location_mask(packet));
                 if (gattservice_subevent_pacs_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK){
+                    // 1. SINK Locations
                     pacs_audio_locations_sink = gattservice_subevent_pacs_audio_locations_get_audio_location_mask(packet);
-                    published_audio_capabilities_service_client_get_source_audio_locations(pacs_cid);
+                    // skip check for SOURCE locations if not available
+                    if (pacs_connection.pacs_characteristics[(uint8_t)PACS_CLIENT_CHARACTERISTIC_INDEX_SOURCE_AUDIO_LOCATIONS].value_handle != 0) {
+                        published_audio_capabilities_service_client_get_source_audio_locations(pacs_cid);
+                        return;
+                    }
                 } else {
+                    // 2. SOURCE Locations
                     pacs_audio_locations_source = gattservice_subevent_pacs_audio_locations_get_audio_location_mask(packet);
-                    // continue ASCS Configure Codec operation
-                    ascs_codec_configuration_request.specific_codec_configuration.audio_channel_allocation_mask =
-                            pacs_audio_locations_sink | pacs_audio_locations_source;
-                    audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
                 }
+                // continue ASCS Configure Codec operation
+                ascs_codec_configuration_request.specific_codec_configuration.audio_channel_allocation_mask =
+                        pacs_audio_locations_sink | pacs_audio_locations_source;
+                audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
             break;
 
         case GATTSERVICE_SUBEVENT_PACS_AVAILABLE_AUDIO_CONTEXTS:
