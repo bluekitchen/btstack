@@ -51,6 +51,8 @@
 #define ASCS_CLIENT_NUM_STREAMENDPOINTS 4
 
 #define MAX_CHANNELS 2
+#define MAX_NUM_CIS  2
+#define MAX_LC3_FRAME_BYTES   155
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -81,6 +83,9 @@ static uint16_t cis_max_octets_per_frame;
 static hci_con_handle_t cis_con_handles[MAX_CHANNELS];
 static bool cis_established[MAX_CHANNELS];
 static unsigned int     cis_setup_next_index;
+static uint16_t packet_sequence_numbers[MAX_NUM_CIS];
+static uint8_t iso_payload[MAX_CHANNELS * MAX_LC3_FRAME_BYTES];
+
 
 static le_audio_role_t bap_get_ase_role(uint8_t ase_index){
     return streamendpoint_characteristics[ase_index].role;
@@ -102,8 +107,8 @@ static void bap_service_client_setup_cig(void){
     uint8_t i;
     for (i=0; i < num_cis; i++){
         cig_params.cis_params[i].cis_id = 1+i;
-        cig_params.cis_params[i].max_sdu_c_to_p = cis_max_octets_per_frame;
-        cig_params.cis_params[i].max_sdu_p_to_c = cis_max_octets_per_frame;
+        cig_params.cis_params[i].max_sdu_c_to_p = (pacs_audio_locations_sink != 0)   ? cis_max_octets_per_frame : 0;
+        cig_params.cis_params[i].max_sdu_p_to_c = (pacs_audio_locations_source != 0) ? cis_max_octets_per_frame : 0;
         cig_params.cis_params[i].phy_c_to_p = 2;  // 2M
         cig_params.cis_params[i].phy_p_to_c = 2;  // 2M
         cig_params.cis_params[i].rtn_c_to_p = 2;
@@ -124,16 +129,50 @@ static void bap_service_client_setup_cis(void){
     gap_cis_create(cig_params.cig_id, cis_con_handles, acl_connection_handles);
 }
 
+
+static void send_iso_packet(uint8_t cis_index){
+    bool ok = hci_reserve_packet_buffer();
+    btstack_assert(ok);
+    uint8_t * buffer = hci_get_outgoing_packet_buffer();
+    // complete SDU, no TimeStamp
+    little_endian_store_16(buffer, 0, cis_con_handles[cis_index] | (2 << 12));
+    // len
+    little_endian_store_16(buffer, 2, 0 + 4 + cis_num_channels * cis_max_octets_per_frame);
+    // TimeStamp if TS flag is set
+    // packet seq nr
+    little_endian_store_16(buffer, 4, packet_sequence_numbers[cis_index]);
+    // iso sdu len
+    little_endian_store_16(buffer, 6, cis_num_channels * cis_max_octets_per_frame);
+    // copy encoded payload
+    uint8_t i;
+    uint16_t offset = 8;
+    for (i=0; i<cis_num_channels;i++) {
+        memcpy(&buffer[offset], &iso_payload[i * MAX_LC3_FRAME_BYTES], cis_max_octets_per_frame);
+        offset += cis_max_octets_per_frame;
+    }
+
+    // send
+    hci_send_iso_packet_buffer(offset);
+
+    packet_sequence_numbers[cis_index]++;
+}
+
 // HCI Handler
 
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     hci_con_handle_t con_handle;
+    hci_con_handle_t cis_con_handle;
     uint8_t i;
 
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
+                case HCI_EVENT_CIS_CAN_SEND_NOW:
+                    cis_con_handle = hci_event_cis_can_send_now_get_cis_con_handle(packet);
+                    send_iso_packet(0);
+                    hci_request_cis_can_send_now_events(cis_con_handles[0]);
+                    break;
                 case HCI_EVENT_META_GAP:
                     switch (hci_event_gap_meta_get_subevent_code(packet)) {
                         case GAP_SUBEVENT_CIG_CREATED:
@@ -269,7 +308,8 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             ase_id     = gattservice_subevent_ascs_streamendpoint_state_get_ase_id(packet);
             ase_state  = gattservice_subevent_ascs_streamendpoint_state_get_state(packet);
 
-            log_info("ASCS Client: ASE STATE (%s) - ase_id %d, con_handle 0x%02x", ascs_util_ase_state2str(ase_state), ase_id, con_handle);
+            log_info("ASCS Client: ASE STATE (%s) - ase_id %d, con_handle 0x%02x, role %s", ascs_util_ase_state2str(ase_state), ase_id, con_handle,
+                     (bap_get_ase_role(ase_index) == LE_AUDIO_ROLE_SOURCE) ? "SOURCE" : "SINK" );
             // send done
             if (response_service_id == BTP_SERVICE_ID_LE_AUDIO){
                 switch (response_op){
@@ -326,6 +366,10 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     default:
                         break;
                 }
+            }
+            // start sending if SINK ASE
+            if ((ase_state == ASCS_STATE_STREAMING) && (bap_get_ase_role(ase_index) == LE_AUDIO_ROLE_SINK)){
+                hci_request_cis_can_send_now_events(cis_con_handles[0]);
             }
             break;
 
