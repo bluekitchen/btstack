@@ -75,6 +75,7 @@ static uint32_t pacs_audio_locations_source;
 // CIG/CIS
 static le_audio_cig_t        cig;
 static le_audio_cig_params_t cig_params;
+static bool cig_created;
 static uint16_t cig_frame_duration_us;
 static uint8_t  cig_framed;
 static uint8_t  cig_num_cis;
@@ -83,14 +84,9 @@ static uint16_t cis_sampling_frequency_hz;
 static uint16_t cis_max_octets_per_frame;
 static hci_con_handle_t cis_con_handles[MAX_CHANNELS];
 static bool cis_established[MAX_CHANNELS];
-static unsigned int     cis_setup_next_index;
+static unsigned int cis_setup_next_index;
 static uint16_t packet_sequence_numbers[MAX_NUM_CIS];
 static uint8_t iso_payload[MAX_CHANNELS * MAX_LC3_FRAME_BYTES];
-
-
-static le_audio_role_t bap_get_ase_role(uint8_t ase_index){
-    return streamendpoint_characteristics[ase_index].role;
-}
 
 static void bap_service_client_setup_cig(void){
     printf("Create CIG\n");
@@ -158,6 +154,10 @@ static void send_iso_packet(uint8_t cis_index){
     packet_sequence_numbers[cis_index]++;
 }
 
+static void bap_ascs_configure_codec(void){
+    audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_id, &ascs_qos_configuration);
+}
+
 // HCI Handler
 
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -174,10 +174,17 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     send_iso_packet(0);
                     hci_request_cis_can_send_now_events(cis_con_handles[0]);
                     break;
+                case HCI_EVENT_LE_META:
+                    switch (hci_event_le_meta_get_subevent_code(packet)){
+                        default:
+                            break;
+                    }
+                    break;
                 case HCI_EVENT_META_GAP:
                     switch (hci_event_gap_meta_get_subevent_code(packet)) {
                         case GAP_SUBEVENT_CIG_CREATED:
-                        MESSAGE("CIS Connection Handles: ");
+                            cig_created = true;
+                            MESSAGE("CIS Connection Handles: ");
                             for (i = 0; i < cig_num_cis; i++) {
                                 cis_con_handles[i] = gap_subevent_cig_created_get_cis_con_handles(packet, i);
                                 MESSAGE("0x%04x ", cis_con_handles[i]);
@@ -187,8 +194,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
                             ascs_qos_configuration.cis_id = cig_params.cis_params[0].cis_id;
                             ascs_qos_configuration.cig_id = gap_subevent_cig_created_get_cig_id(packet);
-
-                            audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_id, &ascs_qos_configuration);
+                            bap_ascs_configure_codec();
                             break;
                         case GAP_SUBEVENT_CIS_CREATED:
                             if (response_op == BTP_LE_AUDIO_OP_ASCS_ENABLE){
@@ -574,19 +580,23 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 MESSAGE("BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS ase_id %u, interval %u, framing %u, sdu_size %u, retrans %u, latency %u",
                         ase_id, sdu_interval_us, framing, max_sdu, retransmission_number, max_transport_latency_ms);
 
-                ascs_qos_configuration.sdu_interval = sdu_interval_us;
-                ascs_qos_configuration.framing = framing;
-                ascs_qos_configuration.phy = LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE;
-                ascs_qos_configuration.max_sdu = max_sdu;
-                ascs_qos_configuration.retransmission_number = retransmission_number;
-                ascs_qos_configuration.max_transport_latency_ms = max_transport_latency_ms;
-                ascs_qos_configuration.presentation_delay_us = 40000;
+                if (cig_created == false){
+                    ascs_qos_configuration.sdu_interval = sdu_interval_us;
+                    ascs_qos_configuration.framing = framing;
+                    ascs_qos_configuration.phy = LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE;
+                    ascs_qos_configuration.max_sdu = max_sdu;
+                    ascs_qos_configuration.retransmission_number = retransmission_number;
+                    ascs_qos_configuration.max_transport_latency_ms = max_transport_latency_ms;
+                    ascs_qos_configuration.presentation_delay_us = 40000;
 
-                // update CIG/CIS
-                cig_frame_duration_us = sdu_interval_us;
-                cig_framed = framing;
-                cis_max_octets_per_frame = max_sdu;
-                bap_service_client_setup_cig();
+                    // update CIG/CIS
+                    cig_frame_duration_us = sdu_interval_us;
+                    cig_framed = framing;
+                    cis_max_octets_per_frame = max_sdu;
+                    bap_service_client_setup_cig();
+                } else {
+                    bap_ascs_configure_codec();
+                }
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_ENABLE:
