@@ -121,6 +121,20 @@ static ascs_streamendpoint_t * ascs_server_get_streamendpoint_for_ase_id(ascs_cl
     return NULL;
 }
 
+static uint8_t ascs_server_get_streamendpoint_index_for_ase_id(ascs_client_connection_t * connection, uint8_t ase_id){
+    uint8_t i;
+    for (i = 0; i < connection->streamendpoints_instances_num; i++){
+        ascs_streamendpoint_t * streamendpoint = &connection->streamendpoints[i];
+        btstack_assert(streamendpoint->ase_characteristic != NULL);
+        
+        if (streamendpoint->ase_characteristic->ase_id == ase_id){
+            return i;
+        }
+    }
+    return 0;
+}
+
+
 static void ascs_client_finalize_connection(ascs_client_connection_t * connection){
     btstack_linked_list_remove(&ascs_connections, (btstack_linked_item_t*) connection);
 }
@@ -868,7 +882,7 @@ uint8_t audio_stream_control_service_client_connect(ascs_client_connection_t * c
     return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t ascs_client_connection_for_parameters_ready(uint16_t ascs_cid, uint8_t streamendpoint_index, bool write_requested, ascs_client_connection_t ** out_connection){
+static uint8_t ascs_client_connection_for_parameters_ready(uint16_t ascs_cid, bool write_requested, ascs_client_connection_t ** out_connection){
     // find connection
     ascs_client_connection_t * connection = ascs_get_client_connection_for_cid(ascs_cid);
     // set out variable
@@ -883,40 +897,46 @@ static uint8_t ascs_client_connection_for_parameters_ready(uint16_t ascs_cid, ui
     if (write_requested && ascs_client_value_buffer_used){
         return ERROR_CODE_CONTROLLER_BUSY;
     } 
-    if (streamendpoint_index >= connection->streamendpoints_instances_num){
-        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
-    }
 
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_cid, uint8_t streamendpoint_index){
+uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_cid, uint8_t ase_id){
     ascs_client_connection_t * connection = NULL;
-    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, streamendpoint_index, false, &connection);
+    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, false, &connection);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
     
-    connection->streamendpoints_index = streamendpoint_index; 
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_READ;
-
+    connection->streamendpoints_index = ascs_server_get_streamendpoint_index_for_ase_id(connection, ase_id);
     ascs_client_run_for_connection(connection);
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint16_t ascs_cid, uint8_t streamendpoint_index, ascs_client_codec_configuration_request_t * codec_configuration){
+uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint16_t ascs_cid, uint8_t ase_id, ascs_client_codec_configuration_request_t * codec_configuration){
     ascs_client_connection_t * connection = NULL;
-    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, streamendpoint_index, true, &connection);
+    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    
     if (codec_configuration == NULL){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
     ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
-    connection->streamendpoints_index = streamendpoint_index;
+    connection->streamendpoints_index = ascs_server_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_CONFIG_CODEC;
     connection->codec_configuration = codec_configuration;
     
@@ -930,19 +950,24 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint1
  * @param ase_id
  * @param qos_configuration
  */
-uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_t ascs_cid, uint8_t streamendpoint_index, ascs_qos_configuration_t * qos_configuration){
+uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_t ascs_cid, uint8_t ase_id, ascs_qos_configuration_t * qos_configuration){
     ascs_client_connection_t * connection = NULL;
-    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, streamendpoint_index, true, &connection);
+    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    
     if (qos_configuration == NULL){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
     ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
-    connection->streamendpoints_index = streamendpoint_index;
+    connection->streamendpoints_index = ascs_server_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_CONFIG_QOS;
     connection->qos_configuration = qos_configuration;
 
@@ -956,19 +981,24 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_
  * @param ase_id
  * @param metadata_configuration
  */
-uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint16_t ascs_cid, uint8_t streamendpoint_index, le_audio_metadata_t * metadata){
+uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint16_t ascs_cid, uint8_t ase_id, le_audio_metadata_t * metadata){
     ascs_client_connection_t * connection = NULL;
-    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, streamendpoint_index, true, &connection);
+    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    
     if (metadata == NULL){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
     ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
-    connection->streamendpoints_index = streamendpoint_index;
+    connection->streamendpoints_index = ascs_server_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_UPDATE_METADATA;
     connection->metadata = metadata;
 
@@ -981,16 +1011,21 @@ uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint1
  * @param con_handle
  * @param ase_id
  */
-uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_cid, uint8_t streamendpoint_index){
+uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_cid, uint8_t ase_id){
     ascs_client_connection_t * connection = NULL;
-    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, streamendpoint_index, true, &connection);
+    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    
    
     ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
-    connection->streamendpoints_index = streamendpoint_index;
+    connection->streamendpoints_index = ascs_server_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_ENABLE;
 
     ascs_client_run_for_connection(connection);
@@ -1002,16 +1037,21 @@ uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_
  * @param con_handle
  * @param ase_id
  */
-uint8_t audio_stream_control_service_client_streamendpoint_receiver_start_ready(uint16_t ascs_cid, uint8_t streamendpoint_index){
+uint8_t audio_stream_control_service_client_streamendpoint_receiver_start_ready(uint16_t ascs_cid, uint8_t ase_id){
     ascs_client_connection_t * connection = NULL;
-    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, streamendpoint_index, true, &connection);
+    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    
 
     ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
-    connection->streamendpoints_index = streamendpoint_index;
+    connection->streamendpoints_index = ascs_server_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_RECEIVER_START_READY;
 
     ascs_client_run_for_connection(connection);
@@ -1023,16 +1063,21 @@ uint8_t audio_stream_control_service_client_streamendpoint_receiver_start_ready(
  * @param con_handle
  * @param ase_id
  */
-uint8_t audio_stream_control_service_client_streamendpoint_receiver_stop_ready(uint16_t ascs_cid, uint8_t streamendpoint_index){
+uint8_t audio_stream_control_service_client_streamendpoint_receiver_stop_ready(uint16_t ascs_cid, uint8_t ase_id){
     ascs_client_connection_t * connection = NULL;
-    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, streamendpoint_index, true, &connection);
+    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    
     
     ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
-    connection->streamendpoints_index = streamendpoint_index;
+    connection->streamendpoints_index = ascs_server_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_RECEIVER_STOP_READY;
 
     ascs_client_run_for_connection(connection);
@@ -1045,16 +1090,21 @@ uint8_t audio_stream_control_service_client_streamendpoint_receiver_stop_ready(u
  * @param ase_id
  * @param caching
  */
-uint8_t audio_stream_control_service_client_streamendpoint_release(uint16_t ascs_cid, uint8_t streamendpoint_index, bool caching){
+uint8_t audio_stream_control_service_client_streamendpoint_release(uint16_t ascs_cid, uint8_t ase_id, bool caching){
     ascs_client_connection_t * connection = NULL;
-    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, streamendpoint_index, true, &connection);
+    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    
     
     ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
-    connection->streamendpoints_index = streamendpoint_index;
+    connection->streamendpoints_index = ascs_server_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_RELEASE;
     
     ascs_client_run_for_connection(connection);
@@ -1066,16 +1116,21 @@ uint8_t audio_stream_control_service_client_streamendpoint_release(uint16_t ascs
  * @param con_handle
  * @param ase_id
  */
-uint8_t audio_stream_control_service_client_streamendpoint_disable(uint16_t ascs_cid, uint8_t streamendpoint_index){
+uint8_t audio_stream_control_service_client_streamendpoint_disable(uint16_t ascs_cid, uint8_t ase_id){
     ascs_client_connection_t * connection = NULL;
-    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, streamendpoint_index, true, &connection);
+    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    
     
     ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
-    connection->streamendpoints_index = streamendpoint_index;
+    connection->streamendpoints_index = ascs_server_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_DISABLE;
     
     ascs_client_run_for_connection(connection);
@@ -1087,16 +1142,21 @@ uint8_t audio_stream_control_service_client_streamendpoint_disable(uint16_t ascs
  * @param con_handle
  * @param ase_id
  */
-uint8_t audio_stream_control_service_client_streamendpoint_released(uint16_t ascs_cid, uint8_t streamendpoint_index){
+uint8_t audio_stream_control_service_client_streamendpoint_released(uint16_t ascs_cid, uint8_t ase_id){
     ascs_client_connection_t * connection = NULL;
-    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, streamendpoint_index, true, &connection);
+    uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    
 
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     ascs_client_value_buffer_used = true;
-    connection->streamendpoints_index = streamendpoint_index;
+    connection->streamendpoints_index = ascs_server_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_RELEASED;
 
     ascs_client_run_for_connection(connection);
@@ -1171,7 +1231,7 @@ le_audio_role_t audio_stream_control_service_client_get_ase_role(uint16_t ascs_c
         return LE_AUDIO_ROLE_INVALID;
     }
 
-    ascs_streamendpoint_t * streamendpoint = ascs_get_streamendpoint_for_ase_id(connection, ase_id);
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
     if (streamendpoint == NULL){
         return LE_AUDIO_ROLE_INVALID;
     }
