@@ -346,6 +346,15 @@ void ascs_server_emit_codec_configuration_request(hci_con_handle_t con_handle, u
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
+static uint16_t ascs_server_codec_configuration_serialize(ascs_codec_configuration_t * codec_configuration, uint8_t * buffer, uint16_t buffer_size){
+    btstack_assert(buffer_size > 22);
+    uint16_t pos = 0;
+
+    pos += ascs_util_codec_configuration_serialize(codec_configuration, buffer, buffer_size);
+    pos += ascs_util_specific_codec_configuration_serialize_to_tlv(
+            &codec_configuration->specific_codec_configuration, &buffer[pos], buffer_size - pos);
+    return pos;
+}
 
 static uint16_t asce_server_ase_serialize(ascs_streamendpoint_t * streamendpoint, uint8_t * value, uint16_t value_size){
     UNUSED(value_size);
@@ -356,7 +365,7 @@ static uint16_t asce_server_ase_serialize(ascs_streamendpoint_t * streamendpoint
 
     switch (streamendpoint->state){
         case ASCS_STATE_CODEC_CONFIGURED:
-            pos += ascs_util_codec_configuration_serialize(&streamendpoint->codec_configuration, &value[pos],
+            pos += ascs_server_codec_configuration_serialize(&streamendpoint->codec_configuration, &value[pos],
                                                       value_size - pos);
             break;
         case ASCS_STATE_QOS_CONFIGURED:

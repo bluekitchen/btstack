@@ -356,17 +356,11 @@ static uint16_t asce_server_codec_configuration_request_serialize(ascs_client_co
     little_endian_store_16(value, pos, codec_configuration->vendor_specific_codec_id);
     pos += 2;
 
-    // reserve place for config length
-    uint16_t codec_config_length_pos = pos;
-    pos++;
-
-    uint8_t codec_config_length = ascs_util_specific_codec_configuration_serialize_using_tlv(
+    pos += ascs_util_specific_codec_configuration_serialize_to_tlv(
             &codec_configuration->specific_codec_configuration, &value[pos], value_size - pos);
-    value[codec_config_length_pos] = codec_config_length;
-    pos += codec_config_length;
+
     return pos;
 }
-
 
 static uint16_t ascs_client_serialize_ase(ascs_client_connection_t * connection, uint8_t * value, uint16_t value_size){
     UNUSED(value_size);
