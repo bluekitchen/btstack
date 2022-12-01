@@ -159,6 +159,27 @@ uint8_t audio_stream_control_service_client_connect(ascs_client_connection_t * c
 
 
 /**
+ * @brief Get audio streamendpoint (ASE) ID.
+ * NOTE:  Code will assert if index is invalid.
+ * 
+ * @param  ascs_cid
+ * @param  streamendpoint_index 
+ * @return ASCS_ASE_ID_INVALID if no HCI connection with the given ascs_cid is found or ASE index is invalid, othewise streamendpoint ID
+ */
+uint8_t audio_stream_control_service_client_get_ase_id(uint16_t ascs_cid, uint8_t ase_index);
+
+/**
+ * @brief Get ASE role.
+ * NOTE:  Code will assert if ID is invalid.
+ * 
+ * @param  ascs_cid
+ * @param  ase_id 
+ * @return LE_AUDIO_ROLE_INVALID if no HCI connection with the given ascs_cid is found or ase_id is invalid, otherwise see le_audio_role_t  
+ */
+le_audio_role_t audio_stream_control_service_client_get_ase_role(uint16_t ascs_cid, uint8_t ase_id);
+
+
+/**
  * @brief Read the current state of the stream endpoint and get the corresponding stream endpoint state values.
  * The current state is received via the GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event.
  * The corresponding stream endpoint state values are subsequently received via the following events:
