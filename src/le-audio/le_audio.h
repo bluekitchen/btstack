@@ -128,7 +128,8 @@ extern "C" {
 
 typedef enum {
     LE_AUDIO_ROLE_SINK = 0,
-    LE_AUDIO_ROLE_SOURCE
+    LE_AUDIO_ROLE_SOURCE,
+    LE_AUDIO_ROLE_INVALID
 } le_audio_role_t;
 
 // GA Codec_Specific_Configuration LTV structures
