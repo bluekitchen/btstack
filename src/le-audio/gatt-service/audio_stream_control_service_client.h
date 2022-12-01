@@ -116,8 +116,8 @@ typedef struct {
     ascs_client_characteristic_t control_point;
 
     // used for notification registration and read/write requests
-    uint8_t  streamendpoints_index;
-    
+    uint8_t streamendpoints_index;
+
     // used for write requests
     ascs_client_codec_configuration_request_t * codec_configuration;
     ascs_qos_configuration_t   * qos_configuration;
@@ -188,14 +188,14 @@ le_audio_role_t audio_stream_control_service_client_get_ase_role(uint16_t ascs_c
  * - GATTSERVICE_SUBEVENT_ASCS_METADATA            for the stream endpoint in the ASCS_STATE_ENABLING/STREAMING/DISABLING state 
  * 
  * @param  ascs_cid
- * @param  streamendpoint_index 
+ * @param  ase_id 
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER  if no HCI connection with the given ascs_cid is found 
  *                - ERROR_CODE_COMMAND_DISALLOWED if the connection is in wrong state
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_cid, uint8_t streamendpoint_index);
+uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_cid, uint8_t ase_id);
 
 /**
  * @brief Request a codec configuration with the server. 
@@ -204,7 +204,7 @@ uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_ci
  * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
  * 
  * @param  ascs_cid
- * @param  streamendpoint_index
+ * @param  ase_id
  * @param  codec_configuration
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER  if no HCI connection with the given ascs_cid is found 
@@ -212,7 +212,7 @@ uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_ci
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint16_t ascs_cid, uint8_t streamendpoint_index, ascs_client_codec_configuration_request_t * codec_configuration);
+uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint16_t ascs_cid, uint8_t ase_id, ascs_client_codec_configuration_request_t * codec_configuration);
 
 /**
  * @brief Request a CIS configuration preference with the server and assign identifiers to the CIS. 
@@ -221,7 +221,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint1
  * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
  * 
  * @param  ascs_cid
- * @param  streamendpoint_index
+ * @param  ase_id
  * @param  qos_configuration
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER  if no HCI connection with the given ascs_cid is found 
@@ -229,7 +229,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint1
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_t ascs_cid, uint8_t streamendpoint_index, ascs_qos_configuration_t * qos_configuration);
+uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_t ascs_cid, uint8_t ase_id, ascs_qos_configuration_t * qos_configuration);
 
 /**
  * @brief Request the server to enable an ASE and to provide any Metadata applicable for that ASE. 
@@ -238,14 +238,14 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_
  * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
  * 
  * @param  ascs_cid
- * @param  streamendpoint_index
+ * @param  ase_id
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER  if no HCI connection with the given ascs_cid is found 
  *                - ERROR_CODE_COMMAND_DISALLOWED if the connection is in wrong state
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_cid, uint8_t streamendpoint_index);
+uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_cid, uint8_t ase_id);
 
 /**
  * @brief Inform the server acting as Audio Source that the client is ready to consume audio data transmitted by the server.
@@ -253,14 +253,14 @@ uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_
 * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
  *
  * @param  ascs_cid
- * @param  streamendpoint_index
+ * @param  ase_id
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER  if no HCI connection with the given ascs_cid is found 
  *                - ERROR_CODE_COMMAND_DISALLOWED if the connection is in wrong state
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_receiver_start_ready(uint16_t ascs_cid, uint8_t streamendpoint_index);
+uint8_t audio_stream_control_service_client_streamendpoint_receiver_start_ready(uint16_t ascs_cid, uint8_t ase_id);
 
 /**
  * @brief Inform the server acting as Audio Source that the client is ready to stop consuming audio data transmitted by the server.
@@ -268,14 +268,14 @@ uint8_t audio_stream_control_service_client_streamendpoint_receiver_start_ready(
  * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
  * 
  * @param  ascs_cid
- * @param  streamendpoint_index
+ * @param  ase_id
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER  if no HCI connection with the given ascs_cid is found 
  *                - ERROR_CODE_COMMAND_DISALLOWED if the connection is in wrong state
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_receiver_stop_ready(uint16_t ascs_cid, uint8_t streamendpoint_index);
+uint8_t audio_stream_control_service_client_streamendpoint_receiver_stop_ready(uint16_t ascs_cid, uint8_t ase_id);
 
 /**
  * @brief Request the server to release an ASE.
@@ -283,7 +283,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_receiver_stop_ready(u
  * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
  * 
  * @param  ascs_cid
- * @param  streamendpoint_index
+ * @param  ase_id
  * @param  caching
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER  if no HCI connection with the given ascs_cid is found 
@@ -291,7 +291,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_receiver_stop_ready(u
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_release(uint16_t ascs_cid, uint8_t streamendpoint_index, bool caching);
+uint8_t audio_stream_control_service_client_streamendpoint_release(uint16_t ascs_cid, uint8_t ase_id, bool caching);
 
 /**
  * @brief Request the server to disable an ASE.
@@ -299,14 +299,14 @@ uint8_t audio_stream_control_service_client_streamendpoint_release(uint16_t ascs
  * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
  * 
  * @param  ascs_cid
- * @param  streamendpoint_index
+ * @param  ase_id
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER  if no HCI connection with the given ascs_cid is found 
  *                - ERROR_CODE_COMMAND_DISALLOWED if the connection is in wrong state
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_disable(uint16_t ascs_cid, uint8_t streamendpoint_index);
+uint8_t audio_stream_control_service_client_streamendpoint_disable(uint16_t ascs_cid, uint8_t ase_id);
 
 
 /**
@@ -315,14 +315,14 @@ uint8_t audio_stream_control_service_client_streamendpoint_disable(uint16_t ascs
  * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
  *  
  * @param  ascs_cid
- * @param  streamendpoint_index
+ * @param  ase_id
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER  if no HCI connection with the given ascs_cid is found 
  *                - ERROR_CODE_COMMAND_DISALLOWED if the connection is in wrong state
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_released(uint16_t ascs_cid, uint8_t streamendpoint_index);
+uint8_t audio_stream_control_service_client_streamendpoint_released(uint16_t ascs_cid, uint8_t ase_id);
 
 /**
  * @brief Provide the server with Metadata to be applied to an ASE. 
@@ -331,7 +331,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_released(uint16_t asc
  * The GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE event provides the current state of the stream endpoint.
  *  
  * @param  ascs_cid
- * @param  streamendpoint_index
+ * @param  ase_id
  * @param  metadata
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER  if no HCI connection with the given ascs_cid is found 
@@ -339,7 +339,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_released(uint16_t asc
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint16_t ascs_cid, uint8_t streamendpoint_index, le_audio_metadata_t * metadata);
+uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint16_t ascs_cid, uint8_t ase_id, le_audio_metadata_t * metadata);
 
 
 /**
