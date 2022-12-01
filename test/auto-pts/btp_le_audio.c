@@ -61,7 +61,7 @@ static ascs_client_connection_t ascs_connection;
 static uint8_t ase_count;
 static ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
 static uint16_t ascs_cid;
-static uint8_t  ase_index = 0;
+static uint8_t  ase_id = 0;
 static ascs_client_codec_configuration_request_t ascs_codec_configuration_request;
 static ascs_qos_configuration_t ascs_qos_configuration;
 static le_audio_metadata_t ascs_metadata;
@@ -182,22 +182,15 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                                 cis_con_handles[i] = gap_subevent_cig_created_get_cis_con_handles(packet, i);
                                 MESSAGE("0x%04x ", cis_con_handles[i]);
                             }
-                            MESSAGE("ASCS Client: Configure QoS %u us, ASE[%d]", cig_params.sdu_interval_p_to_c,
-                                    ase_index);
+                            MESSAGE("ASCS Client: Configure QoS %u us, ASE_ID %d", cig_params.sdu_interval_p_to_c, ase_id);
                             MESSAGE("       NOTE: Only one CIS supported");
 
                             ascs_qos_configuration.cis_id = cig_params.cis_params[0].cis_id;
                             ascs_qos_configuration.cig_id = gap_subevent_cig_created_get_cig_id(packet);
 
-                            audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index,
-                                                                                             &ascs_qos_configuration);
+                            audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_id, &ascs_qos_configuration);
                             break;
                         case GAP_SUBEVENT_CIS_CREATED:
-                            if (bap_get_ase_role(ase_index) == LE_AUDIO_ROLE_SOURCE){
-                                MESSAGE("CIS Established, remote role source");
-                            } else {
-                                MESSAGE("CIS Established, remote role sink");
-                            }
                             if (response_op == BTP_LE_AUDIO_OP_ASCS_ENABLE){
                                 btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
                                 response_op = 0;
@@ -225,7 +218,6 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
     ascs_codec_configuration_t codec_configuration;
-    uint8_t ase_id;
     hci_con_handle_t con_handle;
     ascs_state_t ase_state;
     uint8_t response_code;
@@ -311,7 +303,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             ase_state  = gattservice_subevent_ascs_streamendpoint_state_get_state(packet);
 
             log_info("ASCS Client: ASE STATE (%s) - ase_id %d, con_handle 0x%02x, role %s", ascs_util_ase_state2str(ase_state), ase_id, con_handle,
-                     (bap_get_ase_role(ase_index) == LE_AUDIO_ROLE_SOURCE) ? "SOURCE" : "SINK" );
+                     (audio_stream_control_service_client_get_ase_role(ascs_cid, ase_id) == LE_AUDIO_ROLE_SOURCE) ? "SOURCE" : "SINK" );
             // send done
             if (response_service_id == BTP_SERVICE_ID_LE_AUDIO){
                 switch (response_op){
@@ -374,7 +366,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 }
             }
             // start sending if SINK ASE
-            if ((ase_state == ASCS_STATE_STREAMING) && (bap_get_ase_role(ase_index) == LE_AUDIO_ROLE_SINK)){
+            if ((ase_state == ASCS_STATE_STREAMING) && (audio_stream_control_service_client_get_ase_role(ascs_cid, ase_id) == LE_AUDIO_ROLE_SINK)){
                 hci_request_cis_can_send_now_events(cis_con_handles[0]);
             }
             break;
@@ -447,7 +439,7 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                 // continue ASCS Configure Codec operation
                 ascs_codec_configuration_request.specific_codec_configuration.audio_channel_allocation_mask =
                         pacs_audio_locations_sink | pacs_audio_locations_source;
-                audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
+                audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_id, &ascs_codec_configuration_request);
             break;
 
         case GATTSERVICE_SUBEVENT_PACS_AVAILABLE_AUDIO_CONTEXTS:
@@ -501,13 +493,13 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
         case BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC:
             if (controller_index == 0){
                 // ascs_cid in data[0]
-                uint8_t  ase_index         = data[1];
+                ase_id                     = data[1];
                 uint8_t  coding_format     = data[2];
                 uint32_t frequency_hz      = little_endian_read_32(data, 3);
                 uint16_t frame_duration_us = little_endian_read_16(data, 7);
                 uint16_t octets_per_frame  = little_endian_read_16(data, 9);
-                MESSAGE("BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC ase %u, format %x, freq %u, duration %u, octets %u",
-                        ase_index, coding_format, frequency_hz, frame_duration_us, octets_per_frame);
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC ase_id %u, format %x, freq %u, duration %u, octets %u",
+                        ase_id, coding_format, frequency_hz, frame_duration_us, octets_per_frame);
 
                 ascs_specific_codec_configuration_t * sc_config = &ascs_codec_configuration_request.specific_codec_configuration;
                 sc_config->codec_configuration_mask = coding_format == HCI_AUDIO_CODING_FORMAT_LC3 ? 0x3E : 0x1e;
@@ -573,14 +565,14 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
         case BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS:
             if (controller_index == 0){
                 // ascs_cid in data[0]
-                uint8_t  ase_index                = data[1];
+                ase_id                            = data[1];
                 uint16_t sdu_interval_us          = little_endian_read_16(data, 2);
                 uint8_t  framing                  = data[4];
                 uint32_t max_sdu                  = little_endian_read_16(data, 5);
                 uint8_t  retransmission_number    = data[7];
                 uint8_t  max_transport_latency_ms = data[8];
-                MESSAGE("BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS ase %u, interval %u, framing %u, sdu_size %u, retrans %u, latency %u",
-                        ase_index, sdu_interval_us, framing, max_sdu, retransmission_number, max_transport_latency_ms);
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS ase_id %u, interval %u, framing %u, sdu_size %u, retrans %u, latency %u",
+                        ase_id, sdu_interval_us, framing, max_sdu, retransmission_number, max_transport_latency_ms);
 
                 ascs_qos_configuration.sdu_interval = sdu_interval_us;
                 ascs_qos_configuration.framing = framing;
@@ -600,52 +592,52 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
         case BTP_LE_AUDIO_OP_ASCS_ENABLE:
             if (controller_index == 0) {
                 // ascs_cid in data[0]
-                uint8_t  ase_index = data[1];
-                MESSAGE("BTP_LE_AUDIO_OP_ASCS_ENABLE ase %u", ase_index);
-                audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_index);
+                ase_id = data[1];
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_ENABLE ase_id %u", ase_id);
+                audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_id);
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_RECEIVER_START_READY:
             if (controller_index == 0) {
                 // ascs_cid in data[0]
-                uint8_t  ase_index = data[1];
-                MESSAGE("btstack: add le_audio tests ase %u", ase_index);
-                audio_stream_control_service_client_streamendpoint_receiver_start_ready(ascs_cid, ase_index);
+                ase_id = data[1];
+                MESSAGE("btstack: add le_audio tests ase_id %u", ase_id);
+                audio_stream_control_service_client_streamendpoint_receiver_start_ready(ascs_cid, ase_id);
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_RECEIVER_STOP_READY:
             if (controller_index == 0) {
                 // ascs_cid in data[0]
-                uint8_t  ase_index = data[1];
-                MESSAGE("BTP_LE_AUDIO_OP_ASCS_RECEIVER_STOP_READY ase %u", ase_index);
-                audio_stream_control_service_client_streamendpoint_receiver_stop_ready(ascs_cid, ase_index);
+                ase_id = data[1];
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_RECEIVER_STOP_READY ase_id %u", ase_id);
+                audio_stream_control_service_client_streamendpoint_receiver_stop_ready(ascs_cid, ase_id);
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_DISABLE:
             if (controller_index == 0) {
                 // ascs_cid in data[0]
-                uint8_t  ase_index = data[1];
-                MESSAGE("BTP_LE_AUDIO_OP_ASCS_DISABLE ase %u", ase_index);
-                audio_stream_control_service_client_streamendpoint_disable(ascs_cid, ase_index);
+                ase_id = data[1];
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_DISABLE ase_id %u", ase_id);
+                audio_stream_control_service_client_streamendpoint_disable(ascs_cid, ase_id);
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_RELEASE:
             if (controller_index == 0) {
                 // ascs_cid in data[0]
-                uint8_t  ase_index = data[1];
-                MESSAGE("BTP_LE_AUDIO_OP_ASCS_RELEASE ase %u", ase_index);
-                audio_stream_control_service_client_streamendpoint_release(ascs_cid, ase_index, false);
+                ase_id = data[1];
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_RELEASE ase_id %u", ase_id);
+                audio_stream_control_service_client_streamendpoint_release(ascs_cid, ase_id, false);
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_UPDATE_METADATA:
             if (controller_index == 0){
                 // ascs_cid in data[0]
-                uint8_t  ase_index = data[1];
-                MESSAGE("BTP_LE_AUDIO_OP_ASCS_UPDATE_METADATA ase %u", ase_index);
+                ase_id = data[1];
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_UPDATE_METADATA ase_id %u", ase_id);
                 ascs_metadata.metadata_mask = (1 << LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS) & (1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS);
                 ascs_metadata.preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_MEDIA;
                 ascs_metadata.streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_MEDIA;
-                audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_index, &ascs_metadata);
+                audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_id, &ascs_metadata);
             }
             break;
         default:
