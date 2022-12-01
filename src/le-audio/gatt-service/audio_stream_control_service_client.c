@@ -107,6 +107,20 @@ static ascs_streamendpoint_t * ascs_get_streamendpoint_for_value_handle(ascs_cli
     return NULL;
 }
 
+
+static ascs_streamendpoint_t * ascs_server_get_streamendpoint_for_ase_id(ascs_client_connection_t * connection, uint8_t ase_id){
+    uint8_t i;
+    for (i = 0; i < connection->streamendpoints_instances_num; i++){
+        ascs_streamendpoint_t * streamendpoint = &connection->streamendpoints[i];
+        btstack_assert(streamendpoint->ase_characteristic != NULL);
+        
+        if (streamendpoint->ase_characteristic->ase_id == ase_id){
+            return streamendpoint;
+        }
+    }
+    return NULL;
+}
+
 static void ascs_client_finalize_connection(ascs_client_connection_t * connection){
     btstack_linked_list_remove(&ascs_connections, (btstack_linked_item_t*) connection);
 }
@@ -1136,6 +1150,34 @@ void audio_stream_control_service_client_init(btstack_packet_handler_t packet_ha
     hci_add_event_handler(&ascs_client_hci_event_callback_registration);
 }
 
+
+uint8_t audio_stream_control_service_client_get_ase_id(uint16_t ascs_cid, uint8_t ase_index){
+    ascs_client_connection_t * connection = ascs_get_client_connection_for_cid(ascs_cid);
+    if (connection == NULL){
+        return ASCS_ASE_ID_INVALID;
+    }
+
+    if (ase_index >= connection->streamendpoints_instances_num){
+        return ASCS_ASE_ID_INVALID;
+    }
+    btstack_assert(connection->streamendpoints[ase_index].ase_characteristic != NULL);
+    return connection->streamendpoints[ase_index].ase_characteristic->ase_id;
+}
+
+
+le_audio_role_t audio_stream_control_service_client_get_ase_role(uint16_t ascs_cid, uint8_t ase_id){
+    ascs_client_connection_t * connection = ascs_get_client_connection_for_cid(ascs_cid);
+    if (connection == NULL){
+        return LE_AUDIO_ROLE_INVALID;
+    }
+
+    ascs_streamendpoint_t * streamendpoint = ascs_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        return LE_AUDIO_ROLE_INVALID;
+    }
+
+    return streamendpoint->ase_characteristic->role;
+}
 
 void audio_stream_control_service_client_deinit(void){
     ascs_event_callback = NULL;
