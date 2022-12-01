@@ -103,7 +103,6 @@ uint16_t ascs_util_qos_configuration_parse(const uint8_t * buffer, uint8_t buffe
     return offset;
 }
 
-
 uint16_t ascs_util_specific_codec_configuration_parse(const uint8_t * buffer, uint16_t buffer_size, ascs_specific_codec_configuration_t * codec_configuration){
     btstack_assert(buffer_size > 0);
 
@@ -114,27 +113,28 @@ uint16_t ascs_util_specific_codec_configuration_parse(const uint8_t * buffer, ui
         return pos;
     }
 
+    printf_hexdump(&buffer[pos], buffer_size - pos);
+
     uint16_t remaining_bytes = codec_config_length;
     codec_configuration->codec_configuration_mask = 0;
 
     while (remaining_bytes > 1) {
-        uint8_t payload_length = buffer[pos++];
+        uint8_t ltv_entry_len = buffer[pos++];
         remaining_bytes -= 1;
         
-        if (payload_length > remaining_bytes){
+        if (ltv_entry_len > remaining_bytes){
             return (pos - 1);
         }
 
-        le_audio_codec_configuration_type_t codec_config_type = (le_audio_codec_configuration_type_t)buffer[pos];
+        le_audio_codec_configuration_type_t codec_config_type = (le_audio_codec_configuration_type_t)buffer[pos++];
         if ((codec_config_type == LE_AUDIO_CODEC_CONFIGURATION_TYPE_UNDEFINED) || (codec_config_type >= LE_AUDIO_CODEC_CONFIGURATION_TYPE_RFU)){
             return (pos - 2);
         }
-        if (payload_length != (ascs_util_get_value_size_for_codec_configuration_type(codec_config_type) + 1)){
+        if (ltv_entry_len != (ascs_util_get_value_size_for_codec_configuration_type(codec_config_type) + 1)){
             return (pos - 2);
         }
 
         codec_configuration->codec_configuration_mask |= (1 << codec_config_type);
-
         switch (codec_config_type){
             case LE_AUDIO_CODEC_CONFIGURATION_TYPE_SAMPLING_FREQUENCY:
                 codec_configuration->sampling_frequency_index = buffer[pos];
@@ -155,8 +155,8 @@ uint16_t ascs_util_specific_codec_configuration_parse(const uint8_t * buffer, ui
                 break;
         }
 
-        pos += payload_length;
-        remaining_bytes -= payload_length;
+        pos += ascs_util_get_value_size_for_codec_configuration_type(codec_config_type);
+        remaining_bytes -= ltv_entry_len;
     }
     return pos;
 }
@@ -357,6 +357,7 @@ void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_call
     pos += 2;
     event[pos++] = ase_id;
     pos += ascs_util_codec_configuration_serialize(codec_configuration, &event[pos], sizeof(event) - pos);
+    pos += ascs_util_specific_codec_configuration_serialize(&codec_configuration->specific_codec_configuration, &event[pos], sizeof(event) - pos);
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
