@@ -58,6 +58,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 // ASCS
 static ascs_client_connection_t ascs_connection;
+static uint8_t ase_count;
 static ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
 static uint16_t ascs_cid;
 static uint8_t  ase_index = 0;
@@ -239,7 +240,8 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         gattservice_subevent_ascs_remote_server_connected_get_status(packet));
                 return;
             }
-            MESSAGE("ASCS Client: connected, cid 0x%02x", ascs_cid);
+            ase_count = gattservice_subevent_ascs_remote_server_connected_get_num_streamendpoints(packet);
+            MESSAGE("ASCS Client: connected, cid 0x%02x, num ASEs: %u", ascs_cid, ase_count);
 
             published_audio_capabilities_service_client_connect(&pacs_connection, remote_handle, &pacs_cid);
             break;
@@ -402,7 +404,15 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             MESSAGE("PACS client: connected, cid 0x%02x", pacs_cid);
 
             // TODO: provide separate API for PACS
-            btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONNECT, 0, 0, NULL);
+            uint8_t i;
+            response_len = 0;
+            btp_append_uint8((uint8_t) ascs_cid);
+            btp_append_uint8(ase_count);
+            for (i=0;i<ase_count;i++){
+                btp_append_uint8(streamendpoint_characteristics[i].ase_id);
+                btp_append_uint8((uint8_t) streamendpoint_characteristics[i].role);
+            }
+            btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONNECT, 0, response_len,  response_buffer);
             break;
 
         case GATTSERVICE_SUBEVENT_PACS_DISCONNECTED:
