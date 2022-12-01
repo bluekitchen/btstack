@@ -50,6 +50,7 @@
 extern "C" {
 #endif
 
+#define ASCS_ASE_ID_INVALID                                                         0x00
 #define ASCS_STREAMENDPOINTS_MAX_NUM 5
 #define ASCS_CLIENTS_MAX_NUM 5
 #define ASCS_STREAMENDPOINT_STATE_MAX_SIZE 5
