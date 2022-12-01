@@ -209,11 +209,14 @@ uint16_t ascs_util_codec_configuration_request_parse(uint8_t * buffer, uint8_t b
     return offset;
 }
 
-
-uint16_t ascs_util_specific_codec_configuration_serialize_using_tlv(ascs_specific_codec_configuration_t * codec_configuration, uint8_t * tlv_buffer, uint16_t tlv_buffer_size){
-    btstack_assert(tlv_buffer_size > 18);
+uint16_t ascs_util_specific_codec_configuration_serialize_to_tlv(ascs_specific_codec_configuration_t * codec_configuration, uint8_t * tlv_buffer, uint16_t tlv_buffer_size){
+    btstack_assert(tlv_buffer_size > 11);
     uint16_t pos = 0;
-    uint16_t remaining_bytes = tlv_buffer_size;
+    // reserve place for config length
+    uint16_t codec_config_length_pos = pos;
+    pos++;
+
+    uint16_t remaining_bytes = tlv_buffer_size - pos;
 
     uint8_t  codec_config_type;
     for (codec_config_type = (uint8_t)LE_AUDIO_CODEC_CONFIGURATION_TYPE_SAMPLING_FREQUENCY; codec_config_type < (uint8_t) LE_AUDIO_CODEC_CONFIGURATION_TYPE_RFU; codec_config_type++){
@@ -256,6 +259,8 @@ uint16_t ascs_util_specific_codec_configuration_serialize_using_tlv(ascs_specifi
         pos += payload_length;
         remaining_bytes -= (payload_length + 2);
     }
+
+    tlv_buffer[codec_config_length_pos] = pos - 1;
     return pos;
 }
 
@@ -299,15 +304,6 @@ uint16_t ascs_util_codec_configuration_serialize(ascs_codec_configuration_t * co
     pos += 2;
     little_endian_store_16(event, pos, codec_configuration->vendor_specific_codec_id);
     pos += 2;
-
-    // reserve place for config length
-    uint8_t codec_config_length_pos = pos;
-    pos++;
-    uint8_t codec_config_length = ascs_util_specific_codec_configuration_serialize(&codec_configuration->specific_codec_configuration,
-                                                            &event[pos],
-                                                            event_size - pos);
-    event[codec_config_length_pos] = codec_config_length;
-    pos += codec_config_length;
     return pos;
 }
 
