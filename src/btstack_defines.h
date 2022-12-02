@@ -4787,27 +4787,30 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_PACS_OPERATION_DONE                                 0x51u
 
 /**
- * @format 1214
+ * @format 12114
  * @param subevent_code
  * @param pacs_cid
+ * @param status
  * @param le_audio_role
  * @param audio_location_mask
 */
 #define GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATIONS                               0x52u
 
 /**
- * @format 1222
+ * @format 12122
  * @param subevent_code
  * @param pacs_cid
+ * @param status
  * @param sink_mask
  * @param source_mask
 */
 #define GATTSERVICE_SUBEVENT_PACS_AVAILABLE_AUDIO_CONTEXTS                       0x53u
 
 /**
- * @format 1222
+ * @format 12122
  * @param subevent_code
  * @param pacs_cid
+ * @param status
  * @param sink_mask
  * @param source_mask
 */
