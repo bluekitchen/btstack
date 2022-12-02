@@ -90,9 +90,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-#if USB_OTG_ENABLE == 0
-  MX_USART1_UART_Init();
-#endif
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */

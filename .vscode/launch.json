@@ -9,14 +9,14 @@
       "type": "cortex-debug",
       "request": "launch",
       "name": "Debug J-Link",
-      "cwd": "${workspaceRoot}/port/stm32-f103zet6-csr8x11-freertos",//work directory 
+      "cwd": "${workspaceRoot}/port/stm32-f4discovery-csr8x11",//work directory 
       "executable": "build/nordic_dfu_demo.elf",
       "serverpath": "C:/Program Files (x86)/SEGGER/JLink_V612a/JLinkGDBServerCL.exe", 
       "servertype": "jlink",
-      "device": "STM32F103ZET6",
+      "device": "STM32F407VGT6",
       "interface": "swd",
       "preLaunchTask": "download",//先运行download任务
-      "svdFile":"${workspaceRoot}/port/stm32-f103zet6-csr8x11-freertos/STM32F103xx.svd",
+      "svdFile":"${workspaceRoot}/port/stm32-f4discovery-csr8x11/STM32F407xx.svd",
       "serialNumber": "", //If you have more than one J-Link probe, add the serial number here.ls
       "runToMain": true
       }

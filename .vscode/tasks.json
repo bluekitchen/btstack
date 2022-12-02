@@ -22,7 +22,7 @@
             "label": "Clean",
             "type": "shell",
             "options": {
-                "cwd": "${workspaceRoot}/port/port/stm32-f4discovery-csr8x11"
+                "cwd": "${workspaceRoot}/port/stm32-f4discovery-csr8x11"
             },
             "command": "make -f makefile clean",
             "group": {
@@ -48,7 +48,7 @@
         {
             "label": "rtt",
             "type": "shell",
-            "command": "JLinkRTTClient.ext",
+            "command": "JLinkRTTClient.exe",
             "args": [],
             "problemMatcher": []
         }

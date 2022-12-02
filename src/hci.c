@@ -1260,7 +1260,9 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
             if (hci_stack->hci_transport->reset_link){
                 hci_stack->hci_transport->reset_link();
             }
-
+            if (((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main != ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_init) {
+                hci_stack->hci_transport->set_baudrate(((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main);
+            }
             /* fall through */
 
         case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:

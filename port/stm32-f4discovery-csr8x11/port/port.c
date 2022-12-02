@@ -27,13 +27,17 @@
 #include "hci_dump_embedded_stdout.h"
 #endif
 
-//
-extern UART_HandleTypeDef huart1;//system log uart
-extern UART_HandleTypeDef huart2;//hci log uart
+extern UART_HandleTypeDef huart2;//system log uart or hci log uart
 extern UART_HandleTypeDef huart3;//hci uart
 
-#define SYSTEM_LOG_UART	  huart1
+#define ENABLE_SYSTEM_LOG 1
+
+#if ENABLE_SYSTEM_LOG == 1
+#define SYSTEM_LOG_UART	  huart2
+#else
 #define HCI_LOG_UART	  huart2
+#endif
+
 #define HCI_DRIVER_UART	  huart3
 //
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -41,7 +45,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static const hci_transport_config_uart_t config = {
 	HCI_TRANSPORT_CONFIG_UART,
     115200,
-    0,
+    921600,
     1,
     NULL
 };
@@ -68,6 +72,7 @@ void hal_cpu_enable_irqs_and_sleep(void){
 	//__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
 }
 
+#ifndef ENABLE_SEGGER_RTT
 // hal_stdin.h
 #include "hal_stdin.h"
 static uint8_t stdin_buffer[1];
@@ -75,16 +80,20 @@ static void (*stdin_handler)(char c);
 void hal_stdin_setup(void (*handler)(char c)){
     stdin_handler = handler;
     // start receiving
+#if ENABLE_SYSTEM_LOG
 	HAL_UART_Receive_IT(&SYSTEM_LOG_UART, &stdin_buffer[0], 1);
+#endif
 }
 
 static void stdin_rx_complete(void){
     if (stdin_handler){
         (*stdin_handler)(stdin_buffer[0]);
     }
+#if ENABLE_SYSTEM_LOG
     HAL_UART_Receive_IT(&SYSTEM_LOG_UART, &stdin_buffer[0], 1);
+#endif
 }
-
+#endif
 // hal_uart_dma.h
 
 // hal_uart_dma.c implementation
@@ -144,9 +153,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	if (huart == &HCI_DRIVER_UART){
 		(*rx_done_handler)();
 	}
+#ifndef ENABLE_SEGGER_RTT
+#if ENABLE_SYSTEM_LOG
     if (huart == &SYSTEM_LOG_UART){
         stdin_rx_complete();
     }
+#endif
+#endif
 }
 
 void hal_uart_dma_init(void){
@@ -213,7 +226,9 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 }
 
 void hal_uart_dma_send_block_for_hci(const uint8_t *data, uint16_t size){
+#if ENABLE_SYSTEM_LOG == 0
 	HAL_UART_Transmit( &HCI_LOG_UART, (uint8_t *) data, size, HAL_MAX_DELAY );
+#endif
 }
 
 void hci_log_through_frontline(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len)
@@ -281,7 +296,6 @@ typedef enum {
 }
 
 #ifndef ENABLE_SEGGER_RTT
-
 /**
  * Use USART_CONSOLE as a console.
  * This is a syscall for newlib
@@ -297,7 +311,7 @@ int _write(int file, char *ptr, int len);
 int _write(int file, char *ptr, int len){
 	uint8_t cr = '\r';
 	int i;
-
+#if ENABLE_SYSTEM_LOG
 	if (file == STDOUT_FILENO || file == STDERR_FILENO) {
 		for (i = 0; i < len; i++) {
 			if (ptr[i] == '\n') {
@@ -307,9 +321,12 @@ int _write(int file, char *ptr, int len){
 		}
 		return i;
 	}
+#else
 	errno = EIO;
 	return -1;
+#endif
 }
+#endif
 
 int _read(int file, char * ptr, int len){
 	UNUSED(file);
@@ -337,7 +354,6 @@ int _fstat(int file){
 	UNUSED(file);
 	return -1;
 }
-#endif
 
 // main.c
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
