@@ -129,40 +129,57 @@ static void pacs_client_emit_operation_done(pacs_client_connection_t * connectio
     (*pacs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void pacs_client_emit_audio_locations(pacs_client_connection_t * connection, le_audio_role_t role, const uint8_t * value, uint8_t value_len){
-    if (value_len != 4){
-        return;
-    }
 
-    uint8_t  event[10];
+
+static void pacs_client_emit_audio_locations(pacs_client_connection_t * connection, uint8_t status, le_audio_role_t role, const uint8_t * value, uint8_t value_len){
+    uint8_t  event[11];
+    memset(event, 0, sizeof(event));
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATIONS;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
+    event[pos++] = status;
     event[pos++] = (uint8_t)role;
-    memcpy(&event[pos], value, value_len);
-    
     (*pacs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void pacs_client_emit_audio_contexts(pacs_client_connection_t * connection, uint8_t subevent, const uint8_t * value, uint8_t value_len){
-    if (value_len != 4){
-        return;
-    }
+static void pacs_client_handle_audio_locations(pacs_client_connection_t * connection, le_audio_role_t role, const uint8_t * value, uint8_t value_len){
+    uint8_t status = ERROR_CODE_SUCCESS;
+    uint8_t bytes_to_copy = value_len;
+    
+    if (bytes_to_copy != 4){
+        bytes_to_copy = 0;
+        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    } 
+    pacs_client_emit_audio_locations(connection, status, role, value, bytes_to_copy);
+}
 
-    uint8_t event[9];
+static void pacs_client_emit_audio_contexts(pacs_client_connection_t * connection, uint8_t subevent, uint8_t status, const uint8_t * value, uint8_t value_len){
+    uint8_t event[10];
+    memset(event, 0, sizeof(event));
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = subevent;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
-    memcpy(&event[pos], value, value_len);
-    
+    event[pos++] = status;
     (*pacs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
+
+static void pacs_client_handle_audio_contexts(pacs_client_connection_t * connection, uint8_t subevent, const uint8_t * value, uint8_t value_len){
+    uint8_t status = ERROR_CODE_SUCCESS;
+    uint8_t bytes_to_copy = value_len;
+    
+    if (bytes_to_copy != 4){
+        bytes_to_copy = 0;
+        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    } 
+    pacs_client_emit_audio_contexts(connection, subevent, status, value, bytes_to_copy);
+}
+
 
 static uint16_t le_audio_codec_capabilities_parse_tlv(uint8_t * buffer, uint8_t buffer_size, pacs_codec_capability_t * codec_capability){
     btstack_assert(buffer_size >= 1);
@@ -341,7 +358,6 @@ static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channe
     uint16_t value_length = gatt_event_notification_get_value_length(packet);
     uint8_t * value = (uint8_t *)gatt_event_notification_get_value(packet);
 
-    // TODO
     uint8_t i;
     for (i = 0; i < connection->pacs_characteristics_num; i++){
         if (connection->pacs_characteristics[i].value_handle != value_handle){
@@ -350,19 +366,18 @@ static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channe
 
         switch ((pacs_client_characteristic_index_t)i){
             case PACS_CLIENT_CHARACTERISTIC_INDEX_SINK_AUDIO_LOCATIONS:
-                pacs_client_emit_audio_locations(connection, LE_AUDIO_ROLE_SINK, value, value_length);
+                pacs_client_handle_audio_locations(connection, LE_AUDIO_ROLE_SINK, value, value_length);
                 break;
             case PACS_CLIENT_CHARACTERISTIC_INDEX_SOURCE_AUDIO_LOCATIONS:
-                pacs_client_emit_audio_locations(connection, LE_AUDIO_ROLE_SOURCE, value, value_length);
+                pacs_client_handle_audio_locations(connection, LE_AUDIO_ROLE_SOURCE, value, value_length);
                 break;
             case PACS_CLIENT_CHARACTERISTIC_INDEX_AVAILABLE_AUDIO_CONTEXTS:
-                pacs_client_emit_audio_contexts(connection, GATTSERVICE_SUBEVENT_PACS_AVAILABLE_AUDIO_CONTEXTS, value, value_length);
+                pacs_client_handle_audio_contexts(connection, GATTSERVICE_SUBEVENT_PACS_AVAILABLE_AUDIO_CONTEXTS, value, value_length);
                 break;
             case PACS_CLIENT_CHARACTERISTIC_INDEX_SUPPORTED_AUDIO_CONTEXTS:
-                pacs_client_emit_audio_contexts(connection, GATTSERVICE_SUBEVENT_PACS_SUPPORTED_AUDIO_CONTEXTS, value, value_length);
+                pacs_client_handle_audio_contexts(connection, GATTSERVICE_SUBEVENT_PACS_SUPPORTED_AUDIO_CONTEXTS, value, value_length);
                 break;
             default:
-                // TODO
                 break;
         }
         return;            
@@ -702,25 +717,25 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
             switch (connection->query_characteristic_index){
                 case PACS_CLIENT_CHARACTERISTIC_INDEX_SINK_AUDIO_LOCATIONS:
-                    pacs_client_emit_audio_locations(connection, LE_AUDIO_ROLE_SINK, 
+                    pacs_client_handle_audio_locations(connection, LE_AUDIO_ROLE_SINK, 
                         gatt_event_characteristic_value_query_result_get_value(packet), 
                         gatt_event_characteristic_value_query_result_get_value_length(packet));
                     break;
 
                 case PACS_CLIENT_CHARACTERISTIC_INDEX_SOURCE_AUDIO_LOCATIONS:
-                    pacs_client_emit_audio_locations(connection, LE_AUDIO_ROLE_SOURCE, 
+                    pacs_client_handle_audio_locations(connection, LE_AUDIO_ROLE_SOURCE, 
                         gatt_event_characteristic_value_query_result_get_value(packet), 
                         gatt_event_characteristic_value_query_result_get_value_length(packet));
                     break;
 
                 case PACS_CLIENT_CHARACTERISTIC_INDEX_AVAILABLE_AUDIO_CONTEXTS:
-                    pacs_client_emit_audio_contexts(connection, GATTSERVICE_SUBEVENT_PACS_AVAILABLE_AUDIO_CONTEXTS, 
+                    pacs_client_handle_audio_contexts(connection, GATTSERVICE_SUBEVENT_PACS_AVAILABLE_AUDIO_CONTEXTS, 
                         gatt_event_characteristic_value_query_result_get_value(packet), 
                         gatt_event_characteristic_value_query_result_get_value_length(packet));
                     break;
 
                 case PACS_CLIENT_CHARACTERISTIC_INDEX_SUPPORTED_AUDIO_CONTEXTS:
-                    pacs_client_emit_audio_contexts(connection, GATTSERVICE_SUBEVENT_PACS_SUPPORTED_AUDIO_CONTEXTS, 
+                    pacs_client_handle_audio_contexts(connection, GATTSERVICE_SUBEVENT_PACS_SUPPORTED_AUDIO_CONTEXTS, 
                         gatt_event_characteristic_value_query_result_get_value(packet), 
                         gatt_event_characteristic_value_query_result_get_value_length(packet));
                     break;
