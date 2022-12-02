@@ -181,7 +181,7 @@ static void ascs_client_emit_ase(ascs_client_connection_t * connection, ascs_str
 }
 
 static void ascs_client_emit_connection_established(ascs_client_connection_t * connection, uint8_t status){
-    uint8_t event[9];
+    uint8_t event[9 + 2 + ASCS_STREAMENDPOINTS_MAX_NUM];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
@@ -191,7 +191,28 @@ static void ascs_client_emit_connection_established(ascs_client_connection_t * c
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
-    event[pos++] = connection->streamendpoints_instances_num;
+    
+    uint8_t ase_num_index = pos;
+    event[pos++] = 0;
+
+    uint8_t i;
+    for (i = 0; i < connection->streamendpoints_instances_num; i++){
+        if (connection->streamendpoints[i].ase_characteristic->role == LE_AUDIO_ROLE_SINK){
+            event[ase_num_index] += 1;
+            event[pos++] = connection->streamendpoints[i].ase_characteristic->ase_id;
+        }
+    }
+
+    ase_num_index = pos;
+    event[pos++] = 0;
+
+    for (i = 0; i < connection->streamendpoints_instances_num; i++){
+        if (connection->streamendpoints[i].ase_characteristic->role == LE_AUDIO_ROLE_SOURCE){
+            event[ase_num_index] += 1;
+            event[pos++] = connection->streamendpoints[i].ase_characteristic->ase_id;
+        }
+    }
+
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
