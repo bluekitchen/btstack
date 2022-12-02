@@ -272,7 +272,7 @@ extern "C" {
 #define BTP_MESH_EV_INCOMP_TIMER_EXP            0x88
 
 // LE Audio
-#define BTP_LE_AUDIO_OP_READ_SUPPORTED_COMMANDS  0x01
+#define BTP_LE_AUDIO_OP_READ_SUPPORTED_COMMANDS   0x01
 #define BTP_LE_AUDIO_OP_ASCS_CONNECT              0x02
 #define BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC      0x03
 #define BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS        0x04
@@ -282,5 +282,6 @@ extern "C" {
 #define BTP_LE_AUDIO_OP_ASCS_DISABLE              0x08
 #define BTP_LE_AUDIO_OP_ASCS_RELEASE              0x09
 #define BTP_LE_AUDIO_OP_ASCS_UPDATE_METADATA      0x0A
+#define BTP_LE_AUDIO_OP_CIG_CREATE                0x0B
 
 #endif
