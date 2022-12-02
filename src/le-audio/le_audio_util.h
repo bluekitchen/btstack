@@ -73,6 +73,16 @@ le_audio_codec_frame_duration_index_t le_audio_get_frame_duration_index(uint16_t
 uint32_t le_audio_get_sampling_frequency_hz(le_audio_codec_sampling_frequency_index_t sampling_frequency_index);
 le_audio_codec_sampling_frequency_index_t le_audio_get_sampling_frequency_index(uint32_t sampling_frequency_hz);
 
+const le_audio_codec_configuration_t * le_audio_util_get_codec_setting(
+    le_audio_codec_sampling_frequency_index_t sampling_frequency_index, 
+    le_audio_codec_frame_duration_index_t frame_duration_index, 
+    le_audio_quality_t audio_quality);
+
+const le_audio_qos_configuration_t * le_audio_util_get_qos_setting(
+    le_audio_codec_sampling_frequency_index_t sampling_frequency_index, 
+    le_audio_codec_frame_duration_index_t frame_duration_index, 
+    le_audio_quality_t audio_quality, uint8_t num_channels);
+
 #if defined __cplusplus
 }
 #endif

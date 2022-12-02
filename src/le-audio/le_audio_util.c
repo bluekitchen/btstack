@@ -41,6 +41,93 @@
 #include "btstack_debug.h"
 #include "le-audio/le_audio_util.h"
 
+
+static const le_audio_codec_configuration_t codec_specific_config_settings[] = {
+    {"8_1",  LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ,  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   26},
+    {"8_2",  LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ,  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US,  30},
+    {"16_1", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_16000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   30},
+    {"16_2", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_16000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US,  40},
+    {"24_1", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_24000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   45},
+    {"24_2", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_24000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US,  60},
+    {"32_1", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_32000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   60},
+    {"32_2", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_32000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US,  80},
+    {"441_1",LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   97},
+    {"441_2",LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 130},
+    {"48_1", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   75},
+    {"48_2", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 100},
+    {"48_3", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   90},
+    {"48_4", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 120},
+    {"48_5", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,  117},
+    {"48_6", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 155},
+};
+
+static const le_audio_qos_configuration_t qos_config_settings[] = {
+    ("8_1_1",    7500, 0,  26, 2, 8),
+    ("8_2_1",   10000, 0,  30, 2, 10),
+    ("16_1_1",   7500, 0,  30, 2, 8),
+    ("16_2_1",  10000, 0,  40, 2, 10),
+    ("24_1_1",   7500, 0,  45, 2, 8),
+    ("24_2_1",  10000, 0,  60, 2, 10),
+    ("32_1_1",   7500, 0,  60, 2, 8),
+    ("32_2_1",  10000, 0,  80, 2, 10),
+    ("441_1_1",  8163, 1,  97, 5, 24),
+    ("441_2_1", 10884, 1, 130, 5, 31),
+    ("48_1_1",   7500, 0,  75, 5, 15),
+    ("48_2_1",  10000, 0, 100, 5, 20),
+    ("48_3_1",   7500, 0,  90, 5, 15),
+    ("48_4_1",  10000, 0, 120, 5, 20),
+    ("48_5_1",   7500, 0, 117, 5, 15),
+    ("48_6_1",  10000, 0, 115, 5, 20),
+
+    ("8_1_2",    7500, 0,  26, 13, 75),
+    ("8_2_2",   10000, 0,  30, 13, 95),
+    ("16_1_2",   7500, 0,  30, 13, 75),
+    ("16_2_2",  10000, 0,  40, 13, 95),
+    ("24_1_2",   7500, 0,  45, 13, 75),
+    ("24_2_2",  10000, 0,  60, 13, 95),
+    ("32_1_2",   7500, 0,  60, 13, 75),
+    ("32_2_2",  10000, 0,  80, 13, 95),
+    ("441_1_2",  8163, 1,  97, 13, 80),
+    ("441_2_2", 10884, 1, 130, 13, 85),
+    ("48_1_2",   7500, 0,  75, 13, 75),
+    ("48_2_2",  10000, 0, 100, 13, 95),
+    ("48_3_2",   7500, 0,  90, 13, 75),
+    ("48_4_2",  10000, 0, 120, 13, 100),
+    ("48_5_2",   7500, 0, 117, 13, 75),
+    ("48_6_2",  10000, 0, 115, 13, 100)
+};
+
+static uint8_t codec_offset(le_audio_codec_sampling_frequency_index_t sampling_frequency_index, 
+    le_audio_codec_frame_duration_index_t frame_duration_index, 
+    le_audio_quality_t audio_quality){
+
+    btstack_assert(audio_quality <= LE_AUDIO_QUALITY_HIGH);
+    
+    if (sampling_frequency_index == LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ){
+        return 10 + (audio_quality - LE_AUDIO_QUALITY_LOW) * 2 + (frame_duration_index - LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US);
+    }
+    return (sampling_frequency_index - LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ) * 2 + (frame_duration_index - LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US);
+}
+
+const le_audio_codec_configuration_t * le_audio_util_get_codec_setting(
+    le_audio_codec_sampling_frequency_index_t sampling_frequency_index, 
+    le_audio_codec_frame_duration_index_t frame_duration_index, 
+    le_audio_quality_t audio_quality){
+    
+    return &codec_specific_config_settings[codec_offset(sampling_frequency_index, frame_duration_index, audio_quality)];
+}
+
+const le_audio_qos_configuration_t * le_audio_util_get_qos_setting(
+    le_audio_codec_sampling_frequency_index_t sampling_frequency_index, 
+    le_audio_codec_frame_duration_index_t frame_duration_index, 
+    le_audio_quality_t audio_quality, uint8_t num_channels){
+
+    btstack_assert((num_channels >= 1) && (num_channels <= 2));
+
+    return &codec_specific_config_settings[(num_channels - 1) * 16 + codec_offset(sampling_frequency_index, frame_duration_index, audio_quality)];
+}
+
+
 // help with buffer == NULL
 uint16_t le_audio_util_virtual_memcpy_helper(
     const uint8_t * field_data, uint16_t field_len, uint16_t field_offset,
@@ -486,4 +573,5 @@ le_audio_codec_sampling_frequency_index_t le_audio_get_sampling_frequency_index(
             return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_RFU;
     }
 }
+
 

@@ -197,6 +197,12 @@ typedef enum {
     LE_AUDIO_CODEC_FRAME_DURATION_INDEX_RFU
 } le_audio_codec_frame_duration_index_t;
 
+typedef enum {
+    LE_AUDIO_QUALITY_LOW = 0x00,
+    LE_AUDIO_QUALITY_MEDIUM,
+    LE_AUDIO_QUALITY_HIGH
+} le_audio_quality_t;
+
 #define LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1            0x01
 #define LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2            0x02
 #define LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_3            0x04
@@ -317,6 +323,22 @@ typedef struct {
     uint8_t  vendor_specific_metadata_length;                              
     uint8_t  vendor_specific_metadata[LE_AUDIO_VENDOR_SPECIFIC_METADATA_MAX_LENGTH];
 } le_audio_metadata_t;
+
+typedef struct {
+    const char * name;
+    le_audio_codec_sampling_frequency_index_t sampling_frequency_index;
+    le_audio_codec_frame_duration_index_t     frame_duration_index;
+    uint16_t octets_per_frame;
+} le_audio_codec_configuration_t;
+
+typedef struct {
+    const char * name;
+    uint16_t sdu_interval_us;
+    uint8_t  framing;
+    uint16_t max_sdu_size;
+    uint8_t  retransmission_number;                  
+    uint16_t max_transport_latency_ms; 
+} le_audio_qos_configuration_t;
 
 #if defined __cplusplus
 }
