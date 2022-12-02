@@ -65,6 +65,7 @@
 #include "hci.h"
 #include "l2cap.h"
 #include "le-audio/gatt-service/broadcast_audio_scan_service_client.h"
+#include "le-audio/le_audio_util.h"
 #include "le-audio/le_audio_base_parser.h"
 
 static void show_usage(void);
@@ -181,8 +182,8 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                     break;
                 case 0x02: // 0 = 7.5, 1 = 10 ms
                     frame_duration_index =  codec_specific_configuration[codec_offset+1];
-                    frame_duration = (frame_duration_index == 0) ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
-                    printf("    - frame duration[%u]: %s ms\n", i, (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? "7.5" : "10");
+                    frame_duration = le_audio_util_get_btstack_lc3_frame_duration(frame_duration_index);
+                    printf("    - frame duration[%u]: %u us\n", i, le_audio_get_frame_duration_us(frame_duration_index));
                     break;
                 case 0x04:  // octets per coding frame
                     octets_per_frame = little_endian_read_16(codec_specific_configuration, codec_offset+1);
