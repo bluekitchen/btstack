@@ -15215,13 +15215,40 @@ static inline uint8_t gattservice_subevent_ascs_remote_server_connected_get_stat
     return event[7];
 }
 /**
- * @brief Get field num_streamendpoints from event GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED
+ * @brief Get field sink_ase_num from event GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED
  * @param event packet
- * @return num_streamendpoints
- * @note: btstack_type 1
+ * @return sink_ase_num
+ * @note: btstack_type J
  */
-static inline uint8_t gattservice_subevent_ascs_remote_server_connected_get_num_streamendpoints(const uint8_t * event){
+static inline uint8_t gattservice_subevent_ascs_remote_server_connected_get_sink_ase_num(const uint8_t * event){
     return event[8];
+}
+/**
+ * @brief Get field sink_ase_ids from event GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED
+ * @param event packet
+ * @return sink_ase_ids
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_ascs_remote_server_connected_get_sink_ase_ids(const uint8_t * event){
+    return &event[9];
+}
+/**
+ * @brief Get field source_ase_num from event GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED
+ * @param event packet
+ * @return source_ase_num
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_ascs_remote_server_connected_get_source_ase_num(const uint8_t * event){
+    return event[9u + event[8]];
+}
+/**
+ * @brief Get field source_ase_ids from event GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED
+ * @param event packet
+ * @return source_ase_ids
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_ascs_remote_server_connected_get_source_ase_ids(const uint8_t * event){
+    return &event[9u + event[8] + 1u];
 }
 
 /**

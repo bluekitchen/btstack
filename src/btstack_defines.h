@@ -4645,12 +4645,15 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_DISCONNECTED                   0x3Du
 
 /**
- * @format 1H211
+ * @format 1H21JVJV
  * @param subevent_code
  * @param con_handle
  * @param ascs_cid
  * @param status
- * @param num_streamendpoints
+ * @param sink_ase_num
+ * @param sink_ase_ids
+ * @param source_ase_num
+ * @param source_ase_ids 
 */
 #define GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED                      0x3Eu
 
