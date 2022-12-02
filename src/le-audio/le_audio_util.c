@@ -382,8 +382,8 @@ uint16_t le_audio_util_metadata_serialize_using_mask(le_audio_metadata_t * metad
     return pos;
 }
 
-btstack_lc3_frame_duration_t le_audio_util_get_btstack_lc3_frame_duration(le_audio_codec_frame_duration_index_t le_audio_codec_frame_duration_index){
-    switch (le_audio_codec_frame_duration_index){
+btstack_lc3_frame_duration_t le_audio_util_get_btstack_lc3_frame_duration(le_audio_codec_frame_duration_index_t frame_duration_index){
+    switch (frame_duration_index){
         case LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US:
             return BTSTACK_LC3_FRAME_DURATION_7500US;
         case LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US:
@@ -395,8 +395,8 @@ btstack_lc3_frame_duration_t le_audio_util_get_btstack_lc3_frame_duration(le_aud
     return 0;
 }
 
-uint16_t le_audio_get_frame_duration_us(le_audio_codec_frame_duration_index_t le_audio_codec_frame_duration_index){
-    switch (le_audio_codec_frame_duration_index){
+uint16_t le_audio_get_frame_duration_us(le_audio_codec_frame_duration_index_t frame_duration_index){
+    switch (frame_duration_index){
         case LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US:
             return 7500;
         case LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US:
@@ -405,3 +405,85 @@ uint16_t le_audio_get_frame_duration_us(le_audio_codec_frame_duration_index_t le
             return 0;
     }
 }
+
+le_audio_codec_frame_duration_index_t le_audio_get_frame_duration_index(uint16_t frame_duration_us){
+    switch (frame_duration_us){
+        case 0:
+            return LE_AUDIO_CODEC_FRAME_DURATION_INDEX_INVALID;
+        case 7500:
+            return LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US;
+        case 10000:
+            return LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US;
+        default:
+            return LE_AUDIO_CODEC_FRAME_DURATION_INDEX_RFU;
+    }
+}
+
+uint32_t le_audio_get_sampling_frequency_hz(le_audio_codec_sampling_frequency_index_t sampling_frequency_index){
+    switch (sampling_frequency_index){
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ:
+                return 8000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_11025_HZ:
+                return 11025;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_16000_HZ:
+                return 16000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_22050_HZ:
+                return 22050;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_24000_HZ:
+                return 24000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_32000_HZ:
+                return 32000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ:
+                return 44100;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ:
+                return 48000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_88200_HZ:
+                return 88200;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_96000_HZ:
+                return 96000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_176400_HZ:
+                return 176400;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_192000_HZ:
+                return 192000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_384000_HZ:
+                return 384000;
+        default:
+            return 0;
+    }
+}
+
+le_audio_codec_sampling_frequency_index_t le_audio_get_sampling_frequency_index(uint32_t sampling_frequency_hz){
+    switch (sampling_frequency_hz){
+        case 0:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_INVALID;
+        case 8000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ;
+        case 11025:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_11025_HZ;
+        case 16000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_16000_HZ;
+        case 22050:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_22050_HZ;
+        case 24000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_24000_HZ;
+        case 32000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_32000_HZ;
+        case 44100:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ;
+        case 48000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ;
+        case 88200:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_88200_HZ;
+        case 96000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_96000_HZ;
+        case 176400:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_176400_HZ;
+        case 192000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_192000_HZ;
+        case 384000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_384000_HZ;
+        default:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_RFU;
+    }
+}
+
