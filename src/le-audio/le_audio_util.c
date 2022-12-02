@@ -381,3 +381,27 @@ uint16_t le_audio_util_metadata_serialize_using_mask(le_audio_metadata_t * metad
     }
     return pos;
 }
+
+btstack_lc3_frame_duration_t le_audio_util_get_btstack_lc3_frame_duration(le_audio_codec_frame_duration_index_t le_audio_codec_frame_duration_index){
+    switch (le_audio_codec_frame_duration_index){
+        case LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US:
+            return BTSTACK_LC3_FRAME_DURATION_7500US;
+        case LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US:
+            return BTSTACK_LC3_FRAME_DURATION_10000US;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    return 0;
+}
+
+uint16_t le_audio_get_frame_duration_us(le_audio_codec_frame_duration_index_t le_audio_codec_frame_duration_index){
+    switch (le_audio_codec_frame_duration_index){
+        case LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US:
+            return 7500;
+        case LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US:
+            return 10000;
+        default:
+            return 0;
+    }
+}

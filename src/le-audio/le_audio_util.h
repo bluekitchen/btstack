@@ -45,6 +45,7 @@
 
 #include <stdint.h>
 #include "le_audio.h"
+#include "btstack_lc3.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -61,6 +62,10 @@ uint16_t le_audio_util_metadata_parse(uint8_t * buffer, uint8_t buffer_size, le_
 uint16_t le_audio_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_t * event, uint16_t event_size);
 
 uint16_t le_audio_util_metadata_serialize_using_mask(le_audio_metadata_t * metadata, uint8_t * tlv_buffer, uint16_t tlv_buffer_size);
+
+btstack_lc3_frame_duration_t le_audio_util_get_btstack_lc3_frame_duration(le_audio_codec_frame_duration_index_t le_audio_codec_frame_duration_index);
+
+uint16_t le_audio_get_frame_duration_us(le_audio_codec_frame_duration_index_t le_audio_codec_frame_duration_index);
 
 #if defined __cplusplus
 }
