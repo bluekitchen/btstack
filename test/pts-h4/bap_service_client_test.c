@@ -73,7 +73,7 @@ static uint16_t pacs_cid;
 static ascs_client_connection_t ascs_connection;
 static ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
 static uint16_t ascs_cid;
-static uint8_t  ase_index = 0;
+static uint8_t  ase_id = 1;
 
 // remote info
 static char remote_name[20];
@@ -258,7 +258,7 @@ static void bap_client_reset(void){
     num_channels = 1;
     menu_sampling_frequency = 0;
     menu_variant = 0;
-    ase_index = 0;
+    ase_id = 1;
 }
 
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -401,12 +401,12 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                             printf("0x%04x ", cis_con_handles[i]);
                         }
                         printf("\n");
-                        printf("ASCS Client: Configure QoS %u us, ASE[%d]\n", cig_params.sdu_interval_p_to_c, ase_index);
+                        printf("ASCS Client: Configure QoS %u us, ASE ID %d\n", cig_params.sdu_interval_p_to_c, ase_id);
                         printf("       NOTE: Only one CIS supported\n");
 
                         ascs_qos_configuration.cis_id = cig_params.cis_params[0].cis_id;
                         ascs_qos_configuration.cig_id = gap_subevent_cig_created_get_cig_id(packet);
-                        audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index, &ascs_qos_configuration);
+                        audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_id, &ascs_qos_configuration);
                     }
                     break;
                 case GAP_SUBEVENT_CIS_CREATED:
@@ -651,6 +651,7 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     ascs_state_t ase_state;
     uint8_t response_code;
     uint8_t reason;
+    uint8_t i;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED:
@@ -673,6 +674,12 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                 return;
             }
             printf("ASCS Client: connected, cid 0x%02x\n", ascs_cid);
+            for (i = 0; i < gattservice_subevent_ascs_remote_server_connected_get_sink_ase_num(packet); i++){
+                printf("    - SINK ASE   %u\n", gattservice_subevent_ascs_remote_server_connected_get_sink_ase_ids(packet)[i]);
+            }
+            for (i = 0; i < gattservice_subevent_ascs_remote_server_connected_get_source_ase_num(packet); i++){
+                printf("    - SOURCE ASE %u\n", gattservice_subevent_ascs_remote_server_connected_get_source_ase_ids(packet)[i]);
+            }
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_DISCONNECTED:
@@ -780,7 +787,7 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 }
 
 static void print_config(void) {
-    printf("ASE[%d]: ", ase_index);
+    printf("ASE ID %d: ", ase_id);
     printf("Config '%s_%u': %u, %s ms, %u octets\n",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
            num_channels,
@@ -821,19 +828,19 @@ static void show_usage(void){
     printf("\n--- ASCS Client Test Console %s ---\n", bd_addr_to_str(iut_address));
     print_config();
     printf("d   - connect to %s\n", bap_app_server_addr_string);    
-    printf("k   - read ASE[%d]\n", ase_index);
+    printf("k   - read ASE ID %d\n", ase_id);
 
     printf("K   - configure codec\n");
     printf("l   - create CIG + configure QoS\n");
-    printf("M   - enable, ASE[%d]\n", ase_index);
-    printf("n   - start Ready, ASE[%d]\n", ase_index);
-    printf("N   - stop Ready, ASE[%d]\n", ase_index);
-    printf("r   - disable, ASE[%d]\n", ase_index);
-    printf("R   - release, ASE[%d]\n", ase_index);
-    printf("q   - released, ASE[%d]\n", ase_index);
-    printf("Q   - update metadata, ASE[%d]\n", ase_index);
+    printf("M   - enable, ASE ID %d\n", ase_id);
+    printf("n   - start Ready, ASE ID %d\n", ase_id);
+    printf("N   - stop Ready, ASE ID %d\n", ase_id);
+    printf("r   - disable, ASE ID %d\n", ase_id);
+    printf("R   - release, ASE ID %d\n", ase_id);
+    printf("q   - released, ASE ID %d\n", ase_id);
+    printf("Q   - update metadata, ASE ID %d\n", ase_id);
 
-    printf("u - toggle ASE[%d]\n", ase_index);
+    printf("u - toggle ASE ID %d\n", ase_id);
     printf("x - toggle channels\n");
     printf("y - next sampling frequency\n");
     printf("z - next codec variant\n");
@@ -849,8 +856,8 @@ static void show_usage(void){
 }
 
 
-static void print_ase_index(void) {
-    printf("ASE[%d]\n", ase_index);
+static void print_ase_id(void) {
+    printf("ASE ID %d\n", ase_id);
 }
 
 static void stdin_process(char cmd){
@@ -873,12 +880,12 @@ static void stdin_process(char cmd){
             break;
 
         case 'u':
-            if (ase_index >= 3){
-                ase_index = 0;
+            if (ase_id >= 4){
+                ase_id = 1;
             } else {
-                ase_index++;
+                ase_id++;
             }
-            print_ase_index();
+            print_ase_id();
             break;
 
         case 'x':
@@ -989,13 +996,14 @@ static void stdin_process(char cmd){
             break;
 
         case 'k':
-            printf("ASCS Client: Read ASE with index %d\n", ase_index);
-            status = audio_stream_control_service_client_read_streamendpoint(ascs_cid, ase_index);
+            printf("ASCS Client: Read ASE ID %d\n", ase_id);
+            status = audio_stream_control_service_client_read_streamendpoint(ascs_cid, ase_id);
             break;
         
         case 'K': 
             printf("ASCS Client: Configure Codec, ");
             print_config();
+            print_ase_id();
 
             sc_config.codec_configuration_mask = 0x3E;
             sc_config.sampling_frequency_index = codec_configurations[menu_sampling_frequency].sampling_frequency_index;
@@ -1020,7 +1028,7 @@ static void stdin_process(char cmd){
             ascs_codec_configuration_request.vendor_specific_codec_id = 0;
 
             ascs_codec_configuration_request.specific_codec_configuration = sc_config;
-            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
+            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_id, &ascs_codec_configuration_request);
             break;
         
         case 'l':
@@ -1039,39 +1047,39 @@ static void stdin_process(char cmd){
             break;
        
         case 'M':
-            printf("ASCS Client: Enable, ASE[%d]\n", ase_index);
-            status = audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_index);
+            printf("ASCS Client: Enable, ASE ID %d\n", ase_id);
+            status = audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_id);
             break;
         case 'n':
-            printf("ASCS Client: Start Ready, ASE[%d]\n", ase_index);
-            status = audio_stream_control_service_client_streamendpoint_receiver_start_ready(ascs_cid, ase_index);
+            printf("ASCS Client: Start Ready, ASE ID %d\n", ase_id);
+            status = audio_stream_control_service_client_streamendpoint_receiver_start_ready(ascs_cid, ase_id);
             break;
         case 'N':
-            printf("ASCS Client: Stop Ready, ASE[%d]\n", ase_index);
-            status = audio_stream_control_service_client_streamendpoint_receiver_stop_ready(ascs_cid, ase_index);
+            printf("ASCS Client: Stop Ready, ASE ID %d\n", ase_id);
+            status = audio_stream_control_service_client_streamendpoint_receiver_stop_ready(ascs_cid, ase_id);
             break;
 
         case 'r':
-            printf("ASCS Client: Disable, ASE[%d]\n", ase_index);
-            status = audio_stream_control_service_client_streamendpoint_disable(ascs_cid, ase_index);
+            printf("ASCS Client: Disable, ASE ID %d\n", ase_id);
+            status = audio_stream_control_service_client_streamendpoint_disable(ascs_cid, ase_id);
             break;
         case 'R':
-            printf("ASCS Client: Release, ASE[%d]\n", ase_index);
-            status = audio_stream_control_service_client_streamendpoint_release(ascs_cid, ase_index, false);
+            printf("ASCS Client: Release, ASE ID %d\n", ase_id);
+            status = audio_stream_control_service_client_streamendpoint_release(ascs_cid, ase_id, false);
             break;
 
         case 'q':
-            printf("ASCS Client: Released, ASE[%d]\n", ase_index);
-            audio_stream_control_service_client_streamendpoint_released(ascs_cid, ase_index);
+            printf("ASCS Client: Released, ASE ID %d\n", ase_id);
+            audio_stream_control_service_client_streamendpoint_released(ascs_cid, ase_id);
             break;
 
         case 'Q':
-            printf("ASCS Client: Update metadata, ASE[%d]\n", ase_index);
+            printf("ASCS Client: Update metadata, ASE ID %d\n", ase_id);
             ascs_metadata.metadata_mask = (1 << LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS) & (1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS);
             ascs_metadata.preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_MEDIA;
             ascs_metadata.streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_MEDIA;
 
-            status = audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_index, &ascs_metadata);
+            status = audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_id, &ascs_metadata);
             break;
     
         case 'T':
@@ -1101,7 +1109,7 @@ static void stdin_process(char cmd){
             ascs_codec_configuration_request.vendor_specific_codec_id = 0;
 
             ascs_codec_configuration_request.specific_codec_configuration = sc_config;
-            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_index, &ascs_codec_configuration_request);
+            status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_id, &ascs_codec_configuration_request);
             
             break;
 
@@ -1118,7 +1126,7 @@ static void stdin_process(char cmd){
             break;
         default:
             print_config();
-            print_ase_index();
+            print_ase_id();
             show_usage();
             break;
     }
