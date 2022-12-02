@@ -628,7 +628,6 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             
         case GATTSERVICE_SUBEVENT_PACS_PACK_RECORD:
             printf("PACS Client: %s PAC Record\n", gattservice_subevent_pacs_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
-            printf("      %s PAC Record DONE\n", gattservice_subevent_pacs_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
             break;
         case GATTSERVICE_SUBEVENT_PACS_PACK_RECORD_DONE:
             printf("      %s PAC Record DONE\n", gattservice_subevent_pacs_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
