@@ -787,11 +787,11 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
 static void print_config(void) {
     printf("ASE ID %d: ", ase_id);
-    printf("Config '%s_%u': %u, %s ms, %u octets\n",
+    printf("Config '%s_%u': %u, %u us, %u octets\n",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
            num_channels,
            codec_configurations[menu_sampling_frequency].samplingrate_hz,
-           codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US ? "7.5" : "10",
+           le_audio_get_frame_duration_us(codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index),
            codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame);
 }
 
@@ -1014,9 +1014,8 @@ static void stdin_process(char cmd){
             cis_octets_per_frame = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
             
             cis_sampling_frequency_hz =  codec_configurations[menu_sampling_frequency].samplingrate_hz;
-            if (codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US){
-                cig_frame_duration = BTSTACK_LC3_FRAME_DURATION_10000US;
-            }
+            cig_frame_duration = le_audio_util_get_btstack_lc3_frame_duration(codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index);
+
             cig_num_cis = 1;
             cis_num_channels = 1;
             
@@ -1095,9 +1094,8 @@ static void stdin_process(char cmd){
             cis_octets_per_frame = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
             
             cis_sampling_frequency_hz =  codec_configurations[menu_sampling_frequency].samplingrate_hz;
-            if (codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US){
-                cig_frame_duration = BTSTACK_LC3_FRAME_DURATION_10000US;
-            }
+            cig_frame_duration = le_audio_util_get_btstack_lc3_frame_duration(codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index);
+            
             cig_num_cis = 1;
             cis_num_channels = 1;
             
