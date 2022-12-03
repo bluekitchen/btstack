@@ -1260,8 +1260,11 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
             if (hci_stack->hci_transport->reset_link){
                 hci_stack->hci_transport->reset_link();
             }
-            if (((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main != ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_init) {
-                hci_stack->hci_transport->set_baudrate(((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main);
+            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO) {
+                if (((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main != ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_init &&
+                    ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main != 0) {
+                    hci_stack->hci_transport->set_baudrate(((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main);
+                }
             }
             /* fall through */
 

@@ -1,9 +1,10 @@
-{
+//configuration for jlink
+/*{
     // 使用 IntelliSense 了解相关属性。
     // 悬停以查看现有属性的描述。
     // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
 
-    "version": "0.2.0",
+    /*"version": "0.2.0",
     "configurations": [
       {
       "type": "cortex-debug",
@@ -21,4 +22,31 @@
       "runToMain": true
       }
       ]
+}*/
+
+//configuration for openocd with st-link
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "cwd": "${workspaceRoot}/port/stm32-f4discovery-csr8x11",//work directory 
+            "executable": "build/a2dp_sink_demo.elf",
+            "name": "STM32 Debug",
+            "request": "launch",
+            "type": "cortex-debug",
+            "preLaunchTask": "download",//先运行download任务
+            "showDevDebugOutput": true,
+            "servertype": "openocd",
+            "device": "STM32F407VGT6",
+            "configFiles": [
+                "C:/Program Files (x86)/OpenOCD-20211118-0.11.0/share/openocd/scripts/interface/stlink.cfg",
+                "C:/Program Files (x86)/OpenOCD-20211118-0.11.0/share/openocd/scripts/target/stm32f4x.cfg",
+            ],
+            "svdFile":"STM32F407xx.svd",
+            "runToMain": true
+        },
+    ]
 }

@@ -31,7 +31,32 @@
             },
             "problemMatcher": []
         },
+        //configuration for openocd with st-link
         {
+            "label": "download",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceRoot}/port/stm32-f4discovery-csr8x11"
+            },
+            "command": "openocd",
+            "args": [
+                "-f",
+                "interface/stlink.cfg",
+                "-f",
+                "target/stm32f4x.cfg",
+                "-c",
+                "program build/a2dp_sink_demo.hex verify reset exit"
+            ],
+            "group": "build",
+            "presentation": {
+                // 配置静默输出
+                "reveal": "silent"
+            },
+            // 报错匹配
+            "problemMatcher": "$gcc"
+        }
+        //configuration for jlink
+        /*{
             "label": "download",
             "type": "shell",
             "options": {
@@ -51,6 +76,6 @@
             "command": "JLinkRTTClient.exe",
             "args": [],
             "problemMatcher": []
-        }
+        }*/
     ]
 }
