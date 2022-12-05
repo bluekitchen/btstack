@@ -58,7 +58,8 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 // ASCS
 static ascs_client_connection_t ascs_connection;
-static uint8_t ase_count;
+static uint8_t source_ase_count;
+static uint8_t sink_ase_count;
 static ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
 static uint16_t ascs_cid;
 static uint8_t  ase_id = 0;
@@ -185,8 +186,9 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         gattservice_subevent_ascs_remote_server_connected_get_status(packet));
                 return;
             }
-            ase_count = gattservice_subevent_ascs_remote_server_connected_get_num_streamendpoints(packet);
-            MESSAGE("ASCS Client: connected, cid 0x%02x, num ASEs: %u", ascs_cid, ase_count);
+            source_ase_count = gattservice_subevent_ascs_remote_server_connected_get_source_ase_num(packet);
+            sink_ase_count = gattservice_subevent_ascs_remote_server_connected_get_sink_ase_num(packet);
+            MESSAGE("ASCS Client: connected, cid 0x%02x, num Sink ASEs: %u, num Source ASEs: %u", ascs_cid, sink_ase_count, source_ase_count);
 
             published_audio_capabilities_service_client_connect(&pacs_connection, remote_handle, &pacs_cid);
             break;
@@ -351,8 +353,8 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             uint8_t i;
             response_len = 0;
             btp_append_uint8((uint8_t) ascs_cid);
-            btp_append_uint8(ase_count);
-            for (i=0;i<ase_count;i++){
+            btp_append_uint8(sink_ase_count + source_ase_count);
+            for (i=0;i<sink_ase_count + source_ase_count;i++){
                 btp_append_uint8(streamendpoint_characteristics[i].ase_id);
                 btp_append_uint8((uint8_t) streamendpoint_characteristics[i].role);
             }
@@ -602,6 +604,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                     cig_params.cis_params[i].max_sdu_c_to_p = little_endian_read_16(data, offset);
                     offset += 2;
                     cig_params.cis_params[i].max_sdu_p_to_c = little_endian_read_16(data, offset);
+                    offset += 2;
                     cig_params.cis_params[i].phy_c_to_p = 2;  // 2M
                     cig_params.cis_params[i].phy_p_to_c = 2;  // 2M
                     cig_params.cis_params[i].rtn_c_to_p = 2;
