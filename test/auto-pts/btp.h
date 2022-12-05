@@ -283,5 +283,6 @@ extern "C" {
 #define BTP_LE_AUDIO_OP_ASCS_RELEASE              0x09
 #define BTP_LE_AUDIO_OP_ASCS_UPDATE_METADATA      0x0A
 #define BTP_LE_AUDIO_OP_CIG_CREATE                0x0B
+#define BTP_LE_AUDIO_OP_CIS_CREATE                0x0C
 
 #endif
