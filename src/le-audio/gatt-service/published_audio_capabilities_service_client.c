@@ -142,6 +142,7 @@ static void pacs_client_emit_audio_locations(pacs_client_connection_t * connecti
     pos += 2;
     event[pos++] = status;
     event[pos++] = (uint8_t)role;
+    memcpy(&event[pos], value, value_len);
     (*pacs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -166,6 +167,7 @@ static void pacs_client_emit_audio_contexts(pacs_client_connection_t * connectio
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
+    memcpy(&event[pos], value, value_len);
     (*pacs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
