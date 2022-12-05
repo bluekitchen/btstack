@@ -82,18 +82,6 @@ static unsigned int cis_setup_next_index;
 static uint16_t packet_sequence_numbers[MAX_NUM_CIS];
 static uint8_t iso_payload[MAX_CHANNELS * MAX_LC3_FRAME_BYTES];
 
-static void bap_service_client_setup_cis(void){
-    uint8_t i;
-    cis_setup_next_index = 0;
-    hci_con_handle_t acl_connection_handles[MAX_CHANNELS];
-    for (i=0; i < cig.num_cis; i++){
-        acl_connection_handles[i] = remote_handle;
-    }
-    uint8_t status = gap_cis_create(cig_params.cig_id, cis_con_handles, acl_connection_handles);
-    btstack_assert(status == ERROR_CODE_SUCCESS);
-}
-
-
 static void send_iso_packet(uint8_t cis_index){
     bool ok = hci_reserve_packet_buffer();
     btstack_assert(ok);
@@ -144,7 +132,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_EVENT_META_GAP:
                     switch (hci_event_gap_meta_get_subevent_code(packet)) {
                         case GAP_SUBEVENT_CIG_CREATED:
-                            MESSAGE("CIS Connection Handles: ");
+                            MESSAGE("CIG Created: CIS Connection Handles: ");
                             for (i = 0; i < cig.num_cis; i++) {
                                 cis_con_handles[i] = gap_subevent_cig_created_get_cis_con_handles(packet, i);
                                 MESSAGE("0x%04x ", cis_con_handles[i]);
@@ -155,9 +143,10 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                             }
                             break;
                         case GAP_SUBEVENT_CIS_CREATED:
-                            if (response_op == BTP_LE_AUDIO_OP_ASCS_ENABLE){
+                            MESSAGE("CIS Created");
+                            if (response_op == BTP_LE_AUDIO_OP_CIS_CREATE){
                                 response_op = 0;
-                                btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_ENABLE, 0, 0, NULL);
+                                btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_CIS_CREATE, 0, 0, NULL);
                             }
                             break;
                         default:
@@ -274,10 +263,6 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     case BTP_LE_AUDIO_OP_ASCS_ENABLE:
                         switch (ase_state){
                             case ASCS_STATE_ENABLING:
-                                MESSAGE("Setup ISO Channel\n");
-                                bap_service_client_setup_cis();
-                                break;
-                            case ASCS_STATE_STREAMING:
                                 btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
                                 response_op = 0;
                                 break;
@@ -331,6 +316,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             }
             // start sending if SINK ASE
             if ((ase_state == ASCS_STATE_STREAMING) && (audio_stream_control_service_client_get_ase_role(ascs_cid, ase_id) == LE_AUDIO_ROLE_SINK)){
+                MESSAGE("ASCS_STATE_STREAMING: start streaming");
                 hci_request_cis_can_send_now_events(cis_con_handles[0]);
             }
             break;
@@ -552,7 +538,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
             if (controller_index == 0) {
                 // ascs_cid in data[0]
                 ase_id = data[1];
-                MESSAGE("btstack: add le_audio tests ase_id %u", ase_id);
+                MESSAGE("BTP_LE_AUDIO_OP_ASCS_RECEIVER_START_READY: ase_id %u", ase_id);
                 uint8_t status = audio_stream_control_service_client_streamendpoint_receiver_start_ready(ascs_cid, ase_id);
                 btstack_assert(status == ERROR_CODE_SUCCESS);
             }
@@ -627,6 +613,18 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 }
 
                 uint8_t status = gap_cig_create(&cig, &cig_params);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+            }
+            break;
+        case BTP_LE_AUDIO_OP_CIS_CREATE:
+            if (controller_index == 0) {
+                uint8_t i;
+                cis_setup_next_index = 0;
+                hci_con_handle_t acl_connection_handles[MAX_CHANNELS];
+                for (i = 0; i < cig.num_cis; i++) {
+                    acl_connection_handles[i] = remote_handle;
+                }
+                uint8_t status = gap_cis_create(cig_params.cig_id, cis_con_handles, acl_connection_handles);
                 btstack_assert(status == ERROR_CODE_SUCCESS);
             }
             break;
