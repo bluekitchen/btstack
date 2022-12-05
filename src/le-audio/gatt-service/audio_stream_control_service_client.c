@@ -244,7 +244,6 @@ static void ascs_client_emit_control_point_operation_response(uint16_t cid, uint
 }
 
 static uint16_t ascs_parse_ase(const uint8_t * value, uint16_t value_size, ascs_streamendpoint_t * streamendpoint){
-    UNUSED(value_size);
     uint16_t pos = 0;
 
     if (value_size < 2){
@@ -279,7 +278,7 @@ static uint16_t ascs_parse_ase(const uint8_t * value, uint16_t value_size, ascs_
             cis_id = value[pos++];
             
             if ( (cig_id != streamendpoint->qos_configuration.cig_id) ||
-                 (cig_id != streamendpoint->qos_configuration.cis_id) ){
+                 (cis_id != streamendpoint->qos_configuration.cis_id) ){
                 return 0;
             }
 
