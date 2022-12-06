@@ -542,6 +542,40 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
     }
 }
+
+static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+
+    hci_con_handle_t con_handle;
+    uint8_t status;
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        
+        case GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_CONNECTED:
+            con_handle = gattservice_subevent_csis_coordinator_connected_get_con_handle(packet);
+            status =     gattservice_subevent_csis_coordinator_connected_get_status(packet);
+
+            if (status != ERROR_CODE_SUCCESS){
+                printf("CSIS Server: connection to coordinator failed, con_handle 0x%02x, status 0x%02x\n", con_handle, status);
+                return;
+            }
+            printf("CSIS Server: connected, con_handle 0x%02x\n", con_handle);
+            break;
+
+        case GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_DISCONNECTED:
+            con_handle = gattservice_subevent_csis_coordinator_disconnected_get_con_handle(packet);
+            printf("CSIS Server: RELEASED\n");
+            break;
+
+        default:
+            break;
+    }
+}
+
 // ATT Client Read Callback for Dynamic Data
 // - if buffer == NULL, don't copy data, just return size of value
 // - if buffer != NULL, copy data and return number bytes copied
@@ -567,6 +601,12 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 }
 
 static void show_usage(void){
+    uint8_t iut_address_type;
+    bd_addr_t      iut_address;
+    gap_le_get_own_address(&iut_address_type, iut_address);
+
+    printf("IUT: addr type %u, addr %s", iut_address_type, bd_addr_to_str(iut_address));
+
     printf("## PACS\n");
     printf("a - trigger Sink PAC record notification\n");
     printf("A - trigger Source PAC record notification\n");
@@ -791,7 +831,9 @@ int btstack_main(void)
     media_control_service_server_set_icon_url(media_player_id2, icon_url);
     media_control_service_server_set_track_title(media_player_id2, "");
 
-    coordinated_set_identification_service_server_init(CSIS_COORDINATORS_MAX_NUM, &csis_coordiantors[0], 1);
+    coordinated_set_identification_service_server_init(CSIS_COORDINATORS_MAX_NUM, &csis_coordiantors[0], 1, 1);
+    coordinated_set_identification_service_server_register_packet_handler(&csis_server_packet_handler);
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
