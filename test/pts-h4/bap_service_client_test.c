@@ -112,68 +112,10 @@ typedef enum {
 static bap_app_client_state_t bap_app_client_state = BAP_APP_CLIENT_STATE_IDLE;
 
 // codec menu
-static uint8_t menu_sampling_frequency;
-static uint8_t menu_variant;
-static uint8_t num_channels;
-
-// enumerate default codec configs
-static struct {
-    uint16_t samplingrate_hz;
-    le_audio_codec_sampling_frequency_index_t sampling_frequency_index;
-    uint8_t  num_variants;
-    struct {
-        const char * name;
-        le_audio_codec_frame_duration_index_t frame_duration_index;
-        uint16_t octets_per_frame;
-    } variants[6];
-} codec_configurations[] = {
-    {
-        8000, LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ, 2,
-        {
-            {  "8_1", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 26},
-            {  "8_2", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 30}
-        }
-    },
-    {
-       16000, LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_16000_HZ, 2,
-       {
-            {  "16_1",  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 30},
-            {  "16_2",  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 40}
-       }
-    },
-    {
-        24000, LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_24000_HZ, 2,
-        {
-            {  "24_1",  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 45},
-            {  "24_2",  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 60}
-       }
-    },
-    {
-        32000, LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_32000_HZ, 2,
-        {
-            {  "32_1", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 60},
-            {  "32_2", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 80}
-        }
-    },
-    {
-        44100, LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ, 2,
-        {
-            { "441_1", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,  97},
-            { "441_2", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 130}
-        }
-    },
-    {
-        48000, LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, 6,
-        {
-            {  "48_1", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 75},
-            {  "48_2", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 100},
-            {  "48_3", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 90},
-            {  "48_4", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 120},
-            {  "48_5", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US, 117},
-            {  "48_6", LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 155}
-        }
-    },
-};
+static le_audio_codec_sampling_frequency_index_t menu_sampling_frequency_index;
+static le_audio_codec_frame_duration_index_t menu_frame_duration_index;
+static le_audio_quality_t menu_audio_quality;
+static uint8_t menu_num_channels;
 
 
 static bass_source_data_t source_data1 = {
@@ -255,9 +197,10 @@ static void bap_client_reset(void){
     bap_app_client_state = BAP_APP_CLIENT_STATE_IDLE;
     bap_app_client_con_handle = HCI_CON_HANDLE_INVALID;
 
-    num_channels = 1;
-    menu_sampling_frequency = 0;
-    menu_variant = 0;
+    menu_num_channels = 1;
+    menu_sampling_frequency_index = LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ;
+    menu_frame_duration_index = 0;
+    menu_audio_quality = LE_AUDIO_QUALITY_LOW;
     ase_id = 1;
 }
 
@@ -786,13 +729,15 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 }
 
 static void print_config(void) {
+    const le_audio_codec_configuration_t * setting = le_audio_util_get_codec_setting(menu_sampling_frequency_index, menu_frame_duration_index, menu_audio_quality);
+
     printf("ASE ID %d: ", ase_id);
     printf("Config '%s_%u': %u, %u us, %u octets\n",
-           codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
-           num_channels,
-           codec_configurations[menu_sampling_frequency].samplingrate_hz,
-           le_audio_get_frame_duration_us(codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index),
-           codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame);
+           setting->name,
+           menu_num_channels,
+           le_audio_get_sampling_frequency_hz(menu_sampling_frequency_index),
+           le_audio_get_frame_duration_us(menu_frame_duration_index),
+           setting->octets_per_frame);
 }
 
 static void show_usage(void){
@@ -840,9 +785,9 @@ static void show_usage(void){
     printf("Q   - update metadata, ASE ID %d\n", ase_id);
 
     printf("u - toggle ASE ID %d\n", ase_id);
-    printf("x - toggle channels\n");
+    printf("x - next frame duration index\n");
     printf("y - next sampling frequency\n");
-    printf("z - next codec variant\n");
+    printf("z - next audio quality\n");
 
     printf("T - vendor specific codec\n");
     printf("Y - vendor specific QoS\n");
@@ -888,25 +833,25 @@ static void stdin_process(char cmd){
             break;
 
         case 'x':
-            num_channels = 3 - num_channels;
+            menu_frame_duration_index++;
+            if (menu_frame_duration_index >= LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US){
+                menu_frame_duration_index = LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US;
+            }
             print_config();
             break;
 
         case 'y':
-            menu_sampling_frequency++;
-            if (menu_sampling_frequency >= 6){
-                menu_sampling_frequency = 0;
-            }
-            if (menu_variant >= codec_configurations[menu_sampling_frequency].num_variants){
-                menu_variant = 0;
+            menu_sampling_frequency_index++;
+            if (menu_sampling_frequency_index >= LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_384000_HZ){
+                menu_sampling_frequency_index = LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ;
             }
             print_config();
             break;
         
         case 'z':
-            menu_variant++;
-            if (menu_variant >= codec_configurations[menu_sampling_frequency].num_variants){
-                menu_variant = 0;
+            menu_audio_quality++;
+            if (menu_audio_quality >= LE_AUDIO_QUALITY_HIGH){
+                menu_audio_quality = LE_AUDIO_QUALITY_LOW;
             }
             print_config();
             break;
@@ -999,22 +944,24 @@ static void stdin_process(char cmd){
             status = audio_stream_control_service_client_read_streamendpoint(ascs_cid, ase_id);
             break;
         
-        case 'K': 
+        case 'K': {
+            const le_audio_codec_configuration_t * setting = le_audio_util_get_codec_setting(menu_sampling_frequency_index, menu_frame_duration_index, menu_audio_quality);
+
             printf("ASCS Client: Configure Codec, ");
             print_config();
             print_ase_id();
 
             sc_config.codec_configuration_mask = 0x3E;
-            sc_config.sampling_frequency_index = codec_configurations[menu_sampling_frequency].sampling_frequency_index;
-            sc_config.frame_duration_index   =   codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index;
-            sc_config.octets_per_codec_frame =   codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+            sc_config.sampling_frequency_index = setting->sampling_frequency_index;
+            sc_config.frame_duration_index   =   setting->frame_duration_index;
+            sc_config.octets_per_codec_frame =   setting->octets_per_frame;
             sc_config.audio_channel_allocation_mask = LE_AUDIO_LOCATION_MASK_FRONT_LEFT;
             sc_config.codec_frame_blocks_per_sdu = 1;
 
-            cis_octets_per_frame = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+            cis_octets_per_frame = setting->octets_per_frame;
             
-            cis_sampling_frequency_hz =  codec_configurations[menu_sampling_frequency].samplingrate_hz;
-            cig_frame_duration = le_audio_util_get_btstack_lc3_frame_duration(codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index);
+            cis_sampling_frequency_hz =  setting->samplingrate_hz;
+            cig_frame_duration = le_audio_util_get_btstack_lc3_frame_duration(setting->frame_duration_index);
 
             cig_num_cis = 1;
             cis_num_channels = 1;
@@ -1028,7 +975,7 @@ static void stdin_process(char cmd){
             ascs_codec_configuration_request.specific_codec_configuration = sc_config;
             status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_id, &ascs_codec_configuration_request);
             break;
-        
+        }
         case 'l':
             printf("ASCS Client: Configure QoS, ");
             print_config();
