@@ -809,6 +809,7 @@ static void stdin_process(char cmd){
     operation_cmd = cmd;
     
     ascs_specific_codec_configuration_t sc_config;
+    le_audio_codec_configuration_t * setting;
 
     switch (cmd){
         case 'c':
@@ -944,12 +945,12 @@ static void stdin_process(char cmd){
             status = audio_stream_control_service_client_read_streamendpoint(ascs_cid, ase_id);
             break;
         
-        case 'K': {
-            const le_audio_codec_configuration_t * setting = le_audio_util_get_codec_setting(menu_sampling_frequency_index, menu_frame_duration_index, menu_audio_quality);
-
+        case 'K': 
             printf("ASCS Client: Configure Codec, ");
             print_config();
             print_ase_id();
+
+            setting = le_audio_util_get_codec_setting(menu_sampling_frequency_index, menu_frame_duration_index, menu_audio_quality);
 
             sc_config.codec_configuration_mask = 0x3E;
             sc_config.sampling_frequency_index = setting->sampling_frequency_index;
@@ -960,7 +961,7 @@ static void stdin_process(char cmd){
 
             cis_octets_per_frame = setting->octets_per_frame;
             
-            cis_sampling_frequency_hz =  setting->samplingrate_hz;
+            cis_sampling_frequency_hz =  le_audio_get_sampling_frequency_hz(setting->sampling_frequency_index);
             cig_frame_duration = le_audio_util_get_btstack_lc3_frame_duration(setting->frame_duration_index);
 
             cig_num_cis = 1;
@@ -975,7 +976,7 @@ static void stdin_process(char cmd){
             ascs_codec_configuration_request.specific_codec_configuration = sc_config;
             status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_id, &ascs_codec_configuration_request);
             break;
-        }
+        
         case 'l':
             printf("ASCS Client: Configure QoS, ");
             print_config();
@@ -1031,18 +1032,20 @@ static void stdin_process(char cmd){
             printf("Use vendor specific codec: 48000 Hz, 7.5 ms\n");
             print_config();
 
+            setting = le_audio_util_get_codec_setting(menu_sampling_frequency_index, menu_frame_duration_index, menu_audio_quality);
+
             sc_config.codec_configuration_mask = 0x1E;
-            sc_config.sampling_frequency_index = codec_configurations[menu_sampling_frequency].sampling_frequency_index;
-            sc_config.frame_duration_index   =   codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index;
-            sc_config.octets_per_codec_frame =   codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+            sc_config.sampling_frequency_index = setting->sampling_frequency_index;
+            sc_config.frame_duration_index   =   setting->frame_duration_index;
+            sc_config.octets_per_codec_frame =   setting->octets_per_frame;
             sc_config.audio_channel_allocation_mask = LE_AUDIO_LOCATION_MASK_FRONT_LEFT;
             sc_config.codec_frame_blocks_per_sdu = 1;
 
-            cis_octets_per_frame = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+            cis_octets_per_frame = setting->octets_per_frame;
             
-            cis_sampling_frequency_hz =  codec_configurations[menu_sampling_frequency].samplingrate_hz;
-            cig_frame_duration = le_audio_util_get_btstack_lc3_frame_duration(codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration_index);
-            
+            cis_sampling_frequency_hz =  le_audio_get_sampling_frequency_hz(setting->sampling_frequency_index);
+            cig_frame_duration = le_audio_util_get_btstack_lc3_frame_duration(setting->frame_duration_index);
+
             cig_num_cis = 1;
             cis_num_channels = 1;
             
@@ -1054,7 +1057,6 @@ static void stdin_process(char cmd){
 
             ascs_codec_configuration_request.specific_codec_configuration = sc_config;
             status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_id, &ascs_codec_configuration_request);
-            
             break;
 
         case 'Y':
