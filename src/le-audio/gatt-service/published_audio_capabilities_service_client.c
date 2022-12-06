@@ -456,15 +456,10 @@ static void pacs_client_run_for_connection(pacs_client_connection_t * connection
             break;
 
         case PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W2_READ_SERVER:
-            connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_SERVER_READ_RESPONSE;
-
             pacs_characteristic = pacs_client_get_query_characteristic(connection);
-
-            if (pacs_characteristic == NULL){
-                connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_CONNECTED;
-                break;
-            }
-
+            btstack_assert(pacs_characteristic != NULL);
+            
+            connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_SERVER_READ_RESPONSE;
             status = gatt_client_read_value_of_characteristic_using_value_handle(
                 &handle_gatt_client_event, connection->con_handle, 
                 pacs_characteristic->value_handle);
@@ -859,6 +854,11 @@ static uint8_t published_audio_capabilities_service_client_get_operation(
     }
     if (connection->state != PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_CONNECTED) {
         return GATT_CLIENT_IN_WRONG_STATE;
+    }
+
+    pacs_client_characteristic_t * pacs_characteristic = pacs_client_get_query_characteristic(connection);
+    if (pacs_characteristic == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
     connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W2_READ_SERVER;
