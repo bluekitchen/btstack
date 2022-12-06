@@ -127,7 +127,6 @@ typedef struct {
     uint8_t value[4];
     uint8_t value_len;
     pacs_client_characteristic_index_t query_characteristic_index;
-
 } pacs_client_connection_t;
 
 /**
