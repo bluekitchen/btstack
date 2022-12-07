@@ -716,6 +716,7 @@ static void gap_limited_discovery_timeout_handler(btstack_timer_source_t * ts){
 
 static void gap_connect_timeout_handler(btstack_timer_source_t * ts){
     UNUSED(ts);
+    gap_connect_cancel();
     gap_connect_send_response();
 }
 
@@ -1090,7 +1091,11 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 // uint8_t own_addr_type = data[7];
 
                 // todo: handle Classic
-                gap_auto_connection_start(remote_addr_type, remote_addr);
+                // todo: connect with whitelist didn't work for the second connection although the first had been
+                // removed from the whitelist
+                // gap_whitelist_add(remote_addr_type, remote_addr);
+                // gap_connect_with_whitelist();
+                gap_connect(remote_addr, remote_addr_type);
 
                 // schedule response
                 gap_send_connect_response = true;
