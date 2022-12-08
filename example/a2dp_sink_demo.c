@@ -759,7 +759,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             volume = avrcp_subevent_notification_volume_changed_get_absolute_volume(packet);
             volume_percentage = volume * 100 / 127;
             printf("AVRCP Target    : Volume set to %d%% (%d)\n", volume_percentage, volume);
-            avrcp_volume_changed(volume);
+            avrcp_volume_changed(volume_percentage);
             break;
         
         case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
@@ -984,14 +984,14 @@ static void stdin_process(char cmd){
             volume = volume_percentage * 127 / 100;
             printf(" - volume up   for 10 percent, %d%% (%d) \n", volume_percentage, volume);
             status = avrcp_target_volume_changed(avrcp_cid, volume);
-            avrcp_volume_changed(volume);
+            avrcp_volume_changed(volume_percentage);
             break;
         case 'T':
             volume_percentage = volume_percentage >= 10 ? volume_percentage - 10 : 0;
             volume = volume_percentage * 127 / 100;
             printf(" - volume down for 10 percent, %d%% (%d) \n", volume_percentage, volume);
             status = avrcp_target_volume_changed(avrcp_cid, volume);
-            avrcp_volume_changed(volume);
+            avrcp_volume_changed(volume_percentage);
             break;
 
         case 'O':

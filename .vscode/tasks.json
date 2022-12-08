@@ -9,7 +9,7 @@
             "options": {
                 "cwd": "${workspaceRoot}/port/stm32-f4discovery-csr8x11"
             },
-            "command": "make -j4",
+            "command": "make -j8",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -47,7 +47,8 @@
                 "-c",
                 "program build/a2dp_sink_demo.hex verify reset exit"
             ],
-            "group": "build",
+            //"group": "build",
+            "dependsOn": "build",
             "presentation": {
                 // 配置静默输出
                 "reveal": "silent"

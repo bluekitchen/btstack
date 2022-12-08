@@ -148,7 +148,7 @@ static int btstack_audio_embedded_source_init(
 }
 
 static void btstack_audio_embedded_sink_set_volume(uint8_t volume){
-    UNUSED(volume);
+    hal_audio_sink_set_volume(volume);
 }
 
 static void btstack_audio_embedded_source_set_gain(uint8_t gain){

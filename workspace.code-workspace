@@ -3,5 +3,8 @@
 		{
 			"path": "."
 		}
-	]
+	],
+	"settings": {
+		"cortex-debug.variableUseNaturalFormat": true
+	}
 }

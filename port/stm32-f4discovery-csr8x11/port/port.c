@@ -30,7 +30,7 @@
 extern UART_HandleTypeDef huart2;//system log uart or hci log uart
 extern UART_HandleTypeDef huart3;//hci uart
 
-#define ENABLE_SYSTEM_LOG 1
+#define ENABLE_SYSTEM_LOG 0
 
 #if ENABLE_SYSTEM_LOG == 1
 #define SYSTEM_LOG_UART	  huart2
@@ -43,9 +43,9 @@ extern UART_HandleTypeDef huart3;//hci uart
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static const hci_transport_config_uart_t config = {
-	HCI_TRANSPORT_CONFIG_UART,
+    HCI_TRANSPORT_CONFIG_UART,
     115200,
-    0,
+    460800,
     1,
     NULL
 };
@@ -69,7 +69,7 @@ void hal_cpu_enable_irqs(void){
 
 void hal_cpu_enable_irqs_and_sleep(void){
 	__enable_irq();
-	//__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+	__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
 }
 
 #ifndef ENABLE_SEGGER_RTT
@@ -110,7 +110,7 @@ static void dummy_handler(void){};
 static int hal_uart_needed_during_sleep;
 
 void hal_uart_dma_set_sleep(uint8_t sleep){
-#if 0
+#if 1
 	// RTS is on PD12 - manually set it during sleep
 	GPIO_InitTypeDef RTS_InitStruct;
 	RTS_InitStruct.Pin = GPIO_PIN_12;
@@ -174,7 +174,7 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
 }
 
 void EXTI15_10_IRQHandler(void){
-#if 0
+#if 1
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_11);
 	if (cts_irq_handler){
 		(*cts_irq_handler)();
@@ -183,7 +183,7 @@ void EXTI15_10_IRQHandler(void){
 }
 
 void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
-#if 0
+#if 1
 	GPIO_InitTypeDef CTS_InitStruct = {
 		.Pin       = GPIO_PIN_11,
 		.Mode      = GPIO_MODE_AF_PP,
@@ -211,10 +211,13 @@ void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
 #endif
 }
 
-int  hal_uart_dma_set_baud(uint32_t baud){
+int hal_uart_dma_set_baud(uint32_t baud) {
+    //if (baud == config.baudrate_init)
+        //return 0;
+
 	HCI_DRIVER_UART.Init.BaudRate = baud;
 	HAL_UART_Init(&HCI_DRIVER_UART);
-	return 0;
+    return 0;
 }
 
 void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
@@ -369,22 +372,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION){
-#if 0
                 uint16_t manufacturer   = little_endian_read_16(packet, 10);
-                uint16_t lmp_subversion = little_endian_read_16(packet, 12);
-                // assert manufacturer is TI
-                if (manufacturer != BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC){
-                    printf("ERROR: Expected Bluetooth Chipset from TI but got manufacturer 0x%04x\n", manufacturer);
+                // assert manufacturer is CSR
+                if (manufacturer != BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
+                    printf("ERROR: Expected Bluetooth Chipset from CSR but got manufacturer 0x%04x\n", manufacturer);
                     break;
                 }
-                // assert correct init script is used based on expected lmp_subversion
-                if (lmp_subversion != btstack_chipset_cc256x_lmp_subversion()){
-                    printf("Error: LMP Subversion does not match initscript! ");
-                    printf("Your initscripts is for %s chipset\n", btstack_chipset_cc256x_lmp_subversion() < lmp_subversion ? "an older" : "a newer");
-                    printf("Please update Makefile to include the appropriate bluetooth_init_cc256???.c file\n");
-                    break;
-                }
-#endif
             }
             break;
         default:

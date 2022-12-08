@@ -178,6 +178,14 @@ void hal_audio_sink_stop(void){
 }
 
 /**
+ * @brief set volume
+ */
+
+void hal_audio_sink_set_volume(uint8_t vol)
+{
+    //BSP_AUDIO_OUT_SetVolume(vol);
+}
+/**
  * @brief Close audio codec
  */
 void hal_audio_sink_close(void){

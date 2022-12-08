@@ -1260,12 +1260,15 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
             if (hci_stack->hci_transport->reset_link){
                 hci_stack->hci_transport->reset_link();
             }
+#if 0
             if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO) {
                 if (((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main != ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_init &&
                     ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main != 0) {
+                    log_info("Local baud rate change to %" PRIu32 "(timeout handler)", ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main);
                     hci_stack->hci_transport->set_baudrate(((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main);
                 }
             }
+#endif
             /* fall through */
 
         case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
@@ -1358,8 +1361,16 @@ static void hci_initializing_run(void){
             // use timer to update baud rate after 100 ms (knowing exactly, when command was sent is non-trivial)
             if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS){
                 btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
+                btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                 btstack_run_loop_add_timer(&hci_stack->timeout);
             }
+#if 0
+            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
+                btstack_run_loop_set_timer(&hci_stack->timeout, 500);
+                btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
+                btstack_run_loop_add_timer(&hci_stack->timeout);
+            }
+#endif
             break;
         }
         case HCI_INIT_SEND_BAUD_CHANGE_BCM: {
@@ -1387,16 +1398,23 @@ static void hci_initializing_run(void){
                         btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
                         btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                         btstack_run_loop_add_timer(&hci_stack->timeout);
+#if 0
+                        if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO) {
+                            hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT_LINK_RESET;
+                        }
+#endif
+#if 1
                         if ((hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO)
                             && hci_stack->config
                             && hci_stack->chipset
-                            // && hci_stack->chipset->set_baudrate_command -- there's no such command
+                            //&& hci_stack->chipset->set_baudrate_command
                             && hci_stack->hci_transport->set_baudrate
                             && hci_transport_uart_get_main_baud_rate()){
                             hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
                         } else {
                            hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT_LINK_RESET;
                         }
+#endif
                         break;
                     default:
                         break;

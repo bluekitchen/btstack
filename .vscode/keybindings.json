@@ -1,0 +1,9 @@
+// Place your key bindings in this file to override the defaults
+[
+    {
+        "key":"F6",
+        "command": "workbench.action.tasks.runTask",
+        "args":"download",
+        "when": []
+    }
+]
