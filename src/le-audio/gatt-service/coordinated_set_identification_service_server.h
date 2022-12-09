@@ -102,6 +102,7 @@ uint8_t coordinated_set_identification_service_server_set_size(uint8_t coordinat
 
 uint8_t coordinated_set_identification_service_server_set_rank(uint8_t member_rank);
 
+void coordinated_set_identification_service_server_get_rsi(void);
 
 /**
  * @brief Register callback.
