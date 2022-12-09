@@ -109,10 +109,13 @@ uint8_t coordinated_set_identification_service_server_set_rank(uint8_t member_ra
  */
 void coordinated_set_identification_service_server_register_packet_handler(btstack_packet_handler_t callback);
 
-
 void coordinated_set_identification_service_server_deinit(void);
 
 /* API_END */
+
+// PTS test only
+uint8_t coordinated_set_identification_service_server_simulate_member_connected(hci_con_handle_t con_handle);
+uint8_t coordinated_set_identification_service_server_simulate_set_lock(hci_con_handle_t con_handle, csis_member_lock_t lock);
 
 #if defined __cplusplus
 }
