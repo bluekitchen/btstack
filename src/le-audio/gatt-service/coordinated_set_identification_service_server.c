@@ -87,6 +87,10 @@ static uint16_t member_lock_configuration_handle;
 static uint8_t  csis_member_rank;
 static uint16_t member_rank_handle;
 
+static btstack_crypto_random_t request;
+static uint8_t prand_provisioner[16];
+static uint8_t csis_hash[16];
+
 static csis_coordinator_t * csis_get_coordinator_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
         return NULL;
@@ -158,16 +162,15 @@ static void csis_server_emit_lock(hci_con_handle_t con_handle){
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void csis_server_emit_ris(hci_con_handle_t con_handle){
+static void csis_server_emit_ris(uint8_t * ris){
     btstack_assert(csis_event_callback != NULL);
 
-    uint8_t event[6];
+    uint8_t event[19];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_CSIS_SET_SIZE;
-    little_endian_store_16(event, pos, con_handle);
-    event[pos++] = csis_coordinated_set_size;
+    memcpy(&event[pos], ris, 16);
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -548,6 +551,16 @@ void coordinated_set_identification_service_server_deinit(void){
     csis_event_callback = NULL;
 }
 
+static void csis_handle_prand_provisioner(void * arg){
+    UNUSED(arg);
+    
+    btstack_aes128_calc(csis_sirk, prand_provisioner, csis_hash);
+    csis_server_emit_ris(csis_hash);
+}
+
+void coordinated_set_identification_service_server_get_rsi(void){
+    btstack_crypto_random_generate(&request, prand_provisioner, 16, &csis_handle_prand_provisioner, NULL);
+}
 
 uint8_t coordinated_set_identification_service_server_simulate_member_connected(hci_con_handle_t con_handle){
     csis_coordinator_t * coordinator = csis_get_coordinator_for_con_handle(con_handle);
