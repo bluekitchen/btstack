@@ -416,7 +416,18 @@ void coordinated_set_identification_service_server_init(
 
     member_rank_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_RANK_CHARACTERISTIC);
     
-    log_info("Found SIRK service 0x%02x-0x%02x", start_handle, end_handle);
+    log_info("Found CSIS service 0x%02x-0x%02x", start_handle, end_handle);
+
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("Found CSIS service 0x%02x-0x%02x\n", start_handle, end_handle);
+    printf("sirk_handle             0x%02x\n", sirk_handle);
+    printf("sirk_handle CCC         0x%02x\n", sirk_configuration_handle);
+    printf("set_size_handle         0x%02x\n", coordinated_set_size_handle);
+    printf("set_size_handle CCC     0x%02x\n", coordinated_set_size_configuration_handle);
+    printf("member_lock_handle      0x%02x\n", member_lock_handle);
+    printf("member_lock_handle CCC  0x%02x\n", member_lock_configuration_handle);
+    printf("member_rank_handle      0x%02x\n", member_rank_handle); 
+#endif
 
     csis_coordinated_set_size = coordianted_set_size;
     csis_member_rank = member_rank;
