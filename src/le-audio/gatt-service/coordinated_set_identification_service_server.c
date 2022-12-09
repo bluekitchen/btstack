@@ -278,8 +278,34 @@ static void csis_lock_timer_start(csis_coordinator_t * coordinator){
     btstack_run_loop_add_timer(&coordinator->lock_timer);
 }
 
+static uint8_t csis_set_lock(csis_coordinator_t * coordinator, csis_member_lock_t lock){
+    csis_coordinator_t * lock_owner = csis_get_lock_owner_coordinator();
+
+    if ( (lock_owner != NULL) && (lock_owner != coordinator)){
+        if (lock == CSIS_MEMBER_LOCKED){
+            return CSIS_LOCK_DENIED;
+        }
+        return CSIS_LOCK_RELEASE_NOT_ALLOWED;
+    }
+
+    if (lock >= CSIS_MEMBER_PROHIBITED){
+        return CSIS_INVALID_LOCK_VALUE;
+    }    
+
+    if (csis_member_lock == lock){
+       return CSIS_LOCK_ALREADY_GRANTED;
+    }
+
+    csis_member_lock = lock;
+    coordinator->is_lock_owner = true;
+    if (lock == CSIS_MEMBER_LOCKED){
+        csis_lock_timer_start(coordinator);
+    }
+    csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
+    return ERROR_CODE_SUCCESS;
+}
+
 static int coordinated_set_identification_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    // printf("coordinated_set_identification_service_write_callback con_handle 0x%02x, attr_handle 0x%02x \n", con_handle, attribute_handle);
     csis_coordinator_t * coordinator = csis_get_coordinator_for_con_handle(con_handle);
     if (coordinator == NULL){
         coordinator = csis_server_add_coordinator(con_handle);
@@ -310,40 +336,12 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
     }
 
     if (attribute_handle == member_lock_handle){
-        csis_member_lock_t lock = (csis_member_lock_t) buffer[0];
-        if (csis_member_lock == lock){
-            return CSIS_LOCK_ALREADY_GRANTED;
-        }
-        
-        csis_coordinator_t * lock_owner = csis_get_lock_owner_coordinator();
+        uint8_t status = csis_set_lock(coordinator, (csis_member_lock_t) buffer[0]);
 
-        switch (lock){
-            case CSIS_MEMBER_UNLOCKED:
-                if ((lock_owner == NULL) || (lock_owner != coordinator)){
-                    return CSIS_LOCK_RELEASE_NOT_ALLOWED;
-                }
-                csis_member_lock = lock;
-                // coordinator wrote this value, and as long as it is owner, 
-                // csis_server_set_callback will set notification to all
-                // other coordinators
-                csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
-                coordinator->is_lock_owner = false;
-                break;
-            
-            case CSIS_MEMBER_LOCKED:
-                if (lock_owner != coordinator){
-                    return CSIS_LOCK_DENIED;
-                }
-                csis_member_lock = lock;
-                coordinator->is_lock_owner = true;
-                csis_lock_timer_start(coordinator);
-                csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
-                break;
-
-            default:
-                return CSIS_INVALID_LOCK_VALUE;
+        if (status == ERROR_CODE_SUCCESS){
+            csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
         }
-        return 0;
+        return status;
     }
     
     if (attribute_handle == coordinated_set_size_handle){
