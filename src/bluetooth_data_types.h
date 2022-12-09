@@ -51,6 +51,7 @@
 #define BLUETOOTH_DATA_TYPE_PB_ADV                                             0x29 // PB-ADV
 #define BLUETOOTH_DATA_TYPE_MESH_MESSAGE                                       0x2A // Mesh Message
 #define BLUETOOTH_DATA_TYPE_MESH_BEACON                                        0x2B // Mesh Beacon
+#define BLUETOOTH_DATA_TYPE_RESOLVABLE_SET_IDENTIFIER                          0x2E // Resolvable Set Identifier
 #define BLUETOOTH_DATA_TYPE_3D_INFORMATION_DATA                                0x3D // 3D Information Data
 #define BLUETOOTH_DATA_TYPE_MANUFACTURER_SPECIFIC_DATA                         0xFF // Manufacturer Specific Data
 
