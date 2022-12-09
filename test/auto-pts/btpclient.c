@@ -65,7 +65,7 @@
 #define BT_LE_AD_NO_BREDR (1U << 2)
 
 #define LIM_DISC_SCAN_MIN_MS 10000
-#define GAP_CONNECT_TIMEOUT_MS 10000
+#define GAP_CONNECT_TIMEOUT_MS 30000
 
 //#define TEST_POWER_CYCLE
 
@@ -249,6 +249,7 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
     UNUSED(channel);
     hci_con_handle_t con_handle;
     uint8_t i;
+    uint8_t status;
 
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -1982,6 +1983,8 @@ int btstack_main(int argc, const char * argv[])
     gap_set_local_name(gap_name);
     gap_set_class_of_device(gap_cod);
 #endif
+    // use 30-100 ms connection interval to allow for 2 ACL Connections with CIS
+    gap_set_connection_parameters(0x60, 0x30, 0x18, 0x50, 4, 200, 0x18, 0x50);
 
     // delete all bonding information on start
     gap_delete_bonding_on_start = true;
