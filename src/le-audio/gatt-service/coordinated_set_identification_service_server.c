@@ -144,9 +144,8 @@ static void csis_server_emit_coordinator_connected(hci_con_handle_t con_handle, 
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static uint16_t coordinated_set_identification_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+static uint16_t coordinated_set_identification_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){    
     csis_coordinator_t * coordinator = csis_get_coordinator_for_con_handle(con_handle);
-        
     if (coordinator == NULL){
         coordinator = csis_server_add_coordinator(con_handle);
         
@@ -172,9 +171,12 @@ static uint16_t coordinated_set_identification_service_read_callback(hci_con_han
     }
 
     if (attribute_handle == sirk_handle){
+        if (csis_sirk_exposed_via_oob){
+            return ATT_READ_ERROR_CODE_OFFSET + CSIS_OOB_SIRK_ONLY;
+        }
         uint8_t value[17];
-        value[1] = (uint8_t)csis_sirk_type;
-        memcpy(value, csis_sirk, sizeof(csis_sirk));
+        value[0] = (uint8_t)csis_sirk_type;
+        memcpy(&value[1], csis_sirk, 16);
         return att_read_callback_handle_blob(value, sizeof(value), offset, buffer, buffer_size);
     }
 
