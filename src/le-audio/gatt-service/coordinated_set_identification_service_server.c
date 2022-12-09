@@ -41,6 +41,7 @@
 
 #include "ble/att_db.h"
 #include "ble/att_server.h"
+#include "ble/sm.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_defines.h"
@@ -96,6 +97,10 @@ static csis_coordinator_t * csis_get_coordinator_for_con_handle(hci_con_handle_t
         }
     }
     return NULL;
+}
+
+static bool csis_coordinator_bonded(csis_coordinator_t * coordinator){
+    return sm_le_device_index(coordinator->con_handle) != -1; 
 }
 
 static csis_coordinator_t * csis_server_add_coordinator(hci_con_handle_t con_handle){
@@ -351,12 +356,13 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
 }
 
 static void csis_coordinator_reset(csis_coordinator_t * coordinator){
-    if (csis_get_lock_owner_coordinator() == coordinator){
+    if (!csis_coordinator_bonded(coordinator) && csis_get_lock_owner_coordinator() == coordinator){
         csis_member_lock = CSIS_MEMBER_UNLOCKED;
         btstack_run_loop_remove_timer(&coordinator->lock_timer);
+    
+        memset(coordinator, 0, sizeof(csis_coordinator_t));
     }
 
-    memset(coordinator, 0, sizeof(csis_coordinator_t));
     coordinator->con_handle = HCI_CON_HANDLE_INVALID;
 }
 
