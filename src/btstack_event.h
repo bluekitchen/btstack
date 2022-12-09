@@ -16242,15 +16242,6 @@ static inline uint8_t gattservice_subevent_csis_set_size_get_set_size(const uint
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_RIS
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-//  static inline hci_con_handle_t gattservice_subevent_csis_ris_get_con_handle(const uint8_t * event){
-//      not implemented yet
-//  }
-/**
  * @brief Get field ris from event GATTSERVICE_SUBEVENT_CSIS_RIS
  * @param event packet
  * @return ris

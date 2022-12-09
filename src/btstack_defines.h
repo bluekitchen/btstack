@@ -4895,9 +4895,8 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_CSIS_SET_SIZE                                        0x5Au
 
 /**
- * @format 1HP
+ * @format 1P
  * @param subevent_code
- * @param con_handle
  * @param ris
 */
 #define GATTSERVICE_SUBEVENT_CSIS_RIS                                             0x5Eu
