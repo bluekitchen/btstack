@@ -47,6 +47,7 @@
 #include "btstack_defines.h"
 #include "btstack_event.h"
 #include "btstack_util.h"
+#include "btstack_crypto.h"
 
 #include "le-audio/gatt-service/coordinated_set_identification_service_server.h"
 #include "le-audio/le_audio_util.h"
@@ -140,6 +141,46 @@ static void csis_server_emit_coordinator_connected(hci_con_handle_t con_handle, 
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = status;
+    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void csis_server_emit_lock(hci_con_handle_t con_handle){
+    btstack_assert(csis_event_callback != NULL);
+
+    uint8_t event[6];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_LOCK;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = (uint8_t)csis_member_lock;
+    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void csis_server_emit_ris(hci_con_handle_t con_handle){
+    btstack_assert(csis_event_callback != NULL);
+
+    uint8_t event[6];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_SET_SIZE;
+    little_endian_store_16(event, pos, con_handle);
+    event[pos++] = csis_coordinated_set_size;
+    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void csis_server_emit_set_size(hci_con_handle_t con_handle){
+    btstack_assert(csis_event_callback != NULL);
+
+    uint8_t event[6];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_SET_SIZE;
+    little_endian_store_16(event, pos, con_handle);
+    event[pos++] = csis_member_rank;
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -263,6 +304,7 @@ static void csis_lock_timer_timeout_handler(btstack_timer_source_t * timer){
     csis_coordinator_t * coordinator = (csis_coordinator_t *) btstack_run_loop_get_timer_context(timer);
     coordinator->is_lock_owner = false;
     csis_member_lock = CSIS_MEMBER_UNLOCKED;
+    csis_server_emit_lock(coordinator->con_handle); 
     csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
     btstack_run_loop_remove_timer(&coordinator->lock_timer);
 }
@@ -298,6 +340,8 @@ static uint8_t csis_set_lock(csis_coordinator_t * coordinator, csis_member_lock_
 
     csis_member_lock = lock;
     coordinator->is_lock_owner = true;
+    csis_server_emit_lock(coordinator->con_handle);
+        
     if (lock == CSIS_MEMBER_LOCKED){
         csis_lock_timer_start(coordinator);
     }
@@ -357,6 +401,7 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
     
     if (attribute_handle == coordinated_set_size_handle){
         csis_coordinated_set_size = buffer[0];
+        csis_server_emit_set_size(coordinator->con_handle);
         csis_server_set_callback(CSIS_TASK_SEND_COORDINATED_SET_SIZE);
         return 0;
     }
@@ -367,8 +412,8 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
 static void csis_coordinator_reset(csis_coordinator_t * coordinator){
     if (!csis_coordinator_bonded(coordinator) && csis_get_lock_owner_coordinator() == coordinator){
         csis_member_lock = CSIS_MEMBER_UNLOCKED;
+        csis_server_emit_lock(coordinator->con_handle);
         btstack_run_loop_remove_timer(&coordinator->lock_timer);
-    
         memset(coordinator, 0, sizeof(csis_coordinator_t));
     }
 
