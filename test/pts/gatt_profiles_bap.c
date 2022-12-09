@@ -46,7 +46,7 @@
 #include "gatt_profiles_bap.h"
 #include "btstack.h"
 
-#define CSIS_COORDINATORS_MAX_NUM  1 
+#define CSIS_COORDINATORS_MAX_NUM  3 
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
@@ -298,6 +298,11 @@ static mcs_media_player_t media_player1;
 
 static uint16_t media_player_id2 = 0;
 static mcs_media_player_t media_player2;
+
+static uint8_t sirk[] = {
+    0x01, 0x1A, 0x7D, 0xDA, 0x71, 0x07, 0x71, 0x07,
+    0x02, 0x1A, 0x7D, 0xDA, 0x71, 0x07, 0x71, 0x07,   
+};
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -633,10 +638,15 @@ static void show_usage(void){
     printf("M - released SNK 1\n");
     printf("N - released SRC 3\n");
 
+    printf("\n## CSIS\n");
+    printf("g - set OOB Sirk only\n");
+    printf("G - set Encrypted Sirk");
 }
 
 static void stdin_process(char c){
     printf("%c\n", c);
+    uint8_t status;
+
     switch (c){
         case 'a':
             printf("Trigger Sink PAC record notification\n");
@@ -757,6 +767,40 @@ static void stdin_process(char c){
             printf("Released SRC 3, 0x%02X\n", bap_app_server_con_handle);
             audio_stream_control_service_server_streamendpoint_released(bap_app_server_con_handle, 3, false);
             break;
+
+        case 'g':
+            printf("Set OOB Sirk only\n");
+            coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, &sirk[0], true);
+            break;
+        case 'G':
+            printf("Set Encrypted Sirk");
+            coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_ENCRYPTED, &sirk[0], false);
+            break;
+        case 'h':{
+            printf("Simulate server locked by another remote member\n");
+            hci_con_handle_t con_handle = 0x00AA;
+            coordinated_set_identification_service_server_simulate_member_connected(con_handle);
+            status = coordinated_set_identification_service_server_simulate_set_lock(con_handle, CSIS_MEMBER_LOCKED);
+            if (status == ERROR_CODE_SUCCESS){
+                printf("Server locked by member with con_handle 0x%02x\n", con_handle);
+                break;
+            }        
+        
+            printf("Server lock failed, status 0x%02x\n", status);
+            
+        }   
+        case 'H':{
+            printf("Simulate server unlock by another remote member\n");
+            hci_con_handle_t con_handle = 0x00AA;
+            status = coordinated_set_identification_service_server_simulate_set_lock(con_handle, CSIS_MEMBER_UNLOCKED);
+            if (status == ERROR_CODE_SUCCESS){
+                printf("Server unlocked by member with con_handle 0x%02x\n", con_handle);
+                break;
+            }        
+        
+            printf("Server unlock failed, status 0x%02x\n", status);
+            break;
+        }
         case '\n':
         case '\r':
             break;
@@ -824,9 +868,9 @@ int btstack_main(void)
     media_control_service_server_set_icon_url(media_player_id2, icon_url);
     media_control_service_server_set_track_title(media_player_id2, "");
 
-    coordinated_set_identification_service_server_init(CSIS_COORDINATORS_MAX_NUM, &csis_coordiantors[0], 1, 1);
+    coordinated_set_identification_service_server_init(CSIS_COORDINATORS_MAX_NUM, &csis_coordiantors[0], CSIS_COORDINATORS_MAX_NUM, 1);
     coordinated_set_identification_service_server_register_packet_handler(&csis_server_packet_handler);
-
+    coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, &sirk[0], false);
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
