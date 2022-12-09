@@ -129,7 +129,6 @@ static void csis_server_emit_coordinator_disconnected(hci_con_handle_t con_handl
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-
 static void csis_server_emit_coordinator_connected(hci_con_handle_t con_handle, uint8_t status){
     btstack_assert(csis_event_callback != NULL);
 
@@ -262,7 +261,6 @@ static void csis_server_set_callback(uint8_t task){
 
 static void csis_lock_timer_timeout_handler(btstack_timer_source_t * timer){
     csis_coordinator_t * coordinator = (csis_coordinator_t *) btstack_run_loop_get_timer_context(timer);
-
     coordinator->is_lock_owner = false;
     csis_member_lock = CSIS_MEMBER_UNLOCKED;
     csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
@@ -324,16 +322,27 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
 
     if (attribute_handle == sirk_configuration_handle){
         coordinator->sirk_configuration = little_endian_read_16(buffer, 0);
+        if ((coordinator->sirk_configuration != 0) && csis_coordinator_bonded(coordinator)) {
+            if (!csis_sirk_exposed_via_oob){
+                csis_server_set_callback(CSIS_TASK_SEND_SIRK);
+            }
+        }
         return 0;
     }
 
     if (attribute_handle == coordinated_set_size_configuration_handle){
         coordinator->coordinated_set_size_configuration = little_endian_read_16(buffer, 0);
+        if ((coordinator->coordinated_set_size_configuration != 0) && csis_coordinator_bonded(coordinator)) {
+            csis_server_set_callback(CSIS_TASK_SEND_COORDINATED_SET_SIZE);
+        }
         return 0;
     }
    
     if (attribute_handle == member_lock_configuration_handle){
-        coordinator->coordinated_set_size_configuration = little_endian_read_16(buffer, 0);
+        coordinator->member_lock_configuration = little_endian_read_16(buffer, 0);
+        if ((coordinator->member_lock_configuration != 0) && csis_coordinator_bonded(coordinator)) {
+            csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
+        }
         return 0;
     }
 
