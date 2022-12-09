@@ -55,7 +55,6 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
 static int  le_notification_enabled;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
-static bool accept_next_pairing = true;
 
 typedef enum {
     BAP_APP_SERVER_STATE_IDLE = 0,
@@ -311,14 +310,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             // att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
             break;
        case SM_EVENT_JUST_WORKS_REQUEST:
-            if (accept_next_pairing){
-                accept_next_pairing = false;
-                printf("Accept Just Works\n");
-                sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
-            } else {
-                printf("Reject Just Works\n");
-                sm_bonding_decline(sm_event_just_works_request_get_handle(packet));
-            }
+            printf("Accept Just Works\n");
+            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
             break;
         case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
             printf("Confirming numeric comparison: %"PRIu32"\n", sm_event_numeric_comparison_request_get_passkey(packet));
