@@ -502,3 +502,25 @@ void coordinated_set_identification_service_server_deinit(void){
     csis_member_lock = CSIS_MEMBER_UNLOCKED;
     csis_event_callback = NULL;
 }
+
+
+uint8_t coordinated_set_identification_service_server_simulate_member_connected(hci_con_handle_t con_handle){
+    csis_coordinator_t * coordinator = csis_get_coordinator_for_con_handle(con_handle);
+    if (coordinator != NULL){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
+    
+    coordinator = csis_server_add_coordinator(con_handle);
+    if (coordinator == NULL){
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t coordinated_set_identification_service_server_simulate_set_lock(hci_con_handle_t con_handle, csis_member_lock_t lock){
+    csis_coordinator_t * coordinator = csis_get_coordinator_for_con_handle(con_handle);
+    if (coordinator == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    return csis_set_lock(coordinator, lock);
+}
