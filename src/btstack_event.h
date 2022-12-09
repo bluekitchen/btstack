@@ -16204,6 +16204,63 @@ static inline uint8_t gattservice_subevent_csis_coordinator_connected_get_status
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_LOCK
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_csis_lock_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field lock from event GATTSERVICE_SUBEVENT_CSIS_LOCK
+ * @param event packet
+ * @return lock
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_csis_lock_get_lock(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_SET_SIZE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_csis_set_size_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field set_size from event GATTSERVICE_SUBEVENT_CSIS_SET_SIZE
+ * @param event packet
+ * @return set_size
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_csis_set_size_get_set_size(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_RIS
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+//  static inline hci_con_handle_t gattservice_subevent_csis_ris_get_con_handle(const uint8_t * event){
+//      not implemented yet
+//  }
+/**
+ * @brief Get field ris from event GATTSERVICE_SUBEVENT_CSIS_RIS
+ * @param event packet
+ * @return ris
+ * @note: btstack_type P
+ */
+//  static inline const uint8_t * gattservice_subevent_csis_ris_get_ris(const uint8_t * event){
+//      not implemented yet
+//  }
+
+/**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_DISCONNECTED
  * @param event packet
  * @return con_handle
