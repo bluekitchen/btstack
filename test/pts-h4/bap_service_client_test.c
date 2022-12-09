@@ -809,7 +809,7 @@ static void stdin_process(char cmd){
     operation_cmd = cmd;
     
     ascs_specific_codec_configuration_t sc_config;
-    le_audio_codec_configuration_t * setting;
+    const le_audio_codec_configuration_t * setting;
 
     switch (cmd){
         case 'c':
