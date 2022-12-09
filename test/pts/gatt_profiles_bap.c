@@ -641,6 +641,10 @@ static void show_usage(void){
     printf("\n## CSIS\n");
     printf("g - set OOB Sirk only\n");
     printf("G - set Encrypted Sirk");
+    printf("h - Simulate server locked by another remote coordinator\n");
+    printf("H - Simulate server unlock by another remote coordinator\n");
+    printf("i - Get RIS\n");
+
 }
 
 static void stdin_process(char c){
@@ -801,6 +805,11 @@ static void stdin_process(char c){
             printf("Server unlock failed, status 0x%02x\n", status);
             break;
         }
+        
+        case 'i':
+            coordinated_set_identification_service_server_get_rsi();
+            break;
+
         case '\n':
         case '\r':
             break;
