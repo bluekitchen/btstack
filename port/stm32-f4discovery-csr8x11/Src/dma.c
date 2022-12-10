@@ -49,6 +49,17 @@ void MX_DMA_Init(void)
 
 }
 
+void MX_DMA_DeInit(void)
+{
+
+  HAL_NVIC_DisableIRQ(DMA1_Stream1_IRQn);
+  HAL_NVIC_DisableIRQ(DMA1_Stream4_IRQn);
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_DISABLE();
+
+}
+
 /* USER CODE BEGIN 2 */
 
 /* USER CODE END 2 */

@@ -218,7 +218,6 @@ static void hci_transport_h4_packet_complete(void){
             }
 #endif
     uint16_t packet_len = read_pos-1u;
-
     // reset state machine before delivering packet to stack as it might close the transport
     hci_transport_h4_reset_statemachine();
     hci_transport_h4_packet_handler(hci_packet[0], &hci_packet[1], packet_len);

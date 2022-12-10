@@ -110,7 +110,7 @@ static void dummy_handler(void){};
 static int hal_uart_needed_during_sleep;
 
 void hal_uart_dma_set_sleep(uint8_t sleep){
-#if 1
+#if 0
 	// RTS is on PD12 - manually set it during sleep
 	GPIO_InitTypeDef RTS_InitStruct;
 	RTS_InitStruct.Pin = GPIO_PIN_12;
@@ -174,7 +174,7 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
 }
 
 void EXTI15_10_IRQHandler(void){
-#if 1
+#if 0
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_11);
 	if (cts_irq_handler){
 		(*cts_irq_handler)();
@@ -183,7 +183,7 @@ void EXTI15_10_IRQHandler(void){
 }
 
 void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
-#if 1
+#if 0
 	GPIO_InitTypeDef CTS_InitStruct = {
 		.Pin       = GPIO_PIN_11,
 		.Mode      = GPIO_MODE_AF_PP,
@@ -212,11 +212,13 @@ void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
 }
 
 int hal_uart_dma_set_baud(uint32_t baud) {
-    //if (baud == config.baudrate_init)
-        //return 0;
+    HAL_UART_DeInit(&HCI_DRIVER_UART);
+    MX_DMA_DeInit();
 
 	HCI_DRIVER_UART.Init.BaudRate = baud;
+    MX_DMA_Init();
 	HAL_UART_Init(&HCI_DRIVER_UART);
+
     return 0;
 }
 
