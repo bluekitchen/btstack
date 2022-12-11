@@ -1320,9 +1320,22 @@ HAL_StatusTypeDef HAL_UART_Transmit_DMA(UART_HandleTypeDef *huart, uint8_t *pDat
     /* Process Unlocked */
     __HAL_UNLOCK(huart);
 
+    //
+    // BK: SET_BIT is not IRQ-safe. If CR1 is modified from an IRQ, this change could get overwritten by SET_BIT
+    //
+    // fix: use critical section to modify control registers
+
+    // begin critical section - assumes IRQs are enabled (which holds true for calls from BTstack btstack_uart_block_embedded.c)
+    __disable_irq();
+
     /* Enable the DMA transfer for transmit request by setting the DMAT bit
        in the UART CR3 register */
     SET_BIT(huart->Instance->CR3, USART_CR3_DMAT);
+
+    // end critical section
+    __enable_irq();
+
+    // BK: end fix
 
     return HAL_OK;
   }
@@ -1378,11 +1391,23 @@ HAL_StatusTypeDef HAL_UART_Receive_DMA(UART_HandleTypeDef *huart, uint8_t *pData
     tmp = (uint32_t *)&pData;
     HAL_DMA_Start_IT(huart->hdmarx, (uint32_t)&huart->Instance->DR, *(uint32_t *)tmp, Size);
 
-    /* Clear the Overrun flag just before enabling the DMA Rx request: can be mandatory for the second transfer */
-    __HAL_UART_CLEAR_OREFLAG(huart);
+    //
+    //  BK: __HAL_UART_CLEAR_OREFLAG (also) reads Data Register -> loosing an already received byte
+    //
+    //  /* Clear the Overrun flag just before enabling the DMA Rx request: can be mandatory for the second transfer */
+    //  __HAL_UART_CLEAR_OREFLAG(huart);
+    //
 
     /* Process Unlocked */
     __HAL_UNLOCK(huart);
+
+    //
+    // BK: SET_BIT is not IRQ-safe. If CR1 is modified from an IRQ, this change could get overwritten by SET_BIT
+    //
+    // fix: use critical section to modify control registers
+
+    // begin critical section - assumes IRQs are enabled (which holds true for calls from BTstack btstack_uart_block_embedded.c)
+    __disable_irq();
 
     /* Enable the UART Parity Error Interrupt */
     SET_BIT(huart->Instance->CR1, USART_CR1_PEIE);
@@ -1393,6 +1418,11 @@ HAL_StatusTypeDef HAL_UART_Receive_DMA(UART_HandleTypeDef *huart, uint8_t *pData
     /* Enable the DMA transfer for the receiver request by setting the DMAR bit
     in the UART CR3 register */
     SET_BIT(huart->Instance->CR3, USART_CR3_DMAR);
+
+    // end critical section
+    __enable_irq();
+
+    // BK: end fix
 
     return HAL_OK;
   }

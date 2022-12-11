@@ -212,6 +212,7 @@ void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
 }
 
 int hal_uart_dma_set_baud(uint32_t baud) {
+    HAL_UART_Abort_IT(&HCI_DRIVER_UART);
     HAL_UART_DeInit(&HCI_DRIVER_UART);
     MX_DMA_DeInit();
 
