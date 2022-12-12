@@ -69,12 +69,12 @@ static void (*wakeup_handler)(void);
 
 
 static void btstack_uart_block_received(void){
-    receive_complete = 1;
+    receive_complete++;
     btstack_run_loop_embedded_trigger();
 }
 
 static void btstack_uart_block_sent(void){
-    send_complete = 1;
+    send_complete++;
     btstack_run_loop_embedded_trigger();
 }
 
@@ -94,13 +94,17 @@ static void btstack_uart_embedded_process(btstack_data_source_t *ds, btstack_dat
     switch (callback_type){
         case DATA_SOURCE_CALLBACK_POLL:
             if (send_complete){
-                send_complete = 0;
+                hal_cpu_disable_irqs();
+                send_complete--;
+                hal_cpu_enable_irqs();
                 if (block_sent){
                     block_sent();
                 }
             }
             if (receive_complete){
-                receive_complete = 0;
+                hal_cpu_disable_irqs();
+                receive_complete--;
+                hal_cpu_enable_irqs();
                 if (block_received){
                     block_received();
                 }

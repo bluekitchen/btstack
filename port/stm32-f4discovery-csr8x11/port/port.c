@@ -45,7 +45,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static const hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    460800,
+    1152000,
     1,
     NULL
 };
@@ -233,7 +233,7 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 
 void hal_uart_dma_send_block_for_hci(const uint8_t *data, uint16_t size){
 #if ENABLE_SYSTEM_LOG == 0
-	HAL_UART_Transmit( &HCI_LOG_UART, (uint8_t *) data, size, HAL_MAX_DELAY );
+	//HAL_UART_Transmit( &HCI_LOG_UART, (uint8_t *) data, size, HAL_MAX_DELAY );
 #endif
 }
 
@@ -317,6 +317,7 @@ int _write(int file, char *ptr, int len);
 int _write(int file, char *ptr, int len){
 	uint8_t cr = '\r';
 	int i;
+
 #if ENABLE_SYSTEM_LOG
 	if (file == STDOUT_FILENO || file == STDERR_FILENO) {
 		for (i = 0; i < len; i++) {
