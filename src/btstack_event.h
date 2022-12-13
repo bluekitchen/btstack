@@ -16244,12 +16244,12 @@ static inline uint8_t gattservice_subevent_csis_set_size_get_set_size(const uint
 /**
  * @brief Get field ris from event GATTSERVICE_SUBEVENT_CSIS_RIS
  * @param event packet
- * @return ris
- * @note: btstack_type P
+ * @param Pointer to storage for ris
+ * @note: btstack_type B
  */
-//  static inline const uint8_t * gattservice_subevent_csis_ris_get_ris(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline void gattservice_subevent_csis_ris_get_ris(const uint8_t * event, bd_addr_t ris){
+    reverse_bytes(&event[3], ris, 6);
+}
 
 /**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_DISCONNECTED
