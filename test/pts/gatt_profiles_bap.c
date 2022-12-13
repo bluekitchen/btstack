@@ -65,14 +65,20 @@ static bap_app_server_state_t  bap_app_server_state      = BAP_APP_SERVER_STATE_
 static hci_con_handle_t        bap_app_server_con_handle = HCI_CON_HANDLE_INVALID;
 static bd_addr_t               bap_app_client_addr;
 
-const uint8_t adv_data[] = {
-    // Flags general discoverable, BR/EDR not supported
-    0x02, 0x01, 0x06, 
-    // Name
-    0x0b, 0x09, 'L', 'E', ' ', 'C', 'o', 'u', 'n', 't', 'e', 'r', 
-};
-const uint8_t adv_data_len = sizeof(adv_data);
+#define APP_AD_FLAGS 0x06
 
+static uint8_t adv_data[] = {
+    // Flags general discoverable
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, APP_AD_FLAGS,
+    // RSI
+    0x07, BLUETOOTH_DATA_TYPE_RESOLVABLE_SET_IDENTIFIER, 0x28, 0x31, 0xB6, 0x4C, 0x39, 0xCC,
+    // CSIS
+    0x03, BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, 0x46, 0x18,
+    // Name
+    0x04, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'I', 'U', 'T', 
+};
+
+const uint8_t adv_data_len = sizeof(adv_data);
 
 static ascs_codec_configuration_t ascs_codec_configuration = {
     0x01, 0x00, 0x00, 0x0FA0,
@@ -300,8 +306,8 @@ static uint16_t media_player_id2 = 0;
 static mcs_media_player_t media_player2;
 
 static uint8_t sirk[] = {
-    0x01, 0x1A, 0x7D, 0xDA, 0x71, 0x07, 0x71, 0x07,
-    0x02, 0x1A, 0x7D, 0xDA, 0x71, 0x07, 0x71, 0x07,   
+    0x83, 0x8E, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A,
+    0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8   
 };
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -550,6 +556,8 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
     hci_con_handle_t con_handle;
     uint8_t status;
+    uint8_t ris[6];
+    uint8_t adv_ris[6];
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         
@@ -562,6 +570,16 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 return;
             }
             printf("CSIS Server: connected, con_handle 0x%02x\n", con_handle);
+            break;
+
+        case GATTSERVICE_SUBEVENT_CSIS_RIS:
+            printf("RIS:\n");
+            gattservice_subevent_csis_ris_get_ris(packet, ris);
+            reverse_48(ris, &adv_data[5]);
+            printf_hexdump(&adv_data[5], 6);
+            //
+            gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+            gap_advertisements_enable(1);
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_DISCONNECTED:
@@ -893,6 +911,7 @@ int btstack_main(void)
     gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
+
     btstack_stdin_setup(stdin_process);
 
     // turn on!
