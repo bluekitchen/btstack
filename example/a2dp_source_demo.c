@@ -63,7 +63,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <inttypes.h>
 #include <string.h>
 
 #include "btstack.h"
@@ -147,6 +147,8 @@ static const int16_t sine_int16_48000[] = {
 
 static const int num_samples_sine_int16_48000 = sizeof(sine_int16_48000) / 2;
 
+static const int A2DP_SOURCE_DEMO_INQUIRY_DURATION_1280MS = 12;
+
 typedef struct {
     int reconfigure;
     
@@ -162,21 +164,11 @@ typedef struct {
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-// pts:             static const char * device_addr_string = "00:1B:DC:08:0A:A5";
-// pts:             static const char * device_addr_string = "00:1B:DC:08:E2:72";
-// mac 2013:        static const char * device_addr_string = "84:38:35:65:d1:15";
-// phone 2013:      static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// Minijambox:      
+// Minijambox:
 static const char * device_addr_string = "00:21:3C:AC:F7:38";
-// Philips SHB9100: static const char * device_addr_string = "00:22:37:05:FD:E8";
-// RT-B6:           static const char * device_addr_string = "00:75:58:FF:C9:7D";
-// BT dongle:       static const char * device_addr_string = "00:1A:7D:DA:71:0A";
-// Sony MDR-ZX330BT static const char * device_addr_string = "00:18:09:28:50:18";
-// Panda (BM6)      static const char * device_addr_string = "4F:3F:66:52:8B:E0";
-// BeatsX:          static const char * device_addr_string = "DC:D3:A2:89:57:FB";
-// Green mushroom:  static const char * device_addr_string = "41:42:2A:ED:D6:F3";
 
 static bd_addr_t device_addr;
+static bool scan_active;
 
 static uint8_t sdp_a2dp_source_service_buffer[150];
 static uint8_t sdp_avrcp_target_service_buffer[200];
@@ -252,6 +244,8 @@ static int a2dp_source_and_avrcp_services_init(void){
 
     // Request role change on reconnecting headset to always use them in slave mode
     hci_set_master_slave_policy(0);
+    // enabled EIR
+    hci_set_inquiry_mode(INQUIRY_MODE_RSSI_AND_EIR);
 
     l2cap_init();
 
@@ -508,28 +502,70 @@ static void dump_sbc_configuration(media_codec_configuration_sbc_t * configurati
     printf("    - bitpool_value [%d, %d] \n", configuration->min_bitpool_value, configuration->max_bitpool_value);
 }
 
+static void a2dp_source_demo_start_scanning(void){
+    printf("Start scanning...\n");
+    gap_inquiry_start(A2DP_SOURCE_DEMO_INQUIRY_DURATION_1280MS);
+    scan_active = true;
+}
+
 static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     if (packet_type != HCI_EVENT_PACKET) return;
+    uint8_t status;
+    UNUSED(status);
 
+    bd_addr_t address;
+    uint32_t cod;
+
+    // Service Class: Rendering | Audio, Major Device Class: Audio
+    const uint32_t bluetooth_speaker_cod = 0x200000 | 0x040000 | 0x000400;
+
+    switch (hci_event_packet_get_type(packet)){
 #ifndef HAVE_BTSTACK_STDIN
-    if (hci_event_packet_get_type(packet) == BTSTACK_EVENT_STATE){
-        if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-        printf("Create A2DP Source connection to addr %s.\n", bd_addr_to_str(device_addr));
-        uint8_t status = a2dp_source_establish_stream(device_addr, &media_tracker.a2dp_cid);
-        if (status != ERROR_CODE_SUCCESS){
-            printf("Could not perform command, status 0x%2x\n", status);
-        }
-        return;
-    }
+        case  BTSTACK_EVENT_STATE):
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+            a2dp_source_demo_start_scanning();
+            break;
 #endif
-
-    if (hci_event_packet_get_type(packet) == HCI_EVENT_PIN_CODE_REQUEST) {
-        bd_addr_t address;
-        printf("Pin code request - using '0000'\n");
-        hci_event_pin_code_request_get_bd_addr(packet, address);
-        gap_pin_code_response(address, "0000");
+        case HCI_EVENT_PIN_CODE_REQUEST:
+            printf("Pin code request - using '0000'\n");
+            hci_event_pin_code_request_get_bd_addr(packet, address);
+            gap_pin_code_response(address, "0000");
+            break;
+        case GAP_EVENT_INQUIRY_RESULT:
+            gap_event_inquiry_result_get_bd_addr(packet, address);
+            // print info
+            printf("Device found: %s ",  bd_addr_to_str(address));
+            cod = gap_event_inquiry_result_get_class_of_device(packet);
+            printf("with COD: %06" PRIx32, cod);
+            if (gap_event_inquiry_result_get_rssi_available(packet)){
+                printf(", rssi %d dBm", (int8_t) gap_event_inquiry_result_get_rssi(packet));
+            }
+            if (gap_event_inquiry_result_get_name_available(packet)){
+                char name_buffer[240];
+                int name_len = gap_event_inquiry_result_get_name_len(packet);
+                memcpy(name_buffer, gap_event_inquiry_result_get_name(packet), name_len);
+                name_buffer[name_len] = 0;
+                printf(", name '%s'", name_buffer);
+            }
+            printf("\n");
+            if ((cod & bluetooth_speaker_cod) == bluetooth_speaker_cod){
+                memcpy(device_addr, address, 6);
+                printf("Bluetooth speaker detected, trying to connect to %s...\n", bd_addr_to_str(device_addr));
+                scan_active = false;
+                gap_inquiry_stop();
+                a2dp_source_establish_stream(device_addr, &media_tracker.a2dp_cid);
+            }
+            break;
+        case GAP_EVENT_INQUIRY_COMPLETE:
+            if (scan_active){
+                printf("No Bluetooth speakers found, scanning again...\n");
+                gap_inquiry_start(A2DP_SOURCE_DEMO_INQUIRY_DURATION_1280MS);
+            }
+            break;
+        default:
+            break;
     }
 }
 
@@ -855,6 +891,7 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth  A2DP Source/AVRCP Demo %s ---\n", bd_addr_to_str(iut_address));
+    printf("a      - Scan for Bluetooth speaker and connect\n");
     printf("b      - A2DP Source create connection to addr %s\n", device_addr_string);
     printf("B      - A2DP Source disconnect\n");
     printf("c      - AVRCP create connection to addr %s\n", device_addr_string);
@@ -879,6 +916,9 @@ static void show_usage(void){
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
+        case 'a':
+            a2dp_source_demo_start_scanning();
+            break;
         case 'b':
             status = a2dp_source_establish_stream(device_addr, &media_tracker.a2dp_cid);
             printf("%c - Create A2DP Source connection to addr %s, cid 0x%02x.\n", cmd, bd_addr_to_str(device_addr), media_tracker.a2dp_cid);
