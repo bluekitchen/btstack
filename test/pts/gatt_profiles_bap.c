@@ -658,7 +658,7 @@ static void show_usage(void){
 
     printf("\n## CSIS\n");
     printf("g - set OOB Sirk only\n");
-    printf("G - set Encrypted Sirk");
+    printf("G - set Encrypted Sirk\n");
     printf("h - Simulate server locked by another remote coordinator\n");
     printf("H - Simulate server unlock by another remote coordinator\n");
     printf("i - Get RIS\n");
@@ -795,7 +795,7 @@ static void stdin_process(char c){
             coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, &sirk[0], true);
             break;
         case 'G':
-            printf("Set Encrypted Sirk");
+            printf("Set Encrypted Sirk\n");
             coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_ENCRYPTED, &sirk[0], false);
             break;
         case 'h':{
@@ -825,9 +825,15 @@ static void stdin_process(char c){
         }
         
         case 'i':
-            coordinated_set_identification_service_server_get_rsi();
+            coordinated_set_identification_service_server_calculate_rsi();
             break;
 
+        case 'I':{
+            uint8_t test_sirk[] = {0x83, 0x8E, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8}; 
+            coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_ENCRYPTED, &test_sirk[0], false);
+            coordinated_set_identification_service_server_calculate_encrypted_sirk();
+            break;
+        }
         case '\n':
         case '\r':
             break;
