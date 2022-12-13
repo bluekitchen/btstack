@@ -75,7 +75,7 @@ static bool              csis_sirk_exposed_via_oob;
 static uint8_t           csis_sirk[16];
 static csis_sirk_type_t  csis_sirk_type;
 
-static bool    csis_ris_calculation_started = true;;
+static bool    csis_ris_calculation_ongoing = true;
 static uint8_t csis_prand_data[3];
 static uint8_t csis_hash[16];
 
@@ -93,6 +93,12 @@ static uint16_t member_rank_handle;
 
 static btstack_crypto_random_t random_request;
 static btstack_crypto_aes128_t aes128_request;
+static btstack_crypto_aes128_cmac_t aes128_cmac_request;
+static uint8_t  s1[16];
+static uint8_t   T[16];
+static uint8_t  k1[16];
+static uint8_t sef[16];
+static uint8_t key_ltk[16];
 
 
 static csis_coordinator_t * csis_get_coordinator_for_con_handle(hci_con_handle_t con_handle){
@@ -496,7 +502,7 @@ void coordinated_set_identification_service_server_init(
     printf("member_rank_handle      0x%02x\n", member_rank_handle); 
 #endif
 
-    csis_ris_calculation_started = false;
+    csis_ris_calculation_ongoing = false;
 
     csis_coordinated_set_size = coordianted_set_size;
     csis_member_rank = member_rank;
@@ -555,17 +561,17 @@ uint8_t coordinated_set_identification_service_server_set_rank(uint8_t member_ra
 void coordinated_set_identification_service_server_deinit(void){
     csis_member_lock = CSIS_MEMBER_UNLOCKED;
     csis_event_callback = NULL;
-    csis_ris_calculation_started = false;
+    csis_ris_calculation_ongoing = false;
 }
 
-static void csis_handle_csis_hash(void * arg){
+static void csis_server_handle_csis_hash(void * arg){
     UNUSED(arg);
     uint8_t ris[6];
     memcpy(&ris[0], csis_prand_data, 3);
     memcpy(&ris[3], &csis_hash[13] , 3);
     
     csis_server_emit_ris(ris);
-    csis_ris_calculation_started = false;
+    csis_ris_calculation_ongoing = false;
 }
 
 static void csis_handle_prand_provisioner(void * arg){
@@ -584,15 +590,46 @@ static void csis_handle_prand_provisioner(void * arg){
     prand_prime[13] &= 0x7F;
     prand_prime[13] |= 0x40;
 
-    btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, prand_prime, csis_hash, &csis_handle_csis_hash, NULL);
+    btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, prand_prime, csis_hash, &csis_server_handle_csis_hash, NULL);
 }
 
-void coordinated_set_identification_service_server_get_rsi(void){
-    if (csis_ris_calculation_started){
+void coordinated_set_identification_service_server_calculate_rsi(void){
+    if (csis_ris_calculation_ongoing){
         return;
     }
-    csis_ris_calculation_started = true;
+    csis_ris_calculation_ongoing = true;
     btstack_crypto_random_generate(&random_request, csis_prand_data, 3, &csis_handle_prand_provisioner, NULL);
+}
+
+static void csis_server_handle_k1(void * arg){
+    UNUSED(arg);
+    uint8_t i;
+    for(i = 0; i < sizeof(k1); i++){
+        sef[i] = k1[i] ^ csis_sirk[i];
+    }
+}
+
+static void csis_server_get_ltk(void){
+    // TODO: get LTK
+    const uint8_t ltk[] = {0x32, 0x0D, 0x58, 0x7C, 0x02, 0xE7, 0x70, 0x82, 0xAF, 0x4E, 0xB4, 0xB5, 0xDA, 0xC6, 0xD3, 0x33};
+    memcpy(key_ltk, ltk, sizeof(key_ltk));
+}
+
+static void csis_server_handle_T(void * arg){
+    UNUSED(arg);
+    const static uint8_t csis_string[] = { 'c', 's', 'i', 's'};
+    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, T, sizeof(csis_string), csis_string, k1, csis_server_handle_k1, NULL);
+}
+
+static void csis_server_handle_s1(void * arg){
+    UNUSED(arg);
+    csis_server_get_ltk();
+    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, s1, sizeof(key_ltk), key_ltk, T, csis_server_handle_T, NULL);
+}
+
+void coordinated_set_identification_service_server_calculate_encrypted_sirk(void){
+    const static uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
+    btstack_crypto_aes128_cmac_zero(&aes128_cmac_request, sizeof(s1_string), s1_string, s1, &csis_server_handle_s1, NULL);
 }
 
 uint8_t coordinated_set_identification_service_server_simulate_member_connected(hci_con_handle_t con_handle){
