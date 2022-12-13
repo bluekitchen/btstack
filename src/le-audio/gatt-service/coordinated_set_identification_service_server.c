@@ -75,6 +75,10 @@ static bool              csis_sirk_exposed_via_oob;
 static uint8_t           csis_sirk[16];
 static csis_sirk_type_t  csis_sirk_type;
 
+static bool    csis_ris_calculation_started = true;;
+static uint8_t csis_prand_data[3];
+static uint8_t csis_hash[16];
+
 static uint8_t  csis_coordinated_set_size;
 static uint16_t coordinated_set_size_handle;
 static uint16_t coordinated_set_size_configuration_handle;
@@ -87,9 +91,9 @@ static uint16_t member_lock_configuration_handle;
 static uint8_t  csis_member_rank;
 static uint16_t member_rank_handle;
 
-static btstack_crypto_random_t request;
-static uint8_t prand_provisioner[16];
-static uint8_t csis_hash[16];
+static btstack_crypto_random_t random_request;
+static btstack_crypto_aes128_t aes128_request;
+
 
 static csis_coordinator_t * csis_get_coordinator_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
@@ -162,15 +166,15 @@ static void csis_server_emit_lock(hci_con_handle_t con_handle){
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void csis_server_emit_ris(uint8_t * ris){
+static void csis_server_emit_ris(const uint8_t * ris){
     btstack_assert(csis_event_callback != NULL);
 
-    uint8_t event[19];
+    uint8_t event[9];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_SET_SIZE;
-    memcpy(&event[pos], ris, 16);
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RIS;
+    reverse_48(ris, &event[pos]);
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -219,7 +223,7 @@ static uint16_t coordinated_set_identification_service_read_callback(hci_con_han
         }
         uint8_t value[17];
         value[0] = (uint8_t)csis_sirk_type;
-        memcpy(&value[1], csis_sirk, 16);
+        reverse_128(csis_sirk, &value[1]);
         return att_read_callback_handle_blob(value, sizeof(value), offset, buffer, buffer_size);
     }
 
@@ -492,6 +496,8 @@ void coordinated_set_identification_service_server_init(
     printf("member_rank_handle      0x%02x\n", member_rank_handle); 
 #endif
 
+    csis_ris_calculation_started = false;
+
     csis_coordinated_set_size = coordianted_set_size;
     csis_member_rank = member_rank;
     csis_member_lock = CSIS_MEMBER_UNLOCKED;
@@ -549,17 +555,44 @@ uint8_t coordinated_set_identification_service_server_set_rank(uint8_t member_ra
 void coordinated_set_identification_service_server_deinit(void){
     csis_member_lock = CSIS_MEMBER_UNLOCKED;
     csis_event_callback = NULL;
+    csis_ris_calculation_started = false;
+}
+
+static void csis_handle_csis_hash(void * arg){
+    UNUSED(arg);
+    uint8_t ris[6];
+    memcpy(&ris[0], csis_prand_data, 3);
+    memcpy(&ris[3], &csis_hash[13] , 3);
+    
+    csis_server_emit_ris(ris);
+    csis_ris_calculation_started = false;
 }
 
 static void csis_handle_prand_provisioner(void * arg){
     UNUSED(arg);
+
+    // TEST data
+    // csis_prand_data[0] = 0x69;
+    // csis_prand_data[1] = 0xf5;
+    // csis_prand_data[2] = 0x63;
     
-    btstack_aes128_calc(csis_sirk, prand_provisioner, csis_hash);
-    csis_server_emit_ris(csis_hash);
+    uint8_t prand_prime[16];
+    memset(prand_prime, 0, 16);
+    memcpy(&prand_prime[13], csis_prand_data, 3);
+
+    // CSIS 4.8: The two most significant bits (MSBs) of prand shall be equal to 0 and 1
+    prand_prime[13] &= 0x7F;
+    prand_prime[13] |= 0x40;
+
+    btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, prand_prime, csis_hash, &csis_handle_csis_hash, NULL);
 }
 
 void coordinated_set_identification_service_server_get_rsi(void){
-    btstack_crypto_random_generate(&request, prand_provisioner, 16, &csis_handle_prand_provisioner, NULL);
+    if (csis_ris_calculation_started){
+        return;
+    }
+    csis_ris_calculation_started = true;
+    btstack_crypto_random_generate(&random_request, csis_prand_data, 3, &csis_handle_prand_provisioner, NULL);
 }
 
 uint8_t coordinated_set_identification_service_server_simulate_member_connected(hci_con_handle_t con_handle){
