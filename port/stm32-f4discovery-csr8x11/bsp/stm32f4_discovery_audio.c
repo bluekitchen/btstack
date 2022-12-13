@@ -382,6 +382,11 @@ uint8_t BSP_AUDIO_OUT_Stop(uint32_t Option)
   */
 uint8_t BSP_AUDIO_OUT_SetVolume(uint8_t Volume)
 {
+  if (!pAudioDrv)
+  {
+    return AUDIO_ERROR;
+  }
+
   /* Call the codec volume control function with converted volume value */
   if(pAudioDrv->SetVolume(AUDIO_I2C_ADDRESS, Volume) != 0)
   {

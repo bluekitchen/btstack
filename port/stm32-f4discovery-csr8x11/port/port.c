@@ -30,7 +30,7 @@
 extern UART_HandleTypeDef huart2;//system log uart or hci log uart
 extern UART_HandleTypeDef huart3;//hci uart
 
-#define ENABLE_SYSTEM_LOG 0
+#define ENABLE_SYSTEM_LOG 1
 
 #if ENABLE_SYSTEM_LOG == 1
 #define SYSTEM_LOG_UART	  huart2
@@ -233,7 +233,7 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 
 void hal_uart_dma_send_block_for_hci(const uint8_t *data, uint16_t size){
 #if ENABLE_SYSTEM_LOG == 0
-	//HAL_UART_Transmit( &HCI_LOG_UART, (uint8_t *) data, size, HAL_MAX_DELAY );
+	HAL_UART_Transmit( &HCI_LOG_UART, (uint8_t *) data, size, HAL_MAX_DELAY );
 #endif
 }
 
@@ -411,7 +411,7 @@ void port_main(void){
 #ifdef ENABLE_SEGGER_RTT
     hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
 #else
-    hci_dump_init(hci_dump_embedded_stdout_get_instance());
+    //hci_dump_init(hci_dump_embedded_stdout_get_instance());
 #endif
 
 	// init HCI

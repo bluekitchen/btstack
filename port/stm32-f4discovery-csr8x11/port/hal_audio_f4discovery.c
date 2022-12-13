@@ -163,7 +163,7 @@ int16_t * hal_audio_sink_get_output_buffer(uint8_t buffer_index){
 void hal_audio_sink_start(void){
 	playback_started = 1;
 
-	BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_BOTH, 50, sink_sample_rate);
+	BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_BOTH, 60, sink_sample_rate);
 
 	// BSP_AUDIO_OUT_Play gets number bytes -> 1 frame - 16 bit/stereo = 4 bytes
 	BSP_AUDIO_OUT_Play( (uint16_t*) output_buffer, NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * 4);
@@ -183,7 +183,7 @@ void hal_audio_sink_stop(void){
 
 void hal_audio_sink_set_volume(uint8_t vol)
 {
-    //BSP_AUDIO_OUT_SetVolume(vol);
+    BSP_AUDIO_OUT_SetVolume(vol);
 }
 /**
  * @brief Close audio codec

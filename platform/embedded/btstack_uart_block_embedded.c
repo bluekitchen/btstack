@@ -79,7 +79,7 @@ static void btstack_uart_block_sent(void){
 }
 
 static void btstack_uart_cts_pulse(void){
-    wakeup_event = 1;
+    wakeup_event++;
     btstack_run_loop_embedded_trigger();
 }
 
@@ -110,7 +110,9 @@ static void btstack_uart_embedded_process(btstack_data_source_t *ds, btstack_dat
                 }
             }
             if (wakeup_event){
-                wakeup_event = 0;
+                hal_cpu_disable_irqs();
+                wakeup_event--;
+                hal_cpu_enable_irqs();
                 if (wakeup_handler){
                     wakeup_handler();
                 }

@@ -91,7 +91,7 @@
 
 #define NUM_CHANNELS 2
 #define BYTES_PER_FRAME     (2*NUM_CHANNELS)
-#define MAX_SBC_FRAME_SIZE 120
+#define MAX_SBC_FRAME_SIZE (120 * 5)
 
 // SBC Decoder for WAV file or live playback
 static btstack_sbc_decoder_state_t state;

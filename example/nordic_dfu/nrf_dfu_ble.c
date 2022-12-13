@@ -185,11 +185,11 @@ uint32_t nrf_dfu_ble_init(nrf_dfu_observer_t observer) {
 	dfu_ble.dfu_buttonless_handles.value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid128(start_handle, end_handle, dfu_buttonless_uuid128);
 	dfu_ble.dfu_buttonless_handles.cccd_handle  = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid128(start_handle, end_handle, dfu_buttonless_uuid128);
 
-	log_info("dfu_ctrl_point_value_handle 	0x%02x", dfu_ble.dfu_ctrl_pt_handles.value_handle);
-	log_info("dfu_ctrl_point_cccd_handle 	0x%02x", dfu_ble.dfu_ctrl_pt_handles.cccd_handle);
-	log_info("dfu_data_point_value_handle 	0x%02x", dfu_ble.dfu_pkt_handles.value_handle);
-	log_info("dfu_buttonless_value_handle 	0x%02x", dfu_ble.dfu_buttonless_handles.value_handle);
-	log_info("dfu_buttonless_cccd_handle 	0x%02x", dfu_ble.dfu_buttonless_handles.cccd_handle);
+	NRF_LOG_INFO("dfu_ctrl_point_value_handle 	0x%02x", dfu_ble.dfu_ctrl_pt_handles.value_handle);
+	NRF_LOG_INFO("dfu_ctrl_point_cccd_handle 	0x%02x", dfu_ble.dfu_ctrl_pt_handles.cccd_handle);
+	NRF_LOG_INFO("dfu_data_point_value_handle 	0x%02x", dfu_ble.dfu_pkt_handles.value_handle);
+	NRF_LOG_INFO("dfu_buttonless_value_handle 	0x%02x", dfu_ble.dfu_buttonless_handles.value_handle);
+	NRF_LOG_INFO("dfu_buttonless_cccd_handle 	0x%02x", dfu_ble.dfu_buttonless_handles.cccd_handle);
 	
 	// register service with ATT Server
 	nrf_dfu_service.start_handle   = start_handle;
