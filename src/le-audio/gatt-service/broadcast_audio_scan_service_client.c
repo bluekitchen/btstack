@@ -257,8 +257,7 @@ static void bass_client_handle_gatt_server_notification(uint8_t packet_type, uin
     if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION){
         return;
     }
-
-    bass_client_connection_t * connection = bass_client_get_connection_for_con_handle(channel);
+    bass_client_connection_t * connection = bass_client_get_connection_for_con_handle(gatt_event_notification_get_handle(packet));
     if (connection == NULL){
         return;
     }
