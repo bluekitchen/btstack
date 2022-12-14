@@ -351,7 +351,7 @@ static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channe
         return;
     }
 
-    pacs_client_connection_t * connection = pacs_client_get_connection_for_con_handle(channel);
+    pacs_client_connection_t * connection = pacs_client_get_connection_for_con_handle(gatt_event_notification_get_handle(packet));
     if (connection == NULL){
         return;
     }
