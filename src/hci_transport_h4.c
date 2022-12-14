@@ -229,23 +229,12 @@ static void hci_transport_h4_packet_complete(void){
             }
 #endif
     uint16_t packet_len = read_pos-1u;
-#if 0
-    uint8_t reset[] = {0x04, 0x0E, 0x04, 0x01, 0x03, 0x0C, 0x00};
-    if (memcmp(hci_packet, reset_cmp_prefix, sizeof(reset_cmp_prefix)) == 0) {
-        hci_transport_h4_reset_statemachine();
-        memset(hci_packet_with_pre_buffer, 0, sizeof(hci_packet_with_pre_buffer));
-        memcpy(hci_packet, reset, sizeof(reset));
-        hci_transport_h4_packet_handler(hci_packet[0], &hci_packet[1], sizeof(reset) - 1);
-        return;
-    }
-#endif
     // reset state machine before delivering packet to stack as it might close the transport
     hci_transport_h4_reset_statemachine();
     hci_transport_h4_packet_handler(hci_packet[0], &hci_packet[1], packet_len);
 }
 
 static void hci_transport_h4_block_read(void){
-    uint8_t reset_evt[2] = {0x04, 0x0E};
     read_pos += bytes_to_read;
 
     switch (h4_state) {
@@ -281,13 +270,6 @@ static void hci_transport_h4_block_read(void){
             break;
             
         case H4_W4_EVENT_HEADER:
-#if 0
-            if (0 == memcmp(&hci_packet[1], reset_evt, sizeof(reset_evt))) {
-                bytes_to_read = 5;
-                h4_state = H4_W4_PAYLOAD;
-                break;
-            }
-#endif
             bytes_to_read = hci_packet[2];
             // check Event length
             if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_EVENT_HEADER_SIZE)){

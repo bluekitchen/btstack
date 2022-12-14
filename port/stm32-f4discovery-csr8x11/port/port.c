@@ -411,7 +411,7 @@ void port_main(void){
 #ifdef ENABLE_SEGGER_RTT
     hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
 #else
-    //hci_dump_init(hci_dump_embedded_stdout_get_instance());
+    hci_dump_init(hci_dump_embedded_stdout_get_instance());
 #endif
 
 	// init HCI

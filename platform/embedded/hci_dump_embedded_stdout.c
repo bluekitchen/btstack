@@ -49,9 +49,9 @@
 
 #include <stdio.h>
 
-#ifndef ENABLE_PRINTF_HEXDUMP
-#error "HCI Dump on stdout requires ENABLE_PRINTF_HEXDUMP to be defined. Use different hci dump implementation or add ENABLE_PRINTF_HEXDUMP to btstack_config.h"
-#endif
+//#ifndef ENABLE_PRINTF_HEXDUMP
+//#error "HCI Dump on stdout requires ENABLE_PRINTF_HEXDUMP to be defined. Use different hci dump implementation or add ENABLE_PRINTF_HEXDUMP to btstack_config.h"
+//#endif
 
 static char log_message_buffer[256];
 
@@ -76,27 +76,36 @@ static void hci_dump_embedded_stdout_packet(uint8_t packet_type, uint8_t in, uin
     hci_log_through_frontline(packet_type, in, packet, len);
 
     switch (packet_type){
+#ifdef ENABLE_PRINTF_HEXDUMP
         case HCI_COMMAND_DATA_PACKET:
+            hci_dump_embedded_stdout_timestamp();
             printf("CMD => ");
             break;
         case HCI_EVENT_PACKET:
+            hci_dump_embedded_stdout_timestamp();
             printf("EVT <= ");
             break;
         case HCI_ACL_DATA_PACKET:
             if (in) {
+                hci_dump_embedded_stdout_timestamp();
                 printf("ACL <= ");
             } else {
+                hci_dump_embedded_stdout_timestamp();
                 printf("ACL => ");
             }
             break;
         case HCI_SCO_DATA_PACKET:
             if (in) {
+                hci_dump_embedded_stdout_timestamp();
                 printf("SCO <= ");
             } else {
+                hci_dump_embedded_stdout_timestamp();
                 printf("SCO => ");
             }
             break;
+#endif
         case LOG_MESSAGE_PACKET:
+            hci_dump_embedded_stdout_timestamp();
             printf("LOG -- %s\n", (char*) packet);
             return;
         default:
@@ -106,7 +115,7 @@ static void hci_dump_embedded_stdout_packet(uint8_t packet_type, uint8_t in, uin
 }
 
 static void hci_dump_embedded_stdout_log_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
-    hci_dump_embedded_stdout_timestamp();
+    //hci_dump_embedded_stdout_timestamp();
     hci_dump_embedded_stdout_packet(packet_type, in, packet, len);
 }
 

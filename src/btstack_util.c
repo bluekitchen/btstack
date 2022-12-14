@@ -207,8 +207,8 @@ int nibble_for_char(char c){
     return -1;
 }
 
-#ifdef ENABLE_PRINTF_HEXDUMP
 void printf_hexdump(const void * data, int size){
+#ifdef ENABLE_PRINTF_HEXDUMP
     char buffer[4];
     buffer[2] = ' ';
     buffer[3] =  0;
@@ -220,9 +220,9 @@ void printf_hexdump(const void * data, int size){
         printf("%s", buffer);
         size--;
     }
+#endif
     printf("\n");
 }
-#endif
 
 #if defined(ENABLE_LOG_INFO) || defined(ENABLE_LOG_DEBUG)
 static void log_hexdump(int level, const void * data, int size){
