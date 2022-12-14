@@ -299,8 +299,7 @@ static void handle_gatt_server_control_point_notification(uint8_t packet_type, u
     if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION){
         return;
     }
-
-    ascs_client_connection_t * connection = ascs_client_get_connection_for_con_handle(channel);
+    ascs_client_connection_t * connection = ascs_client_get_connection_for_con_handle(gatt_event_notification_get_handle(packet));
     if (connection == NULL){
         return;
     }
@@ -337,8 +336,7 @@ static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channe
     if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION){
         return;
     }
-
-    ascs_client_connection_t * connection = ascs_client_get_connection_for_con_handle(channel);
+    ascs_client_connection_t * connection = ascs_client_get_connection_for_con_handle(gatt_event_notification_get_handle(packet));
     if (connection == NULL){
         return;
     }
