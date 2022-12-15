@@ -235,6 +235,16 @@ irk_lookup_state_t sm_identity_resolving_state(hci_con_handle_t con_handle);
 int sm_le_device_index(hci_con_handle_t con_handle);
 
 /**
+ * @brief Get LTK for encrypted connection
+ * @param con_handle
+ * @param ltk buffer to store long term key
+ * @return ERROR_CODE_SUCCESS ok
+ *         ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if no connection for this con handle exists
+ *         ERROR_CODE_PIN_OR_KEY_MISSING if connection is not encrypted
+ */
+uint8_t sm_get_ltk(hci_con_handle_t con_handle, sm_key_t ltk);
+
+/**
  * @brief Use fixec passkey for Legacy and SC instead of generating a random number
  * @note Can be used to improve security over Just Works if no keyboard or displary are present and 
  *       individual random passkey can be printed on the device during production
