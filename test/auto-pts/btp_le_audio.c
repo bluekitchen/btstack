@@ -224,6 +224,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     uint8_t ase_id;
     uint8_t num_ases;
     uint8_t i;
+    uint8_t opcode;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED:
@@ -302,8 +303,13 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             con_handle    = gattservice_subevent_ascs_control_point_operation_response_get_con_handle(packet);
             response_code = gattservice_subevent_ascs_control_point_operation_response_get_response_code(packet);
             reason        = gattservice_subevent_ascs_control_point_operation_response_get_reason(packet);
-
-            printf("            OPERATION STATUS - ase_id %d, response [0x%02x, 0x%02x], con_handle 0x%02x\n", ase_id, response_code, reason, con_handle);
+            opcode        = gattservice_subevent_ascs_control_point_operation_response_get_opcode(packet);
+            printf("ASCS Client: Operation complete - ase_id %d, opcode %u, response [0x%02x, 0x%02x], con_handle 0x%02x\n", ase_id, opcode, response_code, reason, con_handle);
+            if ((opcode == ASCS_OPCODE_RECEIVER_START_READY) && (response_op != 0)){
+                MESSAGE("Receiver Start Ready completed");
+                btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
+                response_op = 0;
+            }
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE:
@@ -328,14 +334,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         }
                         break;
                     case BTP_LE_AUDIO_OP_ASCS_RECEIVER_START_READY:
-                        switch (ase_state){
-                            case ASCS_STATE_STREAMING:
-                                btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
-                                response_op = 0;
-                                break;
-                            default:
-                                break;
-                        }
+                        // moved to control operation complete
                         break;
                     case BTP_LE_AUDIO_OP_ASCS_RECEIVER_STOP_READY:
                         switch (ase_state){
@@ -464,6 +463,13 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+static void expect_status_no_error(uint8_t status){
+    if (status != ERROR_CODE_SUCCESS){
+        MESSAGE("STATUS = 0x%02x -> ABORT", status);
+    }
+    btstack_assert(status == ERROR_CODE_SUCCESS);
+}
+
 // BTP LE Audio
 void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data) {
     // provide op info for response
@@ -548,7 +554,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 ascs_codec_configuration_request.vendor_specific_codec_id = 0;
 
                 uint8_t status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_id_used_by_configure_codec, &ascs_codec_configuration_request);
-                btstack_assert(status == ERROR_CODE_SUCCESS);
+                expect_status_no_error(status);
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS:
@@ -575,7 +581,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 ascs_qos_configuration.max_transport_latency_ms = max_transport_latency_ms;
                 ascs_qos_configuration.presentation_delay_us = 40000;
                 uint8_t status = audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_id, &ascs_qos_configuration);
-                btstack_assert(status == ERROR_CODE_SUCCESS);
+                expect_status_no_error(status);
 
                 // TODO:
                 cis_sdu_size = max_sdu;
@@ -587,7 +593,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 ase_id = data[1];
                 MESSAGE("BTP_LE_AUDIO_OP_ASCS_ENABLE ase_id %u", ase_id);
                 uint8_t status = audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_id);
-                btstack_assert(status == ERROR_CODE_SUCCESS);
+                expect_status_no_error(status);
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_RECEIVER_START_READY:
@@ -596,7 +602,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 ase_id = data[1];
                 MESSAGE("BTP_LE_AUDIO_OP_ASCS_RECEIVER_START_READY: ase_id %u", ase_id);
                 uint8_t status = audio_stream_control_service_client_streamendpoint_receiver_start_ready(ascs_cid, ase_id);
-                btstack_assert(status == ERROR_CODE_SUCCESS);
+                expect_status_no_error(status);
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_RECEIVER_STOP_READY:
@@ -605,7 +611,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 ase_id = data[1];
                 MESSAGE("BTP_LE_AUDIO_OP_ASCS_RECEIVER_STOP_READY ase_id %u", ase_id);
                 uint8_t status = audio_stream_control_service_client_streamendpoint_receiver_stop_ready(ascs_cid, ase_id);
-                btstack_assert(status == ERROR_CODE_SUCCESS);
+                expect_status_no_error(status);
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_DISABLE:
@@ -614,6 +620,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 ase_id = data[1];
                 MESSAGE("BTP_LE_AUDIO_OP_ASCS_DISABLE ase_id %u", ase_id);
                 uint8_t status = audio_stream_control_service_client_streamendpoint_disable(ascs_cid, ase_id);
+                expect_status_no_error(status);
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_RELEASE:
@@ -622,7 +629,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 ase_id = data[1];
                 MESSAGE("BTP_LE_AUDIO_OP_ASCS_RELEASE ase_id %u", ase_id);
                 uint8_t status = audio_stream_control_service_client_streamendpoint_release(ascs_cid, ase_id, false);
-                btstack_assert(status == ERROR_CODE_SUCCESS);
+                expect_status_no_error(status);
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_UPDATE_METADATA:
@@ -634,7 +641,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 ascs_metadata.preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_MEDIA;
                 ascs_metadata.streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_MEDIA;
                 uint8_t status = audio_stream_control_service_client_streamendpoint_metadata_update(ascs_cid, ase_id, &ascs_metadata);
-                btstack_assert(status == ERROR_CODE_SUCCESS);
+                expect_status_no_error(status);
             }
             break;
         case BTP_LE_AUDIO_OP_CIG_CREATE:
@@ -670,7 +677,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 }
 
                 uint8_t status = gap_cig_create(&cig, &cig_params);
-                btstack_assert(status == ERROR_CODE_SUCCESS);
+                expect_status_no_error(status);
             }
             break;
         case BTP_LE_AUDIO_OP_CIS_CREATE:
@@ -707,7 +714,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                     acl_connection_handles[i] = hci_connection->con_handle;
                 }
                 uint8_t status = gap_cis_create(cig_cid, cis_connection_handles, acl_connection_handles);
-                btstack_assert(status == ERROR_CODE_SUCCESS);
+                expect_status_no_error(status);
             }
             break;
         case BTP_LE_AUDIO_OP_CIS_START_STREAMING:
