@@ -259,7 +259,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
         case GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION:
             ase_id = gattservice_subevent_ascs_codec_configuration_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_codec_configuration_get_con_handle(packet);
+            ascs_cid = gattservice_subevent_ascs_codec_configuration_get_ascs_cid(packet);
 
             // codec id:
             codec_configuration.coding_format =  gattservice_subevent_ascs_codec_configuration_get_coding_format(packet);;
@@ -273,7 +273,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_codec_configuration_get_octets_per_frame(packet);
             codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_codec_configuration_get_frame_blocks_per_sdu(packet);
 
-            MESSAGE("ASCS Client: CODEC CONFIGURATION - ase_id %d, con_handle 0x%02x", ase_id, con_handle);
+            MESSAGE("ASCS Client: CODEC CONFIGURATION - ase_id %d, ascs_cid 0x%02x", ase_id, ascs_cid);
             response_len = 0;
             btp_append_uint24(gattservice_subevent_ascs_codec_configuration_get_presentation_delay_min(packet));
             btp_append_uint24(gattservice_subevent_ascs_codec_configuration_get_presentation_delay_max(packet));
@@ -282,9 +282,9 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
         case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION:
             ase_id  = gattservice_subevent_ascs_qos_configuration_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_qos_configuration_get_con_handle(packet);
+            ascs_cid = gattservice_subevent_ascs_qos_configuration_get_ascs_cid(packet);
 
-            MESSAGE("ASCS Client: QOS CONFIGURATION - ase_id %d, con_handle 0x%02x", ase_id, con_handle);
+            MESSAGE("ASCS Client: QOS CONFIGURATION - ase_id %d, ascs_cid 0x%02x", ase_id, ascs_cid);
             if (response_op != 0){
                 btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
                 response_op = 0;
@@ -293,18 +293,18 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
         case GATTSERVICE_SUBEVENT_ASCS_METADATA:
             ase_id  = gattservice_subevent_ascs_metadata_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_metadata_get_con_handle(packet);
+            ascs_cid = gattservice_subevent_ascs_metadata_get_ascs_cid(packet);
 
-            printf("ASCS Client: METADATA UPDATE - ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
+            printf("ASCS Client: METADATA UPDATE - ase_id %d, ascs_cid 0x%02x\n", ase_id, ascs_cid);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE:
             ase_id  = gattservice_subevent_ascs_control_point_operation_response_get_ase_id(packet);
-            con_handle    = gattservice_subevent_ascs_control_point_operation_response_get_con_handle(packet);
+            ascs_cid    = gattservice_subevent_ascs_control_point_operation_response_get_ascs_cid(packet);
             response_code = gattservice_subevent_ascs_control_point_operation_response_get_response_code(packet);
             reason        = gattservice_subevent_ascs_control_point_operation_response_get_reason(packet);
             opcode        = gattservice_subevent_ascs_control_point_operation_response_get_opcode(packet);
-            printf("ASCS Client: Operation complete - ase_id %d, opcode %u, response [0x%02x, 0x%02x], con_handle 0x%02x\n", ase_id, opcode, response_code, reason, con_handle);
+            printf("ASCS Client: Operation complete - ase_id %d, opcode %u, response [0x%02x, 0x%02x], ascs_cid 0x%02x\n", ase_id, opcode, response_code, reason, ascs_cid);
             if ((opcode == ASCS_OPCODE_RECEIVER_START_READY) && (response_op != 0)){
                 MESSAGE("Receiver Start Ready completed");
                 btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
@@ -314,11 +314,10 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
         case GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE:
             log_info("GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE");
-            con_handle = gattservice_subevent_ascs_streamendpoint_state_get_con_handle(packet);
-            ase_id = gattservice_subevent_ascs_streamendpoint_state_get_ase_id(packet);
+            ascs_cid   = gattservice_subevent_ascs_streamendpoint_state_get_ascs_cid(packet);
+            ase_id     = gattservice_subevent_ascs_streamendpoint_state_get_ase_id(packet);
             ase_state  = gattservice_subevent_ascs_streamendpoint_state_get_state(packet);
-            ascs_cid   = ascs_get_cid_for_con_handle(con_handle);
-            log_info("ASCS Client: ASE STATE (%s) - ase_id %d, con_handle 0x%02x, role %s", ascs_util_ase_state2str(ase_state), ase_id, con_handle,
+            log_info("ASCS Client: ASE STATE (%s) - ase_id %d, ascs_cid 0x%02x, role %s", ascs_util_ase_state2str(ase_state), ase_id, ascs_cid,
                      (audio_stream_control_service_client_get_ase_role(ascs_cid, ase_id) == LE_AUDIO_ROLE_SOURCE) ? "SOURCE" : "SINK" );
             // send done
             if (response_service_id == BTP_SERVICE_ID_LE_AUDIO){
