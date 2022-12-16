@@ -345,15 +345,19 @@ uint16_t asce_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_t * 
     return pos;
 }
 
-void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_callback, hci_con_handle_t con_handle, uint8_t ase_id, ascs_state_t state, ascs_codec_configuration_t * codec_configuration){
+void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, ascs_codec_configuration_t * codec_configuration){
     btstack_assert(ascs_event_callback != NULL);
     
     uint8_t event[39];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION;
-    little_endian_store_16(event, pos, con_handle);
+    if (client_request){
+        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION_REQUEST;
+    } else {
+        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION;
+    }
+    little_endian_store_16(event, pos, con_identifier);
     pos += 2;
     event[pos++] = ase_id;
     pos += ascs_util_codec_configuration_serialize(codec_configuration, &event[pos], sizeof(event) - pos);
@@ -361,15 +365,19 @@ void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_call
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callback, hci_con_handle_t con_handle, uint8_t ase_id, ascs_state_t state, ascs_qos_configuration_t * qos_configuration){
+void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, ascs_qos_configuration_t * qos_configuration){
     btstack_assert(ascs_event_callback != NULL);
     
     uint8_t event[21];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION;
-    little_endian_store_16(event, pos, con_handle);
+    if (client_request){
+        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION_REQUEST;
+    } else {
+        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION;
+    }
+    little_endian_store_16(event, pos, con_identifier);
     pos += 2;
     event[pos++] = ase_id;
     pos += ascs_util_qos_configuration_serialize(qos_configuration, &event[pos], sizeof(event) - pos);
@@ -377,7 +385,7 @@ void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callba
 }
 
 
-void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, hci_con_handle_t con_handle, uint8_t ase_id, ascs_state_t state, le_audio_metadata_t * metadata){
+void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, le_audio_metadata_t * metadata){
     btstack_assert(ascs_event_callback != NULL);
 
     uint8_t event[25 + LE_AUDIO_PROGRAM_INFO_MAX_LENGTH
@@ -389,8 +397,12 @@ void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, hci_c
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = (uint8_t)sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_METADATA;
-    little_endian_store_16(event, pos, con_handle);
+    if (client_request){
+        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_METADATA_REQUEST;
+    } else {
+        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_METADATA;
+    }
+    little_endian_store_16(event, pos, con_identifier);
     pos += 2;
     event[pos++] = ase_id;
     uint16_t metadata_length = le_audio_util_metadata_serialize(metadata, &event[pos], sizeof(event) - pos);

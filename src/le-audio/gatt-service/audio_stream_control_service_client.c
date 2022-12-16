@@ -139,7 +139,7 @@ static void ascs_client_finalize_connection(ascs_client_connection_t * connectio
     btstack_linked_list_remove(&ascs_connections, (btstack_linked_item_t*) connection);
 }
 
-static void ascs_client_emit_streamendpoint_state(hci_con_handle_t con_handle, uint8_t ase_id, ascs_state_t state){
+static void ascs_client_emit_streamendpoint_state(uint16_t con_identifier, uint8_t ase_id, ascs_state_t state){
     btstack_assert(ascs_event_callback != NULL);
     uint8_t event[7];
     
@@ -147,7 +147,7 @@ static void ascs_client_emit_streamendpoint_state(hci_con_handle_t con_handle, u
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE;
-    little_endian_store_16(event, pos, con_handle);
+    little_endian_store_16(event, pos, con_identifier);
     pos += 2;
     event[pos++] = ase_id;
     event[pos++] = (uint8_t)state;
@@ -160,24 +160,24 @@ static void ascs_client_emit_ase(ascs_client_connection_t * connection, ascs_str
     
     switch (streamendpoint->state){
         case ASCS_STATE_CODEC_CONFIGURED:
-            ascs_util_emit_codec_configuration(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->codec_configuration);
+            ascs_util_emit_codec_configuration(ascs_event_callback, false, connection->cid, ase_id, streamendpoint->state, &streamendpoint->codec_configuration);
             break;
         
         case ASCS_STATE_QOS_CONFIGURED:
-            ascs_util_emit_qos_configuration(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->qos_configuration);
+            ascs_util_emit_qos_configuration(ascs_event_callback, false, connection->cid, ase_id, streamendpoint->state, &streamendpoint->qos_configuration);
             break;
         
         case ASCS_STATE_ENABLING:
         case ASCS_STATE_STREAMING:
         case ASCS_STATE_DISABLING:
-            ascs_util_emit_metadata(ascs_event_callback, connection->con_handle, ase_id, streamendpoint->state, &streamendpoint->metadata);
+            ascs_util_emit_metadata(ascs_event_callback, false, connection->cid, ase_id, streamendpoint->state, &streamendpoint->metadata);
             break;
         
         default:
             break;           
     }
 
-    ascs_client_emit_streamendpoint_state(connection->con_handle, ase_id, streamendpoint->state);
+    ascs_client_emit_streamendpoint_state(connection->con_handle, (uint16_t) connection->cid, streamendpoint->state);
 }
 
 static void ascs_client_emit_connection_established(ascs_client_connection_t * connection, uint8_t status){
@@ -325,7 +325,7 @@ static void handle_gatt_server_control_point_notification(uint8_t packet_type, u
     uint8_t ase_id = value[pos++];
     uint8_t response_code = value[pos++];
     uint8_t reason = value[pos++];
-    ascs_client_emit_control_point_operation_response(connection->con_handle, opcode, ase_id, response_code, reason);
+    ascs_client_emit_control_point_operation_response(connection->cid, opcode, ase_id, response_code, reason);
 }
 
 static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){

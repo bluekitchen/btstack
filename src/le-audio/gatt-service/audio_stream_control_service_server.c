@@ -321,8 +321,7 @@ static void ascs_emit_client_request(hci_con_handle_t con_handle, uint8_t ase_id
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-
-void ascs_server_emit_codec_configuration_request(hci_con_handle_t con_handle, uint8_t ase_id, ascs_client_codec_configuration_request_t * codec_configuration_request){
+static void ascs_server_emit_client_codec_configuration_request(hci_con_handle_t con_handle, uint8_t ase_id, ascs_client_codec_configuration_request_t * codec_configuration_request){
     btstack_assert(ascs_event_callback != NULL);
     
     uint8_t event[23];
@@ -344,6 +343,16 @@ void ascs_server_emit_codec_configuration_request(hci_con_handle_t con_handle, u
     pos += ascs_util_specific_codec_configuration_serialize(&codec_configuration_request->specific_codec_configuration,
                                                             &event[pos], sizeof(event) - pos);
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static void ascs_server_emit_client_qos_configuration_request(btstack_packet_handler_t ascs_event_callback, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, ascs_qos_configuration_t * qos_configuration){
+    btstack_assert(ascs_event_callback != NULL);
+    ascs_util_emit_qos_configuration(ascs_event_callback, true, con_identifier, ase_id, state, qos_configuration);
+}
+
+static void ascs_server_emit_client_metadata_request(btstack_packet_handler_t ascs_event_callback, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, le_audio_metadata_t * metadata){
+    btstack_assert(ascs_event_callback != NULL);
+    ascs_util_emit_metadata(ascs_event_callback, true, con_identifier, ase_id, state, metadata);
 }
 
 static uint16_t ascs_server_codec_configuration_serialize(ascs_codec_configuration_t * codec_configuration, uint8_t * buffer, uint16_t buffer_size){
@@ -919,7 +928,7 @@ static int audio_stream_control_service_write_callback(hci_con_handle_t con_hand
                     ase_id = buffer[data_offset++];
                     data_offset += ascs_util_codec_configuration_request_parse(&buffer[data_offset], buffer_size-data_offset, &codec_config_request);
                     if (ascs_client_request_successfully_processed(client, i)){
-                        ascs_server_emit_codec_configuration_request(con_handle, ase_id, &codec_config_request);
+                        ascs_server_emit_client_codec_configuration_request(con_handle, ase_id, &codec_config_request);
                     }
                 }
                 break;
@@ -936,7 +945,7 @@ static int audio_stream_control_service_write_callback(hci_con_handle_t con_hand
                     ase_id = buffer[data_offset++];
                     data_offset += ascs_util_qos_configuration_parse(&buffer[data_offset], buffer_size - data_offset, &qos_config);
                     if (ascs_client_request_successfully_processed(client, i)){
-                        ascs_util_emit_qos_configuration(ascs_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &qos_config);
+                        ascs_server_emit_client_qos_configuration_request(ascs_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &qos_config);
                     }
                 }
                 break;
@@ -956,7 +965,7 @@ static int audio_stream_control_service_write_callback(hci_con_handle_t con_hand
                     ase_id = buffer[data_offset++];
                     data_offset += le_audio_util_metadata_parse(&buffer[data_offset], buffer_size-data_offset, &metadata_config);
                     if (ascs_client_request_successfully_processed(client, i)){
-                        ascs_util_emit_metadata(ascs_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &metadata_config);
+                        ascs_server_emit_client_metadata_request(ascs_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &metadata_config);
                     }
                 }
                 break;
@@ -1018,7 +1027,7 @@ static int audio_stream_control_service_write_callback(hci_con_handle_t con_hand
                     ase_id = buffer[data_offset++];
                     data_offset += le_audio_util_metadata_parse(&buffer[data_offset], buffer_size-data_offset, &metadata_config);
                     if (ascs_client_request_successfully_processed(client, i)){
-                        ascs_util_emit_metadata(ascs_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &metadata_config);
+                        ascs_server_emit_client_metadata_request(ascs_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &metadata_config);
                     }
                 }
                 break;

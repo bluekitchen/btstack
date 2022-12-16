@@ -215,9 +215,9 @@ uint16_t ascs_util_specific_codec_configuration_serialize(ascs_specific_codec_co
 uint16_t ascs_util_qos_configuration_serialize(ascs_qos_configuration_t * qos_configuration, uint8_t * event, uint16_t event_size);
 uint16_t asce_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_t * value, uint16_t value_size);
     
-void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_callback, hci_con_handle_t con_handle, uint8_t ase_id, ascs_state_t state, ascs_codec_configuration_t * codec_configuration);
-void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callback, hci_con_handle_t con_handle, uint8_t ase_id, ascs_state_t state, ascs_qos_configuration_t * qos_configuration);
-void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, hci_con_handle_t con_handle, uint8_t ase_id, ascs_state_t state, le_audio_metadata_t * metadata);
+void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, ascs_codec_configuration_t * codec_configuration);
+void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, ascs_qos_configuration_t * qos_configuration);
+void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, le_audio_metadata_t * metadata);
 
 #if defined __cplusplus
 }
