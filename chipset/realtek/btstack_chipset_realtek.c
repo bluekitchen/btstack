@@ -84,7 +84,7 @@ enum {
     STATE_RESET,
     STATE_DONE,
 };
-
+//add uart support
 enum { FW_DONE, FW_MORE_TO_DO };
 
 typedef struct {
