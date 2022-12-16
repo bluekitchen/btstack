@@ -98,8 +98,123 @@ static uint8_t  s1[16];
 static uint8_t   T[16];
 static uint8_t  k1[16];
 static uint8_t sef[16];
+const static uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
+
 static uint8_t key_ltk[16];
 
+static csis_coordinator_t * active_coordinator;
+
+static void csis_server_trigger_next_sirk_calculation(void);
+
+static void csis_server_emit_ris(const uint8_t * ris){
+    btstack_assert(csis_event_callback != NULL);
+
+    uint8_t event[9];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RIS;
+    reverse_48(ris, &event[pos]);
+    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void csis_server_handle_csis_hash(void * arg){
+    UNUSED(arg);
+    uint8_t ris[6];
+    memcpy(&ris[0], csis_prand_data, 3);
+    memcpy(&ris[3], &csis_hash[13] , 3);
+    
+    csis_server_emit_ris(ris);
+    csis_ris_calculation_ongoing = false;
+}
+
+static void csis_handle_prand_provisioner(void * arg){
+    UNUSED(arg);
+
+    // TEST data
+    // csis_prand_data[0] = 0x69;
+    // csis_prand_data[1] = 0xf5;
+    // csis_prand_data[2] = 0x63;
+    
+    uint8_t prand_prime[16];
+    memset(prand_prime, 0, 16);
+    memcpy(&prand_prime[13], csis_prand_data, 3);
+
+    // CSIS 4.8: The two most significant bits (MSBs) of prand shall be equal to 0 and 1
+    prand_prime[13] &= 0x7F;
+    prand_prime[13] |= 0x40;
+
+    btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, prand_prime, csis_hash, &csis_server_handle_csis_hash, NULL);
+}
+
+void coordinated_set_identification_service_server_calculate_rsi(void){
+    if (csis_ris_calculation_ongoing){
+        return;
+    }
+    csis_ris_calculation_ongoing = true;
+    btstack_crypto_random_generate(&random_request, csis_prand_data, 3, &csis_handle_prand_provisioner, NULL);
+}
+
+static csis_coordinator_t * csis_server_get_next_coordinator_for_sirk_calculation(void){
+    uint8_t i;
+    for (i = 0; i < csis_coordinators_max_num; i++){
+        if (csis_coordinators[i].con_handle == HCI_CON_HANDLE_INVALID){
+            continue;
+        }
+        if (csis_coordinators[i].encrypted_sirk_state == CSIS_ENCRYPTED_SIRK_CALCULATION_W2_START){
+            return &csis_coordinators[i];
+        }
+    }
+    return NULL;
+}
+
+static void csis_server_handle_k1(void * context){
+    if (active_coordinator == NULL){
+        return;
+    }
+
+    uint8_t i;
+    for(i = 0; i < sizeof(k1); i++){
+        active_coordinator->encrypted_sirk[i] = k1[i] ^ csis_sirk[i];
+    }
+
+    active_coordinator->encrypted_sirk_state = CSIS_ENCRYPTED_SIRK_CALCULATION_STATE_READY;
+    (void)att_server_response_ready(active_coordinator->con_handle);
+    active_coordinator = NULL;
+
+    csis_server_trigger_next_sirk_calculation();
+}
+
+static void csis_server_handle_T(void * context){
+    if (active_coordinator == NULL){
+        return;
+    }
+    const static uint8_t csis_string[] = { 'c', 's', 'i', 's'};
+    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, T, sizeof(csis_string), csis_string, k1, csis_server_handle_k1, NULL);
+}
+
+static void csis_server_handle_s1(void * context){
+    if (active_coordinator == NULL){
+        return;
+    }
+
+    sm_get_ltk(active_coordinator->con_handle, key_ltk);
+    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, s1, sizeof(key_ltk), key_ltk, T, csis_server_handle_T, NULL);
+}
+
+static void csis_server_trigger_next_sirk_calculation(void){
+    if (active_coordinator != NULL){
+        return;
+    }
+
+    active_coordinator = csis_server_get_next_coordinator_for_sirk_calculation();
+    if (active_coordinator == NULL){
+        return;
+    }
+
+    active_coordinator->encrypted_sirk_state = CSIS_ENCRYPTED_SIRK_CALCULATION_ACTIVE;
+    btstack_crypto_aes128_cmac_zero(&aes128_cmac_request, sizeof(s1_string), s1_string, s1, &csis_server_handle_s1, NULL);
+}
 
 static csis_coordinator_t * csis_get_coordinator_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
@@ -172,18 +287,6 @@ static void csis_server_emit_lock(hci_con_handle_t con_handle){
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void csis_server_emit_ris(const uint8_t * ris){
-    btstack_assert(csis_event_callback != NULL);
-
-    uint8_t event[9];
-    uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RIS;
-    reverse_48(ris, &event[pos]);
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 static void csis_server_emit_set_size(hci_con_handle_t con_handle){
     btstack_assert(csis_event_callback != NULL);
 
@@ -227,10 +330,37 @@ static uint16_t coordinated_set_identification_service_read_callback(hci_con_han
         if (csis_sirk_exposed_via_oob){
             return ATT_READ_ERROR_CODE_OFFSET + CSIS_OOB_SIRK_ONLY;
         }
+
         uint8_t value[17];
         value[0] = (uint8_t)csis_sirk_type;
-        reverse_128(csis_sirk, &value[1]);
+
+        switch (csis_sirk_type){
+            case CSIS_SIRK_TYPE_ENCRYPTED:
+                switch (coordinator->encrypted_sirk_state){
+                    case CSIS_ENCRYPTED_SIRK_CALCULATION_STATE_READY:
+                        reverse_128(coordinator->encrypted_sirk, &value[1]);
+                        break;
+                    default:
+                        return ATT_READ_RESPONSE_PENDING;
+                }
+                break;
+            default:
+                reverse_128(csis_sirk, &value[1]);
+                break;
+        }
         return att_read_callback_handle_blob(value, sizeof(value), offset, buffer, buffer_size);
+    }
+    
+    if (attribute_handle == ATT_READ_RESPONSE_PENDING){
+        switch (coordinator->encrypted_sirk_state){
+            case CSIS_ENCRYPTED_SIRK_CALCULATION_ACTIVE:
+                return 0;
+            default:
+                coordinator->encrypted_sirk_state = CSIS_ENCRYPTED_SIRK_CALCULATION_W2_START;
+                break;
+        }
+        csis_server_trigger_next_sirk_calculation();
+        return 0;
     }
 
     if (attribute_handle == coordinated_set_size_handle){
@@ -429,7 +559,11 @@ static void csis_coordinator_reset(csis_coordinator_t * coordinator){
         btstack_run_loop_remove_timer(&coordinator->lock_timer);
         memset(coordinator, 0, sizeof(csis_coordinator_t));
     }
-
+    if (active_coordinator == coordinator){
+        active_coordinator = NULL;
+    }
+    coordinator->encrypted_sirk_state = CSIS_ENCRYPTED_SIRK_CALCULATION_STATE_IDLE;
+    coordinator->scheduled_tasks = 0;
     coordinator->con_handle = HCI_CON_HANDLE_INVALID;
 }
 
@@ -560,76 +694,9 @@ uint8_t coordinated_set_identification_service_server_set_rank(uint8_t member_ra
 
 void coordinated_set_identification_service_server_deinit(void){
     csis_member_lock = CSIS_MEMBER_UNLOCKED;
+    active_coordinator = NULL;
     csis_event_callback = NULL;
     csis_ris_calculation_ongoing = false;
-}
-
-static void csis_server_handle_csis_hash(void * arg){
-    UNUSED(arg);
-    uint8_t ris[6];
-    memcpy(&ris[0], csis_prand_data, 3);
-    memcpy(&ris[3], &csis_hash[13] , 3);
-    
-    csis_server_emit_ris(ris);
-    csis_ris_calculation_ongoing = false;
-}
-
-static void csis_handle_prand_provisioner(void * arg){
-    UNUSED(arg);
-
-    // TEST data
-    // csis_prand_data[0] = 0x69;
-    // csis_prand_data[1] = 0xf5;
-    // csis_prand_data[2] = 0x63;
-    
-    uint8_t prand_prime[16];
-    memset(prand_prime, 0, 16);
-    memcpy(&prand_prime[13], csis_prand_data, 3);
-
-    // CSIS 4.8: The two most significant bits (MSBs) of prand shall be equal to 0 and 1
-    prand_prime[13] &= 0x7F;
-    prand_prime[13] |= 0x40;
-
-    btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, prand_prime, csis_hash, &csis_server_handle_csis_hash, NULL);
-}
-
-void coordinated_set_identification_service_server_calculate_rsi(void){
-    if (csis_ris_calculation_ongoing){
-        return;
-    }
-    csis_ris_calculation_ongoing = true;
-    btstack_crypto_random_generate(&random_request, csis_prand_data, 3, &csis_handle_prand_provisioner, NULL);
-}
-
-static void csis_server_handle_k1(void * arg){
-    UNUSED(arg);
-    uint8_t i;
-    for(i = 0; i < sizeof(k1); i++){
-        sef[i] = k1[i] ^ csis_sirk[i];
-    }
-}
-
-static void csis_server_get_ltk(void){
-    // TODO: get LTK
-    const uint8_t ltk[] = {0x32, 0x0D, 0x58, 0x7C, 0x02, 0xE7, 0x70, 0x82, 0xAF, 0x4E, 0xB4, 0xB5, 0xDA, 0xC6, 0xD3, 0x33};
-    memcpy(key_ltk, ltk, sizeof(key_ltk));
-}
-
-static void csis_server_handle_T(void * arg){
-    UNUSED(arg);
-    const static uint8_t csis_string[] = { 'c', 's', 'i', 's'};
-    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, T, sizeof(csis_string), csis_string, k1, csis_server_handle_k1, NULL);
-}
-
-static void csis_server_handle_s1(void * arg){
-    UNUSED(arg);
-    csis_server_get_ltk();
-    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, s1, sizeof(key_ltk), key_ltk, T, csis_server_handle_T, NULL);
-}
-
-void coordinated_set_identification_service_server_calculate_encrypted_sirk(void){
-    const static uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
-    btstack_crypto_aes128_cmac_zero(&aes128_cmac_request, sizeof(s1_string), s1_string, s1, &csis_server_handle_s1, NULL);
 }
 
 uint8_t coordinated_set_identification_service_server_simulate_member_connected(hci_con_handle_t con_handle){
