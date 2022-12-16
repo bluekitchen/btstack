@@ -77,6 +77,13 @@ typedef enum {
     CSIS_SIRK_TYPE_PROHIBITED
 } csis_sirk_type_t;
 
+typedef enum {
+    CSIS_ENCRYPTED_SIRK_CALCULATION_STATE_IDLE = 0x00,
+    CSIS_ENCRYPTED_SIRK_CALCULATION_W2_START,
+    CSIS_ENCRYPTED_SIRK_CALCULATION_ACTIVE,
+    CSIS_ENCRYPTED_SIRK_CALCULATION_STATE_READY
+} csis_encrypted_sirk_calculation_state_t;
+
 typedef struct {
     uint16_t con_handle;
 
@@ -89,6 +96,10 @@ typedef struct {
 
     uint8_t  scheduled_tasks;
     btstack_context_callback_registration_t  scheduled_tasks_callback;
+
+    csis_encrypted_sirk_calculation_state_t  encrypted_sirk_state;
+    uint8_t encrypted_sirk[16];
+
 } csis_coordinator_t;
 /**
  * @brief Init Coordinated Set Identification Service Server with ATT DB
@@ -103,7 +114,6 @@ uint8_t coordinated_set_identification_service_server_set_size(uint8_t coordinat
 uint8_t coordinated_set_identification_service_server_set_rank(uint8_t member_rank);
 
 void coordinated_set_identification_service_server_calculate_rsi(void);
-void coordinated_set_identification_service_server_calculate_encrypted_sirk(void);
 
 /**
  * @brief Register callback.
