@@ -635,7 +635,7 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
         case GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION:
             ase_id     = gattservice_subevent_ascs_codec_configuration_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_codec_configuration_get_con_handle(packet);
+            ascs_cid =   gattservice_subevent_ascs_codec_configuration_get_ascs_cid(packet);
 
             ascs_codec_configuration.framing = gattservice_subevent_ascs_codec_configuration_get_framing(packet);                        
             ascs_codec_configuration.preferred_phy = gattservice_subevent_ascs_codec_configuration_get_preferred_phy(packet);                  
@@ -653,7 +653,7 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             ascs_codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_codec_configuration_get_octets_per_frame(packet);         
             ascs_codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_codec_configuration_get_frame_blocks_per_sdu(packet); 
             
-            printf("ASCS Client: CODEC CONFIGURATION - ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
+            printf("ASCS Client: CODEC CONFIGURATION - ase_id %d, ascs_cid 0x%02x\n", ase_id, ascs_cid);
             printf("    framing                             0x%0x\n" , ascs_codec_configuration.framing);                               
             printf("    preferred_phy                       0x%0x\n" , ascs_codec_configuration.preferred_phy);                         
             printf("    preferred_retransmission_number     0x%0x\n" , ascs_codec_configuration.preferred_retransmission_number);       
@@ -677,9 +677,9 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
         case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION:
             ase_id     = gattservice_subevent_ascs_qos_configuration_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_qos_configuration_get_con_handle(packet);
+            ascs_cid = gattservice_subevent_ascs_qos_configuration_get_ascs_cid(packet);
 
-            printf("ASCS Client: QOS CONFIGURATION - ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
+            printf("ASCS Client: QOS CONFIGURATION - ase_id %d, ascs_cid 0x%02x\n", ase_id, ascs_cid);
             printf("    cig_id                              0x%0x\n",  gattservice_subevent_ascs_qos_configuration_get_cig_id(packet));
             printf("    cis_id                              0x%0x\n",  gattservice_subevent_ascs_qos_configuration_get_cis_id(packet));
             printf("    sdu_interval                        0x%04x\n", gattservice_subevent_ascs_qos_configuration_get_sdu_interval(packet));
@@ -693,26 +693,26 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
         case GATTSERVICE_SUBEVENT_ASCS_METADATA:
             ase_id     = gattservice_subevent_ascs_metadata_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_metadata_get_con_handle(packet);
+            ascs_cid = gattservice_subevent_ascs_metadata_get_ascs_cid(packet);
 
-            printf("ASCS Client: METADATA UPDATE - ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
+            printf("ASCS Client: METADATA UPDATE - ase_id %d, ascs_cid 0x%02x\n", ase_id, ascs_cid);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE:
             ase_id        = gattservice_subevent_ascs_control_point_operation_response_get_ase_id(packet);
-            con_handle    = gattservice_subevent_ascs_control_point_operation_response_get_con_handle(packet);
+            ascs_cid    = gattservice_subevent_ascs_control_point_operation_response_get_ascs_cid(packet);
             response_code = gattservice_subevent_ascs_control_point_operation_response_get_response_code(packet);
             reason        = gattservice_subevent_ascs_control_point_operation_response_get_reason(packet);
 
-            printf("            OPERATION STATUS - ase_id %d, response [0x%02x, 0x%02x], con_handle 0x%02x\n", ase_id, response_code, reason, con_handle);
+            printf("            OPERATION STATUS - ase_id %d, response [0x%02x, 0x%02x], ascs_cid 0x%02x\n", ase_id, response_code, reason, ascs_cid);
             break;
         
         case GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE:
-            con_handle = gattservice_subevent_ascs_streamendpoint_state_get_con_handle(packet);
+            ascs_cid = gattservice_subevent_ascs_streamendpoint_state_get_ascs_cid(packet);
             ase_id     = gattservice_subevent_ascs_streamendpoint_state_get_ase_id(packet);
             ase_state  = gattservice_subevent_ascs_streamendpoint_state_get_state(packet);
             
-            printf("ASCS Client: ASE STATE (%s) - ase_id %d, con_handle 0x%02x\n", ascs_util_ase_state2str(ase_state), ase_id, con_handle);
+            printf("ASCS Client: ASE STATE (%s) - ase_id %d, ascs_cid 0x%02x\n", ascs_util_ase_state2str(ase_state), ase_id, ascs_cid);
             switch (ase_state){
                 case ASCS_STATE_ENABLING:
                     printf("Setup ISO Channel (TODO: list config)\n");
