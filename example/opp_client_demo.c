@@ -757,7 +757,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 // packet handler for emdded system with fixed operation sequence
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
-    UNUSED(size);
     int i;
     switch (packet_type){
         case HCI_EVENT_PACKET:
