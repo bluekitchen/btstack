@@ -510,33 +510,35 @@ static void opp_server_handle_get_request(opp_server_t * opp_server){
     (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opcode){
+static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opcode, bool do_push_event){
     opp_server_handle_srm_headers(opp_server);
 
     log_info ("handle put request");
     // emit received opp data
     ENTER_STATE (opp_server, OPP_SERVER_STATE_SEND_PUT_RESPONSE);
 
-    uint8_t event[2+3+OPP_SERVER_MAX_NAME_LEN+OPP_SERVER_MAX_TYPE_LEN];
-    uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_OPP_META;
-    event[pos++] = 0;
-    event[pos++] = OPP_SUBEVENT_PUSH_OBJECT;
-    little_endian_store_16 (event, pos, opp_server->opp_cid);
-    pos += 2;
-    little_endian_store_32 (event, pos, opp_server->request.length);
-    pos += 4;
-    int name_len = btstack_min (OPP_SERVER_MAX_NAME_LEN, (uint16_t) strlen(opp_server->request.name));
-    event[pos++] = name_len;
-    (void) memcpy (&event[pos], opp_server->request.name, name_len);
-    pos += name_len;
-    int type_len = btstack_min (OPP_SERVER_MAX_TYPE_LEN, (uint16_t) strlen(opp_server->request.type));
-    event[pos++] = type_len;
-    (void) memcpy (&event[pos], opp_server->request.type, type_len);
-    pos += type_len;
-    event[1] = pos - 2;
+    if (do_push_event) {
+        uint8_t event[2+3+OPP_SERVER_MAX_NAME_LEN+OPP_SERVER_MAX_TYPE_LEN];
+        uint16_t pos = 0;
+        event[pos++] = HCI_EVENT_OPP_META;
+        event[pos++] = 0;
+        event[pos++] = OPP_SUBEVENT_PUSH_OBJECT;
+        little_endian_store_16 (event, pos, opp_server->opp_cid);
+        pos += 2;
+        little_endian_store_32 (event, pos, opp_server->request.length);
+        pos += 4;
+        int name_len = btstack_min (OPP_SERVER_MAX_NAME_LEN, (uint16_t) strlen(opp_server->request.name));
+        event[pos++] = name_len;
+        (void) memcpy (&event[pos], opp_server->request.name, name_len);
+        pos += name_len;
+        int type_len = btstack_min (OPP_SERVER_MAX_TYPE_LEN, (uint16_t) strlen(opp_server->request.type));
+        event[pos++] = type_len;
+        (void) memcpy (&event[pos], opp_server->request.type, type_len);
+        pos += type_len;
+        event[1] = pos - 2;
 
-    (*opp_server_user_packet_handler) (HCI_EVENT_PACKET, 0, event, pos);
+        (*opp_server_user_packet_handler) (HCI_EVENT_PACKET, 0, event, pos);
+    }
 
     if (opp_server->request.abort_response == 0) {
         opp_server->response.code = opcode & OBEX_OPCODE_FINAL_BIT_MASK ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE;
@@ -632,7 +634,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                     case OBEX_OPCODE_PUT:
                     case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
                         opp_server->request.abort_response = 0;
-                        opp_server_handle_put_request(opp_server, op_info.opcode);
+                        opp_server_handle_put_request(opp_server, op_info.opcode, true);
                         if (opp_server->request.abort_response == 0) {
                             (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->opp_cid, (uint8_t *) opp_server->request.payload_data, opp_server->request.payload_len);
                         }
@@ -699,7 +701,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                 obex_parser_get_operation_info(&opp_server->obex_parser, &op_info);
                 switch((op_info.opcode & 0x7f)){
                     case OBEX_OPCODE_PUT:
-                        opp_server_handle_put_request(opp_server, op_info.opcode);
+                        opp_server_handle_put_request(opp_server, op_info.opcode, false);
                         if (opp_server->request.abort_response == 0) {
                             (*opp_server_user_packet_handler)(OPP_DATA_PACKET, opp_server->opp_cid, (uint8_t *) opp_server->request.payload_data, opp_server->request.payload_len);
                         }
