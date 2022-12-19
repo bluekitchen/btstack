@@ -208,7 +208,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("PULL: default object\n");
                             if (handle_pull_default_object) {
                                 opp_server_send_pull_response (opp_cid, OBEX_RESP_SUCCESS,
-                                                               0, sizeof (default_object_vcards[0]) - 1, (uint8_t *) default_object_vcards[0]);
+                                                               0, strlen (default_object_vcards[0]), (uint8_t *) default_object_vcards[0]);
                             } else {
                                 opp_server_send_pull_response (opp_cid, OBEX_RESP_NOT_FOUND,
                                                                0, 0, NULL);
