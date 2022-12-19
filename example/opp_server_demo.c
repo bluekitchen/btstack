@@ -59,6 +59,13 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static uint16_t opp_cid;
 
+#ifdef HAVE_POSIX_FILE_IO
+# include <unistd.h>
+# include <fcntl.h>
+static int outfile_fd = -1;
+static uint32_t expected_bytes = 0;
+#endif
+
 static uint8_t service_buffer[150];
 
 // static uint32_t sdp_service_record_handle;
@@ -184,6 +191,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 printf("PUSH: Rejected with reason 0x%02x\n", handle_push_object_response);
                                 opp_server_abort_request (opp_cid,handle_push_object_response);
                             }
+
+#ifdef HAVE_POSIX_FILE_IO
+                            if (handle_push_object_response == OBEX_RESP_SUCCESS &&
+                                outfile_fd < 0) {
+                                outfile_fd = open ("opp_out.bin", O_WRONLY | O_TRUNC | O_CREAT);
+                                if (outfile_fd < 0)
+                                    perror ("failed to open output file");
+                                else
+                                    expected_bytes = object_size;
+                            }
+#endif
+
                             break;
                         case OPP_SUBEVENT_PULL_DEFAULT_OBJECT:
                             printf("PULL: default object\n");
@@ -215,6 +234,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 printf("%c", packet[i]);
             }
             printf ("\n");
+#ifdef HAVE_POSIX_FILE_IO
+            if (outfile_fd >= 0) {
+                if (write (outfile_fd, packet, size) < size) {
+                    perror ("write did not complete");
+                }
+                expected_bytes -= size;
+
+                if (expected_bytes <= 0) {
+                    close (outfile_fd);
+                    outfile_fd = -1;
+                    expected_bytes = 0;
+                }
+            }
+#endif
             break;
         default:
             log_info ("[-] packet of type %d\n", packet_type);
