@@ -79,6 +79,21 @@ static const char *default_object_vcards[] = {
     "VERSION:3.0\n"
     "N:Doe;John;\n"
     "FN:John Doe\n"
+    "VERSION:3.0\n"
+    "N:Doe;John;\n"
+    "FN:John Doe\n"
+    "VERSION:3.0\n"
+    "N:Doe;John;\n"
+    "FN:John Doe\n"
+    "VERSION:3.0\n"
+    "N:Doe;John;\n"
+    "FN:John Doe\n"
+    "VERSION:3.0\n"
+    "N:Doe;John;\n"
+    "FN:John Doe\n"
+    "VERSION:3.0\n"
+    "N:Doe;John;\n"
+    "FN:John Doe\n"
     "END:VCARD\n",
 
     "BEGIN:VCARD\n"
@@ -207,11 +222,25 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case OPP_SUBEVENT_PULL_DEFAULT_OBJECT:
                             printf("PULL: default object\n");
                             if (handle_pull_default_object) {
-                                opp_server_send_pull_response (opp_cid, OBEX_RESP_SUCCESS,
-                                                               0, strlen (default_object_vcards[0]), (uint8_t *) default_object_vcards[0]);
+                                uint32_t position;
+                                uint16_t max_size;
+                                int data_size;
+                                int resp = OBEX_RESP_SUCCESS;
+
+                                position = opp_subevent_pull_default_object_get_cur_position (packet);
+                                max_size = opp_subevent_pull_default_object_get_buf_size (packet);
+                                data_size = strlen (default_object_vcards[0] + position);
+                                if (data_size > max_size) {
+                                    data_size = max_size;
+                                    resp = OBEX_RESP_CONTINUE;
+                                }
+
+                                opp_server_send_pull_response (opp_cid, resp,
+                                                               data_size,
+                                                               (uint8_t *) (default_object_vcards[0] + position));
                             } else {
                                 opp_server_send_pull_response (opp_cid, OBEX_RESP_NOT_FOUND,
-                                                               0, 0, NULL);
+                                                               0, NULL);
                             }
                             break;
                         case OPP_SUBEVENT_OPERATION_COMPLETED:
