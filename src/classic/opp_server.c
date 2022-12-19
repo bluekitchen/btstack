@@ -353,6 +353,7 @@ static void opp_server_handle_can_send_now(opp_server_t * opp_server){
             // next state
             response_code = opp_server->response.code;
             goep_server_response_create_general(opp_server->goep_cid);
+            opp_server_add_srm_headers(opp_server);
             if (response_code == OBEX_RESP_CONTINUE){
                 // next state
                 ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_PUT_OPCODE);
@@ -516,7 +517,11 @@ static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opc
 
     log_info ("handle put request");
     // emit received opp data
-    ENTER_STATE (opp_server, OPP_SERVER_STATE_SEND_PUT_RESPONSE);
+    if (opp_server->srm_state == SRM_ENABLED) {
+        ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_PUT_OPCODE);
+    } else {
+        ENTER_STATE (opp_server, OPP_SERVER_STATE_SEND_PUT_RESPONSE);
+    }
 
     if (do_push_event) {
         uint8_t event[2+3+OPP_SERVER_MAX_NAME_LEN+OPP_SERVER_MAX_TYPE_LEN];
