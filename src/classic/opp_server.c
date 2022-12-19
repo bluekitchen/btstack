@@ -41,6 +41,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <strings.h>
 #include <stdio.h>
 
 #include "hci_cmd.h"
@@ -485,7 +486,7 @@ static void opp_server_parser_callback_get(void * user_data, uint8_t header_id, 
 
 static void opp_server_handle_get_request(opp_server_t * opp_server){
     opp_server_handle_srm_headers(opp_server);
-    if (strcmp("text/x-vcard", opp_server->request.type) != 0 ||
+    if (strcasecmp("text/x-vcard", opp_server->request.type) != 0 ||
         opp_server->request.name[0] != '\0') {
         // wrong default object request
         if (opp_server->request.name[0] != '\0') {
