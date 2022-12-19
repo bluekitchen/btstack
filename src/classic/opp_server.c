@@ -111,7 +111,7 @@ typedef struct {
         uint32_t length;
         uint8_t *payload_data;
         uint32_t payload_len;
-        uint32_t continuation;
+        uint32_t payload_position;
         uint8_t  abort_response;
     } request;
     // response
@@ -122,7 +122,7 @@ typedef struct {
 
 static opp_server_t opp_server_singleton;
 
-static void opp_server_handle_get_request(opp_server_t * opp_server);
+static void opp_server_handle_get_request(opp_server_t * opp_server, bool first);
 static void opp_server_build_response(opp_server_t * opp_server);
 
 #define ENTER_STATE(opp, s) \
@@ -264,6 +264,10 @@ static void opp_server_add_srm_headers(opp_server_t *opp_server){
     }
 }
 
+static void opp_server_reset_request(opp_server_t * opp_server){
+    (void) memset(&opp_server->request, 0, sizeof(opp_server->request));
+}
+
 static void opp_server_reset_response(opp_server_t * opp_server){
     (void) memset(&opp_server->response, 0, sizeof(opp_server->response));
 }
@@ -311,9 +315,9 @@ static void opp_server_handle_can_send_now(opp_server_t * opp_server){
                 opp_server_reset_response(opp_server);
                 // next state
                 if (opp_server->srm_state == SRM_ENABLED)
-                  ENTER_STATE (opp_server, OPP_SERVER_STATE_ABOUT_TO_SEND);
+                    ENTER_STATE (opp_server, OPP_SERVER_STATE_ABOUT_TO_SEND);
                 else
-                  ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_GET_OPCODE);
+                    ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_GET_OPCODE);
             } else {
                 opp_server_operation_complete(opp_server);
             }
@@ -321,7 +325,8 @@ static void opp_server_handle_can_send_now(opp_server_t * opp_server){
             goep_server_execute(opp_server->goep_cid, response_code);
             // trigger next user response in SRM
             if (opp_server->srm_state == SRM_ENABLED){
-                opp_server_handle_get_request(opp_server);
+                ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_USER_DATA);
+                opp_server_handle_get_request(opp_server, false);
             }
             break;
         case OPP_SERVER_STATE_SEND_DISCONNECT_RESPONSE:
@@ -357,6 +362,7 @@ static void opp_server_handle_can_send_now(opp_server_t * opp_server){
             if (response_code == OBEX_RESP_CONTINUE){
                 // next state
                 ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_PUT_OPCODE);
+                opp_server_reset_response(opp_server);
             } else {
                 opp_server_operation_complete(opp_server);
             }
@@ -485,7 +491,9 @@ static void opp_server_parser_callback_get(void * user_data, uint8_t header_id, 
     }
 }
 
-static void opp_server_handle_get_request(opp_server_t * opp_server){
+static void opp_server_handle_get_request(opp_server_t * opp_server, bool first){
+    uint16_t available;
+
     opp_server_handle_srm_headers(opp_server);
     if (strcasecmp("text/x-vcard", opp_server->request.type) != 0 ||
         opp_server->request.name[0] != '\0') {
@@ -502,13 +510,22 @@ static void opp_server_handle_get_request(opp_server_t * opp_server){
 
     ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_USER_DATA);
 
-    uint8_t event[2+3];
+    if (first)
+        opp_server->request.payload_position = 0;
+
+    uint8_t event[2+1+2+4+2];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_OPP_META;
     event[pos++] = 0;
     event[pos++] = OPP_SUBEVENT_PULL_DEFAULT_OBJECT;
     little_endian_store_16(event, pos, opp_server->opp_cid);
     pos += 2;
+    little_endian_store_32(event, pos, opp_server->request.payload_position);
+    pos += 4;
+    available = opp_server_get_max_body_size (opp_server->opp_cid);
+    little_endian_store_16(event, pos, available);
+    pos += 2;
+
     (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
@@ -517,10 +534,11 @@ static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opc
 
     log_info ("handle put request");
     // emit received opp data
-    if (opp_server->srm_state == SRM_ENABLED) {
-        ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_PUT_OPCODE);
-    } else {
+    if (opcode & OBEX_OPCODE_FINAL_BIT_MASK ||
+        opp_server->srm_state != SRM_ENABLED) {
         ENTER_STATE (opp_server, OPP_SERVER_STATE_SEND_PUT_RESPONSE);
+    } else {
+        ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_PUT_OPCODE);
     }
 
     if (do_push_event) {
@@ -602,12 +620,14 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                 case OBEX_OPCODE_GET:
                 case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
                     log_info ("handling GET\n");
+                    opp_server_reset_request (opp_server);
                     ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_REQUEST);
                     obex_parser_init_for_request(&opp_server->obex_parser, &opp_server_parser_callback_get, (void*) opp_server);
                     break;
                 case OBEX_OPCODE_PUT:
                 case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
                     log_info ("handling PUT\n");
+                    opp_server_reset_request (opp_server);
                     ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_REQUEST);
                     obex_parser_init_for_request(&opp_server->obex_parser, &opp_server_parser_callback_get, (void*) opp_server);
                     break;
@@ -635,7 +655,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                 switch (op_info.opcode){
                     case OBEX_OPCODE_GET:
                     case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
-                        opp_server_handle_get_request(opp_server);
+                        opp_server_handle_get_request(opp_server, true);
                         break;
                     case OBEX_OPCODE_PUT:
                     case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
@@ -676,7 +696,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                 obex_parser_get_operation_info(&opp_server->obex_parser, &op_info);
                 switch((op_info.opcode & 0x7f)){
                     case OBEX_OPCODE_GET:
-                        opp_server_handle_get_request(opp_server);
+                        opp_server_handle_get_request(opp_server, false);
                         break;
                     case (OBEX_OPCODE_ABORT & 0x7f):
                         opp_server->response.code = OBEX_RESP_SUCCESS;
@@ -777,7 +797,8 @@ uint16_t opp_server_get_max_body_size(uint16_t opp_cid){
         return 0;
     }
     opp_server_build_response(opp_server);
-    return goep_server_response_get_max_body_size(opp_server->goep_cid);
+    /* we have to correct for the actual BODY header. */
+    return goep_server_response_get_max_body_size(opp_server->goep_cid) - 3;
 }
 
 void opp_server_abort_request (uint16_t opp_cid, uint8_t response_code) {
@@ -786,21 +807,28 @@ void opp_server_abort_request (uint16_t opp_cid, uint8_t response_code) {
     opp_server->request.abort_response = response_code;
 }
 
-uint16_t opp_server_send_pull_response(uint16_t opp_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t * body){
+uint16_t opp_server_send_pull_response(uint16_t opp_cid, uint8_t response_code, uint16_t body_len, const uint8_t * body){
     opp_server_t * opp_server = opp_server_for_opp_cid(opp_cid);
+    uint16_t available;
+    int ret;
+
     if (opp_server == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     // double check body size
     opp_server_build_response(opp_server);
-    if (body_len > goep_server_response_get_max_body_size(opp_server->goep_cid)){
+    available = opp_server_get_max_body_size(opp_server->opp_cid);
+    if (body_len > available) {
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
     // append body and execute
-    goep_server_header_add_end_of_body(opp_server->goep_cid, body, body_len);
+    ret = goep_server_header_add_end_of_body(opp_server->goep_cid, body, body_len);
+    if (ret != ERROR_CODE_SUCCESS)
+       printf ("FAIL: add_end_of_body returned %d\n", ret);
+
     // set final response code
+    opp_server->request.payload_position += body_len;
     opp_server->response.code = response_code;
-    opp_server->request.continuation = continuation;
     ENTER_STATE (opp_server, OPP_SERVER_STATE_SEND_USER_RESPONSE);
     return goep_server_request_can_send_now(opp_server->goep_cid);
 }

@@ -164,12 +164,11 @@ void opp_server_abort_request(uint16_t opp_cid, uint8_t response_code);
  * @brief Send response to OPP_SUBEVENT_PULL including optional headers
  * @param opp_cid
  * @param response_code, see obex.h
- * @param continuation - 0 if request complete, returned in next pull event
  * @param body_len
  * @param body
  * @return max body size or zero if connection invalid
  */
-uint16_t opp_server_send_pull_response(uint16_t opp_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t * body);
+uint16_t opp_server_send_pull_response(uint16_t opp_cid, uint8_t response_code, uint16_t body_len, const uint8_t * body);
 
 /**
  * @brief De-Init OPP server
