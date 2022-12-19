@@ -751,17 +751,6 @@ uint8_t opp_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_
 void opp_server_deinit(void){
 }
 
-uint8_t opp_connect(bd_addr_t addr, uint16_t * out_cid){
-    UNUSED(&addr);
-    UNUSED(out_cid);
-    return ERROR_CODE_SUCCESS;
-}
-
-uint8_t opp_disconnect(uint16_t opp_cid){
-    UNUSED(opp_cid);
-    return ERROR_CODE_SUCCESS;
-}
-
 static void opp_server_build_response(opp_server_t * opp_server){
     if (opp_server->response.code == 0){
         // set interim response code
