@@ -60,8 +60,10 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t opp_cid;
 
 #ifdef HAVE_POSIX_FILE_IO
-# include <unistd.h>
-# include <fcntl.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 static int outfile_fd = -1;
 static uint32_t expected_bytes = 0;
 #endif
@@ -210,7 +212,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 #ifdef HAVE_POSIX_FILE_IO
                             if (handle_push_object_response == OBEX_RESP_SUCCESS &&
                                 outfile_fd < 0) {
-                                outfile_fd = open ("opp_out.bin", O_WRONLY | O_TRUNC | O_CREAT);
+                                outfile_fd = open ("opp_out.bin", O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
                                 if (outfile_fd < 0)
                                     perror ("failed to open output file");
                                 else
