@@ -1005,6 +1005,7 @@ void pollfd_added_cb(int fd, short events, void *user_data);
 void pollfd_remove_cb(int fd, void *user_data);
 
 void pollfd_added_cb(int fd, short events, void *user_data) {
+    UNUSED(fd);
     UNUSED(events);
     UNUSED(user_data);
     log_error("add fd: %d", fd);
@@ -1012,6 +1013,7 @@ void pollfd_added_cb(int fd, short events, void *user_data) {
 }
 
 void pollfd_remove_cb(int fd, void *user_data) {
+    UNUSED(fd);
     UNUSED(user_data);
     log_error("remove fd: %d", fd);
     btstack_assert(0);
