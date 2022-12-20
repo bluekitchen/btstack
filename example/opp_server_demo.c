@@ -164,6 +164,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     uint8_t status;
     bd_addr_t event_addr;
     uint32_t object_size;
+    char filename[32];
+    char filetype[16];
+    uint16_t filename_len;
+    uint16_t filetype_len;
 
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -198,11 +202,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         case OPP_SUBEVENT_PUSH_OBJECT:
                             object_size = opp_subevent_push_object_get_object_size(packet);
-
-                            printf("PUSH: \"%.*s\" (%.*s, %d bytes)\n",
-                                   packet[9], &packet[10],
-                                   packet[10+packet[9]], &packet[11+packet[9]],
-                                   object_size);
+                            filename_len = btstack_min(sizeof(filename) - 1, opp_subevent_push_object_get_name_len(packet));
+                            filetype_len = btstack_min(sizeof(filetype) - 1, opp_subevent_push_object_get_type_len(packet));
+                            memcpy(filename, opp_subevent_push_object_get_name(packet), filename_len);
+                            memcpy(filetype, opp_subevent_push_object_get_type(packet), filetype_len);
+                            filename[filename_len] = 0;
+                            filetype[filetype_len] = 0;
+                            printf("PUSH: \"%s\" (type '%s', %d bytes)\n", filename, filetype, object_size);
 
                             if (handle_push_object_response != OBEX_RESP_SUCCESS){
                                 printf("PUSH: Rejected with reason 0x%02x\n", handle_push_object_response);
@@ -212,7 +218,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 #ifdef HAVE_POSIX_FILE_IO
                             if (handle_push_object_response == OBEX_RESP_SUCCESS &&
                                 outfile_fd < 0) {
-                                outfile_fd = open ("opp_out.bin", O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+                                outfile_fd = open (filename, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
                                 if (outfile_fd < 0)
                                     perror ("failed to open output file");
                                 else
