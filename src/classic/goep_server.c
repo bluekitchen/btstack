@@ -606,6 +606,14 @@ uint8_t goep_server_response_create_general(uint16_t goep_cid){
     return obex_message_builder_response_create_general(buffer, buffer_len, OBEX_RESP_SUCCESS);
 }
 
+uint16_t goep_server_response_get_max_message_size(uint16_t goep_cid){
+    goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
+    if (connection == NULL) {
+        return 0;
+    }
+    return goep_server_get_outgoing_buffer_len(connection);
+}
+
 uint16_t goep_server_response_get_max_body_size(uint16_t goep_cid){
     goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
     if (connection == NULL) {
