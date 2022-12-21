@@ -492,7 +492,6 @@ static void opp_server_parser_callback_get(void * user_data, uint8_t header_id, 
 }
 
 static void opp_server_handle_get_request(opp_server_t * opp_server, bool first){
-    uint16_t available;
 
     opp_server_handle_srm_headers(opp_server);
     if (strcasecmp("text/x-vcard", opp_server->request.type) != 0 ||
@@ -510,8 +509,12 @@ static void opp_server_handle_get_request(opp_server_t * opp_server, bool first)
 
     ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_USER_DATA);
 
-    if (first)
+    if (first){
         opp_server->request.payload_position = 0;
+    }
+
+    // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
+    uint16_t available = goep_server_response_get_max_message_size(opp_server->opp_cid) - 8;
 
     uint8_t event[2+1+2+4+2];
     uint16_t pos = 0;
@@ -522,7 +525,6 @@ static void opp_server_handle_get_request(opp_server_t * opp_server, bool first)
     pos += 2;
     little_endian_store_32(event, pos, opp_server->request.payload_position);
     pos += 4;
-    available = opp_server_get_max_body_size (opp_server->opp_cid);
     little_endian_store_16(event, pos, available);
     pos += 2;
 
