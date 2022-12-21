@@ -526,6 +526,8 @@ uint8_t goep_server_request_can_send_now(uint16_t goep_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
+    btstack_assert(connection->state == GOEP_SERVER_CONNECTED);
+
     switch (connection->type){
         case GOEP_CONNECTION_RFCOMM:
             rfcomm_request_can_send_now_event(connection->bearer_cid);
@@ -561,6 +563,7 @@ static uint16_t goep_server_get_outgoing_buffer_len(goep_server_connection_t * c
 }
 
 static void goep_server_packet_init(goep_server_connection_t * connection){
+    btstack_assert(connection->state == GOEP_SERVER_CONNECTED);
     switch (connection->type){
 #ifdef ENABLE_GOEP_L2CAP
         case GOEP_CONNECTION_L2CAP:
@@ -573,6 +576,7 @@ static void goep_server_packet_init(goep_server_connection_t * connection){
             btstack_unreachable();
             break;
     }
+    connection->state = GOEP_SERVER_OUTGOING_BUFFER_RESERVED;
 }
 
 uint8_t goep_server_response_create_connect(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length){
@@ -663,8 +667,10 @@ uint8_t goep_server_execute(uint16_t goep_cid, uint8_t response_code){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
+    connection->state = GOEP_SERVER_CONNECTED;
+
     uint8_t * buffer = goep_server_get_outgoing_buffer(connection);
-    // set reponse code
+    // set response code
     buffer[0] = response_code;
     uint16_t pos = big_endian_read_16(buffer, 1);
     switch (connection->type) {
