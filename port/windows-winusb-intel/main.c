@@ -51,6 +51,7 @@
 #include "btstack_config.h"
 
 #include "ble/le_device_db_tlv.h"
+#include "btstack_audio.h"
 #include "btstack_chipset_intel_firmware.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -139,6 +140,11 @@ static void intel_firmware_done(int result){
 
     // init HCI
     hci_init(transport, NULL);
+
+#ifdef HAVE_PORTAUDIO
+    btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
+#endif
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

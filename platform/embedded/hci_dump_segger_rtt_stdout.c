@@ -41,8 +41,11 @@
  *  Dump HCI trace on stdout
  */
 
-#include "hci_dump.h"
 #include "btstack_config.h"
+
+#ifdef ENABLE_SEGGER_RTT
+
+#include "hci_dump.h"
 #include "btstack_util.h"
 #include "hci.h"
 #include <stdio.h>
@@ -191,3 +194,5 @@ const hci_dump_t * hci_dump_segger_rtt_stdout_get_instance(void){
     };
     return &hci_dump_instance;
 }
+
+#endif

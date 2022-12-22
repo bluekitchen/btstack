@@ -45,6 +45,8 @@
 
 #include <stdint.h>
 
+#include "ble/att_db.h"
+
 #if defined __cplusplus
 extern "C" {
 #endif

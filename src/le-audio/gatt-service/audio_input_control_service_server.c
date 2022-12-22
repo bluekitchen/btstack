@@ -45,7 +45,7 @@
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 
-#include "ble/gatt-service/audio_input_control_service_server.h"
+#include "le-audio/gatt-service/audio_input_control_service_server.h"
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>

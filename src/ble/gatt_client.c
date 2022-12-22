@@ -194,14 +194,14 @@ static gatt_client_t * gatt_client_provide_context_for_handle_and_start_timer(hc
     return gatt_client;
 }
 
-static int is_ready(gatt_client_t * gatt_client){
+static bool is_ready(gatt_client_t * gatt_client){
     return gatt_client->gatt_client_state == P_READY;
 }
 
 int gatt_client_is_ready(hci_con_handle_t con_handle){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle(con_handle);
     if (gatt_client == NULL) return 0;
-    return is_ready(gatt_client);
+    return is_ready(gatt_client) ? 1 : 0;
 }
 
 void gatt_client_mtu_enable_auto_negotiation(uint8_t enabled){

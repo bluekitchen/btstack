@@ -39,6 +39,7 @@
 
 #define ENABLE_LOG_DEBUG
 
+#include <inttypes.h>
 #include <string.h>
 
 #include "mesh/adv_bearer.h"
@@ -208,7 +209,7 @@ static void adv_bearer_timeout_handler(btstack_timer_source_t * ts){
             gap_advertisements_enable(0);
             if (gap_advertising_enabled){
                 gap_adv_next_ms = now + gap_adv_int_ms - ADVERTISING_INTERVAL_CONNECTABLE_MIN_MS;
-                log_debug("Next adv: %u", gap_adv_next_ms);
+                log_debug("Next adv: %" PRIu32, gap_adv_next_ms);
             }
             adv_bearer_state = STATE_IDLE;
             break;
@@ -248,7 +249,7 @@ static void adv_bearer_run(void){
                     adv_bearer_connectable_advertisement_data_item_t * item = (adv_bearer_connectable_advertisement_data_item_t *) btstack_linked_list_pop(&gap_connectable_advertisements);
                     if (item == NULL){
                         gap_adv_next_ms += gap_adv_int_ms;
-                        log_debug("Next adv: %u", gap_adv_next_ms);
+                        log_debug("Next adv: %" PRIu32, gap_adv_next_ms);
                     } else {
                         // queue again
                         btstack_linked_list_add_tail(&gap_connectable_advertisements, (void*) item);                        

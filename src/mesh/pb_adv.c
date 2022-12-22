@@ -39,6 +39,7 @@
 
 #include "pb_adv.h"
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -177,8 +178,8 @@ static void pb_adv_device_link_timeout(btstack_timer_source_t * ts){
     UNUSED(ts);
     // timeout occured
     link_state = LINK_STATE_W4_OPEN;
-    log_info("link timeout, %08x", pb_adv_link_id);
-    printf("PB-ADV: Link timeout %08x\n", pb_adv_link_id);
+    log_info("link timeout, %08" PRIx32, pb_adv_link_id);
+    printf("PB-ADV: Link timeout %08" PRIx32 "\n", pb_adv_link_id);
     pb_adv_emit_link_close(pb_adv_cid, ERROR_CODE_PAGE_TIMEOUT);
 }
 
@@ -206,8 +207,8 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
                     pb_adv_provisioner_role = 0;
                     pb_adv_msg_in_transaction_nr = 0xff;  // first transaction nr will be 0x00 
                     pb_adv_msg_in_transaction_nr_prev = 0xff;
-                    log_info("link open, id %08x", pb_adv_link_id);
-                    printf("PB-ADV: Link Open %08x\n", pb_adv_link_id);
+                    log_info("link open, id %08" PRIx32, pb_adv_link_id);
+                    printf("PB-ADV: Link Open %08" PRIx32 "\n", pb_adv_link_id);
                     link_state = LINK_STATE_W2_SEND_ACK;
                     adv_bearer_request_can_send_now_for_provisioning_pdu();
                     pb_adv_emit_link_open(ERROR_CODE_SUCCESS, pb_adv_cid);
@@ -230,8 +231,8 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
             pb_adv_msg_in_transaction_nr = 0x7f;    // first transaction nr will be 0x80
             pb_adv_msg_in_transaction_nr_prev = 0x7f;
             btstack_run_loop_remove_timer(&pb_adv_link_timer);
-            log_info("link open, id %08x", pb_adv_link_id);
-            printf("PB-ADV: Link Open %08x\n", pb_adv_link_id);
+            log_info("link open, id %08" PRIx32, pb_adv_link_id);
+            printf("PB-ADV: Link Open %08" PRIx32 "\n", pb_adv_link_id);
             pb_adv_emit_link_open(ERROR_CODE_SUCCESS, pb_adv_cid);
             break;
 #endif
@@ -513,7 +514,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         buffer[5] = (0 << 2) | 3; // Link Open | Provisioning Bearer Control
                         (void)memcpy(&buffer[6], pb_adv_peer_device_uuid, 16);
                         adv_bearer_send_provisioning_pdu(buffer, sizeof(buffer));
-                        log_info("link open %08x", pb_adv_link_id);
+                        log_info("link open %08" PRIx32, pb_adv_link_id);
                         printf("PB-ADV: Sending Link Open for device uuid: ");
                         printf_hexdump(pb_adv_peer_device_uuid, 16);
                         btstack_run_loop_set_timer_handler(&pb_adv_link_timer, &pb_adv_timer_handler);
@@ -523,8 +524,8 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     }
 #endif
                     if (link_state == LINK_STATE_CLOSING){
-                        log_info("link close %08x", pb_adv_link_id);
-                        printf("PB-ADV: Sending Link Close %08x\n", pb_adv_link_id);
+                        log_info("link close %08" PRIx32, pb_adv_link_id);
+                        printf("PB-ADV: Sending Link Close %08" PRIx32 "\n", pb_adv_link_id);
                         // build packet
                         uint8_t buffer[7];
                         big_endian_store_32(buffer, 0, pb_adv_link_id);
@@ -549,8 +550,8 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         buffer[4] = 0;
                         buffer[5] = (1 << 2) | 3; // Link Ack | Provisioning Bearer Control
                         adv_bearer_send_provisioning_pdu(buffer, sizeof(buffer));
-                        log_info("link ack %08x", pb_adv_link_id);
-                        printf("PB-ADV: Sending Link Open Ack %08x\n", pb_adv_link_id);
+                        log_info("link ack %08" PRIx32, pb_adv_link_id);
+                        printf("PB-ADV: Sending Link Open Ack %08" PRIx32 "\n", pb_adv_link_id);
                         break;
                     }
                     if (pb_adv_msg_in_send_ack){
@@ -560,7 +561,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         buffer[4] = pb_adv_msg_in_transaction_nr_prev;
                         buffer[5] = MESH_GPCF_TRANSACTION_ACK;
                         adv_bearer_send_provisioning_pdu(buffer, sizeof(buffer));
-                        log_info("transaction ack %08x", pb_adv_link_id);
+                        log_info("transaction ack %08" PRIx32, pb_adv_link_id);
                         printf("PB-ADV: %02x sending ACK\n", pb_adv_msg_in_transaction_nr_prev);
                         pb_adv_run();
                         break;

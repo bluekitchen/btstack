@@ -104,6 +104,7 @@ file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/sco_demo_util.c")
 file(GLOB SOURCES_BLE       "../../src/ble/*.c")
 file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c")
 file(GLOB SOURCES_CLASSIC   "../../src/classic/*.c")
+file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-service/*.c")
 file(GLOB SOURCES_MESH      "../../src/mesh/*.c")
 file(GLOB SOURCES_BLUEDROID "../../3rd-party/bluedroid/encoder/srce/*.c" "../../3rd-party/bluedroid/decoder/srce/*.c")
 file(GLOB SOURCES_MD5       "../../3rd-party/md5/md5.c")
@@ -174,6 +175,7 @@ set(SOURCES
 	${SOURCES_SRC}
 	${SOURCES_BLE}
 	${SOURCES_GATT}
+	${SOURCES_LE_AUDIO}
 	${SOURCES_MESH}
 	${SOURCES_CLASSIC} 
 	${SOURCES_UECC}

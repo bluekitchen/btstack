@@ -8,6 +8,7 @@
 #define BTSTACK_CONFIG_H
 
 // Port related features
+#define HAVE_ASSERT
 #define HAVE_BTSTACK_STDIN
 #define HAVE_EMBEDDED_TIME_MS
 #define HAVE_FREERTOS_INCLUDE_PREFIX
@@ -24,12 +25,12 @@
 
 // Enable Classic/LE based on esp-idf sdkconfig
 #include "sdkconfig.h"
-#if CONFIG_BT_SOC_SUPPORT_5_0
-// ESP32-C3 and ESP32-S3 with LE-only Controller
-#define ENABLE_BLE
-#else /* CONFIG_BT_SOC_SUPPORT_5_0 */
+#ifdef CONFIG_IDF_TARGET_ESP32
 // ESP32 as dual-mode Controller
 #define ENABLE_CLASSIC
+#define ENABLE_BLE
+#else /* CONFIG_IDF_TARGET_ESP32 */
+// ESP32-C3 and ESP32-S3 with LE-only Controller
 #define ENABLE_BLE
 #endif
 
@@ -40,9 +41,17 @@
 
 #define ENABLE_SCO_OVER_HCI
 
+// mainly needed for AVRCP Browsing, can be removed otherwise to reduce code size
+#define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+
 // work around to link layer issues in ESP32
 // https://github.com/espressif/esp-idf/issues/5494
 #define ENABLE_CLASSIC_LEGACY_CONNECTIONS_FOR_SCO_DEMOS
+
+// support CTKD if LE is available, too
+#ifdef ENABLE_BLE
+#define ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+#endif
 
 #define NVM_NUM_LINK_KEYS 16
 

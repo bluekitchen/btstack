@@ -22,7 +22,7 @@ static int es_write_reg(uint8_t slave_addr, uint8_t reg_addr, uint8_t data)
     res |= i2c_master_write_byte(cmd, reg_addr, 1 /*ACK_CHECK_EN*/);
     res |= i2c_master_write_byte(cmd, data, 1 /*ACK_CHECK_EN*/);
     res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
+    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_PERIOD_MS);
     i2c_cmd_link_delete(cmd);
     ES_ASSERT(res, "es8388_write_reg error", -1);
     return res;
@@ -38,7 +38,7 @@ static int es8388_read_reg(uint8_t reg_addr, uint8_t *pdata)
     res |= i2c_master_write_byte(cmd, ES8388_ADDR, 1 /*ACK_CHECK_EN*/);
     res |= i2c_master_write_byte(cmd, reg_addr, 1 /*ACK_CHECK_EN*/);
     res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
+    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_PERIOD_MS);
     i2c_cmd_link_delete(cmd);
 
     cmd = i2c_cmd_link_create();
@@ -46,7 +46,7 @@ static int es8388_read_reg(uint8_t reg_addr, uint8_t *pdata)
     res |= i2c_master_write_byte(cmd, ES8388_ADDR | 0x01, 1 /*ACK_CHECK_EN*/);
     res |= i2c_master_read_byte(cmd, &data, 0x01/*NACK_VAL*/);
     res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
+    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_PERIOD_MS);
     i2c_cmd_link_delete(cmd);
 
     ES_ASSERT(res, "es8388_read_reg error", -1);
@@ -71,7 +71,7 @@ void es8388_read_all_regs()
     for (int i = 0; i < 50; i++) {
         uint8_t reg = 0;
         es8388_read_reg(i, &reg);
-        ets_printf("%x: %x\n", i, reg);
+        printf("%x: %x\n", i, reg);
     }
 }
 
@@ -219,8 +219,7 @@ int es8388_init(es8388_config_t *cfg)
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCPOWER, 0x09); //Power up ADC, Enable LIN&RIN, Power down MICBIAS, set int1lp to low power mode
 
     es8388_pa_power(true);
-    ESP_LOGE(ES8388_TAG, "init, out:%02x, in:%02x", cfg->dac_output, cfg->adc_input);
-    ESP_LOGE(ES8388_TAG, "res = %d", res);
+    ESP_LOGD(ES8388_TAG, "init, out:%02x, in:%02x -> %d", cfg->dac_output, cfg->adc_input, res);
     return res;
 }
 
@@ -351,7 +350,8 @@ void es8388_pa_power(bool enable)
 {
     gpio_config_t  io_conf;
     memset(&io_conf, 0, sizeof(io_conf));
-    io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+    // v4.4 - io_conf.intr_type = GPIO_PIN_INTR_DISABLE == 0
+    // v5   - io_conf.intr_type = GPIO_INTR_DISABLE     == 0
     io_conf.mode = GPIO_MODE_OUTPUT;
     io_conf.pin_bit_mask = 1UL << GPIO_NUM_21;
     io_conf.pull_down_en = 0;

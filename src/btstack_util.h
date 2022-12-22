@@ -322,8 +322,9 @@ uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid);
  * @param dst
  * @param dst_size
  * @param src
+ * @retun bytes_copied including trailing 0
  */
-void btstack_strcpy(char * dst, uint16_t dst_size, const char * src);
+uint16_t btstack_strcpy(char * dst, uint16_t dst_size, const char * src);
 
 /**
  * @brief Append src string to string in dst buffer with terminating '\0'
@@ -342,6 +343,36 @@ void btstack_strcat(char * dst, uint16_t dst_size, const char * src);
  * @return number of leading 0-bits
  */
 uint8_t btstack_clz(uint32_t value);
+
+/**
+ * @brief Copy chunk of data into a virtual buffer backed by a physical buffer.
+ * Used to provide chunk of data of larger buffer that is constructed on the fly, e.g. serializing data struct
+ * 
+ * For example, copy field2 to buffer, with buffer_offset = 11
+ * 
+ *           field1  field2  field3     field4        field5  filed6
+ * struct:  -------|-------|----------|-------------|-------|--------------
+ * buffer:             ------------------       
+ * result:             ----|         
+ * 
+ * When also copying field3 and field4 to buffer, with buffer_offset = 11
+ * 
+ *           field1  field2  field3     field4        field5  filed6
+ * struct:  -------|-------|----------|-------------|-------|--------------
+ * buffer:             ------------------       
+ * result:             ----|----------|--         
+ *
+ * @param field_data
+ * @param field_len
+ * @param field_offset  position of field in complete data block
+ * @param buffer_data
+ * @param buffer_len
+ * @param buffer_offset position of buffer in complete data block
+ * @return bytes_copied number of bytes actually stored in buffer
+ */
+uint16_t btstack_virtual_memcpy(
+    const uint8_t * field_data, uint16_t field_len, uint16_t field_offset, 
+    uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset);
 
 
 /* API_END */

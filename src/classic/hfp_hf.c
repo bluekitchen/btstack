@@ -1488,7 +1488,7 @@ static void hfp_hf_set_defaults(void){
 }
 
 uint8_t hfp_hf_set_default_microphone_gain(uint8_t gain){
-    if ((gain < 0) || (gain > 15)){
+    if (gain > 15){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
     hfp_hf_microphone_gain = gain;
@@ -1496,7 +1496,7 @@ uint8_t hfp_hf_set_default_microphone_gain(uint8_t gain){
 }
 
 uint8_t hfp_hf_set_default_speaker_gain(uint8_t gain){
-    if ((gain < 0) || (gain > 15)){
+    if (gain > 15){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
     hfp_hf_speaker_gain = gain;

@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -90,6 +90,11 @@ static void spp_service_setup(void){
 
     l2cap_init();
 
+#ifdef ENABLE_BLE
+    // Initialize LE Security Manager. Needed for cross-transport key derivation
+    sm_init();
+#endif
+
     rfcomm_init();
     rfcomm_register_service(packet_handler, RFCOMM_SERVER_CHANNEL, 0xffff);  // reserved channel, mtu limited by l2cap
 
@@ -98,6 +103,7 @@ static void spp_service_setup(void){
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
     spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     sdp_register_service(spp_service_buffer);
+    printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
 }
 /* LISTING_END */
 
@@ -114,7 +120,8 @@ static void  heartbeat_handler(struct btstack_timer_source *ts){
     static int counter = 0;
 
     if (rfcomm_channel_id){
-        sprintf(lineBuffer, "BTstack counter %04u\n", ++counter);
+        snprintf(lineBuffer, sizeof(lineBuffer), "BTstack counter %04u\n", ++counter);
+        printf("%s", lineBuffer);
 
         rfcomm_request_can_send_now_event(rfcomm_channel_id);
     }
@@ -174,50 +181,54 @@ static void one_shot_timer_setup(void){
 /* LISTING_START(SppServerPacketHandler): SPP Server - Heartbeat Counter over RFCOMM */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
-    UNUSED(size);
 
 /* LISTING_PAUSE */ 
     bd_addr_t event_addr;
-    
+    uint8_t   rfcomm_channel_nr;
+    uint16_t  mtu;
+    int i;
+
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
 /* LISTING_RESUME */ 
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
-                    log_info("Pin code request - using '0000'\n");
+                    printf("Pin code request - using '0000'\n");
                     hci_event_pin_code_request_get_bd_addr(packet, event_addr);
                     gap_pin_code_response(event_addr, "0000");
                     break;
 
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
                     // ssp: inform about user confirmation request
-                    log_info("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", little_endian_read_32(packet, 8));
-                    log_info("SSP User Confirmation Auto accept\n");
+                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", little_endian_read_32(packet, 8));
+                    printf("SSP User Confirmation Auto accept\n");
                     break;
 
                 case RFCOMM_EVENT_INCOMING_CONNECTION:
-                    // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-                    rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
+                    rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr);
+                    rfcomm_channel_nr = rfcomm_event_incoming_connection_get_server_channel(packet);
                     rfcomm_channel_id = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
+                    printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
                     rfcomm_accept_connection(rfcomm_channel_id);
                     break;
                
                 case RFCOMM_EVENT_CHANNEL_OPENED:
-                    // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
                     if (rfcomm_event_channel_opened_get_status(packet)) {
-                        log_info("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
+                        printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
                     } else {
                         rfcomm_channel_id = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+                        mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
+                        printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
                     }
                     break;
                 case RFCOMM_EVENT_CAN_SEND_NOW:
-                    rfcomm_send(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));  
+                    rfcomm_send(rfcomm_channel_id, (uint8_t*) lineBuffer, (uint16_t) strlen(lineBuffer));  
                     break;
 
 /* LISTING_PAUSE */                 
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
-                    log_info("RFCOMM channel closed\n");
+                    printf("RFCOMM channel closed\n");
                     rfcomm_channel_id = 0;
                     break;
                 
@@ -227,6 +238,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
 
         case RFCOMM_DATA_PACKET:
+            printf("RCV: '");
+            for (i=0;i<size;i++){
+                putchar(packet[i]);
+            }
+            printf("'\n");
             break;
 
         default:

@@ -37,6 +37,7 @@
 
 #define BTSTACK_FILE__ "mesh_generic_level_server.c"
 
+#include <inttypes.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -78,7 +79,7 @@ static mesh_transition_t * generic_level_server_get_base_transition(mesh_model_t
 
 static void mesh_server_transition_handler(mesh_transition_t * base_transition, model_state_update_reason_t event){
     mesh_transition_int16_t * transition = (mesh_transition_int16_t*) base_transition;
-    printf("Transition: event %x, current %x, target %x, increment %x, time %u\n", (int) event, transition->current_value, transition->target_value, transition->stepwise_value_increment, btstack_run_loop_get_time_ms());
+    printf("Transition: event %x, current %x, target %x, increment %x, time %" PRIu32 "\n", (int) event, transition->current_value, transition->target_value, transition->stepwise_value_increment, btstack_run_loop_get_time_ms());
     switch (event){
         case MODEL_STATE_UPDATE_REASON_TRANSITION_ACTIVE:
             transition->current_value = add_and_clip_int16(transition->current_value, transition->stepwise_value_increment);

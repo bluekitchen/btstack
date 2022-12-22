@@ -20,7 +20,7 @@
 #include "bluetooth.h"
 #include "bluetooth_gatt.h"
 
-#include "ble/gatt-service/microphone_control_service_server.h"
+#include "le-audio/gatt-service/microphone_control_service_server.h"
 #include "microphone_control_service_server_test.h"
 #include "mock_att_server.h"
 

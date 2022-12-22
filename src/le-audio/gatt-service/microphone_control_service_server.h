@@ -44,7 +44,7 @@
 #define MICROPHONE_CONTROL_SERVICE_SERVER_H
 
 #include <stdint.h>
-#include "ble/gatt-service/audio_input_control_service_server.h"
+#include "le-audio/gatt-service/audio_input_control_service_server.h"
 
 #if defined __cplusplus
 extern "C" {

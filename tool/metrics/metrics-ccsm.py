@@ -96,6 +96,11 @@ def analyze_folders(btstack_root, folders):
             function_metrics = {}
             for key, value in zip(fields, row):
                 if key == 'file':
+                    # get rid of directory traversal on buildbot
+                    pos_metrics_folder = value.find('tool/metrics/')
+                    if pos_metrics_folder > 0:
+                        value = value[pos_metrics_folder+13:]
+                    # streamline path
                     file = value.replace('../../','')
                     continue
                 if key == 'function':

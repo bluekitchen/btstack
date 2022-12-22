@@ -42,6 +42,8 @@
  */
 #include "btstack_config.h"
 
+#ifdef ENABLE_SEGGER_RTT
+
 #include "hci_dump_segger_rtt_binary.h"
 
 #include "btstack_debug.h"
@@ -147,3 +149,6 @@ const hci_dump_t * hci_dump_segger_rtt_binary_get_instance(void){
     };
     return &hci_dump_instance;
 }
+
+#endif
+

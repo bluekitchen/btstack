@@ -45,8 +45,8 @@
 
 #include <stdint.h>
 
-#include "ble/gatt-service/audio_input_control_service_server.h"
-#include "ble/gatt-service/volume_offset_control_service_server.h"
+#include "le-audio/gatt-service/audio_input_control_service_server.h"
+#include "le-audio/gatt-service/volume_offset_control_service_server.h"
 
 #if defined __cplusplus
 extern "C" {

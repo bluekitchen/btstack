@@ -1530,7 +1530,60 @@ static void sm_store_bonding_information(sm_connection_t * sm_conn){
     }
 }
 
+static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
+    sm_conn->sm_pairing_failed_reason = reason;
+    sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+}
+
+static int sm_lookup_by_address(void) {
+    int i;
+    for (i=0; i < le_device_db_max_count(); i++){
+        bd_addr_t address;
+        int address_type = BD_ADDR_TYPE_UNKNOWN;
+        le_device_db_info(i, &address_type, address, NULL);
+        // skip unused entries
+        if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
+        if ((address_type == BD_ADDR_TYPE_LE_PUBLIC) && (memcmp(address, setup->sm_peer_address, 6) == 0)){
+            return i;
+        }
+    }
+    return -1;
+}
+
+static void sm_remove_le_device_db_entry(uint16_t i) {
+    le_device_db_remove(i);
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+    // to remove an entry from the resolving list requires its identity address, which was already deleted
+    // fully reload resolving list instead
+    gap_load_resolving_list_from_le_device_db();
+#endif
+}
+
+static uint8_t sm_key_distribution_validate_received(sm_connection_t * sm_conn){
+    // if identity is provided, abort if we have bonding with same address but different irk
+    if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
+        int index = sm_lookup_by_address();
+        if (index >= 0){
+            sm_key_t irk;
+            le_device_db_info(index, NULL, NULL, irk);
+            if (memcmp(irk, setup->sm_peer_irk, 16) != 0){
+                // IRK doesn't match, delete bonding information
+                log_info("New IRK for %s (type %u) does not match stored IRK -> delete bonding information", bd_addr_to_str(sm_conn->sm_peer_address), sm_conn->sm_peer_addr_type);
+                sm_remove_le_device_db_entry(index);
+            }
+        }
+    }
+    return 0;
+}
+
 static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
+
+    // abort pairing if received keys are not valid
+    uint8_t reason = sm_key_distribution_validate_received(sm_conn);
+    if (reason != 0){
+        sm_pairing_error(sm_conn, reason);
+        return;
+    }
 
     // only store pairing information if both sides are bondable, i.e., the bonadble flag is set
     bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq)
@@ -1542,11 +1595,6 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
     } else {
         log_info("Ignoring received keys, bonding not enabled");
     }
-}
-
-static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
-    sm_conn->sm_pairing_failed_reason = reason;
-    sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
 }
 
 static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
@@ -2170,15 +2218,13 @@ static bool sm_run_csrk(void){
         }
     }
 
-    // -- Continue with CSRK device lookup by public or resolvable private address
+    // -- Continue with device lookup by public or resolvable private address
     if (!sm_address_resolution_idle()){
-        log_info("LE Device Lookup: device %u/%u", sm_address_resolution_test, le_device_db_max_count());
         while (sm_address_resolution_test < le_device_db_max_count()){
             int addr_type = BD_ADDR_TYPE_UNKNOWN;
             bd_addr_t addr;
             sm_key_t irk;
             le_device_db_info(sm_address_resolution_test, &addr_type, addr, irk);
-            log_info("device type %u, addr: %s", addr_type, bd_addr_to_str(addr));
 
             // skip unused entries
             if (addr_type == BD_ADDR_TYPE_UNKNOWN){
@@ -2186,14 +2232,22 @@ static bool sm_run_csrk(void){
                 continue;
             }
 
+            log_info("LE Device Lookup: device %u of %u", sm_address_resolution_test, le_device_db_max_count());
+
             if ((sm_address_resolution_addr_type == addr_type) && (memcmp(addr, sm_address_resolution_address, 6) == 0)){
-                log_info("LE Device Lookup: found CSRK by { addr_type, address} ");
+                log_info("LE Device Lookup: found by { addr_type, address} ");
                 sm_address_resolution_handle_event(ADDRESS_RESOLUTION_SUCCEEDED);
                 break;
             }
 
             // if connection type is public, it must be a different one
             if (sm_address_resolution_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
+                sm_address_resolution_test++;
+                continue;
+            }
+
+            // skip AH if no IRK
+            if (sm_is_null_key(irk)){
                 sm_address_resolution_test++;
                 continue;
             }
@@ -2588,6 +2642,13 @@ static void sm_run(void){
             return;
         }
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+        // assert that sm cmac engine is ready
+        if (sm_cmac_ready() == false){
+            break;
+        }
+#endif
+
         int key_distribution_flags;
         UNUSED(key_distribution_flags);
 #ifdef ENABLE_LE_PERIPHERAL
@@ -2597,50 +2658,39 @@ static void sm_run(void){
 #endif
 
         log_info("sm_run: state %u", connection->sm_engine_state);
-        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, connection->sm_cid)) {
-            log_info("sm_run // cannot send");
-        }
         switch (connection->sm_engine_state){
 
             // secure connections, initiator + responding states
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             case SM_SC_W2_CMAC_FOR_CONFIRMATION:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CMAC_FOR_CONFIRMATION;
                 sm_sc_calculate_local_confirm(connection);
                 break;
             case SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CMAC_FOR_CHECK_CONFIRMATION;
                 sm_sc_calculate_remote_confirm(connection);
                 break;
             case SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F6_FOR_DHKEY_CHECK;
                 sm_sc_calculate_f6_for_dhkey_check(connection);
                 break;
             case SM_SC_W2_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK;
                 sm_sc_calculate_f6_to_verify_dhkey_check(connection);
                 break;
             case SM_SC_W2_CALCULATE_F5_SALT:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_SALT;
                 f5_calculate_salt(connection);
                 break;
             case SM_SC_W2_CALCULATE_F5_MACKEY:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_MACKEY;
                 f5_calculate_mackey(connection);
                 break;
             case SM_SC_W2_CALCULATE_F5_LTK:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_F5_LTK;
                 f5_calculate_ltk(connection);
                 break;
             case SM_SC_W2_CALCULATE_G2:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_G2;
                 g2_calculate(connection);
                 break;
@@ -2652,7 +2702,6 @@ static void sm_run(void){
             case SM_INITIATOR_PH4_HAS_LTK: {
 				sm_reset_setup();
 				sm_load_security_info(connection);
-                sm_reencryption_started(connection);
 
                 sm_key_t peer_ltk_flipped;
                 reverse_128(setup->sm_peer_ltk, peer_ltk_flipped);
@@ -2661,19 +2710,23 @@ static void sm_run(void){
                 uint32_t rand_high = big_endian_read_32(setup->sm_peer_rand, 0);
                 uint32_t rand_low  = big_endian_read_32(setup->sm_peer_rand, 4);
                 hci_send_cmd(&hci_le_start_encryption, connection->sm_handle,rand_low, rand_high, setup->sm_peer_ediv, peer_ltk_flipped);
+
+                // notify after sending
+                sm_reencryption_started(connection);
                 return;
             }
 
 			case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
 				sm_reset_setup();
 				sm_init_setup(connection);
-				sm_timeout_start(connection);
-				sm_pairing_started(connection);
 
                 sm_pairing_packet_set_code(setup->sm_m_preq, SM_CODE_PAIRING_REQUEST);
                 connection->sm_engine_state = SM_INITIATOR_PH1_W4_PAIRING_RESPONSE;
                 sm_send_connectionless(connection, (uint8_t*) &setup->sm_m_preq, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
+
+                // notify after sending
+                sm_pairing_started(connection);
                 break;
 #endif
 
@@ -2874,7 +2927,6 @@ static void sm_run(void){
                 }
 
 				sm_init_setup(connection);
-                sm_pairing_started(connection);
 
 				// recover pairing request
 				(void)memcpy(&setup->sm_m_preq, &connection->sm_m_preq, sizeof(sm_pairing_packet_t));
@@ -2887,6 +2939,8 @@ static void sm_run(void){
                     }
 #endif
 				if (err != 0){
+                    // emit pairing started/failed sequence
+                    sm_pairing_started(connection);
                     sm_pairing_error(connection, err);
 					sm_trigger_run();
 					break;
@@ -2929,6 +2983,10 @@ static void sm_run(void){
 
                 sm_send_connectionless(connection, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
+
+                // notify after sending
+                sm_pairing_started(connection);
+
                 // SC Numeric Comparison will trigger user response after public keys & nonces have been exchanged
                 if (!setup->sm_use_secure_connections || (setup->sm_stk_generation_method == JUST_WORKS)){
                     sm_trigger_user_response(connection);
@@ -3186,32 +3244,26 @@ static void sm_run(void){
                 sm_ctkd_start_from_br_edr(connection);
                 continue;
             case SM_SC_W2_CALCULATE_ILK_USING_H6:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
                 h6_calculate_ilk_from_le_ltk(connection);
                 break;
             case SM_SC_W2_CALCULATE_BR_EDR_LINK_KEY:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_BR_EDR_LINK_KEY;
                 h6_calculate_br_edr_link_key(connection);
                 break;
             case SM_SC_W2_CALCULATE_ILK_USING_H7:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
                 h7_calculate_ilk_from_le_ltk(connection);
                 break;
             case SM_BR_EDR_W2_CALCULATE_ILK_USING_H6:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_ILK;
                 h6_calculate_ilk_from_br_edr(connection);
                 break;
             case SM_BR_EDR_W2_CALCULATE_LE_LTK:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_LE_LTK;
                 h6_calculate_le_ltk(connection);
                 break;
             case SM_BR_EDR_W2_CALCULATE_ILK_USING_H7:
-                if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_ILK;
                 h7_calculate_ilk_from_br_edr(connection);
                 break;
@@ -4528,6 +4580,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;
 #endif
 
+        case SM_PH2_W4_CONNECTION_ENCRYPTED:
         case SM_PH3_RECEIVE_KEYS:
             switch(sm_pdu_code){
                 case SM_CODE_ENCRYPTION_INFORMATION:
@@ -5244,10 +5297,7 @@ void gap_delete_bonding(bd_addr_type_t address_type, bd_addr_t address){
         // skip unused entries
         if (entry_address_type == (int) BD_ADDR_TYPE_UNKNOWN) continue;
         if ((entry_address_type == (int) address_type) && (memcmp(entry_address, address, 6) == 0)){
-#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
-            hci_remove_le_device_db_entry_from_resolving_list(i);
-#endif
-            le_device_db_remove(i);
+            sm_remove_le_device_db_entry(i);
             break;
         }
     }

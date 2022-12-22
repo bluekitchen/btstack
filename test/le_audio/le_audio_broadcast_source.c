@@ -56,6 +56,7 @@
 #include "hci_dump.h"
 #include "btstack_lc3.h"
 #include "btstack_lc3_google.h"
+#include "le-audio/le_audio_base_builder.h"
 
 #include "hxcmod.h"
 #include "mods/mod.h"
@@ -92,9 +93,15 @@ static const le_extended_advertising_parameters_t extended_params = {
         .scan_request_notification_enable = 0,
 };
 
+// Random Broadcast ID, valid for lifetime of BIG
+#define BROADCAST_ID (0x112233u)
+
 static const uint8_t extended_adv_data[] = {
         // 16 bit service data, ORG_BLUETOOTH_SERVICE_BASIC_AUDIO_ANNOUNCEMENT_SERVICE, Broadcast ID
-        6, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID, 0x52, 0x18, 0x30, 0x5d, 0x9b,
+        6, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID, 0x52, 0x18,
+        BROADCAST_ID >> 16,
+        (BROADCAST_ID >> 8) & 0xff,
+        BROADCAST_ID & 0xff,
         // name
 #ifdef PTS_MODE
         7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'P', 'T', 'S', '-', 'x', 'x'
@@ -109,60 +116,6 @@ static const le_periodic_advertising_parameters_t periodic_params = {
         .periodic_advertising_interval_min = 0x258, // 375 ms
         .periodic_advertising_interval_max = 0x258, // 375 ms
         .periodic_advertising_properties = 0
-};
-
-static uint8_t periodic_adv_data_1[] = {
-    // 16 bit service data
-    37, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID,
-        // Level 1 - BIG Parameters (common to all BISes)
-        0x51, 0x18,         // Basic Audio Announcement Service UUID
-        0x28, 0x00, 0x00,   // Presentation Delay 3
-        0x01,               // Num_Subgroups
-        // Level 2 - BIS Subgroup Parameters (common parameters for subgroups of BISes)
-        // offset 8
-        0x01,               // The number of BISes in this subgroup
-        0x06, 0x00, 0x00, 0x00, 0x00,  // 0x06 = LC3, vendor id + codec id = 0
-        10,                 // Codec_Specific_Configuration_Length[i]
-        // Codec_Specific_Configuration[i] = 8_2
-        // offset 15
-        0x02, 0x01, 0x01,       // Sampling frequency 0x01 = 0x01 / 8 kHz
-        0x02, 0x02, 0x01,       // Frame Duration     0x02 = 0x01 / 10 ms
-        0x03, 0x04, 0x1E, 0x00, // Octets per Frame   0x04 = 0x1e / 30
-        4,                  // Metadata_Length[i]
-        0x03, 0x02, 0x04, 0x00, // Metadata[i]
-        // Level 3 - Specific BIS Parameters (if required, for individual BISes)
-        0x01,               // BIS_index[i[k]]
-        6,                  // Codec_Specific_Configuration_Length[i[k]]
-        0x05, 0x03, 0x01, 0x00, 0x00, 0x00 // Codec_Specific_Configuration[i[k]]
-};
-
-static uint8_t periodic_adv_data_2[] = {
-    // 16 bit service data
-    37+8, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID,
-        // Level 1 - BIG Parameters (common to all BISes)
-        0x51, 0x18,         // Basic Audio Announcement Service UUID
-        0x28, 0x00, 0x00,   // Presentation Delay 3
-        0x01,               // Num_Subgroups
-        // Level 2 - BIS Subgroup Parameters (common parameters for subgroups of BISes)
-        // offset 8
-        0x02,               // The number of BISes in this subgroup
-        0x06, 0x00, 0x00, 0x00, 0x00,  // 0x06 = LC3, vendor id + codec id = 0
-        10,                 // Codec_Specific_Configuration_Length[i]
-        // Codec_Specific_Configuration[0] = 8_2
-        // offset 15
-        0x02, 0x01, 0x01,       // Sampling frequency 0x01 = 0x01 / 8 kHz
-        0x02, 0x02, 0x01,       // Frame Duration     0x02 = 0x01 / 10 ms
-        0x03, 0x04, 0x1E, 0x00, // Octets per Frame   0x04 = 0x1e / 30
-        4,                  // Metadata_Length[i]
-        0x03, 0x02, 0x04, 0x00, // Metadata[0]
-        // Level 3 - Specific BIS Parameters (if required, for individual BISes)
-        0x01,               // BIS_index[i[k]]
-        6,                  // Codec_Specific_Configuration_Length[i[k]]
-        0x05, 0x03, 0x01, 0x00, 0x00, 0x00, // Codec_Specific_Configuration[i[k]]
-        // Level 3 - Specific BIS Parameters (if required, for individual BISes)
-        0x02,               // BIS_index[i[k]]
-        6,                  // Codec_Specific_Configuration_Length[i[k]]
-        0x05, 0x03, 0x02, 0x00, 0x00, 0x00 // Codec_Specific_Configuration[i[k]]
 };
 
 // input signal: pre-computed int16 sine wave, 96000 Hz at 300 Hz
@@ -205,6 +158,8 @@ static bd_addr_t remote;
 static const char * remote_addr_string = "00:1B:DC:08:E2:72";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static uint8_t period_adv_data[255];
+static uint16_t period_adv_data_len;
 
 static uint8_t adv_handle = 0;
 static unsigned int     next_bis_index;
@@ -255,7 +210,7 @@ static uint16_t sine_phases[MAX_NUM_BIS];
 
 // encryption
 static uint8_t encryption = 0;
-static uint8_t broadcast_code [] = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+static uint8_t broadcast_code [] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8, };
 
 // audio producer
 static enum {
@@ -267,7 +222,6 @@ static enum {
     APP_IDLE,
     APP_W4_CREATE_BIG_COMPLETE,
     APP_STREAMING,
-    APP_W4_POWER_OFF,
 } app_state = APP_IDLE;
 
 // enumerate default codec configs
@@ -346,9 +300,9 @@ static void setup_lc3_encoder(void){
     for (channel = 0 ; channel < num_bis ; channel++){
         btstack_lc3_encoder_google_t * context = &encoder_contexts[channel];
         lc3_encoder = btstack_lc3_encoder_google_init_instance(context);
-        lc3_encoder->configure(context, sampling_frequency_hz, frame_duration);
+        lc3_encoder->configure(context, sampling_frequency_hz, frame_duration, octets_per_frame);
     }
-    number_samples_per_frame = lc3_encoder->get_number_samples_per_frame(&encoder_contexts[0]);
+    number_samples_per_frame = btstack_lc3_samples_per_frame(sampling_frequency_hz, frame_duration);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
     printf("LC3 Encoder config: %u hz, frame duration %s ms, num samples %u, num octets %u\n",
            sampling_frequency_hz, frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
@@ -404,7 +358,7 @@ static void generate_audio(void){
 
 static void encode(uint8_t bis_index){
     // encode as lc3
-    lc3_encoder->encode_signed_16(&encoder_contexts[bis_index], &pcm[bis_index], num_bis, &iso_payload[bis_index * MAX_LC3_FRAME_BYTES], octets_per_frame);
+    lc3_encoder->encode_signed_16(&encoder_contexts[bis_index], &pcm[bis_index], num_bis, &iso_payload[bis_index * MAX_LC3_FRAME_BYTES]);
 }
 
 
@@ -469,21 +423,7 @@ static void setup_advertising() {
     gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
     gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
     gap_periodic_advertising_set_params(adv_handle, &periodic_params);
-    switch(num_bis){
-        case 1:
-            gap_periodic_advertising_set_data(adv_handle, sizeof(periodic_adv_data_1), periodic_adv_data_1);
-            printf("BASE: ");
-            printf_hexdump(periodic_adv_data_1, sizeof(periodic_adv_data_1));
-            break;
-        case 2:
-            gap_periodic_advertising_set_data(adv_handle, sizeof(periodic_adv_data_2), periodic_adv_data_2);
-            printf("BASE: ");
-            printf_hexdump(periodic_adv_data_2, sizeof(periodic_adv_data_2));
-            break;
-        default:
-            btstack_unreachable();
-            break;
-    }
+    gap_periodic_advertising_set_data(adv_handle, period_adv_data_len, period_adv_data);
     gap_periodic_advertising_start(adv_handle, 0);
     gap_extended_advertising_start(adv_handle, 0, 0);
 }
@@ -525,14 +465,38 @@ static void start_broadcast() {// use values from table
     // get num samples per frame
     setup_lc3_encoder();
 
-    // update BASEs
-    periodic_adv_data_1[17] = codec_configurations[menu_sampling_frequency].samplingrate_index;
-    periodic_adv_data_1[20] = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;
-    little_endian_store_16(periodic_adv_data_1, 23, octets_per_frame);
-
-    periodic_adv_data_2[17] = codec_configurations[menu_sampling_frequency].samplingrate_index;
-    periodic_adv_data_2[20] = (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;
-    little_endian_store_16(periodic_adv_data_2, 23, octets_per_frame);
+    // setup base
+    uint8_t codec_id[] = { 0x06, 0x00, 0x00, 0x00, 0x00 };
+    uint8_t subgroup_codec_specific_configuration[] = {
+            0x02, 0x01, 0x01,
+            0x02, 0x02, 0x01,
+            0x03, 0x04, 0x1E, 0x00,
+    };
+    subgroup_codec_specific_configuration[2] = codec_configurations[menu_sampling_frequency].samplingrate_index;
+    subgroup_codec_specific_configuration[5] =  (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;;
+    uint8_t subgroup_metadata[] = {
+            0x03, 0x02, 0x04, 0x00, // Metadata[i]
+    };
+    little_endian_store_16(subgroup_codec_specific_configuration, 8, octets_per_frame);
+    uint8_t bis_codec_specific_configuration_1[] = {
+            0x05, 0x03, 0x01, 0x00, 0x00, 0x00
+    };
+    uint8_t bis_codec_specific_configuration_2[] = {
+            0x05, 0x03, 0x02, 0x00, 0x00, 0x00
+    };
+    le_audio_base_builder_t builder;
+    le_audio_base_builder_init(&builder, period_adv_data, sizeof(period_adv_data), 40);
+    le_audio_base_builder_add_subgroup(&builder, codec_id,
+                                       sizeof(subgroup_codec_specific_configuration),
+                                       subgroup_codec_specific_configuration,
+                                       sizeof(subgroup_metadata), subgroup_metadata);
+    le_audio_base_builder_add_bis(&builder, 1, sizeof(bis_codec_specific_configuration_1),
+                                  bis_codec_specific_configuration_1);
+    if (num_bis == 2){
+        le_audio_base_builder_add_bis(&builder, 2, sizeof(bis_codec_specific_configuration_2),
+                                      bis_codec_specific_configuration_2);
+    }
+    period_adv_data_len = le_audio_base_builder_get_ad_data_size(&builder);
 
     // setup mod player
     setup_mod_player();
@@ -621,7 +585,6 @@ static void show_usage(void){
     printf("v - next codec variant\n");
     printf("t - toggle sine / modplayer\n");
     printf("s - start broadcast\n");
-    printf("x - shutdown\n");
     printf("---\n");
 }
 static void stdin_process(char c){
@@ -666,20 +629,6 @@ static void stdin_process(char c){
                 menu_variant = 0;
             }
             print_config();
-            break;
-        case 'x':
-#ifdef COUNT_MODE
-            printf("Send statistic:\n");
-            {
-                uint16_t i;
-                for (i=0;i<MAX_PACKET_INTERVAL_BINS_MS;i++){
-                    printf("%2u: %5u\n", i, send_time_bins[i]);
-                }
-            }
-#endif
-            printf("Shutdown...\n");
-            app_state = APP_W4_POWER_OFF;
-            hci_power_control(HCI_POWER_OFF);
             break;
         case 's':
             if (app_state != APP_IDLE){

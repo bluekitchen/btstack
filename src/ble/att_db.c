@@ -1350,6 +1350,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
 bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle){
     bool in_group    = false;
     uint16_t prev_handle = 0;
+    uint16_t service_start = 0;
 
     uint8_t attribute_value[2];
     int attribute_len = sizeof(attribute_value);
@@ -1364,8 +1365,13 @@ bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint1
         // close current tag, if within a group and a new service definition starts or we reach end of att db
         if (in_group &&
             ((it.handle == 0u) || new_service_started)){
-            *end_handle = prev_handle;
-            return true;
+            in_group = false;
+            // check range
+            if ((service_start >= *start_handle) && (prev_handle <= *end_handle)){
+                *start_handle = service_start;
+                *end_handle = prev_handle;
+                return true;
+            }
         }
         
         // keep track of previous handle
@@ -1373,7 +1379,7 @@ bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint1
         
         // check if found
         if ( (it.handle != 0u) && new_service_started && (attribute_len == it.value_len) && (memcmp(attribute_value, it.value, it.value_len) == 0)){
-            *start_handle = it.handle;
+            service_start = it.handle;
             in_group = true;
         }
     }

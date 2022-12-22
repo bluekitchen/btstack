@@ -37,6 +37,10 @@
 
 #define BTSTACK_FILE__ "main.c"
 
+#include "sdkconfig.h"
+
+#if CONFIG_BT_ENABLED
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -416,3 +420,4 @@ uint8_t btstack_init(void){
     return ERROR_CODE_SUCCESS;
 }
 
+#endif

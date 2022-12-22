@@ -131,6 +131,12 @@ int main (int argc, const char * argv[]){
             return -10;
     }
 
+    uint16_t number_samples_per_frame = btstack_lc3_samples_per_frame(sample_rate_hz, duration2);
+    if (number_samples_per_frame > MAX_SAMPLES_PER_FRAME) {
+        printf("number samples per frame %u too large\n", number_samples_per_frame);
+        return -10;
+    }
+
     // init decoder
     uint8_t channel;
     btstack_lc3_decoder_google_t decoder_contexts[MAX_NUM_CHANNELS];
@@ -138,33 +144,27 @@ int main (int argc, const char * argv[]){
     for (channel = 0 ; channel < num_channels ; channel++){
         btstack_lc3_decoder_google_t * decoder_context = &decoder_contexts[channel];
         lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
-        lc3_decoder->configure(decoder_context, sample_rate_hz, duration2);
+        lc3_decoder->configure(decoder_context, sample_rate_hz, duration2, number_samples_per_frame);
     }
 
+    // calc num octets from bitrate
     uint32_t bitrate_per_channel = bitrate / num_channels;
-    uint16_t bytes_per_frame          = lc3_decoder->get_number_octets_for_bitrate(&decoder_contexts[0], bitrate_per_channel);
-    uint16_t number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(&decoder_contexts[0]);
-
-    // fix bitrate for 8_1
+    uint16_t bytes_per_frame = 0;
     if ((sample_rate_hz == 8000) && (bitrate_per_channel == 27700)){
+        // fix bitrate for 8_1
         bitrate_per_channel = 27734;
         bitrate = bitrate_per_channel * num_channels;
         bytes_per_frame = 26;
-    }
-
-    // fix bitrate for 441_1 and 441_2
-    if (sample_rate_hz == 44100){
+    } else if (sample_rate_hz == 44100){
+        // fix bitrate for 441_1 and 441_2
         if ((frame_us == 7500) && (bitrate_per_channel == 95000)) {
             bitrate = 95060;
         }
         if ((frame_us == 10000) && (bitrate_per_channel == 95500)) {
             bytes_per_frame = 130;
         }
-    }
-
-    if (number_samples_per_frame > MAX_SAMPLES_PER_FRAME) {
-        printf("number samples per frame %u too large\n", number_samples_per_frame);
-        return -10;
+    } else {
+        bytes_per_frame = bitrate_per_channel / (10000 / (frame_us/100)) / 8;
     }
 
     // print format
@@ -212,7 +212,7 @@ int main (int argc, const char * argv[]){
             uint8_t tmp_BEC_detect;
             uint8_t BFI = 0;
 
-            uint8_t status = lc3_decoder->decode_signed_16(&decoder_contexts[channel], read_buffer, bytes_per_frame, BFI, &pcm[channel], num_channels, &tmp_BEC_detect);
+            uint8_t status = lc3_decoder->decode_signed_16(&decoder_contexts[channel], read_buffer, BFI, &pcm[channel], num_channels, &tmp_BEC_detect);
             if (status != ERROR_CODE_SUCCESS){
                 printf("Error %u\n", status);
                 done = true;

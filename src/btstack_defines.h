@@ -2287,8 +2287,8 @@ typedef uint8_t sm_key_t[16];
  * @format 1H11
  * @param subevent_code
  * @param acl_handle
- * @param status      // 0-success
- * @param enhanced    // 0-legacy, 1-enhanced
+ * @param status      0-success
+ * @param enhanced    0-legacy, 1-enhanced
  */
 #define HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED                0x1Eu
 
@@ -2296,7 +2296,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1H1
  * @param subevent_code
  * @param acl_handle
- * @param status      // 0-success
+ * @param status      0-success
  */
 #define HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED               0x1Fu
 
@@ -3187,7 +3187,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param avrcp_cid
  * @param status
- * @param enabled   // 1 enabled, 0 disabled
+ * @param enabled      1 enabled, 0 disabled
  * @param event_id
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_STATE                               0x11u
@@ -4048,7 +4048,7 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_REMOTE_MICS_MUTE                              0x1Au
 
 /**
- * @format 121
+ * @format 1H1
  * @param subevent_code
  * @param con_handle
  * @param state
@@ -4056,7 +4056,7 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE                                0x1Bu
 
 /**
- * @format 1211
+ * @format 1H11
  * @param subevent_code
  * @param con_handle
  * @param index
@@ -4065,7 +4065,7 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_AICS_MUTE_MODE                                 0x1Cu
 
 /**
- * @format 1211
+ * @format 1H11
  * @param subevent_code
  * @param con_handle
  * @param index
@@ -4074,7 +4074,7 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_AICS_GAIN_MODE                                 0x1Du
 
 /**
- * @format 1211
+ * @format 1H11
  * @param subevent_code
  * @param con_handle
  * @param index
@@ -4083,7 +4083,7 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED                              0x1Eu
 
 /**
- * @format 121JV
+ * @format 1H1JV
  * @param subevent_code
  * @param con_handle
  * @param index
@@ -4093,7 +4093,7 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_AICS_AUDIO_INPUT_DESC_CHANGED                   0x20u
 
 /**
- * @format 1212
+ * @format 1H12
  * @param subevent_code
  * @param con_handle
  * @param index
@@ -4102,7 +4102,7 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_VOCS_VOLUME_OFFSET                              0x21u
 
 /**
- * @format 1214
+ * @format 1H14
  * @param subevent_code
  * @param con_handle
  * @param index
@@ -4111,7 +4111,7 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_VOCS_AUDIO_LOCATION                             0x22u
 
 /**
- * @format 121JV
+ * @format 1H1JV
  * @param subevent_code
  * @param con_handle
  * @param index
@@ -4121,7 +4121,7 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_VOCS_AUDIO_OUTPUT_DESC_CHANGED                   0x23u
 
 /**
- * @format 12111
+ * @format 1H111
  * @param subevent_code
  * @param con_handle
  * @param volume_setting
@@ -4131,13 +4131,394 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_VCS_VOLUME_STATE                                 0x24u
 
 /**
- * @format 121
+ * @format 1H1
  * @param subevent_code
  * @param con_handle
  * @param flags
 */
 #define GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS                                 0x25u
 
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define GATTSERVICE_SUBEVENT_BASS_REMOTE_SCAN_STOPPED                         0x26u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define GATTSERVICE_SUBEVENT_BASS_REMOTE_SCAN_STARTED                          0x27u
+
+/**
+ * @format 1H1K
+ * @param subevent_code
+ * @param con_handle
+ * @param source_id
+ * @param broadcast_code
+*/
+#define GATTSERVICE_SUBEVENT_BASS_BROADCAST_CODE                               0x28u
+
+/**
+ * @format 1H11
+ * @param subevent_code
+ * @param con_handle
+ * @param source_id
+ * @param pa_sync
+ */
+#define GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED                                 0x29u
+
+/**
+ * @format 1H11
+ * @param subevent_code
+ * @param con_handle
+ * @param source_id
+ * @param pa_sync
+ */
+#define GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED                              0x30u
+
+/**
+ * @format 1H11
+ * @param subevent_code
+ * @param con_handle
+ * @param source_id
+ * @param pa_sync
+ */
+#define GATTSERVICE_SUBEVENT_BASS_SOURCE_DELETED                               0x31u
+
+/**
+ * @format 1H111122111421
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+ * @param target_latency
+ * @param target_phy
+ * @param coding_format
+ * @param company_id
+ * @param vendor_specific_codec_id
+ * @param specific_codec_configuration_mask
+ * @param sampling_frequency_index
+ * @param frame_duration_index
+ * @param audio_channel_allocation_mask
+ * @param octets_per_frame 
+ * @param frame_blocks_per_sdu 
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION_REQUEST                  0x32u
+
+/**
+ * @format 1H1113112123
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+ * @param cig_id
+ * @param cis_id
+ * @param sdu_interval
+ * @param framing
+ * @param phy
+ * @param max_sdu
+ * @param retransmission_number
+ * @param max_transport_latency
+ * @param presentation_delay_us
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION                           0x033u
+
+/**
+ * @format 1H1122JV3JV1JV2JV2JV
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+ * @param metadata_mask
+ * @param preferred_audio_contexts_mask
+ * @param streaming_audio_contexts_mask
+ * @param program_info_length
+ * @param program_info
+ * @param language_code
+ * @param ccids_num
+ * @param ccids
+ * @param parental_rating
+ * @param program_info_uri_length
+ * @param program_info_uri
+ * @param extended_metadata_type
+ * @param extended_metadata_value_length
+ * @param extended_metadata_value
+ * @param vendor_specific_metadata_type
+ * @param vendor_specific_metadata_value_length
+ * @param vendor_specific_metadata_value
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_METADATA                                     0x34u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/ 
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_START_READY                           0x35u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/ 
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISABLING                             0x36u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/ 
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASING                             0x37u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/ 
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_STOP_READY                            0x38u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASED                              0x39u
+
+/**
+ * @format 1H41
+ * @param subevent_code
+ * @param con_handle
+ * @param audio_locations
+ * @param role              see le_audio_role_t
+*/
+#define GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATION_RECEIVED                      0x42u
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param con_handle
+ * @param bass_cid
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_BASS_CONNECTED                                    0x43u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param bass_cid
+*/
+#define GATTSERVICE_SUBEVENT_BASS_DISCONNECTED                                 0x44u
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param bass_cid
+ * @param status
+ * @param opcode
+*/
+#define GATTSERVICE_SUBEVENT_BASS_SCAN_OPERATION_COMPLETE                       0x45u
+
+/**
+ * @format 1211B1311P1
+ * @param subevent_code
+ * @param bass_cid
+ * @param source_id
+ * @param source_address_type
+ * @param source_address
+ * @param source_adv_sid
+ * @param broadcast_id
+ * @param pa_sync_state
+ * @param big_encryption
+ * @param bad_code
+ * @param subgroups_num
+*/
+#define GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE                     0x46u
+
+/**
+ * @format 1214122JV3JV1JV2JV2JV
+ * @param subevent_code
+ * @param bass_cid
+ * @param source_id
+ * @param bis_sync_state
+ * @param metadata_mask
+ * @param preferred_audio_contexts_mask
+ * @param streaming_audio_contexts_mask
+ * @param program_info_length
+ * @param program_info
+ * @param language_code
+ * @param ccids_num
+ * @param ccids
+ * @param parental_rating
+ * @param program_info_uri_length
+ * @param program_info_uri
+ * @param extended_metadata_type
+ * @param extended_metadata_value_length
+ * @param extended_metadata_value
+ * @param vendor_specific_metadata_type
+ * @param vendor_specific_metadata_value_length
+ * @param vendor_specific_metadata_value
+*/
+#define GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_SUBGROUP                 0x47u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param bass_cid
+ * @param source_id
+*/
+#define GATTSERVICE_SUBEVENT_BASS_NOTIFICATION_COMPLETE                         0x48u
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param bass_cid
+ * @param status
+ * @param opcode
+ * @param source_id
+*/
+#define GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE                     0x49u
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param con_handle
+ * @param pacs_cid
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_PACS_CONNECTED                                      0x50u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param pacs_cid
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_PACS_OPERATION_DONE                                 0x51u
+
+/**
+ * @format 1214
+ * @param subevent_code
+ * @param pacs_cid
+ * @param le_audio_role
+ * @param audio_location_mask
+*/
+#define GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATIONS                               0x52u
+
+/**
+ * @format 1222
+ * @param subevent_code
+ * @param pacs_cid
+ * @param sink_mask
+ * @param source_mask
+*/
+#define GATTSERVICE_SUBEVENT_PACS_AVAILABLE_AUDIO_CONTEXTS                       0x53u
+
+/**
+ * @format 1222
+ * @param subevent_code
+ * @param pacs_cid
+ * @param sink_mask
+ * @param source_mask
+*/
+#define GATTSERVICE_SUBEVENT_PACS_SUPPORTED_AUDIO_CONTEXTS                       0x54u
+
+/**
+ * @format 1211221211221222JV3JV1JV2JV2JV
+ * @param subevent_code
+ * @param pacs_cid
+ * @param le_audio_role
+ * @param coding_format
+ * @param company_id
+ * @param vendor_specific_codec_id
+ * @param codec_capability_mask
+ * @param supported_sampling_frequencies_mask
+ * @param supported_frame_durations_mask
+ * @param supported_audio_channel_counts_mask
+ * @param supported_octets_per_frame_min_num 
+ * @param supported_octets_per_frame_max_num 
+ * @param supported_max_codec_frames_per_sdu 
+ * @param metadata_mask
+ * @param preferred_audio_contexts_mask
+ * @param streaming_audio_contexts_mask
+ * @param program_info_length
+ * @param program_info
+ * @param language_code
+ * @param ccids_num
+ * @param ccids
+ * @param parental_rating
+ * @param program_info_uri_length
+ * @param program_info_uri
+ * @param extended_metadata_type
+ * @param extended_metadata_value_length
+ * @param extended_metadata_value
+ * @param vendor_specific_metadata_type
+ * @param vendor_specific_metadata_value_length
+ * @param vendor_specific_metadata_value
+*/
+
+#define GATTSERVICE_SUBEVENT_PACS_PACK_RECORD                                    0x55u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param pacs_cid
+ * @param le_audio_role
+*/
+#define GATTSERVICE_SUBEVENT_PACS_PACK_RECORD_DONE                               0x56u
+
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param con_handle
+ * @param ascs_cid
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_CONNECTED                                      0x57u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param ascs_cid
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_DISCONNECTED                                   0x58u
+
+/**
+ * @format 1H111123333122111421
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+ * @param framing
+ * @param preferred_phy
+ * @param preferred_retransmission_number
+ * @param max_transport_latency
+ * @param presentation_delay_min
+ * @param presentation_delay_max
+ * @param preferred_presentation_delay_min
+ * @param preferred_presentation_delay_max
+ * @param coding_format
+ * @param company_id
+ * @param vendor_specific_codec_id
+ * @param specific_codec_configuration_mask
+ * @param sampling_frequency_index
+ * @param frame_duration_index
+ * @param audio_channel_allocation_mask
+ * @param octets_per_frame 
+ * @param frame_blocks_per_sdu 
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION                             0x59u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param pacs_cid
+*/
+#define GATTSERVICE_SUBEVENT_PACS_DISCONNECTED                                    0x5Au
 
 // MAP Meta Event Group
 
@@ -4182,7 +4563,6 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param map_cid
  * @param handle
-
  */
 #define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                                 0x05u
 

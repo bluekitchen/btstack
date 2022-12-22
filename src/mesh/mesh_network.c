@@ -37,6 +37,7 @@
 
 #define BTSTACK_FILE__ "mesh_network.c"
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -561,7 +562,7 @@ static void process_network_pdu_validate_d(void * arg){
         // check cache
         uint32_t hash = mesh_network_cache_hash(incoming_pdu_decoded);
 #ifdef LOG_NETWORK
-        printf("RX-Hash (%p): %08x\n", incoming_pdu_decoded, hash);
+        printf("RX-Hash (%p): %08" PRIx32 "\n", incoming_pdu_decoded, hash);
 #endif
         if (mesh_network_cache_find(hash)){
             // found in cache, drop
@@ -600,7 +601,7 @@ static uint32_t iv_index_for_pdu(const mesh_network_pdu_t * network_pdu){
     if ((iv_index & 1 ) ^ ivi){
         iv_index--;
 #ifdef LOG_NETWORK
-        printf("RX-IV: IVI indicates previous IV index, using 0x%08x\n", iv_index);
+        printf("RX-IV: IVI indicates previous IV index, using 0x%08" PRIx32 "\n", iv_index);
 #endif
     }
     return iv_index;

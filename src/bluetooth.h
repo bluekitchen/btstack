@@ -166,6 +166,23 @@ typedef enum {
 #define HCI_EVENT_PACKET        0x04
 #define HCI_ISO_DATA_PACKET     0x05
 
+/**
+ * Other assigned numbers, Assigned_Numbers_Host Controller Interface.pdf
+ */
+
+typedef enum {
+    HCI_AUDIO_CODING_FORMAT_U_LAW_LOG = 0x00,
+    HCI_AUDIO_CODING_FORMAT_A_LAW_LOG,
+    HCI_AUDIO_CODING_FORMAT_CVSD,
+    HCI_AUDIO_CODING_FORMAT_TRANSPARENT, // Indicates that the controller does not do any transcoding or resampling. This is also used for test mode.
+    HCI_AUDIO_CODING_FORMAT_LINEAR_PCM,
+    HCI_AUDIO_CODING_FORMAT_MSBC,
+    HCI_AUDIO_CODING_FORMAT_LC3,
+    HCI_AUDIO_CODING_FORMAT_G_729A, 
+    HCI_AUDIO_CODING_FORMAT_RFU,
+    HCI_AUDIO_CODING_FORMAT_VENDOR_SPECIFIC = 0xFF
+} hci_audio_coding_format_t;
+
 /** 
  * HCI Layer
  */
@@ -695,6 +712,12 @@ typedef enum {
 #define ATT_ERROR_DATA_MISMATCH                    0x7e
 #define ATT_ERROR_TIMEOUT                          0x7F
 #define ATT_ERROR_WRITE_RESPONSE_PENDING           0x100
+
+// MARK: ATT Error Codes from Bluetooth Core Specification Supplement, Version 9 or later
+#define ATT_ERROR_WRITE_REQUEST_REJECTED                                                      0xFC
+#define ATT_ERROR_CLIENT_CHARACTERISTIC_CONFIGURATION_DESCRIPTOR_IMPROPERLY_CONFIGURED        0xFD
+#define ATT_ERROR_PROCEDURE_ALREADY_IN_PROGRESS                                               0xFE
+#define ATT_ERROR_OUT_OF_RANGE                                                                0xFF
 
 // MARK: ATT Error Codes from Cycling Power Service spec
 #define CYCLING_POWER_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS                          0x80

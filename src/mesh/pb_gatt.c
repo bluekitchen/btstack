@@ -43,7 +43,7 @@
 #include <string.h>
 
 #include "ble/att_server.h"
-#include "ble/gatt-service/mesh_provisioning_service_server.h"
+#include "mesh/gatt-service/mesh_provisioning_service_server.h"
 
 #include "btstack_debug.h"
 #include "btstack_event.h"

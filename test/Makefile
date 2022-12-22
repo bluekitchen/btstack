@@ -73,7 +73,7 @@ SUBDIRS_BLE = \
 # sbc \
 #	gatt_server \
 
-.PHONY: coverage coverage-sm-sc.info coverage-pts.info
+.PHONY: coverage coverage-sm-sc.info
 
 subdirs:
 	echo Building all tests
@@ -104,13 +104,9 @@ subdirs-coverage-ble:
 	done
 
 
-coverage-pts.info:
-	# download pts coverage and fix paths
-	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-pts.info | sed "s|/Users/mringwal/buildbot-worker/auto-pts/btstack|`realpath ..`|" > coverage-pts.info
-
 coverage-sm-sc.info:
-	# download pts coverage and fix paths
-	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-sm-sc.info | sed "s|/Users/mringwal/buildbot-worker/test-develop-sm-sc/build|`realpath ..`|" > coverage-sm-sc.info
+	# download sm_sc_replay coverage and fix paths
+	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-sm-sc.info | sed "s|/Users/mringwal/buildbot-worker/test-develop-sm-sc-replay/btstack|`realpath ..`|" > coverage-sm-sc.info
 
 
 coverage-unit.info: subdirs-coverage
@@ -130,9 +126,9 @@ coverage-unit-ble.info: subdirs-coverage-ble
 	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit-ble.info
 
 
-coverage-ble.info: coverage-pts.info coverage-sm-sc.info coverage-unit-ble.info
-	# combine unit-ble and pts
-	lcov --rc lcov_branch_coverage=1 -a coverage-pts.info -a coverage-sm-sc.info -a coverage-unit-ble.info --output-file coverage-ble.info
+coverage-ble.info: coverage-sm-sc.info coverage-unit-ble.info
+	# combine unit-ble and sm-sc-replay
+	lcov --rc lcov_branch_coverage=1 -a coverage-sm-sc.info -a coverage-unit-ble.info --output-file coverage-ble.info
 
 
 coverage-bat.info: coverage-ble.info
@@ -140,14 +136,14 @@ coverage-bat.info: coverage-ble.info
 	./coverage_subset_bat.py coverage-ble.info coverage-bat.info
 
 
-coverage.info: coverage-pts.info coverage-sm-sc.info coverage-unit.info
-	# combine unit-ble and pts
-	lcov --rc lcov_branch_coverage=1 -a coverage-pts.info -a coverage-sm-sc.info -a coverage-unit.info --output-file coverage.info
+coverage.info: coverage-sm-sc.info coverage-unit.info
+	# combine unit-ble and sm-sc-replay
+	lcov --rc lcov_branch_coverage=1 -a coverage-sm-sc.info -a coverage-unit.info --output-file coverage.info
 
 
 coverage-all: coverage.info
 	# generate html output
-	genhtml coverage.info     --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage
+	genhtml coverage.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage
 
 coverage-bat: coverage-bat.info
 	# generate html output
@@ -164,10 +160,6 @@ coverage-unit-ble: coverage-unit-ble.info
 coverage-sm-sc: coverage-sm-sc.info
 	# generate html output
 	genhtml coverage-sm-sc.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-sm-sc
-
-coverage-pts: coverage-pts.info
-	# generate html output
-	genhtml coverage-pts.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-pts
 
 coverage: coverage-all coverage-ble coverage-bat
 

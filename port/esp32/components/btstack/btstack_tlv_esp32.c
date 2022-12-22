@@ -39,6 +39,7 @@
 #include "nvs_flash.h"
 #include "nvs.h"
 
+#include <inttypes.h>
 #include <string.h>
 
 static nvs_handle the_nvs_handle;
@@ -70,7 +71,7 @@ static int btstack_tlv_esp32_get_tag(void * context, uint32_t tag, uint8_t * buf
     switch (err) {
         case ESP_OK:
         	if (size > buffer_size){
-        		log_error("buffer_size %u < value size %u", buffer_size, size);
+        		log_error("buffer_size %" PRIu32 " < value size %zu", buffer_size, size);
         		return 0;
         	}
         	nvs_get_blob(the_nvs_handle, key_buffer, buffer, &size);

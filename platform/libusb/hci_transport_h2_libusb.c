@@ -60,12 +60,21 @@
 
 #include <libusb.h>
 
+// bail out if seen libusb is apperently to old
+#if !defined(LIBUSB_API_VERSION) || (LIBUSB_API_VERSION < 0x01000104)
+#error libusb api version to old!
+#endif
+
+#include <poll.h>
+
 #include "btstack_config.h"
 
 #include "btstack_debug.h"
 #include "hci.h"
 #include "hci_transport.h"
 #include "hci_transport_usb.h"
+
+#define DEBUG
 
 // deal with changes in libusb API:
 #ifdef LIBUSB_API_VERSION
@@ -81,6 +90,7 @@
 
 #define ACL_IN_BUFFER_COUNT    3
 #define EVENT_IN_BUFFER_COUNT  3
+#define EVENT_OUT_BUFFER_COUNT 4
 #define SCO_IN_BUFFER_COUNT   10
 
 #define ASYNC_POLLING_INTERVAL_MS 1
@@ -99,7 +109,7 @@
 
 #ifdef ENABLE_SCO_OVER_HCI
 // alt setting for 1-3 connections and 8/16 bit
-static const int alt_setting_8_bit[]  = {1,2,3};      
+static const int alt_setting_8_bit[]  = {1,2,3};
 static const int alt_setting_16_bit[] = {2,4,5};
 
 // for ALT_SETTING >= 1 and 8-bit channel, we need the following isochronous packets
@@ -123,15 +133,15 @@ static const uint16_t iso_packet_size_for_alt_setting[] = {
 
 // Outgoing SCO packet queue
 // simplified ring buffer implementation
-#define SCO_OUT_BUFFER_COUNT  (8)
+#define SCO_OUT_BUFFER_COUNT  (20)
 #define SCO_OUT_BUFFER_SIZE (SCO_OUT_BUFFER_COUNT * SCO_PACKET_SIZE)
 
 // seems to be the max depth for USB 3
 #define USB_MAX_PATH_LEN 7
 
 // prototypes
-static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
-static int usb_close(void);    
+static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
+static int usb_close(void);
 
 typedef enum {
     LIB_USB_CLOSED = 0,
@@ -160,11 +170,6 @@ static struct libusb_device_descriptor desc;
 #endif
 static libusb_device_handle * handle;
 
-static struct libusb_transfer *command_out_transfer;
-static struct libusb_transfer *acl_out_transfer;
-static struct libusb_transfer *event_in_transfer[EVENT_IN_BUFFER_COUNT];
-static struct libusb_transfer *acl_in_transfer[ACL_IN_BUFFER_COUNT];
-
 // known devices
 typedef struct {
     btstack_linked_item_t next;
@@ -173,6 +178,163 @@ typedef struct {
 } usb_known_device_t;
 
 static btstack_linked_list_t usb_knwon_devices;
+
+typedef struct list_head {
+    struct list_head *next, *prev;
+} list_head_t;
+
+static inline void __list_add( list_head_t *new, list_head_t *prev, list_head_t *next ) {
+    next->prev = new;
+    new->next = next;
+    new->prev = prev;
+    prev->next = new;
+}
+
+#define LIST_HEAD_INIT(name) { &(name), &(name) }
+
+static inline void init_list_head( list_head_t *list ) {
+    list->next = list;
+    list->prev = list;
+}
+
+static inline void list_add( list_head_t *new, list_head_t *head ) {
+    __list_add( new, head, head->next );
+}
+
+static inline void list_add_tail( list_head_t *new, list_head_t *head ) {
+    __list_add( new, head->prev, head );
+}
+
+static inline void list_del( list_head_t *entry ) {
+    entry->next->prev = entry->prev;
+    entry->prev->next = entry->next;
+
+    entry->prev = NULL;
+    entry->next = NULL;
+}
+
+static inline bool list_empty( list_head_t *head ) {
+    return head->next == head;
+}
+
+static inline list_head_t *list_pop_front( list_head_t *head ) {
+    list_head_t *front = head->next;
+    list_del( front );
+    return front;
+}
+
+
+typedef struct {
+    list_head_t list;
+    struct libusb_transfer *t;
+    uint8_t *data;
+    bool in_flight;
+} usb_transfer_list_entry_t;
+
+typedef struct {
+    list_head_t transfers;
+    int nbr;
+    usb_transfer_list_entry_t entries[0];
+} usb_transfer_list_t;
+
+static struct libusb_transfer *usb_transfer_list_acquire( usb_transfer_list_t *list ) {
+    usb_transfer_list_entry_t *current = (usb_transfer_list_entry_t*)list_pop_front( &list->transfers );
+    struct libusb_transfer *transfer = current->t;
+    current->in_flight = true;
+    return transfer;
+}
+void usb_transfer_list_free( usb_transfer_list_t *list );
+
+static void usb_transfer_list_release( usb_transfer_list_t *list, struct libusb_transfer *transfer ) {
+    usb_transfer_list_entry_t *current = (usb_transfer_list_entry_t*)transfer->user_data;
+    btstack_assert( current != NULL );
+    current->in_flight = false;
+    list_add( &current->list, &list->transfers );
+}
+
+static bool usb_transfer_list_empty( usb_transfer_list_t *list ) {
+    return list_empty( &list->transfers );
+}
+
+static usb_transfer_list_t *usb_transfer_list_alloc( int nbr, int iso_packets, int length ) {
+    usb_transfer_list_t *list = malloc( sizeof(usb_transfer_list_t) + nbr*sizeof(usb_transfer_list_entry_t) );
+    init_list_head( &list->transfers );
+    list->nbr = nbr;
+    for( int i=0; i<nbr; ++i )
+    {
+        usb_transfer_list_entry_t *entry = &list->entries[i];
+        struct libusb_transfer *transfer = libusb_alloc_transfer(iso_packets);
+        entry->data = malloc( length );
+        transfer->buffer = entry->data;
+        transfer->user_data = entry;
+        entry->t = transfer;
+        usb_transfer_list_release( list, transfer );
+        btstack_assert( entry->t->user_data != NULL );
+    }
+    return list;
+}
+
+static void usb_transfer_list_cancel( usb_transfer_list_t *list ) {
+#ifdef __APPLE__
+    // for darwin ignore all warnings
+    libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_ERROR);
+#endif
+    for( int i=0; i<list->nbr; ++i ) {
+        usb_transfer_list_entry_t *current = &list->entries[i];
+        if( current->in_flight ) {
+            libusb_cancel_transfer( current->t );
+        }
+    }
+#ifdef __APPLE__
+    libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_WARNING);
+#endif
+}
+
+static int usb_transfer_list_in_flight( usb_transfer_list_t *list ) {
+    int cnt = 0;
+    for(int i=0; i<list->nbr; ++i) {
+        usb_transfer_list_entry_t *entry = &list->entries[i];
+        if( entry->in_flight ) {
+            ++cnt;
+        }
+    }
+    return cnt;
+}
+
+
+static void usb_transfer_list_free_entry( struct libusb_transfer *transfer ) {
+    usb_transfer_list_entry_t *current = (usb_transfer_list_entry_t*)transfer->user_data;
+    free( current->data );
+    libusb_free_transfer( transfer );
+    current->in_flight = false;
+    current->t = NULL;
+    current->data = NULL;
+}
+
+void usb_transfer_list_free( usb_transfer_list_t *list ) {
+    for( int i=0; i<list->nbr; ++i ) {
+        usb_transfer_list_entry_t *entry = &list->entries[i];
+        btstack_assert( entry->in_flight == false );
+        if( entry->t ) {
+            usb_transfer_list_free_entry( entry->t );
+        }
+    }
+    free( list );
+}
+
+static usb_transfer_list_t *default_transfer_list = NULL;
+
+// For (ab)use as a linked list of received packets
+static list_head_t handle_packet_list = LIST_HEAD_INIT(handle_packet_list);
+
+static void enqueue_transfer(struct libusb_transfer *transfer) {
+    usb_transfer_list_entry_t *current = (usb_transfer_list_entry_t*)transfer->user_data;
+    btstack_assert( current != NULL );
+    list_add_tail( &current->list, &handle_packet_list );
+}
+
+static void signal_acknowledge(void);
+static void signal_sco_can_send_now(void);
 
 #ifdef ENABLE_SCO_OVER_HCI
 
@@ -185,45 +347,30 @@ static H2_SCO_STATE sco_state;
 static uint8_t  sco_buffer[255+3 + SCO_PACKET_SIZE];
 static uint16_t sco_read_pos;
 static uint16_t sco_bytes_to_read;
-static struct  libusb_transfer *sco_in_transfer[SCO_IN_BUFFER_COUNT];
-static uint8_t hci_sco_in_buffer[SCO_IN_BUFFER_COUNT][SCO_PACKET_SIZE]; 
-
-// outgoing SCO
-static uint8_t  sco_out_ring_buffer[SCO_OUT_BUFFER_SIZE];
-static int      sco_ring_write;  // packet idx
-static int      sco_out_transfers_active;
-static struct libusb_transfer *sco_out_transfers[SCO_OUT_BUFFER_COUNT];
-static int      sco_out_transfers_in_flight[SCO_OUT_BUFFER_COUNT];
 
 // pause/resume
 static uint16_t sco_voice_setting;
 static int      sco_num_connections;
-static int      sco_shutdown;
+static bool     sco_activated;
 
 // dynamic SCO configuration
 static uint16_t iso_packet_size;
 static int      sco_enabled;
 
+usb_transfer_list_t *sco_transfer_list = NULL;
+
 #endif
 
-// outgoing buffer for HCI Command packets
-static uint8_t hci_cmd_buffer[3 + 256 + LIBUSB_CONTROL_SETUP_SIZE];
-
-// incoming buffer for HCI Events and ACL Packets
-static uint8_t hci_event_in_buffer[EVENT_IN_BUFFER_COUNT][HCI_ACL_BUFFER_SIZE]; // bigger than largest packet
-static uint8_t hci_acl_in_buffer[ACL_IN_BUFFER_COUNT][HCI_INCOMING_PRE_BUFFER_SIZE + HCI_ACL_BUFFER_SIZE]; 
-
-// For (ab)use as a linked list of received packets
-static struct libusb_transfer *handle_packet;
 
 static int doing_pollfds;
 static int num_pollfds;
 static btstack_data_source_t * pollfd_data_sources;
+
+static void usb_transport_response_ds(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
+static btstack_data_source_t transport_response;
+
 static btstack_timer_source_t usb_timer;
 static int usb_timer_active;
-
-static int usb_acl_out_active = 0;
-static int usb_command_active = 0;
 
 // endpoint addresses
 static int event_in_addr;
@@ -256,16 +403,6 @@ static void hci_transport_h2_libusb_emit_usb_info(void) {
     (*packet_handler)(HCI_EVENT_PACKET, event, pos);
 }
 
-#ifdef ENABLE_SCO_OVER_HCI
-static void sco_ring_init(void){
-    sco_ring_write = 0;
-    sco_out_transfers_active = 0;
-}
-static int sco_ring_have_space(void){
-    return sco_out_transfers_active < SCO_OUT_BUFFER_COUNT;
-}
-#endif
-
 void hci_transport_usb_add_device(uint16_t vendor_id, uint16_t product_id) {
     usb_known_device_t * device = malloc(sizeof(usb_known_device_t));
     if (device != NULL) {
@@ -279,95 +416,23 @@ void hci_transport_usb_set_path(int len, uint8_t * port_numbers){
     if (len > USB_MAX_PATH_LEN || !port_numbers){
         log_error("hci_transport_usb_set_path: len or port numbers invalid");
         return;
-    } 
+    }
     usb_path_len = len;
     memcpy(usb_path, port_numbers, len);
 }
 
-//
-static void queue_transfer(struct libusb_transfer *transfer){
-
-    // log_info("queue_transfer %p, endpoint %x size %u", transfer, transfer->endpoint, transfer->actual_length);
-
-    transfer->user_data = NULL;
-
-    // insert first element
-    if (handle_packet == NULL) {
-        handle_packet = transfer;
-        return;
-    }
-
-    // Walk to end of list and add current packet there
-    struct libusb_transfer *temp = handle_packet;
-    while (temp->user_data) {
-        temp = (struct libusb_transfer*)temp->user_data;
-    }
-    temp->user_data = transfer;
-}
-
-LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer){
-
-    int c;
-
-    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED){
-        log_info("shutdown, transfer %p", transfer);
-    }
-
-
-    // identify and free transfers as part of shutdown
-#ifdef ENABLE_SCO_OVER_HCI
-    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED || sco_shutdown) {
-        for (c=0;c<SCO_IN_BUFFER_COUNT;c++){
-            if (transfer == sco_in_transfer[c]){
-                libusb_free_transfer(transfer);
-                sco_in_transfer[c] = NULL;
-                return;
-            }
-        }
-
-        for (c=0;c<SCO_OUT_BUFFER_COUNT;c++){
-            if (transfer == sco_out_transfers[c]){
-                sco_out_transfers_in_flight[c] = 0;
-                libusb_free_transfer(transfer);
-                sco_out_transfers[c] = NULL;
-                return;
-            }
-        }
-    }
-#endif
-
+LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer) {
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) {
-        for (c=0;c<EVENT_IN_BUFFER_COUNT;c++){
-            if (transfer == event_in_transfer[c]){
-                libusb_free_transfer(transfer);
-                event_in_transfer[c] = 0;
-                return;
-            }
-        }
-        for (c=0;c<ACL_IN_BUFFER_COUNT;c++){
-            if (transfer == acl_in_transfer[c]){
-                libusb_free_transfer(transfer);
-                acl_in_transfer[c] = 0;
-                return;
-            }
-        }
+        log_info("shutdown, transfer %p", transfer);
+        usb_transfer_list_free_entry( transfer );
         return;
     }
-
-#ifdef ENABLE_SCO_OVER_HCI
-    // mark SCO OUT transfer as done
-    for (c=0;c<SCO_OUT_BUFFER_COUNT;c++){
-        if (transfer == sco_out_transfers[c]){
-            sco_out_transfers_in_flight[c] = 0;
-        }
-    }
-#endif
 
     int r;
     // log_info("begin async_callback endpoint %x, status %x, actual length %u", transfer->endpoint, transfer->status, transfer->actual_length );
 
     if (transfer->status == LIBUSB_TRANSFER_COMPLETED) {
-        queue_transfer(transfer);
+        enqueue_transfer(transfer);
     } else if (transfer->status == LIBUSB_TRANSFER_STALL){
         log_info("-> Transfer stalled, trying again");
         r = libusb_clear_halt(handle, transfer->endpoint);
@@ -377,6 +442,15 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer){
         r = libusb_submit_transfer(transfer);
         if (r) {
             log_error("Error re-submitting transfer %d", r);
+        }
+    } else if ( transfer->status == LIBUSB_TRANSFER_CANCELLED ) {
+#ifdef ENABLE_SCO_OVER_HCI
+        if(( transfer->endpoint == sco_in_addr) || (transfer->endpoint == sco_out_addr)) {
+            usb_transfer_list_release( sco_transfer_list, transfer );
+        } else
+#endif
+        {
+            usb_transfer_list_release( default_transfer_list, transfer );
         }
     } else {
         log_info("async_callback. not data -> resubmit transfer, endpoint %x, status %x, length %u", transfer->endpoint, transfer->status, transfer->actual_length);
@@ -394,45 +468,39 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer){
 static int usb_send_sco_packet(uint8_t *packet, int size){
     int r;
 
+    if( !sco_activated ) {
+        log_error("sco send without beeing active!");
+        return -1;
+    }
+
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+
+    struct libusb_transfer *transfer = usb_transfer_list_acquire( sco_transfer_list );
+    uint8_t *data = transfer->buffer;
+    void *user_data = transfer->user_data;
 
     // log_info("usb_send_acl_packet enter, size %u", size);
 
     // store packet in free slot
-    int tranfer_index = sco_ring_write;
-    uint8_t * data = &sco_out_ring_buffer[tranfer_index * SCO_PACKET_SIZE];
     memcpy(data, packet, size);
 
     // setup transfer
     // log_info("usb_send_sco_packet: size %u, max size %u, iso packet size %u", size, NUM_ISO_PACKETS * iso_packet_size, iso_packet_size);
-    struct libusb_transfer * sco_transfer = sco_out_transfers[tranfer_index];
-    libusb_fill_iso_transfer(sco_transfer, handle, sco_out_addr, data, NUM_ISO_PACKETS * iso_packet_size, NUM_ISO_PACKETS, async_callback, NULL, 0);
-    libusb_set_iso_packet_lengths(sco_transfer, iso_packet_size);
-    r = libusb_submit_transfer(sco_transfer);
+    libusb_fill_iso_transfer(transfer, handle, sco_out_addr, data, NUM_ISO_PACKETS * iso_packet_size, NUM_ISO_PACKETS, async_callback, user_data, 0);
+    libusb_set_iso_packet_lengths(transfer, iso_packet_size);
+    r = libusb_submit_transfer(transfer);
     if (r < 0) {
         log_error("Error submitting sco transfer, %d", r);
         return -1;
     }
 
-    // mark slot as full
-    sco_ring_write++;
-    if (sco_ring_write == SCO_OUT_BUFFER_COUNT){
-        sco_ring_write = 0;
-    }
-    sco_out_transfers_active++;
-    sco_out_transfers_in_flight[tranfer_index] = 1;
-
     // log_info("H2: queued packet at index %u, num active %u", tranfer_index, sco_out_transfers_active);
+    signal_acknowledge();
 
-    // notify upper stack that provided buffer can be used again
-    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
-
-    // and if we have more space for SCO packets
-    if (sco_ring_have_space()) {
-        uint8_t event_sco[] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0};
-        packet_handler(HCI_EVENT_PACKET, &event_sco[0], sizeof(event_sco));
+    if( !usb_transfer_list_empty( sco_transfer_list ) ) {
+        signal_sco_can_send_now();
     }
+
     return 0;
 }
 
@@ -479,8 +547,6 @@ static void handle_isochronous_data(uint8_t * buffer, uint16_t size){
 static void handle_completed_transfer(struct libusb_transfer *transfer){
 
     int resubmit = 0;
-    int signal_done = 0;
-
     if (transfer->endpoint == event_in_addr) {
         packet_handler(HCI_EVENT_PACKET, transfer->buffer, transfer->actual_length);
         resubmit = 1;
@@ -490,15 +556,22 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         resubmit = 1;
     } else if (transfer->endpoint == 0){
         // log_info("command done, size %u", transfer->actual_length);
-        usb_command_active = 0;
-        signal_done = 1;
+//        printf("%s cmd release\n", __FUNCTION__ );
+        usb_transfer_list_release( default_transfer_list, transfer );
     } else if (transfer->endpoint == acl_out_addr){
         // log_info("acl out done, size %u", transfer->actual_length);
-        usb_acl_out_active = 0;
-        signal_done = 1;
+//        printf("%s acl release\n", __FUNCTION__ );
+        usb_transfer_list_release( default_transfer_list, transfer );
 #ifdef ENABLE_SCO_OVER_HCI
     } else if (transfer->endpoint == sco_in_addr) {
         // log_info("handle_completed_transfer for SCO IN! num packets %u", transfer->NUM_ISO_PACKETS);
+
+        // give the transfer back to the pool, without resubmiting 
+        if( !sco_activated ) {
+            usb_transfer_list_release( sco_transfer_list, transfer );
+            return;
+        }
+
         int i;
         for (i = 0; i < transfer->num_iso_packets; i++) {
             struct libusb_iso_packet_descriptor *pack = &transfer->iso_packet_desc[i];
@@ -519,40 +592,40 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
                 log_error("Error: pack %u status %d\n", i, pack->status);
             }
         }
+        usb_transfer_list_release( sco_transfer_list, transfer );
+        if( !sco_activated ) {
+            return;
+        }
         // log_info("sco out done, {{ %u/%u (%x)}, { %u/%u (%x)}, { %u/%u (%x)}}", 
         //     transfer->iso_packet_desc[0].actual_length, transfer->iso_packet_desc[0].length, transfer->iso_packet_desc[0].status,
         //     transfer->iso_packet_desc[1].actual_length, transfer->iso_packet_desc[1].length, transfer->iso_packet_desc[1].status,
         //     transfer->iso_packet_desc[2].actual_length, transfer->iso_packet_desc[2].length, transfer->iso_packet_desc[2].status);
         // notify upper layer if there's space for new SCO packets
 
-        if (sco_ring_have_space()) {
-            uint8_t event[] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0};
-            packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+        if (!usb_transfer_list_empty(sco_transfer_list)) {
+            signal_sco_can_send_now();
         }
-        // decrease tab
-        sco_out_transfers_active--;
         // log_info("H2: sco out complete, num active num active %u", sco_out_transfers_active);
 #endif
     } else {
         log_info("usb_process_ds endpoint unknown %x", transfer->endpoint);
     }
 
-    if (signal_done){
-        // notify upper stack that provided buffer can be used again
-        uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-        packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
-    }
-
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
 
     if (resubmit){
         // Re-submit transfer 
-        transfer->user_data = NULL;
         int r = libusb_submit_transfer(transfer);
         if (r) {
             log_error("Error re-submitting transfer %d", r);
         }
-    }   
+    }
+}
+
+void usb_handle_pending_events(void);
+void usb_handle_pending_events(void) {
+    struct timeval tv = { 0 };
+    libusb_handle_events_timeout_completed(NULL, &tv, NULL);
 }
 
 static void usb_process_ds(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
@@ -560,24 +633,21 @@ static void usb_process_ds(btstack_data_source_t *ds, btstack_data_source_callba
     UNUSED(ds);
     UNUSED(callback_type);
 
-    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
+   if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
 
     // log_info("begin usb_process_ds");
     // always handling an event as we're called when data is ready
-    struct timeval tv;
-    memset(&tv, 0, sizeof(struct timeval));
-    libusb_handle_events_timeout(NULL, &tv);
+    usb_handle_pending_events();
 
     // Handle any packet in the order that they were received
-    while (handle_packet) {
+    while (!list_empty(&handle_packet_list)) {
         // log_info("handle packet %p, endpoint %x, status %x", handle_packet, handle_packet->endpoint, handle_packet->status);
 
         // pop next transfer
-        struct libusb_transfer * transfer = handle_packet;
-        handle_packet = (struct libusb_transfer*) handle_packet->user_data;
+        usb_transfer_list_entry_t *current = (usb_transfer_list_entry_t*)list_pop_front( &handle_packet_list );
 
         // handle transfer
-        handle_completed_transfer(transfer);
+        handle_completed_transfer(current->t);
 
         // handle case where libusb_close might be called by hci packet handler        
         if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
@@ -721,12 +791,12 @@ static int scan_for_bt_device(libusb_device **devs, int start_index) {
             log_error("failed to get device descriptor");
             return 0;
         }
-        
+
         log_info("%04x:%04x (bus %d, device %d) - class %x subclass %x protocol %x ",
                desc.idVendor, desc.idProduct,
                libusb_get_bus_number(dev), libusb_get_device_address(dev),
                desc.bDeviceClass, desc.bDeviceSubClass, desc.bDeviceProtocol);
-        
+
         // Detect USB Dongle based Class, Subclass, and Protocol
         // The class code (bDeviceClass) is 0xE0 – Wireless Controller. 
         // The SubClass code (bDeviceSubClass) is 0x01 – RF Controller. 
@@ -855,13 +925,16 @@ static libusb_device_handle * try_open_device(libusb_device * device){
 }
 
 #ifdef ENABLE_SCO_OVER_HCI
-
 static int usb_sco_start(void){
 
     log_info("usb_sco_start");
+    if( sco_activated ) {
+        log_error("double sco start!");
+        return -1;
+    }
+    sco_activated = true;
 
     sco_state_machine_init();
-    sco_ring_init();
 
     int alt_setting;
     if (sco_voice_setting & 0x0020){
@@ -875,36 +948,37 @@ static int usb_sco_start(void){
     iso_packet_size = iso_packet_size_for_alt_setting[alt_setting];
 
     log_info("Switching to setting %u on interface 1..", alt_setting);
-    int r = libusb_set_interface_alt_setting(handle, 1, alt_setting); 
+    int r = libusb_set_interface_alt_setting(handle, 1, alt_setting);
     if (r < 0) {
         log_error("Error setting alternative setting %u for interface 1: %s\n", alt_setting, libusb_error_name(r));
         return r;
     }
 
+#ifdef DEBUG
+    int in_flight = usb_transfer_list_in_flight( sco_transfer_list );
+    // there need to be at least SCO_IN_BUFFER_COUNT packets available to 
+    // fill them in below
+    btstack_assert( in_flight <= SCO_OUT_BUFFER_COUNT );
+#endif
+
     // incoming
     int c;
     for (c = 0 ; c < SCO_IN_BUFFER_COUNT ; c++) {
-        sco_in_transfer[c] = libusb_alloc_transfer(NUM_ISO_PACKETS); // isochronous transfers SCO in
-        if (!sco_in_transfer[c]) {
-            usb_close();
-            return LIBUSB_ERROR_NO_MEM;
-        }
+
+        struct libusb_transfer *transfer = usb_transfer_list_acquire( sco_transfer_list );
+        uint8_t *data = transfer->buffer;
+        void *user_data = transfer->user_data;
+
         // configure sco_in handlers
-        libusb_fill_iso_transfer(sco_in_transfer[c], handle, sco_in_addr, 
-            hci_sco_in_buffer[c], NUM_ISO_PACKETS * iso_packet_size, NUM_ISO_PACKETS, async_callback, NULL, 0);
-        libusb_set_iso_packet_lengths(sco_in_transfer[c], iso_packet_size);
-        r = libusb_submit_transfer(sco_in_transfer[c]);
+        libusb_fill_iso_transfer(transfer, handle, sco_in_addr,
+                data, NUM_ISO_PACKETS * iso_packet_size, NUM_ISO_PACKETS, async_callback, user_data, 0);
+        libusb_set_iso_packet_lengths(transfer, iso_packet_size);
+        r = libusb_submit_transfer(transfer);
         if (r) {
             log_error("Error submitting isochronous in transfer %d", r);
             usb_close();
             return r;
         }
-    }
-
-    // outgoing
-    for (c=0; c < SCO_OUT_BUFFER_COUNT ; c++){
-        sco_out_transfers[c] = libusb_alloc_transfer(NUM_ISO_PACKETS); // 1 isochronous transfers SCO out - up to 3 parts
-        sco_out_transfers_in_flight[c] = 0;
     }
     return 0;
 }
@@ -912,97 +986,12 @@ static int usb_sco_start(void){
 static void usb_sco_stop(void){
 
     log_info("usb_sco_stop");
-    sco_shutdown = 1;
+    sco_activated = false;
 
-    // Free SCO transfers already in queue
-    struct libusb_transfer* transfer = handle_packet;
-    struct libusb_transfer* prev_transfer = NULL;
-    while (transfer != NULL) {
-        uint16_t c;
-        bool drop_transfer = false;
-        for (c=0;c<SCO_IN_BUFFER_COUNT;c++){
-            if (transfer == sco_in_transfer[c]){
-                sco_in_transfer[c] = NULL;
-                drop_transfer = true;
-                break;
-            }
-        }
-        for (c=0;c<SCO_OUT_BUFFER_COUNT;c++){
-            if (transfer == sco_out_transfers[c]){
-                sco_out_transfers_in_flight[c] = 0;
-                sco_out_transfers[c] = NULL;
-                drop_transfer = true;
-                break;
-            }
-        }
-        struct libusb_transfer * next_transfer = (struct libusb_transfer *) transfer->user_data;
-        if (drop_transfer) {
-            log_info("Drop completed SCO transfer %p", transfer);
-            if (prev_transfer == NULL) {
-                // first item
-                handle_packet = (struct libusb_transfer *) next_transfer;
-            } else {
-                // other item
-                prev_transfer->user_data = (struct libusb_transfer *) next_transfer;
-            }
-            libusb_free_transfer(transfer);
-        } else {
-            prev_transfer = transfer;
-        }
-        transfer = next_transfer;
-    }
-
-    libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_ERROR);
-
-    int c;
-    for (c = 0 ; c < SCO_IN_BUFFER_COUNT ; c++) {
-        if (sco_in_transfer[c] != NULL) {
-            libusb_cancel_transfer(sco_in_transfer[c]);
-        }
-    }
-
-    for (c = 0; c < SCO_OUT_BUFFER_COUNT ; c++){
-        if (sco_out_transfers_in_flight[c]) {
-            libusb_cancel_transfer(sco_out_transfers[c]);
-        } else {
-            if (sco_out_transfers[c] != NULL) {
-                libusb_free_transfer(sco_out_transfers[c]);
-                sco_out_transfers[c] = 0;
-            }
-        }
-    }
-
-    // wait until all transfers are completed
-    int completed = 0;
-    while (!completed){
-        struct timeval tv;
-        memset(&tv, 0, sizeof(struct timeval));
-        libusb_handle_events_timeout(NULL, &tv);
-        // check if all done
-        completed = 1;
-
-        // Cancel all synchronous transfer
-        for (c = 0 ; c < SCO_IN_BUFFER_COUNT ; c++) {
-            if (sco_in_transfer[c] != NULL){
-                completed = 0;
-                break;
-            }
-        }
-
-        if (!completed) continue;
-
-        for (c=0; c < SCO_OUT_BUFFER_COUNT ; c++){
-            if (sco_out_transfers[c] != NULL){
-                completed = 0;
-                break;
-            }
-        }
-    }
-    sco_shutdown = 0;
-    libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_WARNING);
+    usb_transfer_list_cancel( sco_transfer_list );
 
     log_info("Switching to setting %u on interface 1..", 0);
-    int r = libusb_set_interface_alt_setting(handle, 1, 0); 
+    int r = libusb_set_interface_alt_setting(handle, 1, 0);
     if (r < 0) {
         log_error("Error setting alternative setting %u for interface 1: %s", 0, libusb_error_name(r));
         return;
@@ -1010,17 +999,30 @@ static void usb_sco_stop(void){
 
     log_info("usb_sco_stop done");
 }
-
-
-
 #endif
+
+void pollfd_added_cb(int fd, short events, void *user_data);
+void pollfd_remove_cb(int fd, void *user_data);
+
+void pollfd_added_cb(int fd, short events, void *user_data) {
+    UNUSED(fd);
+    UNUSED(events);
+    UNUSED(user_data);
+    log_error("add fd: %d", fd);
+    btstack_assert(0);
+}
+
+void pollfd_remove_cb(int fd, void *user_data) {
+    UNUSED(fd);
+    UNUSED(user_data);
+    log_error("remove fd: %d", fd);
+    btstack_assert(0);
+}
 
 static int usb_open(void){
     int r;
 
     if (usb_transport_open) return 0;
-
-    handle_packet = NULL;
 
     // default endpoint addresses
     event_in_addr = 0x81; // EP1, IN interrupt
@@ -1037,7 +1039,7 @@ static int usb_open(void){
 
     // configure debug level
     libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_WARNING);
-    
+
     libusb_device * dev = NULL;
 
 #ifdef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
@@ -1152,36 +1154,35 @@ static int usb_open(void){
     }
 
 #endif
-    
+
     // allocate transfer handlers
     int c;
-    for (c = 0 ; c < EVENT_IN_BUFFER_COUNT ; c++) {
-        event_in_transfer[c] = libusb_alloc_transfer(0); // 0 isochronous transfers Events
-        if (!event_in_transfer[c]) {
-            usb_close();
-            return LIBUSB_ERROR_NO_MEM;
-        }
-    }
-    for (c = 0 ; c < ACL_IN_BUFFER_COUNT ; c++) {
-        acl_in_transfer[c]  =  libusb_alloc_transfer(0); // 0 isochronous transfers ACL in
-        if (!acl_in_transfer[c]) {
-            usb_close();
-            return LIBUSB_ERROR_NO_MEM;
-        }
-    }
 
-    command_out_transfer = libusb_alloc_transfer(0);
-    acl_out_transfer     = libusb_alloc_transfer(0);
+    default_transfer_list = usb_transfer_list_alloc(
+            EVENT_OUT_BUFFER_COUNT+EVENT_IN_BUFFER_COUNT+ACL_IN_BUFFER_COUNT,
+            0,
+            LIBUSB_CONTROL_SETUP_SIZE + HCI_INCOMING_PRE_BUFFER_SIZE + HCI_ACL_BUFFER_SIZE ); // biggest packet ever to expect
+
+#ifdef ENABLE_SCO_OVER_HCI
+    sco_transfer_list = usb_transfer_list_alloc(
+            SCO_OUT_BUFFER_COUNT+SCO_IN_BUFFER_COUNT,
+            NUM_ISO_PACKETS,
+            SCO_PACKET_SIZE
+            );
+#endif
 
     // TODO check for error
 
     libusb_state = LIB_USB_TRANSFERS_ALLOCATED;
 
     for (c = 0 ; c < EVENT_IN_BUFFER_COUNT ; c++) {
-        // configure event_in handlers
-        libusb_fill_interrupt_transfer(event_in_transfer[c], handle, event_in_addr, 
-                hci_event_in_buffer[c], HCI_ACL_BUFFER_SIZE, async_callback, NULL, 0) ;
-        r = libusb_submit_transfer(event_in_transfer[c]);
+        struct libusb_transfer *transfer = usb_transfer_list_acquire( default_transfer_list );
+        uint8_t *data = transfer->buffer;
+        void *user_data = transfer->user_data;
+        // configure event_in handlers      
+        libusb_fill_interrupt_transfer(transfer, handle, event_in_addr,
+                data, HCI_ACL_BUFFER_SIZE, async_callback, user_data, 0);
+        r = libusb_submit_transfer(transfer);
         if (r) {
             log_error("Error submitting interrupt transfer %d", r);
             usb_close();
@@ -1190,25 +1191,26 @@ static int usb_open(void){
     }
 
     for (c = 0 ; c < ACL_IN_BUFFER_COUNT ; c++) {
+        struct libusb_transfer *transfer = usb_transfer_list_acquire( default_transfer_list );
+        usb_transfer_list_entry_t *transfer_meta_data = (usb_transfer_list_entry_t*)transfer->user_data;
+        uint8_t *data = transfer_meta_data->data;
+        void *user_data = transfer->user_data;
         // configure acl_in handlers
-        libusb_fill_bulk_transfer(acl_in_transfer[c], handle, acl_in_addr, 
-                hci_acl_in_buffer[c] + HCI_INCOMING_PRE_BUFFER_SIZE, HCI_ACL_BUFFER_SIZE, async_callback, NULL, 0) ;
-        r = libusb_submit_transfer(acl_in_transfer[c]);
+        libusb_fill_bulk_transfer(transfer, handle, acl_in_addr,
+                data + HCI_INCOMING_PRE_BUFFER_SIZE, HCI_ACL_BUFFER_SIZE, async_callback, user_data, 0) ;
+        r = libusb_submit_transfer(transfer);
         if (r) {
             log_error("Error submitting bulk in transfer %d", r);
             usb_close();
             return r;
         }
- 
+
      }
 
- #if 0
     // Check for pollfds functionality
     doing_pollfds = libusb_pollfds_handle_timeouts(NULL);
-#else
-    // NOTE: using pollfds doesn't work on Linux, so it is disable until further investigation
-    doing_pollfds = 0;
-#endif
+
+    libusb_set_pollfd_notifiers( NULL,  pollfd_added_cb, pollfd_remove_cb, NULL );
 
     if (doing_pollfds) {
         log_info("Async using pollfds:");
@@ -1219,18 +1221,21 @@ static int usb_open(void){
         if (!pollfd_data_sources){
             log_error("Cannot allocate data sources for pollfds");
             usb_close();
-            return 1;            
+            return 1;
         }
         memset(pollfd_data_sources, 0, sizeof(btstack_data_source_t) * num_pollfds);
         for (r = 0 ; r < num_pollfds ; r++) {
             btstack_data_source_t *ds = &pollfd_data_sources[r];
             btstack_run_loop_set_data_source_fd(ds, pollfd[r]->fd);
             btstack_run_loop_set_data_source_handler(ds, &usb_process_ds);
-            btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
+            if( pollfd[r]->events & POLLIN )
+                btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
+            else
+                btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
             btstack_run_loop_add_data_source(ds);
             log_info("%u: %p fd: %u, events %x", r, pollfd[r], pollfd[r]->fd, pollfd[r]->events);
         }
-        free(pollfd);
+        libusb_free_pollfds(pollfd);
     } else {
         log_info("Async using timers:");
 
@@ -1244,13 +1249,14 @@ static int usb_open(void){
 
     hci_transport_h2_libusb_emit_usb_info();
 
+    btstack_data_source_t *ds = &transport_response;
+    btstack_run_loop_set_data_source_handler(ds, &usb_transport_response_ds);
+    btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(ds);
     return 0;
 }
 
-static int usb_close(void){
-    int c;
-    int completed = 0;
-
+static int usb_close(void) {
     if (!usb_transport_open) return 0;
 
     log_info("usb_close");
@@ -1282,97 +1288,31 @@ static int usb_close(void){
             /* fall through */
 
         case LIB_USB_INTERFACE_CLAIMED:
-            // Cancel all transfers, ignore warnings for this
-            libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_ERROR);
-            for (c = 0 ; c < EVENT_IN_BUFFER_COUNT ; c++) {
-                if (event_in_transfer[c]){
-                    log_info("cancel event_in_transfer[%u] = %p", c, event_in_transfer[c]);
-                    libusb_cancel_transfer(event_in_transfer[c]);
-                }
-            }
-            for (c = 0 ; c < ACL_IN_BUFFER_COUNT ; c++) {
-                if (acl_in_transfer[c]){
-                    log_info("cancel acl_in_transfer[%u] = %p", c, acl_in_transfer[c]);
-                    libusb_cancel_transfer(acl_in_transfer[c]);
-                }
-            }
+            libusb_set_pollfd_notifiers( NULL, NULL, NULL, NULL );
+            usb_transfer_list_cancel( default_transfer_list );
 #ifdef ENABLE_SCO_OVER_HCI
-            for (c = 0 ; c < SCO_IN_BUFFER_COUNT ; c++) {
-                if (sco_in_transfer[c]){
-                    log_info("cancel sco_in_transfer[%u] = %p", c, sco_in_transfer[c]);
-                    libusb_cancel_transfer(sco_in_transfer[c]);
-                }
-            }
-            for (c = 0; c < SCO_OUT_BUFFER_COUNT ; c++){
-                if (sco_out_transfers_in_flight[c]) {
-                    log_info("cancel sco_out_transfers[%u] = %p", c, sco_out_transfers[c]);
-                    libusb_cancel_transfer(sco_out_transfers[c]);
-                } else {
-                    if (sco_out_transfers[c] != NULL){
-                        libusb_free_transfer(sco_out_transfers[c]);
-                        sco_out_transfers[c] = 0;
-                    }
-                }
-            }
+            usb_transfer_list_cancel( sco_transfer_list );
 #endif
-            libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_WARNING);
 
-            // wait until all transfers are completed - or 20 iterations
-            int countdown = 20;
-            while (!completed){
-
-                if (--countdown == 0){
-                    log_info("Not all transfers cancelled, leaking a bit.");
-                    break;
-                }
-
-                struct timeval tv;
-                memset(&tv, 0, sizeof(struct timeval));
+            int in_flight_transfers = usb_transfer_list_in_flight( default_transfer_list );
+#ifdef ENABLE_SCO_OVER_HCI
+            in_flight_transfers += usb_transfer_list_in_flight( sco_transfer_list );
+#endif
+            while( in_flight_transfers > 0 ) {
+                struct timeval tv = { 0 };
                 libusb_handle_events_timeout(NULL, &tv);
-                // check if all done
-                completed = 1;
-                for (c=0;c<EVENT_IN_BUFFER_COUNT;c++){
-                    if (event_in_transfer[c]) {
-                        log_info("event_in_transfer[%u] still active (%p)", c, event_in_transfer[c]);
-                        completed = 0;
-                        break;
-                    }
-                }
 
-                if (!completed) continue;
-
-                for (c=0;c<ACL_IN_BUFFER_COUNT;c++){
-                    if (acl_in_transfer[c]) {
-                        log_info("acl_in_transfer[%u] still active (%p)", c, acl_in_transfer[c]);
-                        completed = 0;
-                        break;
-                    }
-                }
-
+                in_flight_transfers = usb_transfer_list_in_flight( default_transfer_list );
 #ifdef ENABLE_SCO_OVER_HCI
-                if (!completed) continue;
-
-                // Cancel all synchronous transfer
-                for (c = 0 ; c < SCO_IN_BUFFER_COUNT ; c++) {
-                    if (sco_in_transfer[c]){
-                        log_info("sco_in_transfer[%u] still active (%p)", c, sco_in_transfer[c]);
-                        completed = 0;
-                        break;
-                    }
-                }
-
-                if (!completed) continue;
-
-                for (c=0; c < SCO_OUT_BUFFER_COUNT ; c++){
-                    if (sco_out_transfers[c] != NULL){
-                        log_info("sco_out_transfers[%u] still active (%p)", c, sco_out_transfers[c]);
-                        completed = 0;
-                        break;
-                    }
-                }
-                sco_enabled = 0;
+                in_flight_transfers += usb_transfer_list_in_flight( sco_transfer_list );
 #endif
             }
+
+            usb_transfer_list_free( default_transfer_list );
+#ifdef ENABLE_SCO_OVER_HCI
+            usb_transfer_list_free( sco_transfer_list );
+            sco_enabled = 0;
+#endif
 
             // finally release interface
             libusb_release_interface(handle, 0);
@@ -1404,31 +1344,60 @@ static int usb_close(void){
     return 0;
 }
 
+static int acknowledge_count = 0;
+static void signal_acknowledge() {
+    ++acknowledge_count;
+    btstack_run_loop_poll_data_sources_from_irq();
+}
+
+static int sco_can_send_now_count = 0;
+static void signal_sco_can_send_now() {
+    ++sco_can_send_now_count;
+    btstack_run_loop_poll_data_sources_from_irq();
+}
+
+static void usb_transport_response_ds(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    UNUSED(ds);
+    UNUSED(callback_type);
+//    printf("%s packet sent: %d sco can send now: %d\n", __FUNCTION__, acknowledge_count, sco_can_send_now_count);
+    for(; acknowledge_count>0; --acknowledge_count) {
+        static const uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0 };
+        packet_handler(HCI_EVENT_PACKET, (uint8_t*)&event[0], sizeof(event));
+    }
+
+    for(; sco_can_send_now_count>0; --sco_can_send_now_count) {
+        static const uint8_t event[] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0 };
+        packet_handler(HCI_EVENT_PACKET, (uint8_t*)&event[0], sizeof(event));
+    }
+
+}
+
 static int usb_send_cmd_packet(uint8_t *packet, int size){
     int r;
 
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+//    printf("%s( %p, %d )\n", __FUNCTION__, packet, size );
+
+    struct libusb_transfer *transfer = usb_transfer_list_acquire( default_transfer_list );
+    uint8_t *data = transfer->buffer;
+    void *user_data = transfer->user_data;
 
     // async
-    libusb_fill_control_setup(hci_cmd_buffer, LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE, 0, 0, 0, size);
-    memcpy(hci_cmd_buffer + LIBUSB_CONTROL_SETUP_SIZE, packet, size);
+    libusb_fill_control_setup(data, LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE, 0, 0, 0, size);
+    memcpy(data + LIBUSB_CONTROL_SETUP_SIZE, packet, size);
 
     // prepare transfer
-    int completed = 0;
-    libusb_fill_control_transfer(command_out_transfer, handle, hci_cmd_buffer, async_callback, &completed, 0);
-    command_out_transfer->flags = LIBUSB_TRANSFER_FREE_BUFFER;
-
-    // update stata before submitting transfer
-    usb_command_active = 1;
+    libusb_fill_control_transfer(transfer, handle, data, async_callback, user_data, 0);
 
     // submit transfer
-    r = libusb_submit_transfer(command_out_transfer);
+    r = libusb_submit_transfer(transfer);
 
     if (r < 0) {
-        usb_command_active = 0;
         log_error("Error submitting cmd transfer %d", r);
         return -1;
     }
+
+    signal_acknowledge();
 
     return 0;
 }
@@ -1437,38 +1406,55 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     int r;
 
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
-
+//   printf("%s( %p, %d )\n", __FUNCTION__, packet, size );
     // log_info("usb_send_acl_packet enter, size %u", size);
 
+    struct libusb_transfer *transfer = usb_transfer_list_acquire( default_transfer_list );
+    uint8_t *data = transfer->buffer;
+
     // prepare transfer
-    int completed = 0;
-    libusb_fill_bulk_transfer(acl_out_transfer, handle, acl_out_addr, packet, size,
-        async_callback, &completed, 0);
-    acl_out_transfer->type = LIBUSB_TRANSFER_TYPE_BULK;
+    memcpy( data, packet, size );
+    libusb_fill_bulk_transfer(transfer, handle, acl_out_addr, data, size,
+        async_callback, transfer->user_data, 0);
 
-    // update stata before submitting transfer
-    usb_acl_out_active = 1;
+    r = libusb_submit_transfer(transfer);
 
-    r = libusb_submit_transfer(acl_out_transfer);
     if (r < 0) {
-        usb_acl_out_active = 0;
         log_error("Error submitting acl transfer, %d", r);
         return -1;
     }
+
+    signal_acknowledge();
 
     return 0;
 }
 
 static int usb_can_send_packet_now(uint8_t packet_type){
     switch (packet_type){
-        case HCI_COMMAND_DATA_PACKET:
-            return !usb_command_active;
-        case HCI_ACL_DATA_PACKET:
-            return !usb_acl_out_active;
+        case HCI_COMMAND_DATA_PACKET: {
+            int ret = !usb_transfer_list_empty( default_transfer_list );
+            if( !ret ) {
+                log_error("command transfers shouldn't be empty!");
+            }
+            return ret;
+        }
+        case HCI_ACL_DATA_PACKET: {
+            int ret = !usb_transfer_list_empty( default_transfer_list );
+            if( !ret ) {
+                log_error("acl transfers shouldn't be empty!");
+            }
+            return ret;
+        }
+
 #ifdef ENABLE_SCO_OVER_HCI
-        case HCI_SCO_DATA_PACKET:
-            if (!sco_enabled) return 0;
-            return sco_ring_have_space();
+        case HCI_SCO_DATA_PACKET: {
+            if (!sco_enabled || !sco_activated) return 0;
+            int ret = !usb_transfer_list_empty( sco_transfer_list );
+            if( !ret ) {
+                log_error("sco transfers shouldn't be empty!");
+            }
+            return ret;
+        }
 #endif
         default:
             return 0;

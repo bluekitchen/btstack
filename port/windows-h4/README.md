@@ -20,16 +20,21 @@ We've used the Msys2 package available from the [downloads page](https://www.min
 In the MSYS2 shell, you can install everything with pacman:
 
     $ pacman -S git
+    $ pacman -S cmake
     $ pacman -S make
     $ pacman -S mingw-w64-x86_64-toolchain
+    $ pacman -S mingw-w64-x86_64-portaudio
     $ pacman -S python
     $ pacman -S winpty
 
-### Compilation
+### Compilation with CMake
 
-With mingw64-w64 installed, just go to the port/windows-h4 directory and run make
+With mingw64-w64 installed, just go to the port/windows-h4 directory and use CMake as usual
 
     $ cd port/windows-h4
+    $ mkdir build
+    $ cd build
+    $ cmake ..
     $ make
 
 Note: When compiling with msys2-32 bit and/or the 32-bit toolchain, compilation fails

@@ -36,6 +36,7 @@ set(src_dirs "3rd-party/bluedroid/decoder/srce"
              "src/ble"
              "src/mesh"
              "src/"
+             "platform/embedded"
              "platform/freertos"
              "platform/lwip"
              ".")
@@ -51,6 +52,7 @@ set(priv_include_dirs
 set(priv_requires
         "nvs_flash"
         "bt"
+        "driver"
         "lwip"
         )
 

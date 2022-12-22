@@ -8,11 +8,36 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+## Added
+## Fixed
+## Changed
+
+## Release v1.5.5
+
 ### Added
+- hci_dump_stdout: allow to truncate ACL, SCO and ISO packets with HCI_DUMP_STDOUT_MAX_SIZE_*
+- GATT Service: Broadcast Audio Scan Service Server and Client (BASS 1.0)
+- example/a2dp_source_demo: add command to scan and connect to Bluetooth speaker by class of device
+
 ### Fixed
+- GAP: reload LE Resolving List after power-cycle 
+- GAP: fix setting of LE Scan Response for data that needs to be fragmented  
+- SM: fix pairing process with active ATT communication
 - ESP32: fix init for BR/EDR Only mode
- 
+- ESP32: fix audio driver for sink + source mode
+- ESP32: fixes for ESP-IDF v5.x
+- ESP32: fix compile of non-BTstack examples after adding components/btstack
+
 ### Changed
+- GAP: reload LE Filterlist and Periodic Advertiser List after power-cycle
+- SM: delete bonding information for existing device with BD_ADDR on new pairing with different IRK
+- Mesh: move GATT Services into src/mesh/gatt-service
+- LE Audio: move GATT Services into src/le-audio/gatt-service
+- libusb: improve implementation
+
+## Known Issues
+- ESP32: audio driver for ES8388/LyraT v4.3 not updated for esp-idf 5.x
+
 
 ## Release v1.5.4
 

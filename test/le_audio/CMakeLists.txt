@@ -98,6 +98,7 @@ file(GLOB SOURCES_SRC       "../../src/*.c" "../../src/*.cpp" "../../example/sco
 file(GLOB SOURCES_BLE       "../../src/ble/*.c")
 file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c")
 file(GLOB SOURCES_CLASSIC   "../../src/classic/*.c")
+file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-service/*.c")
 file(GLOB SOURCES_MESH      "../../src/mesh/*.c")
 file(GLOB SOURCES_MD5       "../../3rd-party/md5/md5.c")
 file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")
@@ -125,6 +126,7 @@ set(SOURCES
 	${SOURCES_SRC}
 	${SOURCES_BLE}
 	${SOURCES_GATT}
+	${SOURCES_LE_AUDIO}
 	${SOURCES_MESH}
 	${SOURCES_CLASSIC} 
 	${SOURCES_UECC}
@@ -144,6 +146,7 @@ file(GLOB EXAMPLES_GATT "*.gatt")
 # create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
+	set(SOURCE_FILES ${EXAMPLE_FILE})
 
 	# add GATT DB creation
 	if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
@@ -158,6 +161,6 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	else()
 		message("LE Audio Tool: ${EXAMPLE}")
 	endif()
-	add_executable(${EXAMPLE} ${EXAMPLE_FILE} )
+	add_executable(${EXAMPLE} ${SOURCE_FILES} )
 	target_link_libraries(${EXAMPLE} btstack m pthread)
 endforeach(EXAMPLE_FILE)

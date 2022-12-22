@@ -180,7 +180,6 @@ static enum {
     APP_IDLE,
     APP_W4_CIS_COMPLETE,
     APP_STREAMING,
-    APP_W4_POWER_OFF,
 } app_state = APP_W4_WORKING;
 
 // enumerate default codec configs
@@ -259,9 +258,9 @@ static void setup_lc3_encoder(void){
     for (channel = 0 ; channel < num_channels ; channel++){
         btstack_lc3_encoder_google_t * context = &encoder_contexts[channel];
         lc3_encoder = btstack_lc3_encoder_google_init_instance(context);
-        lc3_encoder->configure(context, sampling_frequency_hz, frame_duration);
+        lc3_encoder->configure(context, sampling_frequency_hz, frame_duration, octets_per_frame);
     }
-    number_samples_per_frame = lc3_encoder->get_number_samples_per_frame(&encoder_contexts[0]);
+    number_samples_per_frame = btstack_lc3_samples_per_frame(sampling_frequency_hz, frame_duration);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
     printf("LC3 Encoder config: %u hz, frame duration %s ms, num samples %u, num octets %u\n",
            sampling_frequency_hz, frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
@@ -317,7 +316,7 @@ static void generate_audio(void){
 
 static void encode(uint8_t channel){
     // encode as lc3
-    lc3_encoder->encode_signed_16(&encoder_contexts[channel], &pcm[channel], num_channels, &iso_payload[channel * MAX_LC3_FRAME_BYTES], octets_per_frame);
+    lc3_encoder->encode_signed_16(&encoder_contexts[channel], &pcm[channel], num_channels, &iso_payload[channel * MAX_LC3_FRAME_BYTES]);
 }
 
 static void send_iso_packet(uint8_t cis_index){
@@ -555,20 +554,6 @@ static void stdin_process(char c){
                 menu_variant = 0;
             }
             print_config();
-            break;
-        case 'x':
-#ifdef COUNT_MODE
-            printf("Send statistic:\n");
-            {
-                uint16_t i;
-                for (i=0;i<MAX_PACKET_INTERVAL_BINS_MS;i++){
-                    printf("%2u: %5u\n", i, send_time_bins[i]);
-                }
-            }
-#endif
-            printf("Shutdown...\n");
-            app_state = APP_W4_POWER_OFF;
-            hci_power_control(HCI_POWER_OFF);
             break;
         case 's':
             if (app_state != APP_IDLE){

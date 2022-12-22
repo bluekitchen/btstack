@@ -37,91 +37,92 @@ The file *btstack_config.h* contains three parts:
 ### HAVE_* directives {#sec:haveDirectives}
 System properties:
 
-\#define | Description
------------------------------------|-------------------------------------
-HAVE_MALLOC                        | Use dynamic memory
-HAVE_AES128                        | Use platform AES128 engine - not needed usually
-HAVE_BTSTACK_STDIN                 | STDIN is available for CLI interface
-HAVE_MBEDTLS_ECC_P256              | mbedTLS provides NIST P-256 operations e.g. for LE Secure Connections
+| \#define              | Description                                                           |
+|-----------------------|-----------------------------------------------------------------------|
+| HAVE_MALLOC           | Use dynamic memory                                                    |
+| HAVE_AES128           | Use platform AES128 engine - not needed usually                       |
+| HAVE_BTSTACK_STDIN    | STDIN is available for CLI interface                                  |
+| HAVE_MBEDTLS_ECC_P256 | mbedTLS provides NIST P-256 operations e.g. for LE Secure Connections |
 
 Embedded platform properties:
 
-\#define                           | Description
------------------------------------|------------------------------------
-HAVE_EMBEDDED_TIME_MS              | System provides time in milliseconds
-HAVE_EMBEDDED_TICK                 | System provides tick interrupt
-HAVE_HAL_AUDIO                     | Audio HAL is available
-HAVE_HAL_AUDIO_SINK_STEREO_ONLY    | Duplicate samples for mono playback 
+| \#define                        | Description                          |
+|---------------------------------|--------------------------------------|
+| HAVE_EMBEDDED_TIME_MS           | System provides time in milliseconds |
+| HAVE_EMBEDDED_TICK              | System provides tick interrupt       |
+| HAVE_HAL_AUDIO                  | Audio HAL is available               |
+| HAVE_HAL_AUDIO_SINK_STEREO_ONLY | Duplicate samples for mono playback  |
 
 FreeRTOS platform properties:
 
-\#define                           | Description
------------------------------------|------------------------------------
-HAVE_FREERTOS_INCLUDE_PREFIX       | FreeRTOS headers are in 'freertos' folder (e.g. ESP32's esp-idf)
+| \#define                     | Description                                                      |
+|------------------------------|------------------------------------------------------------------|
+| HAVE_FREERTOS_INCLUDE_PREFIX | FreeRTOS headers are in 'freertos' folder (e.g. ESP32's esp-idf) |
 
 POSIX platform properties:
 
-\#define                            | Description
------------------------------------|------------------------------------
-HAVE_POSIX_FILE_IO                 | POSIX File i/o used for hci dump
-HAVE_POSIX_TIME                    | System provides time function
-LINK_KEY_PATH                      | Path to stored link keys
-LE_DEVICE_DB_PATH                  | Path to stored LE device information
+| \#define           | Description                          |
+|--------------------|--------------------------------------|
+| HAVE_POSIX_FILE_IO | POSIX File i/o used for hci dump     |
+| HAVE_POSIX_TIME    | System provides time function        |
+| LINK_KEY_PATH      | Path to stored link keys             |
+| LE_DEVICE_DB_PATH  | Path to stored LE device information |
+
 <!-- a name "lst:btstackFeatureConfiguration"></a-->
 <!-- -->
 
 ### ENABLE_* directives {#sec:enableDirectives}
 BTstack properties:
 
-\#define                         | Description
----------------------------------|---------------------------------------------
-ENABLE_CLASSIC                   | Enable Classic related code in HCI and L2CAP
-ENABLE_BLE                       | Enable BLE related code in HCI and L2CAP
-ENABLE_EHCILL                    | Enable eHCILL low power mode on TI CC256x/WL18xx chipsets
-ENABLE_H5                        | Enable support for SLIP mode in `btstack_uart.h` drivers for HCI H5 ('Three-Wire Mode')
-ENABLE_LOG_DEBUG                 | Enable log_debug messages
-ENABLE_LOG_ERROR                 | Enable log_error messages
-ENABLE_LOG_INFO                  | Enable log_info messages
-ENABLE_SCO_OVER_HCI              | Enable SCO over HCI for chipsets (if supported)
-ENABLE_SCO_OVER_PCM              | Enable SCO ofer PCM/I2S for chipsets (if supported)
-ENABLE_HFP_WIDE_BAND_SPEECH      | Enable support for mSBC codec used in HFP profile for Wide-Band Speech
-ENABLE_HFP_AT_MESSAGES           | Enable `HFP_SUBEVENT_AT_MESSAGE_SENT` and `HFP_SUBEVENT_AT_MESSAGE_RECEIVED` events
-ENABLE_LE_PERIPHERAL             | Enable support for LE Peripheral Role in HCI and Security Manager
-ENBALE_LE_CENTRAL                | Enable support for LE Central Role in HCI and Security Manager
-ENABLE_LE_SECURE_CONNECTIONS     | Enable LE Secure Connections
-ENABLE_LE_PROACTIVE_AUTHENTICATION | Enable automatic encryption for bonded devices on re-connect
-ENABLE_GATT_CLIENT_PAIRING       | Enable GATT Client to start pairing and retry operation on security error
-ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS | Use [micro-ecc library](https://github.com/kmackay/micro-ecc) for ECC operations
-ENABLE_LE_DATA_LENGTH_EXTENSION  | Enable LE Data Length Extension support
-ENABLE_LE_EXTENDED_ADVERTISING   | Enable extended advertising and scanning
-ENABLE_LE_PERIODIC_ADVERTISING   | Enable periodic advertising and scanning
-ENABLE_LE_SIGNED_WRITE           | Enable LE Signed Writes in ATT/GATT
-ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION | Enable address resolution for resolvable private addresses in Controller
-ENABLE_CROSS_TRANSPORT_KEY_DERIVATION | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections
-ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE | Enable Enhanced Retransmission Mode for L2CAP Channels. Mandatory for AVRCP Browsing
-ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE | Enable LE credit-based flow-control mode for L2CAP channels
-ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE | Enable Enhanced credit-based flow-control mode for L2CAP Channels
-ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow Control, see below
-ENABLE_HCI_SERIALIZED_CONTROLLER_OPERATIONS | Serialize Inquiry, Remote Name Request, and Create Connection operations
-ENABLE_ATT_DELAYED_RESPONSE      | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)
-ENABLE_BCM_PCM_WBS               | Enable support for Wide-Band Speech codec in BCM controller, requires ENABLE_SCO_OVER_PCM
-ENABLE_CC256X_ASSISTED_HFP       | Enable support for Assisted HFP mode in CC256x Controller, requires ENABLE_SCO_OVER_PCM
-Enable_RTK_PCM_WBS               | Enable support for Wide-Band Speech codec in Realtek controller, requires ENABLE_SCO_OVER_PCM
-ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.
-ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.
-ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS | Force HCI to fragment ACL-LE packets to fit into over-the-air packet
-ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD | Enable use of explicit delete field in TLV Flash implemenation - required when flash value cannot be overwritten with zero
-ENABLE_CONTROLLER_WARM_BOOT      | Enable stack startup without power cycle (if supported/possible)
-ENABLE_SEGGER_RTT                | Use SEGGER RTT for console output and packet log, see [additional options](#sec:rttConfiguration)
-ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL | Disable calls to control Connectable Mode by L2CAP
-ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY | Let application trigger sending IO Capabilities (Negative) Reply
-ENABLE_EXPLICIT_LINK_KEY_REPLY | Let application trigger sending Link Key (Negative) Response, allows for asynchronous link key lookup
-ENABLE_EXPLICIT_BR_EDR_SECURITY_MANAGER | Report BR/EDR Security Manager support in L2CAP Information Response
-ENABLE_CLASSIC_OOB_PAIRING       | Enable support for classic Out-of-Band (OOB) pairing
-ENABLE_A2DP_EXPLICIT_CONFIG      | Let application configure stream endpoint (skip auto-config of SBC endpoint)
-ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION | allow accept or reject of stream start on A2DP_SUBEVENT_START_STREAM_REQUESTED
-ENABLE_LE_WHITELIST_TOUCH_AFTER_RESOLVING_LIST_UPDATE | Enable Workaround for Controller bug.
-ENABLE_CONTROLLER_DUMP_PACKETS   | Dump number of packets in Controller per type for debugging
+| \#define                                                  | Description                                                                                                                |
+|-----------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| ENABLE_CLASSIC                                            | Enable Classic related code in HCI and L2CAP                                                                               |
+| ENABLE_BLE                                                | Enable BLE related code in HCI and L2CAP                                                                                   |
+| ENABLE_EHCILL                                             | Enable eHCILL low power mode on TI CC256x/WL18xx chipsets                                                                  |
+| ENABLE_H5                                                 | Enable support for SLIP mode in `btstack_uart.h` drivers for HCI H5 ('Three-Wire Mode')                                    |
+| ENABLE_LOG_DEBUG                                          | Enable log_debug messages                                                                                                  |
+| ENABLE_LOG_ERROR                                          | Enable log_error messages                                                                                                  |
+| ENABLE_LOG_INFO                                           | Enable log_info messages                                                                                                   |
+| ENABLE_SCO_OVER_HCI                                       | Enable SCO over HCI for chipsets (if supported)                                                                            |
+| ENABLE_SCO_OVER_PCM                                       | Enable SCO ofer PCM/I2S for chipsets (if supported)                                                                        |
+| ENABLE_HFP_WIDE_BAND_SPEECH                               | Enable support for mSBC codec used in HFP profile for Wide-Band Speech                                                     |
+| ENABLE_HFP_AT_MESSAGES                                    | Enable `HFP_SUBEVENT_AT_MESSAGE_SENT` and `HFP_SUBEVENT_AT_MESSAGE_RECEIVED` events                                        |
+| ENABLE_LE_PERIPHERAL                                      | Enable support for LE Peripheral Role in HCI and Security Manager                                                          |
+| ENBALE_LE_CENTRAL                                         | Enable support for LE Central Role in HCI and Security Manager                                                             |
+| ENABLE_LE_SECURE_CONNECTIONS                              | Enable LE Secure Connections                                                                                               |
+| ENABLE_LE_PROACTIVE_AUTHENTICATION                        | Enable automatic encryption for bonded devices on re-connect                                                               |
+| ENABLE_GATT_CLIENT_PAIRING                                | Enable GATT Client to start pairing and retry operation on security error                                                  |
+| ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS                | Use [micro-ecc library](https://github.com/kmackay/micro-ecc) for ECC operations                                           |
+| ENABLE_LE_DATA_LENGTH_EXTENSION                           | Enable LE Data Length Extension support                                                                                    |
+| ENABLE_LE_EXTENDED_ADVERTISING                            | Enable extended advertising and scanning                                                                                   |
+| ENABLE_LE_PERIODIC_ADVERTISING                            | Enable periodic advertising and scanning                                                                                   |
+| ENABLE_LE_SIGNED_WRITE                                    | Enable LE Signed Writes in ATT/GATT                                                                                        |
+| ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION                      | Enable address resolution for resolvable private addresses in Controller                                                   |
+| ENABLE_CROSS_TRANSPORT_KEY_DERIVATION                     | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections                                                        |
+| ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE                 | Enable Enhanced Retransmission Mode for L2CAP Channels. Mandatory for AVRCP Browsing                                       |
+| ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE            | Enable LE credit-based flow-control mode for L2CAP channels                                                                |
+| ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE      | Enable Enhanced credit-based flow-control mode for L2CAP Channels                                                          |
+| ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL                | Enable HCI Controller to Host Flow Control, see below                                                                      |
+| ENABLE_HCI_SERIALIZED_CONTROLLER_OPERATIONS               | Serialize Inquiry, Remote Name Request, and Create Connection operations                                                   |
+| ENABLE_ATT_DELAYED_RESPONSE                               | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)                              |
+| ENABLE_BCM_PCM_WBS                                        | Enable support for Wide-Band Speech codec in BCM controller, requires ENABLE_SCO_OVER_PCM                                  |
+| ENABLE_CC256X_ASSISTED_HFP                                | Enable support for Assisted HFP mode in CC256x Controller, requires ENABLE_SCO_OVER_PCM                                    |
+| Enable_RTK_PCM_WBS                                        | Enable support for Wide-Band Speech codec in Realtek controller, requires ENABLE_SCO_OVER_PCM                              |
+| ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND  | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.                                |
+| ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.                             |
+| ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS                | Force HCI to fragment ACL-LE packets to fit into over-the-air packet                                                       |
+| ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD                    | Enable use of explicit delete field in TLV Flash implemenation - required when flash value cannot be overwritten with zero |
+| ENABLE_CONTROLLER_WARM_BOOT                               | Enable stack startup without power cycle (if supported/possible)                                                           |
+| ENABLE_SEGGER_RTT                                         | Use SEGGER RTT for console output and packet log, see [additional options](#sec:rttConfiguration)                          |
+| ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL                  | Disable calls to control Connectable Mode by L2CAP                                                                         |
+| ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY                     | Let application trigger sending IO Capabilities (Negative) Reply                                                           |
+| ENABLE_EXPLICIT_LINK_KEY_REPLY                            | Let application trigger sending Link Key (Negative) Response, allows for asynchronous link key lookup                      |
+| ENABLE_EXPLICIT_BR_EDR_SECURITY_MANAGER                   | Report BR/EDR Security Manager support in L2CAP Information Response                                                       |
+| ENABLE_CLASSIC_OOB_PAIRING                                | Enable support for classic Out-of-Band (OOB) pairing                                                                       |
+| ENABLE_A2DP_EXPLICIT_CONFIG                               | Let application configure stream endpoint (skip auto-config of SBC endpoint)                                               |
+| ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION  | allow accept or reject of stream start on A2DP_SUBEVENT_START_STREAM_REQUESTED                                             |
+| ENABLE_LE_WHITELIST_TOUCH_AFTER_RESOLVING_LIST_UPDATE     | Enable Workaround for Controller bug.                                                                                      |
+| ENABLE_CONTROLLER_DUMP_PACKETS                            | Dump number of packets in Controller per type for debugging                                                                |
 
 Notes:
 
@@ -132,13 +133,12 @@ In general, BTstack relies on flow control of the HCI transport, either via Hard
 
 Host buffer configuration for HCI Controller to Host Flow Control:
 
-\#define         | Description
-------------------|------------
-HCI_HOST_ACL_PACKET_NUM | Max number of ACL packets
-HCI_HOST_ACL_PACKET_LEN | Max size of HCI Host ACL packets
-HCI_HOST_SCO_PACKET_NUM | Max number of ACL packets
-HCI_HOST_SCO_PACKET_LEN | Max size of HCI Host SCO packets
-
+| \#define                | Description                      |
+|-------------------------|----------------------------------|
+| HCI_HOST_ACL_PACKET_NUM | Max number of ACL packets        |
+| HCI_HOST_ACL_PACKET_LEN | Max size of HCI Host ACL packets |
+| HCI_HOST_SCO_PACKET_NUM | Max number of ACL packets        |
+| HCI_HOST_SCO_PACKET_LEN | Max size of HCI Host SCO packets |
 
 ### Memory configuration directives {#sec:memoryConfigurationHowTo}
 
@@ -159,26 +159,25 @@ For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For 
 <!-- a name "lst:memoryConfiguration"></a-->
 <!-- -->
 
-\#define | Description
---------|------------
-HCI_ACL_PAYLOAD_SIZE | Max size of HCI ACL payloads
-HCI_INCOMING_PRE_BUFFER_SIZE | Number of bytes reserved before actual data for incoming HCI packets
-MAX_NR_BNEP_CHANNELS | Max number of BNEP channels
-MAX_NR_BNEP_SERVICES | Max number of BNEP services
-MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES | Max number of link key entries cached in RAM
-MAX_NR_GATT_CLIENTS | Max number of GATT clients
-MAX_NR_HCI_CONNECTIONS | Max number of HCI connections
-MAX_NR_HFP_CONNECTIONS | Max number of HFP connections
-MAX_NR_L2CAP_CHANNELS |  Max number of L2CAP connections
-MAX_NR_L2CAP_SERVICES |  Max number of L2CAP services
-MAX_NR_RFCOMM_CHANNELS | Max number of RFOMMM connections
-MAX_NR_RFCOMM_MULTIPLEXERS | Max number of RFCOMM multiplexers, with one multiplexer per HCI connection
-MAX_NR_RFCOMM_SERVICES | Max number of RFCOMM services
-MAX_NR_SERVICE_RECORD_ITEMS | Max number of SDP service records
-MAX_NR_SM_LOOKUP_ENTRIES | Max number of items in Security Manager lookup queue
-MAX_NR_WHITELIST_ENTRIES | Max number of items in GAP LE Whitelist to connect to
-MAX_NR_LE_DEVICE_DB_ENTRIES | Max number of items in LE Device DB
-
+| \#define                                  | Description                                                                |
+|-------------------------------------------|----------------------------------------------------------------------------|
+| HCI_ACL_PAYLOAD_SIZE                      | Max size of HCI ACL payloads                                               |
+| HCI_INCOMING_PRE_BUFFER_SIZE              | Number of bytes reserved before actual data for incoming HCI packets       |
+| MAX_NR_BNEP_CHANNELS                      | Max number of BNEP channels                                                |
+| MAX_NR_BNEP_SERVICES                      | Max number of BNEP services                                                |
+| MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES | Max number of link key entries cached in RAM                               |
+| MAX_NR_GATT_CLIENTS                       | Max number of GATT clients                                                 |
+| MAX_NR_HCI_CONNECTIONS                    | Max number of HCI connections                                              |
+| MAX_NR_HFP_CONNECTIONS                    | Max number of HFP connections                                              |
+| MAX_NR_L2CAP_CHANNELS                     | Max number of L2CAP connections                                            |
+| MAX_NR_L2CAP_SERVICES                     | Max number of L2CAP services                                               |
+| MAX_NR_RFCOMM_CHANNELS                    | Max number of RFOMMM connections                                           |
+| MAX_NR_RFCOMM_MULTIPLEXERS                | Max number of RFCOMM multiplexers, with one multiplexer per HCI connection |
+| MAX_NR_RFCOMM_SERVICES                    | Max number of RFCOMM services                                              |
+| MAX_NR_SERVICE_RECORD_ITEMS               | Max number of SDP service records                                          |
+| MAX_NR_SM_LOOKUP_ENTRIES                  | Max number of items in Security Manager lookup queue                       |
+| MAX_NR_WHITELIST_ENTRIES                  | Max number of items in GAP LE Whitelist to connect to                      |
+| MAX_NR_LE_DEVICE_DB_ENTRIES               | Max number of items in LE Device DB                                        |
 
 The memory is set up by calling *btstack_memory_init* function:
 
@@ -211,12 +210,21 @@ If implemented, bonding information is stored in Non-volatile memory. For Classi
 <!-- a name "lst:nvmDefines"></a-->
 <!-- -->
 
-\#define                  | Description
---------------------------|------------
-NVM_NUM_LINK_KEYS         | Max number of Classic Link Keys that can be stored 
-NVM_NUM_DEVICE_DB_ENTRIES | Max number of LE Device DB entries that can be stored
-NVN_NUM_GATT_SERVER_CCC   | Max number of 'Client Characteristic Configuration' values that can be stored by GATT Server
+| \#define                  | Description                                                                                  |
+|---------------------------|----------------------------------------------------------------------------------------------|
+| NVM_NUM_LINK_KEYS         | Max number of Classic Link Keys that can be stored                                           |
+| NVM_NUM_DEVICE_DB_ENTRIES | Max number of LE Device DB entries that can be stored                                        |
+| NVN_NUM_GATT_SERVER_CCC   | Max number of 'Client Characteristic Configuration' values that can be stored by GATT Server |
 
+### HCI Dump Stdout directives {#sec:hciDumpStdout}
+
+Allow to truncate HCI ACL and SCO packets to reduce console output for debugging audio applications.
+
+| \#define                     | Description                               |
+|------------------------------|-------------------------------------------|
+| HCI_DUMP_STDOUT_MAX_SIZE_ACL | Max size of ACL packets to log via stdout |
+| HCI_DUMP_STDOUT_MAX_SIZE_SCO | Max size of SCO packets to log via stdout |
+| HCI_DUMP_STDOUT_MAX_SIZE_ISO | Max size of ISO packets to log via stdout |
 
 ### SEGGER Real Time Transfer (RTT) directives {#sec:rttConfiguration}
 
@@ -224,11 +232,11 @@ NVN_NUM_GATT_SERVER_CCC   | Max number of 'Client Characteristic Configuration' 
 
 When enabled with `ENABLE_SEGGER_RTT` and `hci_dump_init()` can be called with an `hci_dunp_segger_stdout_get_instance()` for textual output and `hci_dump_segger_binary_get_instance()` for binary output. With the latter, you can select `HCI_DUMP_BLUEZ` or `HCI_DUMP_PACKETLOGGER`, format. For RTT, the following directives are used to configure the up channel:
 
-\#define                         | Default                        | Description
----------------------------------|--------------------------------|------------------------
-SEGGER_RTT_PACKETLOG_MODE        | SEGGER_RTT_MODE_NO_BLOCK_SKIP  | SEGGER_RTT_MODE_NO_BLOCK_SKIP to skip messages if buffer is full, or, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL to block 
-SEGGER_RTT_PACKETLOG_CHANNEL     | 1                              | Channel to use for packet log. Channel 0 is used for terminal
-SEGGER_RTT_PACKETLOG_BUFFER_SIZE | 1024                           | Size of outgoing ring buffer. Increase if you cannot block but get 'message skipped' warnings.
+| \#define                         | Default                       | Description                                                                                                       |
+|----------------------------------|-------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| SEGGER_RTT_PACKETLOG_MODE        | SEGGER_RTT_MODE_NO_BLOCK_SKIP | SEGGER_RTT_MODE_NO_BLOCK_SKIP to skip messages if buffer is full, or, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL to block |
+| SEGGER_RTT_PACKETLOG_CHANNEL     | 1                             | Channel to use for packet log. Channel 0 is used for terminal                                                     |
+| SEGGER_RTT_PACKETLOG_BUFFER_SIZE | 1024                          | Size of outgoing ring buffer. Increase if you cannot block but get 'message skipped' warnings.                    |
 
 ## Run-time configuration
 
@@ -297,16 +305,16 @@ executing the run loop.
 
 The source tree has been organized to easily setup new projects.
 
-Path                | Description
---------------------|---------------
-chipset             | Support for individual Bluetooth Controller chipsets
-doc                 | Sources for BTstack documentation
-example             | Example applications available for all ports
-platform            | Support for special OSs and/or MCU architectures
-port                | Complete port for a MCU + Chipset combinations
-src                 | Bluetooth stack implementation
-test                | Unit and PTS tests
-tool                | Helper tools for BTstack
+| Path     | Description                                          |
+|----------|------------------------------------------------------|
+| chipset  | Support for individual Bluetooth Controller chipsets |
+| doc      | Sources for BTstack documentation                    |
+| example  | Example applications available for all ports         |
+| platform | Support for special OSs and/or MCU architectures     |
+| port     | Complete port for a MCU + Chipset combinations       |
+| src      | Bluetooth stack implementation                       |
+| test     | Unit and PTS tests                                   |
+| tool     | Helper tools for BTstack                             |
 
 The core of BTstack, including all protocol and profiles, is in *src/*.
 
@@ -605,15 +613,14 @@ These handlers are registered with the functions listed in Table
 {@tbl:registeringFunction}.
 
 
-Packet Handler                 | Registering Function
--------------------------------|--------------------------------------
-HCI packet handler             | hci_add_event_handler
-L2CAP packet handler           | l2cap_register_packet_handler
-L2CAP service packet handler   | l2cap_register_service
-L2CAP channel packet handler   | l2cap_create_channel
-RFCOMM service packet handler  | rfcomm_register_service and rfcomm_register_service_with_initial_credits
-RFCOMM channel packet handler  | rfcomm_create_channel and rfcomm_create_channel_with_initial_credits
-
+| Packet Handler                | Registering Function                                                     |
+|-------------------------------|--------------------------------------------------------------------------|
+| HCI packet handler            | hci_add_event_handler                                                    |
+| L2CAP packet handler          | l2cap_register_packet_handler                                            |
+| L2CAP service packet handler  | l2cap_register_service                                                   |
+| L2CAP channel packet handler  | l2cap_create_channel                                                     |
+| RFCOMM service packet handler | rfcomm_register_service and rfcomm_register_service_with_initial_credits |
+| RFCOMM channel packet handler | rfcomm_create_channel and rfcomm_create_channel_with_initial_credits     |
 
 Table: Functions for registering packet handlers. {#tbl:registeringFunction}
 
@@ -668,14 +675,13 @@ For this, BTstack provides a configurable packet logging mechanism via hci_dump.
 
     void hci_dump_init(const hci_dump_t * hci_dump_implementation);
 
-Platform | File                         | Description
----------|------------------------------|------------
-POSIX    | `hci_dump_posix_fs.c`        | HCI log file for Apple PacketLogger and Wireshark
-POSIX    | `hci_dump_posix_stdout.c`    | Console output via printf
-Embedded | `hci_dump_embedded_stdout.c` | Console output via printf
-Embedded | `hci_dump_segger_stdout.c`   | Console output via SEGGER RTT
-Embedded | `hci_dump_segger_binary.c`   | HCI log file for Apple PacketLogger via SEGGER RTT
-
+| Platform | File                         | Description                                        |
+|----------|------------------------------|----------------------------------------------------|
+| POSIX    | `hci_dump_posix_fs.c`        | HCI log file for Apple PacketLogger and Wireshark  |
+| POSIX    | `hci_dump_posix_stdout.c`    | Console output via printf                          |
+| Embedded | `hci_dump_embedded_stdout.c` | Console output via printf                          |
+| Embedded | `hci_dump_segger_stdout.c`   | Console output via SEGGER RTT                      |
+| Embedded | `hci_dump_segger_binary.c`   | HCI log file for Apple PacketLogger via SEGGER RTT |
 
 On POSIX systems, you can call *hci_dump_init* with a *hci_dump_posix_fs_get_instance()* and 
 configure the path and output format with *hci_dump_posix_fs_open(const char * path, hci_dump_format_t format)*

@@ -1001,7 +1001,7 @@ static void vli_mmod_fast(uint64_t *RESTRICT result, uint64_t *RESTRICT product)
 #elif uECC_CURVE == uECC_secp256r1
 
 /* Computes result = product % curve_p
-   from http://www.nsa.gov/ia/_files/nist-routines.pdf */
+   from www.nsa.gov/ia/_files/nist-routines.pdf */
 #if uECC_WORD_SIZE == 1
 static void vli_mmod_fast(uint8_t *RESTRICT result, uint8_t *RESTRICT product) {
     uint8_t tmp[uECC_BYTES];
@@ -1491,7 +1491,7 @@ static void vli_modSquare_fast(uECC_word_t *result, const uECC_word_t *left) {
 #define EVEN(vli) (!(vli[0] & 1))
 /* Computes result = (1 / input) % mod. All VLIs are the same size.
    See "From Euclid's GCD to Montgomery Multiplication to the Great Divide"
-   https://labs.oracle.com/techrep/2001/smli_tr-2001-95.pdf */
+   labs.oracle.com/techrep/2001/smli_tr-2001-95.pdf */
 #if !asm_modInv
 static void vli_modInv(uECC_word_t *result, const uECC_word_t *input, const uECC_word_t *mod) {
     uECC_word_t a[uECC_WORDS], b[uECC_WORDS], u[uECC_WORDS], v[uECC_WORDS];
@@ -1570,7 +1570,7 @@ static cmpresult_t EccPoint_isZero(const EccPoint *point) {
 }
 
 /* Point multiplication algorithm using Montgomery's ladder with co-Z coordinates.
-From http://eprint.iacr.org/2011/338.pdf
+From eprint.iacr.org/2011/338.pdf
 */
 
 /* Double in place */

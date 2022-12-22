@@ -227,7 +227,7 @@ void ublox_spp_service_server_init(btstack_packet_handler_t packet_handler){
 
     // get service handle range
     uint16_t start_handle = 0;
-    uint16_t end_handle   = 0xfff;
+    uint16_t end_handle   = 0xffff;
     int service_found = gatt_server_get_handle_range_for_service_with_uuid128(ublox_spp_profile_uuid128, &start_handle, &end_handle);
 	btstack_assert(service_found != 0);
 	UNUSED(service_found);

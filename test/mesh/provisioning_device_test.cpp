@@ -38,7 +38,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "btstack_memory.h"
-#include "ble/gatt-service/mesh_provisioning_service_server.h"
+#include "mesh/gatt-service/mesh_provisioning_service_server.h"
 #include "hci_dump.h"
 #include "hci_dump_posix_fs.h"
 #include "mesh/mesh_node.h"

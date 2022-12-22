@@ -1046,7 +1046,12 @@ def getFile( fileName ):
 
 
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
-default_includes = [os.path.normpath(path) for path in [ btstack_root + '/src/', btstack_root + '/src/ble/gatt-service/']]
+default_includes = [os.path.normpath(path) for path in [ 
+    btstack_root + '/src/', 
+    btstack_root + '/src/ble/gatt-service/',
+    btstack_root + '/src/le-audio/gatt-service/',
+    btstack_root + '/src/mesh/gatt-service/'
+]]
 
 parser = argparse.ArgumentParser(description='BLE GATT configuration generator for use with BTstack')
 

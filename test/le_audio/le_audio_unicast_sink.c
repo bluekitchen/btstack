@@ -76,14 +76,22 @@
 #include "wav_util.h"
 #endif
 
+//#define DEBUG_PLC
+#ifdef DEBUG_PLC
+#define printf_plc(...) printf(__VA_ARGS__)
+#else
+#define printf_plc(...)  (void)(0);
+#endif
+
 // max config
 #define MAX_CHANNELS 2
 #define MAX_SAMPLES_PER_FRAME 480
 
 // playback
-#define MAX_NUM_LC3_FRAMES   5
+#define MAX_NUM_LC3_FRAMES   15
 #define MAX_BYTES_PER_SAMPLE 4
 #define PLAYBACK_BUFFER_SIZE (MAX_NUM_LC3_FRAMES * MAX_SAMPLES_PER_FRAME * MAX_BYTES_PER_SAMPLE)
+#define PLAYBACK_START_MS (MAX_NUM_LC3_FRAMES * 20 / 3)
 
 // analysis
 #define PACKET_PREFIX_LEN 10
@@ -106,16 +114,11 @@ static enum {
     APP_W4_CIG_COMPLETE,
     APP_W4_CIS_CREATED,
     APP_STREAMING,
-    APP_IDLE
+    APP_IDLE,
 } app_state = APP_W4_WORKING;
 
 //
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-uint32_t last_samples_report_ms;
-uint32_t samples_received;
-uint32_t samples_dropped;
-uint16_t frames_per_second[MAX_CHANNELS];
 
 // remote info
 static char             remote_name[20];
@@ -137,15 +140,6 @@ static hci_con_handle_t cis_con_handles[MAX_CHANNELS];
 static bool cis_established[MAX_CHANNELS];
 static unsigned int     next_cis_index;
 
-// analysis
-static uint16_t last_packet_sequence[MAX_CHANNELS];
-static uint32_t last_packet_time_ms[MAX_CHANNELS];
-static uint8_t last_packet_prefix[MAX_CHANNELS * PACKET_PREFIX_LEN];
-
-// lc3 writer
-static int dump_file;
-static uint32_t lc3_frames;
-
 // lc3 codec config
 static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
@@ -166,8 +160,22 @@ static btstack_lc3plus_fraunhofer_decoder_t fraunhofer_decoder_contexts[MAX_CHAN
 static void * decoder_contexts[MAX_NR_BIS];
 
 // playback
+static uint16_t playback_start_threshold_bytes;
+static bool     playback_active;
 static uint8_t playback_buffer_storage[PLAYBACK_BUFFER_SIZE];
 static btstack_ring_buffer_t playback_buffer;
+
+// statistics
+static bool     last_packet_received[MAX_CHANNELS];
+static uint16_t last_packet_sequence[MAX_CHANNELS];
+static uint32_t last_packet_time_ms[MAX_CHANNELS];
+static uint8_t last_packet_prefix[MAX_CHANNELS * PACKET_PREFIX_LEN];
+
+static uint32_t lc3_frames;
+static uint32_t samples_received;
+static uint32_t samples_played;
+static uint32_t samples_dropped;
+static uint32_t last_samples_report_ms;
 
 // PLC state
 #define PLC_GUARD_MS 1
@@ -177,28 +185,34 @@ static uint16_t               cached_iso_sdu_len;
 
 static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_samples){
     // called from lower-layer but guaranteed to be on main thread
-    uint32_t bytes_needed = num_samples * num_channels * 2;
-
-    static bool underrun = true;
-
     log_info("Playback: need %u, have %u", num_samples, btstack_ring_buffer_bytes_available(&playback_buffer) / (num_channels * 2));
 
-    if (bytes_needed > btstack_ring_buffer_bytes_available(&playback_buffer)){
-        memset(buffer, 0, bytes_needed);
-        if (underrun == false){
-            log_info("Playback underrun");
-            underrun = true;
+    samples_played += num_samples;
+
+    uint32_t bytes_needed = num_samples * num_channels * 2;
+    if (playback_active == false){
+        if (btstack_ring_buffer_bytes_available(&playback_buffer) >= playback_start_threshold_bytes) {
+            log_info("Playback started");
+            playback_active = true;
         }
-        return;
+    } else {
+        if (bytes_needed > btstack_ring_buffer_bytes_available(&playback_buffer)) {
+            log_info("Playback underrun");
+            printf("Playback Underrun\n");
+            // empty buffer
+            uint32_t bytes_read;
+            btstack_ring_buffer_read(&playback_buffer, (uint8_t *) buffer, bytes_needed, &bytes_read);
+            playback_active = false;
+        }
     }
 
-    if (underrun){
-        underrun = false;
-        log_info("Playback started");
+    if (playback_active){
+        uint32_t bytes_read;
+        btstack_ring_buffer_read(&playback_buffer, (uint8_t *) buffer, bytes_needed, &bytes_read);
+        btstack_assert(bytes_read == bytes_needed);
+    } else {
+        memset(buffer, 0, bytes_needed);
     }
-    uint32_t bytes_read;
-    btstack_ring_buffer_read(&playback_buffer, (uint8_t *) buffer, bytes_needed, &bytes_read);
-    btstack_assert(bytes_read == bytes_needed);
 }
 
 static void setup_lc3_decoder(void){
@@ -218,16 +232,15 @@ static void setup_lc3_decoder(void){
             lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
         }
         decoder_contexts[channel] = decoder_context;
-        lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration);
+        lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration, octets_per_frame);
     }
-    number_samples_per_frame = lc3_decoder->get_number_samples_per_frame(decoder_contexts[0]);
+    number_samples_per_frame = btstack_lc3_samples_per_frame(sampling_frequency_hz, frame_duration);
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
 }
 
 static void close_files(void){
 #ifdef HAVE_POSIX_FILE_IO
     printf("Close files\n");
-    close(dump_file);
     wav_writer_close();
 #endif
 }
@@ -251,12 +264,16 @@ static void enter_streaming(void){
     // init playback buffer
     btstack_ring_buffer_init(&playback_buffer, playback_buffer_storage, PLAYBACK_BUFFER_SIZE);
 
+    // calc start threshold in bytes for PLAYBACK_START_MS
+    playback_start_threshold_bytes = (sampling_frequency_hz / 1000 * PLAYBACK_START_MS) * num_channels * 2;
+
     // start playback
     const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
     if (sink != NULL){
         sink->init(num_channels, sampling_frequency_hz, le_audio_connection_sink_playback);
         sink->start_stream();
     }
+
 }
 
 static void start_scanning() {
@@ -331,12 +348,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (hci_event_disconnection_complete_get_connection_handle(packet) == remote_handle){
                 printf("Disconnected, back to scanning\n");
+                // stop timer
+                btstack_run_loop_remove_timer(&next_packet_timer);
+                // close files
+                close_files();
                 // stop playback
                 const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
                 if (sink != NULL){
                     sink->stop_stream();
                 }
-
                 start_scanning();
             }
             break;
@@ -427,6 +447,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("\n");
                         next_cis_index = 0;
 
+                        memset(last_packet_sequence, 0, sizeof(last_packet_sequence));
+                        memset(last_packet_received, 0, sizeof(last_packet_received));
+                        memset(pcm, 0, sizeof(pcm));
+
                         printf("Create CIS\n");
                         hci_con_handle_t acl_connection_handles[MAX_CHANNELS];
                         for (i=0; i < num_cis; i++){
@@ -458,6 +482,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 default:
                     break;
             }
+            break;
         default:
             break;
     }
@@ -479,6 +504,20 @@ static void store_samples_in_ringbuffer(void){
     }
 }
 
+static void plc_do(void) {
+    // inject packet
+    uint8_t tmp_BEC_detect;
+    uint8_t BFI = 1;
+    uint8_t channel;
+    for (channel = 0; channel < num_channels; channel++){
+        (void) lc3_decoder->decode_signed_16(decoder_contexts[channel], NULL, BFI,
+                                             &pcm[channel], num_channels,
+                                             &tmp_BEC_detect);
+    }
+
+    store_samples_in_ringbuffer();
+}
+
 static void plc_timeout(btstack_timer_source_t * timer) {
     // set timer again
     uint32_t frame_duration_ms = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8 : 10;
@@ -486,17 +525,8 @@ static void plc_timeout(btstack_timer_source_t * timer) {
     btstack_run_loop_set_timer_handler(&next_packet_timer, plc_timeout);
     btstack_run_loop_add_timer(&next_packet_timer);
 
-    // inject packet
-    uint8_t tmp_BEC_detect;
-    uint8_t BFI = 1;
-    uint8_t channel;
-    for (channel = 0; channel < num_channels; channel++){
-        (void) lc3_decoder->decode_signed_16(decoder_contexts[channel], NULL, cached_iso_sdu_len, BFI,
-                                             &pcm[channel], num_channels,
-                                             &tmp_BEC_detect);
-    }
-
-    store_samples_in_ringbuffer();
+    printf_plc("- ISO, PLC for timeout\n");
+    plc_do();
 }
 
 static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -513,6 +543,8 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         uint32_t time_stamp = little_endian_read_32(packet, offset);
         offset += 4;
     }
+
+    uint32_t receive_time_ms = btstack_run_loop_get_time_ms();
 
     uint16_t packet_sequence_number = little_endian_read_16(packet, offset);
     offset += 2;
@@ -562,13 +594,44 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
     } else {
 
+        if (last_packet_received[cis_channel]) {
+            printf_plc("ISO, receive %u\n", packet_sequence_number);
+
+            int16_t packet_sequence_delta = btstack_time16_delta(packet_sequence_number,
+                                                                 last_packet_sequence[cis_channel]);
+            if (packet_sequence_delta < 1) {
+                // drop delayed packet that had already been generated by PLC
+                printf_plc("- dropping delayed packet. Current sequence number %u, last received or generated by PLC: %u\n",
+                           packet_sequence_number, last_packet_sequence[cis_channel]);
+                return;
+            }
+            // simple check
+            if (packet_sequence_number != last_packet_sequence[cis_channel] + 1) {
+                printf_plc("- BIS #%u, missing %u\n", cis_channel, last_packet_sequence[cis_channel] + 1);
+            }
+        } else {
+            printf_plc("BIS %u, first packet seq number %u\n", cis_channel, packet_sequence_number);
+            last_packet_received[cis_channel] = true;
+        }
+
+        // PLC for missing packets
+        while (true) {
+            uint16_t expected = last_packet_sequence[cis_channel]+1;
+            if (expected == packet_sequence_number){
+                break;
+            }
+            printf_plc("- ISO, PLC for %u\n", expected);
+            plc_do();
+            last_packet_sequence[cis_channel] = expected;
+        }
+
         uint8_t channel;
         for (channel = 0 ; channel < num_channels ; channel++){
 
             // decode codec frame
             uint8_t tmp_BEC_detect;
             uint8_t BFI = 0;
-            (void) lc3_decoder->decode_signed_16(decoder_contexts[channel], &packet[offset], octets_per_frame, BFI,
+            (void) lc3_decoder->decode_signed_16(decoder_contexts[channel], &packet[offset], BFI,
                                        &pcm[channel], num_channels,
                                        &tmp_BEC_detect);
             offset += octets_per_frame;
@@ -579,35 +642,30 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         log_info("Samples in playback buffer %5u", btstack_ring_buffer_bytes_available(&playback_buffer) / (num_channels * 2));
 
         lc3_frames++;
-        frames_per_second[cis_channel]++;
 
         // PLC
         cached_iso_sdu_len = iso_sdu_length;
         uint32_t frame_duration_ms = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8 : 10;
+        uint32_t timeout_ms = frame_duration_ms * 5 / 2;
         btstack_run_loop_remove_timer(&next_packet_timer);
-        btstack_run_loop_set_timer(&next_packet_timer, frame_duration_ms + PLC_GUARD_MS);
+        btstack_run_loop_set_timer(&next_packet_timer, timeout_ms);
         btstack_run_loop_set_timer_handler(&next_packet_timer, plc_timeout);
         btstack_run_loop_add_timer(&next_packet_timer);
 
-        uint32_t time_ms = btstack_run_loop_get_time_ms();
-        if (btstack_time_delta(time_ms, last_samples_report_ms) > 1000){
-            last_samples_report_ms = time_ms;
-            printf("LC3 Frames: %4u - ", lc3_frames / num_channels);
-            uint8_t i;
-            for (i=0; i < num_channels; i++){
-                printf("%u ", frames_per_second[i]);
-                frames_per_second[i] = 0;
-            }
-            printf(" frames per second, dropped %u of %u\n", samples_dropped, samples_received);
+        if (samples_received >= sampling_frequency_hz){
+            printf("LC3 Frames: %4u - samples received %5u, played %5u, dropped %5u\n", lc3_frames, samples_received, samples_played, samples_dropped);
             samples_received = 0;
             samples_dropped  =  0;
+            samples_played = 0;
         }
+
+        last_packet_time_ms[cis_channel]  = receive_time_ms;
+        last_packet_sequence[cis_channel] = packet_sequence_number;
     }
 }
 
 static void show_usage(void){
     printf("\n--- LE Audio Unicast Sink Test Console ---\n");
-    printf("x - close files and exit\n");
     printf("s - start scanning\n");
 #ifdef HAVE_LC3PLUS
     printf("q - use LC3plus decoder if 10 ms ISO interval is used\n");
@@ -626,11 +684,6 @@ static void stdin_process(char c){
             request_lc3plus_decoder = true;
             break;
 #endif
-            case 'x':
-            close_files();
-            printf("Shutdown...\n");
-            hci_power_control(HCI_POWER_OFF);
-            break;
         case '\n':
         case '\r':
             break;
