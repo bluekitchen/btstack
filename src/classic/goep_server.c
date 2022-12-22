@@ -675,6 +675,8 @@ uint8_t goep_server_execute(uint16_t goep_cid, uint8_t response_code){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
+    btstack_assert(connection->state == GOEP_SERVER_CONNECTED);
+
     connection->state = GOEP_SERVER_CONNECTED;
 
     uint8_t * buffer = goep_server_get_outgoing_buffer(connection);
