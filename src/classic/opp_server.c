@@ -802,19 +802,6 @@ static void opp_server_build_response(opp_server_t * opp_server){
     }
 }
 
-uint16_t opp_server_get_max_body_size(uint16_t opp_cid){
-    opp_server_t * opp_server = opp_server_for_opp_cid(opp_cid);
-    if (opp_server == NULL){
-        return 0;
-    }
-    if (opp_server->state != OPP_SERVER_STATE_W4_USER_DATA) {
-        return 0;
-    }
-    opp_server_build_response(opp_server);
-    /* we have to correct for the actual BODY header. */
-    return goep_server_response_get_max_body_size(opp_server->goep_cid) - 3;
-}
-
 void opp_server_abort_request (uint16_t opp_cid, uint8_t response_code) {
     opp_server_t * opp_server = opp_server_for_opp_cid(opp_cid);
 
