@@ -25,49 +25,35 @@
 - OPP/SR/OPH/BV-34-I: wait 
 
 - OPP/SR/BCP/BV-01-I: wait
-
 - OPP/SR/BCP/BV-03-I: wait
+- OPP/SR/BCP/BV-04-I: wait
+- OPP/SR/BCP/BV-05-I: wait
 
 - OPP/SR/BCE/BV-01-I: wait
 - OPP/SR/BCE/BV-03-I: wait
-- OPP/SR/BCE/BV-05-I: wait
-
+- OPP/SR/BCE/BV-04-I: wait
+- OPP/SR/BCE/BV-05-I: d
+- OPP/SR/BCE/BV-05-I: p
+- OPP/SR/BCE/BV-05-I: p
+- 
 - OPP/SR/GOEP/CON/BV-02-C: wait
 
 - OPP/SR/GOEP/BC/BV-01-I: wait
+- OPP/SR/GOEP/BC/BV-03-I: wait
 
 - OPP/SR/GOEP/BC/ROP/BV-01-I: wait
 - OPP/SR/GOEP/BC/ROP/BV-02-I: wait
-- 
+
 - OPP/SR/GOEP/SRM/BI-02-C: wait
 - OPP/SR/GOEP/SRM/BI-03-C: wait
 - OPP/SR/GOEP/SRM/BV-04-C: wait
+- OPP/SR/GOEP/SRM/BI-05-C: wait
+- OPP/SR/GOEP/SRM/BV-08-C: wait
+
+# Info
+- Filetype - PTS does not seem to send file type. INFO
 
 ## ToDo:
-- Create GOEP packet after receiving goep can send now. same problem as with pbap server send pull request
-- Don't print obex data / only print obex data if text format 
-- Pull Default Object not working, retest after fixing can send now issue
-  - OPP/SR/BCE/BV-06-I: p INCONC: The IUT must reject this PUT operation.  Please restart the test case and try again.
-  - OPP/SR/BCE/BV-07-I: p INCONC: The IUT must reject this PUT operation.  Please restart the test case and try again
-  - OPP/SR/OPH/BV-27-I: NOT IMPLEMENTED - OBEX PUSH with Abort.
-- other:
-- OPP/SR/OPH/BV-22-I: 2 MB file, probably ok, just wait
-- OPP/SR/BCP/BV-04-I: FAIL - OBEX PULL, Demo hangs
-- OPP/SR/BCP/BV-05-I: FAIL - OBEX PULL, Demo hangs
-- OPP/SR/BCE/BV-04-I: INCONC: IUT did not complete the business card pull operation as requested.
-- OPP/SR/GOEP/BC/BV-03-I: INCONC: IUT did not complete the business card pull operation as requested.
-- SRM / SRMP
-  - OPP/SR/GOEP/SRM/BI-05-C: requires PULL to work
-  - OPP/SR/GOEP/SRM/BV-08-C: requires PULL to work
-
-## Update
-- Filetype - PTS does not seem to send file type. INFO
-- PUSH "filename" is shown in console repeatedly. FIXED
-- btstack_event.h is auto-generated, don't edit manually. FIXED
-- Always use event getters. FIXED
-- PUT Response with SRM headers looks ok, seems to be a bug in Wireshark
-- SRM looks good, non-pull tests already pass
-- Body Size should be for payload. Let's fix goep_server_response_get_max_body_size()
-- TODO: rework pull logic
 - TODO: emit event on ABORT by client, print in demo
-- TODO: create folder 'opp-server-files' and store files in it
+  - OPP/SR/OPH/BV-27-I: NOT IMPLEMENTED - OBEX PUSH with Abort.
+  - OPP/SR/OPH/BV-22-I: 2 MB file, probably ok, just wait
