@@ -1161,8 +1161,8 @@ uint16_t pbap_server_get_max_body_size(uint16_t pbap_cid){
     }
     btstack_assert(pbap_server->request.object_type != PBAP_OBJECT_TYPE_INVALID);
 
-    pbap_server_build_response(pbap_server);
-    return goep_server_response_get_max_body_size(pbap_server->goep_cid);
+    // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
+    return goep_server_response_get_max_message_size(pbap_server->goep_cid) - (3 + 2 + 3);
 }
 
 uint8_t pbap_server_send_phonebook_size(uint16_t pbap_cid, uint8_t response_code, uint16_t phonebook_size){
