@@ -76,33 +76,33 @@ static const uint8_t supported_formats[] = { 1, 2, 3, 4, 5, 6};
 static uint8_t handle_pull_default_object = 1;
 static uint8_t handle_push_object_response = OBEX_RESP_SUCCESS;
 
+// from https://www.w3.org/2002/12/cal/vcard-examples/
 static const char *default_object_vcards[] = {
     "BEGIN:VCARD\n"
     "VERSION:3.0\n"
-    "N:Doe;John;\n"
+    "N:Doe;John;;;\n"
     "FN:John Doe\n"
-    "VERSION:3.0\n"
-    "N:Doe;John;\n"
-    "FN:John Doe\n"
-    "VERSION:3.0\n"
-    "N:Doe;John;\n"
-    "FN:John Doe\n"
-    "VERSION:3.0\n"
-    "N:Doe;John;\n"
-    "FN:John Doe\n"
-    "VERSION:3.0\n"
-    "N:Doe;John;\n"
-    "FN:John Doe\n"
-    "VERSION:3.0\n"
-    "N:Doe;John;\n"
-    "FN:John Doe\n"
-    "END:VCARD\n",
-
-    "BEGIN:VCARD\n"
-    "VERSION:3.0\n"
-    "N:Doe;John;\n"
-    "FN:John Doe and a full number of bytes\n"
-    "END:VCARD\n",
+    "ORG:Example.com Inc.;\n"
+    "TITLE:Imaginary test person\n"
+    "EMAIL;type=INTERNET;type=WORK;type=pref:johnDoe@example.org\n"
+    "TEL;type=WORK;type=pref:+1 617 555 1212\n"
+    "TEL;type=WORK:+1 (617) 555-1234\n"
+    "TEL;type=CELL:+1 781 555 1212\n"
+    "TEL;type=HOME:+1 202 555 1212\n"
+    "item1.ADR;type=WORK:;;2 Enterprise Avenue;Worktown;NY;01111;USA\n"
+    "item1.X-ABADR:us\n"
+    "item2.ADR;type=HOME;type=pref:;;3 Acacia Avenue;Hoemtown;MA;02222;USA\n"
+    "item2.X-ABADR:us\n"
+    "NOTE:John Doe has a long and varied history\\, being documented on more police files that anyone else. Reports of his death are alas numerous.\n"
+    "item3.URL;type=pref:http\\://www.example/com/doe\n"
+    "item3.X-ABLabel:_$!<HomePage>!$_\n"
+    "item4.URL:http\\://www.example.com/Joe/foaf.df\n"
+    "item4.X-ABLabel:FOAF\n"
+    "item5.X-ABRELATEDNAMES;type=pref:Jane Doe\n"
+    "item5.X-ABLabel:_$!<Friend>!$_\n"
+    "CATEGORIES:Work,Test group\n"
+    "X-ABUID:5AD380FD-B2DE-4261-BA99-DE1D1DB52FBE\\:ABPerson\n"
+    "END:VCARD"
 };
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -160,7 +160,6 @@ static void stdin_process(char c) {
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    int i;
     uint8_t status;
     bd_addr_t event_addr;
     uint32_t object_size;
@@ -228,12 +227,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                             break;
                         case OPP_SUBEVENT_PULL_DEFAULT_OBJECT:
-                            printf("PULL: default object\n");
                             if (handle_pull_default_object) {
                                 uint32_t position;
                                 uint16_t max_size;
-                                int data_size;
-                                int resp = OBEX_RESP_SUCCESS;
+                                uint16_t data_size;
+                                uint8_t  resp = OBEX_RESP_SUCCESS;
 
                                 position = opp_subevent_pull_default_object_get_cur_position (packet);
                                 max_size = opp_subevent_pull_default_object_get_buf_size (packet);
@@ -243,13 +241,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                     resp = OBEX_RESP_CONTINUE;
                                 }
 
-                                opp_server_send_pull_response (opp_cid, resp,
+                                printf("PULL Default Object(position %u, max size %u): send %u bytes\n", position, max_size, data_size);
+
+                                status = opp_server_send_pull_response (opp_cid, resp,
                                                                data_size,
                                                                (uint8_t *) (default_object_vcards[0] + position));
+
                             } else {
-                                opp_server_send_pull_response (opp_cid, OBEX_RESP_NOT_FOUND,
-                                                               0, NULL);
+                                printf("PULL Default Object: reject with OBEX_RESP_NOT_FOUND\n");
+                                status = opp_server_send_pull_response (opp_cid, OBEX_RESP_NOT_FOUND, 0, NULL);
                             }
+                            btstack_assert(status == ERROR_CODE_SUCCESS);
                             break;
                         case OPP_SUBEVENT_OPERATION_COMPLETED:
                             printf("[+] Operation complete, status 0x%02x\n",
@@ -267,10 +269,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             }
             break;
         case OPP_DATA_PACKET:
-            for (i=0;i<size;i++){
-                printf("%c", packet[i]);
-            }
-            printf ("\n");
 #ifdef HAVE_POSIX_FILE_IO
             if (outfile_fd >= 0) {
                 if (write (outfile_fd, packet, size) < size) {
@@ -284,6 +282,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     expected_bytes = 0;
                 }
             }
+#endif
+#if 0
+            {
+                uint16_t i;
+                for (i=0;i<size;i++){
+                    printf("%c", packet[i]);
+                }
+                printf ("\n");
+            }
+#else
+            printf("OPP Data: %u bytes, need %u more\n", size, expected_bytes);
 #endif
             break;
         default:
