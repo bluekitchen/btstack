@@ -166,9 +166,11 @@ void opp_server_abort_request(uint16_t opp_cid, uint8_t response_code);
  * @param response_code, see obex.h
  * @param body_len
  * @param body
- * @return max body size or zero if connection invalid
+ * @return status ERROR_CODE_SUCCESS on success,
+ *                ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if opp_cid is invalid
+ *                BTSTACK_BUSY if in a wrong state, .
  */
-uint16_t opp_server_send_pull_response(uint16_t opp_cid, uint8_t response_code, uint16_t body_len, const uint8_t * body);
+uint8_t opp_server_send_pull_response(uint16_t opp_cid, uint8_t response_code, uint16_t body_len, const uint8_t * body);
 
 /**
  * @brief De-Init OPP server

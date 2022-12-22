@@ -117,6 +117,8 @@ typedef struct {
     // response
     struct {
         uint8_t code;
+        uint16_t body_len;
+        const uint8_t * body_data;
     } response;
 } opp_server_t;
 
@@ -309,6 +311,13 @@ static void opp_server_handle_can_send_now(opp_server_t * opp_server){
             goep_server_execute(opp_server->goep_cid, response_code);
             break;
         case OPP_SERVER_STATE_SEND_USER_RESPONSE:
+            // prepare response
+            goep_server_response_create_general(opp_server->goep_cid);
+            opp_server_add_srm_headers(opp_server);
+            goep_server_header_add_end_of_body(opp_server->goep_cid,
+                                               opp_server->response.body_data,
+                                               opp_server->response.body_len);
+
             // next state
             response_code = opp_server->response.code;
             if (response_code == OBEX_RESP_CONTINUE){
@@ -514,7 +523,7 @@ static void opp_server_handle_get_request(opp_server_t * opp_server, bool first)
     }
 
     // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
-    uint16_t available = goep_server_response_get_max_message_size(opp_server->opp_cid) - 8;
+    uint16_t max_body_size = goep_server_response_get_max_message_size(opp_server->goep_cid) - (3 + 2 + 3);
 
     uint8_t event[2+1+2+4+2];
     uint16_t pos = 0;
@@ -525,8 +534,11 @@ static void opp_server_handle_get_request(opp_server_t * opp_server, bool first)
     pos += 2;
     little_endian_store_32(event, pos, opp_server->request.payload_position);
     pos += 4;
-    little_endian_store_16(event, pos, available);
+    little_endian_store_16(event, pos, max_body_size);
     pos += 2;
+
+    log_info("max size %u", max_body_size);
+    log_info_hexdump(event, pos);
 
     (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
@@ -809,28 +821,26 @@ void opp_server_abort_request (uint16_t opp_cid, uint8_t response_code) {
     opp_server->request.abort_response = response_code;
 }
 
-uint16_t opp_server_send_pull_response(uint16_t opp_cid, uint8_t response_code, uint16_t body_len, const uint8_t * body){
+uint8_t opp_server_send_pull_response(uint16_t opp_cid, uint8_t response_code, uint16_t body_len, const uint8_t * body){
     opp_server_t * opp_server = opp_server_for_opp_cid(opp_cid);
-    uint16_t available;
-    int ret;
-
     if (opp_server == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    // double check body size
-    opp_server_build_response(opp_server);
-    available = opp_server_get_max_body_size(opp_server->opp_cid);
-    if (body_len > available) {
+
+    // double check size
+
+    // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
+    uint16_t max_body_size = goep_server_response_get_max_message_size(opp_server->goep_cid) - (3 + 2 + 3);
+    log_info("max size %u, body syze %u", max_body_size, body_len);
+    if (body_len > max_body_size){
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
-    // append body and execute
-    ret = goep_server_header_add_end_of_body(opp_server->goep_cid, body, body_len);
-    if (ret != ERROR_CODE_SUCCESS)
-       printf ("FAIL: add_end_of_body returned %d\n", ret);
 
     // set final response code
     opp_server->request.payload_position += body_len;
     opp_server->response.code = response_code;
+    opp_server->response.body_data = body;
+    opp_server->response.body_len = body_len;
     ENTER_STATE (opp_server, OPP_SERVER_STATE_SEND_USER_RESPONSE);
     return goep_server_request_can_send_now(opp_server->goep_cid);
 }
