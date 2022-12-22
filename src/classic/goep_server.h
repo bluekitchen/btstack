@@ -161,13 +161,6 @@ uint8_t goep_server_response_create_connect(uint16_t goep_cid, uint8_t obex_vers
 uint8_t goep_server_response_create_general(uint16_t goep_cid);
 
 /**
- * @brief Get max size of body data that can be added to current response with goep_server_header_add_end_of_body
- * @param goep_cid
- * @return size in bytes or 0
- */
-uint16_t goep_server_response_get_max_body_size(uint16_t goep_cid);
-
-/**
  * @brief Add who header to current response
  * @param goep_cid
  * @param who 16 bytes
