@@ -85,6 +85,7 @@ typedef enum {
     PBAP_SERVER_STATE_W4_GET_REQUEST,
     PBAP_SERVER_STATE_SEND_INTERNAL_RESPONSE,
     PBAP_SERVER_STATE_SEND_USER_RESPONSE,
+    PBAP_SERVER_STATE_SEND_PHONEBOOK_SIZE,
     PBAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE,
     PBAP_SERVER_STATE_ABOUT_TO_SEND,
 } pbap_server_state_t;
@@ -152,6 +153,8 @@ typedef struct {
         uint8_t database_identifier[PBAP_DATABASE_IDENTIFIER_LEN];
         uint8_t primary_folder_version[PBAP_FOLDER_VERSION_LEN];
         uint8_t secondary_folder_version[PBAP_FOLDER_VERSION_LEN];
+        uint16_t body_len;
+        const uint8_t * body_data;
     } response;
 } pbap_server_t;
 
@@ -179,7 +182,9 @@ static struct {
 // 796135f0-f0c5-11d8-0966- 0800200c9a66
 static const uint8_t pbap_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
 
+// Prototypes
 static void pbap_server_handle_get_request(pbap_server_t * pbap_server);
+static void pbap_server_build_response(pbap_server_t * pbap_server);
 
 static pbap_server_t * pbap_server_for_goep_cid(uint16_t goep_cid){
     // TODO: check goep_cid after incoming connection -> accept/reject is implemented and state has been setup
@@ -510,6 +515,13 @@ static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
             goep_server_execute(pbap_server->goep_cid, response_code);
             break;
         case PBAP_SERVER_STATE_SEND_USER_RESPONSE:
+            // prepare response
+            pbap_server_build_response(pbap_server);
+            if (pbap_server->response.body_len > 0){
+                goep_server_header_add_end_of_body(pbap_server->goep_cid,
+                                                   pbap_server->response.body_data,
+                                                   pbap_server->response.body_len);
+            }
             // next state
             response_code = pbap_server->response.code;
             if (response_code == OBEX_RESP_CONTINUE){
@@ -1118,37 +1130,33 @@ uint8_t pbap_server_set_database_identifier(uint16_t pbap_cid, const uint8_t * d
     return ERROR_CODE_SUCCESS;
 };
 
-void pbap_server_build_response(pbap_server_t * pbap_server){
-    if (pbap_server->response.code == 0){
-        // set interim response code
-        pbap_server->response.code = OBEX_RESP_SUCCESS;
-        goep_server_response_create_general(pbap_server->goep_cid);
-        pbap_server_add_srm_headers(pbap_server);
-        // Application Params
-        uint8_t app_params[PBAP_SERVER_MAX_APP_PARAMS_LEN];
-        uint16_t app_params_pos = 0;
-        if (pbap_server->response.phonebook_size_set){
-            pbap_server->response.phonebook_size_set = false;
-            app_params_pos += pbap_server_application_params_add_phonebook_size(&app_params[app_params_pos], pbap_server->response.phonebook_size);
-        }
-        if (pbap_server->response.new_missed_calls_set){
-            pbap_server->response.new_missed_calls_set = false;
-            app_params_pos += pbap_server_application_params_add_new_missed_calls(&app_params[app_params_pos], pbap_server->response.new_missed_calls);
-        }
-        if (pbap_server->response.primary_folder_version_set){
-            pbap_server->response.primary_folder_version_set = false;
-            app_params_pos += pbap_server_application_params_add_primary_folder_version(&app_params[app_params_pos], pbap_server->response.primary_folder_version);
-        }
-        if (pbap_server->response.secondary_folder_version_set){
-            pbap_server->response.secondary_folder_version_set = false;
-            app_params_pos += pbap_server_application_params_add_secondary_folder_version(&app_params[app_params_pos], pbap_server->response.secondary_folder_version);
-        }
-        if (pbap_server->response.database_identifier_set){
-            pbap_server->response.database_identifier_set = false;
-            app_params_pos += pbap_server_application_params_add_database_identifier(&app_params[app_params_pos], pbap_server->response.database_identifier);
-        }
-        pbap_server_add_application_parameters(pbap_server, app_params, app_params_pos);
+static void pbap_server_build_response(pbap_server_t * pbap_server){
+    goep_server_response_create_general(pbap_server->goep_cid);
+    pbap_server_add_srm_headers(pbap_server);
+    // Application Params
+    uint8_t app_params[PBAP_SERVER_MAX_APP_PARAMS_LEN];
+    uint16_t app_params_pos = 0;
+    if (pbap_server->response.phonebook_size_set){
+        pbap_server->response.phonebook_size_set = false;
+        app_params_pos += pbap_server_application_params_add_phonebook_size(&app_params[app_params_pos], pbap_server->response.phonebook_size);
     }
+    if (pbap_server->response.new_missed_calls_set){
+        pbap_server->response.new_missed_calls_set = false;
+        app_params_pos += pbap_server_application_params_add_new_missed_calls(&app_params[app_params_pos], pbap_server->response.new_missed_calls);
+    }
+    if (pbap_server->response.primary_folder_version_set){
+        pbap_server->response.primary_folder_version_set = false;
+        app_params_pos += pbap_server_application_params_add_primary_folder_version(&app_params[app_params_pos], pbap_server->response.primary_folder_version);
+    }
+    if (pbap_server->response.secondary_folder_version_set){
+        pbap_server->response.secondary_folder_version_set = false;
+        app_params_pos += pbap_server_application_params_add_secondary_folder_version(&app_params[app_params_pos], pbap_server->response.secondary_folder_version);
+    }
+    if (pbap_server->response.database_identifier_set){
+        pbap_server->response.database_identifier_set = false;
+        app_params_pos += pbap_server_application_params_add_database_identifier(&app_params[app_params_pos], pbap_server->response.database_identifier);
+    }
+    pbap_server_add_application_parameters(pbap_server, app_params, app_params_pos);
 }
 
 uint16_t pbap_server_get_max_body_size(uint16_t pbap_cid){
@@ -1174,7 +1182,6 @@ uint8_t pbap_server_send_phonebook_size(uint16_t pbap_cid, uint8_t response_code
     if (pbap_server_valid_header_for_request(pbap_server)){
         pbap_server->response.phonebook_size = phonebook_size;
         pbap_server->response.phonebook_size_set = true;
-        pbap_server_build_response(pbap_server);
         pbap_server->response.code = response_code;
         pbap_server->state = PBAP_SERVER_STATE_SEND_USER_RESPONSE;
         return goep_server_request_can_send_now(pbap_server->goep_cid);
@@ -1188,17 +1195,21 @@ uint16_t pbap_server_send_pull_response(uint16_t pbap_cid, uint8_t response_code
     if (pbap_server == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    // double check body size
-    pbap_server_build_response(pbap_server);
-    if (body_len > goep_server_response_get_max_body_size(pbap_server->goep_cid)){
+
+    // double check size
+
+    // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
+    uint16_t max_body_size = goep_server_response_get_max_message_size(pbap_server->goep_cid) - (3 + 2 + 3);
+    if (body_len > max_body_size){
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
-    // append body and execute
-    goep_server_header_add_end_of_body(pbap_server->goep_cid, body, body_len);
-    // set final response code
+
+    // set data for response and trigger execute
     pbap_server->response.code = response_code;
     pbap_server->request.continuation = continuation;
     pbap_server->state = PBAP_SERVER_STATE_SEND_USER_RESPONSE;
+    pbap_server->response.body_data = body;
+    pbap_server->response.body_len = body_len;
     return goep_server_request_can_send_now(pbap_server->goep_cid);
 }
 
