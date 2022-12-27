@@ -118,6 +118,8 @@ static le_audio_quality_t menu_audio_quality;
 static uint8_t menu_num_channels;
 
 
+uint16_t csis_cid;
+
 static bass_source_data_t source_data1 = {
     // address_type, address
      
@@ -728,6 +730,41 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_CONNECTED:
+            if (bap_app_client_con_handle != gattservice_subevent_csis_remote_server_connected_get_con_handle(packet)){
+                printf("CSIS Client: expected con handle 0x%02x, received 0x%02x\n", bap_app_client_con_handle, gattservice_subevent_csis_remote_server_connected_get_con_handle(packet));
+                return;
+            }
+
+            bap_app_client_state = BAP_APP_CLIENT_STATE_CONNECTED;
+
+            if (gattservice_subevent_csis_remote_server_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+                printf("CSIS client: connection failed, cid 0x%02x, con_handle 0x%02x, status 0x%02x\n", csis_cid, bap_app_client_con_handle, 
+                    gattservice_subevent_csis_remote_server_connected_get_status(packet));
+                return;
+            }
+
+            printf("CSIS client: connected, cid 0x%02x\n", csis_cid);
+            break;
+
+        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_DISCONNECTED:
+            csis_cid = 0;
+            printf("CSIS Client: disconnected\n");
+            break;
+
+        default:
+            break;
+    }
+}
+
 static void print_config(void) {
     const le_audio_codec_configuration_t * setting = le_audio_util_get_codec_setting(menu_sampling_frequency_index, menu_frame_duration_index, menu_audio_quality);
 
@@ -1102,6 +1139,8 @@ int btstack_main(int argc, const char * argv[]){
     broadcast_audio_scan_service_client_init(&bass_client_event_handler);
     published_audio_capabilities_service_client_init(&pacs_client_event_handler);
     audio_stream_control_service_client_init(&ascs_client_event_handler);
+    coordinated_set_identification_service_client_init(&csis_client_event_handler);
+
 
     hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
