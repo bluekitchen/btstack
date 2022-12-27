@@ -120,6 +120,9 @@ typedef struct {
         uint16_t body_len;
         const uint8_t * body_data;
     } response;
+    // operation status
+    bool    operation_complete_send;
+    uint8_t operation_complete_status;
 } opp_server_t;
 
 static opp_server_t opp_server_singleton;
@@ -274,10 +277,32 @@ static void opp_server_reset_response(opp_server_t * opp_server){
     (void) memset(&opp_server->response, 0, sizeof(opp_server->response));
 }
 
+static void opp_server_emit_operation_complete_event(opp_server_t * opp_server, uint8_t status){
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_OPP_META;
+    pos++;  // skip len
+    event[pos++] = OPP_SUBEVENT_OPERATION_COMPLETED;
+    little_endian_store_16(event,pos,opp_server->opp_cid);
+    pos+=2;
+    event[pos++]= status;
+    event[1] = pos - 2;
+    btstack_assert(pos == sizeof(event));
+    (*opp_server_user_packet_handler)(HCI_EVENT_PACKET, opp_server->opp_cid, &event[0], pos);
+}
+
 static void opp_server_operation_complete(opp_server_t * opp_server){
+    uint8_t opeation_complete_status = opp_server->operation_complete_status;
+    bool operation_complete_send = opp_server->operation_complete_send;
+    opp_server->operation_complete_send = false;
+
     ENTER_STATE (opp_server, OPP_SERVER_STATE_CONNECTED);
     opp_server->srm_state = SRM_DISABLED;
     opp_server_reset_response(opp_server);
+
+    if (operation_complete_send){
+        opp_server_emit_operation_complete_event(opp_server, opeation_complete_status);
+    }
 }
 
 static void opp_server_handle_can_send_now(opp_server_t * opp_server){
@@ -522,6 +547,8 @@ static void opp_server_handle_get_request(opp_server_t * opp_server, bool first)
         opp_server->request.payload_position = 0;
     }
 
+    opp_server->operation_complete_send = true;
+
     // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
     uint16_t max_body_size = goep_server_response_get_max_message_size(opp_server->goep_cid) - (3 + 2 + 3);
 
@@ -556,6 +583,9 @@ static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opc
     }
 
     if (do_push_event) {
+
+        opp_server->operation_complete_send = true;
+
         uint8_t event[2+3+OPP_SERVER_MAX_NAME_LEN+OPP_SERVER_MAX_TYPE_LEN];
         uint16_t pos = 0;
         event[pos++] = HCI_EVENT_OPP_META;
@@ -713,6 +743,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                         opp_server_handle_get_request(opp_server, false);
                         break;
                     case (OBEX_OPCODE_ABORT & 0x7f):
+                        opp_server->operation_complete_status = OBEX_ABORTED;
                         opp_server->response.code = OBEX_RESP_SUCCESS;
                         ENTER_STATE (opp_server, OPP_SERVER_STATE_SEND_INTERNAL_RESPONSE);
                         goep_server_request_can_send_now(opp_server->goep_cid);
@@ -747,6 +778,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
                         }
                         break;
                     case (OBEX_OPCODE_ABORT & 0x7f):
+                        opp_server->operation_complete_status = OBEX_ABORTED;
                         opp_server->response.code = OBEX_RESP_SUCCESS;
                         ENTER_STATE (opp_server, OPP_SERVER_STATE_SEND_INTERNAL_RESPONSE);
                         goep_server_request_can_send_now(opp_server->goep_cid);
