@@ -827,7 +827,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 return;
             }
 
-            bytes_read = ascs_parse_ase(gatt_event_notification_get_value(packet), gatt_event_notification_get_value_length(packet), streamendpoint);
+            bytes_read = ascs_parse_ase(gatt_event_characteristic_value_query_result_get_value(packet), 
+                gatt_event_characteristic_value_query_result_get_value_length(packet), streamendpoint);
             
             if (connection->state == AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_ID_READ){
                 break;
