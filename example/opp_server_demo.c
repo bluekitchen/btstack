@@ -233,8 +233,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 uint16_t data_size;
                                 uint8_t  resp = OBEX_RESP_SUCCESS;
 
-                                position = opp_subevent_pull_default_object_get_cur_position (packet);
-                                max_size = opp_subevent_pull_default_object_get_buf_size (packet);
+                                position = opp_subevent_pull_default_object_get_position (packet);
+                                max_size = opp_subevent_pull_default_object_get_buffer_size (packet);
                                 data_size = strlen (default_object_vcards[0] + position);
                                 if (data_size > max_size) {
                                     data_size = max_size;
@@ -254,8 +254,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             btstack_assert(status == ERROR_CODE_SUCCESS);
                             break;
                         case OPP_SUBEVENT_OPERATION_COMPLETED:
-                            printf("[+] Operation complete, status 0x%02x\n",
-                                   opp_subevent_operation_completed_get_status(packet));
+                            printf("[+] Operation complete, status 0x%02x\n", opp_subevent_operation_completed_get_status(packet));
                             break;
 
                         default:
@@ -264,7 +263,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     }
                     break;
                 default:
-                    log_info ("[-] hci event packet of type %d\n", hci_event_packet_get_type(packet));
                     break;
             }
             break;
