@@ -110,7 +110,7 @@ uint8_t att_server_request_to_send_notification(btstack_context_callback_registr
  */
 uint8_t att_server_request_to_send_indication(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle);
 
-/*
+/**
  * @brief notify client about attribute value change
  * @param con_handle
  * @param attribute_handle
@@ -120,7 +120,7 @@ uint8_t att_server_request_to_send_indication(btstack_context_callback_registrat
  */
 uint8_t att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len);
 
-/*
+/**
  * @brief indicate value change to client. client is supposed to reply with an indication_response
  * @param con_handle
  * @param attribute_handle
@@ -131,7 +131,7 @@ uint8_t att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle
 uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len);
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
-/*
+/**
  * @brief response ready - called after returning ATT_READ__RESPONSE_PENDING in an att_read_callback or
  * ATT_ERROR_WRITE_REQUEST_PENDING IN att_write_callback before to trigger callback again and complete the transaction
  * @nore The ATT Server will retry handling the current ATT request
@@ -141,9 +141,14 @@ uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_hand
 uint8_t att_server_response_ready(hci_con_handle_t con_handle);
 #endif
 
+/**
+ * De-Init ATT Server 
+ */
+void att_server_deinit(void);
+
 // the following functions will be removed soon
 
-/*
+/**
  * @brief tests if a notification or indication can be send right now
  * @param con_handle
  * @return 1, if packet can be sent

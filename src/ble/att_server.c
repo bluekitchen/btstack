@@ -100,7 +100,7 @@ typedef struct {
 // global
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
-static btstack_packet_handler_t               att_client_packet_handler = NULL;
+static btstack_packet_handler_t               att_client_packet_handler;
 static btstack_linked_list_t                  service_handlers;
 static btstack_context_callback_registration_t att_client_waiting_for_can_send_registration;
 
@@ -1279,4 +1279,11 @@ uint16_t att_server_get_mtu(hci_con_handle_t con_handle){
     if (!hci_connection) return 0;
     att_connection_t * att_connection = &hci_connection->att_connection;
     return att_connection->mtu;
+}
+
+void att_server_deinit(void){
+    att_server_client_read_callback  = NULL;
+    att_server_client_write_callback = NULL;
+    att_client_packet_handler = NULL;
+    service_handlers = NULL;
 }
