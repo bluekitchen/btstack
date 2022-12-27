@@ -708,8 +708,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("[+] Connection closed\n");
                             break;
                         case OPP_SUBEVENT_PUSH_OBJECT_DATA:
-                            cur_pos = opp_subevent_push_object_data_get_cur_position(packet);
-                            bufsize = opp_subevent_push_object_data_get_buf_size(packet);
+                            cur_pos = opp_subevent_push_object_data_get_position(packet);
+                            bufsize = opp_subevent_push_object_data_get_buffer_size(packet);
                             switch (chunked_mode) {
                                 case 0:
                                     cur_size = sizeof (test_jpg_image) - cur_pos;
