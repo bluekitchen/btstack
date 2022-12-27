@@ -1145,8 +1145,16 @@ static int att_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
  * @param att_service_handler_t
  */
 void att_server_register_service_handler(att_service_handler_t * handler){
-    if (att_service_handler_for_handle(handler->start_handle) ||
-        att_service_handler_for_handle(handler->end_handle)){
+    bool att_server_registered = false;
+    if (att_service_handler_for_handle(handler->start_handle)){
+        att_server_registered = true;
+    }
+
+    if (att_service_handler_for_handle(handler->end_handle)){
+        att_server_registered = true;
+    }
+    
+    if (att_server_registered){
         log_error("handler for range 0x%04x-0x%04x already registered", handler->start_handle, handler->end_handle);
         return;
     }
