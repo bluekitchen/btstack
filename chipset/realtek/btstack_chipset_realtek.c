@@ -67,6 +67,8 @@
 #define ROM_LMP_8821a 0X8821
 #define ROM_LMP_8761a 0X8761
 #define ROM_LMP_8822b 0X8822
+#define ROM_LMP_8852a 0x8852
+#define ROM_LMP_8851b 0x8851
 
 #define HCI_DOWNLOAD_FW 0xFC20
 #define HCI_READ_ROM_VERSION 0xFC6D
@@ -287,6 +289,13 @@ uint16_t project_id[] = {
     ROM_LMP_8821a,                                                             /* RTL8821CU */
     ROM_LMP_NONE,  ROM_LMP_NONE,  ROM_LMP_8822b,                               /* RTL8822CU */
     ROM_LMP_8761a,                                                             /* index 14 for 8761BU */
+    ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_8852a,                   /* index 18 for 8852AU */
+	ROM_LMP_8723b,                                                             /* index 19 for 8723FU */
+	ROM_LMP_8852a,                                                             /* index 20 for 8852BU */
+	ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_8852a,     /* index 25 for 8852CU */
+	ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, 
+    ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_8822b,                                 /* index 33 for 8822EU */
+	ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_8851b,                                 /* index 36 for 8851BU */                                                         
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
