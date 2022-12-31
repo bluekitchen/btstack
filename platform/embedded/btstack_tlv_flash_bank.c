@@ -38,6 +38,7 @@
 #include "btstack_debug.h"
 
 #include <string.h>
+#include <inttypes.h>
 
 // Header:
 // - Magic: 'BTstack'
@@ -156,6 +157,7 @@ static void btstack_tlv_flash_bank_iterator_init(btstack_tlv_flash_bank_t * self
 }
 
 static int btstack_tlv_flash_bank_iterator_has_next(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it){
+	UNUSED(self);
 	if (it->tag == 0xffffffff) return 0;
 	return 1;
 }
@@ -375,7 +377,7 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 	big_endian_store_32(entry, 0, tag);
 	big_endian_store_32(entry, 4, data_size);
 
-	log_info("write '%x', len %u at %u", (unsigned int) tag, (unsigned int) data_size, self->write_offset);
+	log_info("write '%" PRIx32 "', len %" PRIu32 " at %" PRIx32, tag, data_size, self->write_offset);
 
 	uint32_t value_offset = self->write_offset + 8;
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
@@ -484,7 +486,7 @@ const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_ban
 		self->write_offset = 8;
 	}
 
-	log_info("write offset %u", self->write_offset);
+	log_info("write offset %" PRIx32, self->write_offset);
 	return &btstack_tlv_flash_bank;
 }
 
