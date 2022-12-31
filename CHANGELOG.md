@@ -209,6 +209,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - hci_dump_stdout: allow to truncate ACL, SCO and ISO packets with HCI_DUMP_STDOUT_MAX_SIZE_*
 - GATT Service: Broadcast Audio Scan Service Server and Client (BASS 1.0)
 - example/a2dp_source_demo: add command to scan and connect to Bluetooth speaker by class of device
+- OPP Server profile and OPP Server demo
 
 ### Fixed
 - GAP: reload LE Resolving List after power-cycle 
