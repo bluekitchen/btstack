@@ -154,6 +154,7 @@ static const uint8_t hci_write_codec_config_cvsd[] = {
 #endif
 
 static void chipset_init(const void * config){
+    UNUSED(config);
     init_script_offset = 0;
 #if defined(__GNUC__) && defined(__MSP430X__) && (__MSP430X__ > 0)
     // On MSP430, custom init script is not supported
