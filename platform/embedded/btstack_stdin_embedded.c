@@ -73,6 +73,8 @@ static void btstack_stdin_handler(char c){
 }
 
 static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type){
+    UNUSED(ds);
+    UNUSED(callback_type);
 	if (!stdin_character_received) {
         return;
     }
@@ -83,6 +85,8 @@ static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_s
 #else
 
 static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type){
+    UNUSED(ds);
+    UNUSED(callback_type);
 	if (SEGGER_RTT_HasKey()){
 		int stdin_character = SEGGER_RTT_GetKey();
 		(*stdin_handler)((uint8_t)stdin_character);

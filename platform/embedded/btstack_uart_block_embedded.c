@@ -91,6 +91,7 @@ static int btstack_uart_embedded_init(const btstack_uart_config_t * config){
 }
 
 static void btstack_uart_embedded_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    UNUSED(ds);
     switch (callback_type){
         case DATA_SOURCE_CALLBACK_POLL:
             if (send_complete){
@@ -152,6 +153,7 @@ static void btstack_uart_embedded_set_wakeup_handler( void (*the_wakeup_handler)
 }
 
 static int btstack_uart_embedded_set_parity(int parity){
+    UNUSED(parity);
     return 0;
 }
 
