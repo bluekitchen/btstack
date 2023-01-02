@@ -62,7 +62,7 @@ int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
 	return 0;
 }
 
-void hci_setup_le_connection(uint16_t con_handle){
+static void hci_setup_connection(uint16_t con_handle, bd_addr_type_t type){
     hci_connection.att_connection.mtu = 23;
     hci_connection.att_connection.con_handle = con_handle;
     hci_connection.att_connection.max_mtu = 23;
@@ -73,11 +73,21 @@ void hci_setup_le_connection(uint16_t con_handle){
     hci_connection.att_server.ir_le_device_db_index = 0;
 
     hci_connection.con_handle = con_handle;
+    hci_connection.address_type = type;
 
     if (btstack_linked_list_empty(&connections)){
         btstack_linked_list_add(&connections, (btstack_linked_item_t *)&hci_connection);
     }
 }
+
+void hci_setup_le_connection(uint16_t con_handle){
+    hci_setup_connection(con_handle, BD_ADDR_TYPE_LE_PUBLIC);
+}
+
+void hci_setup_classic_connection(uint16_t con_handle){
+    hci_setup_connection(con_handle, BD_ADDR_TYPE_ACL);
+}
+
 
 void mock_l2cap_set_max_mtu(uint16_t mtu){
     max_mtu = mtu;
