@@ -248,9 +248,23 @@ uint8_t gap_encryption_key_size(hci_con_handle_t con_handle){
 bool gap_secure_connection(hci_con_handle_t con_handle){
 	return false;
 }
-gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle){
-	return GAP_CONNECTION_INVALID;
+gap_connection_type_t gap_get_connection_type(hci_con_handle_t con_handle){
+    if (hci_connection.con_handle != con_handle){
+        return GAP_CONNECTION_INVALID;
+    }
+    switch (hci_connection.address_type){
+        case BD_ADDR_TYPE_LE_PUBLIC:
+        case BD_ADDR_TYPE_LE_RANDOM:
+            return GAP_CONNECTION_LE;
+        case BD_ADDR_TYPE_SCO:
+            return GAP_CONNECTION_SCO;
+        case BD_ADDR_TYPE_ACL:
+            return GAP_CONNECTION_ACL;
+        default:
+            return GAP_CONNECTION_INVALID;
+    }
 }
+
 int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_t conn_interval_min,
 	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout){
 	return 0;	
