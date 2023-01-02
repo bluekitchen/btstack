@@ -367,7 +367,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                         att_connection->encryption_key_size, att_connection->authenticated, att_connection->secure_connection);
                     if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE){
                         // restore CCC values when encrypted for LE Connections
-                        if (hci_event_encryption_change_get_encryption_enabled(packet)){
+                        if (hci_event_encryption_change_get_encryption_enabled(packet) != 0){
                             att_server_persistent_ccc_restore(hci_connection);
                         } 
                     }
