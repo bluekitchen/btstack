@@ -57,9 +57,25 @@
 #endif
 
 static void (*stdin_handler)(char c);
-static btstack_data_source_t stdin_data_source;
 
-#ifndef ENABLE_SEGGER_RTT
+#ifdef ENABLE_SEGGER_RTT
+
+#define RTT_POLL_INTERVAL_MS 50
+
+static btstack_timer_source_t stdin_timer_source;
+
+static void btstack_stdin_timer_handler(btstack_timer_source_t *ts){
+	if (SEGGER_RTT_HasKey()){
+		int stdin_character = SEGGER_RTT_GetKey();
+		(*stdin_handler)((uint8_t)stdin_character);
+	}
+    btstack_run_loop_set_timer(ts, RTT_POLL_INTERVAL_MS);
+    btstack_run_loop_add_timer(ts);
+}
+
+#else
+
+static btstack_data_source_t stdin_data_source;
 
 // callback from hal_stdin is from irq context
 
@@ -82,29 +98,23 @@ static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_s
 	stdin_character_received = 0;
 }
 
-#else
-
-static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-	if (SEGGER_RTT_HasKey()){
-		int stdin_character = SEGGER_RTT_GetKey();
-		(*stdin_handler)((uint8_t)stdin_character);
-	}
-}
-
 #endif
 
 void btstack_stdin_setup(void (*handler)(char c)){
 	// set handler
 	stdin_handler = handler;
 
-	// set up polling data_source
-	btstack_run_loop_set_data_source_handler(&stdin_data_source, &btstack_stdin_process);
-	btstack_run_loop_enable_data_source_callbacks(&stdin_data_source, DATA_SOURCE_CALLBACK_POLL);
-	btstack_run_loop_add_data_source(&stdin_data_source);
+#ifdef ENABLE_SEGGER_RTT
+    // start polling with timer
+    btstack_run_loop_set_timer_handler(&stdin_timer_source, &btstack_stdin_timer_handler);
+    btstack_run_loop_set_timer(&stdin_timer_source, RTT_POLL_INTERVAL_MS);
+    btstack_run_loop_add_timer(&stdin_timer_source);
+#else
+    // set up polling data_source
+    btstack_run_loop_set_data_source_handler(&stdin_data_source, &btstack_stdin_process);
+    btstack_run_loop_enable_data_source_callbacks(&stdin_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(&stdin_data_source);
 
-#ifndef ENABLE_SEGGER_RTT
 	// start receiving via hal_stdin.h
 	hal_stdin_setup(&btstack_stdin_handler);
 #endif

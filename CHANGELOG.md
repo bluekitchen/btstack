@@ -9,8 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ## Added
+
 ## Fixed
+- btstack_stdin_embedded: use timer to poll RTT input, fix for tickless RTOS
+
 ## Changed
+
 
 ## Release v1.5.5
 
