@@ -490,7 +490,7 @@ TEST(ATT_SERVER, sm_event_numeric_comparison_request_event) {
 }
 
 TEST(ATT_SERVER, sm_event_identity_created_event) {
-    uint8_t buffer[11];
+    uint8_t buffer[20];
     buffer[0] = SM_EVENT_IDENTITY_CREATED;
     buffer[1] = 9; 
 
@@ -506,7 +506,7 @@ TEST(ATT_SERVER, sm_event_pairing_complete_event) {
 }
 
 TEST(ATT_SERVER, sm_event_authorization_result_event) {
-    uint8_t buffer[11];
+    uint8_t buffer[12];
     buffer[0] = SM_EVENT_AUTHORIZATION_RESULT;
     buffer[1] = 9; 
 
