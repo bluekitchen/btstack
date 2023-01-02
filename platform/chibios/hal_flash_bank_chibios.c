@@ -111,6 +111,9 @@ static const hal_flash_bank_t hal_flash_bank_chibios = {
 const hal_flash_bank_t * hal_flash_bank_chibios_init_instance(hal_flash_bank_chbios_t * context, 
     uint16_t bank_0_sector, uint16_t bank_1_sector){
 
+    // start EFL driver
+    eflStart(&EFLD1, NULL);
+
     const flash_descriptor_t * descriptor = flashGetDescriptor(&EFLD1);
     btstack_assert(bank_0_sector < descriptor->sectors_count);
     btstack_assert(bank_1_sector < descriptor->sectors_count);
@@ -125,8 +128,10 @@ const hal_flash_bank_t * hal_flash_bank_chibios_init_instance(hal_flash_bank_chb
     context->sectors[1] = bank_1_sector;
     context->banks[0]   = bank_0_offset;
     context->banks[1]   = bank_1_offset;
+
     log_info("Bank size %" PRIu32 " bytes", sector_size);
     log_info("Bank 0 uses sector %u, offset %" PRIx32, bank_0_sector, bank_0_offset);
     log_info("Bank 1 uses sector %u, offset %" PRIx32, bank_1_sector, bank_1_offset);
+
     return &hal_flash_bank_chibios;
 }
