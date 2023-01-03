@@ -183,6 +183,28 @@ void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
     btstack_linked_list_iterator_init(it, &connections);
 }
 
+static void hci_setup_connection(uint16_t con_handle, bd_addr_type_t type){
+    hci_connection.att_connection.mtu = 23;
+    hci_connection.att_connection.con_handle = con_handle;
+    hci_connection.att_connection.max_mtu = 23;
+    hci_connection.att_connection.encryption_key_size = 0;
+    hci_connection.att_connection.authenticated = 0;
+    hci_connection.att_connection.authorized = 0;
+
+    hci_connection.att_server.ir_le_device_db_index = 0;
+
+    hci_connection.con_handle = con_handle;
+    hci_connection.address_type = type;
+
+    if (btstack_linked_list_empty(&connections)){
+        btstack_linked_list_add(&connections, (btstack_linked_item_t *)&hci_connection);
+    }
+}
+
+void hci_setup_le_connection(uint16_t con_handle){
+    hci_setup_connection(con_handle, BD_ADDR_TYPE_LE_PUBLIC);
+}
+
 // int hci_send_cmd(const hci_cmd_t *cmd, ...){
 // //	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
 // 	return 0;
