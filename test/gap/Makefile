@@ -32,7 +32,7 @@ LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/test_le_scan build-asan/test_le_scan
+all: build-coverage/test_le_scan build-asan/test_le_scan build-coverage/hci_test build-asan/hci_test
 
 build-%:
 	mkdir -p $@
@@ -59,12 +59,20 @@ build-coverage/test_le_scan: ${COMMON_OBJ_COVERAGE} build-coverage/test_le_scan.
 build-asan/test_le_scan: ${COMMON_OBJ_ASAN} build-asan/test_le_scan.o | build-asan
 	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
+build-coverage/hci_test: ${COMMON_OBJ_COVERAGE} build-coverage/hci_test.o | build-coverage
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/hci_test: ${COMMON_OBJ_ASAN} build-asan/hci_test.o | build-asan
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
+
 test: all
 	build-asan/test_le_scan
+	build-asan/hci_test
 
 coverage: all
 	rm -f build-coverage/*.gcda
 	build-coverage/test_le_scan
+	build-coverage/hci_test
 
 clean:
 	rm -rf build-coverage build-asan
