@@ -172,7 +172,11 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_
 	return NULL;
 }
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
-	return &hci_connection;
+    if (con_handle == hci_connection.con_handle){
+        return &hci_connection;
+    } else {
+        return NULL;
+    }
 }
 void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
 	// printf("hci_connections_get_iterator not implemented in mock backend\n");
