@@ -707,11 +707,13 @@ static void report_gatt_included_service_uuid128(gatt_client_t * gatt_client, ui
 static const int characteristic_value_event_header_size = 8;
 static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t * value, uint16_t length){
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    // avoid using pre ATT headers.
-    return NULL;
-#endif
+    // copy value into test packet for testing
+    static uint8_t packet[1000];
+    memcpy(&packet[8], value, length);
+#else
     // before the value inside the ATT PDU
     uint8_t * packet = value - characteristic_value_event_header_size;
+#endif
     packet[0] = type;
     packet[1] = characteristic_value_event_header_size - 2 + length;
     little_endian_store_16(packet, 2, con_handle);
@@ -2338,5 +2340,9 @@ uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_hand
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 void gatt_client_att_packet_handler_fuzz(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     gatt_client_att_packet_handler(packet_type, handle, packet, size);
+}
+
+gatt_client_t * gatt_client_get_client(hci_con_handle_t con_handle){
+    return gatt_client_provide_context_for_handle(con_handle);
 }
 #endif

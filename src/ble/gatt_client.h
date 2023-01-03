@@ -868,6 +868,7 @@ void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, i
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 void gatt_client_att_packet_handler_fuzz(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
+gatt_client_t * gatt_client_get_client(hci_con_handle_t con_handle);
 #endif
 
 #if defined __cplusplus
