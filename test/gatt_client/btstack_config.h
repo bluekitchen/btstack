@@ -35,4 +35,7 @@
 
 #define NVM_NUM_LINK_KEYS 2
 
+// testing
+#define FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+
 #endif
