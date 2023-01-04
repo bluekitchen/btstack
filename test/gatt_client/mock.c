@@ -143,7 +143,7 @@ void sm_cmac_signed_write_start(const sm_key_t key, uint8_t opcode, uint16_t att
 	//sm_notify_client(SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);      
 }
 int sm_le_device_index(uint16_t handle ){
-	return -1;
+	return 0;
 }
 void sm_send_security_request(hci_con_handle_t con_handle){
 }
