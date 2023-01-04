@@ -4090,7 +4090,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
                                 if (cig->cis_con_handles[i] == handle){
                                     cig->cis_setup_active[i] = false;
                                     if (status == ERROR_CODE_SUCCESS){
-                                        cig->cis_setup_active[i] = false;
                                         cig->cis_established[i] = true;
                                     } else {
                                         hci_emit_cis_created(cig->cig_id, handle, status);
@@ -4099,11 +4098,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             }
 
                             // trigger iso path setup if complete
-                            bool setup_active = false;
+                            bool cis_setup_active = false;
                             for (i=0;i<cig->num_cis;i++){
-                                setup_active |= cig->cis_setup_active[i];
+                                cis_setup_active |= cig->cis_setup_active[i];
                             }
-                            if (setup_active == false){
+                            if (cis_setup_active == false){
                                 cig->state_vars.next_cis = 0;
                                 cig->state = LE_AUDIO_CIG_STATE_SETUP_ISO_PATH;
                                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
@@ -9833,6 +9832,8 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
     for (i=0;i<cig->num_cis;i++){
         cig->cis_con_handles[i] = HCI_CON_HANDLE_INVALID;
         cig->acl_con_handles[i] = HCI_CON_HANDLE_INVALID;
+        cig->cis_setup_active[i] = false;
+        cig->cis_established[i] = false;
     }
     btstack_linked_list_add(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) cig);
 
