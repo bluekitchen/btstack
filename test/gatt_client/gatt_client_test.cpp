@@ -64,6 +64,132 @@ current_test_t test = IDLE;
 uint8_t  characteristic_uuid128[] = {0x00, 0x00, 0xf0, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb};
 uint16_t characteristic_uuid16 = 0xF000;
 
+static const uint8_t service_data_uuid128[] = {
+	// 0x0056 PRIMARY_SERVICE-0x34FB with Bluetooth prefix
+    0x18, 0x00, 0x02, 0x00, 0x56, 0x00, 0x00, 0x28, 0xFB, 0x34, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB,
+    // 0x0057 INCLUDE_SERVICE-0000FF10-0000-1000-8000-00805F9B34FB
+    0x0c, 0x00, 0x02, 0x00, 0x57, 0x00, 0x02, 0x28, 0x0f, 0x00, 0x11, 0x00, 
+    // 0x0058 INCLUDE_SERVICE-0000FF11-0000-1000-8000-00805F9B34FB
+    0x0c, 0x00, 0x02, 0x00, 0x58, 0x00, 0x02, 0x28, 0x12, 0x00, 0x14, 0x00, 
+    // Characteristics 16 and 128 bit with different authoriztion/authentication/encryption requirements and read/write flags
+    // - no requirements
+    // 0x0059 CHARACTERISTIC-F200-READ | WRITE | DYNAMIC | NOTIFY | INDICATE | RELIABLE_WRITE | WRITE_WITHOUT_RESPONSE
+    0x0d, 0x00, 0x02, 0x00, 0x59, 0x00, 0x03, 0x28, 0xbe, 0x5a, 0x00, 0x00, 0xf2, 
+    // 0x005a VALUE-F200-READ | WRITE | DYNAMIC | NOTIFY | INDICATE | RELIABLE_WRITE | WRITE_WITHOUT_RESPONSE-''
+    // READ_ANYBODY, WRITE_ANYBODY
+    0x08, 0x00, 0x8e, 0x01, 0x5a, 0x00, 0x00, 0xf2, 
+    // 0x005b CLIENT_CHARACTERISTIC_CONFIGURATION
+    // READ_ANYBODY, WRITE_ANYBODY
+    0x0a, 0x00, 0x0e, 0x01, 0x5b, 0x00, 0x02, 0x29, 0x00, 0x00, 
+    // 0x005c CHARACTERISTIC_EXTENDED_PROPERTIES
+    0x0a, 0x00, 0x02, 0x00, 0x5c, 0x00, 0x00, 0x29, 0x01, 0x00, 
+    // 0x005d CHARACTERISTIC_USER_DESCRIPTION-READ | WRITE | DYNAMIC-
+    // READ_ANYBODY, WRITE_ANYBODY
+    0x08, 0x00, 0x0a, 0x00, 0x5d, 0x00, 0x01, 0x29, 
+    // 0x005e CHARACTERISTIC-0000F201-0000-1000-8000-00805F9B34FB-READ | WRITE | DYNAMIC | NOTIFY | INDICATE | RELIABLE_WRITE
+    0x1b, 0x00, 0x02, 0x00, 0x5e, 0x00, 0x03, 0x28, 0xba, 0x5f, 0x00, 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x01, 0xf2, 0x00, 0x00, 
+    // 0x005f VALUE-0000F201-0000-1000-8000-00805F9B34FB-READ | WRITE | DYNAMIC | NOTIFY | INDICATE | RELIABLE_WRITE-''
+    // READ_ANYBODY, WRITE_ANYBODY
+    0x16, 0x00, 0x8a, 0x03, 0x5f, 0x00, 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x01, 0xf2, 0x00, 0x00, 
+    // 0x0060 CLIENT_CHARACTERISTIC_CONFIGURATION
+    // READ_ANYBODY, WRITE_ANYBODY
+    0x0a, 0x00, 0x0e, 0x01, 0x60, 0x00, 0x02, 0x29, 0x00, 0x00, 
+    // 0x0061 CHARACTERISTIC_EXTENDED_PROPERTIES
+    0x0a, 0x00, 0x02, 0x00, 0x61, 0x00, 0x00, 0x29, 0x01, 0x00, 
+    // 0x0062 CHARACTERISTIC_USER_DESCRIPTION-READ | WRITE | DYNAMIC-
+    // READ_ANYBODY, WRITE_ANYBODY
+    0x08, 0x00, 0x0a, 0x00, 0x62, 0x00, 0x01, 0x29, 
+    // - neither read nor writable
+    // 0x0063 CHARACTERISTIC-F202-DYNAMIC
+    0x0d, 0x00, 0x02, 0x00, 0x63, 0x00, 0x03, 0x28, 0x00, 0x64, 0x00, 0x02, 0xf2, 
+    // 0x0064 VALUE-F202-DYNAMIC-''
+    // 
+    0x08, 0x00, 0x00, 0x01, 0x64, 0x00, 0x02, 0xf2, 
+    // 0x0065 CHARACTERISTIC_USER_DESCRIPTION-DYNAMIC-
+    // READ_ANYBODY
+    0x08, 0x00, 0x02, 0x00, 0x65, 0x00, 0x01, 0x29, 
+    // 0x0066 CHARACTERISTIC-0000F203-0000-1000-8000-00805F9B34FB-DYNAMIC
+    0x1b, 0x00, 0x02, 0x00, 0x66, 0x00, 0x03, 0x28, 0x00, 0x67, 0x00, 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x03, 0xf2, 0x00, 0x00, 
+    // 0x0067 VALUE-0000F203-0000-1000-8000-00805F9B34FB-DYNAMIC-''
+    // 
+    0x16, 0x00, 0x00, 0x03, 0x67, 0x00, 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x03, 0xf2, 0x00, 0x00, 
+    // 0x0068 CHARACTERISTIC_USER_DESCRIPTION-DYNAMIC-
+    // READ_ANYBODY
+    0x08, 0x00, 0x02, 0x00, 0x68, 0x00, 0x01, 0x29, 
+    // - authorization required
+    // 0x0069 CHARACTERISTIC-F204-READ | WRITE | DYNAMIC | AUTHORIZATION_REQUIRED
+    0x0d, 0x00, 0x02, 0x00, 0x69, 0x00, 0x03, 0x28, 0x0a, 0x6a, 0x00, 0x04, 0xf2, 
+    // 0x006a VALUE-F204-READ | WRITE | DYNAMIC | AUTHORIZATION_REQUIRED-''
+    // READ_AUTHORIZED, WRITE_AUTHORIZED
+    0x08, 0x00, 0x1b, 0x0d, 0x6a, 0x00, 0x04, 0xf2, 
+    // 0x006b CHARACTERISTIC_USER_DESCRIPTION-READ | WRITE | DYNAMIC | AUTHORIZATION_REQUIRED-
+    // READ_ANYBODY, WRITE_AUTHORIZED
+    0x08, 0x00, 0x1b, 0x00, 0x6b, 0x00, 0x01, 0x29, 
+    // 0x006c CHARACTERISTIC-0000F205-0000-1000-8000-00805F9B34FB-READ | WRITE | DYNAMIC | AUTHORIZATION_REQUIRED
+    0x1b, 0x00, 0x02, 0x00, 0x6c, 0x00, 0x03, 0x28, 0x0a, 0x6d, 0x00, 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x05, 0xf2, 0x00, 0x00, 
+    // 0x006d VALUE-0000F205-0000-1000-8000-00805F9B34FB-READ | WRITE | DYNAMIC | AUTHORIZATION_REQUIRED-''
+    // READ_AUTHORIZED, WRITE_AUTHORIZED
+    0x16, 0x00, 0x1b, 0x0f, 0x6d, 0x00, 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x05, 0xf2, 0x00, 0x00, 
+    // 0x006e CHARACTERISTIC_USER_DESCRIPTION-READ | WRITE | DYNAMIC | AUTHORIZATION_REQUIRED-
+    // READ_ANYBODY, WRITE_AUTHORIZED
+    0x08, 0x00, 0x1b, 0x00, 0x6e, 0x00, 0x01, 0x29, 
+    // - authenthication required
+    // 0x006f CHARACTERISTIC-F206-READ | WRITE | DYNAMIC | AUTHENTICATION_REQUIRED
+    0x0d, 0x00, 0x02, 0x00, 0x6f, 0x00, 0x03, 0x28, 0x0a, 0x70, 0x00, 0x06, 0xf2, 
+    // 0x0070 VALUE-F206-READ | WRITE | DYNAMIC | AUTHENTICATION_REQUIRED-''
+    // READ_AUTHENTICATED, WRITE_AUTHENTICATED
+    0x08, 0x00, 0x1a, 0x09, 0x70, 0x00, 0x06, 0xf2, 
+    // 0x0071 CHARACTERISTIC_USER_DESCRIPTION-READ | WRITE | DYNAMIC | AUTHENTICATION_REQUIRED-
+    // READ_ANYBODY, WRITE_AUTHENTICATED
+    0x08, 0x00, 0x1a, 0x00, 0x71, 0x00, 0x01, 0x29, 
+    // 0x0072 CHARACTERISTIC-0000F207-0000-1000-8000-00805F9B34FB-READ | WRITE | DYNAMIC | AUTHENTICATION_REQUIRED
+    0x1b, 0x00, 0x02, 0x00, 0x72, 0x00, 0x03, 0x28, 0x0a, 0x73, 0x00, 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x07, 0xf2, 0x00, 0x00, 
+    // 0x0073 VALUE-0000F207-0000-1000-8000-00805F9B34FB-READ | WRITE | DYNAMIC | AUTHENTICATION_REQUIRED-''
+    // READ_AUTHENTICATED, WRITE_AUTHENTICATED
+    0x16, 0x00, 0x1a, 0x0b, 0x73, 0x00, 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x07, 0xf2, 0x00, 0x00, 
+    // 0x0074 CHARACTERISTIC_USER_DESCRIPTION-READ | WRITE | DYNAMIC | AUTHENTICATION_REQUIRED-
+    // READ_ANYBODY, WRITE_AUTHENTICATED
+    0x08, 0x00, 0x1a, 0x00, 0x74, 0x00, 0x01, 0x29, 
+    // - encryptiont with 128 bit key required
+    // 0x0075 CHARACTERISTIC-F208-READ | WRITE | DYNAMIC | ENCRYPTION_KEY_SIZE_16
+    0x0d, 0x00, 0x02, 0x00, 0x75, 0x00, 0x03, 0x28, 0x0a, 0x76, 0x00, 0x08, 0xf2, 
+    // 0x0076 VALUE-F208-READ | WRITE | DYNAMIC | ENCRYPTION_KEY_SIZE_16-''
+    // READ_ENCRYPTED, WRITE_ENCRYPTED, ENCRYPTION_KEY_SIZE=16
+    0x08, 0x00, 0x0b, 0xf5, 0x76, 0x00, 0x08, 0xf2, 
+    // 0x0077 CHARACTERISTIC_USER_DESCRIPTION-READ | WRITE | DYNAMIC | ENCRYPTION_KEY_SIZE_16-
+    // READ_ANYBODY, WRITE_ENCRYPTED, ENCRYPTION_KEY_SIZE=16
+    0x08, 0x00, 0x0b, 0xf0, 0x77, 0x00, 0x01, 0x29, 
+    // 0x0078 CHARACTERISTIC-0000F209-0000-1000-8000-00805F9B34FB-READ | WRITE | DYNAMIC | ENCRYPTION_KEY_SIZE_16
+    0x1b, 0x00, 0x02, 0x00, 0x78, 0x00, 0x03, 0x28, 0x0a, 0x79, 0x00, 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x09, 0xf2, 0x00, 0x00, 
+    // 0x0079 VALUE-0000F209-0000-1000-8000-00805F9B34FB-READ | WRITE | DYNAMIC | ENCRYPTION_KEY_SIZE_16-''
+    // READ_ENCRYPTED, WRITE_ENCRYPTED, ENCRYPTION_KEY_SIZE=16
+    0x16, 0x00, 0x0b, 0xf7, 0x79, 0x00, 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x09, 0xf2, 0x00, 0x00, 
+    // 0x007a CHARACTERISTIC_USER_DESCRIPTION-READ | WRITE | DYNAMIC | ENCRYPTION_KEY_SIZE_16-
+    // READ_ANYBODY, WRITE_ENCRYPTED, ENCRYPTION_KEY_SIZE=16
+    0x08, 0x00, 0x0b, 0xf0, 0x7a, 0x00, 0x01, 0x29
+};
+
+static const uint8_t service_data_uuid16[] = {
+	// 0x0015 PRIMARY_SERVICE-FFFF
+    0x0a, 0x00, 0x02, 0x00, 0x15, 0x00, 0x00, 0x28, 0xff, 0xff, 
+    // 0x0016 CHARACTERISTIC-FFFD-READ | WRITE | DYNAMIC
+    0x0d, 0x00, 0x02, 0x00, 0x16, 0x00, 0x03, 0x28, 0x0a, 0x17, 0x00, 0xfd, 0xff, 
+    // 0x0017 VALUE-FFFD-READ | WRITE | DYNAMIC-''
+    // READ_ANYBODY, WRITE_ANYBODY
+    0x08, 0x00, 0x0a, 0x01, 0x17, 0x00, 0xfd, 0xff, 
+    // 0x0018 CHARACTERISTIC-FFFE-READ | WRITE | DYNAMIC
+    0x0d, 0x00, 0x02, 0x00, 0x18, 0x00, 0x03, 0x28, 0x0a, 0x19, 0x00, 0xfe, 0xff, 
+    // 0x0019 VALUE-FFFE-READ | WRITE | DYNAMIC-''
+    // READ_ANYBODY, WRITE_ANYBODY
+    0x08, 0x00, 0x0a, 0x01, 0x19, 0x00, 0xfe, 0xff, 
+};
+
+static const uint8_t characteristic_data_uuid128[] = {};
+static const uint8_t characteristic_data_uuid16[] = {};
+static const uint8_t characteristic_descriptor_data_uuid128[] = {};
+static const uint8_t characteristic_descriptor_data_uuid16[] = {};
+
+
 static int result_index;
 static uint8_t result_counter;
 
@@ -306,6 +432,8 @@ TEST_GROUP(GATTClient){
 	void reset_query_state(void){
 		gatt_client_t * gatt_client = gatt_client_get_client(gatt_client_handle);
 		gatt_client->gatt_client_state = P_READY;
+		gatt_client_set_required_security_level(LEVEL_0);
+		gatt_client_mtu_enable_auto_negotiation(1);
 
 		gatt_query_complete = 0;
 		result_counter = 0;
@@ -319,6 +447,10 @@ TEST_GROUP(GATTClient){
 	}
 };
 
+TEST(GATTClient, gatt_client_setters){
+	gatt_client_set_required_security_level(LEVEL_4);
+	gatt_client_mtu_enable_auto_negotiation(0);
+}
 
 TEST(GATTClient, TestDiscoverPrimaryServices){
 	test = DISCOVER_PRIMARY_SERVICES;
@@ -354,6 +486,14 @@ TEST(GATTClient, TestDiscoverPrimaryServicesByUUID128){
 	CHECK_EQUAL(1, result_counter);
 	verify_primary_services_with_uuid128();
 	CHECK_EQUAL(1, gatt_query_complete);
+
+	// invalid con handle
+    status = gatt_client_discover_primary_services_by_uuid128(handle_ble_client_event, HCI_CON_HANDLE_INVALID, primary_service_uuid128);
+    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_discover_primary_services_by_uuid128(handle_ble_client_event, gatt_client_handle, primary_service_uuid128);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 }
 
 TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID16){
@@ -382,6 +522,14 @@ TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID128){
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 	verify_included_services_uuid128();
+
+	// invalid con handle
+    status = gatt_client_find_included_services_for_service(handle_ble_client_event, HCI_CON_HANDLE_INVALID, &services[0]);
+    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_find_included_services_for_service(handle_ble_client_event, gatt_client_handle, &services[0]);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristicsForService){
@@ -396,6 +544,14 @@ TEST(GATTClient, TestDiscoverCharacteristicsForService){
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 	verify_charasteristics();
+
+	// invalid con handle
+    status = gatt_client_discover_characteristics_for_service(handle_ble_client_event, HCI_CON_HANDLE_INVALID, &services[0]);
+    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_discover_characteristics_for_service(handle_ble_client_event, gatt_client_handle, &services[0]);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristicsByUUID16){
@@ -405,6 +561,14 @@ TEST(GATTClient, TestDiscoverCharacteristicsByUUID16){
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
+
+	// invalid con handle
+    status = gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_ble_client_event, HCI_CON_HANDLE_INVALID, 0x30, 0x32, 0xF102);
+    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_ble_client_event, gatt_client_handle, 0x30, 0x32, 0xF102);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristicsByUUID128){
@@ -414,6 +578,14 @@ TEST(GATTClient, TestDiscoverCharacteristicsByUUID128){
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
+
+	// invalid con handle
+    status = gatt_client_discover_characteristics_for_handle_range_by_uuid128(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristic_handles[1][0], characteristic_handles[1][1], characteristic_uuids[1]);
+    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_discover_characteristics_for_handle_range_by_uuid128(handle_ble_client_event, gatt_client_handle, characteristic_handles[1][0], characteristic_handles[1][1], characteristic_uuids[1]);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID128){
@@ -532,7 +704,7 @@ TEST(GATTClient, TestWriteClientCharacteristicConfiguration){
 	characteristics->properties = 0;
 	status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
  	CHECK_EQUAL(GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED, status);
- }
+}
 
 TEST(GATTClient, TestReadCharacteristicDescriptor){
 	test = READ_CHARACTERISTIC_DESCRIPTOR;
@@ -554,6 +726,21 @@ TEST(GATTClient, TestReadCharacteristicDescriptor){
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(3, result_counter);
 
+	// invalid con handle
+    status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, HCI_CON_HANDLE_INVALID,  &characteristics[0]);
+    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, gatt_client_handle,  &characteristics[0]);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
+	reset_query_state();
+	uint16_t end_handle = characteristics[0].end_handle;
+	characteristics[0].end_handle = characteristics[0].value_handle;
+	status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, gatt_client_handle, &characteristics[0]);
+	CHECK_EQUAL(0, status);
+	characteristics[0].end_handle = end_handle;
+
 	reset_query_state();
 	status = gatt_client_read_characteristic_descriptor(handle_ble_client_event, gatt_client_handle, &descriptors[0]);
 	CHECK_EQUAL(0, status);
@@ -568,6 +755,223 @@ TEST(GATTClient, TestReadCharacteristicDescriptor){
 	status = gatt_client_read_characteristic_descriptor(handle_ble_client_event, gatt_client_handle, &descriptors[0]);
     CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 }
+
+TEST(GATTClient, gatt_client_read_value_of_characteristic_using_value_handle){
+	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	// invalid con handle
+    status = gatt_client_read_value_of_characteristic_using_value_handle(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle);
+ 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_read_value_of_characteristic_using_value_handle(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset){
+	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	// invalid con handle
+    status = gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, 0);
+ 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+
+TEST(GATTClient, gatt_client_read_value_of_characteristics_by_uuid16){
+	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_read_value_of_characteristics_by_uuid16(handle_ble_client_event, gatt_client_handle, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid16);
+ 	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+
+	// invalid con handle
+    status = gatt_client_read_value_of_characteristics_by_uuid16(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid16);
+ 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_read_value_of_characteristics_by_uuid16(handle_ble_client_event, gatt_client_handle, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid16);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_read_value_of_characteristics_by_uuid128){
+	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_read_value_of_characteristics_by_uuid128(handle_ble_client_event, gatt_client_handle, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid128);
+ 	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+
+	// invalid con handle
+    status = gatt_client_read_value_of_characteristics_by_uuid128(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid128);
+ 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_read_value_of_characteristics_by_uuid128(handle_ble_client_event, gatt_client_handle, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid128);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_write_characteristic_descriptor_using_descriptor_handle){
+	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+
+	reset_query_state();
+	status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, gatt_client_handle, &characteristics[0]);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(3, result_counter);
+
+	reset_query_state();
+	status = gatt_client_write_characteristic_descriptor_using_descriptor_handle(handle_ble_client_event, gatt_client_handle, descriptors[0].handle, characteristics[0].end_handle, characteristics[0].uuid128);
+ 	CHECK_EQUAL(0, status);
+
+	// invalid con handle
+    status = gatt_client_write_characteristic_descriptor_using_descriptor_handle(handle_ble_client_event, HCI_CON_HANDLE_INVALID, descriptors[0].handle, characteristics[0].end_handle, characteristics[0].uuid128);
+ 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_write_characteristic_descriptor_using_descriptor_handle(handle_ble_client_event, gatt_client_handle, descriptors[0].handle, characteristics[0].end_handle, characteristics[0].uuid128);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_prepare_write){
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_prepare_write(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0, short_value_length, (uint8_t*)short_value);
+ 	CHECK_EQUAL(0, status);
+
+	// invalid con handle
+    status = gatt_client_prepare_write(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, 0, short_value_length, (uint8_t*)short_value);
+ 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_prepare_write(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0, short_value_length, (uint8_t*)short_value);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_execute_write){
+	reset_query_state();
+	status = gatt_client_execute_write(handle_ble_client_event, gatt_client_handle);
+ 	CHECK_EQUAL(0, status);
+
+	// invalid con handle
+    status = gatt_client_execute_write(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
+ 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_execute_write(handle_ble_client_event, gatt_client_handle);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_cancel_write){
+	reset_query_state();
+	status = gatt_client_cancel_write(handle_ble_client_event, gatt_client_handle);
+ 	CHECK_EQUAL(0, status);
+
+	// invalid con handle
+    status = gatt_client_cancel_write(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
+ 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_cancel_write(handle_ble_client_event, gatt_client_handle);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_deserialize_service){
+	gatt_client_service_t service;
+	gatt_client_deserialize_service(service_data_uuid16, 0, &service);
+	gatt_client_deserialize_service(service_data_uuid128, 0, &service);
+}
+
+// TEST(GATTClient, gatt_client_deserialize_characteristic){
+// 	gatt_client_characteristic_t characteristic;
+// 	gatt_client_deserialize_characteristic(characteristic_data_uuid16, 0, &characteristic);
+// 	gatt_client_deserialize_characteristic(characteristic_data_uuid128, 0, &characteristic);
+// }
+
+// TEST(GATTClient, gatt_client_deserialize_characteristic_descriptor){
+// 	gatt_client_characteristic_descriptor_t characteristic_descriptor;
+// 	gatt_client_deserialize_characteristic_descriptor(characteristic_descriptor_data_uuid16, 0, &characteristic_descriptor);
+// 	gatt_client_deserialize_characteristic_descriptor(characteristic_descriptor_data_uuid128, 0, &characteristic_descriptor);
+// }
 
 TEST(GATTClient, TestReadCharacteristicValue){
 	test = READ_CHARACTERISTIC_VALUE;
@@ -890,8 +1294,114 @@ TEST(GATTClient, gatt_client_write_value_of_characteristic_without_response){
 
 	status = gatt_client_write_value_of_characteristic_without_response(gatt_client_handle, characteristics[0].value_handle, 19, (uint8_t*)long_value);
 	CHECK_EQUAL(0, status);
-
 }
+
+TEST(GATTClient, gatt_client_is_ready){
+	int status = gatt_client_is_ready(HCI_CON_HANDLE_INVALID);
+	CHECK_EQUAL(0, status);
+
+	status = gatt_client_is_ready(gatt_client_handle);
+	CHECK_EQUAL(1, status);
+}
+
+
+TEST(GATTClient, register_for_notification){
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	gatt_client_notification_t notification;
+
+	gatt_client_listen_for_characteristic_value_updates(&notification, handle_ble_client_event, gatt_client_handle, &characteristics[0]);
+	gatt_client_stop_listening_for_characteristic_value_updates(&notification);
+
+	gatt_client_listen_for_characteristic_value_updates(&notification, handle_ble_client_event, gatt_client_handle, NULL);
+	gatt_client_stop_listening_for_characteristic_value_updates(&notification);
+}
+
+TEST(GATTClient, gatt_client_signed_write_without_response){
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	// invalid con handle
+	status = gatt_client_signed_write_without_response(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+	reset_query_state();
+    set_wrong_gatt_client_state();
+	status = gatt_client_signed_write_without_response(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
+	reset_query_state();
+
+	status = gatt_client_signed_write_without_response(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+	CHECK_EQUAL(0, status);
+}
+
+TEST(GATTClient, gatt_client_discover_secondary_services){
+	reset_query_state();
+	// invalid con handle
+	status = gatt_client_discover_secondary_services(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
+    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+	reset_query_state();
+    set_wrong_gatt_client_state();
+	status = gatt_client_discover_secondary_services(handle_ble_client_event, gatt_client_handle);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
+	reset_query_state();
+
+	status = gatt_client_discover_secondary_services(handle_ble_client_event, gatt_client_handle);
+	CHECK_EQUAL(0, status);
+}
+
+
+
+TEST(GATTClient, gatt_client_get_mtu){
+	reset_query_state();
+	uint16_t mtu;
+	int status = gatt_client_get_mtu(HCI_CON_HANDLE_INVALID, &mtu);
+	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+
+	status = gatt_client_get_mtu(gatt_client_handle, &mtu);
+	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	CHECK_EQUAL(ATT_DEFAULT_MTU, mtu);
+
+	gatt_client_t * gatt_client = gatt_client_get_client(gatt_client_handle);
+	CHECK_TRUE(gatt_client != NULL);
+	gatt_client->mtu = 30;
+	
+	gatt_client->mtu_state = MTU_EXCHANGED;
+	status = gatt_client_get_mtu(gatt_client_handle, &mtu);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(gatt_client->mtu, mtu);
+
+	gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
+	status = gatt_client_get_mtu(gatt_client_handle, &mtu);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(gatt_client->mtu, mtu);
+
+	gatt_client->mtu_state = SEND_MTU_EXCHANGE;
+}
+
 
 int main (int argc, const char * argv[]){
 	att_set_db(profile_data);
