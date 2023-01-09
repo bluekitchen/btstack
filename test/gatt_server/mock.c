@@ -183,15 +183,22 @@ uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16
 	return ERROR_CODE_SUCCESS;
 }
 
+static int cmac_ready = 1;
+void set_cmac_ready(int ready){
+    cmac_ready = ready;
+}
+
 void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
 }
 
 int  sm_cmac_ready(void){
-	return 1;
+	return cmac_ready;
 }
+
 void sm_cmac_signed_write_start(const sm_key_t key, uint8_t opcode, uint16_t attribute_handle, uint16_t message_len, const uint8_t * message, uint32_t sign_counter, void (*done_callback)(uint8_t * hash)){
-	//sm_notify_client(SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);      
+	// sm_notify_client(SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);      
 }
+
 int sm_le_device_index(uint16_t handle ){
 	return -1;
 }
