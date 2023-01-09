@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ## Added
+- HCI_ACL_CHUNK_SIZE_ALIGNMENT allows to keep HCI transport writes aligned
 
 ## Fixed
 - btstack_stdin_embedded: use timer to poll RTT input, fix for tickless RTOS

@@ -162,6 +162,7 @@ For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For 
 | \#define                                  | Description                                                                |
 |-------------------------------------------|----------------------------------------------------------------------------|
 | HCI_ACL_PAYLOAD_SIZE                      | Max size of HCI ACL payloads                                               |
+| HCI_ACL_CHUNK_SIZE_ALIGNMENT              | Alignment of ACL chunk size, can be used to align HCI transport writes     |
 | HCI_INCOMING_PRE_BUFFER_SIZE              | Number of bytes reserved before actual data for incoming HCI packets       |
 | MAX_NR_BNEP_CHANNELS                      | Max number of BNEP channels                                                |
 | MAX_NR_BNEP_SERVICES                      | Max number of BNEP services                                                |

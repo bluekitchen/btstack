@@ -100,6 +100,10 @@
 #define MAX_NR_CONTROLLER_SCO_PACKETS 255
 #endif
 
+#ifndef HCI_ACL_CHUNK_SIZE_ALIGNMENT
+#define HCI_ACL_CHUNK_SIZE_ALIGNMENT 1
+#endif
+
 #if defined(ENABLE_SCO_OVER_HCI) && defined(ENABLE_SCO_OVER_PCM)
 #error "SCO data can either be routed over HCI or over PCM, but not over both. Please only enable ENABLE_SCO_OVER_HCI or ENABLE_SCO_OVER_PCM."
 #endif
@@ -901,7 +905,7 @@ static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
         // if ACL packet is larger than Bluetooth packet buffer, only send max_acl_data_packet_length
         if (current_acl_data_packet_length > max_acl_data_packet_length){
             more_fragments = true;
-            current_acl_data_packet_length = max_acl_data_packet_length;
+            current_acl_data_packet_length = max_acl_data_packet_length & (~(HCI_ACL_CHUNK_SIZE_ALIGNMENT-1));
         }
 
         // copy handle_and_flags if not first fragment and update packet boundary flags to be 01 (continuing fragmnent)
