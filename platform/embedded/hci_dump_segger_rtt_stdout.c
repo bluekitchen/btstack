@@ -48,7 +48,7 @@
 #include "hci_dump.h"
 #include "btstack_util.h"
 #include "hci.h"
-#include <stdio.h>
+#include "hci_dump_segger_rtt_stdout.h"
 
 #include "SEGGER_RTT.h"
 

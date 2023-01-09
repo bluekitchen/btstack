@@ -82,7 +82,7 @@ static void hal_flash_bank_memory_write(void * context, int bank, uint32_t offse
 	if (offset > self->bank_size) return;
 	if ((offset + size) > self->bank_size) return;
 
-	int i;
+	uint32_t i;
 	for (i=0;i<size;i++){
 		// write 0xff doesn't change anything
 		if (data[i] == 0xff) {
