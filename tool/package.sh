@@ -19,7 +19,7 @@ else
 fi
 
 # zip repository
-archive_zip="btstack-extra-${version}.zip"
+archive_zip="btstack-${version}.zip"
 echo Create ${archive_zip}
 cd ${BTSTACK_ROOT} && git archive --format=zip -o ${archive_zip} HEAD .
 
