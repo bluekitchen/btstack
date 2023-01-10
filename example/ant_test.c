@@ -150,7 +150,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case RFCOMM_EVENT_CHANNEL_OPENED:
                     // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
                     if (rfcomm_event_channel_opened_get_status(packet)) {
-                        printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
+                        printf("RFCOMM channel open failed, status 0%02x\n", rfcomm_event_channel_opened_get_status(packet));
                     } else {
                         rfcomm_channel_id = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
                         mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
@@ -219,9 +219,9 @@ static void  heartbeat_handler(struct btstack_timer_source *ts){
         sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
         puts(lineBuffer);
         if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
-            int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));
-            if (err) {
-                printf("rfcomm_send -> error %d", err);
+            uint8_t status = rfcomm_send(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));
+            if (status) {
+                printf("rfcomm_send -> status 0x%02x", status);
             }
         }   
     }

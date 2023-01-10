@@ -254,7 +254,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
-            printf("- LE Connection %04x: disconnect, reason %02x\n", con_handle, hci_event_disconnection_complete_get_reason(packet));                    
+            printf("- LE Connection 0x%04x: disconnect, reason %02x\n", con_handle, hci_event_disconnection_complete_get_reason(packet));                    
             break;
         case HCI_EVENT_LE_META:
             switch (hci_event_le_meta_get_subevent_code(packet)) {
@@ -262,18 +262,18 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     // print connection parameters (without using float operations)
                     con_handle    = hci_subevent_le_connection_complete_get_connection_handle(packet); 
                     conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
-                    printf("- LE Connection %04x: connected - connection interval %u.%02u ms, latency %u\n", con_handle, conn_interval * 125 / 100,
+                    printf("- LE Connection 0x%04x: connected - connection interval %u.%02u ms, latency %u\n", con_handle, conn_interval * 125 / 100,
                         25 * (conn_interval & 3), hci_subevent_le_connection_complete_get_conn_latency(packet));
 
                     // request min con interval 15 ms for iOS 11+ 
-                    printf("- LE Connection %04x: request 15 ms connection interval\n", con_handle);
+                    printf("- LE Connection 0x%04x: request 15 ms connection interval\n", con_handle);
                     gap_request_connection_parameter_update(con_handle, 12, 12, 0, 0x0048);
                     break;
                 case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
                     // print connection parameters (without using float operations)
                     con_handle    = hci_subevent_le_connection_update_complete_get_connection_handle(packet);
                     conn_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
-                    printf("- LE Connection %04x: connection update - connection interval %u.%02u ms, latency %u\n", con_handle, conn_interval * 125 / 100,
+                    printf("- LE Connection 0x%04x: connection update - connection interval %u.%02u ms, latency %u\n", con_handle, conn_interval * 125 / 100,
                         25 * (conn_interval & 3), hci_subevent_le_connection_update_complete_get_conn_latency(packet));
                     break;
                 default:
@@ -311,7 +311,7 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     context->counter = 'A';
                     context->connection_handle = att_event_connected_get_handle(packet);
                     context->test_data_len = btstack_min(att_server_get_mtu(context->connection_handle) - 3, sizeof(context->test_data));
-                    printf("%c: ATT connected, handle %04x, test data len %u\n", context->name, context->connection_handle, context->test_data_len);
+                    printf("%c: ATT connected, handle 0x%04x, test data len %u\n", context->name, context->connection_handle, context->test_data_len);
                     break;
                 case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
                     mtu = att_event_mtu_exchange_complete_get_MTU(packet) - 3;
@@ -327,7 +327,7 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     context = connection_for_conn_handle(att_event_disconnected_get_handle(packet));
                     if (!context) break;
                     // free connection
-                    printf("%c: ATT disconnected, handle %04x\n", context->name, context->connection_handle);                    
+                    printf("%c: ATT disconnected, handle 0x%04x\n", context->name, context->connection_handle);                    
                     context->le_notification_enabled = 0;
                     context->connection_handle = HCI_CON_HANDLE_INVALID;
                     break;
@@ -398,7 +398,7 @@ static void streamer(void){
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(offset);
 
-    // printf("att_write_callback att_handle %04x, transaction mode %u\n", att_handle, transaction_mode);
+    // printf("att_write_callback att_handle 0x%04x, transaction mode %u\n", att_handle, transaction_mode);
     if (transaction_mode != ATT_TRANSACTION_MODE_NONE) return 0;
     le_streamer_connection_t * context = connection_for_conn_handle(con_handle);
     switch(att_handle){

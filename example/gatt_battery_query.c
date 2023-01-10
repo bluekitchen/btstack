@@ -287,7 +287,7 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                         gattservice_subevent_battery_service_connected_get_poll_bitmap(packet));
                     break;
                 default:
-                    printf("Battery service client connection failed, err 0x%02x.\n", status);
+                    printf("Battery service client connection failed, status 0x%02x.\n", status);
                     add_to_blacklist(report.address);
                     gap_disconnect(connection_handle);
                     break;

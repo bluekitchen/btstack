@@ -588,7 +588,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
             status = avrcp_subevent_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP: Connection failed: status 0x%02x\n", status);
+                printf("AVRCP: Connection failed, status 0x%02x\n", status);
                 connection->avrcp_cid = 0;
                 return;
             }
@@ -849,7 +849,7 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             a2dp_conn->a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
             a2dp_conn->stream_state = STREAM_STATE_OPEN;
 
-            printf("A2DP  Sink      : Streaming connection is established, address %s, cid 0x%02X, local seid %d\n",
+            printf("A2DP  Sink      : Streaming connection is established, address %s, cid 0x%02x, local seid %d\n",
                    bd_addr_to_str(address), a2dp_conn->a2dp_cid, a2dp_conn->a2dp_local_seid);
 #ifdef HAVE_BTSTACK_STDIN
             // use address for outgoing connections
@@ -859,7 +859,7 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
         
 #ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
         case A2DP_SUBEVENT_START_STREAM_REQUESTED:
-            printf("A2DP  Sink      : Explicit Accept to start stream, local_seid 0x%02x\n", a2dp_subevent_start_stream_requested_get_local_seid(packet));
+            printf("A2DP  Sink      : Explicit Accept to start stream, local_seid %d\n", a2dp_subevent_start_stream_requested_get_local_seid(packet));
             a2dp_sink_start_stream_accept(a2dp_cid, a2dp_local_seid);
             break;
 #endif

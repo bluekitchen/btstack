@@ -300,7 +300,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case PBAP_SUBEVENT_PHONEBOOK_SIZE:
                             status = pbap_subevent_phonebook_size_get_status(packet);
                             if (status){
-                                printf("[!] Get Phonebook size error: 0x%x\n", status);
+                                printf("[!] Get Phonebook size error: 0x%02x\n", status);
                             } else {
                                 printf("[+] Phonebook size: %u\n", pbap_subevent_phonebook_size_get_phonebook_size(packet));
                             }

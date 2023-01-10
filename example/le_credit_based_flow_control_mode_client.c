@@ -265,7 +265,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     handle = l2cap_event_cbm_channel_opened_get_handle(packet);
                     status = l2cap_event_cbm_channel_opened_get_status(packet);
                     if (status == ERROR_CODE_SUCCESS) {
-                        printf("L2CAP: CBM Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                        printf("L2CAP: CBM Channel successfully opened: %s, handle 0x%04x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
                         le_cbm_connection.cid = cid;
                         le_cbm_connection.connection_handle = handle;

@@ -285,7 +285,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
             
         case SDP_EVENT_QUERY_COMPLETE:
             handle_sdp_client_record_complete();
-            fprintf(stderr, "General query done with status %d, bnep psm %04x.\n", sdp_event_query_complete_get_status(packet), bnep_l2cap_psm);
+            fprintf(stderr, "Query complete, status 0%02x, bnep psm 0x%04x.\n", sdp_event_query_complete_get_status(packet), bnep_l2cap_psm);
             if (bnep_l2cap_psm){
                 /* Create BNEP connection */
                 bnep_connect(packet_handler, remote_addr, bnep_l2cap_psm, BLUETOOTH_SERVICE_CLASS_PANU, bnep_remote_uuid);
@@ -360,7 +360,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                  */  
 				case BNEP_EVENT_CHANNEL_OPENED:
                     if (bnep_event_channel_opened_get_status(packet)) {
-                        printf("BNEP channel open failed, status %02x\n", bnep_event_channel_opened_get_status(packet));
+                        printf("BNEP channel open failed, status 0x%02x\n", bnep_event_channel_opened_get_status(packet));
                     } else {
                         bnep_cid    = bnep_event_channel_opened_get_bnep_cid(packet);
                         uuid_source = bnep_event_channel_opened_get_source_uuid(packet);

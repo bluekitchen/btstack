@@ -350,7 +350,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     app_state = READY;
                     break;
                 default:
-                    printf("HID service client connection failed, err 0x%02x.\n", status);
+                    printf("HID service client connection failed, status 0x%02x.\n", status);
                     handle_outgoing_connection_error();
                     break;
             }

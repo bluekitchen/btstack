@@ -160,11 +160,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                
                 case RFCOMM_EVENT_CHANNEL_OPENED:
                     if (rfcomm_event_channel_opened_get_status(packet)) {
-                        printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
+                        printf("RFCOMM channel open failed, status 0x%02x\n", rfcomm_event_channel_opened_get_status(packet));
                     } else {
                         rfcomm_channel_id = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
                         mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
-                        printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
+                        printf("RFCOMM channel open succeeded. New RFCOMM Channel ID 0x%02x, max frame size %u\n", rfcomm_channel_id, mtu);
                     }
                     break;
                     

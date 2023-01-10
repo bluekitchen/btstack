@@ -550,19 +550,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             break;
 
                         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-                            printf("AG Indicator Status  | INDEX %d: status %d, '%s'\n", 
+                            printf("AG Indicator Status  | INDEX %d: status 0x%02x, '%s'\n", 
                                 hfp_subevent_ag_indicator_status_changed_get_indicator_index(event), 
                                 hfp_subevent_ag_indicator_status_changed_get_indicator_status(event),
                                 (const char*) hfp_subevent_ag_indicator_status_changed_get_indicator_name(event));
                             break;
                         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
-                            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", 
+                            printf("NETWORK_OPERATOR_CHANGED, operator mode %d, format %d, name %s\n", 
                                 hfp_subevent_network_operator_changed_get_network_operator_mode(event), 
                                 hfp_subevent_network_operator_changed_get_network_operator_format(event), 
                                 (char *) hfp_subevent_network_operator_changed_get_network_operator_name(event));          
                             break;
                         case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
-                            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status: 0x%02x\n",
+                            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status 0x%02x\n",
                                 hfp_subevent_extended_audio_gateway_error_get_error(event));
                             break;
                         case HFP_SUBEVENT_START_RINGING:
@@ -604,7 +604,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED:
                             status = hfp_subevent_voice_recognition_activated_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
-                                printf("Voice Recognition Activate command failed\n");
+                                printf("Voice Recognition Activate command failed, status 0x%02x\n", status);
                                 break;
                             }
                             
@@ -623,7 +623,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED:
                             status = hfp_subevent_voice_recognition_deactivated_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
-                                printf("Voice Recognition Deactivate command failed\n");
+                                printf("Voice Recognition Deactivate command failed, status 0x%02x\n", status);
                                 break;
                             }
                             printf("\nVoice Recognition DEACTIVATED\n\n");

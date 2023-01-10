@@ -309,7 +309,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             // connections were opened successfully.
                             status = hid_subevent_connection_opened_get_status(packet);
                             if (status != ERROR_CODE_SUCCESS) {
-                                printf("Connection failed, status 0x%x\n", status);
+                                printf("Connection failed, status 0x%02x\n", status);
                                 app_state = APP_IDLE;
                                 hid_host_cid = 0;
                                 return;
@@ -332,7 +332,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                                 hid_host_descriptor_available = true;
                                 printf("HID Descriptor available, please start typing.\n");
                             } else {
-                                printf("Cannot handle input report, HID Descriptor is not available.\n");
+                                printf("Cannot handle input report, HID Descriptor is not available, status 0x%02x\n", status);
                             }
                             break;
 

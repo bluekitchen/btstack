@@ -341,7 +341,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
             status = avrcp_subevent_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP: Connection failed: status 0x%02x\n", status);
+                printf("AVRCP: Connection failed, status 0x%02x\n", status);
                 avrcp_cid = 0;
                 return;
             }
@@ -415,7 +415,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                             local_cid = avrcp_subevent_browsing_connection_established_get_browsing_cid(packet);
                             status = avrcp_subevent_browsing_connection_established_get_status(packet);
                             if (status != ERROR_CODE_SUCCESS){
-                                printf("AVRCP: Connection failed: status 0x%02x\n", status);
+                                printf("AVRCP: Connection failed, status 0x%02x\n", status);
                                 browsing_cid = 0;
                                 return;
                             }
@@ -454,7 +454,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                                     browsing_state = AVRCP_BROWSING_STATE_W4_SET_PLAYER;
                                     status = avrcp_browsing_controller_set_browsed_player(browsing_cid, media_player_items[0].player_id);
                                     if (status != ERROR_CODE_SUCCESS){
-                                        printf("Could not set player, status 0x%02X\n", status);
+                                        printf("Could not set player, status 0x%02x\n", status);
                                         status = AVRCP_BROWSING_STATE_W4_GET_PLAYERS;
                                         break;
                                     }         
@@ -530,7 +530,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     uint8_t feature_bitmask[16];
                     memcpy(feature_bitmask, packet, 16);
                     pos += 16;
-                    printf("player ID 0x%04x, major_type %d, subtype %d, status %d\n", player_id, major_type, subtype, status);
+                    printf("player ID 0x%04x, major_type %d, subtype %d, status 0x%02x\n", player_id, major_type, subtype, status);
                     media_player_items[next_media_player_item_index()].player_id = player_id;
                     break;
                 }

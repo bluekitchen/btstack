@@ -147,7 +147,7 @@ static void att_update_value(struct btstack_timer_source *ts){
     // trigger ATT Server to try request again
     int status = att_server_response_ready(con_handle);
 
-    printf("Value updated -> complete ATT request - status %02x\n", status);
+    printf("Value updated -> complete ATT request - status 0x%02x\n", status);
 
     // simulated value becoming stale again
     att_timer.process = &att_invalidate_value;
@@ -181,14 +181,14 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
             if (value_ready){
                 return att_read_callback_handle_blob((const uint8_t *)test_string, strlen(test_string), offset, buffer, buffer_size);
             } else {
-                printf("Read callback for handle %02x, but value not ready -> report response pending\n", att_handle);
+                printf("Read callback for handle 0x%02x, but value not ready -> report response pending\n", att_handle);
                 con_handle = connection_handle;
                 return ATT_READ_RESPONSE_PENDING;
             }
             break;
         case ATT_READ_RESPONSE_PENDING:
             // virtual handle indicating all attributes have been queried
-            printf("Read callback for virtual handle %02x - all attributes have been queried (important for read multiple or read by type) -> start updating values\n", att_handle);
+            printf("Read callback for virtual handle 0x%02x - all attributes have been queried (important for read multiple or read by type) -> start updating values\n", att_handle);
             // simulated delayed response for example
             att_timer.process = &att_update_value;
             btstack_run_loop_set_timer(&att_timer, ATT_VALUE_DELAY_MS);
@@ -228,7 +228,7 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
             printf("Write callback, value ready\n");
             return 0;                    
         } else {
-            printf("Write callback for handle %02x, but not ready -> return response pending\n", att_handle);
+            printf("Write callback for handle 0x%02x, but not ready -> return response pending\n", att_handle);
         }
         // simulated delayed response for example
         att_timer.process = &att_update_value;

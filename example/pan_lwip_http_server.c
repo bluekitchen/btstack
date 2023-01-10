@@ -123,7 +123,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                  */  
                 case BNEP_EVENT_CHANNEL_OPENED:
                     if (bnep_event_channel_opened_get_status(packet)) {
-                        printf("BNEP channel open failed, status %02x\n", bnep_event_channel_opened_get_status(packet));
+                        printf("BNEP channel open failed, status 0x%02x\n", bnep_event_channel_opened_get_status(packet));
                     } else {
                         uint16_t uuid_source = bnep_event_channel_opened_get_source_uuid(packet);
                         uint16_t uuid_dest   = bnep_event_channel_opened_get_destination_uuid(packet);

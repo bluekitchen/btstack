@@ -207,7 +207,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE:
                             status = hsp_subevent_rfcomm_connection_complete_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
-                                printf("RFCOMM connection establishement failed with status %u\n", status);
+                                printf("RFCOMM connection establishement failed, status 0x%02x\n", status);
                                 break;
                             } 
                             printf("RFCOMM connection established.\n");
@@ -222,7 +222,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
                             status = hsp_subevent_audio_connection_complete_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
-                                printf("Audio connection establishment failed with status %u\n", status);
+                                printf("Audio connection establishment failed, status 0x%02x\n", status);
                             } else {
                                 sco_handle = hsp_subevent_audio_connection_complete_get_sco_handle(event);
                                 printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
@@ -257,7 +257,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             }
                             break;
                         default:
-                            printf("event not handled %u\n", event[2]);
+                            printf("event not handled 0x%02x\n", event[2]);
                             break;
                     }
                     break;

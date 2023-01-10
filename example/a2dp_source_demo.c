@@ -690,7 +690,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             cid = a2dp_subevent_stream_reconfigured_get_a2dp_cid(packet);
 
             if (status != ERROR_CODE_SUCCESS){
-                printf("A2DP Source: Stream reconfiguration failed with status 0x%02x\n", status);
+                printf("A2DP Source: Stream reconfiguration failed, status 0x%02x\n", status);
                 break;
             }
 
@@ -804,7 +804,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     }
 
     if (status != ERROR_CODE_SUCCESS){
-        printf("Responding to event 0x%02x failed with status 0x%02x\n", packet[2], status);
+        printf("Responding to event 0x%02x failed, status 0x%02x\n", packet[2], status);
     }
 }
 
@@ -856,7 +856,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     }
 
     if (status != ERROR_CODE_SUCCESS){
-        printf("Responding to event 0x%02x failed with status 0x%02x\n", packet[2], status);
+        printf("Responding to event 0x%02x failed, status 0x%02x\n", packet[2], status);
     }
 }
 
@@ -874,7 +874,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             break;
         case AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:
             // see avrcp_battery_status_t
-            printf("AVRCP Controller: Notification Battery Status %d\n", avrcp_subevent_notification_event_batt_status_changed_get_battery_status(packet));
+            printf("AVRCP Controller: Notification Battery Status 0x%02x\n", avrcp_subevent_notification_event_batt_status_changed_get_battery_status(packet));
             break;
         case AVRCP_SUBEVENT_NOTIFICATION_STATE:
             printf("AVRCP Controller: Notification %s - %s\n", 

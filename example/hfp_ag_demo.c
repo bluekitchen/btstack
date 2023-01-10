@@ -535,7 +535,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break;
                 case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
                     if (hfp_subevent_audio_connection_established_get_status(event) != ERROR_CODE_SUCCESS){
-                        printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
+                        printf("Audio connection establishment failed with status 0x%02x\n", hfp_subevent_audio_connection_established_get_status(event));
                     } else {
                         sco_handle = hfp_subevent_audio_connection_established_get_sco_handle(event);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
@@ -679,7 +679,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("Received BATTERY LEVEL indicator, value %d\n", hfp_subevent_hf_indicator_get_value(event));
                             break;
                         default:
-                            printf("Received HF INDICATOR indicator, UUID 0x%4X, value %d\n", hfp_subevent_hf_indicator_get_uuid(event), hfp_subevent_hf_indicator_get_value(event));
+                            printf("Received HF INDICATOR indicator, UUID 0x%4x, value %d\n", hfp_subevent_hf_indicator_get_uuid(event), hfp_subevent_hf_indicator_get_value(event));
                             break;
                     }
                     break;
