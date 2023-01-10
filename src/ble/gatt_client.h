@@ -253,7 +253,8 @@ void gatt_client_set_required_security_level(gap_security_level_t level);
  * otherwise the default value ATT_DEFAULT_MTU (see bluetooth.h). 
  * @param  con_handle   
  * @param  mtu
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if MTU is not exchanged and MTU auto-exchange is disabled
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -575,7 +576,8 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
  * @param  value_handle
  * @param  message_len
  * @param  message is not copied, make sure memory is accessible until write is done
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -591,7 +593,8 @@ uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callb
  * @param  value_handle
  * @param  value_length
  * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -606,7 +609,8 @@ uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callb
  * @param  value_handle
  * @param  value_length
  * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -622,7 +626,8 @@ uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t 
  * @param  offset of value
  * @param  value_length
  * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -638,7 +643,8 @@ uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packe
  * @param  value_handle
  * @param  value_length
  * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -651,7 +657,8 @@ uint8_t gatt_client_reliable_write_long_value_of_characteristic(btstack_packet_h
  * @param  callback   
  * @param  con_handle
  * @param  descriptor
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -664,7 +671,8 @@ uint8_t gatt_client_read_characteristic_descriptor(btstack_packet_handler_t call
  * @param  callback   
  * @param  con_handle
  * @param  descriptor
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -677,7 +685,8 @@ uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btsta
  * @param  callback   
  * @param  con_handle
  * @param  descriptor
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -690,7 +699,8 @@ uint8_t gatt_client_read_long_characteristic_descriptor(btstack_packet_handler_t
  * @param  callback   
  * @param  con_handle
  * @param  descriptor_handle
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -704,7 +714,8 @@ uint8_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handle(
  * @param  con_handle
  * @param  descriptor_handle
  * @param  offset
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -719,7 +730,8 @@ uint8_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_
  * @param  descriptor
  * @param  value_length
  * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -734,7 +746,8 @@ uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t cal
  * @param  descriptor_handle
  * @param  value_length
  * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -749,7 +762,8 @@ uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btst
  * @param  descriptor
  * @param  value_length
  * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -764,7 +778,8 @@ uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_
  * @param  descriptor_handle
  * @param  value_length
  * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -780,7 +795,8 @@ uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle
  * @param  offset of value
  * @param  value_length
  * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
@@ -797,7 +813,8 @@ uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle
  * @param  con_handle
  * @param  characteristic
  * @param  configuration                                                    GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION
- * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED     if configuring notification, but characteristic has no notification property set
  *                GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED       if configuring indication, but characteristic has no indication property set
@@ -848,6 +865,7 @@ uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_han
  * @brief Commit transactional write. GATT_EVENT_QUERY_COMPLETE is received.
  * @param  callback   
  * @param  con_handle
+ * @return status
  */
 uint8_t gatt_client_execute_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
 
@@ -855,6 +873,7 @@ uint8_t gatt_client_execute_write(btstack_packet_handler_t callback, hci_con_han
  * @brief Abort transactional write. GATT_EVENT_QUERY_COMPLETE is received.
  * @param  callback   
  * @param  con_handle
+ * @return status
  */
 uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
 
@@ -868,7 +887,7 @@ void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, i
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 void gatt_client_att_packet_handler_fuzz(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
-gatt_client_t * gatt_client_get_client(hci_con_handle_t con_handle);
+uint8_t gatt_client_get_client(hci_con_handle_t con_handle, gatt_client_t ** gatt_client);
 #endif
 
 #if defined __cplusplus

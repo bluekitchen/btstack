@@ -154,18 +154,27 @@ static gatt_client_t * gatt_client_get_context_for_handle(uint16_t handle){
 
 // @return gatt_client context
 // returns existing one, or tries to setup new one
-static gatt_client_t * gatt_client_provide_context_for_handle(hci_con_handle_t con_handle){
+static uint8_t gatt_client_provide_context_for_handle(hci_con_handle_t con_handle, gatt_client_t ** out_gatt_client){
     gatt_client_t * gatt_client = gatt_client_get_context_for_handle(con_handle);
-    if (gatt_client != NULL) return gatt_client;
+
+    if (gatt_client != NULL){
+        *out_gatt_client = gatt_client;
+        return ERROR_CODE_SUCCESS;
+    }
 
     // bail if no such hci connection
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (hci_connection == NULL){
         log_error("No connection for handle 0x%04x", con_handle);
-        return NULL;
+        *out_gatt_client = NULL;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
     gatt_client = btstack_memory_gatt_client_get();
-    if (!gatt_client) return NULL;
+    if (gatt_client == NULL){
+        *out_gatt_client = NULL;
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    } 
     // init state
     gatt_client->con_handle = con_handle;
     gatt_client->mtu = ATT_DEFAULT_MTU;
@@ -183,15 +192,17 @@ static gatt_client_t * gatt_client_provide_context_for_handle(hci_con_handle_t c
         gatt_client->mtu = hci_connection->att_connection.mtu;
         gatt_client->mtu_state = MTU_EXCHANGED;
     }
-
-    return gatt_client;
+    *out_gatt_client = gatt_client;
+    return ERROR_CODE_SUCCESS;
 }
 
-static gatt_client_t * gatt_client_provide_context_for_handle_and_start_timer(hci_con_handle_t con_handle){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle(con_handle);
-    if (gatt_client == NULL) return NULL;
-    gatt_client_timeout_start(gatt_client);
-    return gatt_client;
+static uint8_t gatt_client_provide_context_for_handle_and_start_timer(hci_con_handle_t con_handle, gatt_client_t ** out_gatt_client){
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, out_gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    gatt_client_timeout_start(*out_gatt_client);
+    return status;
 }
 
 static bool is_ready(gatt_client_t * gatt_client){
@@ -199,8 +210,11 @@ static bool is_ready(gatt_client_t * gatt_client){
 }
 
 int gatt_client_is_ready(hci_con_handle_t con_handle){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle(con_handle);
-    if (gatt_client == NULL) return 0;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return 0;
+    }
     return is_ready(gatt_client) ? 1 : 0;
 }
 
@@ -209,8 +223,11 @@ void gatt_client_mtu_enable_auto_negotiation(uint8_t enabled){
 }
 
 uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
 
     if ((gatt_client->mtu_state == MTU_EXCHANGED) || (gatt_client->mtu_state == MTU_AUTO_EXCHANGE_DISABLED)){
         *mtu = gatt_client->mtu;
@@ -1331,7 +1348,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             report_gatt_notification(handle, little_endian_read_16(packet,1u), &packet[3], size-3u);
             return;                
         case ATT_HANDLE_VALUE_INDICATION:
-            gatt_client = gatt_client_provide_context_for_handle(handle);
+            gatt_client_provide_context_for_handle(handle, &gatt_client);
             break;
         default:
             gatt_client = gatt_client_get_context_for_handle(handle);
@@ -1824,9 +1841,14 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
 }
 
 uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t message_len, uint8_t * message){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = value_handle;
@@ -1839,9 +1861,14 @@ uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callb
 #endif
 
 uint8_t gatt_client_discover_primary_services(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->start_group_handle = 0x0001;
@@ -1853,9 +1880,14 @@ uint8_t gatt_client_discover_primary_services(btstack_packet_handler_t callback,
 }
 
 uint8_t gatt_client_discover_secondary_services(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->start_group_handle = 0x0001;
@@ -1867,9 +1899,14 @@ uint8_t gatt_client_discover_secondary_services(btstack_packet_handler_t callbac
 }
 
 uint8_t gatt_client_discover_primary_services_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t uuid16){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->start_group_handle = 0x0001;
@@ -1882,9 +1919,14 @@ uint8_t gatt_client_discover_primary_services_by_uuid16(btstack_packet_handler_t
 }
 
 uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, const uint8_t * uuid128){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->start_group_handle = 0x0001;
@@ -1897,9 +1939,14 @@ uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_
 }
 
 uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->start_group_handle = service->start_group_handle;
@@ -1912,9 +1959,14 @@ uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_
 }
 
 uint8_t gatt_client_find_included_services_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
     gatt_client->callback = callback;
     gatt_client->start_group_handle = service->start_group_handle;
     gatt_client->end_group_handle   = service->end_group_handle;
@@ -1925,9 +1977,14 @@ uint8_t gatt_client_find_included_services_for_service(btstack_packet_handler_t 
 }
 
 uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->start_group_handle = start_handle;
@@ -1942,9 +1999,14 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_
 }
 
 uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->start_group_handle = start_handle;
@@ -1968,9 +2030,14 @@ uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_pack
 }
 
 uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
     
     if (characteristic->value_handle == characteristic->end_handle){
         emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
@@ -1985,9 +2052,14 @@ uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t
 }
 
 uint8_t gatt_client_read_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = value_handle;
@@ -1998,9 +2070,14 @@ uint8_t gatt_client_read_value_of_characteristic_using_value_handle(btstack_pack
 }
 
 uint8_t gatt_client_read_value_of_characteristics_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->start_group_handle = start_handle;
@@ -2015,9 +2092,14 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid16(btstack_packet_handl
 }
 
 uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->start_group_handle = start_handle;
@@ -2037,9 +2119,14 @@ uint8_t gatt_client_read_value_of_characteristic(btstack_packet_handler_t callba
 }
 
 uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = value_handle;
@@ -2058,9 +2145,14 @@ uint8_t gatt_client_read_long_value_of_characteristic(btstack_packet_handler_t c
 }
 
 uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->read_multiple_handle_count = num_value_handles;
@@ -2071,8 +2163,11 @@ uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t
 }
 
 uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
 
     if (value_length > (gatt_client->mtu - 3u)) return GATT_CLIENT_VALUE_TOO_LONG;
     if (!att_dispatch_client_can_send_now(gatt_client->con_handle)) return GATT_CLIENT_BUSY;
@@ -2081,9 +2176,14 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
 }
 
 uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = value_handle;
@@ -2095,9 +2195,14 @@ uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callb
 }
 
 uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = value_handle;
@@ -2114,9 +2219,14 @@ uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t 
 }
 
 uint8_t gatt_client_reliable_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = value_handle;
@@ -2129,9 +2239,14 @@ uint8_t gatt_client_reliable_write_long_value_of_characteristic(btstack_packet_h
 }
 
 uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic, uint16_t configuration){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
     
     if ( (configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION) &&
         ((characteristic->properties & ATT_PROPERTY_NOTIFY) == 0u)) {
@@ -2158,9 +2273,14 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
 }
 
 uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = descriptor_handle;
@@ -2175,9 +2295,14 @@ uint8_t gatt_client_read_characteristic_descriptor(btstack_packet_handler_t call
 }
 
 uint8_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t offset){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = descriptor_handle;
@@ -2196,9 +2321,14 @@ uint8_t gatt_client_read_long_characteristic_descriptor(btstack_packet_handler_t
 }
 
 uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t value_length, uint8_t * value){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = descriptor_handle;
@@ -2215,9 +2345,14 @@ uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t cal
 }
 
 uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = descriptor_handle;
@@ -2241,9 +2376,14 @@ uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_
  * @brief -> gatt complete event
  */
 uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = attribute_handle;
@@ -2259,10 +2399,14 @@ uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_han
  * @brief -> gatt complete event
  */
 uint8_t gatt_client_execute_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->gatt_client_state = P_W2_EXECUTE_PREPARED_WRITE;
@@ -2274,9 +2418,14 @@ uint8_t gatt_client_execute_write(btstack_packet_handler_t callback, hci_con_han
  * @brief -> gatt complete event
  */
 uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
-    gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
-    if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle_and_start_timer(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    if (is_ready(gatt_client) == 0){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    }
 
     gatt_client->callback = callback;
     gatt_client->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE;
@@ -2319,21 +2468,29 @@ void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, i
 }
 
 void gatt_client_send_mtu_negotiation(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
-    gatt_client_t * context = gatt_client_provide_context_for_handle(con_handle);
-    if (context == NULL) return;
-    if (context->mtu_state == MTU_AUTO_EXCHANGE_DISABLED){
-        context->callback = callback;
-        context->mtu_state = SEND_MTU_EXCHANGE;
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return;
+    }    
+    if (gatt_client->mtu_state == MTU_AUTO_EXCHANGE_DISABLED){
+        gatt_client->callback = callback;
+        gatt_client->mtu_state = SEND_MTU_EXCHANGE;
         gatt_client_run();
     }
 }
 
 uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
-    gatt_client_t * context = gatt_client_provide_context_for_handle(con_handle);
-    if (context == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (context->write_without_response_callback != NULL) return GATT_CLIENT_IN_WRONG_STATE;
-    context->write_without_response_callback = callback;
-    att_dispatch_client_request_can_send_now_event(context->con_handle);
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }    
+    if (gatt_client->write_without_response_callback != NULL){
+        return GATT_CLIENT_IN_WRONG_STATE;
+    } 
+    gatt_client->write_without_response_callback = callback;
+    att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -2342,7 +2499,8 @@ void gatt_client_att_packet_handler_fuzz(uint8_t packet_type, uint16_t handle, u
     gatt_client_att_packet_handler(packet_type, handle, packet, size);
 }
 
-gatt_client_t * gatt_client_get_client(hci_con_handle_t con_handle){
-    return gatt_client_provide_context_for_handle(con_handle);
+uint8_t gatt_client_get_client(hci_con_handle_t con_handle, gatt_client_t ** out_gatt_client){
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, out_gatt_client);
+    return status;
 }
 #endif

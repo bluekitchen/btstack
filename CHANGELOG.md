@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Fixed
 - btstack_stdin_embedded: use timer to poll RTT input, fix for tickless RTOS
+- gatt_client: return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER for invalid connection handle
 
 ## Changed
 

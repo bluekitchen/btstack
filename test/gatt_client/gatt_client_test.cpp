@@ -303,9 +303,16 @@ TEST_GROUP(GATTClient){
 		hci_setup_le_connection(gatt_client_handle);
 	}
 
+	gatt_client_t * get_gatt_client(hci_con_handle_t con_handle){
+        gatt_client_t * gatt_client;
+		(void) gatt_client_get_client(gatt_client_handle, &gatt_client);
+		return gatt_client;
+	}
+
 	void reset_query_state(void){
-		gatt_client_t * gatt_client = gatt_client_get_client(gatt_client_handle);
+		gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
 		gatt_client->gatt_client_state = P_READY;
+		
 		gatt_client_set_required_security_level(LEVEL_0);
 		gatt_client_mtu_enable_auto_negotiation(1);
 
@@ -315,7 +322,7 @@ TEST_GROUP(GATTClient){
 	}
 
 	void set_wrong_gatt_client_state(void){
-		gatt_client_t * gatt_client = gatt_client_get_client(gatt_client_handle);
+		gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
 	    CHECK_TRUE(gatt_client != NULL);
 	    gatt_client->gatt_client_state = P_W2_SEND_SERVICE_QUERY;
 	}
@@ -335,7 +342,7 @@ TEST(GATTClient, gatt_client_is_ready_mtu_exchange_disabled){
 TEST(GATTClient, TestDiscoverPrimaryServices){
 	test = DISCOVER_PRIMARY_SERVICES;
 	status = gatt_client_discover_primary_services(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
-	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
 	set_wrong_gatt_client_state();
 	status = gatt_client_discover_primary_services(handle_ble_client_event, gatt_client_handle);
@@ -369,7 +376,7 @@ TEST(GATTClient, TestDiscoverPrimaryServicesByUUID128){
 
 	// invalid con handle
     status = gatt_client_discover_primary_services_by_uuid128(handle_ble_client_event, HCI_CON_HANDLE_INVALID, primary_service_uuid128);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_discover_primary_services_by_uuid128(handle_ble_client_event, gatt_client_handle, primary_service_uuid128);
@@ -405,7 +412,7 @@ TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID128){
 
 	// invalid con handle
     status = gatt_client_find_included_services_for_service(handle_ble_client_event, HCI_CON_HANDLE_INVALID, &services[0]);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_find_included_services_for_service(handle_ble_client_event, gatt_client_handle, &services[0]);
@@ -427,7 +434,7 @@ TEST(GATTClient, TestDiscoverCharacteristicsForService){
 
 	// invalid con handle
     status = gatt_client_discover_characteristics_for_service(handle_ble_client_event, HCI_CON_HANDLE_INVALID, &services[0]);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_discover_characteristics_for_service(handle_ble_client_event, gatt_client_handle, &services[0]);
@@ -444,7 +451,7 @@ TEST(GATTClient, TestDiscoverCharacteristicsByUUID16){
 
 	// invalid con handle
     status = gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_ble_client_event, HCI_CON_HANDLE_INVALID, 0x30, 0x32, 0xF102);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_ble_client_event, gatt_client_handle, 0x30, 0x32, 0xF102);
@@ -461,7 +468,7 @@ TEST(GATTClient, TestDiscoverCharacteristicsByUUID128){
 
 	// invalid con handle
     status = gatt_client_discover_characteristics_for_handle_range_by_uuid128(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristic_handles[1][0], characteristic_handles[1][1], characteristic_uuids[1]);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_discover_characteristics_for_handle_range_by_uuid128(handle_ble_client_event, gatt_client_handle, characteristic_handles[1][0], characteristic_handles[1][1], characteristic_uuids[1]);
@@ -518,7 +525,7 @@ TEST(GATTClient, TestDiscoverCharacteristicDescriptor){
 	reset_query_state();
 	// invalid con handle
 	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, HCI_CON_HANDLE_INVALID, service_uuid16);
-	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
 	set_wrong_gatt_client_state();
 	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
@@ -563,7 +570,7 @@ TEST(GATTClient, TestWriteClientCharacteristicConfiguration){
 
 	// invalid con handle
     status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, HCI_CON_HANDLE_INVALID, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
- 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
@@ -608,7 +615,7 @@ TEST(GATTClient, TestReadCharacteristicDescriptor){
 
 	// invalid con handle
     status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, HCI_CON_HANDLE_INVALID,  &characteristics[0]);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, gatt_client_handle,  &characteristics[0]);
@@ -629,7 +636,7 @@ TEST(GATTClient, TestReadCharacteristicDescriptor){
 
 	// invalid con handle
 	status = gatt_client_read_characteristic_descriptor(handle_ble_client_event, HCI_CON_HANDLE_INVALID, &descriptors[0]);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
 	status = gatt_client_read_characteristic_descriptor(handle_ble_client_event, gatt_client_handle, &descriptors[0]);
@@ -652,7 +659,7 @@ TEST(GATTClient, gatt_client_read_value_of_characteristic_using_value_handle){
 
 	// invalid con handle
     status = gatt_client_read_value_of_characteristic_using_value_handle(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle);
- 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_read_value_of_characteristic_using_value_handle(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle);
@@ -676,7 +683,7 @@ TEST(GATTClient, gatt_client_read_long_value_of_characteristic_using_value_handl
 
 	// invalid con handle
     status = gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, 0);
- 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0);
@@ -706,7 +713,7 @@ TEST(GATTClient, gatt_client_read_value_of_characteristics_by_uuid16){
 
 	// invalid con handle
     status = gatt_client_read_value_of_characteristics_by_uuid16(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid16);
- 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_read_value_of_characteristics_by_uuid16(handle_ble_client_event, gatt_client_handle, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid16);
@@ -735,7 +742,7 @@ TEST(GATTClient, gatt_client_read_value_of_characteristics_by_uuid128){
 
 	// invalid con handle
     status = gatt_client_read_value_of_characteristics_by_uuid128(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid128);
- 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_read_value_of_characteristics_by_uuid128(handle_ble_client_event, gatt_client_handle, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid128);
@@ -770,7 +777,7 @@ TEST(GATTClient, gatt_client_write_characteristic_descriptor_using_descriptor_ha
 
 	// invalid con handle
     status = gatt_client_write_characteristic_descriptor_using_descriptor_handle(handle_ble_client_event, HCI_CON_HANDLE_INVALID, descriptors[0].handle, characteristics[0].end_handle, characteristics[0].uuid128);
- 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_write_characteristic_descriptor_using_descriptor_handle(handle_ble_client_event, gatt_client_handle, descriptors[0].handle, characteristics[0].end_handle, characteristics[0].uuid128);
@@ -797,7 +804,7 @@ TEST(GATTClient, gatt_client_prepare_write){
 
 	// invalid con handle
     status = gatt_client_prepare_write(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, 0, short_value_length, (uint8_t*)short_value);
- 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_prepare_write(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0, short_value_length, (uint8_t*)short_value);
@@ -812,7 +819,7 @@ TEST(GATTClient, gatt_client_execute_write){
 
 	// invalid con handle
     status = gatt_client_execute_write(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
- 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_execute_write(handle_ble_client_event, gatt_client_handle);
@@ -827,7 +834,7 @@ TEST(GATTClient, gatt_client_cancel_write){
 
 	// invalid con handle
     status = gatt_client_cancel_write(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
- 	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_cancel_write(handle_ble_client_event, gatt_client_handle);
@@ -872,7 +879,7 @@ TEST(GATTClient, TestWriteCharacteristicValue){
 
 // invalid con handle
     status = gatt_client_write_value_of_characteristic(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
-	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
     status = gatt_client_write_value_of_characteristic(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
@@ -1025,7 +1032,7 @@ TEST(GATTClient, TestWriteReliableLongCharacteristicValue){
 
 	// invalid con handle
 	status = gatt_client_reliable_write_long_value_of_characteristic(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
 	status = gatt_client_reliable_write_long_value_of_characteristic(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
@@ -1057,7 +1064,7 @@ TEST(GATTClient, gatt_client_write_long_value_of_characteristic_with_offset){
 	reset_query_state();
 	// invalid con handle
 	status = gatt_client_write_long_value_of_characteristic_with_offset(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, 0, long_value_length, (uint8_t*)long_value);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     reset_query_state();
     set_wrong_gatt_client_state();
@@ -1089,7 +1096,7 @@ TEST(GATTClient, gatt_client_read_long_characteristic_descriptor_using_descripto
 	reset_query_state();
 	// invalid con handle
 	status = gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_with_offset(handle_ble_client_event, HCI_CON_HANDLE_INVALID, descriptors[0].handle, 0);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     reset_query_state();
     set_wrong_gatt_client_state();
@@ -1119,7 +1126,7 @@ TEST(GATTClient, gatt_client_read_multiple_characteristic_values){
 	reset_query_state();
 	// invalid con handle
 	status = gatt_client_read_multiple_characteristic_values(handle_ble_client_event, HCI_CON_HANDLE_INVALID, 1, value_handles);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 	
 	reset_query_state();
     set_wrong_gatt_client_state();
@@ -1140,12 +1147,10 @@ TEST(GATTClient, gatt_client_write_value_of_characteristic_without_response){
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
 
-	uint16_t value_handles[] = {characteristics[0].value_handle};
-
 	reset_query_state();
 	// invalid con handle
 	status = gatt_client_write_value_of_characteristic_without_response(HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
 	reset_query_state();
     set_wrong_gatt_client_state();
@@ -1205,7 +1210,7 @@ TEST(GATTClient, gatt_client_signed_write_without_response){
 	reset_query_state();
 	// invalid con handle
 	status = gatt_client_signed_write_without_response(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
 	reset_query_state();
     set_wrong_gatt_client_state();
@@ -1222,7 +1227,7 @@ TEST(GATTClient, gatt_client_discover_secondary_services){
 	reset_query_state();
 	// invalid con handle
 	status = gatt_client_discover_secondary_services(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
-    CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
 	reset_query_state();
     set_wrong_gatt_client_state();
@@ -1237,9 +1242,9 @@ TEST(GATTClient, gatt_client_discover_secondary_services){
 
 TEST(GATTClient, gatt_client_request_can_write_without_response_event){
 	int status = gatt_client_request_can_write_without_response_event(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
-	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
-	gatt_client_t * gatt_client = gatt_client_get_client(gatt_client_handle);
+	gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
 	CHECK_TRUE(gatt_client != NULL);
 	btstack_packet_handler_t write_without_response_callback;
 	gatt_client->write_without_response_callback = write_without_response_callback;
@@ -1256,7 +1261,7 @@ TEST(GATTClient, gatt_client_send_mtu_negotiation){
 
 	gatt_client_send_mtu_negotiation(handle_ble_client_event, gatt_client_handle);
 
-	gatt_client_t * gatt_client = gatt_client_get_client(gatt_client_handle);
+	gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
 	CHECK_TRUE(gatt_client != NULL);
 	gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
 	gatt_client_send_mtu_negotiation(handle_ble_client_event, gatt_client_handle);
@@ -1268,13 +1273,13 @@ TEST(GATTClient, gatt_client_get_mtu){
 	reset_query_state();
 	uint16_t mtu;
 	int status = gatt_client_get_mtu(HCI_CON_HANDLE_INVALID, &mtu);
-	CHECK_EQUAL(BTSTACK_MEMORY_ALLOC_FAILED, status);
+	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
 	status = gatt_client_get_mtu(gatt_client_handle, &mtu);
 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 	CHECK_EQUAL(ATT_DEFAULT_MTU, mtu);
 
-	gatt_client_t * gatt_client = gatt_client_get_client(gatt_client_handle);
+	gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
 	CHECK_TRUE(gatt_client != NULL);
 	gatt_client->mtu = 30;
 	
