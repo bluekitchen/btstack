@@ -475,23 +475,12 @@ static inline void sm_pairing_packet_set_responder_key_distribution(sm_pairing_p
     packet[6] = responder_key_distribution;
 }
 
-// @return 1 if all bytes are 0
-static bool sm_is_null(uint8_t * data, int size){
-    int i;
-    for (i=0; i < size ; i++){
-        if (data[i] != 0) {
-            return false;
-        }
-    }
-    return true;
-}
-
 static bool sm_is_null_random(uint8_t random[8]){
-    return sm_is_null(random, 8);
+    return btstack_is_null(random, 8);
 }
 
 static bool sm_is_null_key(uint8_t * key){
-    return sm_is_null(key, 16);
+    return btstack_is_null(key, 16);
 }
 
 // sm_trigger_run allows to schedule callback from main run loop // reduces stack depth
