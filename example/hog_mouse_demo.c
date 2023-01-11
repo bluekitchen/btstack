@@ -171,6 +171,7 @@ static void send_report(uint8_t buttons, int8_t dx, int8_t dy){
     switch (protocol_mode){
         case 0:
             hids_device_send_boot_mouse_input_report(con_handle, report, sizeof(report));
+            break;
         case 1:
             hids_device_send_input_report(con_handle, report, sizeof(report));
             break;

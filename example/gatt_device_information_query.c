@@ -52,6 +52,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "btstack.h"
 
@@ -338,8 +339,8 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                 uint32_t manufacturer_identifier_low  = gattservice_subevent_device_information_system_id_get_manufacturer_id_low(packet);
                 uint8_t  manufacturer_identifier_high = gattservice_subevent_device_information_system_id_get_manufacturer_id_high(packet);
 
-                printf("Manufacturer ID:  0x%02x%08x\n",  manufacturer_identifier_high, manufacturer_identifier_low);   
-                printf("Organizationally Unique ID:  0x%06x\n", gattservice_subevent_device_information_system_id_get_organizationally_unique_id(packet));           
+                printf("Manufacturer ID:  0x%02x%08" PRIx32 "\n",  manufacturer_identifier_high, manufacturer_identifier_low);
+                printf("Organizationally Unique ID:  0x%06" PRIx32 "\n", gattservice_subevent_device_information_system_id_get_organizationally_unique_id(packet));
             }
             break;
         
