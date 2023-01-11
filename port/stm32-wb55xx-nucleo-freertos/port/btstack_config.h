@@ -28,6 +28,7 @@
 #define HCI_ACL_PAYLOAD_SIZE (512 + 4) //Max official att size + l2cap header size
 #define MAX_NR_GATT_CLIENTS 1
 #define MAX_NR_HCI_CONNECTIONS 1
+#define MAX_NR_HIDS_CLIENTS 1
 #define MAX_NR_L2CAP_CHANNELS  3
 #define MAX_NR_L2CAP_SERVICES  2
 #define MAX_NR_LE_DEVICE_DB_ENTRIES 1
