@@ -836,7 +836,14 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             }
             dump_sbc_configuration(&a2dp_conn->sbc_configuration);
             break;
-        }  
+        }
+        case A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
+            status = a2dp_subevent_signaling_connection_established_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                printf("A2DP  Sink      : Signaling connection failed, status 0x%02x\n", status);
+            }
+            break;
+
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             a2dp_subevent_stream_established_get_bd_addr(packet, a2dp_conn->addr);
 
@@ -956,7 +963,7 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'b':
             status = a2dp_sink_establish_stream(device_addr, stream_endpoint->a2dp_local_seid, &a2dp_connection->a2dp_cid);
-            printf(" - Create AVDTP connection to addr %s, and local seid %d, expected cid 0x%02x.\n",
+            printf(" - Create AVDTP connection to addr %s, and local seid %d, cid 0x%02x.\n",
                    bd_addr_to_str(device_addr), a2dp_connection->a2dp_local_seid, a2dp_connection->a2dp_cid);
             break;
         case 'B':
