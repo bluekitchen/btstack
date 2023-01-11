@@ -187,6 +187,14 @@ void reverse_256(const uint8_t * src, uint8_t * dest);
 
 void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest);
 
+/**
+ * @brief Check if all bytes in buffer are zero
+ * @param buffer
+ * @param size
+ * @return true if all bytes is buffer are zero
+ */
+bool btstack_is_null(const uint8_t * buffer, uint16_t size);
+
 /** 
  * @brief ASCII character for 4-bit nibble
  * @return character
