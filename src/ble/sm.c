@@ -5226,7 +5226,9 @@ void gap_random_address_set_update_period(int period_ms){
 void gap_random_address_set(const bd_addr_t addr){
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_STATIC);
     (void)memcpy(sm_random_address, addr, 6);
-    hci_le_random_address_set(addr);
+    // assert msb bits are set to '11'
+    sm_random_address[0] |= 0xc0;
+    hci_le_random_address_set(sm_random_address);
 }
 
 #ifdef ENABLE_LE_PERIPHERAL
