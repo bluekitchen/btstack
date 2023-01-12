@@ -8,7 +8,7 @@ COMMON += btstack_audio_portaudio.c btstack_chipset_zephyr.c btstack_chipset_rea
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
-CFLAGS  += -g -std=c99 -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-parameter -Wredundant-decls -Wsign-compare -Wswitch-default
+CFLAGS  += -g -std=gnu99 -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-parameter -Wredundant-decls -Wsign-compare -Wswitch-default
 # CFLAGS += -Werror
 # CFLAGS += -pedantic
 
