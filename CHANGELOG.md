@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - gatt_client: return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER for invalid connection handle
 
 ## Changed
-
+- GAP: add gap_set_peer_privacy_mode with default LE_PRIVACY_MODE_DEVICE
 
 ## Release v1.5.5
 
