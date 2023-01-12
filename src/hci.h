@@ -1247,6 +1247,7 @@ typedef struct {
 
     // LE Resolving List
 #ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+    le_privacy_mode_t         le_privacy_mode;
     le_resolving_list_state_t le_resolving_list_state;
     uint16_t                  le_resolving_list_size;
     uint8_t                   le_resolving_list_add_entries[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];

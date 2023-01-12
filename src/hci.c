@@ -4604,6 +4604,10 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->iso_packets_to_queue = 1;
 #endif
 
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+    hci_stack->le_privacy_mode = LE_PRIVACY_MODE_DEVICE;
+#endif
+
     hci_state_reset();
 }
 
@@ -9116,6 +9120,10 @@ uint8_t gap_load_resolving_list_from_le_device_db(void){
 		hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_READ_SIZE;
 	}
 	return ERROR_CODE_SUCCESS;
+}
+
+void gap_set_peer_privacy_mode(le_privacy_mode_t privacy_mode ){
+    hci_stack->le_privacy_mode = privacy_mode;
 }
 #endif
 

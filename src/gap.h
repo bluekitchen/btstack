@@ -1386,6 +1386,13 @@ void gap_delete_bonding(bd_addr_type_t address_type, bd_addr_t address);
  */
 
 /**
+ * Set Privacy Mode for use in Resolving List. Default: LE_PRIVACY_MODE_DEVICE
+ * @note Only applies for new devices added to resolving list, please call before startup
+ * @param privacy_mode
+ */
+void gap_set_peer_privacy_mode(le_privacy_mode_t privacy_mode );
+
+/**
  * @brief Load LE Device DB entries into Controller Resolving List to allow filtering on
  *        bonded devies with resolvable private addresses
  * @return EROOR_CODE_SUCCESS if supported by Controller
