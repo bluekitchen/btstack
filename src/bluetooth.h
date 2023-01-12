@@ -109,6 +109,14 @@ typedef enum {
 } link_key_type_t;
 
 /**
+ * LE Privacy 1.2
+ */
+typedef enum {
+    LE_PRIVACY_MODE_NETWORK = 0,
+    LE_PRIVACY_MODE_DEVICE = 1,
+} le_privacy_mode_t;
+
+/**
  * @brief Extended Inquiry Response
  */
 #define EXTENDED_INQUIRY_RESPONSE_DATA_LEN 240
