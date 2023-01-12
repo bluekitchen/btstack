@@ -16546,12 +16546,12 @@ static inline hci_con_handle_t gattservice_subevent_csis_remote_server_connected
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field pacs_cid from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_CONNECTED
+ * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_CONNECTED
  * @param event packet
- * @return pacs_cid
+ * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_remote_server_connected_get_pacs_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_csis_remote_server_connected_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 5);
 }
 /**
@@ -16565,13 +16565,41 @@ static inline uint8_t gattservice_subevent_csis_remote_server_connected_get_stat
 }
 
 /**
- * @brief Get field pacs_cid from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_DISCONNECTED
+ * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_DISCONNECTED
  * @param event packet
- * @return pacs_cid
+ * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_remote_server_disconnected_get_pacs_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_csis_remote_server_disconnected_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_csis_write_lock_complete_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE
+ * @param event packet
+ * @return csis_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_csis_write_lock_complete_get_csis_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_csis_write_lock_complete_get_status(const uint8_t * event){
+    return event[7];
 }
 
 /**
