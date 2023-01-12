@@ -333,11 +333,13 @@ static void network_setup(void){
     }
 #endif
 
+#ifndef HAVE_LWIP
     // init lwIP stack
 #if NO_SYS
     lwip_init();
 #else
     tcpip_init(NULL, NULL);
+#endif
 #endif
 
     // start DHCP Server
