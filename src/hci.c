@@ -6208,6 +6208,8 @@ static bool hci_run_general_gap_le(void){
 				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_UPDATES_ENTRIES;
 				(void) memset(hci_stack->le_resolving_list_add_entries, 0xff,
 							  sizeof(hci_stack->le_resolving_list_add_entries));
+                (void) memset(hci_stack->le_resolving_list_set_privacy_mode, 0xff,
+                              sizeof(hci_stack->le_resolving_list_set_privacy_mode));
 				(void) memset(hci_stack->le_resolving_list_remove_entries, 0,
 							  sizeof(hci_stack->le_resolving_list_remove_entries));
 				hci_send_cmd(&hci_le_clear_resolving_list);
@@ -6264,6 +6266,29 @@ static bool hci_run_general_gap_le(void){
 								 peer_irk_flipped, local_irk_flipped);
 					return true;
 				}
+
+                // finally, set privacy mode
+                for (i = 0; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++) {
+                    uint8_t offset = i >> 3;
+                    uint8_t mask = 1 << (i & 7);
+                    if ((hci_stack->le_resolving_list_set_privacy_mode[offset] & mask) == 0) continue;
+                    hci_stack->le_resolving_list_set_privacy_mode[offset] &= ~mask;
+                    if (hci_stack->le_privacy_mode == LE_PRIVACY_MODE_NETWORK) {
+                        // Network Privacy Mode is default
+                        continue;
+                    }
+                    bd_addr_t peer_identity_address;
+                    int peer_identity_addr_type = (int) BD_ADDR_TYPE_UNKNOWN;
+                    sm_key_t peer_irk;
+                    le_device_db_info(i, &peer_identity_addr_type, peer_identity_address, peer_irk);
+                    if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
+                    if (btstack_is_null(peer_irk, 16)) continue;
+                    // command uses format specifier 'P' that stores 16-byte value without flip
+                    uint8_t peer_irk_flipped[16];
+                    reverse_128(peer_irk, peer_irk_flipped);
+                    hci_send_cmd(&hci_le_set_privacy_mode, peer_identity_addr_type, peer_identity_address, hci_stack->le_privacy_mode);
+                    return true;
+                }
 				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
 				break;
 
@@ -9094,6 +9119,7 @@ void hci_load_le_device_db_entry_into_resolving_list(uint16_t le_device_db_index
     uint8_t offset = le_device_db_index >> 3;
     uint8_t mask = 1 << (le_device_db_index & 7);
     hci_stack->le_resolving_list_add_entries[offset] |= mask;
+    hci_stack->le_resolving_list_set_privacy_mode[offset] |= mask;
     if (hci_stack->le_resolving_list_state == LE_RESOLVING_LIST_DONE){
     	// note: go back to remove entries, otherwise, a remove + add will skip the add
         hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_UPDATES_ENTRIES;

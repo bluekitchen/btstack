@@ -1251,6 +1251,7 @@ typedef struct {
     le_resolving_list_state_t le_resolving_list_state;
     uint16_t                  le_resolving_list_size;
     uint8_t                   le_resolving_list_add_entries[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];
+    uint8_t                   le_resolving_list_set_privacy_mode[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];
 	uint8_t                   le_resolving_list_remove_entries[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];
 #endif
 
