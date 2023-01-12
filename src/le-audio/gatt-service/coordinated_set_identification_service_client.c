@@ -137,6 +137,18 @@ static void csis_client_emit_disconnect(uint16_t cid){
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void csis_client_emit_write_lock_complete(csis_client_connection_t * connection, uint8_t status){
+    uint8_t event[6];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE;
+    little_endian_store_16(event, pos, connection->cid);
+    pos += 2;
+    event[pos++] = status;
+    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
     UNUSED(channel);
@@ -337,8 +349,12 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
             csis_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
             break;
 
-        case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE_READ:
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE_WRITTEN:
+            connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
+            csis_client_emit_write_lock_complete(connection, status);
+            break;
+
+        case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE_READ:
             connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
             break;
 
@@ -609,7 +625,7 @@ uint8_t coordinated_set_identification_service_client_write_lock(uint16_t ascs_c
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     if (connection->characteristics[CSIS_CHARACTERISTIC_INDEX_LOCK].value_handle == 0){
-        return ERROR_CODE_COMMAND_DISALLOWED;
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
     connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE;
