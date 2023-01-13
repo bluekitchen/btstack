@@ -105,9 +105,9 @@ typedef struct {
     uint8_t  service_instances_num;
     uint8_t  characteristic_index;
 
-    csis_sirk_calculation_state_t  decrypted_sirk_state;
-    uint8_t remote_encrypted_sirk[16];
-    
+    csis_sirk_calculation_state_t  remote_sirk_state;
+    uint8_t remote_sirk[16];
+
     csis_member_lock_t coordinator_lock;
 } csis_client_connection_t;
 
