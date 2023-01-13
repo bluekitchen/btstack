@@ -245,7 +245,16 @@ static void csis_client_emit_read_event(csis_client_connection_t * connection, c
                 csis_client_emit_read_remote_sirk(connection, ATT_ERROR_VALUE_NOT_ALLOWED, NULL);
                 break;
             }
-            csis_client_emit_read_remote_sirk(connection, ATT_ERROR_SUCCESS, &data[1]);
+
+            switch ((csis_sirk_type_t)data[0]){
+                case CSIS_SIRK_TYPE_ENCRYPTED:
+                    reverse_128(connection->remote_encrypted_sirk, (uint8_t *)&data[1]);
+                    // TODO: decrypt sirk
+                    break;
+                default:
+                    csis_client_emit_read_remote_sirk(connection, ATT_ERROR_SUCCESS, &data[1]);
+                    break;
+            }
             break;
         case CSIS_CHARACTERISTIC_INDEX_SIZE:
             if (status != ERROR_CODE_SUCCESS){
@@ -702,6 +711,26 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     }
 }
 
+uint8_t coordinated_set_identification_service_client_read_sirk(uint16_t ascs_cid){
+    csis_client_connection_t * connection = csis_get_client_connection_for_cid(ascs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    if (connection->characteristics[CSIS_CHARACTERISTIC_INDEX_SIRK].value_handle == 0){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    if (connection->decrypted_sirk_state != CSIS_SIRK_CALCULATION_STATE_IDLE){
+        return ERROR_CODE_REPEATED_ATTEMPTS;
+    }
+
+    connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE;
+    connection->characteristic_index = CSIS_CHARACTERISTIC_INDEX_SIRK;
+    return ERROR_CODE_SUCCESS;
+}
+
 static uint8_t coordinated_set_identification_service_client_read_characteristics_value(uint16_t ascs_cid, csis_characteristic_index_t index){
     csis_client_connection_t * connection = csis_get_client_connection_for_cid(ascs_cid);
     if (connection == NULL){
@@ -718,11 +747,6 @@ static uint8_t coordinated_set_identification_service_client_read_characteristic
     connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE;
     connection->characteristic_index = index;
     return ERROR_CODE_SUCCESS;
-}
-
-
-uint8_t coordinated_set_identification_service_client_read_sirk(uint16_t ascs_cid){
-    return coordinated_set_identification_service_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_SIRK);
 }
 
 uint8_t coordinated_set_identification_service_client_read_coordinated_set_size(uint16_t ascs_cid){
