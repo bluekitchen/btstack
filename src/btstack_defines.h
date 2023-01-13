@@ -5004,13 +5004,13 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK                                     0x65u
 
 /**
- * @format 121B
+ * @format 121P
  * @param subevent_code
  * @param csis_cid
  * @param status
- * @param ris
+ * @param sirk
 */
-#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_RIS                                      0x66u
+#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK                                     0x66u
 
 
 /**
