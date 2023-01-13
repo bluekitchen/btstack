@@ -4969,13 +4969,49 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_DISCONNECTED                      0x61u
 
 /**
- * @format 1H21
+ * @format 121
  * @param subevent_code
- * @param con_handle
  * @param csis_cid
  * @param status
 */
 #define GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE                             0x62u
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param csis_cid
+ * @param status
+ * @param lock
+*/
+#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK                                     0x63u
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param csis_cid
+ * @param status
+ * @param coordinated_set_size
+*/
+#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_COORDINATED_SET_SIZE                     0x64u
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param csis_cid
+ * @param status
+ * @param rank
+*/
+#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK                                     0x65u
+
+/**
+ * @format 121B
+ * @param subevent_code
+ * @param csis_cid
+ * @param status
+ * @param ris
+*/
+#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_RIS                                      0x66u
+
 
 /**
  * @format 1H1
