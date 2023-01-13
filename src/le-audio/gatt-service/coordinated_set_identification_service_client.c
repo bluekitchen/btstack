@@ -109,6 +109,24 @@ static csis_client_connection_t * csis_get_client_connection_for_cid(uint16_t cs
     return NULL;
 }
 
+static csis_characteristic_index_t csis_get_characteristic_index_for_uuid16(uint16_t uuid16){
+    switch (uuid16){
+        case ORG_BLUETOOTH_CHARACTERISTIC_SET_IDENTITY_RESOLVING_KEY_CHARACTERISTIC:
+            return CSIS_CHARACTERISTIC_INDEX_SIRK;
+
+        case ORG_BLUETOOTH_CHARACTERISTIC_SIZE_CHARACTERISTIC:
+            return CSIS_CHARACTERISTIC_INDEX_SIZE;
+
+        case ORG_BLUETOOTH_CHARACTERISTIC_LOCK_CHARACTERISTIC:
+            return CSIS_CHARACTERISTIC_INDEX_LOCK;
+
+        case ORG_BLUETOOTH_CHARACTERISTIC_RANK_CHARACTERISTIC:
+            return CSIS_CHARACTERISTIC_INDEX_RANK;
+
+        default:
+            return CSIS_CHARACTERISTIC_INDEX_RFU;
+    }
+}
 static void csis_client_finalize_connection(csis_client_connection_t * connection){
     btstack_linked_list_remove(&csis_connections, (btstack_linked_item_t*) connection);
 }
@@ -474,24 +492,6 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
     return true;
 }
 
-static uint8_t csis_get_index_of_characteristic_with_uuid16(uint16_t uuid16){
-    switch (uuid16){
-        case ORG_BLUETOOTH_CHARACTERISTIC_SET_IDENTITY_RESOLVING_KEY_CHARACTERISTIC:
-            return (uint8_t)CSIS_CHARACTERISTIC_INDEX_SIRK;
-
-        case ORG_BLUETOOTH_CHARACTERISTIC_SIZE_CHARACTERISTIC:
-            return (uint8_t)CSIS_CHARACTERISTIC_INDEX_SIZE;
-
-        case ORG_BLUETOOTH_CHARACTERISTIC_LOCK_CHARACTERISTIC:
-            return (uint8_t)CSIS_CHARACTERISTIC_INDEX_LOCK;
-
-        case ORG_BLUETOOTH_CHARACTERISTIC_RANK_CHARACTERISTIC:
-            return (uint8_t)CSIS_CHARACTERISTIC_INDEX_RANK;
-
-        default:
-            return (uint8_t)CSIS_CHARACTERISTIC_INDEX_RFU;
-    }
-}
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
@@ -543,7 +543,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case ORG_BLUETOOTH_CHARACTERISTIC_SIZE_CHARACTERISTIC:
                 case ORG_BLUETOOTH_CHARACTERISTIC_LOCK_CHARACTERISTIC:
                 case ORG_BLUETOOTH_CHARACTERISTIC_RANK_CHARACTERISTIC:
-                    index = csis_get_index_of_characteristic_with_uuid16(characteristic.uuid16);
+                    index = (uint8_t)csis_get_characteristic_index_for_uuid16(characteristic.uuid16);
                     break;
 
                 default:
