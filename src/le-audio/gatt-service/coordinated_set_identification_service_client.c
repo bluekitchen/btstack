@@ -217,19 +217,19 @@ static void csis_client_emit_read_remote_rank(csis_client_connection_t * connect
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void csis_client_emit_read_remote_ris(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
-    uint8_t event[12];
+static void csis_client_emit_read_remote_sirk(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
+    uint8_t event[22];
     memset(event, 0, sizeof(event));
 
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RIS;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
     if (data != NULL){
-        reverse_48(data, &event[pos]);
+        reverse_128(data, &event[pos]);
     }
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -238,14 +238,14 @@ static void csis_client_emit_read_event(csis_client_connection_t * connection, c
     switch (index){
         case CSIS_CHARACTERISTIC_INDEX_SIRK:
             if (status != ERROR_CODE_SUCCESS){
-                csis_client_emit_read_remote_ris(connection, status, NULL);
+                csis_client_emit_read_remote_sirk(connection, status, NULL);
                 break;
             }
-            if (data_size != 6){
-                csis_client_emit_read_remote_ris(connection, ATT_ERROR_VALUE_NOT_ALLOWED, NULL);
+            if (data_size != 17){
+                csis_client_emit_read_remote_sirk(connection, ATT_ERROR_VALUE_NOT_ALLOWED, NULL);
                 break;
             }
-            csis_client_emit_read_remote_ris(connection, ATT_ERROR_SUCCESS, data);
+            csis_client_emit_read_remote_sirk(connection, ATT_ERROR_SUCCESS, &data[1]);
             break;
         case CSIS_CHARACTERISTIC_INDEX_SIZE:
             if (status != ERROR_CODE_SUCCESS){
