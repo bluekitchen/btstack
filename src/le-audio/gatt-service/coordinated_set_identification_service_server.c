@@ -37,8 +37,6 @@
 
 #define BTSTACK_FILE__ "coordinated_set_identification_service_server.c"
 
-#include <stdio.h>
-
 #include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "ble/sm.h"
