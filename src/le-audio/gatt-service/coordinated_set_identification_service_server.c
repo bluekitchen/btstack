@@ -161,7 +161,7 @@ static csis_coordinator_t * csis_server_get_next_coordinator_for_sirk_calculatio
         if (csis_coordinators[i].con_handle == HCI_CON_HANDLE_INVALID){
             continue;
         }
-        if (csis_coordinators[i].encrypted_sirk_state == CSIS_ENCRYPTED_SIRK_CALCULATION_W2_START){
+        if (csis_coordinators[i].encrypted_sirk_state == CSIS_SIRK_CALCULATION_W2_START){
             return &csis_coordinators[i];
         }
     }
@@ -178,7 +178,7 @@ static void csis_server_handle_k1(void * context){
         active_coordinator->encrypted_sirk[i] = k1[i] ^ csis_sirk[i];
     }
 
-    active_coordinator->encrypted_sirk_state = CSIS_ENCRYPTED_SIRK_CALCULATION_STATE_READY;
+    active_coordinator->encrypted_sirk_state = CSIS_SIRK_CALCULATION_STATE_READY;
     (void)att_server_response_ready(active_coordinator->con_handle);
     active_coordinator = NULL;
 
@@ -212,7 +212,7 @@ static void csis_server_trigger_next_sirk_calculation(void){
         return;
     }
 
-    active_coordinator->encrypted_sirk_state = CSIS_ENCRYPTED_SIRK_CALCULATION_ACTIVE;
+    active_coordinator->encrypted_sirk_state = CSIS_SIRK_CALCULATION_ACTIVE;
     btstack_crypto_aes128_cmac_zero(&aes128_cmac_request, sizeof(s1_string), s1_string, s1, &csis_server_handle_s1, NULL);
 }
 
@@ -337,7 +337,7 @@ static uint16_t coordinated_set_identification_service_read_callback(hci_con_han
         switch (csis_sirk_type){
             case CSIS_SIRK_TYPE_ENCRYPTED:
                 switch (coordinator->encrypted_sirk_state){
-                    case CSIS_ENCRYPTED_SIRK_CALCULATION_STATE_READY:
+                    case CSIS_SIRK_CALCULATION_STATE_READY:
                         reverse_128(coordinator->encrypted_sirk, &value[1]);
                         break;
                     default:
@@ -353,10 +353,10 @@ static uint16_t coordinated_set_identification_service_read_callback(hci_con_han
     
     if (attribute_handle == ATT_READ_RESPONSE_PENDING){
         switch (coordinator->encrypted_sirk_state){
-            case CSIS_ENCRYPTED_SIRK_CALCULATION_ACTIVE:
+            case CSIS_SIRK_CALCULATION_ACTIVE:
                 return 0;
             default:
-                coordinator->encrypted_sirk_state = CSIS_ENCRYPTED_SIRK_CALCULATION_W2_START;
+                coordinator->encrypted_sirk_state = CSIS_SIRK_CALCULATION_W2_START;
                 break;
         }
         csis_server_trigger_next_sirk_calculation();
@@ -562,7 +562,7 @@ static void csis_coordinator_reset(csis_coordinator_t * coordinator){
     if (active_coordinator == coordinator){
         active_coordinator = NULL;
     }
-    coordinator->encrypted_sirk_state = CSIS_ENCRYPTED_SIRK_CALCULATION_STATE_IDLE;
+    coordinator->encrypted_sirk_state = CSIS_SIRK_CALCULATION_STATE_IDLE;
     coordinator->scheduled_tasks = 0;
     coordinator->con_handle = HCI_CON_HANDLE_INVALID;
 }

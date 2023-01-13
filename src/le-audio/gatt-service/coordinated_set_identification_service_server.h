@@ -59,12 +59,7 @@ extern "C" {
  * To use with your application, add `#import <coordinated_set_identification_service.gatt>` to your .gatt file. 
  */
 
-typedef enum {
-    CSIS_ENCRYPTED_SIRK_CALCULATION_STATE_IDLE = 0x00,
-    CSIS_ENCRYPTED_SIRK_CALCULATION_W2_START,
-    CSIS_ENCRYPTED_SIRK_CALCULATION_ACTIVE,
-    CSIS_ENCRYPTED_SIRK_CALCULATION_STATE_READY
-} csis_encrypted_sirk_calculation_state_t;
+
 
 typedef struct {
     uint16_t con_handle;
@@ -79,7 +74,7 @@ typedef struct {
     uint8_t  scheduled_tasks;
     btstack_context_callback_registration_t  scheduled_tasks_callback;
 
-    csis_encrypted_sirk_calculation_state_t  encrypted_sirk_state;
+    csis_sirk_calculation_state_t  encrypted_sirk_state;
     uint8_t encrypted_sirk[16];
 
 } csis_coordinator_t;
