@@ -149,6 +149,112 @@ static void csis_client_emit_write_lock_complete(csis_client_connection_t * conn
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void csis_client_emit_read_remote_lock(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
+    uint8_t event[7];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK;
+    little_endian_store_16(event, pos, connection->cid);
+    pos += 2;
+    event[pos++] = status;
+    event[pos++] = (data == NULL) ? 0 : data[0];
+    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void csis_client_emit_read_remote_coordinated_set_size(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
+    uint8_t event[7];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_COORDINATED_SET_SIZE;
+    little_endian_store_16(event, pos, connection->cid);
+    pos += 2;
+    event[pos++] = status;
+    event[pos++] = (data == NULL) ? 0 : data[0];
+    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void csis_client_emit_read_remote_rank(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
+    uint8_t event[7];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK;
+    little_endian_store_16(event, pos, connection->cid);
+    pos += 2;
+    event[pos++] = status;
+    event[pos++] = (data == NULL) ? 0 : data[0];
+    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void csis_client_emit_read_remote_ris(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
+    uint8_t event[12];
+    memset(event, 0, sizeof(event));
+
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK;
+    little_endian_store_16(event, pos, connection->cid);
+    pos += 2;
+    event[pos++] = status;
+    if (data != NULL){
+        reverse_48(data, &event[pos]);
+    }
+    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void csis_client_emit_read_event(csis_client_connection_t * connection, csis_characteristic_index_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
+    switch (index){
+        case CSIS_CHARACTERISTIC_INDEX_SIRK:
+            if (status != ERROR_CODE_SUCCESS){
+                csis_client_emit_read_remote_ris(connection, status, NULL);
+                break;
+            }
+            if (data_size != 6){
+                csis_client_emit_read_remote_ris(connection, ATT_ERROR_VALUE_NOT_ALLOWED, NULL);
+                break;
+            }
+            csis_client_emit_read_remote_ris(connection, ATT_ERROR_SUCCESS, data);
+            break;
+        case CSIS_CHARACTERISTIC_INDEX_SIZE:
+            if (status != ERROR_CODE_SUCCESS){
+                csis_client_emit_read_remote_coordinated_set_size(connection, status, NULL);
+                break;
+            }
+            if (data_size != 1){
+                csis_client_emit_read_remote_coordinated_set_size(connection, ATT_ERROR_VALUE_NOT_ALLOWED, NULL);
+                break;
+            }
+            csis_client_emit_read_remote_coordinated_set_size(connection, ATT_ERROR_SUCCESS, data);
+            break;
+        case CSIS_CHARACTERISTIC_INDEX_LOCK:
+            if (status != ERROR_CODE_SUCCESS){
+                csis_client_emit_read_remote_lock(connection, status, NULL);
+                break;
+            }
+            if (data_size != 1){
+                csis_client_emit_read_remote_lock(connection, ATT_ERROR_VALUE_NOT_ALLOWED, NULL);
+                break;
+            }
+            csis_client_emit_read_remote_lock(connection, ATT_ERROR_SUCCESS, data);
+            break;
+        case CSIS_CHARACTERISTIC_INDEX_RANK:
+            if (status != ERROR_CODE_SUCCESS){
+                csis_client_emit_read_remote_rank(connection, status, NULL);
+                break;
+            }
+            if (data_size != 1){
+                csis_client_emit_read_remote_rank(connection, ATT_ERROR_VALUE_NOT_ALLOWED, NULL);
+                break;
+            }
+            csis_client_emit_read_remote_rank(connection, ATT_ERROR_SUCCESS, data);
+            break;
+        default:
+            break;
+    }
+}
 static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
     UNUSED(channel);
@@ -355,6 +461,9 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
             break;
 
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE_READ:
+            if (status != ERROR_CODE_SUCCESS){
+                csis_client_emit_read_event(connection, connection->characteristic_index, status, NULL, 0);
+            }
             connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
             break;
 
@@ -495,11 +604,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 break;
             }
 
-            if (gatt_event_characteristic_value_query_result_get_value_length(packet) == 0 ){
-                break;
-            }
-            
-            // TODO
+            csis_client_emit_read_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS, 
+                gatt_event_characteristic_value_query_result_get_value(packet), 
+                gatt_event_characteristic_value_query_result_get_value_length(packet));
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
