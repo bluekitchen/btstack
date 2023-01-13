@@ -63,13 +63,17 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];
 
 /**
  * Address types
- * @note: BTstack uses a custom addr type to refer to classic ACL and SCO devices
  */
  typedef enum {
+    // Public Device Address
     BD_ADDR_TYPE_LE_PUBLIC = 0,
+    // Random Device Address
     BD_ADDR_TYPE_LE_RANDOM = 1,
-    BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_PUBLIC = 2,
-    BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_RANDOM = 3,
+    // Public Identity Address (Corresponds to Resolved Private Address)
+    BD_ADDR_TYPE_LE_PUBLIC_IDENTITY = 2,
+    // Random (static) Identity Address (Corresponds to Resolved Private Address)
+    BD_ADDR_TYPE_LE_RANDOM_IDENTITY = 3,
+    // internal BTstack addr types for Classic connections
     BD_ADDR_TYPE_SCO       = 0xfc,
     BD_ADDR_TYPE_ACL       = 0xfd,
     BD_ADDR_TYPE_UNKNOWN   = 0xfe,  // also used as 'invalid'

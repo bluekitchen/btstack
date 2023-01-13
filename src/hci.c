@@ -607,8 +607,8 @@ static bool hci_is_le_connection_type(bd_addr_type_t address_type){
     switch (address_type){
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
-        case BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_PUBLIC:
-        case BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_RANDOM:
+        case BD_ADDR_TYPE_LE_PUBLIC_IDENTITY:
+        case BD_ADDR_TYPE_LE_RANDOM_IDENTITY:
             return true;
         default:
             return false;
