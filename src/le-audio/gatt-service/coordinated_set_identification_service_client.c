@@ -127,6 +127,17 @@ static csis_characteristic_index_t csis_get_characteristic_index_for_uuid16(uint
             return CSIS_CHARACTERISTIC_INDEX_RFU;
     }
 }
+
+static csis_characteristic_index_t csis_get_characteristic_index_for_value_handle(csis_client_connection_t * connection, uint16_t value_handle){
+    uint8_t i;
+    for (i = 0; i < (uint8_t)CSIS_CHARACTERISTIC_INDEX_RFU; i++){
+        if (connection->characteristics[i].value_handle == value_handle){
+            return (csis_characteristic_index_t)i;
+        }
+    }
+    return CSIS_CHARACTERISTIC_INDEX_RFU;
+}
+
 static void csis_client_finalize_connection(csis_client_connection_t * connection){
     btstack_linked_list_remove(&csis_connections, (btstack_linked_item_t*) connection);
 }
@@ -213,7 +224,7 @@ static void csis_client_emit_read_remote_ris(csis_client_connection_t * connecti
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RIS;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -273,6 +284,7 @@ static void csis_client_emit_read_event(csis_client_connection_t * connection, c
             break;
     }
 }
+
 static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
     UNUSED(channel);
@@ -291,7 +303,9 @@ static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channe
     uint16_t value_length = gatt_event_notification_get_value_length(packet);
     uint8_t * value = (uint8_t *)gatt_event_notification_get_value(packet);
 
-    // TODO send SIRK, LOCk, SIZE
+    // get index for value_handle
+    csis_characteristic_index_t index = csis_get_characteristic_index_for_value_handle(connection, value_handle);
+    csis_client_emit_read_event(connection, index, ATT_ERROR_SUCCESS, value, value_length);
 }
 
 static bool csis_client_register_notification(csis_client_connection_t * connection){
