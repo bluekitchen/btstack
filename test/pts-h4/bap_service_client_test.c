@@ -212,7 +212,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
     if (packet_type != HCI_EVENT_PACKET) return;
     bd_addr_t addr;
-    uint8_t status;
     uint8_t event = hci_event_packet_get_type(packet);
     uint8_t i;
     hci_con_handle_t  cis_handle;
@@ -297,7 +296,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             uint16_t uuid;
             for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
                 uint8_t data_type = ad_iterator_get_data_type(&context);
-                uint8_t size = ad_iterator_get_data_len(&context);
                 const uint8_t *data = ad_iterator_get_data(&context);
                 switch (data_type){
                     case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
@@ -591,7 +589,6 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
     uint8_t ase_id;
-    hci_con_handle_t con_handle;
     ascs_state_t ase_state;
     uint8_t response_code;
     uint8_t reason;
@@ -738,7 +735,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
     uint8_t status;
-    
+
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_CONNECTED:
             if (bap_app_client_con_handle != gattservice_subevent_csis_remote_server_connected_get_con_handle(packet)){
