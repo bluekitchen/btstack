@@ -331,6 +331,16 @@ static int btstack_audio_portaudio_source_init(
     return 0;
 }
 
+static uint32_t btstack_audio_portaudio_sink_get_samplerate(void) {
+    const PaStreamInfo *stream_info = Pa_GetStreamInfo(stream_sink);
+    return stream_info->sampleRate;
+}
+
+static uint32_t btstack_audio_portaudio_source_get_samplerate(void) {
+    const PaStreamInfo *stream_info = Pa_GetStreamInfo(stream_source);
+    return stream_info->sampleRate;
+}
+
 static void btstack_audio_portaudio_sink_set_volume(uint8_t volume){
     sink_volume = volume;
 }
@@ -468,6 +478,7 @@ static void btstack_audio_portaudio_source_close(void){
 
 static const btstack_audio_sink_t btstack_audio_portaudio_sink = {
     /* int (*init)(..);*/                                       &btstack_audio_portaudio_sink_init,
+    /* uint32_t (*get_samplerate)() */                          &btstack_audio_portaudio_sink_get_samplerate,
     /* void (*set_volume)(uint8_t volume); */                   &btstack_audio_portaudio_sink_set_volume,
     /* void (*start_stream(void));*/                            &btstack_audio_portaudio_sink_start_stream,
     /* void (*stop_stream)(void)  */                            &btstack_audio_portaudio_sink_stop_stream,
@@ -476,6 +487,7 @@ static const btstack_audio_sink_t btstack_audio_portaudio_sink = {
 
 static const btstack_audio_source_t btstack_audio_portaudio_source = {
     /* int (*init)(..);*/                                       &btstack_audio_portaudio_source_init,
+    /* uint32_t (*get_samplerate)() */                          &btstack_audio_portaudio_source_get_samplerate,
     /* void (*set_gain)(uint8_t gain); */                       &btstack_audio_portaudio_source_set_gain,
     /* void (*start_stream(void));*/                            &btstack_audio_portaudio_source_start_stream,
     /* void (*stop_stream)(void)  */                            &btstack_audio_portaudio_source_stop_stream,
