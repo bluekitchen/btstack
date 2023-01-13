@@ -434,7 +434,6 @@ static uint16_t ascs_client_serialize_ase(ascs_client_connection_t * connection,
 }
 
 static void ascs_client_run_for_connection(ascs_client_connection_t * connection){
-    uint8_t status;
     gatt_client_characteristic_t characteristic;
     gatt_client_service_t service;
 
