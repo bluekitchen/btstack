@@ -95,7 +95,6 @@ static btstack_crypto_aes128_cmac_t aes128_cmac_request;
 static uint8_t  s1[16];
 static uint8_t   T[16];
 static uint8_t  k1[16];
-static uint8_t sef[16];
 const static uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
 
 static uint8_t key_ltk[16];
