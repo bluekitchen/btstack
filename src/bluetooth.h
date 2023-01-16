@@ -391,7 +391,17 @@ typedef enum {
 #define HCI_ACL_3DH3_SIZE          552
 #define HCI_ACL_2DH5_SIZE          679
 #define HCI_ACL_3DH5_SIZE         1021
-       
+#define HCI_SCO_HV1_SIZE            10
+#define HCI_SCO_HV2_SIZE            20
+#define HCI_SCO_HV3_SIZE            30
+#define HCI_SCO_EV3_SIZE            30
+#define HCI_SCO_EV4_SIZE           120
+#define HCI_SCO_EV5_SIZE           180
+#define HCI_SCO_2EV3_SIZE           60
+#define HCI_SCO_2EV5_SIZE          360
+#define HCI_SCO_3EV3_SIZE           90
+#define HCI_SCO_3EV5_SIZE          540
+
 #define LE_ADVERTISING_DATA_SIZE    31
 #define LE_EXTENDED_ADVERTISING_MAX_HANDLE 0xEFu
 #define LE_EXTENDED_ADVERTISING_MAX_CHUNK_LEN 251
@@ -409,9 +419,15 @@ typedef enum {
 // SCO Packet Types
 #define SCO_PACKET_TYPES_NONE  0x0000
 #define SCO_PACKET_TYPES_HV1   0x0001
+#define SCO_PACKET_TYPES_HV2   0x0002
 #define SCO_PACKET_TYPES_HV3   0x0004
 #define SCO_PACKET_TYPES_EV3   0x0008
+#define SCO_PACKET_TYPES_EV4   0x0010
+#define SCO_PACKET_TYPES_EV5   0x0020
 #define SCO_PACKET_TYPES_2EV3  0x0040
+#define SCO_PACKET_TYPES_3EV3  0x0080
+#define SCO_PACKET_TYPES_2EV5  0x0100
+#define SCO_PACKET_TYPES_3EV5  0x0200
 #define SCO_PACKET_TYPES_ALL   0x03FF
 
 // Link Policy Settings
