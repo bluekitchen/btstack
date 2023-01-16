@@ -53,6 +53,8 @@
 #include "lwip/prot/dhcp.h"
 #include "netif/etharp.h"
 
+#include "btstack_bool.h"
+
 #if LWIP_IPV6
 #include "lwip/ethip6.h"
 #endif
@@ -80,7 +82,7 @@
 #define LWIP_TIMER_INTERVAL_MS 25
 
 static void bnep_lwip_outgoing_process(void * arg);
-static int bnep_lwip_outgoing_packets_empty(void);
+static bool bnep_lwip_outgoing_packets_empty(void);
 
 // lwip data
 static struct netif btstack_netif;
@@ -153,9 +155,9 @@ static struct pbuf * bnep_lwip_outgoing_pop_packet(void){
     return p;
 }
 
-static int bnep_lwip_outgoing_packets_empty(void){
+static bool bnep_lwip_outgoing_packets_empty(void){
 #if NO_SYS
-    return btstack_ring_buffer_empty(&bnep_lwip_outgoing_queue);
+    return btstack_ring_buffer_empty(&bnep_lwip_outgoing_queue) != 0;
  #else
     return uxQueueMessagesWaiting(bnep_lwip_outgoing_queue) == 0;
 #endif
