@@ -92,6 +92,7 @@ static btstack_ring_buffer_t bnep_lwip_outgoing_queue;
 #else
 static QueueHandle_t bnep_lwip_outgoing_queue;
 #endif
+btstack_context_callback_registration_t bnep_lwip_outgoing_callback_registration;
 
 #if NO_SYS
 static btstack_timer_source_t   bnep_lwip_timer;
@@ -181,7 +182,8 @@ static void bnep_lwip_trigger_outgoing_process(void){
 #if NO_SYS
     bnep_lwip_outgoing_process(NULL);
 #else
-    btstack_run_loop_freertos_execute_code_on_main_thread(&bnep_lwip_outgoing_process, NULL);
+    bnep_lwip_outgoing_callback_registration.callback = &bnep_lwip_outgoing_process;
+    btstack_run_loop_execute_on_main_thread(&bnep_lwip_outgoing_callback_registration);
 #endif
 }
 
