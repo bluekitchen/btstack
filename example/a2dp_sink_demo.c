@@ -837,12 +837,6 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             dump_sbc_configuration(&a2dp_conn->sbc_configuration);
             break;
         }
-        case A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
-            status = a2dp_subevent_signaling_connection_established_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                printf("A2DP  Sink      : Signaling connection failed, status 0x%02x\n", status);
-            }
-            break;
 
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             a2dp_subevent_stream_established_get_bd_addr(packet, a2dp_conn->addr);
