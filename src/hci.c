@@ -2439,6 +2439,7 @@ static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status
     switch (conn->state){
         case SENT_CREATE_CONNECTION:
         case RECEIVED_CONNECTION_REQUEST:
+        case ACCEPTED_CONNECTION_REQUEST:
             break;
         default:
             return;
@@ -3029,6 +3030,7 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
     switch (opcode){
 #ifdef ENABLE_CLASSIC
         case HCI_OPCODE_HCI_CREATE_CONNECTION:
+        case HCI_OPCODE_HCI_SETUP_SYNCHRONOUS_CONNECTION:
         case HCI_OPCODE_HCI_ACCEPT_SYNCHRONOUS_CONNECTION:
 #endif
 #ifdef ENABLE_LE_CENTRAL
@@ -3509,19 +3511,14 @@ static void event_handler(uint8_t *packet, uint16_t size){
             reverse_bd_addr(&packet[5], addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
             log_info("Synchronous Connection Complete for %p (status=%u) %s", conn, packet[2], bd_addr_to_str(addr));
-            if (packet[2]){
-                // connection failed
-                if (conn){
-                    hci_handle_connection_failed(conn, packet[2]);
-                }
+            btstack_assert(conn != NULL);
+
+            if (packet[2] != ERROR_CODE_SUCCESS){
+                // connection failed, remove entry
+                hci_handle_connection_failed(conn, packet[2]);
                 break;
             }
-            if (!conn) {
-                conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
-            }
-            if (!conn) {
-                break;
-            }
+
             conn->state = OPEN;
             conn->con_handle = little_endian_read_16(packet, 3);            
 
@@ -7174,17 +7171,61 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
 
 #if defined (ENABLE_SCO_OVER_HCI) || defined (HAVE_SCO_TRANSPORT)
         case HCI_OPCODE_HCI_SETUP_SYNCHRONOUS_CONNECTION:
+            conn = hci_connection_for_handle(little_endian_read_16(packet, 3));
+            if (conn == NULL) {
+                // neither SCO nor ACL connection for con handle
+                return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+            } else {
+                switch (conn->address_type){
+                    case BD_ADDR_TYPE_ACL:
+                        // assert SCO connection does not exit
+                        conn = hci_connection_for_bd_addr_and_type(conn->address, BD_ADDR_TYPE_SCO);
+                        if (conn){
+                            return ERROR_CODE_COMMAND_DISALLOWED;
+                        }
+                        // allocate connection struct
+                        conn = create_connection_for_bd_addr_and_type(conn->address, BD_ADDR_TYPE_SCO);
+                        if (!conn) {
+                            return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+                        }
+                        break;
+                    case BD_ADDR_TYPE_SCO:
+                        // update of existing SCO connection
+                        break;
+                    default:
+                        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+                }
+            }
+            // conn refers to hci connection of type sco
+            conn->state = SENT_CREATE_CONNECTION;
+            conn->role  = HCI_ROLE_MASTER;
+
+            // track outgoing connection to handle command status with error
+            hci_stack->outgoing_addr_type = BD_ADDR_TYPE_SCO;
+            (void) memcpy(hci_stack->outgoing_addr, addr, 6);
+
             // setup_synchronous_connection? Voice setting at offset 22
             // TODO: compare to current setting if sco connection already active
             hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 15);
             break;
+
         case HCI_OPCODE_HCI_ACCEPT_SYNCHRONOUS_CONNECTION:
+            // get SCO connection
+            reverse_bd_addr(&packet[3], addr);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
+            if (conn == NULL){
+                return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+            }
+
+            conn->state = ACCEPTED_CONNECTION_REQUEST;
+
+            // track outgoing connection to handle command status with error
+            hci_stack->outgoing_addr_type = BD_ADDR_TYPE_SCO;
+            (void) memcpy(hci_stack->outgoing_addr, addr, 6);
+
             // accept_synchronous_connection? Voice setting at offset 18
             // TODO: compare to current setting if sco connection already active
             hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 19);
-            // track outgoing connection
-            hci_stack->outgoing_addr_type = BD_ADDR_TYPE_SCO;
-            reverse_bd_addr(&packet[3], hci_stack->outgoing_addr);
             break;
 #endif
 #endif
