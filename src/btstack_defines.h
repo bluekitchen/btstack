@@ -5012,6 +5012,13 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK                                     0x66u
 
+/**
+ * @format 121
+ * @param subevent_code
+ * @param csis_cid
+ * @param match
+*/
+#define GATTSERVICE_SUBEVENT_CSIS_RIS_MATCH                                       0x67u
 
 /**
  * @format 1H1

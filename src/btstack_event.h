@@ -16706,6 +16706,25 @@ static inline uint8_t gattservice_subevent_csis_remote_rank_get_rank(const uint8
 //  }
 
 /**
+ * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_RIS_MATCH
+ * @param event packet
+ * @return csis_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_csis_ris_match_get_csis_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field match from event GATTSERVICE_SUBEVENT_CSIS_RIS_MATCH
+ * @param event packet
+ * @return match
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_csis_ris_match_get_match(const uint8_t * event){
+    return event[5];
+}
+
+/**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_BASS_SERVER_CONNECTED
  * @param event packet
  * @return con_handle
