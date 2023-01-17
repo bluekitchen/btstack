@@ -7179,8 +7179,7 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
                 switch (conn->address_type){
                     case BD_ADDR_TYPE_ACL:
                         // assert SCO connection does not exit
-                        conn = hci_connection_for_bd_addr_and_type(conn->address, BD_ADDR_TYPE_SCO);
-                        if (conn){
+                        if (hci_connection_for_bd_addr_and_type(conn->address, BD_ADDR_TYPE_SCO) != NULL){
                             return ERROR_CODE_COMMAND_DISALLOWED;
                         }
                         // allocate connection struct
@@ -7188,6 +7187,7 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
                         if (!conn) {
                             return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
                         }
+                        conn->role  = HCI_ROLE_MASTER;
                         break;
                     case BD_ADDR_TYPE_SCO:
                         // update of existing SCO connection
@@ -7196,9 +7196,10 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
                         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
                 }
             }
-            // conn refers to hci connection of type sco
+
+            // conn refers to hci connection of type sco now
+
             conn->state = SENT_CREATE_CONNECTION;
-            conn->role  = HCI_ROLE_MASTER;
 
             // track outgoing connection to handle command status with error
             hci_stack->outgoing_addr_type = BD_ADDR_TYPE_SCO;

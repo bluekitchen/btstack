@@ -918,7 +918,6 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             uint8_t  retransmission_interval = hci_event_synchronous_connection_complete_get_retransmission_interval(packet);// measured in slots
             uint16_t rx_packet_length = hci_event_synchronous_connection_complete_get_rx_packet_length(packet); // measured in bytes
             uint16_t tx_packet_length = hci_event_synchronous_connection_complete_get_tx_packet_length(packet); // measured in bytes
-            uint16_t packet_types = hfp_link_settings[hfp_sco_establishment_active->link_setting].packet_types;
 
             switch (link_type){
                 case 0x00:
@@ -961,7 +960,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
             hfp_emit_sco_connection_established(hfp_connection, status,
                                                 hfp_connection->negotiated_codec,
-                                                packet_types, rx_packet_length, tx_packet_length);
+                                                hfp_connection->packet_types, rx_packet_length, tx_packet_length);
             break;                
         }
 
@@ -1896,10 +1895,13 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
         sco_voice_setting = 0x0043; // Transparent data, 8-bit otherwise
 #endif
     }
+    uint16_t packet_types = hfp_link_settings[setting].packet_types;
+    hfp_connection->packet_types = packet_types;
+
     // get packet types - bits 6-9 are 'don't allow'
-    uint16_t packet_types = hfp_link_settings[setting].packet_types ^ 0x03c0;
+    uint16_t packet_types_flipped = packet_types ^ 0x03c0;
     hci_send_cmd(&hci_setup_synchronous_connection, hfp_connection->acl_handle, 8000, 8000, hfp_link_settings[setting].max_latency,
-        sco_voice_setting, hfp_link_settings[setting].retransmission_effort, packet_types);
+        sco_voice_setting, hfp_link_settings[setting].retransmission_effort, packet_types_flipped);
 }
 
 void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool incoming_eSCO){
@@ -1935,12 +1937,14 @@ void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool i
     // filter packet types
     packet_types &= hfp_get_sco_packet_types();
 
+    hfp_connection->packet_types = packet_types;
+
     // bits 6-9 are 'don't allow'
-    packet_types ^= 0x3c0;
+    uint16_t packet_types_flipped = packet_types ^ 0x3c0;
 
     log_info("HFP: sending hci_accept_connection_request, packet types 0x%04x, sco_voice_setting 0x%02x", packet_types, sco_voice_setting);
     hci_send_cmd(&hci_accept_synchronous_connection, hfp_connection->remote_addr, 8000, 8000, max_latency,
-                 sco_voice_setting, retransmission_effort, packet_types);
+                 sco_voice_setting, retransmission_effort, packet_types_flipped);
 }
 
 #ifdef ENABLE_CC256X_ASSISTED_HFP
