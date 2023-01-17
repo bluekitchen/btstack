@@ -468,8 +468,9 @@ static void hfp_emit_audio_connection_released(hfp_connection_t * hfp_connection
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-void hfp_emit_sco_connection_established(hfp_connection_t *hfp_connection, uint8_t status, hci_con_handle_t sco_handle, bd_addr_t addr,
-                                         uint8_t negotiated_codec, uint16_t packet_types) {
+void hfp_emit_sco_connection_established(hfp_connection_t *hfp_connection, uint8_t status, hci_con_handle_t sco_handle,
+                                         bd_addr_t addr, uint8_t negotiated_codec, uint16_t packet_types,
+                                         uint16_t rx_packet_length, uint16_t tx_packet_length) {
     btstack_assert(hfp_connection != NULL);
     uint8_t event[17];
     int pos = 0;
@@ -886,7 +887,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 hfp_connection->establish_audio_connection = 0;
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 hfp_emit_sco_connection_established(hfp_connection, status, 0, hfp_connection->remote_addr,
-                                                    hfp_connection->negotiated_codec, 0);
+                                                    hfp_connection->negotiated_codec, 0, 0, 0);
             }
             break;
 
@@ -908,7 +909,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 hfp_emit_sco_connection_established(hfp_connection, status, 0, event_addr,
                                                     hfp_connection->negotiated_codec,
-                                                    0);
+                                                    0, 0, 0);
                 break;
             }
             
@@ -961,7 +962,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
             hfp_emit_sco_connection_established(hfp_connection, status, sco_handle, event_addr,
                                                 hfp_connection->negotiated_codec,
-                                                packet_types);
+                                                packet_types, rx_packet_length, tx_packet_length);
             break;                
         }
 
