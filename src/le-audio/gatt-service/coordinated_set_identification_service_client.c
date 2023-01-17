@@ -810,7 +810,7 @@ static uint8_t coordinated_set_identification_service_client_read_characteristic
     }
 
     if (connection->characteristics[index].value_handle == 0){
-        return ERROR_CODE_COMMAND_DISALLOWED;
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
     connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE;
