@@ -6022,6 +6022,15 @@ static inline void hfp_subevent_audio_connection_established_get_bd_addr(const u
 static inline uint8_t hfp_subevent_audio_connection_established_get_negotiated_codec(const uint8_t * event){
     return event[14];
 }
+/**
+ * @brief Get field sco_packet_types from event HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return sco_packet_types
+ * @note: btstack_type 2
+ */
+static inline uint16_t hfp_subevent_audio_connection_established_get_sco_packet_types(const uint8_t * event){
+    return little_endian_read_16(event, 15);
+}
 
 /**
  * @brief Get field acl_handle from event HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED

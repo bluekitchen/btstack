@@ -2043,13 +2043,14 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED       0x02u
 
 /**
- * @format 1H1HB1
+ * @format 1H1HB12
  * @param subevent_code
  * @param acl_handle
  * @param status 0 == OK
  * @param sco_handle
  * @param bd_addr
  * @param negotiated_codec
+ * @param sco_packet_types see SCO_PACKET_TYPES_* in btstack_defines.h
  */
 #define HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED            0x03u
 
