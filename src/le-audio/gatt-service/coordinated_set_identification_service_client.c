@@ -81,6 +81,13 @@ static uint8_t key_ltk[16];
 static csis_client_connection_t * active_connection;
 static void csis_client_trigger_next_sirk_calculation(void);
 
+// RSI Calculation
+static bool csis_ris_calculation_ongoing;
+static btstack_crypto_aes128_t aes128_request;
+static uint8_t csis_hash[16];
+static uint8_t csis_sirk[16];
+static uint8_t csis_rsi[6];
+
 // CSIS Client
 static btstack_packet_handler_t csis_event_callback;
 static btstack_linked_list_t    csis_connections;
@@ -866,6 +873,7 @@ void coordinated_set_identification_service_client_init(btstack_packet_handler_t
     btstack_assert(packet_handler != NULL);
     csis_event_callback = packet_handler;
 
+    csis_ris_calculation_ongoing = false;
     csis_sirk_calculation_ongoing = false;
 
     csis_client_hci_event_callback_registration.callback = &hci_event_handler;
@@ -874,6 +882,7 @@ void coordinated_set_identification_service_client_init(btstack_packet_handler_t
 
 void coordinated_set_identification_service_client_deinit(void){
     csis_event_callback = NULL;
+    csis_ris_calculation_ongoing = false;
     csis_sirk_calculation_ongoing = false;
     
     btstack_linked_list_iterator_t it;    
@@ -882,5 +891,42 @@ void coordinated_set_identification_service_client_deinit(void){
         csis_client_connection_t * connection = (csis_client_connection_t *)btstack_linked_list_iterator_next(&it);
         btstack_linked_list_remove(&csis_connections, (btstack_linked_item_t *)connection);
     }
+}
+
+static void csis_server_handle_csis_hash(void * arg){
+    UNUSED(arg);
+    btstack_assert(csis_event_callback != NULL);
+
+    bool is_match = memcmp(&csis_rsi[3], &csis_hash[13], 3) == 0;
+    csis_ris_calculation_ongoing = false;
+
+    uint8_t event[4];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RIS_MATCH;
+    event[pos++] = is_match ? 1u : 0u;
+    
+    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));    
+}
+
+uint8_t coordinated_set_identification_service_client_check_rsi(const uint8_t * rsi, const uint8_t * sirk){
+    btstack_assert(rsi != NULL);
+    btstack_assert(sirk != NULL);
+    btstack_assert(csis_event_callback != NULL);
+
+    if (csis_ris_calculation_ongoing){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    csis_ris_calculation_ongoing = true;
+
+    memcpy(csis_sirk, sirk, sizeof(csis_sirk));
+    
+    uint8_t prand_prime[16];
+    memset(prand_prime, 0, 16);
+    memcpy(&prand_prime[13], &rsi[0], 3);
+
+    btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, csis_rsi, csis_hash, &csis_server_handle_csis_hash, NULL);
+    return ERROR_CODE_SUCCESS;
 }
 
