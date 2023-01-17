@@ -59,8 +59,6 @@ extern "C" {
  * To use with your application, add `#import <coordinated_set_identification_service.gatt>` to your .gatt file. 
  */
 
-
-
 typedef struct {
     uint16_t con_handle;
 

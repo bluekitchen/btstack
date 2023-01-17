@@ -36,7 +36,7 @@
  */
 
 /**
- * @title oordinated Set Identification Service Client
+ * @title Coordinated Set Identification Service Client
  * 
  */
 
@@ -51,7 +51,6 @@
 extern "C" {
 #endif
 
-/* API_START */
 typedef enum {
     COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_IDLE,
     COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
@@ -114,13 +113,13 @@ typedef struct {
 /* API_START */
 
 /**
- * @brief Init Coordinated Set Identification Service Client and register callback for events.
+ * @brief Init Coordinated Set Identification Service (CSIS) Client and register callback for events.
  * @param packet_handler
  */
 void coordinated_set_identification_service_client_init(btstack_packet_handler_t packet_handler);
 
 /**
- * @brief Connect to remote Coordinated Set Identification Service Server.
+ * @brief Connect to remote CSIS Server. 
  * @param  connection                            
  * @param  con_handle
  * @param  ascs_cid
@@ -129,19 +128,66 @@ void coordinated_set_identification_service_client_init(btstack_packet_handler_t
  */
 uint8_t coordinated_set_identification_service_client_connect(csis_client_connection_t * connection, hci_con_handle_t con_handle, uint16_t * ascs_cid);
 
+/**
+ * @brief Read SIRK from remote CSIS server. The SIRK value is reported via the GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK event. 
+ * @param  ascs_cid
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise
+ *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
+ *                - ERROR_CODE_COMMAND_DISALLOWED if the client is not connected
+ *                - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no appropriate characteristic is found on the remote server
+ */
 uint8_t coordinated_set_identification_service_client_read_sirk(uint16_t ascs_cid);
 
+/**
+ * @brief Read lock from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK event. 
+ * @param  ascs_cid
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise
+ *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
+ *                - ERROR_CODE_COMMAND_DISALLOWED if the client is not connected
+ *                - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no appropriate characteristic is found on the remote server
+ */
 uint8_t coordinated_set_identification_service_client_read_lock(uint16_t ascs_cid);
 
+/**
+ * @brief Write lock on remote CSIS server. The status of write is reported via the GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE event. 
+ * @param  ascs_cid
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise
+ *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
+ *                - ERROR_CODE_COMMAND_DISALLOWED if the client is not connected
+ *                - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no appropriate characteristic is found on the remote server
+ */
 uint8_t coordinated_set_identification_service_client_write_lock(uint16_t ascs_cid, csis_member_lock_t lock);
 
+/**
+ * @brief Read coordinated set size from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_REMOTE_COORDINATED_SET_SIZE event. 
+ * @param  ascs_cid
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise
+ *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
+ *                - ERROR_CODE_COMMAND_DISALLOWED if the client is not connected
+ *                - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no appropriate characteristic is found on the remote server
+ */
 uint8_t coordinated_set_identification_service_client_read_coordinated_set_size(uint16_t ascs_cid);
 
+/**
+ * @brief Read coordinator rank from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK event. 
+ * @param  ascs_cid
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise
+ *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
+ *                - ERROR_CODE_COMMAND_DISALLOWED if the client is not connected
+ *                - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no appropriate characteristic is found on the remote server
+ */
 uint8_t coordinated_set_identification_service_client_read_coordinator_rank(uint16_t ascs_cid);
 
-uint8_t coordinated_set_identification_service_client_check_rsi(const uint8_t * rsi, const uint8_t * sirk);
 /**
- * @brief Deinit Coordinated Set Identification Service Client
+ * @brief Check if the RSI matches the given SIRK value. The result is reported via the GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH event. 
+ * @param  ascs_cid
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise
+ *                - ERROR_CODE_COMMAND_DISALLOWED if there is an ongoing RSI calculation
+ */
+uint8_t coordinated_set_identification_service_client_check_rsi(const uint8_t * rsi, const uint8_t * sirk);
+
+/**
+ * @brief Deinit CSIS Client
  */
 void coordinated_set_identification_service_client_deinit(void);
 
