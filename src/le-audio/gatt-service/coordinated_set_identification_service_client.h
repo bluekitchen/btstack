@@ -139,6 +139,7 @@ uint8_t coordinated_set_identification_service_client_read_coordinated_set_size(
 
 uint8_t coordinated_set_identification_service_client_read_coordinator_rank(uint16_t ascs_cid);
 
+uint8_t coordinated_set_identification_service_client_check_rsi(const uint8_t * rsi, const uint8_t * sirk);
 /**
  * @brief Deinit Coordinated Set Identification Service Client
  */
