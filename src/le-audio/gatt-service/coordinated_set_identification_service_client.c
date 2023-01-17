@@ -70,24 +70,24 @@ static char * csis_characteristic_index_name[] = {
     "RFU"
 };
 
+// SIRK Calculation
+static bool csis_sirk_calculation_ongoing;
 static btstack_crypto_aes128_cmac_t aes128_cmac_request;
 static uint8_t  s1[16];
 static uint8_t   T[16];
 static uint8_t  k1[16];
 const static uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
 static uint8_t key_ltk[16];
-
 static csis_client_connection_t * active_connection;
 static void csis_client_trigger_next_sirk_calculation(void);
 
+// CSIS Client
 static btstack_packet_handler_t csis_event_callback;
 static btstack_linked_list_t    csis_connections;
 static uint16_t                 csis_client_cid_counter = 0;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static btstack_packet_callback_registration_t csis_client_hci_event_callback_registration;
-
-static bool    csis_sirk_calculation_ongoing = false;
 
 static char * characteristic_index2name(csis_characteristic_index_t index){
     if (index >= CSIS_CHARACTERISTIC_INDEX_RFU){
@@ -157,6 +157,8 @@ static void csis_client_finalize_connection(csis_client_connection_t * connectio
 }
 
 static void csis_client_emit_connection_established(csis_client_connection_t * connection, uint8_t status){
+    btstack_assert(csis_event_callback != NULL);
+
     uint8_t event[8];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -171,6 +173,8 @@ static void csis_client_emit_connection_established(csis_client_connection_t * c
 }
 
 static void csis_client_emit_disconnect(uint16_t cid){
+    btstack_assert(csis_event_callback != NULL);
+
     uint8_t event[5];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -181,6 +185,8 @@ static void csis_client_emit_disconnect(uint16_t cid){
 }
 
 static void csis_client_emit_write_lock_complete(csis_client_connection_t * connection, uint8_t status){
+    btstack_assert(csis_event_callback != NULL);
+
     uint8_t event[6];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -193,6 +199,8 @@ static void csis_client_emit_write_lock_complete(csis_client_connection_t * conn
 }
 
 static void csis_client_emit_read_remote_lock(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
+    btstack_assert(csis_event_callback != NULL);
+
     uint8_t event[7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -206,6 +214,8 @@ static void csis_client_emit_read_remote_lock(csis_client_connection_t * connect
 }
 
 static void csis_client_emit_read_remote_coordinated_set_size(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
+    btstack_assert(csis_event_callback != NULL);
+
     uint8_t event[7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -232,6 +242,8 @@ static void csis_client_emit_read_remote_rank(csis_client_connection_t * connect
 }
 
 static void csis_client_emit_read_remote_sirk(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
+    btstack_assert(csis_event_callback != NULL);
+
     uint8_t event[22];
     memset(event, 0, sizeof(event));
 
@@ -263,7 +275,6 @@ static void csis_server_handle_k1(void * context){
     active_connection = NULL;
     
     csis_client_emit_read_remote_sirk(active_connection, ATT_ERROR_SUCCESS, (const uint8_t *)active_connection->remote_sirk);
-
     csis_client_trigger_next_sirk_calculation();
 }
 
@@ -855,13 +866,16 @@ void coordinated_set_identification_service_client_init(btstack_packet_handler_t
     btstack_assert(packet_handler != NULL);
     csis_event_callback = packet_handler;
 
+    csis_sirk_calculation_ongoing = false;
+
     csis_client_hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&csis_client_hci_event_callback_registration);
 }
 
 void coordinated_set_identification_service_client_deinit(void){
     csis_event_callback = NULL;
-
+    csis_sirk_calculation_ongoing = false;
+    
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &csis_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
