@@ -72,7 +72,13 @@
 #include "btstack_run_loop.h"
 #include "lwip/timeouts.h"
 #else
-#include "btstack_run_loop_freertos.h"
+#ifdef HAVE_FREERTOS_INCLUDE_PREFIX
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#else
+#include "FreeRTOS.h"
+#include "queue.h"
+#endif
 #endif
 
 /* Short name used for netif in lwIP */
