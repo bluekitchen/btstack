@@ -82,7 +82,7 @@ static csis_client_connection_t * active_connection;
 static void csis_client_trigger_next_sirk_calculation(void);
 
 // RSI Calculation
-static bool csis_ris_calculation_ongoing;
+static bool csis_rsi_calculation_ongoing;
 static btstack_crypto_aes128_t aes128_request;
 static uint8_t csis_hash[16];
 static uint8_t csis_sirk[16];
@@ -819,22 +819,6 @@ static uint8_t coordinated_set_identification_service_client_read_characteristic
 }
 
 uint8_t coordinated_set_identification_service_client_read_sirk(uint16_t ascs_cid){
-    csis_client_connection_t * connection = csis_get_client_connection_for_cid(ascs_cid);
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (connection->state != COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
-    if (connection->characteristics[CSIS_CHARACTERISTIC_INDEX_SIRK].value_handle == 0){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
-    if (connection->remote_sirk_state == CSIS_SIRK_CALCULATION_STATE_READY){
-        csis_client_emit_read_remote_sirk(connection, ATT_ERROR_SUCCESS, connection->remote_sirk);
-        return ERROR_CODE_SUCCESS;
-    }
     return coordinated_set_identification_service_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_SIRK);
 }
 
@@ -873,7 +857,7 @@ void coordinated_set_identification_service_client_init(btstack_packet_handler_t
     btstack_assert(packet_handler != NULL);
     csis_event_callback = packet_handler;
 
-    csis_ris_calculation_ongoing = false;
+    csis_rsi_calculation_ongoing = false;
     csis_sirk_calculation_ongoing = false;
 
     csis_client_hci_event_callback_registration.callback = &hci_event_handler;
@@ -882,7 +866,7 @@ void coordinated_set_identification_service_client_init(btstack_packet_handler_t
 
 void coordinated_set_identification_service_client_deinit(void){
     csis_event_callback = NULL;
-    csis_ris_calculation_ongoing = false;
+    csis_rsi_calculation_ongoing = false;
     csis_sirk_calculation_ongoing = false;
     
     btstack_linked_list_iterator_t it;    
@@ -898,13 +882,13 @@ static void csis_server_handle_csis_hash(void * arg){
     btstack_assert(csis_event_callback != NULL);
 
     bool is_match = memcmp(&csis_rsi[3], &csis_hash[13], 3) == 0;
-    csis_ris_calculation_ongoing = false;
+    csis_rsi_calculation_ongoing = false;
 
     uint8_t event[4];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RIS_MATCH;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH;
     event[pos++] = is_match ? 1u : 0u;
     
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));    
@@ -915,10 +899,10 @@ uint8_t coordinated_set_identification_service_client_check_rsi(const uint8_t * 
     btstack_assert(sirk != NULL);
     btstack_assert(csis_event_callback != NULL);
 
-    if (csis_ris_calculation_ongoing){
+    if (csis_rsi_calculation_ongoing){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    csis_ris_calculation_ongoing = true;
+    csis_rsi_calculation_ongoing = true;
 
     memcpy(csis_sirk, sirk, sizeof(csis_sirk));
     
