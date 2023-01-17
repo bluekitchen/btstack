@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Added
 - HCI_ACL_CHUNK_SIZE_ALIGNMENT allows to keep HCI transport writes aligned
-
+- HFP: provide SCO packet types in HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
+ 
 ## Fixed
 - btstack_stdin_embedded: use timer to poll RTT input, fix for tickless RTOS
 - gatt_client: return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER for invalid connection handle
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Changed
 - GAP: add gap_set_peer_privacy_mode with default LE_PRIVACY_MODE_DEVICE
 - bluetooth: indicated identity address in resolved address types
+
 
 ## Release v1.5.5
 
