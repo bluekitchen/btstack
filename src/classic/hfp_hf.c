@@ -1353,8 +1353,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
                         case HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE:
                             hfp_reset_context_flags(hfp_connection);
                             hfp_emit_sco_connection_established(hfp_connection, HFP_REMOTE_REJECTS_AUDIO_CONNECTION,
-                                                                hfp_connection->negotiated_codec,
-                                                                0, 0, 0);
+                                                                hfp_connection->negotiated_codec, 0, 0);
                             return;
                         default:
                             break;
