@@ -73,7 +73,7 @@ static bool              csis_sirk_exposed_via_oob;
 static uint8_t           csis_sirk[16];
 static csis_sirk_type_t  csis_sirk_type;
 
-static bool    csis_ris_calculation_ongoing = true;
+static bool    csis_rsi_calculation_ongoing = true;
 static uint8_t csis_prand_data[3];
 static uint8_t csis_hash[16];
 
@@ -103,26 +103,26 @@ static csis_coordinator_t * active_coordinator;
 
 static void csis_server_trigger_next_sirk_calculation(void);
 
-static void csis_server_emit_ris(const uint8_t * ris){
+static void csis_server_emit_rsi(const uint8_t * rsi){
     btstack_assert(csis_event_callback != NULL);
 
     uint8_t event[9];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RIS;
-    reverse_48(ris, &event[pos]);
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RSI;
+    reverse_48(rsi, &event[pos]);
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void csis_server_handle_csis_hash(void * arg){
     UNUSED(arg);
-    uint8_t ris[6];
-    memcpy(&ris[0], csis_prand_data, 3);
-    memcpy(&ris[3], &csis_hash[13] , 3);
+    uint8_t rsi[6];
+    memcpy(&rsi[0], csis_prand_data, 3);
+    memcpy(&rsi[3], &csis_hash[13] , 3);
     
-    csis_server_emit_ris(ris);
-    csis_ris_calculation_ongoing = false;
+    csis_server_emit_rsi(rsi);
+    csis_rsi_calculation_ongoing = false;
 }
 
 static void csis_handle_prand_provisioner(void * arg){
@@ -145,10 +145,10 @@ static void csis_handle_prand_provisioner(void * arg){
 }
 
 void coordinated_set_identification_service_server_calculate_rsi(void){
-    if (csis_ris_calculation_ongoing){
+    if (csis_rsi_calculation_ongoing){
         return;
     }
-    csis_ris_calculation_ongoing = true;
+    csis_rsi_calculation_ongoing = true;
     btstack_crypto_random_generate(&random_request, csis_prand_data, 3, &csis_handle_prand_provisioner, NULL);
 }
 
@@ -633,7 +633,7 @@ void coordinated_set_identification_service_server_init(
     printf("member_rank_handle      0x%02x\n", member_rank_handle); 
 #endif
 
-    csis_ris_calculation_ongoing = false;
+    csis_rsi_calculation_ongoing = false;
 
     csis_coordinated_set_size = coordianted_set_size;
     csis_member_rank = member_rank;
@@ -693,7 +693,7 @@ void coordinated_set_identification_service_server_deinit(void){
     csis_member_lock = CSIS_MEMBER_UNLOCKED;
     active_coordinator = NULL;
     csis_event_callback = NULL;
-    csis_ris_calculation_ongoing = false;
+    csis_rsi_calculation_ongoing = false;
 }
 
 uint8_t coordinated_set_identification_service_server_simulate_member_connected(hci_con_handle_t con_handle){

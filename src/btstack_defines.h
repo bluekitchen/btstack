@@ -4942,7 +4942,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param ris
 */
-#define GATTSERVICE_SUBEVENT_CSIS_RIS                                             0x5Eu
+#define GATTSERVICE_SUBEVENT_CSIS_RSI                                             0x5Eu
 
 /**
  * @format 1H
@@ -5018,7 +5018,7 @@ typedef uint8_t sm_key_t[16];
  * @param csis_cid
  * @param match
 */
-#define GATTSERVICE_SUBEVENT_CSIS_RIS_MATCH                                       0x67u
+#define GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH                                       0x67u
 
 /**
  * @format 1H1
