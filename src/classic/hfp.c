@@ -101,6 +101,24 @@ static btstack_linked_list_t hfp_custom_commands_ag;
 static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
 static void parse_sequence(hfp_connection_t * context);
 
+
+static const struct link_settings {
+    const uint16_t max_latency;
+    const uint8_t  retransmission_effort;
+    const uint16_t packet_types;
+    const bool     eSCO;
+    const uint8_t  codec;
+} hfp_link_settings [] = {
+        { 0xffff, 0xff, SCO_PACKET_TYPES_HV1,  false, HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_D0
+        { 0xffff, 0xff, SCO_PACKET_TYPES_HV3,  false, HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_D1
+        { 0x0007, 0x01, SCO_PACKET_TYPES_EV3,  true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S1
+        { 0x0007, 0x01, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S2
+        { 0x000a, 0x01, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S3
+        { 0x000c, 0x02, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S4
+        { 0x0008, 0x02, SCO_PACKET_TYPES_EV3,  true,  HFP_CODEC_MSBC }, // HFP_LINK_SETTINGS_T1
+        { 0x000d, 0x02, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_MSBC }  // HFP_LINK_SETTINGS_T2
+};
+
 static const char * hfp_hf_features[] = {
         "EC and/or NR function",
         "Three-way calling",
@@ -895,7 +913,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             uint8_t  retransmission_interval = hci_event_synchronous_connection_complete_get_retransmission_interval(packet);// measured in slots
             uint16_t rx_packet_length = hci_event_synchronous_connection_complete_get_rx_packet_length(packet); // measured in bytes
             uint16_t tx_packet_length = hci_event_synchronous_connection_complete_get_tx_packet_length(packet); // measured in bytes
-            
+
             switch (link_type){
                 case 0x00:
                     log_info("SCO Connection established.");
@@ -1856,23 +1874,6 @@ uint8_t hfp_trigger_release_audio_connection(hfp_connection_t * hfp_connection){
     }
     return ERROR_CODE_SUCCESS;
 }
-
-static const struct link_settings {
-    const uint16_t max_latency;
-    const uint8_t  retransmission_effort;
-    const uint16_t packet_types;
-    const bool     eSCO;
-    const uint8_t  codec;
-} hfp_link_settings [] = {
-    { 0xffff, 0xff, SCO_PACKET_TYPES_HV1,  false, HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_D0
-    { 0xffff, 0xff, SCO_PACKET_TYPES_HV3,  false, HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_D1
-    { 0x0007, 0x01, SCO_PACKET_TYPES_EV3,  true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S1
-    { 0x0007, 0x01, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S2
-    { 0x000a, 0x01, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S3
-    { 0x000c, 0x02, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S4
-    { 0x0008, 0x02, SCO_PACKET_TYPES_EV3,  true,  HFP_CODEC_MSBC }, // HFP_LINK_SETTINGS_T1
-    { 0x000d, 0x02, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_MSBC }  // HFP_LINK_SETTINGS_T2
-};
 
 void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     // all packet types, fixed bandwidth
