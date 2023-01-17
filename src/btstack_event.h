@@ -6031,6 +6031,24 @@ static inline uint8_t hfp_subevent_audio_connection_established_get_negotiated_c
 static inline uint16_t hfp_subevent_audio_connection_established_get_sco_packet_types(const uint8_t * event){
     return little_endian_read_16(event, 15);
 }
+/**
+ * @brief Get field rx_packet_length from event HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return rx_packet_length
+ * @note: btstack_type 2
+ */
+static inline uint16_t hfp_subevent_audio_connection_established_get_rx_packet_length(const uint8_t * event){
+    return little_endian_read_16(event, 17);
+}
+/**
+ * @brief Get field tx_packet_length from event HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return tx_packet_length
+ * @note: btstack_type 2
+ */
+static inline uint16_t hfp_subevent_audio_connection_established_get_tx_packet_length(const uint8_t * event){
+    return little_endian_read_16(event, 19);
+}
 
 /**
  * @brief Get field acl_handle from event HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED
