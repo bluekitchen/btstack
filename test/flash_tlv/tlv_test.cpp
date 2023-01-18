@@ -329,7 +329,11 @@ TEST(LINK_KEY_DB, KeyReplacement){
 
 int main (int argc, const char * argv[]){
     // log into file using HCI_DUMP_PACKETLOGGER format
+#ifdef ENABLE_TLV_FLASH_WRITE_ONCE
+    const char * pklg_path = "hci_dump_write_once.pklg";
+#else
     const char * pklg_path = "hci_dump.pklg";
+#endif
     hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
     hci_dump_init(hci_dump_posix_fs_get_instance());
     printf("Packet Log: %s\n", pklg_path);
