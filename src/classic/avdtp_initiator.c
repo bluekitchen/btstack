@@ -295,11 +295,13 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
             log_info("AVDTP_RESPONSE_REJECT_MSG signal %s", avdtp_si2str(connection->initiator_signaling_packet.signal_identifier));
             avdtp_signaling_emit_reject(connection->avdtp_cid, connection->initiator_local_seid,
                                         connection->initiator_signaling_packet.signal_identifier, true);
+            stream_endpoint->sep.in_use = 0;
             return;
         case AVDTP_GENERAL_REJECT_MSG:
             log_info("AVDTP_GENERAL_REJECT_MSG signal %s", avdtp_si2str(connection->initiator_signaling_packet.signal_identifier));
             avdtp_signaling_emit_general_reject(connection->avdtp_cid, connection->initiator_local_seid,
                                                 connection->initiator_signaling_packet.signal_identifier, true);
+            stream_endpoint->sep.in_use = 0;
             return;
         default:
             break;
