@@ -231,6 +231,7 @@ static void udp_recv_proc(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
 	uint8_t *ptr;
 	dhcp_entry_t *entry;
 	struct pbuf *pp;
+	struct netif *nif;
 
 	unsigned int n = p->len;
 	if (n > sizeof(dhcp_data)) n = sizeof(dhcp_data);
@@ -262,7 +263,12 @@ static void udp_recv_proc(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
 			pp = pbuf_alloc(PBUF_TRANSPORT, sizeof(dhcp_data), PBUF_POOL);
 			if (pp == NULL) break;
 			memcpy(pp->payload, &dhcp_data, sizeof(dhcp_data));
-			udp_sendto(upcb, pp, IP_ADDR_BROADCAST, port);
+			nif = ip_current_input_netif();
+			if (nif) {
+				udp_sendto_if(upcb, pp, IP_ADDR_BROADCAST, port, nif);
+			} else {
+				udp_sendto(upcb, pp, IP_ADDR_BROADCAST, port);
+			}
 			pbuf_free(pp);
 			break;
 
@@ -306,7 +312,12 @@ static void udp_recv_proc(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
 			if (pp == NULL) break;
 			memcpy(entry->mac, dhcp_data.dp_chaddr, 6);
 			memcpy(pp->payload, &dhcp_data, sizeof(dhcp_data));
-			udp_sendto(upcb, pp, IP_ADDR_BROADCAST, port);
+			nif = ip_current_input_netif();
+			if (nif) {
+				udp_sendto_if(upcb, pp, IP_ADDR_BROADCAST, port, nif);
+			} else {
+				udp_sendto(upcb, pp, IP_ADDR_BROADCAST, port);
+			}
 			pbuf_free(pp);
 			break;
 
