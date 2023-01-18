@@ -21,7 +21,7 @@ import scipy.io.wavfile as wavfile
 import struct
 import argparse
 
-import build.lc3 as lc3
+import lc3
 import tables as T, appendix_c as C
 
 import mdct, energy, bwdet, sns, tns, spec, ltpf
@@ -54,7 +54,7 @@ class Decoder:
 
         b = bitstream.BitstreamReader(data)
 
-        bw = self.bwdet.get_bw(b)
+        bw = self.bwdet.get(b)
         if bw > self.sr:
             raise ValueError('Invalid bandwidth indication')
 
@@ -168,9 +168,6 @@ if __name__ == "__main__":
 
         data = f_lc3.read(2)
         if len(data) != 2:
-            break
-
-        if nframes >= 1000:
             break
 
         (frame_nbytes,) = struct.unpack('=H', data)

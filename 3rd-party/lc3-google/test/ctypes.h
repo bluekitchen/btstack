@@ -470,13 +470,13 @@ static PyObject *to_sns_data(PyObject *obj, struct lc3_sns_data *data)
         CTYPES_CHECK("sns.idx_a", to_scalar(item, NPY_INT, &data->idx_a));
 
     if ((item = PyDict_GetItemString(obj, "ls_a")))
-        CTYPES_CHECK("sns.ls_a", to_scalar(item, NPY_INT, &data->ls_a));
+        CTYPES_CHECK("sns.ls_a", to_scalar(item, NPY_BOOL, &data->ls_a));
 
     if ((item = PyDict_GetItemString(obj, "idx_b")))
         CTYPES_CHECK("sns.idx_b", to_scalar(item, NPY_INT, &data->idx_b));
 
     if ((item = PyDict_GetItemString(obj, "ls_b")))
-        CTYPES_CHECK("sns.ls_b", to_scalar(item, NPY_INT, &data->ls_b));
+        CTYPES_CHECK("sns.ls_b", to_scalar(item, NPY_BOOL, &data->ls_b));
 
     return obj;
 }

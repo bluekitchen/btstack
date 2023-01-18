@@ -16,7 +16,7 @@
 
 import numpy as np
 
-import build.lc3 as lc3
+import lc3
 import tables as T, appendix_c as C
 
 ### ------------------------------------------------------------------------ ###
@@ -68,7 +68,7 @@ class Tns:
         self.dt = dt
 
         (self.nfilters, self.lpc_weighting, self.rc_order, self.rc) = \
-            (None, None, None, None)
+            (0, False, np.array([ 0, 0 ]), np.array([ 0, 0 ]))
 
     def get_data(self):
 
@@ -133,7 +133,7 @@ class TnsAnalysis(Tns):
 
         return (r[0] / err, a)
 
-    def lpc_weighting(self, pred_gain, a):
+    def lpc_weight(self, pred_gain, a):
 
         gamma = 1 - (1 - 0.85) * (2 - pred_gain) / (2 - 1.5)
         return a * np.power(gamma, np.arange(len(a)))
@@ -199,7 +199,7 @@ class TnsAnalysis(Tns):
                 continue
 
             if self.lpc_weighting and pred_gain < 2:
-                a = self.lpc_weighting(pred_gain, a)
+                a = self.lpc_weight(pred_gain, a)
 
             rc = self.coeffs_reflexion(a)
 
@@ -221,7 +221,7 @@ class TnsAnalysis(Tns):
     def store(self, b):
 
         for f in range(self.nfilters):
-            lpc_weighting = self.lpc_weighting[f]
+            lpc_weighting = self.lpc_weighting
             rc_order = self.rc_order[f]
             rc = self.rc[f]
 

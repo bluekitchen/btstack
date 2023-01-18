@@ -151,14 +151,18 @@ extern "C" {
 
 /**
  * PCM Sample Format
- *   S16  Signed 16 bits, in 16 bits words (int16_t)
- *   S24  Signed 24 bits, using low three bytes of 32 bits words (int32_t).
- *        The high byte sign extends the sample value (bits 31..24 set to b23).
+ *   S16      Signed 16 bits, in 16 bits words (int16_t)
+ *   S24      Signed 24 bits, using low three bytes of 32 bits words (int32_t).
+ *            The high byte sign extends (bits 31..24 set to b23).
+ *   S24_3LE  Signed 24 bits packed in 3 bytes little endian
+ *   FLOAT    Floating point 32 bits (float type), in range -1 to 1
  */
 
 enum lc3_pcm_format {
     LC3_PCM_FORMAT_S16,
     LC3_PCM_FORMAT_S24,
+    LC3_PCM_FORMAT_S24_3LE,
+    LC3_PCM_FORMAT_FLOAT,
 };
 
 

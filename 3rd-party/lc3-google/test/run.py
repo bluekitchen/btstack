@@ -37,4 +37,4 @@ for m in [ ( mdct    , "MDCT"                   ),
 
     ok = ok and ret
 
-exit(0 if ok else 1);
+exit(0 if ok else 1)

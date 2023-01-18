@@ -20,8 +20,14 @@
 
 #include <arm_acle.h>
 
+static inline int16x2_t __pkhbt(int16x2_t a, int16x2_t b)
+{
+    int16x2_t r;
+    __asm("pkhbt %0, %1, %2" : "=r" (r) : "r" (a), "r" (b));
+    return r;
+}
+
 #else
-#define __ARM_FEATURE_SIMD32 1
 
 #include <stdint.h>
 

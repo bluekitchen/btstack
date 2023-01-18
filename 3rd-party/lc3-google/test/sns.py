@@ -17,7 +17,7 @@
 import numpy as np
 import scipy.fftpack as fftpack
 
-import build.lc3 as lc3
+import lc3
 import tables as T, appendix_c as C
 
 ### ------------------------------------------------------------------------ ###
@@ -506,7 +506,7 @@ def check_synthesis(rng, dt, sr):
 
         y = synthesis.run(x)
         y_c = lc3.sns_synthesize(dt, sr, synthesis.get_data(), x)
-        ok = ok and np.amax(np.abs(y - y_c)) < 1e0
+        ok = ok and np.amax(np.abs(y - y_c)) < 2e0
 
     return ok
 
