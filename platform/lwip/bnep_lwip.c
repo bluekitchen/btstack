@@ -41,7 +41,6 @@
  * bnep_lwip_lwip_.c
  */
 
-#include "lwip/netif.h"
 #include "lwip/sys.h"
 #include "lwip/arch.h"
 #include "lwip/api.h"
@@ -555,4 +554,8 @@ uint8_t bnep_lwip_connect(bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src,
     } else {
         return ERROR_CODE_SUCCESS;
     }
+}
+
+struct netif *bnep_lwip_get_interface(void){
+    return &btstack_netif;
 }
