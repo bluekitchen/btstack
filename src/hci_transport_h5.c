@@ -429,7 +429,7 @@ static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer){
             if (link_peer_asleep){
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_WAKEUP;
                 hci_transport_link_set_timer(LINK_WAKEUP_MS);
-                return;
+                break;
             }
             // resend packet
             hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_QUEUED_PACKET;
