@@ -57,12 +57,19 @@
 // Most Flash implementations allow to:
 // - erase sector -> all values are 0xff
 // - write value (1s -> 0s)
-// - overwrite value with zero (remaininig 1s -> 0s)
+// - overwrite value with zero (remaining 1s -> 0s)
 //
 // We use the ability to overwrite a value with zeros to mark deleted enttries (by writing zero into the tag field).
-// Some targetes, E.g. Kinetix K64F, do enot allow for that. 
+// Some targets, E.g. Kinetix K64F, do enot allow for that.
 //
 // With ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD an extra field is reserved to indicate a deleted tag, while keeping main logic
+//
+// With ENABLE_TLV_FLASH_WRITE_ONCE, tags are never marked as deleted. Instead, an emtpy tag will be written instead.
+//     Also, lookup and migrate requires to always search until the end of the valid bank
+
+#if defined (ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD) && defined (ENABLE_TLV_FLASH_WRITE_ONCE)
+#error "Please define either ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD or ENABLE_TLV_FLASH_WRITE_ONCE"
+#endif
 
 #define BTSTACK_TLV_HEADER_LEN 8
 
@@ -255,32 +262,54 @@ static void btstack_tlv_flash_bank_migrate(btstack_tlv_flash_bank_t * self){
 			uint32_t tag_len = it.len;
 			uint32_t tag_index = it.offset;
 
-			log_info("migrate pos %u, tag '%x' len %u -> new pos %u",
-                (unsigned  int)  tag_index, (unsigned int)  it.tag, (unsigned int) tag_len, next_write_pos);
+            bool tag_valid = true;
 
-			// copy header
-			uint8_t header_buffer[8];
-			btstack_tlv_flash_bank_read(self, self->current_bank, tag_index,      header_buffer, 8);
-			btstack_tlv_flash_bank_write(self, next_bank,         next_write_pos, header_buffer, 8);
-			tag_index      += 8;
-			next_write_pos += 8;
+#ifdef ENABLE_TLV_FLASH_WRITE_ONCE
+            // search until end for newer entry of same tag
+            tlv_iterator_t it2;
+            memcpy(&it2, &it, sizeof(tlv_iterator_t));
+            while (btstack_tlv_flash_bank_iterator_has_next(self, &it2)){
+                if ((it2.offset != it.offset) && (it2.tag == it.tag)){
+                    tag_valid = false;
+                    break;
+                }
+                tlv_iterator_fetch_next(self, &it2);
+            }
+            if (tag_valid == false){
+			    log_info("skip pos %u, tag '%x' as newer entry found at %u", (unsigned int) tag_index, (unsigned int) it.tag,
+                    (unsigned int) it2.offset);
+            }
+#endif
+
+            if (tag_valid) {
+
+                log_info("migrate pos %u, tag '%x' len %u -> new pos %u",
+                         (unsigned int) tag_index, (unsigned int) it.tag, (unsigned int) tag_len, next_write_pos);
+
+                // copy header
+                uint8_t header_buffer[8];
+                btstack_tlv_flash_bank_read(self, self->current_bank, tag_index, header_buffer, 8);
+                btstack_tlv_flash_bank_write(self, next_bank, next_write_pos, header_buffer, 8);
+                tag_index += 8;
+                next_write_pos += 8;
 
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
-			// skip delete field
-			tag_index      += self->delete_tag_len;
-			next_write_pos += self->delete_tag_len;
+                // skip delete field
+                tag_index      += self->delete_tag_len;
+                next_write_pos += self->delete_tag_len;
 #endif
-			// copy value
-			int bytes_to_copy = tag_len;
-			uint8_t copy_buffer[32];
-			while (bytes_to_copy){
-				int bytes_this_iteration = btstack_min(bytes_to_copy, sizeof(copy_buffer));
-				btstack_tlv_flash_bank_read(self, self->current_bank, tag_index, copy_buffer, bytes_this_iteration);
-				btstack_tlv_flash_bank_write(self, next_bank, next_write_pos, copy_buffer, bytes_this_iteration);
-				tag_index      += bytes_this_iteration;
-				next_write_pos += bytes_this_iteration;
-				bytes_to_copy  -= bytes_this_iteration;
-			}
+                // copy value
+                int bytes_to_copy = tag_len;
+                uint8_t copy_buffer[32];
+                while (bytes_to_copy) {
+                    int bytes_this_iteration = btstack_min(bytes_to_copy, sizeof(copy_buffer));
+                    btstack_tlv_flash_bank_read(self, self->current_bank, tag_index, copy_buffer, bytes_this_iteration);
+                    btstack_tlv_flash_bank_write(self, next_bank, next_write_pos, copy_buffer, bytes_this_iteration);
+                    tag_index += bytes_this_iteration;
+                    next_write_pos += bytes_this_iteration;
+                    bytes_to_copy -= bytes_this_iteration;
+                }
+            }
 		}
 		tlv_iterator_fetch_next(self, &it);
 	}
@@ -293,6 +322,7 @@ static void btstack_tlv_flash_bank_migrate(btstack_tlv_flash_bank_t * self){
 	self->write_offset = next_write_pos;
 }
 
+#ifndef ENABLE_TLV_FLASH_WRITE_ONCE
 static void btstack_tlv_flash_bank_delete_tag_until_offset(btstack_tlv_flash_bank_t * self, uint32_t tag, uint32_t offset){
 	tlv_iterator_t it;
 	btstack_tlv_flash_bank_iterator_init(self, &it, self->current_bank);
@@ -314,6 +344,7 @@ static void btstack_tlv_flash_bank_delete_tag_until_offset(btstack_tlv_flash_ban
 		tlv_iterator_fetch_next(self, &it);
 	}
 }
+#endif
 
 /**
  * Get Value for Tag
@@ -335,7 +366,9 @@ static int btstack_tlv_flash_bank_get_tag(void * context, uint32_t tag, uint8_t 
 			log_info("Found tag '%x' at position %u", (unsigned int) tag, (unsigned int) it.offset);
 			tag_index = it.offset;
 			tag_len   = it.len;
+#ifndef ENABLE_TLV_FLASH_WRITE_ONCE
 			break;
+#endif
 		}
 		tlv_iterator_fetch_next(self, &it);
 	}
@@ -391,8 +424,10 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 	// then entry
 	btstack_tlv_flash_bank_write(self, self->current_bank, self->write_offset, entry, sizeof(entry));
 
+#ifndef ENABLE_TLV_FLASH_WRITE_ONCE
 	// overwrite old entries (if exists)
 	btstack_tlv_flash_bank_delete_tag_until_offset(self, tag, self->write_offset);
+#endif
 
 	// done
 	self->write_offset += sizeof(entry) + btstack_tlv_flash_bank_align_size(self, data_size);
@@ -410,8 +445,12 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
  * @param tag
  */
 static void btstack_tlv_flash_bank_delete_tag(void * context, uint32_t tag){
-	btstack_tlv_flash_bank_t * self = (btstack_tlv_flash_bank_t *) context;
+#ifdef ENABLE_TLV_FLASH_WRITE_ONCE
+    btstack_tlv_flash_bank_store_tag(context, tag, NULL, 0);
+#else
+    btstack_tlv_flash_bank_t * self = (btstack_tlv_flash_bank_t *) context;
 	btstack_tlv_flash_bank_delete_tag_until_offset(self, tag, self->write_offset);
+#endif
 }
 
 static const btstack_tlv_t btstack_tlv_flash_bank = {
@@ -447,23 +486,29 @@ const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_ban
 
 		// find last entry and write offset
 		tlv_iterator_t it;
+#ifndef ENABLE_TLV_FLASH_WRITE_ONCE
 		uint32_t last_tag = 0;
 		uint32_t last_offset = 0;
-		btstack_tlv_flash_bank_iterator_init(self, &it, self->current_bank);
+#endif
+        btstack_tlv_flash_bank_iterator_init(self, &it, self->current_bank);
 		while (btstack_tlv_flash_bank_iterator_has_next(self, &it)){
+#ifndef ENABLE_TLV_FLASH_WRITE_ONCE
 			last_tag = it.tag;
 			last_offset = it.offset;
+#endif
 			tlv_iterator_fetch_next(self, &it);
 		}
 		self->write_offset = it.offset;
 
 		if (self->write_offset < self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
 
+#ifndef ENABLE_TLV_FLASH_WRITE_ONCE
 			// delete older instances of last_tag
 			// this handles the unlikely case where MCU did reset after new value + header was written but before delete did complete
 			if (last_tag){
 				btstack_tlv_flash_bank_delete_tag_until_offset(self, last_tag, last_offset);
 			}
+#endif
 
 			// verify that rest of bank is empty
 			// this handles the unlikely case where MCU did reset after new value was written, but not the tag

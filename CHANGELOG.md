@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Changed
 - GAP: add gap_set_peer_privacy_mode with default LE_PRIVACY_MODE_DEVICE
 - bluetooth: indicated identity address in resolved address types
+- btstack_flash_bank: write empty tag instead of overwriting existing tag with ENABLE_TLV_FLASH_WRITE_ONCE
 
 
 ## Release v1.5.5
