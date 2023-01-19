@@ -108,7 +108,7 @@ analyzed with the macOS X PacketLogger or WireShark.
 
 ## Setup
 
-![Renesas Eval Kit EK-RA6M4 with DA14531](a6m4-and-ble-tiny-click.jpg)
+![Renesas Eval Kit EK-RA6M4 with DA14531](ra6m4-and-ble-tiny-click.jpg)
 
 ## Updating HAL Configuration
 - Start Renesas RA v3.7.0/e2-studio on Windows and open `e2-project`
