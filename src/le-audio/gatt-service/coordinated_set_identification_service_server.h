@@ -74,35 +74,63 @@ typedef struct {
 
     csis_sirk_calculation_state_t  encrypted_sirk_state;
     uint8_t encrypted_sirk[16];
-
 } csis_coordinator_t;
+
 /**
  * @brief Init Coordinated Set Identification Service Server with ATT DB
  */
 void coordinated_set_identification_service_server_init(const uint8_t coordinators_num, csis_coordinator_t * coordinators, 
     uint8_t coordinated_set_size, uint8_t member_rank);
 
-uint8_t coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t type, uint8_t * sirk, bool exposed_via_oob);
-
-uint8_t coordinated_set_identification_service_server_set_size(uint8_t coordinated_set_size);
-
-uint8_t coordinated_set_identification_service_server_set_rank(uint8_t member_rank);
-
-void coordinated_set_identification_service_server_calculate_rsi(void);
+/**
+ * @brief Register packet handler to receive events:
+ * - GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_DISCONNECTED
+ * - GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_CONNECTED
+ * - GATTSERVICE_SUBEVENT_CSIS_COORDINATED_SET_MEMBER_LOCK
+ * - GATTSERVICE_SUBEVENT_CSIS_COORDINATED_SET_SIZE
+ * - GATTSERVICE_SUBEVENT_CSIS_RSI
+ * @param packet_handler
+ */
+void coordinated_set_identification_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
 /**
- * @brief Register callback.
- * @param callback
+ * @brief Set SIRK. The SIRK associates a device with a Coordinated Set. 
+ * @param sirk_type
+ * @param sirk
+ * @param exposed_via_oob
  */
-void coordinated_set_identification_service_server_register_packet_handler(btstack_packet_handler_t callback);
+void coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t sirk_type, const uint8_t * sirk, bool exposed_via_oob);
 
+/**
+ * @brief Set the number of devices in the Coordinated Set to whom this server is part of. A size of zero is not allowed.
+ * @param coordinated_set_size
+ */
+void coordinated_set_identification_service_server_set_size(uint8_t coordinated_set_size);
+
+/**
+ * @brief Set the order of the server in which the client should access it when performing procedures with the Coordinated Set.
+ * The rank of the server should be greater then zero and unique within a Coordinated Set. 
+ * @param coordinated_set_member_rank
+ */
+void coordinated_set_identification_service_server_set_rank(uint8_t coordinated_set_member_rank);
+
+/**
+ * @brief Calculate RSI based on SIRK and a random number. The result is reported via the GATTSERVICE_SUBEVENT_CSIS_RSI event.
+ * @return ERROR_CODE_SUCCESS if successful, otherwise
+ *                - ERROR_CODE_COMMAND_DISALLOWED if there is an ongoing RSI calculation
+ */ 
+uint8_t coordinated_set_identification_service_server_generate_rsi(void);
+
+/**
+ * @brief De-init CSIS server.
+ */
 void coordinated_set_identification_service_server_deinit(void);
 
 /* API_END */
 
 // PTS test only
 uint8_t coordinated_set_identification_service_server_simulate_member_connected(hci_con_handle_t con_handle);
-uint8_t coordinated_set_identification_service_server_simulate_set_lock(hci_con_handle_t con_handle, csis_member_lock_t lock);
+uint8_t coordinated_set_identification_service_server_simulate_set_lock(hci_con_handle_t con_handle, csis_member_lock_t coordinated_set_member_lock);
 
 #if defined __cplusplus
 }
