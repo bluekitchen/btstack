@@ -86,8 +86,8 @@ static csis_member_lock_t   csis_member_lock;
 static uint16_t member_lock_handle;
 static uint16_t member_lock_configuration_handle;
 
-static uint8_t  csis_member_rank;
-static uint16_t member_rank_handle;
+static uint8_t  csis_coordinated_set_member_rank;
+static uint16_t coordinated_set_member_rank_handle;
 
 static btstack_crypto_random_t random_request;
 static btstack_crypto_aes128_t aes128_request;
@@ -144,12 +144,13 @@ static void csis_handle_prand_provisioner(void * arg){
     btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, prand_prime, csis_hash, &csis_server_handle_csis_hash, NULL);
 }
 
-void coordinated_set_identification_service_server_calculate_rsi(void){
+uint8_t coordinated_set_identification_service_server_generate_rsi(void){
     if (csis_rsi_calculation_ongoing){
-        return;
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
     csis_rsi_calculation_ongoing = true;
     btstack_crypto_random_generate(&random_request, csis_prand_data, 3, &csis_handle_prand_provisioner, NULL);
+    return ERROR_CODE_SUCCESS;
 }
 
 static csis_coordinator_t * csis_server_get_next_coordinator_for_sirk_calculation(void){
@@ -277,7 +278,7 @@ static void csis_server_emit_lock(hci_con_handle_t con_handle){
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_LOCK;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_COORDINATED_SET_MEMBER_LOCK;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = (uint8_t)csis_member_lock;
@@ -291,9 +292,9 @@ static void csis_server_emit_set_size(hci_con_handle_t con_handle){
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_SET_SIZE;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_COORDINATED_SET_SIZE;
     little_endian_store_16(event, pos, con_handle);
-    event[pos++] = csis_member_rank;
+    event[pos++] = csis_coordinated_set_member_rank;
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -368,8 +369,8 @@ static uint16_t coordinated_set_identification_service_read_callback(hci_con_han
         return att_read_callback_handle_byte((uint8_t)csis_member_lock, offset, buffer, buffer_size);
     }
 
-    if (attribute_handle == member_rank_handle){
-        return att_read_callback_handle_byte(csis_member_rank, offset, buffer, buffer_size);
+    if (attribute_handle == coordinated_set_member_rank_handle){
+        return att_read_callback_handle_byte(csis_coordinated_set_member_rank, offset, buffer, buffer_size);
     }
 
     // reset coordinator if no attribute handle was associated with it
@@ -405,7 +406,7 @@ static void csis_server_can_send_now(void * context){
     } else if ((coordinator->scheduled_tasks & CSIS_TASK_SEND_MEMBER_RANK) != 0) {
         coordinator->scheduled_tasks &= ~CSIS_TASK_SEND_MEMBER_RANK;
         uint8_t value[1];
-        value[0] = csis_member_rank;
+        value[0] = csis_coordinated_set_member_rank;
         att_server_notify(coordinator->con_handle, member_lock_handle, &value[0], sizeof(value));
     }
 
@@ -460,7 +461,7 @@ static void csis_lock_timer_start(csis_coordinator_t * coordinator){
     btstack_run_loop_add_timer(&coordinator->lock_timer);
 }
 
-static uint8_t csis_set_lock(csis_coordinator_t * coordinator, csis_member_lock_t lock){
+static uint8_t csis_set_member_lock(csis_coordinator_t * coordinator, csis_member_lock_t lock){
     csis_coordinator_t * lock_owner = csis_get_lock_owner_coordinator();
 
     if ( (lock_owner != NULL) && (lock_owner != coordinator)){
@@ -531,7 +532,7 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
     }
 
     if (attribute_handle == member_lock_handle){
-        uint8_t status = csis_set_lock(coordinator, (csis_member_lock_t) buffer[0]);
+        uint8_t status = csis_set_member_lock(coordinator, (csis_member_lock_t) buffer[0]);
 
         if (status == ERROR_CODE_SUCCESS){
             csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
@@ -594,12 +595,12 @@ static void coordinated_set_identification_service_packet_handler(uint8_t packet
 
 void coordinated_set_identification_service_server_init(
     const uint8_t coordinators_num, csis_coordinator_t * coordinators, 
-    uint8_t coordianted_set_size, uint8_t member_rank){
+    uint8_t coordianted_set_size, uint8_t coordinated_set_member_rank){
     
     btstack_assert(coordinators_num != 0);
     btstack_assert(coordinators     != NULL);
     btstack_assert(coordianted_set_size    != 0);
-    btstack_assert(member_rank > 0);
+    btstack_assert(coordinated_set_member_rank > 0);
 
      // get service handle range
     uint16_t start_handle = 0;
@@ -618,7 +619,7 @@ void coordinated_set_identification_service_server_init(
     member_lock_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_LOCK_CHARACTERISTIC);
     member_lock_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_LOCK_CHARACTERISTIC);
 
-    member_rank_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_RANK_CHARACTERISTIC);
+    coordinated_set_member_rank_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_RANK_CHARACTERISTIC);
     
     log_info("Found CSIS service 0x%02x-0x%02x", start_handle, end_handle);
 
@@ -630,13 +631,14 @@ void coordinated_set_identification_service_server_init(
     printf("set_size_handle CCC     0x%02x\n", coordinated_set_size_configuration_handle);
     printf("member_lock_handle      0x%02x\n", member_lock_handle);
     printf("member_lock_handle CCC  0x%02x\n", member_lock_configuration_handle);
-    printf("member_rank_handle      0x%02x\n", member_rank_handle); 
+    printf("coordinated_set_member_rank_handle      0x%02x\n", coordinated_set_member_rank_handle); 
 #endif
 
     csis_rsi_calculation_ongoing = false;
+    memset(csis_sirk, 0, sizeof(csis_sirk));
 
     csis_coordinated_set_size = coordianted_set_size;
-    csis_member_rank = member_rank;
+    csis_coordinated_set_member_rank = coordinated_set_member_rank;
     csis_member_lock = CSIS_MEMBER_UNLOCKED;
     
     csis_coordinators_max_num = coordinators_num;
@@ -655,41 +657,43 @@ void coordinated_set_identification_service_server_init(
     att_server_register_service_handler(&coordinated_set_identification_service);
 }
 
-void coordinated_set_identification_service_server_register_packet_handler(btstack_packet_handler_t callback){
-    btstack_assert(callback != NULL);
-    csis_event_callback = callback;
+void coordinated_set_identification_service_server_register_packet_handler(btstack_packet_handler_t packet_handler){
+    btstack_assert(packet_handler != NULL);
+    csis_event_callback = packet_handler;
 }
 
-uint8_t coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t type, uint8_t * sirk, bool exposed_via_oob){
-    if (type >= CSIS_SIRK_TYPE_PROHIBITED){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
+void coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t sirk_type, const uint8_t * sirk, bool exposed_via_oob){
+    btstack_assert(sirk != NULL);
+    btstack_assert(sirk_type < CSIS_SIRK_TYPE_PROHIBITED);
+    
     csis_sirk_exposed_via_oob = exposed_via_oob;
-    csis_sirk_type = type;
+    csis_sirk_type = sirk_type;
     memcpy(csis_sirk, sirk, sizeof(csis_sirk));
     csis_server_set_callback(CSIS_TASK_SEND_SIRK);
-    return ERROR_CODE_SUCCESS;
 }
 
-uint8_t coordinated_set_identification_service_server_set_size(uint8_t coordinated_set_size){
-    if (coordinated_set_size == 0){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
+void coordinated_set_identification_service_server_set_size(uint8_t coordinated_set_size){
+    btstack_assert(coordinated_set_size > 0u);
     csis_coordinated_set_size = coordinated_set_size;
     csis_server_set_callback(CSIS_TASK_SEND_COORDINATED_SET_SIZE);
-    return ERROR_CODE_SUCCESS;
 }
 
-uint8_t coordinated_set_identification_service_server_set_rank(uint8_t member_rank){
-    if (member_rank == 0){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    csis_member_rank = member_rank;
+void coordinated_set_identification_service_server_set_rank(uint8_t coordinated_set_member_rank){
+    btstack_assert(coordinated_set_member_rank > 0u);
+    csis_coordinated_set_member_rank = coordinated_set_member_rank;
     csis_server_set_callback(CSIS_TASK_SEND_MEMBER_RANK);
-    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t coordinated_set_identification_service_server_simulate_set_lock(hci_con_handle_t con_handle, csis_member_lock_t coordinated_set_member_lock){
+    csis_coordinator_t * coordinator = csis_get_coordinator_for_con_handle(con_handle);
+    if (coordinator == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    return csis_set_member_lock(coordinator, coordinated_set_member_lock);
 }
 
 void coordinated_set_identification_service_server_deinit(void){
+    memset(csis_sirk, 0, sizeof(csis_sirk));
     csis_member_lock = CSIS_MEMBER_UNLOCKED;
     active_coordinator = NULL;
     csis_event_callback = NULL;
@@ -699,7 +703,7 @@ void coordinated_set_identification_service_server_deinit(void){
 uint8_t coordinated_set_identification_service_server_simulate_member_connected(hci_con_handle_t con_handle){
     csis_coordinator_t * coordinator = csis_get_coordinator_for_con_handle(con_handle);
     if (coordinator != NULL){
-        return ERROR_CODE_COMMAND_DISALLOWED;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     } 
     
     coordinator = csis_server_add_coordinator(con_handle);
@@ -709,10 +713,3 @@ uint8_t coordinated_set_identification_service_server_simulate_member_connected(
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t coordinated_set_identification_service_server_simulate_set_lock(hci_con_handle_t con_handle, csis_member_lock_t lock){
-    csis_coordinator_t * coordinator = csis_get_coordinator_for_con_handle(con_handle);
-    if (coordinator == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    return csis_set_lock(coordinator, lock);
-}
