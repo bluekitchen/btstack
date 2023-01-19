@@ -557,7 +557,6 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     hci_con_handle_t con_handle;
     uint8_t status;
     uint8_t ris[6];
-    uint8_t adv_ris[6];
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         
@@ -572,9 +571,9 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             printf("CSIS Server: connected, con_handle 0x%02x\n", con_handle);
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_RIS:
-            printf("RIS:\n");
-            gattservice_subevent_csis_ris_get_ris(packet, ris);
+        case GATTSERVICE_SUBEVENT_CSIS_RSI:
+            printf("RSI:\n");
+            gattservice_subevent_csis_rsi_get_rsi(packet, ris);
             reverse_48(ris, &adv_data[5]);
             printf_hexdump(&adv_data[5], 6);
             //
@@ -825,13 +824,13 @@ static void stdin_process(char c){
         }
         
         case 'i':
-            coordinated_set_identification_service_server_calculate_rsi();
+            coordinated_set_identification_service_server_generate_rsi();
             break;
 
         case 'I':{
             uint8_t test_sirk[] = {0x83, 0x8E, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8}; 
             coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_ENCRYPTED, &test_sirk[0], false);
-            coordinated_set_identification_service_server_calculate_encrypted_sirk();
+            // coordinated_set_identification_service_server_calculate_encrypted_sirk();
             break;
         }
         case '\n':
