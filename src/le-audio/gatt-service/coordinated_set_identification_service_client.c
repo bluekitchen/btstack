@@ -198,7 +198,7 @@ static void csis_client_emit_write_lock_complete(csis_client_connection_t * conn
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
