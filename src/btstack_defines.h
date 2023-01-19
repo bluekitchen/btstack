@@ -4940,7 +4940,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1B
  * @param subevent_code
- * @param ris
+ * @param rsi
 */
 #define GATTSERVICE_SUBEVENT_CSIS_RSI                                             0x5Eu
 
@@ -4974,7 +4974,7 @@ typedef uint8_t sm_key_t[16];
  * @param csis_cid
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE                             0x62u
+#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE                      0x62u
 
 /**
  * @format 1211
