@@ -16517,13 +16517,13 @@ static inline uint8_t gattservice_subevent_csis_coordinated_set_size_get_set_siz
 }
 
 /**
- * @brief Get field ris from event GATTSERVICE_SUBEVENT_CSIS_RSI
+ * @brief Get field rsi from event GATTSERVICE_SUBEVENT_CSIS_RSI
  * @param event packet
- * @param Pointer to storage for ris
+ * @param Pointer to storage for rsi
  * @note: btstack_type B
  */
-static inline void gattservice_subevent_csis_rsi_get_ris(const uint8_t * event, bd_addr_t ris){
-    reverse_bytes(&event[3], ris, 6);
+static inline void gattservice_subevent_csis_rsi_get_rsi(const uint8_t * event, bd_addr_t rsi){
+    reverse_bytes(&event[3], rsi, 6);
 }
 
 /**
@@ -16575,21 +16575,21 @@ static inline uint16_t gattservice_subevent_csis_remote_server_disconnected_get_
 }
 
 /**
- * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE
+ * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE
  * @param event packet
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_write_lock_complete_get_csis_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_csis_remote_lock_write_complete_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_write_lock_complete_get_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_remote_lock_write_complete_get_status(const uint8_t * event){
     return event[5];
 }
 
