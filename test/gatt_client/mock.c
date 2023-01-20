@@ -9,6 +9,7 @@
 #include "ble/att_db.h"
 #include "ble/sm.h"
 #include "gap.h"
+#include "btstack_debug.h"
 
 #define PREBUFFER_SIZE (HCI_INCOMING_PRE_BUFFER_SIZE + 8)
 #define TEST_MAX_MTU 23
@@ -20,6 +21,9 @@ static btstack_linked_list_t     connections;
 static uint8_t  l2cap_stack_buffer[PREBUFFER_SIZE + TEST_MAX_MTU];	// pre buffer + HCI Header + L2CAP header
 static uint16_t gatt_client_handle = 0x40;
 static hci_connection_t hci_connection;
+
+static uint8_t packet_buffer[256];
+static uint16_t packet_buffer_len;
 
 uint16_t get_gatt_client_handle(void){
 	return gatt_client_handle;
@@ -76,6 +80,28 @@ static void att_init_connection(att_connection_t * att_connection){
     att_connection->encryption_key_size = 0;
     att_connection->authenticated = 0;
 	att_connection->authorized = 0;
+}
+
+HCI_STATE hci_get_state(void){
+	return HCI_STATE_WORKING;
+}
+
+uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
+
+	btstack_assert(false);
+
+    va_list argptr;
+    va_start(argptr, cmd);
+    uint16_t len = hci_cmd_create_from_template(packet_buffer, cmd, argptr);
+    va_end(argptr);
+	hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet_buffer, len);
+	// dump_packet(HCI_COMMAND_DATA_PACKET, packet_buffer, len);
+	packet_buffer_len = len;
+	return ERROR_CODE_SUCCESS;
+}
+
+bool hci_can_send_command_packet_now(void){
+	return true;
 }
 
 bool hci_can_send_acl_le_packet_now(void){
@@ -146,6 +172,11 @@ int sm_le_device_index(uint16_t handle ){
 	return 0;
 }
 void sm_send_security_request(hci_con_handle_t con_handle){
+}
+
+uint8_t sm_get_ltk(hci_con_handle_t con_handle, sm_key_t ltk){
+	memset((uint8_t*) ltk, 0x22, 16);
+	return ERROR_CODE_SUCCESS;
 }
 
 irk_lookup_state_t sm_identity_resolving_state(hci_con_handle_t con_handle){

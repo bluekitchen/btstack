@@ -12,6 +12,7 @@ link_libraries( CppUTestExt )
 
 include_directories(.)
 include_directories(../../src)
+include_directories(../../3rd-party/rijndael/)
 include_directories( ${CMAKE_CURRENT_BINARY_DIR})
 
 set(SOURCES
@@ -26,6 +27,9 @@ set(SOURCES
 	../../src/btstack_util.c
 	../../src/hci_cmd.c
 	../../src/hci_dump.c
+	../../src/le-audio/gatt-service/coordinated_set_identification_service_client.c
+	../../src/btstack_crypto.c
+	../../3rd-party/rijndael/rijndael.c
 )
 
 # create static lib
