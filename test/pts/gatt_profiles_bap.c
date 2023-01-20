@@ -572,10 +572,10 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_RSI:
-            printf("RSI:\n");
+            printf("CSIS Server: RSI \n");
             gattservice_subevent_csis_rsi_get_rsi(packet, ris);
             reverse_48(ris, &adv_data[5]);
-            printf_hexdump(&adv_data[5], 6);
+            printf_hexdump(ris, 6);
             //
             gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
             gap_advertisements_enable(1);
