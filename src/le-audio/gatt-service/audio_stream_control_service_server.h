@@ -86,10 +86,20 @@ void audio_stream_control_service_server_init(
     const uint8_t clients_num, ascs_remote_client_t * clients);
 
 /**
- * @brief Register callback.
- * @param callback
+ * @brief Register packet handler to receive events:
+ * - GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_DISCONNECTED
+ * - GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_CONNECTED
+ * - GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION_REQUEST
+ * - GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION_REQUEST
+ * - GATTSERVICE_SUBEVENT_ASCS_METADATA_REQUEST
+ * - GATTSERVICE_SUBEVENT_ASCS_CLIENT_START_READY
+ * - GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISABLING
+ * - GATTSERVICE_SUBEVENT_ASCS_CLIENT_STOP_READY
+ * - GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASING
+ * - GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASED
+ * @param packet_handler
  */
-void audio_stream_control_service_server_register_packet_handler(btstack_packet_handler_t callback);
+void audio_stream_control_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
 /**
  * @brief Configure codec.
