@@ -36,7 +36,7 @@ set(SOURCES
 add_library(btstack STATIC ${SOURCES})
 
 # create targets
-foreach(EXAMPLE_FILE le_central.cpp gatt_client_test.cpp)
+foreach(EXAMPLE_FILE le_central.cpp gatt_client_test.cpp gatt_client_crypto_test.cpp)
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
 	set (SOURCE_FILES ${EXAMPLE_FILE} mock.c)
 	# profile.h
