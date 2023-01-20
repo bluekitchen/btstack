@@ -905,12 +905,15 @@ uint8_t coordinated_set_identification_service_client_check_rsi(const uint8_t * 
     csis_rsi_calculation_ongoing = true;
 
     memcpy(csis_sirk, sirk, sizeof(csis_sirk));
+    memcpy(csis_rsi,   rsi, sizeof(csis_rsi));
     
     uint8_t prand_prime[16];
     memset(prand_prime, 0, 16);
     memcpy(&prand_prime[13], &rsi[0], 3);
+    // prand_prime[13] &= 0x7F;
+    // prand_prime[13] |= 0x40;
 
-    btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, csis_rsi, csis_hash, &csis_server_handle_csis_hash, NULL);
+    btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, prand_prime, csis_hash, &csis_server_handle_csis_hash, NULL);
     return ERROR_CODE_SUCCESS;
 }
 

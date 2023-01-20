@@ -128,6 +128,10 @@ static void csis_server_handle_csis_hash(void * arg){
 static void csis_handle_prand_provisioner(void * arg){
     UNUSED(arg);
 
+    // CSIS 4.8: The two most significant bits (MSBs) of prand shall be equal to 0 and 1
+    csis_prand_data[0] &= 0x7F;
+    csis_prand_data[0] |= 0x40;
+
     // TEST data
     // csis_prand_data[0] = 0x69;
     // csis_prand_data[1] = 0xf5;
@@ -136,10 +140,6 @@ static void csis_handle_prand_provisioner(void * arg){
     uint8_t prand_prime[16];
     memset(prand_prime, 0, 16);
     memcpy(&prand_prime[13], csis_prand_data, 3);
-
-    // CSIS 4.8: The two most significant bits (MSBs) of prand shall be equal to 0 and 1
-    prand_prime[13] &= 0x7F;
-    prand_prime[13] |= 0x40;
 
     btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, prand_prime, csis_hash, &csis_server_handle_csis_hash, NULL);
 }
