@@ -129,7 +129,14 @@ typedef struct {
 /* API_START */
 
 /**
- * @brief Init Audio Stream Control Service Client and register callback for events.
+ * @brief Init Audio Stream Control Service Client and register callback for events:
+ * - GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED
+ * - GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_DISCONNECTED
+ * - GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
+ * - GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION
+ * - GATTSERVICE_SUBEVENT_ASCS_METADATA
+ * - GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE
+ * - GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE
  * @param packet_handler
  */
 void audio_stream_control_service_client_init(btstack_packet_handler_t packet_handler);
