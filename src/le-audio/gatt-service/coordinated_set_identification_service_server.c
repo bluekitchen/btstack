@@ -47,8 +47,8 @@
 #include "btstack_util.h"
 #include "btstack_crypto.h"
 
-#include "le-audio/gatt-service/coordinated_set_identification_service_server.h"
 #include "le-audio/le_audio_util.h"
+#include "le-audio/gatt-service/coordinated_set_identification_service_server.h"
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>
