@@ -35,7 +35,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "audio_stream_control_service_client.c"
+#define BTSTACK_FILE__ "coordinated_set_identification_service_client.c"
 
 #include "ble/att_db.h"
 #include "ble/att_server.h"
