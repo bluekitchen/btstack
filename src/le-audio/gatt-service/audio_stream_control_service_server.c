@@ -1234,9 +1234,9 @@ void audio_stream_control_service_server_init(
     att_server_register_service_handler(&audio_stream_control_service);
 }
 
-void audio_stream_control_service_server_register_packet_handler(btstack_packet_handler_t callback){
-    btstack_assert(callback != NULL);
-    ascs_event_callback = callback;
+void audio_stream_control_service_server_register_packet_handler(btstack_packet_handler_t packet_handler){
+    btstack_assert(packet_handler != NULL);
+    ascs_event_callback = packet_handler;
 }
 
 static void ascs_streamendpoint_schedule_value_changed_task(ascs_remote_client_t * client, ascs_streamendpoint_t * streamendpoint){
