@@ -18,6 +18,7 @@ CORE += \
 
 COMMON += \
 	hci.c			            \
+	btstack_crypto.c            \
 	device_id_server.c          \
 	ad_parser.c                 \
 	hci_cmd.c		            \
@@ -83,33 +84,22 @@ AVRCP += \
 	avrcp_browsing_target.c \
 	avrcp_browsing_controller.c \
 
-SRC_BLE_GATT_SERVICE_FILES += \
-	audio_input_control_service_server.c \
-	audio_stream_control_service_server.c \
-	broadcast_audio_scan_service_server.c \
-	broadcast_audio_scan_service_util.c \
-	coordinated_set_identification_service.c \
-	media_control_service_server.c \
-	microphone_control_service_server.c \
-	published_audio_capabilities_service_server.c \
-	volume_control_service_server.c \
-
-SRC_BLE_GATT_CLIENT_FILES += \
-	le_audio_util.c 					  \
-	broadcast_audio_scan_service_util.c   \
-	broadcast_audio_scan_service_client.c \
-	microphone_control_service_client.c \
-
-# include ${BTSTACK_ROOT}/example/Makefile.inc
-
 HXCMOD_PLAYER = \
 	${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c 						\
 	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
 
-include ${BTSTACK_ROOT}/example/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 include ${BTSTACK_ROOT}/src/ble/gatt-service/Makefile.inc
+
+SRC_BLE_GATT_CLIENT_FILES += \
+	broadcast_audio_scan_service_util.c   \
+	broadcast_audio_scan_service_client.c \
+	le_audio_util.c 					  \
+	microphone_control_service_client.c \
+
+SRC_BLE_GATT_SERVICE_FILES += \
+	coordinated_set_identification_service_server.c
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Wswitch-default
 CFLAGS += -D ENABLE_TESTING_SUPPORT
@@ -169,7 +159,7 @@ SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
 AVRCP_OBJ  = $(AVRCP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
-SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
+SRC_BLE_GATT_SERVICE_FILES_OBJ = ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 SRC_BLE_GATT_CLIENT_FILES_OBJ = ${SRC_BLE_GATT_CLIENT_FILES}
 
 EXAMPLES  = iopt gatt_server_test gatt_client_test l2cap_test classic_test bnep_test l2cap_cbm_ecbm
@@ -298,6 +288,7 @@ gatt_profiles_bap.h: gatt_profiles_bap.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 gatt_profiles_bap: gatt_profiles_bap.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o gatt_sdp.o gatt_profiles_bap.o
+	echo ${SRC_BLE_GATT_SERVICE_FILES}
 	${CC} $(filter-out gatt_profiles_bap.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 myclean:

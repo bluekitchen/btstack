@@ -486,27 +486,27 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             audio_stream_control_service_server_streamendpoint_configure_codec(con_handle, ase_id, codec_configuration);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION:
-            ase_id = gattservice_subevent_ascs_qos_configuration_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_qos_configuration_get_con_handle(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION_REQUEST:
+            ase_id = gattservice_subevent_ascs_qos_configuration_request_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_qos_configuration_request_get_con_handle(packet);
 
-            qos_configuration.cig_id = gattservice_subevent_ascs_qos_configuration_get_cig_id(packet);
-            qos_configuration.cis_id = gattservice_subevent_ascs_qos_configuration_get_cis_id(packet);
-            qos_configuration.sdu_interval = gattservice_subevent_ascs_qos_configuration_get_sdu_interval(packet);
-            qos_configuration.framing = gattservice_subevent_ascs_qos_configuration_get_framing(packet);
-            qos_configuration.phy = gattservice_subevent_ascs_qos_configuration_get_phy(packet);
-            qos_configuration.max_sdu = gattservice_subevent_ascs_qos_configuration_get_max_sdu(packet);
-            qos_configuration.retransmission_number = gattservice_subevent_ascs_qos_configuration_get_retransmission_number(packet);
-            qos_configuration.max_transport_latency_ms = gattservice_subevent_ascs_qos_configuration_get_max_transport_latency(packet);
-            qos_configuration.presentation_delay_us = gattservice_subevent_ascs_qos_configuration_get_presentation_delay_us(packet);
+            qos_configuration.cig_id = gattservice_subevent_ascs_qos_configuration_request_get_cig_id(packet);
+            qos_configuration.cis_id = gattservice_subevent_ascs_qos_configuration_request_get_cis_id(packet);
+            qos_configuration.sdu_interval = gattservice_subevent_ascs_qos_configuration_request_get_sdu_interval(packet);
+            qos_configuration.framing = gattservice_subevent_ascs_qos_configuration_request_get_framing(packet);
+            qos_configuration.phy = gattservice_subevent_ascs_qos_configuration_request_get_phy(packet);
+            qos_configuration.max_sdu = gattservice_subevent_ascs_qos_configuration_request_get_max_sdu(packet);
+            qos_configuration.retransmission_number = gattservice_subevent_ascs_qos_configuration_request_get_retransmission_number(packet);
+            qos_configuration.max_transport_latency_ms = gattservice_subevent_ascs_qos_configuration_request_get_max_transport_latency(packet);
+            qos_configuration.presentation_delay_us = gattservice_subevent_ascs_qos_configuration_request_get_presentation_delay_us(packet);
 
             printf("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d\n", ase_id);
             audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ase_id, qos_configuration);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_METADATA:
-            ase_id = gattservice_subevent_ascs_metadata_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_metadata_get_con_handle(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_METADATA_REQUEST:
+            ase_id = gattservice_subevent_ascs_metadata_request_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_metadata_request_get_con_handle(packet);
             printf("ASCS: METADATA_RECEIVED ase_id %d\n", ase_id);
             audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id);
             break;
