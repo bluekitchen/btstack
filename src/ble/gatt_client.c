@@ -517,9 +517,19 @@ static uint16_t get_last_result_handle_from_included_services_list(uint8_t * pac
     return little_endian_read_16(packet, size - attr_length);
 }
 
+static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client){
+    while (gatt_client->gatt_client_state == P_READY){
+        btstack_context_callback_registration_t * callback = (btstack_context_callback_registration_t *) btstack_linked_list_pop(&gatt_client->query_requests);
+        if (callback != NULL){
+            (*callback->callback)(callback->context);
+        }
+    }
+}
+
 static void gatt_client_handle_transaction_complete(gatt_client_t * gatt_client){
     gatt_client->gatt_client_state = P_READY;
     gatt_client_timeout_stop(gatt_client);
+    gatt_client_notify_can_send_query(gatt_client);
 }
 
 static void emit_event_new(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
@@ -2496,6 +2506,21 @@ uint8_t gatt_client_request_to_write_without_response(btstack_context_callback_r
     }
     bool added = btstack_linked_list_add_tail(&gatt_client->write_without_response_requests, (btstack_linked_item_t*) callback_registration);
     att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
+    if (added){
+        return ERROR_CODE_SUCCESS;
+    } else {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+}
+
+uint8_t gatt_client_request_to_send_gatt_query(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    bool added = btstack_linked_list_add_tail(&gatt_client->query_requests, (btstack_linked_item_t*) callback_registration);
+    gatt_client_notify_can_send_query(gatt_client);
     if (added){
         return ERROR_CODE_SUCCESS;
     } else {

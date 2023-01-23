@@ -154,6 +154,9 @@ typedef struct gatt_client{
     // can write without response requests
     btstack_linked_list_t write_without_response_requests;
 
+    // regular gatt query requests
+    btstack_linked_list_t query_requests;
+
     hci_con_handle_t con_handle;
 
     uint16_t          mtu;
@@ -873,8 +876,17 @@ uint8_t gatt_client_execute_write(btstack_packet_handler_t callback, hci_con_han
 uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
 
 /**
+ * @brief Request callback when regular gatt query can be sent
+ * @note callback might happen during call to this function
+ * @param callback_registration to point to callback function and context information
+ * @param con_handle
+ * @return ERROR_CODE_SUCCESS if ok, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if handle unknown, and ERROR_CODE_COMMAND_DISALLOWED if callback already registered
+ */
+uint8_t gatt_client_request_to_send_gatt_query(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle);
+
+/**
  * @brief Request callback when writing characteristic value without response is possible
- * @note callback might happend during call to this function
+ * @note callback might happen during call to this function
  * @param callback_registration to point to callback function and context information
  * @param con_handle
  * @return ERROR_CODE_SUCCESS if ok, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if handle unknown, and ERROR_CODE_COMMAND_DISALLOWED if callback already registered

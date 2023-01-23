@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP: provide SCO packet types and rx/tx packet lengths in HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
 - Port for Renesas RA6M4 with DA14531
 - example: gatt_streamer_server and le_streamer_client report DLE and PHY changes
+- gatt_client: queue requests with gatt_client_request_to_send_gatt_query and gatt_client_request_to_write_without_response 
 
 ## Fixed
 - btstack_stdin_embedded: use timer to poll RTT input, fix for tickless RTOS
