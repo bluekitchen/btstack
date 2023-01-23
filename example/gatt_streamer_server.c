@@ -240,10 +240,13 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     UNUSED(channel);
     UNUSED(size);
     
+    if (packet_type != HCI_EVENT_PACKET) return;
+
     uint16_t conn_interval;
     hci_con_handle_t con_handle;
-
-    if (packet_type != HCI_EVENT_PACKET) return;
+    static const char * const phy_names[] = {
+        "1 M", "2 M", "Codec"
+    };
 
     switch (hci_event_packet_get_type(packet)) {
         case BTSTACK_EVENT_STATE:
@@ -275,6 +278,16 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     conn_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
                     printf("- LE Connection 0x%04x: connection update - connection interval %u.%02u ms, latency %u\n", con_handle, conn_interval * 125 / 100,
                         25 * (conn_interval & 3), hci_subevent_le_connection_update_complete_get_conn_latency(packet));
+                    break;
+                case HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE:
+                    con_handle = hci_subevent_le_data_length_change_get_connection_handle(packet);
+                    printf("- LE Connection 0x%04x: data length change - max %u bytes per packet\n", con_handle,
+                           hci_subevent_le_data_length_change_get_max_tx_octets(packet));
+                    break;
+                case HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE:
+                    con_handle = hci_subevent_le_phy_update_complete_get_connection_handle(packet);
+                    printf("- LE Connection 0x%04x: PHY update - using LE %s PHY now\n", con_handle,
+                           phy_names[hci_subevent_le_phy_update_complete_get_tx_phy(packet)]);
                     break;
                 default:
                     break;

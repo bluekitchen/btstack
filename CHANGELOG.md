@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI_ACL_CHUNK_SIZE_ALIGNMENT allows to keep HCI transport writes aligned
 - HFP: provide SCO packet types and rx/tx packet lengths in HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
 - Port for Renesas RA6M4 with DA14531
+- example: gatt_streamer_server and le_streamer_client report DLE and PHY changes
 
 ## Fixed
 - btstack_stdin_embedded: use timer to poll RTT input, fix for tickless RTOS
