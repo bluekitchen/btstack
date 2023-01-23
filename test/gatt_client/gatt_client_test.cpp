@@ -1264,6 +1264,20 @@ TEST(GATTClient, gatt_client_request_to_write_without_response){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
 }
 
+static void dummy_callback(void * context){
+    (void) context;
+}
+TEST(GATTClient, gatt_client_request_to_send_gatt_query){
+    btstack_context_callback_registration_t callback_registration = { 0 };
+    callback_registration.callback = &dummy_callback;
+
+    uint8_t status = gatt_client_request_to_send_gatt_query(&callback_registration, HCI_CON_HANDLE_INVALID);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    status = gatt_client_request_to_send_gatt_query(&callback_registration, gatt_client_handle);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+}
+
 TEST(GATTClient, gatt_client_send_mtu_negotiation){
 	gatt_client_send_mtu_negotiation(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
 
