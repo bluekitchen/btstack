@@ -1241,19 +1241,27 @@ TEST(GATTClient, gatt_client_discover_secondary_services){
 }
 
 TEST(GATTClient, gatt_client_request_can_write_without_response_event){
-	int status = gatt_client_request_can_write_without_response_event(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
+	uint8_t status = gatt_client_request_can_write_without_response_event(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
 	gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
 	CHECK_TRUE(gatt_client != NULL);
-	btstack_packet_handler_t write_without_response_callback;
-	gatt_client->write_without_response_callback = write_without_response_callback;
+	gatt_client->write_without_response_callback = handle_ble_client_event;
 	status = gatt_client_request_can_write_without_response_event(handle_ble_client_event, gatt_client_handle);
 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 
 	gatt_client->write_without_response_callback = NULL;
 	status = gatt_client_request_can_write_without_response_event(handle_ble_client_event, gatt_client_handle);
 	CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+}
+
+TEST(GATTClient, gatt_client_request_to_write_without_response){
+    btstack_context_callback_registration_t callback_registration = { 0 };
+    uint8_t status = gatt_client_request_to_write_without_response(&callback_registration, HCI_CON_HANDLE_INVALID);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    status = gatt_client_request_can_write_without_response_event(handle_ble_client_event, gatt_client_handle);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
 }
 
 TEST(GATTClient, gatt_client_send_mtu_negotiation){
