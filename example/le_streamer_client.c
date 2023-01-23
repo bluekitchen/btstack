@@ -57,8 +57,16 @@
 
 #include "btstack.h"
 
-// prototypes
-static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+typedef struct {
+    char name;
+    int le_notification_enabled;
+    int  counter;
+    char test_data[200];
+    int  test_data_len;
+    uint32_t test_data_sent;
+    uint32_t test_data_start;
+    btstack_context_callback_registration_t write_without_response_request;
+} le_streamer_connection_t;
 
 typedef enum {
     TC_OFF,
@@ -96,6 +104,11 @@ static int listener_registered;
 static gc_state_t state = TC_OFF;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+// prototypes
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void le_streamer_handle_can_write_without_response(void * context);
+static void le_streamer_client_request_to_send(le_streamer_connection_t * connection);
+
 /*
  * @section Track throughput
  * @text We calculate the throughput by setting a start time and measuring the amount of 
@@ -115,16 +128,6 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 #define REPORT_INTERVAL_MS 3000
 
 // support for multiple clients
-typedef struct {
-    char name;
-    int le_notification_enabled;
-    int  counter;
-    char test_data[200];
-    int  test_data_len;
-    uint32_t test_data_sent;
-    uint32_t test_data_start;
-} le_streamer_connection_t;
-
 static le_streamer_connection_t le_streamer_connection;
 
 static void test_reset(le_streamer_connection_t * context){
@@ -149,28 +152,33 @@ static void test_track_data(le_streamer_connection_t * context, int bytes_sent){
 /* LISTING_END(tracking): Tracking throughput */
 
 
-// stramer
-static void streamer(le_streamer_connection_t * context){
-    if (connection_handle == HCI_CON_HANDLE_INVALID) return;
+// streamer
+static void le_streamer_handle_can_write_without_response(void * context){
+    le_streamer_connection_t * connection = (le_streamer_connection_t *) context;
 
     // create test data
-    context->counter++;
-    if (context->counter > 'Z') context->counter = 'A';
-    memset(context->test_data, context->counter, context->test_data_len);
+    connection->counter++;
+    if (connection->counter > 'Z') connection->counter = 'A';
+    memset(connection->test_data, connection->counter, connection->test_data_len);
 
     // send
-    uint8_t status = gatt_client_write_value_of_characteristic_without_response(connection_handle, le_streamer_characteristic_rx.value_handle, context->test_data_len, (uint8_t*) context->test_data);
+    uint8_t status = gatt_client_write_value_of_characteristic_without_response(connection_handle, le_streamer_characteristic_rx.value_handle, connection->test_data_len, (uint8_t*) connection->test_data);
     if (status){
         printf("Write without response failed, status 0x%02x.\n", status);
         return;
     } else {
-        test_track_data(&le_streamer_connection, context->test_data_len);
+        test_track_data(connection, connection->test_data_len);
     }
 
     // request again
-    gatt_client_request_can_write_without_response_event(handle_gatt_client_event, connection_handle);
+    le_streamer_client_request_to_send(connection);
 }
 
+static void le_streamer_client_request_to_send(le_streamer_connection_t * connection){
+    connection->write_without_response_request.callback = &le_streamer_handle_can_write_without_response;
+    connection->write_without_response_request.context = connection;
+    gatt_client_request_to_write_without_response(&connection->write_without_response_request, connection_handle);
+}
 
 // returns 1 if name is found in advertisement
 static int advertisement_report_contains_name(const char * name, uint8_t * advertisement_report){
@@ -285,7 +293,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     state = TC_W4_TEST_DATA;
 #if (TEST_MODE & TEST_MODE_WRITE_WITHOUT_RESPONSE)
                     printf("Start streaming - request can send now.\n");
-                    gatt_client_request_can_write_without_response_event(handle_gatt_client_event, connection_handle);
+                    le_streamer_client_request_to_send(&le_streamer_connection);
 #endif
                     break;
                 default:
@@ -301,7 +309,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     state = TC_W4_TEST_DATA;
 #if (TEST_MODE & TEST_MODE_WRITE_WITHOUT_RESPONSE)
                     printf("Start streaming - request can send now.\n");
-                    gatt_client_request_can_write_without_response_event(handle_gatt_client_event, connection_handle);
+                    le_streamer_client_request_to_send(&le_streamer_connection);
 #endif
                     break;
                 default:
@@ -317,7 +325,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case GATT_EVENT_QUERY_COMPLETE:
                     break;
                 case GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE:
-                    streamer(&le_streamer_connection);
+                    le_streamer_handle_can_write_without_response(&le_streamer_connection);
                     break;
                 default:
                     printf("Unknown packet type 0x%02x\n", hci_event_packet_get_type(packet));
