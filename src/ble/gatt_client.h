@@ -151,6 +151,9 @@ typedef struct gatt_client{
     // can write without response callback
     btstack_packet_handler_t write_without_response_callback;
 
+    // can write without response requests
+    btstack_linked_list_t write_without_response_requests;
+
     hci_con_handle_t con_handle;
 
     uint16_t          mtu;
@@ -244,6 +247,7 @@ void gatt_client_init(void);
  *        With level > 0, the GATT Client triggers authentication for all GATT Requests and defers any exchange
  *        until the required security level is established.
  *        gatt_client_request_can_write_without_response_event does not trigger authentication
+ *        gatt_client_request_to_write_without_response does not trigger authentication
  *  @pram level, default LEVEL_0 (no encryption required)
  */
 void gatt_client_set_required_security_level(gap_security_level_t level);
@@ -841,15 +845,6 @@ void gatt_client_listen_for_characteristic_value_updates(gatt_client_notificatio
 void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification);
 
 /**
- * @brief Requests GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE that guarantees 
- * a single successful gatt_client_write_value_of_characteristic_without_response call.
- * @param  callback
- * @param  con_handle
- * @return status
- */
-uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
-
-/**
  * @brief Transactional write. It can be called as many times as it is needed to write the characteristics within the same transaction. 
  * Call the gatt_client_execute_write function to commit the transaction.
  * @param  callback   
@@ -876,6 +871,28 @@ uint8_t gatt_client_execute_write(btstack_packet_handler_t callback, hci_con_han
  * @return status
  */
 uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
+
+/**
+ * @brief Request callback when writing characteristic value without response is possible
+ * @note callback might happend during call to this function
+ * @param callback_registration to point to callback function and context information
+ * @param con_handle
+ * @return ERROR_CODE_SUCCESS if ok, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if handle unknown, and ERROR_CODE_COMMAND_DISALLOWED if callback already registered
+ */
+uint8_t gatt_client_request_to_write_without_response(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle);
+
+
+// the following functions are marked as deprecated and will be removed eventually
+/**
+ * @brief Requests GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE that guarantees
+ * a single successful gatt_client_write_value_of_characteristic_without_response call.
+ * @deprecated please use gatt_client_request_to_write_without_response instead
+ * @param  callback
+ * @param  con_handle
+ * @return status
+ */
+uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
+
 
 /* API_END */
 

@@ -1153,7 +1153,15 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
             break;
     }
 
-    // requested can send snow?
+    // write without response callback
+    btstack_context_callback_registration_t * callback =
+            (btstack_context_callback_registration_t *) btstack_linked_list_pop(&gatt_client->write_without_response_requests);
+    if (callback != NULL){
+        (*callback->callback)(callback->context);
+        return true;
+    }
+
+    // requested can send now old
     if (gatt_client->write_without_response_callback){
         btstack_packet_handler_t packet_handler = gatt_client->write_without_response_callback;
         gatt_client->write_without_response_callback = NULL;
@@ -2477,6 +2485,21 @@ void gatt_client_send_mtu_negotiation(btstack_packet_handler_t callback, hci_con
         gatt_client->callback = callback;
         gatt_client->mtu_state = SEND_MTU_EXCHANGE;
         gatt_client_run();
+    }
+}
+
+uint8_t gatt_client_request_to_write_without_response(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    bool added = btstack_linked_list_add_tail(&gatt_client->write_without_response_requests, (btstack_linked_item_t*) callback_registration);
+    att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
+    if (added){
+        return ERROR_CODE_SUCCESS;
+    } else {
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
 }
 
