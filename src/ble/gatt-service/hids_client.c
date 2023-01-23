@@ -69,6 +69,7 @@ static uint8_t * hids_client_descriptor_storage;
 static uint16_t  hids_client_descriptor_storage_len;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void hids_client_handle_can_write_without_reponse(void * context);
 
 #ifdef ENABLE_TESTING_SUPPORT
 static char * hid_characteristic_name(uint16_t uuid){
@@ -856,7 +857,61 @@ static void hids_run_for_client(hids_client_t * client){
 
         case HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE:
         case HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE:
-            (void) gatt_client_request_can_write_without_response_event(&handle_gatt_client_event, client->con_handle);
+            client->write_without_response_request.callback = &hids_client_handle_can_write_without_reponse;
+            client->write_without_response_request.context = client;
+            (void) gatt_client_request_to_write_without_response(&client->write_without_response_request, client->con_handle);
+            break;
+
+        default:
+            break;
+    }
+}
+
+static void hids_client_handle_can_write_without_reponse(void * context) {
+    hids_client_t *client = (hids_client_t *) context;
+    uint8_t att_status;
+    switch (client->state){
+        case HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE:
+            att_status = gatt_client_write_value_of_characteristic_without_response(
+                client->con_handle,
+                client->services[client->service_index].protocol_mode_value_handle, 1, (uint8_t *)&client->required_protocol_mode);
+
+#ifdef ENABLE_TESTING_SUPPORT
+            printf("\n\nSet report mode %d of service %d, status 0x%02x", client->required_protocol_mode, client->service_index, att_status);
+#endif
+
+            if (att_status == ATT_ERROR_SUCCESS){
+                client->services[client->service_index].protocol_mode = client->required_protocol_mode;
+                if ((client->service_index + 1) < client->num_instances){
+                    client->service_index++;
+                    hids_run_for_client(client);
+                    break;
+                }
+            }
+
+            // read UUIDS for external characteristics
+            if (hids_client_report_map_uuid_query_init(client)){
+                hids_run_for_client(client);
+                break;
+            }
+
+            // discover characteristic descriptor for all Report characteristics,
+            // then read value of characteristic descriptor to get Report ID
+            if (hids_client_report_query_init(client)){
+                hids_run_for_client(client);
+                break;
+            }
+
+            client->state = HIDS_CLIENT_STATE_CONNECTED;
+            hids_emit_connection_established(client, ERROR_CODE_SUCCESS);
+            break;
+
+        case HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE:
+#ifdef ENABLE_TESTING_SUPPORT
+            printf("    Write characteristic [service %d, handle 0x%04X]:\n", client->service_index, client->handle);
+#endif
+            client->state = HIDS_CLIENT_STATE_CONNECTED;
+            (void) gatt_client_write_value_of_characteristic_without_response(client->con_handle, client->handle, 1, (uint8_t *) &client->value);
             break;
 
         default:
@@ -1115,60 +1170,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 default:
                     break;
             }
-            break;
-
-        case GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE:
-            client = hids_get_client_for_con_handle(gatt_event_can_write_without_response_get_handle(packet));
-            if (client == NULL) break;
-
-            switch (client->state){
-                case HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE:
-                    att_status = gatt_client_write_value_of_characteristic_without_response(
-                        client->con_handle, 
-                        client->services[client->service_index].protocol_mode_value_handle, 1, (uint8_t *)&client->required_protocol_mode);
-
-#ifdef ENABLE_TESTING_SUPPORT
-                    printf("\n\nSet report mode %d of service %d, status 0x%02x", client->required_protocol_mode, client->service_index, att_status);
-#endif            
-                    
-                    if (att_status == ATT_ERROR_SUCCESS){
-                        client->services[client->service_index].protocol_mode = client->required_protocol_mode;
-                        if ((client->service_index + 1) < client->num_instances){
-                            client->service_index++;
-                            hids_run_for_client(client);
-                            break;
-                        }
-                    }
-                    
-                    // read UUIDS for external characteristics
-                    if (hids_client_report_map_uuid_query_init(client)){
-                        hids_run_for_client(client);
-                        break;
-                    }   
-
-                    // discover characteristic descriptor for all Report characteristics,
-                    // then read value of characteristic descriptor to get Report ID
-                    if (hids_client_report_query_init(client)){
-                        hids_run_for_client(client);
-                        break;
-                    }
-                    
-                    client->state = HIDS_CLIENT_STATE_CONNECTED;            
-                    hids_emit_connection_established(client, ERROR_CODE_SUCCESS); 
-                    break;
-
-                case HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE:
-#ifdef ENABLE_TESTING_SUPPORT
-                    printf("    Write characteristic [service %d, handle 0x%04X]:\n", client->service_index, client->handle);
-#endif
-                    client->state = HIDS_CLIENT_STATE_CONNECTED;
-                    (void) gatt_client_write_value_of_characteristic_without_response(client->con_handle, client->handle, 1, (uint8_t *) &client->value);
-                    break;
-
-                default:
-                    break;
-            }
-            
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:

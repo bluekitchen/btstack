@@ -198,6 +198,8 @@ typedef struct {
     hids_client_report_t external_reports[HIDS_CLIENT_NUM_REPORTS];
     uint8_t num_external_reports;
 
+    btstack_context_callback_registration_t write_without_response_request;
+
     // index used for report and report map search
     uint8_t   report_index;
     uint16_t  report_len;
