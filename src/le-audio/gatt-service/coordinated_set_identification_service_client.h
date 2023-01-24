@@ -135,7 +135,7 @@ void coordinated_set_identification_service_client_init(btstack_packet_handler_t
  * @return ERROR_CODE_SUCCESS if the HCI connection with the given con_handle is found, otherwise
  *                ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER
  */
-uint8_t coordinated_set_identification_service_client_connect(csis_client_connection_t * connection, hci_con_handle_t con_handle, uint16_t * ascs_cid);
+uint8_t coordinated_set_identification_service_client_connect(csis_client_connection_t * connection, hci_con_handle_t con_handle, uint16_t * csis_cid);
 
 /**
  * @brief Read SIRK from remote CSIS server. The SIRK value is reported via the GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK event. 
