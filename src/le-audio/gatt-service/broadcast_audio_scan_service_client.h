@@ -151,7 +151,11 @@ typedef struct {
 } bass_client_connection_t;
 
 /**
- * @brief Init Broadcast Audio Scan Service Client
+ * @brief Init Broadcast Audio Scan Service Client. Register packet handler to receive events:
+ * - GATTSERVICE_SUBEVENT_BASS_CONNECTED
+ * - GATTSERVICE_SUBEVENT_BASS_SCAN_OPERATION_COMPLETE
+ * - GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE
+ * - GATTSERVICE_SUBEVENT_BASS_NOTIFICATION_COMPLETE
  * @param packet_handler for events
  */
 void    broadcast_audio_scan_service_client_init(btstack_packet_handler_t packet_handler);
