@@ -75,6 +75,10 @@ static ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_
 static uint16_t ascs_cid;
 static uint8_t  ase_id = 1;
 
+// CSIS
+static csis_client_connection_t csis_connection;
+static uint16_t csis_cid;
+
 // remote info
 static char remote_name[20];
 static bd_addr_t remote;
@@ -117,8 +121,6 @@ static le_audio_codec_frame_duration_index_t menu_frame_duration_index;
 static le_audio_quality_t menu_audio_quality;
 static uint8_t menu_num_channels;
 
-
-uint16_t csis_cid;
 
 static bass_source_data_t source_data1 = {
     // address_type, address
@@ -735,6 +737,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
     uint8_t status;
+    uint8_t sirk[16];
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_CONNECTED:
@@ -754,10 +757,49 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("CSIS client: connected, cid 0x%04x\n", csis_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE:
-            status = gattservice_subevent_csis_write_lock_complete_get_status(packet);
+        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE:
+            status = gattservice_subevent_csis_remote_lock_write_complete_get_status(packet);
             printf("CSIS client: write LOCK done, status 0x%02x\n", status);
             break;
+
+        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK:
+            status = gattservice_subevent_csis_remote_lock_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                printf("CSIS client: read LOCK failed, 0x%02x\n", status);
+                break;
+            }
+            printf("CSIS client: remote LOCK %u\n", gattservice_subevent_csis_remote_lock_get_lock(packet));
+            break;
+        
+        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK:
+            status = gattservice_subevent_csis_remote_rank_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                printf("CSIS client: read RANK failed, 0x%02x\n", status);
+                break;
+            }
+            printf("CSIS client: remote RANK %u\n", gattservice_subevent_csis_remote_rank_get_rank(packet));
+            break;
+
+        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_COORDINATED_SET_SIZE:
+            status = gattservice_subevent_csis_remote_coordinated_set_size_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                printf("CSIS client: read COORDINATED_SET_SIZE failed, 0x%02x\n", status);
+                break;
+            }
+            printf("CSIS client: remote COORDINATED_SET_SIZE %u\n", gattservice_subevent_csis_remote_coordinated_set_size_get_coordinated_set_size(packet));
+            break;
+
+        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK:
+            status = gattservice_subevent_csis_remote_sirk_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                printf("CSIS client: read SIRK failed, 0x%02x\n", status);
+                break;
+            }
+            gattservice_subevent_csis_remote_sirk_get_sirk(packet, sirk);
+            printf("CSIS client: remote SIRK ");
+            printf_hexdump(sirk, sizeof(sirk));
+            break;
+
 
         case GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_DISCONNECTED:
             csis_cid = 0;
@@ -834,6 +876,10 @@ static void show_usage(void){
     printf("Y - vendor specific QoS\n");
     printf("Z - vendor specific metadata\n");
     
+    printf("\n--- CSIS Client Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("B   - connect to %s\n", bap_app_server_addr_string);    
+    printf("0   - read SIRK\n");
+    printf("\n");
     printf(" \n");
     printf(" \n");
     printf("Ctrl-c - exit\n");
@@ -1108,9 +1154,20 @@ static void stdin_process(char cmd){
             printf("Use vendor specific metadata\n");
             break;
 
+        case 'B':
+            printf("CSIS client: Connect\n");
+            status = coordinated_set_identification_service_client_connect(&csis_connection, bap_app_client_con_handle, &csis_cid);
+            break;
+
+        case '0':
+            printf("CSIS client: read SIRK\n");
+            status = coordinated_set_identification_service_client_read_sirk(csis_cid);
+            break;
+
         case '\n':
         case '\r':
             break;
+
         default:
             print_config();
             print_ase_id();
