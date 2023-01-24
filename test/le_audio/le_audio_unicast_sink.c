@@ -415,7 +415,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             remote_type = gap_event_advertising_report_get_address_type(packet);
             pts_mode   = false;
             count_mode = false;
-            printf("Remote Broadcast source found, addr %s, name: '%s' (pts-mode: %u, count: %u)\n", bd_addr_to_str(remote_addr), remote_name, pts_mode, count_mode);
+            printf("Remote Unicast source found, addr %s, name: '%s' (pts-mode: %u, count: %u)\n", bd_addr_to_str(remote_addr), remote_name, pts_mode, count_mode);
             // stop scanning
             app_state = APP_W4_CIS_CREATED;
             gap_stop_scan();
@@ -435,6 +435,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 default:
                     break;
             }
+            break;
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
                 case GAP_SUBEVENT_CIG_CREATED:
