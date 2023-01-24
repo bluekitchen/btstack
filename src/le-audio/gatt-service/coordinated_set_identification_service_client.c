@@ -837,15 +837,15 @@ uint8_t coordinated_set_identification_service_client_read_coordinated_set_size(
     return coordinated_set_identification_service_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_SIZE);
 }
 
-uint8_t coordinated_set_identification_service_client_read_coordinator_rank(uint16_t ascs_cid){
+uint8_t coordinated_set_identification_service_client_read_member_rank(uint16_t ascs_cid){
     return coordinated_set_identification_service_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_RANK);
 }
 
-uint8_t coordinated_set_identification_service_client_read_lock(uint16_t ascs_cid){
+uint8_t coordinated_set_identification_service_client_read_member_lock(uint16_t ascs_cid){
     return coordinated_set_identification_service_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_LOCK);
 }
 
-uint8_t coordinated_set_identification_service_client_write_lock(uint16_t ascs_cid, csis_member_lock_t lock){
+uint8_t coordinated_set_identification_service_client_write_member_lock(uint16_t ascs_cid, csis_member_lock_t lock){
     csis_client_connection_t * connection = csis_get_client_connection_for_cid(ascs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

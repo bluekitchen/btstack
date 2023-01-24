@@ -155,7 +155,7 @@ uint8_t coordinated_set_identification_service_client_read_sirk(uint16_t ascs_ci
  *                - ERROR_CODE_COMMAND_DISALLOWED if the client is not connected
  *                - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no appropriate characteristic is found on the remote server
  */
-uint8_t coordinated_set_identification_service_client_read_lock(uint16_t ascs_cid);
+uint8_t coordinated_set_identification_service_client_read_member_lock(uint16_t ascs_cid);
 
 /**
  * @brief Write lock on remote CSIS server. The status of write is reported via the GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE event. 
@@ -165,7 +165,7 @@ uint8_t coordinated_set_identification_service_client_read_lock(uint16_t ascs_ci
  *                - ERROR_CODE_COMMAND_DISALLOWED if the client is not connected
  *                - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no appropriate characteristic is found on the remote server
  */
-uint8_t coordinated_set_identification_service_client_write_lock(uint16_t ascs_cid, csis_member_lock_t lock);
+uint8_t coordinated_set_identification_service_client_write_member_lock(uint16_t ascs_cid, csis_member_lock_t lock);
 
 /**
  * @brief Read coordinated set size from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_REMOTE_COORDINATED_SET_SIZE event. 
@@ -185,7 +185,7 @@ uint8_t coordinated_set_identification_service_client_read_coordinated_set_size(
  *                - ERROR_CODE_COMMAND_DISALLOWED if the client is not connected
  *                - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no appropriate characteristic is found on the remote server
  */
-uint8_t coordinated_set_identification_service_client_read_coordinator_rank(uint16_t ascs_cid);
+uint8_t coordinated_set_identification_service_client_read_member_rank(uint16_t ascs_cid);
 
 /**
  * @brief Check if the RSI matches the given SIRK value. The result is reported via the GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH event. 
