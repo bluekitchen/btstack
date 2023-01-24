@@ -2765,11 +2765,16 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             break;
         case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
             manufacturer = little_endian_read_16(packet, 10);
-            // map Cypress to Broadcom
-            if (manufacturer  == BLUETOOTH_COMPANY_ID_CYPRESS_SEMICONDUCTOR){
-                log_info("Treat Cypress as Broadcom");
-                manufacturer = BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION;
-                little_endian_store_16(packet, 10, manufacturer);
+            // map Cypress & Infineon to Broadcom
+            switch (manufacturer){
+                case BLUETOOTH_COMPANY_ID_CYPRESS_SEMICONDUCTOR:
+                case BLUETOOTH_COMPANY_ID_INFINEON_TECHNOLOGIES_AG:
+                    log_info("Treat Cypress/Infineon as Broadcom");
+                    manufacturer = BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION;
+                    little_endian_store_16(packet, 10, manufacturer);
+                    break;
+                default:
+                    break;
             }
             hci_stack->manufacturer = manufacturer;
             log_info("Manufacturer: 0x%04x", hci_stack->manufacturer);
