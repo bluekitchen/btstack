@@ -15751,11 +15751,11 @@ static inline uint8_t leaudio_subevent_bass_client_notify_receive_state_base_get
 /**
  * @brief Get field bad_code from event LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
- * @return bad_code
- * @note: btstack_type P
+ * @param Pointer to storage for bad_code
+ * @note: btstack_type K
  */
-static inline const uint8_t * leaudio_subevent_bass_client_notify_receive_state_base_get_bad_code(const uint8_t * event){
-    return (const uint8_t *) &event[19];
+static inline void leaudio_subevent_bass_client_notify_receive_state_base_get_bad_code(const uint8_t * event, uint8_t * bad_code){
+    reverse_bytes(&event[19], bad_code, 16);
 }
 /**
  * @brief Get field subgroups_num from event LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_BASE
@@ -16683,27 +16683,27 @@ static inline uint8_t gattservice_subevent_csis_remote_rank_get_rank(const uint8
  * @return csis_cid
  * @note: btstack_type 2
  */
-//  static inline uint16_t gattservice_subevent_csis_remote_sirk_get_csis_cid(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint16_t gattservice_subevent_csis_remote_sirk_get_csis_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_csis_remote_sirk_get_status(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_csis_remote_sirk_get_status(const uint8_t * event){
+    return event[5];
+}
 /**
  * @brief Get field sirk from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK
  * @param event packet
- * @return sirk
- * @note: btstack_type P
+ * @param Pointer to storage for sirk
+ * @note: btstack_type K
  */
-//  static inline const uint8_t * gattservice_subevent_csis_remote_sirk_get_sirk(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline void gattservice_subevent_csis_remote_sirk_get_sirk(const uint8_t * event, uint8_t * sirk){
+    reverse_bytes(&event[6], sirk, 16);
+}
 
 /**
  * @brief Get field match from event GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
