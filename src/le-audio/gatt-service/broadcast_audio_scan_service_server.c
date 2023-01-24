@@ -600,9 +600,9 @@ void broadcast_audio_scan_service_server_init(const uint8_t sources_num, bass_se
     att_server_register_service_handler(&broadcast_audio_scan_service);
 }
 
-void broadcast_audio_scan_service_server_register_packet_handler(btstack_packet_handler_t callback){
-    btstack_assert(callback != NULL);
-    bass_event_callback = callback;
+void broadcast_audio_scan_service_server_register_packet_handler(btstack_packet_handler_t packet_handler){
+    btstack_assert(packet_handler != NULL);
+    bass_event_callback = packet_handler;
 }
 
 static void bass_service_can_send_now(void * context){
