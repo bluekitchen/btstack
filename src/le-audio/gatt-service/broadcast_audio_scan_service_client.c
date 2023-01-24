@@ -121,6 +121,8 @@ static void bass_client_reset_source(bass_client_source_t * source){
 }
 
 static void bass_client_emit_connection_established(bass_client_connection_t * connection, uint8_t status){
+    btstack_assert(bass_event_callback != NULL);
+
     uint8_t event[8];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -135,6 +137,7 @@ static void bass_client_emit_connection_established(bass_client_connection_t * c
 }
 
 static void bass_client_emit_scan_operation_complete(bass_client_connection_t * connection, uint8_t status, bass_opcode_t opcode){
+    btstack_assert(bass_event_callback != NULL);
     uint8_t event[7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -148,6 +151,7 @@ static void bass_client_emit_scan_operation_complete(bass_client_connection_t * 
 }
 
 static void bass_client_emit_source_operation_complete(bass_client_connection_t * connection, uint8_t status, bass_opcode_t opcode, uint8_t source_id){
+    btstack_assert(bass_event_callback != NULL);
     uint8_t event[8];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -162,6 +166,7 @@ static void bass_client_emit_source_operation_complete(bass_client_connection_t 
 }
 
 static void bass_client_emit_receive_state(bass_client_connection_t * connection, uint8_t source_id){
+    btstack_assert(bass_event_callback != NULL);
     uint8_t pos = 0;
     uint8_t event[7];
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
