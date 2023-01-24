@@ -829,6 +829,7 @@ static uint8_t coordinated_set_identification_service_client_read_characteristic
 
     connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE;
     connection->characteristic_index = index;
+    csis_client_run_for_connection(connection);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -863,6 +864,7 @@ uint8_t coordinated_set_identification_service_client_write_lock(uint16_t ascs_c
     connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE;
     connection->characteristic_index = CSIS_CHARACTERISTIC_INDEX_LOCK;
     connection->coordinator_lock = lock;
+    csis_client_run_for_connection(connection);
     return ERROR_CODE_SUCCESS;
 }
 
