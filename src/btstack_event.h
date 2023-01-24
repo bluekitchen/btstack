@@ -16696,13 +16696,22 @@ static inline uint8_t gattservice_subevent_csis_remote_sirk_get_status(const uin
     return event[5];
 }
 /**
+ * @brief Get field sirk_type from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK
+ * @param event packet
+ * @return sirk_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_csis_remote_sirk_get_sirk_type(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field sirk from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK
  * @param event packet
  * @param Pointer to storage for sirk
  * @note: btstack_type K
  */
 static inline void gattservice_subevent_csis_remote_sirk_get_sirk(const uint8_t * event, uint8_t * sirk){
-    reverse_bytes(&event[6], sirk, 16);
+    reverse_bytes(&event[7], sirk, 16);
 }
 
 /**
