@@ -71,7 +71,6 @@ static char * csis_characteristic_index_name[] = {
 };
 
 // SIRK Calculation
-static bool csis_sirk_calculation_ongoing;
 static btstack_crypto_aes128_cmac_t aes128_cmac_request;
 static uint8_t  s1[16];
 static uint8_t   T[16];
@@ -272,16 +271,16 @@ static void csis_server_handle_k1(void * context){
         return;
     }
 
-    uint16_t decrypted_sirk[16];
+    uint8_t decrypted_sirk[16];
     uint8_t i;
     for(i = 0; i < sizeof(k1); i++){
         decrypted_sirk[i] = k1[i] ^ active_connection->remote_sirk[i];
     }
     memcpy(active_connection->remote_sirk, decrypted_sirk, sizeof(decrypted_sirk));
     active_connection->remote_sirk_state = CSIS_SIRK_CALCULATION_STATE_READY;
-    active_connection = NULL;
-    
     csis_client_emit_read_remote_sirk(active_connection, ATT_ERROR_SUCCESS, (const uint8_t *)active_connection->remote_sirk);
+    
+    active_connection = NULL;
     csis_client_trigger_next_sirk_calculation();
 }
 
@@ -344,11 +343,8 @@ static void csis_client_emit_read_event(csis_client_connection_t * connection, c
             switch ((csis_sirk_type_t)data[0]){
                 case CSIS_SIRK_TYPE_ENCRYPTED:
                     reverse_128(connection->remote_sirk, (uint8_t *)&data[1]);
-                    
-                    if (csis_sirk_calculation_ongoing){
-                        connection->remote_sirk_state = CSIS_SIRK_CALCULATION_W2_START;
-                        break;
-                    }
+                    connection->remote_sirk_state = CSIS_SIRK_CALCULATION_W2_START;
+
                     csis_client_trigger_next_sirk_calculation();
                     break;
                 
@@ -785,7 +781,7 @@ uint8_t coordinated_set_identification_service_client_connect(csis_client_connec
     connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
     btstack_linked_list_add(&csis_connections, (btstack_linked_item_t *) connection);
     
-    csis_sirk_calculation_ongoing = false;
+    active_connection = NULL;
 
     csis_client_run_for_connection(connection);
     return ERROR_CODE_SUCCESS;
@@ -874,7 +870,7 @@ void coordinated_set_identification_service_client_init(btstack_packet_handler_t
     csis_event_callback = packet_handler;
 
     csis_rsi_calculation_ongoing = false;
-    csis_sirk_calculation_ongoing = false;
+    active_connection = NULL;
 
     csis_client_hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&csis_client_hci_event_callback_registration);
@@ -883,7 +879,7 @@ void coordinated_set_identification_service_client_init(btstack_packet_handler_t
 void coordinated_set_identification_service_client_deinit(void){
     csis_event_callback = NULL;
     csis_rsi_calculation_ongoing = false;
-    csis_sirk_calculation_ongoing = false;
+    active_connection = NULL;
     
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &csis_connections);
