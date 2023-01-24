@@ -422,6 +422,9 @@ static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channe
 
 static bool csis_client_register_notification(csis_client_connection_t * connection){
     gatt_client_characteristic_t characteristic;
+    if (connection->characteristics[connection->characteristic_index].client_configuration_handle == 0){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
 
     characteristic.value_handle = connection->characteristics[connection->characteristic_index].value_handle;
     characteristic.end_handle = connection->characteristics[connection->characteristic_index].end_handle;
@@ -440,7 +443,7 @@ static bool csis_client_register_notification(csis_client_connection_t * connect
             &handle_gatt_server_notification, 
             connection->con_handle, &characteristic);
     } 
-    return ERROR_CODE_SUCCESS;
+    return status;
 }
 
 static void csis_client_run_for_connection(csis_client_connection_t * connection){
@@ -498,16 +501,27 @@ static void csis_client_run_for_connection(csis_client_connection_t * connection
             connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
     
             status = csis_client_register_notification(connection);
-            if (status == ERROR_CODE_SUCCESS){
+            switch (status) {
+                case ERROR_CODE_SUCCESS:
 #ifdef ENABLE_TESTING_SUPPORT
-                printf("Register notification [index %d, handle 0x%04X]: %s\n", 
-                    connection->characteristic_index, 
-                    connection->characteristics[connection->characteristic_index].client_configuration_handle,
-                    characteristic_index2name((csis_characteristic_index_t)connection->characteristic_index));
-#endif          
-                return;  
-            } 
-            
+                    printf("Register notification [index %d, handle 0x%04X]: %s\n",
+                           connection->characteristic_index,
+                           connection->characteristics[connection->characteristic_index].client_configuration_handle,
+                           characteristic_index2name((csis_characteristic_index_t) connection->characteristic_index));
+#endif
+                    return;
+                case ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE:
+#ifdef ENABLE_TESTING_SUPPORT
+                    printf("Notification not supported [index %d, handle 0x%04X]: %s\n",
+                           connection->characteristic_index,
+                           connection->characteristics[connection->characteristic_index].client_configuration_handle,
+                           characteristic_index2name((csis_characteristic_index_t) connection->characteristic_index));
+#endif
+                    return;
+                default:
+                    break;
+            }
+
             if (connection->characteristics[connection->characteristic_index].client_configuration_handle != 0){
                 connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_CONFIGURATION;
                 break;
@@ -683,7 +697,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             
 
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("CSIS Characteristic:\n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X, %s", 
+            printf("CSIS Characteristic:\n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X, %s\n",
                 characteristic.start_handle, 
                 characteristic.properties, 
                 characteristic.value_handle, characteristic.uuid16, characteristic_index2name((csis_characteristic_index_t)index));
