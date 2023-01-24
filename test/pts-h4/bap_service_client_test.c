@@ -796,7 +796,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                 break;
             }
             gattservice_subevent_csis_remote_sirk_get_sirk(packet, sirk);
-            printf("CSIS client: remote SIRK ");
+            printf("CSIS client: remote SIRK (%s) ", (csis_sirk_type_t)gattservice_subevent_csis_remote_sirk_get_sirk_type(packet) == CSIS_SIRK_TYPE_ENCRYPTED ? "ENCRYPTED" : "PLAIN_TEXT");
             printf_hexdump(sirk, sizeof(sirk));
             break;
 
@@ -879,6 +879,9 @@ static void show_usage(void){
     printf("\n--- CSIS Client Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("B   - connect to %s\n", bap_app_server_addr_string);    
     printf("0   - read SIRK\n");
+    printf("1   - read Coordianted Set Size\n");
+    printf("2   - read Member Lock\n");
+    printf("3   - read Member Rank\n");
     printf("\n");
     printf(" \n");
     printf(" \n");
@@ -1162,6 +1165,21 @@ static void stdin_process(char cmd){
         case '0':
             printf("CSIS client: read SIRK\n");
             status = coordinated_set_identification_service_client_read_sirk(csis_cid);
+            break;
+
+        case '1':
+            printf("CSIS client: read Coordinated Set Size\n");
+            status = coordinated_set_identification_service_client_read_coordinated_set_size(csis_cid);
+            break;
+
+        case '2':
+            printf("CSIS client: read Member Lock\n");
+            status = coordinated_set_identification_service_client_read_member_lock(csis_cid);
+            break;
+
+        case '3':
+            printf("CSIS client: read Member Rank\n");
+            status = coordinated_set_identification_service_client_read_member_rank(csis_cid);
             break;
 
         case '\n':
