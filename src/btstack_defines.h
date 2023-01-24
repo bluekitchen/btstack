@@ -4753,7 +4753,7 @@ typedef uint8_t sm_key_t[16];
 #define LEAUDIO_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE                   0x0Bu
 
 /**
- * @format 1211B1311P1
+ * @format 1211B1311K1
  * @param subevent_code
  * @param bass_cid
  * @param source_id
@@ -5004,7 +5004,7 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK                                     0x65u
 
 /**
- * @format 121P
+ * @format 121K
  * @param subevent_code
  * @param csis_cid
  * @param status
