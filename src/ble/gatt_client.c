@@ -520,9 +520,10 @@ static uint16_t get_last_result_handle_from_included_services_list(uint8_t * pac
 static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client){
     while (gatt_client->gatt_client_state == P_READY){
         btstack_context_callback_registration_t * callback = (btstack_context_callback_registration_t *) btstack_linked_list_pop(&gatt_client->query_requests);
-        if (callback != NULL){
-            (*callback->callback)(callback->context);
+        if (callback == NULL) {
+            return;
         }
+        (*callback->callback)(callback->context);
     }
 }
 
