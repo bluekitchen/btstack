@@ -15258,90 +15258,90 @@ static inline uint8_t gattservice_subevent_bass_scan_operation_complete_get_opco
  * @return bass_cid
  * @note: btstack_type 2
  */
-//  static inline uint16_t gattservice_subevent_bass_notify_receive_state_base_get_bass_cid(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint16_t gattservice_subevent_bass_notify_receive_state_base_get_bass_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field source_id from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return source_id
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_source_id(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_source_id(const uint8_t * event){
+    return event[5];
+}
 /**
  * @brief Get field source_address_type from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return source_address_type
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_source_address_type(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_source_address_type(const uint8_t * event){
+    return event[6];
+}
 /**
  * @brief Get field source_address from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
- * @return source_address
+ * @param Pointer to storage for source_address
  * @note: btstack_type B
  */
-//  static inline bd_addr_t gattservice_subevent_bass_notify_receive_state_base_get_source_address(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline void gattservice_subevent_bass_notify_receive_state_base_get_source_address(const uint8_t * event, bd_addr_t source_address){
+    reverse_bytes(&event[7], source_address, 6);
+}
 /**
  * @brief Get field source_adv_sid from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return source_adv_sid
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_source_adv_sid(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_source_adv_sid(const uint8_t * event){
+    return event[13];
+}
 /**
  * @brief Get field broadcast_id from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return broadcast_id
  * @note: btstack_type 3
  */
-//  static inline uint32_t gattservice_subevent_bass_notify_receive_state_base_get_broadcast_id(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint32_t gattservice_subevent_bass_notify_receive_state_base_get_broadcast_id(const uint8_t * event){
+    return little_endian_read_24(event, 14);
+}
 /**
  * @brief Get field pa_sync_state from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return pa_sync_state
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_pa_sync_state(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_pa_sync_state(const uint8_t * event){
+    return event[17];
+}
 /**
  * @brief Get field big_encryption from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return big_encryption
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_big_encryption(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_big_encryption(const uint8_t * event){
+    return event[18];
+}
 /**
  * @brief Get field bad_code from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
- * @return bad_code
- * @note: btstack_type P
+ * @param Pointer to storage for bad_code
+ * @note: btstack_type K
  */
-//  static inline const uint8_t * gattservice_subevent_bass_notify_receive_state_base_get_bad_code(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline void gattservice_subevent_bass_notify_receive_state_base_get_bad_code(const uint8_t * event, uint8_t * bad_code){
+    reverse_bytes(&event[19], bad_code, 16);
+}
 /**
  * @brief Get field subgroups_num from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return subgroups_num
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_subgroups_num(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_subgroups_num(const uint8_t * event){
+    return event[35];
+}
 
 /**
  * @brief Get field bass_cid from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_SUBGROUP
@@ -16253,27 +16253,27 @@ static inline uint8_t gattservice_subevent_csis_remote_rank_get_rank(const uint8
  * @return csis_cid
  * @note: btstack_type 2
  */
-//  static inline uint16_t gattservice_subevent_csis_remote_sirk_get_csis_cid(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint16_t gattservice_subevent_csis_remote_sirk_get_csis_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_csis_remote_sirk_get_status(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_csis_remote_sirk_get_status(const uint8_t * event){
+    return event[5];
+}
 /**
  * @brief Get field sirk from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK
  * @param event packet
- * @return sirk
- * @note: btstack_type P
+ * @param Pointer to storage for sirk
+ * @note: btstack_type K
  */
-//  static inline const uint8_t * gattservice_subevent_csis_remote_sirk_get_sirk(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline void gattservice_subevent_csis_remote_sirk_get_sirk(const uint8_t * event, uint8_t * sirk){
+    reverse_bytes(&event[6], sirk, 16);
+}
 
 /**
  * @brief Get field match from event GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
