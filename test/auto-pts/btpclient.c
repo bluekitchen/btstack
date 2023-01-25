@@ -65,7 +65,7 @@
 #define BT_LE_AD_NO_BREDR (1U << 2)
 
 #define LIM_DISC_SCAN_MIN_MS 10000
-#define GAP_CONNECT_TIMEOUT_MS 30000
+#define GAP_CONNECT_TIMEOUT_MS 15000
 
 //#define TEST_POWER_CYCLE
 
@@ -417,6 +417,7 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     switch (hci_event_gap_meta_get_subevent_code(packet)){
                         case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
                             // send connect response if pending
+                            btstack_run_loop_remove_timer(&gap_connection_timer);
                             gap_connect_send_response();
 
                             // Assume success
@@ -717,8 +718,12 @@ static void gap_limited_discovery_timeout_handler(btstack_timer_source_t * ts){
 
 static void gap_connect_timeout_handler(btstack_timer_source_t * ts){
     UNUSED(ts);
+    MESSAGE("GAP CONNECT TIMEOUT :(");
     gap_connect_cancel();
-    gap_connect_send_response();
+    if (gap_send_connect_response){
+        gap_send_connect_response = false;
+        btp_send_error(BTP_SERVICE_ID_GAP, 1);
+    }
 }
 
 static void btp_core_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
