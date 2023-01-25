@@ -195,7 +195,7 @@ static void csis_client_emit_disconnect(uint16_t cid){
 static void csis_client_emit_write_lock_complete(csis_client_connection_t * connection, uint8_t status){
     btstack_assert(csis_event_callback != NULL);
 
-    uint8_t event[6];
+    uint8_t event[7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
@@ -203,6 +203,7 @@ static void csis_client_emit_write_lock_complete(csis_client_connection_t * conn
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
+    event[pos++] = connection->coordinator_lock;
     (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -421,7 +422,7 @@ static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channe
     csis_client_emit_read_event(connection, index, ATT_ERROR_SUCCESS, value, value_length);
 }
 
-static bool csis_client_register_notification(csis_client_connection_t * connection){
+static uint8_t csis_client_register_notification(csis_client_connection_t * connection){
     gatt_client_characteristic_t characteristic;
     if (connection->characteristics[connection->characteristic_index].client_configuration_handle == 0){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
