@@ -559,6 +559,17 @@ static void csis_client_run_for_connection(csis_client_connection_t * connection
     }
 }
 
+static bool csis_next_index_for_query(csis_client_connection_t *connection) {
+    bool next_query_found = false;
+    while (!next_query_found && (connection->characteristic_index < 3)) {
+        connection->characteristic_index++;
+        if (connection->characteristics[connection->characteristic_index].client_configuration_handle != 0) {
+            next_query_found = true;
+        }
+    }
+    return next_query_found;
+}
+
 static bool csis_client_handle_query_complete(csis_client_connection_t * connection, uint8_t status){
     if (status != ATT_ERROR_SUCCESS){
         switch (connection->state){
@@ -594,8 +605,14 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
                 break;
             }
 
-            connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
             connection->characteristic_index = 0;
+            if (csis_next_index_for_query(connection)){
+                connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
+            } else {
+                connection->characteristic_index = 0;
+                connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
+                csis_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+            }
             break;
 
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED:
@@ -633,7 +650,6 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
     }
     return true;
 }
-
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
