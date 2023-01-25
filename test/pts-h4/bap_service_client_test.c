@@ -78,6 +78,7 @@ static uint8_t  ase_id = 1;
 // CSIS
 static csis_client_connection_t csis_connection;
 static uint16_t csis_cid;
+static csis_member_lock_t csis_member_lock = CSIS_MEMBER_UNLOCKED;
 
 // remote info
 static char remote_name[20];
@@ -757,11 +758,6 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("CSIS client: connected, cid 0x%04x\n", csis_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE:
-            status = gattservice_subevent_csis_remote_lock_write_complete_get_status(packet);
-            printf("CSIS client: write LOCK done, status 0x%02x\n", status);
-            break;
-
         case GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK:
             status = gattservice_subevent_csis_remote_lock_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
@@ -777,7 +773,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                 printf("CSIS client: read RANK failed, 0x%02x\n", status);
                 break;
             }
-            printf("CSIS client: remote RANK %u\n", gattservice_subevent_csis_remote_rank_get_rank(packet));
+            printf("CSIS client: remote member RANK %u\n", gattservice_subevent_csis_remote_rank_get_rank(packet));
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_REMOTE_COORDINATED_SET_SIZE:
@@ -800,6 +796,15 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf_hexdump(sirk, sizeof(sirk));
             break;
 
+        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE:
+            status = gattservice_subevent_csis_remote_lock_write_complete_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                printf("CSIS client: write LOCK failed, 0x%02x\n", status);
+                break;
+            }
+            csis_member_lock = (csis_member_lock_t) gattservice_subevent_csis_remote_lock_write_complete_get_lock(packet);
+            printf("CSIS client: remote member %s\n", csis_member_lock == CSIS_MEMBER_UNLOCKED ? "UNLOCKED" : "LOCKED");
+            break;
 
         case GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_DISCONNECTED:
             csis_cid = 0;
@@ -882,6 +887,8 @@ static void show_usage(void){
     printf("1   - read Coordianted Set Size\n");
     printf("2   - read Member Lock\n");
     printf("3   - read Member Rank\n");
+    printf("4   - toggle Member Lock\n");
+    
     printf("\n");
     printf(" \n");
     printf(" \n");
@@ -1182,6 +1189,12 @@ static void stdin_process(char cmd){
             status = coordinated_set_identification_service_client_read_member_rank(csis_cid);
             break;
 
+        case '4':{
+            csis_member_lock_t lock = (csis_member_lock == CSIS_MEMBER_UNLOCKED) ? CSIS_MEMBER_LOCKED : CSIS_MEMBER_UNLOCKED;
+            printf("CSIS client: toggle client LOCK (%s)\n", lock == CSIS_MEMBER_UNLOCKED ? "UNLOCKED" : "LOCKED");
+            coordinated_set_identification_service_client_write_member_lock(csis_cid, lock);
+            break;
+        }
         case '\n':
         case '\r':
             break;
