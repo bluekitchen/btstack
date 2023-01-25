@@ -16592,6 +16592,15 @@ static inline uint16_t gattservice_subevent_csis_remote_lock_write_complete_get_
 static inline uint8_t gattservice_subevent_csis_remote_lock_write_complete_get_status(const uint8_t * event){
     return event[5];
 }
+/**
+ * @brief Get field lock from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE
+ * @param event packet
+ * @return lock
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_csis_remote_lock_write_complete_get_lock(const uint8_t * event){
+    return event[6];
+}
 
 /**
  * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK

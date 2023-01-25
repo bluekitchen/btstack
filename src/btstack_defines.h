@@ -4969,10 +4969,11 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_DISCONNECTED                      0x61u
 
 /**
- * @format 121
+ * @format 1211
  * @param subevent_code
  * @param csis_cid
  * @param status
+ * @param lock
 */
 #define GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE                      0x62u
 
