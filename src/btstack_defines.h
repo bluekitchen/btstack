@@ -4509,7 +4509,7 @@ typedef uint8_t sm_key_t[16];
  * @param octets_per_frame 
  * @param frame_blocks_per_sdu 
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION_REQUEST                  0x32u
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION                  0x32u
 
 
 /**
@@ -4527,7 +4527,7 @@ typedef uint8_t sm_key_t[16];
  * @param max_transport_latency
  * @param presentation_delay_us
 */
-#define GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION_REQUEST                   0x034u
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_QOS_CONFIGURATION                   0x034u
 
 /**
  * @format 1H1122JV3JV1JV2JV2JV
@@ -4552,7 +4552,7 @@ typedef uint8_t sm_key_t[16];
  * @param vendor_specific_metadata_value_length
  * @param vendor_specific_metadata_value
 */
-#define GATTSERVICE_SUBEVENT_ASCS_METADATA_REQUEST                             0x35u
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_METADATA                             0x35u
 
 /**
  * @format 12111123333122111421
@@ -4637,7 +4637,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param ase_id
 */ 
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_START_READY                           0x3Au
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_START_READY                           0x3Au
 
 /**
  * @format 1H1
@@ -4645,7 +4645,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param ase_id
 */ 
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISABLING                             0x3Bu
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLING                             0x3Bu
 
 /**
  * @format 1H1
@@ -4653,7 +4653,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param ase_id
 */ 
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASING                             0x3Cu
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASING                             0x3Cu
 
 /**
  * @format 1H1
@@ -4661,7 +4661,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param ase_id
 */ 
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_STOP_READY                            0x3Du
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_STOP_READY                            0x3Du
 
 /**
  * @format 1H1
@@ -4669,7 +4669,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param ase_id
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASED                              0x3Eu
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASED                              0x3Eu
 
 // used by server
 /**
@@ -4678,14 +4678,14 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_CONNECTED                      0x3Fu
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_CONNECTED                              0x3Fu
 
 /**
  * @format 1H
  * @param subevent_code
  * @param con_handle
 */
-#define GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_DISCONNECTED                   0x40u
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_DISCONNECTED                           0x40u
 
 /**
  * @format 1H21JVJV
