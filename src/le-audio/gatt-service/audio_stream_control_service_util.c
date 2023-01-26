@@ -353,7 +353,7 @@ void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_call
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     if (client_request){
-        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION_REQUEST;
+        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION;
     } else {
         event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION;
     }
@@ -373,7 +373,7 @@ void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callba
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     if (client_request){
-        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION_REQUEST;
+        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_QOS_CONFIGURATION;
     } else {
         event[pos++] = GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION;
     }
@@ -398,7 +398,7 @@ void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, bool 
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = (uint8_t)sizeof(event) - 2;
     if (client_request){
-        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_METADATA_REQUEST;
+        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_METADATA;
     } else {
         event[pos++] = GATTSERVICE_SUBEVENT_ASCS_METADATA;
     }
