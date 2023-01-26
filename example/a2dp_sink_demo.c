@@ -118,8 +118,8 @@ static btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
 
 // ring buffer for SBC Frames
 // below 30: add samples, 30-40: fine, above 40: drop samples
-#define OPTIMAL_FRAMES_MIN 30
-#define OPTIMAL_FRAMES_MAX 40
+#define OPTIMAL_FRAMES_MIN 60
+#define OPTIMAL_FRAMES_MAX 80
 #define ADDITIONAL_FRAMES  20
 static uint8_t sbc_frame_storage[(OPTIMAL_FRAMES_MAX + ADDITIONAL_FRAMES) * MAX_SBC_FRAME_SIZE];
 static btstack_ring_buffer_t sbc_frame_ring_buffer;
@@ -546,6 +546,9 @@ static void media_processing_pause(void){
     if (audio){
         audio->stop_stream();
     }
+    // discard pending data
+    btstack_ring_buffer_reset(&decoded_audio_ring_buffer);
+    btstack_ring_buffer_reset(&sbc_frame_ring_buffer);
 }
 
 static void media_processing_close(void){
@@ -592,7 +595,9 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     if (!read_sbc_header(packet, size, &pos, &sbc_header)) return;
 
     // update sample rate compensation
-    ratio_measure_update( &sample_rate_adaption, sbc_header.num_frames*128 );
+    if( audio_stream_started ) {
+        ratio_measure_update( &sample_rate_adaption, sbc_header.num_frames*128 );
+    }
 
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     // process data right away if there's no audio implementation active, e.g. on posix systems to store as .wav
