@@ -4577,7 +4577,7 @@ typedef uint8_t sm_key_t[16];
  * @param octets_per_frame 
  * @param frame_blocks_per_sdu 
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION                         0x36u
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION                         0x36u
 
 /**
  * @format 121113112123
@@ -4594,7 +4594,7 @@ typedef uint8_t sm_key_t[16];
  * @param max_transport_latency
  * @param presentation_delay_us
 */
-#define GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION                           0x37u
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION                           0x37u
 
 /**
  * @format 121122JV3JV1JV2JV2JV
@@ -4619,7 +4619,7 @@ typedef uint8_t sm_key_t[16];
  * @param vendor_specific_metadata_value_length
  * @param vendor_specific_metadata_value
 */
-#define GATTSERVICE_SUBEVENT_ASCS_METADATA                                     0x38u
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_METADATA                                     0x38u
 
 /**
  * @format 1211
@@ -4628,7 +4628,7 @@ typedef uint8_t sm_key_t[16];
  * @param ase_id
  * @param state
 */
-#define GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE                         0x39u
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_STREAMENDPOINT_STATE                         0x39u
 
 // used by server to emit control point operation operation
 /**
@@ -4698,14 +4698,14 @@ typedef uint8_t sm_key_t[16];
  * @param source_ase_num
  * @param source_ase_ids 
 */
-#define GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED                      0x41u
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_CONNECTED                      0x41u
 
 /**
  * @format 12
  * @param subevent_code
  * @param ascs_cid
 */
-#define GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_DISCONNECTED                   0x42u
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISCONNECTED                   0x42u
 
 /**
  * @format 121111
@@ -4716,7 +4716,7 @@ typedef uint8_t sm_key_t[16];
  * @param response_code
  * @param reason
 */ 
-#define GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE             0x43u
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_CONTROL_POINT_OPERATION_RESPONSE             0x43u
 
 /**
  * @format 1H41
