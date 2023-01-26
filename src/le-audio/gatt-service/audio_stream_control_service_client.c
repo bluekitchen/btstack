@@ -146,7 +146,7 @@ static void ascs_client_emit_streamendpoint_state(uint16_t con_identifier, uint8
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE;
+    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CLIENT_STREAMENDPOINT_STATE;
     little_endian_store_16(event, pos, con_identifier);
     pos += 2;
     event[pos++] = ase_id;
@@ -185,7 +185,7 @@ static void ascs_client_emit_connection_established(ascs_client_connection_t * c
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED;
+    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CLIENT_CONNECTED;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, connection->cid);
@@ -221,7 +221,7 @@ static void ascs_client_emit_disconnect(uint16_t cid){
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_DISCONNECTED;
+    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISCONNECTED;
     little_endian_store_16(event, pos, cid);
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -231,7 +231,7 @@ static void ascs_client_emit_control_point_operation_response(uint16_t cid, uint
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE;
+    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CLIENT_CONTROL_POINT_OPERATION_RESPONSE;
     little_endian_store_16(event, pos, cid);
     pos += 2;
     event[pos++] = opcode;
