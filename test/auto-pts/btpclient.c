@@ -107,6 +107,10 @@ static uint8_t connection_role;
 static uint8_t  ad_flags;
 static uint8_t  gap_adv_data[31];
 static uint16_t gap_adv_data_len;
+static uint8_t gap_ext_adv_enable;
+static uint8_t gap_ext_adv_primary_phy;
+static uint8_t gap_ext_adv_secondary_phy;
+static uint8_t gap_ext_adv_sid;
 static uint8_t  gap_scan_response[31];
 static uint16_t gap_scan_response_len;
 static uint8_t gap_inquriy_scan_active;
@@ -789,6 +793,11 @@ static void btp_core_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             break;
     }
 }
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+static le_extended_advertising_parameters_t btp_advertising_parameters;
+static le_advertising_set_t btp_advertising_set;
+static uint8_t btp_advertising_handle;
+#endif
 
 static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
     switch (opcode){
@@ -1027,10 +1036,32 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                     adv_int_max = 0xa0;
                 }
 
-                gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, pts_addr, 0x07, 0x00);
-                gap_advertisements_set_data(gap_adv_data_len, (uint8_t *) gap_adv_data);
-                gap_scan_response_set_data(scan_response_len, (uint8_t *) scan_response);
-                gap_advertisements_enable(1);
+                if (gap_ext_adv_enable){
+                    // values from PTS 8.3.3 in BAP UCL tests
+                    btp_advertising_parameters.advertising_event_properties = 0x0001;
+                    btp_advertising_parameters.primary_advertising_interval_min = adv_int_min;
+                    btp_advertising_parameters.primary_advertising_interval_max = adv_int_max;
+                    btp_advertising_parameters.primary_advertising_channel_map = 0x07;
+                    btp_advertising_parameters.own_address_type = BD_ADDR_TYPE_LE_PUBLIC;
+                    btp_advertising_parameters.advertising_filter_policy = 0;
+                    btp_advertising_parameters.advertising_tx_power = 10;
+                    btp_advertising_parameters.primary_advertising_phy = gap_ext_adv_primary_phy;
+                    btp_advertising_parameters.secondary_advertising_max_skip = 0;
+                    btp_advertising_parameters.secondary_advertising_phy = gap_ext_adv_secondary_phy;
+                    btp_advertising_parameters.advertising_sid = gap_ext_adv_sid;
+                    btp_advertising_parameters.scan_request_notification_enable = 0;
+
+                    gap_extended_advertising_setup(&btp_advertising_set, &btp_advertising_parameters, &btp_advertising_handle);
+                    gap_extended_advertising_set_adv_data(btp_advertising_handle, gap_adv_data_len, (uint8_t *) gap_adv_data);
+                    gap_extended_advertising_set_scan_response_data(btp_advertising_handle, gap_scan_response_len, (uint8_t *) gap_scan_response);
+                    gap_extended_advertising_start(btp_advertising_handle, 0, 0);
+                } else {
+                    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, pts_addr, 0x07, 0x00);
+                    gap_advertisements_set_data(gap_adv_data_len, (uint8_t *) gap_adv_data);
+                    gap_scan_response_set_data(gap_scan_response_len, (uint8_t *) gap_scan_response);
+                    gap_advertisements_enable(1);
+                }
+
                 // update settings
                 current_settings |= BTP_GAP_SETTING_ADVERTISING;
                 btp_send_gap_settings(opcode);
@@ -1039,7 +1070,11 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
         case BTP_GAP_OP_STOP_ADVERTISING:
             MESSAGE("BTP_GAP_OP_STOP_ADVERTISING");
             if (controller_index == 0){
-                gap_advertisements_enable(0);
+                if (gap_ext_adv_enable){
+                    gap_extended_advertising_stop(btp_advertising_handle);
+                } else {
+                    gap_advertisements_enable(0);
+                }
                 // update settings
                 current_settings &= ~BTP_GAP_SETTING_ADVERTISING;
                 btp_send_gap_settings(opcode);
@@ -1200,6 +1235,23 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                     gap_request_connection_parameter_update(remote_handle, conn_interval_min, conn_interval_max, conn_latency, supervision_timeout);
                 }
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
+            }
+            break;
+        case BTP_GAP_SET_EXTENDED_ADVERTISING:
+            if (controller_index == 0) {
+                MESSAGE("BTP_GAP_OP_CONNECTION_PARAM_UPDATE");
+                gap_ext_adv_enable = data[0];
+                gap_ext_adv_primary_phy = data[1];
+                gap_ext_adv_secondary_phy = data[2];
+                gap_ext_adv_sid = data[3];
+
+                // update settings
+                if (gap_ext_adv_enable){
+                    current_settings |= BTP_GAP_SETTINGS_EXTENDED_ADVERTISING;
+                } else {
+                    current_settings &= ~BTP_GAP_SETTINGS_EXTENDED_ADVERTISING;
+                }
+                btp_send_gap_settings(opcode);
             }
             break;
         default:
