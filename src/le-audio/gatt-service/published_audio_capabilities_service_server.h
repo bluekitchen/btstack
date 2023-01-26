@@ -44,6 +44,7 @@
 #define PUBLISHED_AUDIO_CAPABILITIES_SERVICE_SERVER_H
 
 #include <stdint.h>
+#include "btstack_defines.h"
 #include "le-audio/le_audio.h"
 #include "le-audio/gatt-service/published_audio_capabilities_service_util.h"
 
