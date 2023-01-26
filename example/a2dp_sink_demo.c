@@ -68,6 +68,7 @@
 #include <string.h>
 
 #include "btstack.h"
+#include "btstack_sample_rate_compensation.h"
 #include "btstack_resample.h"
 
 //#define AVRCP_BROWSING_ENABLED
@@ -120,7 +121,7 @@ static btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
 // below 30: add samples, 30-40: fine, above 40: drop samples
 #define OPTIMAL_FRAMES_MIN 60
 #define OPTIMAL_FRAMES_MAX 80
-#define ADDITIONAL_FRAMES  20
+#define ADDITIONAL_FRAMES  30
 static uint8_t sbc_frame_storage[(OPTIMAL_FRAMES_MAX + ADDITIONAL_FRAMES) * MAX_SBC_FRAME_SIZE];
 static btstack_ring_buffer_t sbc_frame_ring_buffer;
 static unsigned int sbc_frame_size;
@@ -317,119 +318,7 @@ static int a2dp_and_avrcp_setup(void){
 }
 /* LISTING_END */
 
-#define FTOQ15(a)   ((signed)((a)*(UINT16_C(1)<<15)+0.5f))
-#define FTOQ8(a)    ((signed)((a)*(UINT16_C(1)<<8)+0.5f))
-#define FTOQ7(a)    ((signed)((a)*(UINT16_C(1)<<7)+0.5f))
-
-#define Q16TOF(a)   ((float)(a)/(UINT32_C(1)<<16))
-#define Q15TOF(a)   ((float)(a)/(UINT32_C(1)<<15))
-#define Q8TOF(a)    ((float)(a)/(UINT32_C(1)<<8))
-#define Q7TOF(a)    ((float)(a)/(UINT32_C(1)<<7))
-
-#define DEBUG_RATIO_CALCULATION
-
-typedef struct {
-    uint32_t count;         // 17bit are usable to count samples, recommended for max 96kHz
-    uint32_t last;          // time stamp of last measurement
-    uint32_t rate_state;    // unsigned Q17.8
-    uint32_t ratio_state;   // unsigned Q16.16
-    uint32_t constant_playback_sample_rate; // playback sample rate if no real one is available
-#ifdef DEBUG_RATIO_CALCULATION
-    double sample_rate;
-    double ratio;
-#endif
-} ratio_measure_t;
-
-#define RATE_SCALE  (8)
-#define RATIO_SCALE (16)
-
-static void ratio_measure_reset( ratio_measure_t *me );
-static void ratio_measure_init( ratio_measure_t *me, uint32_t sample_rate, uint32_t ratioQ15 );
-static void ratio_measure_update( ratio_measure_t *me, uint32_t samples );
-
-static void ratio_measure_reset( ratio_measure_t *me ) {
-    me->count = 0;
-    me->last  = 0;
-}
-
-static void ratio_measure_init( ratio_measure_t *me, uint32_t sample_rate, uint32_t ratioQ15 ) {
-    ratio_measure_reset( me );
-    me->ratio_state = ratioQ15 << 1; // Q15 to Q16 is one left shift
-    me->rate_state = sample_rate << RATE_SCALE;
-#ifdef DEBUG_RATIO_CALCULATION
-    me->ratio = Q15TOF(ratioQ15);
-    me->sample_rate = sample_rate;
-#endif
-}
-
-static void ratio_measure_update( ratio_measure_t *me, uint32_t samples ) {
-    if( me->last == 0 ) {
-        me->count = 0;
-        me->last = btstack_run_loop_get_time_ms();
-    }
-
-    uint32_t current = btstack_run_loop_get_time_ms();
-    int32_t delta = current - me->last;
-    if( delta >= 1000 ) {
-        const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
-        uint32_t playback_sample_rate = me->constant_playback_sample_rate;
-
-        // update playback sample rate if we know better
-        if (audio_sink){
-            playback_sample_rate = audio_sink->get_samplerate();
-        }
-        printf("current playback sample rate: %d\n", playback_sample_rate );
-
-#ifdef DEBUG_RATIO_CALCULATION
-        {
-            double current_sample_rate = me->count*(1000./delta);
-            double current_ratio = me->sample_rate/playback_sample_rate;
-
-            // exponential weighted moving average
-            const double rate_decay = 0.025;
-            me->sample_rate += rate_decay * (current_sample_rate-me->sample_rate);
-
-            // exponential weighted moving average
-            static const double ratio_decay = 1.3;
-            me->ratio += ratio_decay * (current_ratio-me->ratio);
-
-            log_debug("current l2cap sample rate: %f (%d %d)", current_sample_rate, delta, me->count );
-            log_debug("current ratio:             %f", current_ratio);
-            log_debug("calculated ratio:          %f", me->ratio );
-        }
-#endif
-        uint32_t fixed_rate = (me->count*(UINT16_C(1)<<15))/delta*1000;  // sample rate as Q15
-        uint32_t fixed_ratio = (me->rate_state<<7)/playback_sample_rate; // Q15
-        printf("fp current l2cap sample rate: %f (%d %d)\n", Q15TOF(fixed_rate), delta, me->count);
-
-        me->last = current;
-        me->count = 0;
-        if( fixed_rate > FTOQ15(50000.f) )
-            goto no_adaption;
-
-        // fixed point exponential weighted moving average
-        const int16_t rate_decay = FTOQ15(0.025f);
-        uint32_t rate = me->rate_state >> 8; // integer part only
-        me->rate_state += (rate_decay * (int32_t)((fixed_rate>>15)-rate)) >> (15-8); // Q8;
-
-        // fixed point exponential weighted moving average
-        const int16_t ratio_decay = FTOQ8(1.3f);
-        me->ratio_state += (ratio_decay * (int32_t)((fixed_ratio<<1)-me->ratio_state)) >> (16-8); // Q16
-
-        printf("sbc buffer level :            %d\n", btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer));
-        printf("fp current ratio :            %f\n", Q15TOF(fixed_ratio));
-        printf("fp calculated ratio:          %f\n", Q16TOF(me->ratio_state));
-        uint32_t scaleQ16 = me->ratio_state;
-        printf("scale factor Q16:             %d\n", scaleQ16);
-        btstack_resample_set_factor(&resample_instance, scaleQ16);
-
-    }
-no_adaption:
-    me->count += samples;
-
-}
-
-ratio_measure_t sample_rate_adaption;
+btstack_sample_rate_compensation_t sample_rate_adaption;
 
 static void playback_handler(int16_t * buffer, uint16_t num_audio_frames){
 
@@ -503,7 +392,7 @@ static void handle_pcm_data(int16_t * data, int num_audio_frames, int num_channe
 static int media_processing_init(media_codec_configuration_sbc_t * configuration){
     if (media_initialized) return 0;
 
-    ratio_measure_init( &sample_rate_adaption, configuration->sampling_frequency, FTOQ15(1.f) );
+    btstack_sample_rate_compensation_init( &sample_rate_adaption, btstack_run_loop_get_time_ms(), configuration->sampling_frequency, FLOAT_TO_Q15(1.f) );
 
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
 
@@ -529,7 +418,7 @@ static int media_processing_init(media_codec_configuration_sbc_t * configuration
 static void media_processing_start(void){
     if (!media_initialized) return;
 
-    ratio_measure_reset( &sample_rate_adaption );
+    btstack_sample_rate_compensation_reset( &sample_rate_adaption, btstack_run_loop_get_time_ms() );
     // setup audio playback
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (audio){
@@ -594,16 +483,18 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     avdtp_sbc_codec_header_t sbc_header;
     if (!read_sbc_header(packet, size, &pos, &sbc_header)) return;
 
-    // update sample rate compensation
-    if( audio_stream_started ) {
-        ratio_measure_update( &sample_rate_adaption, sbc_header.num_frames*128 );
-    }
-
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     // process data right away if there's no audio implementation active, e.g. on posix systems to store as .wav
     if (!audio){
         btstack_sbc_decoder_process_data(&state, 0, packet+pos, size-pos);
         return;
+    }
+
+    // update sample rate compensation
+    if( audio_stream_started && (audio != NULL)) {
+        uint32_t resampling_factor = btstack_sample_rate_compensation_update( &sample_rate_adaption, btstack_run_loop_get_time_ms(), sbc_header.num_frames*128, audio->get_samplerate() );
+        btstack_resample_set_factor(&resample_instance, resampling_factor);
+//        printf("sbc buffer level :            %d\n", btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer));
     }
 
     // store sbc frame size for buffer management
