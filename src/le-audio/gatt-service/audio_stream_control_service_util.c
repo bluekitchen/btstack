@@ -355,7 +355,7 @@ void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_call
     if (client_request){
         event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION;
     } else {
-        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION;
+        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION;
     }
     little_endian_store_16(event, pos, con_identifier);
     pos += 2;
@@ -375,7 +375,7 @@ void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callba
     if (client_request){
         event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_QOS_CONFIGURATION;
     } else {
-        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION;
+        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION;
     }
     little_endian_store_16(event, pos, con_identifier);
     pos += 2;
@@ -400,7 +400,7 @@ void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, bool 
     if (client_request){
         event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_METADATA;
     } else {
-        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_METADATA;
+        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CLIENT_METADATA;
     }
     little_endian_store_16(event, pos, con_identifier);
     pos += 2;
