@@ -287,7 +287,7 @@ static void ascs_server_emit_remote_client_disconnected(hci_con_handle_t con_han
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_DISCONNECTED;
+    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_DISCONNECTED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -300,7 +300,7 @@ static void ascs_server_emit_remote_client_connected(hci_con_handle_t con_handle
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_CONNECTED;
+    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_CONNECTED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = status;
@@ -328,7 +328,7 @@ static void ascs_server_emit_client_codec_configuration_request(hci_con_handle_t
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION_REQUEST;
+    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = ase_id;
@@ -980,7 +980,7 @@ static int audio_stream_control_service_write_callback(hci_con_handle_t con_hand
                 for (i = 0; i < client->response_ases_num; i++){
                     ase_id = buffer[data_offset++];
                     if (ascs_client_request_successfully_processed(client, i)){
-                        ascs_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_CLIENT_START_READY);
+                        ascs_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_START_READY);
                     }
                 }
                 break;
@@ -995,7 +995,7 @@ static int audio_stream_control_service_write_callback(hci_con_handle_t con_hand
                 for (i = 0; i < client->response_ases_num; i++){
                     ase_id = buffer[data_offset++];
                     if (ascs_client_request_successfully_processed(client, i)){
-                        ascs_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISABLING);
+                        ascs_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLING);
                     }
                 }
                 break;
@@ -1010,7 +1010,7 @@ static int audio_stream_control_service_write_callback(hci_con_handle_t con_hand
                 for (i = 0; i < client->response_ases_num; i++){
                     ase_id = buffer[data_offset++];
                     if (ascs_client_request_successfully_processed(client, i)){
-                        ascs_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_CLIENT_STOP_READY);
+                        ascs_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_STOP_READY);
                     }
                 }
                 break;
@@ -1042,7 +1042,7 @@ static int audio_stream_control_service_write_callback(hci_con_handle_t con_hand
                 for (i = 0; i < client->response_ases_num; i++){
                     ase_id = buffer[data_offset++];
                     if (ascs_client_request_successfully_processed(client, i)){
-                        ascs_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASING);
+                        ascs_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASING);
                     }
                 }
                 break;
@@ -1056,7 +1056,7 @@ static int audio_stream_control_service_write_callback(hci_con_handle_t con_hand
                 for (i = 0; i < client->response_ases_num; i++){
                     ase_id = buffer[data_offset++];
                     if (ascs_client_request_successfully_processed(client, i)){
-                        ascs_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASED);
+                        ascs_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASED);
                     }
                 }
                 break;
