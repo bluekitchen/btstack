@@ -97,7 +97,7 @@ typedef struct {
 #endif
     
     gatt_client_notification_t notification_listener;
-} microphone_service_t;
+} mics_service_t;
 
 
 typedef struct {
@@ -108,7 +108,7 @@ typedef struct {
     microphone_service_client_state_t  state;
     btstack_packet_handler_t client_handler;
  
-    // microphone_service_t service;
+    // mics_service_t service;
     // service
     uint16_t start_handle;
     uint16_t end_handle;
@@ -126,7 +126,7 @@ typedef struct {
     uint8_t  requested_mute;
 
     gatt_client_notification_t notification_listener;
-} microphone_control_service_client_t;
+} mics_client_connection_t;
 
 /* API_START */
 
