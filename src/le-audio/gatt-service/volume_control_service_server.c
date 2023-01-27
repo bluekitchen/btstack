@@ -70,9 +70,9 @@ typedef enum {
 
 static att_service_handler_t volume_control_service;
 
-static btstack_context_callback_registration_t  vcs_callback;
-static hci_con_handle_t  vcs_con_handle;
-static uint8_t           vcs_tasks;
+static btstack_context_callback_registration_t  vcs_server_callback;
+static hci_con_handle_t  vcs_server_con_handle;
+static uint8_t           vcs_server_tasks;
 
 static uint8_t    vcs_volume_change_step_size;
 
@@ -106,11 +106,11 @@ static volume_offset_control_service_server_t vocs_services[VOCS_MAX_NUM_SERVICE
 static uint8_t vocs_services_num;
 
 
-static void volume_control_service_update_change_counter(void){
+static void vcs_server_update_change_counter(void){
     vcs_volume_state_change_counter++;
 }
 
-static void volume_control_service_volume_up(void){
+static void vcs_server_volume_up(void){
     if (vcs_volume_state_volume_setting < (255 - vcs_volume_change_step_size)){
         vcs_volume_state_volume_setting += vcs_volume_change_step_size;
     } else {
@@ -118,7 +118,7 @@ static void volume_control_service_volume_up(void){
     }
 } 
 
-static void volume_control_service_volume_down(void){
+static void vcs_server_volume_down(void){
     if (vcs_volume_state_volume_setting > vcs_volume_change_step_size){
         vcs_volume_state_volume_setting -= vcs_volume_change_step_size;
     } else {
@@ -126,15 +126,15 @@ static void volume_control_service_volume_down(void){
     }
 } 
 
-static void volume_control_service_mute(void){
+static void vcs_server_mute(void){
     vcs_volume_state_mute = VCS_MUTE_ON;
 }
 
-static void volume_control_service_unmute(void){
+static void vcs_server_unmute(void){
     vcs_volume_state_mute = VCS_MUTE_OFF;
 }
 
-static void vcs_emit_volume_state(void){
+static void vcs_server_emit_volume_state(void){
     btstack_assert(vcs_server_event_callback != NULL);
     
     uint8_t event[8];
@@ -142,7 +142,7 @@ static void vcs_emit_volume_state(void){
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_STATE;
-    little_endian_store_16(event, pos, vcs_con_handle);
+    little_endian_store_16(event, pos, vcs_server_con_handle);
     pos += 2;
     event[pos++] = vcs_volume_state_volume_setting;
     event[pos++] = vcs_volume_change_step_size;
@@ -150,7 +150,7 @@ static void vcs_emit_volume_state(void){
     (*vcs_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void vcs_emit_volume_flags(void){
+static void vcs_server_emit_volume_flags(void){
     btstack_assert(vcs_server_event_callback != NULL);
     
     uint8_t event[6];
@@ -158,13 +158,13 @@ static void vcs_emit_volume_flags(void){
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS;
-    little_endian_store_16(event, pos, vcs_con_handle);
+    little_endian_store_16(event, pos, vcs_server_con_handle);
     pos += 2;
     event[pos++] = vcs_volume_flags;
     (*vcs_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static uint16_t volume_control_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+static uint16_t vcs_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
 
     if (attribute_handle == vcs_volume_state_handle){
@@ -190,48 +190,48 @@ static uint16_t volume_control_service_read_callback(hci_con_handle_t con_handle
     return 0;
 }
 
-static void volume_control_service_can_send_now(void * context){
+static void vcs_server_can_send_now(void * context){
     UNUSED(context);
 
     // checks task
-    if ((vcs_tasks & VCS_TASK_SEND_VOLUME_SETTING) != 0){
-        vcs_tasks &= ~VCS_TASK_SEND_VOLUME_SETTING;
+    if ((vcs_server_tasks & VCS_TASK_SEND_VOLUME_SETTING) != 0){
+        vcs_server_tasks &= ~VCS_TASK_SEND_VOLUME_SETTING;
         
         uint8_t buffer[3];
         buffer[0] = vcs_volume_state_volume_setting;
         buffer[1] = (uint8_t)vcs_volume_state_mute;
         buffer[2] = vcs_volume_state_change_counter;
-        att_server_notify(vcs_con_handle, vcs_volume_state_handle, &buffer[0], sizeof(buffer));
+        att_server_notify(vcs_server_con_handle, vcs_volume_state_handle, &buffer[0], sizeof(buffer));
 
-    } else if ((vcs_tasks & VCS_TASK_SEND_VOLUME_FLAGS) != 0){
-        vcs_tasks &= ~VCS_TASK_SEND_VOLUME_FLAGS;
-        att_server_notify(vcs_con_handle, vcs_volume_flags_handle, &vcs_volume_flags, 1);
+    } else if ((vcs_server_tasks & VCS_TASK_SEND_VOLUME_FLAGS) != 0){
+        vcs_server_tasks &= ~VCS_TASK_SEND_VOLUME_FLAGS;
+        att_server_notify(vcs_server_con_handle, vcs_volume_flags_handle, &vcs_volume_flags, 1);
     }
 
-    if (vcs_tasks != 0){
-        att_server_register_can_send_now_callback(&vcs_callback, vcs_con_handle);
+    if (vcs_server_tasks != 0){
+        att_server_register_can_send_now_callback(&vcs_server_callback, vcs_server_con_handle);
     }
 }
 
-static void volume_control_service_server_set_callback(uint8_t task){
-    if (vcs_con_handle == HCI_CON_HANDLE_INVALID){
-        vcs_tasks &= ~task;
+static void vcs_server_set_callback(uint8_t task){
+    if (vcs_server_con_handle == HCI_CON_HANDLE_INVALID){
+        vcs_server_tasks &= ~task;
         return;
     }
 
-    uint8_t scheduled_tasks = vcs_tasks;
-    vcs_tasks |= task;
+    uint8_t scheduled_tasks = vcs_server_tasks;
+    vcs_server_tasks |= task;
     if (scheduled_tasks == 0){
-        vcs_callback.callback = &volume_control_service_can_send_now;
-        att_server_register_can_send_now_callback(&vcs_callback, vcs_con_handle);
+        vcs_server_callback.callback = &vcs_server_can_send_now;
+        att_server_register_can_send_now_callback(&vcs_server_callback, vcs_server_con_handle);
     }   
 }
 
-static void vcs_set_con_handle(hci_con_handle_t con_handle, uint16_t configuration){
-    vcs_con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
+static void vcs_server_set_con_handle(hci_con_handle_t con_handle, uint16_t configuration){
+    vcs_server_con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
 }
 
-static int volume_control_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+static int vcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(transaction_mode);
     UNUSED(offset);
 
@@ -252,21 +252,21 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
 
         switch (opcode){
             case VCS_OPCODE_RELATIVE_VOLUME_DOWN:  
-                volume_control_service_volume_down();
+                vcs_server_volume_down();
                 break;
 
             case VCS_OPCODE_RELATIVE_VOLUME_UP:
-                volume_control_service_volume_up();
+                vcs_server_volume_up();
                 break;
 
             case VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_DOWN:
-                volume_control_service_volume_down();
-                volume_control_service_unmute();
+                vcs_server_volume_down();
+                vcs_server_unmute();
                 break;
 
             case VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_UP:     
-                volume_control_service_volume_up();
-                volume_control_service_unmute();
+                vcs_server_volume_up();
+                vcs_server_unmute();
                 break;
 
             case VCS_OPCODE_SET_ABSOLUTE_VOLUME: 
@@ -277,38 +277,38 @@ static int volume_control_service_write_callback(hci_con_handle_t con_handle, ui
                 break;
             
             case VCS_OPCODE_UNMUTE:                    
-                volume_control_service_unmute();
+                vcs_server_unmute();
                 break;
 
             case VCS_OPCODE_MUTE:                          
-                volume_control_service_mute();
+                vcs_server_mute();
                 break;
 
             default:
                 return VOLUME_CONTROL_OPCODE_NOT_SUPPORTED;
         }
         volume_control_service_server_set_volume_state(volume_setting, mute);
-        vcs_emit_volume_state();
-        vcs_emit_volume_flags();
+        vcs_server_emit_volume_state();
+        vcs_server_emit_volume_flags();
     } 
 
     else if (attribute_handle == vcs_volume_state_client_configuration_handle){
         vcs_volume_state_client_configuration = little_endian_read_16(buffer, 0);
-        vcs_set_con_handle(con_handle, vcs_volume_state_client_configuration);
+        vcs_server_set_con_handle(con_handle, vcs_volume_state_client_configuration);
     }
 
     else if (attribute_handle == vcs_volume_flags_client_configuration_handle){
         vcs_volume_flags_client_configuration = little_endian_read_16(buffer, 0);
-        vcs_set_con_handle(con_handle, vcs_volume_flags_client_configuration);
+        vcs_server_set_con_handle(con_handle, vcs_volume_flags_client_configuration);
     }
 
     return 0;
 }
 
-static void volume_control_service_server_reset_values(void){
+static void vcs_server_reset_values(void){
     vcs_volume_flags = 0;
-    vcs_con_handle = HCI_CON_HANDLE_INVALID;
-    vcs_tasks = 0;
+    vcs_server_con_handle = HCI_CON_HANDLE_INVALID;
+    vcs_server_tasks = 0;
 
     vcs_volume_change_step_size = 1;
     vcs_volume_state_volume_setting = 0;
@@ -328,8 +328,8 @@ static void vcs_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
-            if (vcs_con_handle == con_handle){
-                volume_control_service_server_reset_values();
+            if (vcs_server_con_handle == con_handle){
+                vcs_server_reset_values();
             }
             break;
         default:
@@ -337,7 +337,7 @@ static void vcs_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     }
 }
 
-static void volume_control_init_included_aics_services(uint16_t vcs_start_handle, uint16_t vcs_end_handle, uint8_t aics_info_num, aics_info_t * aics_info){
+static void vcs_server_init_included_aics_services(uint16_t vcs_start_handle, uint16_t vcs_end_handle, uint8_t aics_info_num, aics_info_t * aics_info){
     uint16_t start_handle = vcs_start_handle + 1;
     uint16_t end_handle   = vcs_end_handle - 1;
     aics_services_num = 0;
@@ -371,7 +371,7 @@ static void volume_control_init_included_aics_services(uint16_t vcs_start_handle
     }
 }
 
-static void volume_control_init_included_vocs_services(uint16_t start_handle, uint16_t end_handle, uint8_t vocs_info_num, vocs_info_t * vocs_info){
+static void vcs_server_init_included_vocs_services(uint16_t start_handle, uint16_t end_handle, uint8_t vocs_info_num, vocs_info_t * vocs_info){
     vocs_services_num = 0;
 
     // include and enumerate AICS services
@@ -408,7 +408,7 @@ void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
     uint8_t aics_info_num, aics_info_t * aics_info, 
     uint8_t vocs_info_num, vocs_info_t * vocs_info){
 
-    volume_control_service_server_reset_values();
+    vcs_server_reset_values();
 
     vcs_volume_state_volume_setting = volume_setting;
     vcs_volume_state_mute = mute;
@@ -431,14 +431,14 @@ void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
 
     log_info("Found VCS service 0x%02x-0x%02x", start_handle, end_handle);
 
-    volume_control_init_included_aics_services(start_handle, end_handle, aics_info_num, aics_info);
-    volume_control_init_included_vocs_services(start_handle, end_handle, vocs_info_num, vocs_info);
+    vcs_server_init_included_aics_services(start_handle, end_handle, aics_info_num, aics_info);
+    vcs_server_init_included_vocs_services(start_handle, end_handle, vocs_info_num, vocs_info);
 
     // register service with ATT Server
     volume_control_service.start_handle   = start_handle;
     volume_control_service.end_handle     = end_handle;
-    volume_control_service.read_callback  = &volume_control_service_read_callback;
-    volume_control_service.write_callback = &volume_control_service_write_callback;
+    volume_control_service.read_callback  = &vcs_server_read_callback;
+    volume_control_service.write_callback = &vcs_server_write_callback;
     volume_control_service.packet_handler = vcs_packet_handler;
     att_server_register_service_handler(&volume_control_service);
 }
@@ -456,14 +456,14 @@ void volume_control_service_server_set_volume_state(uint8_t volume_setting, vcs_
     vcs_volume_state_mute = mute;
 
     if ((old_volume_setting != vcs_volume_state_volume_setting) || (old_mute != vcs_volume_state_mute)) {
-        volume_control_service_update_change_counter();
-        volume_control_service_server_set_callback(VCS_TASK_SEND_VOLUME_SETTING);
+        vcs_server_update_change_counter();
+        vcs_server_set_callback(VCS_TASK_SEND_VOLUME_SETTING);
     }
 
     if (old_volume_setting != vcs_volume_state_volume_setting) {
         if ((vcs_volume_flags & VCS_VOLUME_FLAGS_SETTING_PERSISTED_MASK) == VCS_VOLUME_FLAGS_SETTING_PERSISTED_RESET){
             vcs_volume_flags |= VCS_VOLUME_FLAGS_SETTING_PERSISTED_USER_SET;
-            volume_control_service_server_set_callback(VCS_TASK_SEND_VOLUME_FLAGS);
+            vcs_server_set_callback(VCS_TASK_SEND_VOLUME_FLAGS);
         }
     }
 }
