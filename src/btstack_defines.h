@@ -4942,14 +4942,14 @@ typedef uint8_t sm_key_t[16];
  * @param csis_cid
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_CONNECTED                         0x60u
+#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED                         0x60u
 
 /**
  * @format 12
  * @param subevent_code
  * @param csis_cid
 */
-#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_DISCONNECTED                      0x61u
+#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_DISCONNECTED                      0x61u
 
 /**
  * @format 1211
@@ -4958,7 +4958,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param lock
 */
-#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE                      0x62u
+#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE                      0x62u
 
 /**
  * @format 1211
@@ -4967,7 +4967,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param lock
 */
-#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK                                     0x63u
+#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_REMOTE_LOCK                                     0x63u
 
 /**
  * @format 1211
@@ -4976,7 +4976,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param coordinated_set_size
 */
-#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_COORDINATED_SET_SIZE                     0x64u
+#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE                     0x64u
 
 /**
  * @format 1211
@@ -4985,7 +4985,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param rank
 */
-#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK                                     0x65u
+#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK                                     0x65u
 
 /**
  * @format 1211K
@@ -4995,7 +4995,7 @@ typedef uint8_t sm_key_t[16];
  * @param sirk_type
  * @param sirk
 */
-#define GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK                                     0x66u
+#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK                                     0x66u
 
 /**
  * @format 11
