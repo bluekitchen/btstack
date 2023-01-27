@@ -444,7 +444,7 @@ static void bass_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_BASS_CONNECTED:
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED:
             if (bap_app_client_con_handle != gattservice_subevent_bass_connected_get_con_handle(packet)){
                 printf("BASS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_bass_connected_get_con_handle(packet));
                 return;
@@ -461,13 +461,13 @@ static void bass_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("BASS client: connected, cid 0x%04x\n", bass_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_BASS_DISCONNECTED:
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_DISCONNECTED:
             bass_cid = 0;
             printf("BASS Client: disconnected\n");
             break;
 
 
-        case GATTSERVICE_SUBEVENT_BASS_SCAN_OPERATION_COMPLETE:
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE:
             if (bass_cid != gattservice_subevent_bass_scan_operation_complete_get_bass_cid(packet)){
                 return;
             }
@@ -478,7 +478,7 @@ static void bass_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("BASS Client: scan operation %s completed\n", bass_opcode2str(gattservice_subevent_bass_scan_operation_complete_get_opcode(packet)));
             break;
 
-        case GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE:
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE:
             if (bass_cid != gattservice_subevent_bass_source_operation_complete_get_bass_cid(packet)){
                 return;
             }
@@ -500,13 +500,13 @@ static void bass_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE:
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_BASE:
             printf("BASS Client: GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE\n");
             break;
-        case GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_SUBGROUP:
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_SUBGROUP:
             printf("BASS Client: GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_SUBGROUP\n");
             break;
-        case GATTSERVICE_SUBEVENT_BASS_NOTIFICATION_COMPLETE:
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE:
             printf("BASS Client: GATTSERVICE_SUBEVENT_BASS_NOTIFICATION_COMPLETE\n");
             break;
         
@@ -741,7 +741,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     uint8_t sirk[16];
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_CONNECTED:
+        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED:
             if (bap_app_client_con_handle != gattservice_subevent_csis_remote_server_connected_get_con_handle(packet)){
                 printf("CSIS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_csis_remote_server_connected_get_con_handle(packet));
                 return;
@@ -758,7 +758,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("CSIS client: connected, cid 0x%04x\n", csis_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK:
+        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_REMOTE_LOCK:
             status = gattservice_subevent_csis_remote_lock_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client: read LOCK failed, 0x%02x\n", status);
@@ -767,7 +767,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("CSIS client: remote LOCK %u\n", gattservice_subevent_csis_remote_lock_get_lock(packet));
             break;
         
-        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK:
+        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK:
             status = gattservice_subevent_csis_remote_rank_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client: read RANK failed, 0x%02x\n", status);
@@ -776,7 +776,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("CSIS client: remote member RANK %u\n", gattservice_subevent_csis_remote_rank_get_rank(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_COORDINATED_SET_SIZE:
+        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE:
             status = gattservice_subevent_csis_remote_coordinated_set_size_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client: read COORDINATED_SET_SIZE failed, 0x%02x\n", status);
@@ -785,7 +785,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("CSIS client: remote COORDINATED_SET_SIZE %u\n", gattservice_subevent_csis_remote_coordinated_set_size_get_coordinated_set_size(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK:
+        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK:
             status = gattservice_subevent_csis_remote_sirk_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client: read SIRK failed, 0x%02x\n", status);
@@ -796,7 +796,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf_hexdump(sirk, sizeof(sirk));
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE:
+        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE:
             status = gattservice_subevent_csis_remote_lock_write_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client: write LOCK failed, 0x%02x\n", status);
@@ -806,7 +806,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("CSIS client: remote member %s\n", csis_member_lock == CSIS_MEMBER_UNLOCKED ? "UNLOCKED" : "LOCKED");
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_DISCONNECTED:
+        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_DISCONNECTED:
             csis_cid = 0;
             printf("CSIS Client: disconnected\n");
             break;
