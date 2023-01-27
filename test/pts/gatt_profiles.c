@@ -72,7 +72,7 @@ static broadcast_audio_scan_service_server_t bass_clients[BASS_NUM_CLIENTS];
 #define ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS 5
 #define ASCS_NUM_CLIENTS 3
 static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
-static audio_stream_control_service_server_t ascs_clients[ASCS_NUM_CLIENTS];
+static ascs_server_connection_t ascs_clients[ASCS_NUM_CLIENTS];
 
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
