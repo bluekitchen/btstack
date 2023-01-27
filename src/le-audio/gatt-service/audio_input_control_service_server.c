@@ -260,7 +260,7 @@ static void audio_input_control_service_server_set_callback(audio_input_control_
     }
 }
 
-static void aics_set_con_handle(audio_input_control_service_server_t * aics, hci_con_handle_t con_handle, uint16_t configuration){
+static void aics_server_set_con_handle(audio_input_control_service_server_t * aics, hci_con_handle_t con_handle, uint16_t configuration){
     aics->con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
 }
 
@@ -376,17 +376,17 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
 
     if (attribute_handle == client->audio_input_state_client_configuration_handle){
         client->audio_input_state_client_configuration = little_endian_read_16(buffer, 0);
-        aics_set_con_handle(client, con_handle, client->audio_input_state_client_configuration);
+        aics_server_set_con_handle(client, con_handle, client->audio_input_state_client_configuration);
     }
     
     if (attribute_handle == client->audio_input_status_client_configuration_handle){
         client->audio_input_status_client_configuration = little_endian_read_16(buffer, 0);
-        aics_set_con_handle(client, con_handle, client->audio_input_status_client_configuration);
+        aics_server_set_con_handle(client, con_handle, client->audio_input_status_client_configuration);
     }
     
     if (attribute_handle == client->audio_input_description_client_configuration_handle){
         client->audio_input_description_client_configuration = little_endian_read_16(buffer, 0);
-        aics_set_con_handle(client, con_handle, client->audio_input_description_client_configuration);
+        aics_server_set_con_handle(client, con_handle, client->audio_input_description_client_configuration);
     }
 
     return 0;
