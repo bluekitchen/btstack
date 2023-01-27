@@ -16465,7 +16465,7 @@ static inline uint16_t gattservice_subevent_pacs_disconnected_get_pacs_cid(const
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_csis_coordinator_connected_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_csis_server_connected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -16474,7 +16474,7 @@ static inline hci_con_handle_t gattservice_subevent_csis_coordinator_connected_g
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_coordinator_connected_get_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_server_connected_get_status(const uint8_t * event){
     return event[5];
 }
 
@@ -16484,7 +16484,7 @@ static inline uint8_t gattservice_subevent_csis_coordinator_connected_get_status
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_csis_coordinated_set_member_lock_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_csis_server_member_lock_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -16493,7 +16493,7 @@ static inline hci_con_handle_t gattservice_subevent_csis_coordinated_set_member_
  * @return lock
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_coordinated_set_member_lock_get_lock(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_server_member_lock_get_lock(const uint8_t * event){
     return event[5];
 }
 
@@ -16503,7 +16503,7 @@ static inline uint8_t gattservice_subevent_csis_coordinated_set_member_lock_get_
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_csis_coordinated_set_size_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_csis_server_coordinated_set_size_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -16512,7 +16512,7 @@ static inline hci_con_handle_t gattservice_subevent_csis_coordinated_set_size_ge
  * @return set_size
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_coordinated_set_size_get_set_size(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_server_coordinated_set_size_get_set_size(const uint8_t * event){
     return event[5];
 }
 
@@ -16532,7 +16532,7 @@ static inline void gattservice_subevent_csis_rsi_get_rsi(const uint8_t * event, 
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_csis_coordinator_disconnected_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_csis_server_disconnected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
