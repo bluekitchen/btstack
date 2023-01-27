@@ -141,7 +141,7 @@ typedef struct {
     btstack_context_callback_registration_t scheduled_tasks_callback; 
 
     mcs_media_player_data_t data;
-} mcs_media_player_t;
+} media_control_service_server_t;
 
 /**
  * @brief Init media Control Service Server with ATT DB
@@ -149,7 +149,7 @@ typedef struct {
  */
 void media_control_service_server_init(btstack_packet_handler_t callback);
 
-uint8_t media_control_service_server_register_media_player(mcs_media_player_t * media_player, uint16_t * media_player_id);
+uint8_t media_control_service_server_register_media_player(media_control_service_server_t * media_player, uint16_t * media_player_id);
 
 uint8_t media_control_service_server_set_media_player_name(uint16_t media_player_id, char * name);
 
@@ -168,7 +168,7 @@ uint8_t media_control_service_server_set_seeking_speed( uint16_t media_player_id
 
 uint8_t media_control_service_server_set_media_state(uint16_t media_player_id, mcs_media_state_t media_state);
 
-uint8_t media_control_service_server_unregister_media_player(mcs_media_player_t * media_player);
+uint8_t media_control_service_server_unregister_media_player(media_control_service_server_t * media_player);
 
 /* API_END */
 

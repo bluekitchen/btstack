@@ -62,7 +62,7 @@ static btstack_packet_handler_t ascs_event_callback;
 
 static ascs_streamendpoint_characteristic_t * ascs_streamendpoint_characteristics;
 static uint8_t  ascs_streamendpoint_chr_num = 0;
-static ascs_remote_client_t * ascs_clients;
+static audio_stream_control_service_server_t * ascs_clients;
 static uint8_t ascs_clients_num = 0;
 static uint8_t ascs_streamendpoint_characteristics_id_counter = 0;
 
@@ -72,7 +72,7 @@ static uint16_t ascs_ase_control_point_client_configuration_handle;
 // configration of conntrol point notifications is stored per client
 
 #ifdef ENABLE_TESTING_SUPPORT
-static void dump_streamendpoint(ascs_remote_client_t * client, ascs_streamendpoint_t * streamendpoint){
+static void dump_streamendpoint(audio_stream_control_service_server_t * client, ascs_streamendpoint_t * streamendpoint){
     printf("Streamendpoint (con_handle 0x%02x): \n", client->con_handle);
     printf("    - id              %d\n", streamendpoint->ase_characteristic->ase_id);
     printf("    - value handle 0x%02x\n", streamendpoint->ase_characteristic->ase_characteristic_value_handle);
@@ -92,7 +92,7 @@ static uint8_t ascs_get_next_streamendpoint_chr_id(void){
     return next_streamendpoint_id;
 }
 
-static ascs_remote_client_t * ascs_get_remote_client_for_con_handle(hci_con_handle_t con_handle){
+static audio_stream_control_service_server_t * ascs_get_remote_client_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
         return NULL;
     }
@@ -105,7 +105,7 @@ static ascs_remote_client_t * ascs_get_remote_client_for_con_handle(hci_con_hand
     return NULL;
 }
 
-static ascs_remote_client_t * ascs_server_add_remote_client(hci_con_handle_t con_handle){
+static audio_stream_control_service_server_t * ascs_server_add_remote_client(hci_con_handle_t con_handle){
     uint8_t i;
     
     for (i = 0; i < ascs_clients_num; i++){
@@ -118,7 +118,7 @@ static ascs_remote_client_t * ascs_server_add_remote_client(hci_con_handle_t con
     return NULL;
 }
 
-static ascs_streamendpoint_t * ascs_get_streamendpoint_for_ase_id(ascs_remote_client_t * client, uint8_t ase_id){
+static ascs_streamendpoint_t * ascs_get_streamendpoint_for_ase_id(audio_stream_control_service_server_t * client, uint8_t ase_id){
     uint8_t i;
     for (i = 0; i < ascs_streamendpoint_chr_num; i++){
         if (client->streamendpoints[i].ase_characteristic->ase_id == ase_id){
@@ -234,7 +234,7 @@ static bool ascs_streamendpoint_can_transit_to_state(ascs_streamendpoint_t * str
 }
 
 
-static void ascs_client_reset_response(ascs_remote_client_t * client){
+static void ascs_client_reset_response(audio_stream_control_service_server_t * client){
     client->response_opcode = ASCS_OPCODE_UNSUPPORTED;
     client->response_ases_num = 0;
     memset(client->response, 0, sizeof(ascs_control_point_operation_response_t) * ASCS_STREAMENDPOINTS_MAX_NUM);
@@ -242,7 +242,7 @@ static void ascs_client_reset_response(ascs_remote_client_t * client){
 
 
 
-static void ascs_client_reset_streamendpoints_for_client(ascs_remote_client_t * client){
+static void ascs_client_reset_streamendpoints_for_client(audio_stream_control_service_server_t * client){
     if (client == NULL){
         return;
     }
@@ -258,7 +258,7 @@ static void ascs_client_reset_streamendpoints_for_client(ascs_remote_client_t * 
     }
 }
 
-static void ascs_client_reset(ascs_remote_client_t * client){
+static void ascs_client_reset(audio_stream_control_service_server_t * client){
     if (client == NULL){
         return;
     }
@@ -269,7 +269,7 @@ static void ascs_client_reset(ascs_remote_client_t * client){
     ascs_client_reset_streamendpoints_for_client(client);
 }
 
-static bool ascs_client_request_successfully_processed(ascs_remote_client_t * client, uint8_t response_index){
+static bool ascs_client_request_successfully_processed(audio_stream_control_service_server_t * client, uint8_t response_index){
     if (client->response[response_index].response_code != ASCS_ERROR_CODE_SUCCESS){
         return false;
     }
@@ -280,7 +280,7 @@ static bool ascs_client_request_successfully_processed(ascs_remote_client_t * cl
 }
 
 
-static void ascs_server_emit_remote_client_disconnected(hci_con_handle_t con_handle){
+static void ascs_server_emit_disconnected(hci_con_handle_t con_handle){
     btstack_assert(ascs_event_callback != NULL);
 
     uint8_t event[5];
@@ -293,7 +293,7 @@ static void ascs_server_emit_remote_client_disconnected(hci_con_handle_t con_han
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void ascs_server_emit_remote_client_connected(hci_con_handle_t con_handle, uint8_t status){
+static void ascs_server_emit_connected(hci_con_handle_t con_handle, uint8_t status){
     btstack_assert(ascs_event_callback != NULL);
 
     uint8_t event[6];
@@ -396,17 +396,17 @@ static uint16_t asce_server_ase_serialize(ascs_streamendpoint_t * streamendpoint
 }
 
 static uint16_t audio_stream_control_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-    ascs_remote_client_t * client = ascs_get_remote_client_for_con_handle(con_handle);
+    audio_stream_control_service_server_t * client = ascs_get_remote_client_for_con_handle(con_handle);
     
     if (client == NULL){
         client = ascs_server_add_remote_client(con_handle);
         
         if (client == NULL){
-            ascs_server_emit_remote_client_connected(con_handle, ERROR_CODE_CONNECTION_LIMIT_EXCEEDED);
+            ascs_server_emit_connected(con_handle, ERROR_CODE_CONNECTION_LIMIT_EXCEEDED);
             log_info("There are already %d clients connected. No memory for new client.", ascs_clients_num);
             return 0;
         } else {
-            ascs_server_emit_remote_client_connected(con_handle, ERROR_CODE_SUCCESS);
+            ascs_server_emit_connected(con_handle, ERROR_CODE_SUCCESS);
         }    
     }
 
@@ -435,7 +435,7 @@ static uint16_t audio_stream_control_service_read_callback(hci_con_handle_t con_
 }
 
 static void audio_stream_control_service_server_can_send_now(void * context){
-    ascs_remote_client_t * client = (ascs_remote_client_t *) context;
+    audio_stream_control_service_server_t * client = (audio_stream_control_service_server_t *) context;
     if (client->con_handle == HCI_CON_HANDLE_INVALID){
         ascs_client_reset(client);
         return;
@@ -496,7 +496,7 @@ static void audio_stream_control_service_server_can_send_now(void * context){
     }
 }
 
-static void ascs_schedule_task(ascs_remote_client_t * client, uint8_t task){
+static void ascs_schedule_task(audio_stream_control_service_server_t * client, uint8_t task){
     if (client->con_handle == HCI_CON_HANDLE_INVALID){
         ascs_client_reset(client);
         return;
@@ -519,7 +519,7 @@ static void ascs_schedule_task(ascs_remote_client_t * client, uint8_t task){
     }
 }
 
-static void ascs_update_control_point_operation_response(ascs_remote_client_t * client, uint8_t response_index, uint8_t response_code, uint8_t reason){
+static void ascs_update_control_point_operation_response(audio_stream_control_service_server_t * client, uint8_t response_index, uint8_t response_code, uint8_t reason){
      client->response[response_index].response_code = response_code;
      client->response[response_index].reason = reason;
 }
@@ -588,7 +588,7 @@ static bool ascs_control_point_operation_has_valid_length(ascs_opcode_t opcode, 
     return (pos == buffer_size);
 }
 
-static void ascs_control_point_operation_prepare_response_for_codec_configuration(ascs_remote_client_t * client, uint8_t ase_index, uint8_t ase_id, ascs_client_codec_configuration_request_t codec_config){
+static void ascs_control_point_operation_prepare_response_for_codec_configuration(audio_stream_control_service_server_t * client, uint8_t ase_index, uint8_t ase_id, ascs_client_codec_configuration_request_t codec_config){
     client->response[ase_index].ase_id = ase_id;
 
     ascs_streamendpoint_t * streamendpoint = ascs_get_streamendpoint_for_ase_id(client, ase_id);
@@ -673,7 +673,7 @@ static void ascs_control_point_operation_prepare_response_for_codec_configuratio
     }
 }
 
-static void ascs_control_point_operation_prepare_response_for_qos_configuration(ascs_remote_client_t * client, uint8_t ase_index, uint8_t ase_id, ascs_qos_configuration_t qos_config){
+static void ascs_control_point_operation_prepare_response_for_qos_configuration(audio_stream_control_service_server_t * client, uint8_t ase_index, uint8_t ase_id, ascs_qos_configuration_t qos_config){
     client->response[ase_index].ase_id = ase_id;
     
     ascs_streamendpoint_t * streamendpoint = ascs_get_streamendpoint_for_ase_id(client, ase_id);
@@ -742,7 +742,7 @@ static void ascs_control_point_operation_prepare_response_for_qos_configuration(
     }
 }
 
-static void ascs_control_point_operation_prepare_response_for_target_state(ascs_remote_client_t * client, uint8_t ase_index, uint8_t ase_id, ascs_state_t target_state){
+static void ascs_control_point_operation_prepare_response_for_target_state(audio_stream_control_service_server_t * client, uint8_t ase_index, uint8_t ase_id, ascs_state_t target_state){
     client->response[ase_index].ase_id = ase_id;
     
     ascs_streamendpoint_t * streamendpoint = ascs_get_streamendpoint_for_ase_id(client, ase_id);
@@ -761,7 +761,7 @@ static void ascs_control_point_operation_prepare_response_for_target_state(ascs_
     }
 }
 
-static void ascs_control_point_operation_prepare_response_for_metadata_update(ascs_remote_client_t * client, uint8_t ase_index, uint8_t ase_id, le_audio_metadata_t * metadata){
+static void ascs_control_point_operation_prepare_response_for_metadata_update(audio_stream_control_service_server_t * client, uint8_t ase_index, uint8_t ase_id, le_audio_metadata_t * metadata){
     client->response[ase_index].ase_id = ase_id;
     
     ascs_streamendpoint_t * streamendpoint = ascs_get_streamendpoint_for_ase_id(client, ase_id);
@@ -816,7 +816,7 @@ static void ascs_control_point_operation_prepare_response_for_metadata_update(as
     }
 }
 
-static void ascs_control_point_operation_prepare_response_for_start_ready(ascs_remote_client_t * client, uint8_t ase_index, uint8_t ase_id){
+static void ascs_control_point_operation_prepare_response_for_start_ready(audio_stream_control_service_server_t * client, uint8_t ase_index, uint8_t ase_id){
     client->response[ase_index].ase_id = ase_id;
     
     ascs_streamendpoint_t * streamendpoint = ascs_get_streamendpoint_for_ase_id(client, ase_id);
@@ -836,7 +836,7 @@ static void ascs_control_point_operation_prepare_response_for_start_ready(ascs_r
     }
 }
 
-static void ascs_control_point_operation_prepare_response_for_stop_ready(ascs_remote_client_t * client, uint8_t ase_index, uint8_t ase_id){
+static void ascs_control_point_operation_prepare_response_for_stop_ready(audio_stream_control_service_server_t * client, uint8_t ase_index, uint8_t ase_id){
     client->response[ase_index].ase_id = ase_id;
     
     ascs_streamendpoint_t * streamendpoint = ascs_get_streamendpoint_for_ase_id(client, ase_id);
@@ -866,7 +866,7 @@ static int audio_stream_control_service_write_callback(hci_con_handle_t con_hand
             return 0; // ASCS_ERROR_CODE_UNSUPPORTED_OPCODE;
         }
 
-        ascs_remote_client_t * client = ascs_get_remote_client_for_con_handle(con_handle);
+        audio_stream_control_service_server_t * client = ascs_get_remote_client_for_con_handle(con_handle);
         if (client == NULL){
             return 0; 
         }
@@ -1070,17 +1070,17 @@ static int audio_stream_control_service_write_callback(hci_con_handle_t con_hand
         return 0;
     }
 
-    ascs_remote_client_t * client = ascs_get_remote_client_for_con_handle(con_handle);
+    audio_stream_control_service_server_t * client = ascs_get_remote_client_for_con_handle(con_handle);
     if (client == NULL){
         client = ascs_server_add_remote_client(con_handle);
         
         if (client == NULL){
-            ascs_server_emit_remote_client_connected(con_handle, ERROR_CODE_CONNECTION_LIMIT_EXCEEDED);
+            ascs_server_emit_connected(con_handle, ERROR_CODE_CONNECTION_LIMIT_EXCEEDED);
             log_info("There are already %d clients connected. No memory for new client.", ascs_clients_num);
             return 0;
         } else {
             client->con_handle = con_handle;
-            ascs_server_emit_remote_client_connected(con_handle, ERROR_CODE_SUCCESS);
+            ascs_server_emit_connected(con_handle, ERROR_CODE_SUCCESS);
         }    
     }
 
@@ -1118,7 +1118,7 @@ static void audio_stream_control_service_packet_handler(uint8_t packet_type, uin
     }
 
     hci_con_handle_t con_handle;
-    ascs_remote_client_t * client_connection;
+    audio_stream_control_service_server_t * client_connection;
     
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -1127,7 +1127,7 @@ static void audio_stream_control_service_packet_handler(uint8_t packet_type, uin
             client_connection = ascs_get_remote_client_for_con_handle(con_handle);
             if (client_connection != NULL){
                 ascs_client_reset(client_connection);
-                ascs_server_emit_remote_client_disconnected(con_handle);
+                ascs_server_emit_disconnected(con_handle);
             }
             break;
         default:
@@ -1176,8 +1176,8 @@ static void ascs_streamenpoint_init(
 }
 
 void audio_stream_control_service_server_init(
-        const uint8_t streamendpoint_characteristics_num, ascs_streamendpoint_characteristic_t * streamendpoint_characteristics, 
-        const uint8_t clients_num, ascs_remote_client_t * clients){
+        const uint8_t streamendpoint_characteristics_num, ascs_streamendpoint_characteristic_t * streamendpoint_characteristics,
+        const uint8_t clients_num, audio_stream_control_service_server_t * clients){
 
     btstack_assert(streamendpoint_characteristics_num != 0);
     btstack_assert(clients_num != 0);
@@ -1205,7 +1205,7 @@ void audio_stream_control_service_server_init(
 
     ascs_clients_num = clients_num;
     ascs_clients = clients;
-    memset(ascs_clients, 0, sizeof(ascs_remote_client_t) * ascs_clients_num);
+    memset(ascs_clients, 0, sizeof(audio_stream_control_service_server_t) * ascs_clients_num);
     uint8_t i;
     for (i = 0; i < ascs_clients_num; i++){
         uint8_t j;
@@ -1239,7 +1239,7 @@ void audio_stream_control_service_server_register_packet_handler(btstack_packet_
     ascs_event_callback = packet_handler;
 }
 
-static void ascs_streamendpoint_schedule_value_changed_task(ascs_remote_client_t * client, ascs_streamendpoint_t * streamendpoint){
+static void ascs_streamendpoint_schedule_value_changed_task(audio_stream_control_service_server_t * client, ascs_streamendpoint_t * streamendpoint){
     btstack_assert(streamendpoint != NULL);
     // skip if already scheduled
     if (streamendpoint->ase_characteristic_value_changed_w2_notify == true){
@@ -1254,8 +1254,8 @@ static void ascs_streamendpoint_schedule_value_changed_task(ascs_remote_client_t
     }
 }
 
-static bool ascs_streamendpoint_transit_to_state(hci_con_handle_t con_handle, uint8_t ase_id, ascs_opcode_t opcode, ascs_state_t target_state, ascs_remote_client_t ** out_client, ascs_streamendpoint_t ** out_streamendpoint){
-    ascs_remote_client_t * client = ascs_get_remote_client_for_con_handle(con_handle);
+static bool ascs_streamendpoint_transit_to_state(hci_con_handle_t con_handle, uint8_t ase_id, ascs_opcode_t opcode, ascs_state_t target_state, audio_stream_control_service_server_t ** out_client, ascs_streamendpoint_t ** out_streamendpoint){
+    audio_stream_control_service_server_t * client = ascs_get_remote_client_for_con_handle(con_handle);
     if (client == NULL){
         log_info("no client found for con_handle 0x%02x", con_handle);
         return false;
@@ -1277,7 +1277,7 @@ static bool ascs_streamendpoint_transit_to_state(hci_con_handle_t con_handle, ui
 }
 
 void audio_stream_control_service_server_streamendpoint_configure_codec(hci_con_handle_t con_handle, uint8_t ase_id, ascs_codec_configuration_t codec_configuration){
-    ascs_remote_client_t  * client;
+    audio_stream_control_service_server_t  * client;
     ascs_streamendpoint_t * streamendpoint;
     if (!ascs_streamendpoint_transit_to_state(con_handle, ase_id, ASCS_OPCODE_CONFIG_CODEC, ASCS_STATE_CODEC_CONFIGURED, &client, &streamendpoint)){
         return;
@@ -1288,7 +1288,7 @@ void audio_stream_control_service_server_streamendpoint_configure_codec(hci_con_
 }
 
 void audio_stream_control_service_server_streamendpoint_configure_qos(hci_con_handle_t con_handle, uint8_t ase_id, ascs_qos_configuration_t qos_configuration){
-    ascs_remote_client_t  * client;
+    audio_stream_control_service_server_t  * client;
     ascs_streamendpoint_t * streamendpoint;
 
     if (!ascs_streamendpoint_transit_to_state(con_handle, ase_id, ASCS_OPCODE_CONFIG_QOS, ASCS_STATE_QOS_CONFIGURED, &client, &streamendpoint)){
@@ -1299,7 +1299,7 @@ void audio_stream_control_service_server_streamendpoint_configure_qos(hci_con_ha
 }
 
 void audio_stream_control_service_server_streamendpoint_enable(hci_con_handle_t con_handle, uint8_t ase_id){
-    ascs_remote_client_t  * client;
+    audio_stream_control_service_server_t  * client;
     ascs_streamendpoint_t * streamendpoint;
 
     if (!ascs_streamendpoint_transit_to_state(con_handle, ase_id, ASCS_OPCODE_ENABLE, ASCS_STATE_ENABLING, &client, &streamendpoint)){
@@ -1309,7 +1309,7 @@ void audio_stream_control_service_server_streamendpoint_enable(hci_con_handle_t 
 }
 
 void audio_stream_control_service_server_streamendpoint_receiver_start_ready(hci_con_handle_t con_handle, uint8_t ase_id){
-    ascs_remote_client_t  * client;
+    audio_stream_control_service_server_t  * client;
     ascs_streamendpoint_t * streamendpoint;
 
     if (!ascs_streamendpoint_transit_to_state(con_handle, ase_id, ASCS_OPCODE_RECEIVER_START_READY, ASCS_STATE_STREAMING, &client, &streamendpoint)){
@@ -1320,7 +1320,7 @@ void audio_stream_control_service_server_streamendpoint_receiver_start_ready(hci
 
 
 void audio_stream_control_service_server_streamendpoint_disable(hci_con_handle_t con_handle, uint8_t ase_id){
-    ascs_remote_client_t * client = ascs_get_remote_client_for_con_handle(con_handle);
+    audio_stream_control_service_server_t * client = ascs_get_remote_client_for_con_handle(con_handle);
     if (client == NULL){
         return;
     }
@@ -1345,7 +1345,7 @@ void audio_stream_control_service_server_streamendpoint_disable(hci_con_handle_t
 }
 
 void audio_stream_control_service_server_streamendpoint_receiver_stop_ready(hci_con_handle_t con_handle, uint8_t ase_id){
-    ascs_remote_client_t  * client;
+    audio_stream_control_service_server_t  * client;
     ascs_streamendpoint_t * streamendpoint;
 
     if (!ascs_streamendpoint_transit_to_state(con_handle, ase_id, ASCS_OPCODE_RECEIVER_STOP_READY, ASCS_STATE_QOS_CONFIGURED, &client, &streamendpoint)){
@@ -1355,7 +1355,7 @@ void audio_stream_control_service_server_streamendpoint_receiver_stop_ready(hci_
 }
 
 void audio_stream_control_service_server_streamendpoint_release(hci_con_handle_t con_handle, uint8_t ase_id){
-    ascs_remote_client_t  * client;
+    audio_stream_control_service_server_t  * client;
     ascs_streamendpoint_t * streamendpoint;
 
     if (!ascs_streamendpoint_transit_to_state(con_handle, ase_id, ASCS_OPCODE_RELEASE, ASCS_STATE_RELEASING, &client, &streamendpoint)){
@@ -1365,7 +1365,7 @@ void audio_stream_control_service_server_streamendpoint_release(hci_con_handle_t
 }
 
 void audio_stream_control_service_server_streamendpoint_released(hci_con_handle_t con_handle, uint8_t ase_id, bool caching){
-    ascs_remote_client_t  * client;
+    audio_stream_control_service_server_t  * client;
     ascs_streamendpoint_t * streamendpoint;
 
     ascs_state_t target_state = ASCS_STATE_IDLE;
@@ -1381,7 +1381,7 @@ void audio_stream_control_service_server_streamendpoint_released(hci_con_handle_
 }
 
 void audio_stream_control_service_server_streamendpoint_metadata_update(hci_con_handle_t con_handle, uint8_t ase_id, le_audio_metadata_t metadata){
-    ascs_remote_client_t * client = ascs_get_remote_client_for_con_handle(con_handle);
+    audio_stream_control_service_server_t * client = ascs_get_remote_client_for_con_handle(con_handle);
     if (client == NULL){
         return;
     }
