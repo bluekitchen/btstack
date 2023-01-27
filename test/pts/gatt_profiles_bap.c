@@ -282,10 +282,10 @@ static bass_source_data_t source_data1 = {
 };
 
 
-static csis_coordinator_t csis_coordiantors[CSIS_COORDINATORS_MAX_NUM];
+static coordinated_set_identification_service_server_t csis_coordiantors[CSIS_COORDINATORS_MAX_NUM];
 
 static uint8_t bad_code[] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8}; 
-static bass_remote_client_t bass_clients[BASS_NUM_CLIENTS];
+static broadcast_audio_scan_service_server_t bass_clients[BASS_NUM_CLIENTS];
 
 static le_audio_pa_sync_state_t pa_sync_state = LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA;
 static uint8_t source_id = 0;
@@ -296,14 +296,14 @@ static uint8_t ase_id = 0;
 #define ASCS_NUM_CLIENTS 3
 
 static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
-static ascs_remote_client_t ascs_clients[ASCS_NUM_CLIENTS];
+static audio_stream_control_service_server_t ascs_clients[ASCS_NUM_CLIENTS];
 
 // MCS
 static uint16_t media_player_id1 = 0;
-static mcs_media_player_t media_player1;
+static media_control_service_server_t media_player1;
 
 static uint16_t media_player_id2 = 0;
-static mcs_media_player_t media_player2;
+static media_control_service_server_t media_player2;
 
 static uint8_t sirk[] = {
     0x83, 0x8E, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A,
