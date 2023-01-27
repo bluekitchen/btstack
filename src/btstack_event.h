@@ -12864,21 +12864,21 @@ static inline uint8_t gattservice_subevent_remote_mics_mute_get_state(const uint
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_MICS_SERVER_LOCAL_MUTE
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_local_mics_mute_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_mics_server_local_mute_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field state from event GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_MICS_SERVER_LOCAL_MUTE
  * @param event packet
  * @return state
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_local_mics_mute_get_state(const uint8_t * event){
+static inline uint8_t gattservice_subevent_mics_server_local_mute_get_state(const uint8_t * event){
     return event[5];
 }
 
@@ -14878,6 +14878,35 @@ static inline uint8_t gattservice_subevent_bass_server_connected_get_status(cons
  * @note: btstack_type H
  */
 static inline hci_con_handle_t gattservice_subevent_bass_server_disconnected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_MICS_SERVER_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_mics_server_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_MICS_SERVER_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mics_server_connected_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_MICS_SERVER_DISCONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_mics_server_disconnected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
