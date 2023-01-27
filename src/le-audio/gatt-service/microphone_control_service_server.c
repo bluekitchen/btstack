@@ -53,22 +53,22 @@
 #include "le-audio/gatt-service/microphone_control_service_server.h"
 #include "le-audio/gatt-service/audio_input_control_service_server.h"
 
-static btstack_context_callback_registration_t  mc_mute_callback;
+static btstack_context_callback_registration_t  mics_server_mute_callback;
 static att_service_handler_t       microphone_control;
 
-static gatt_microphone_control_mute_t mc_mute_state;
-static uint16_t mc_mute_state_client_configuration;
-static hci_con_handle_t mc_mute_state_client_configuration_connection;
+static gatt_microphone_control_mute_t mics_server_mute_state;
+static uint16_t mics_server_mute_state_client_configuration;
+static hci_con_handle_t mics_server_con_handle;
 
-static uint16_t mc_mute_state_handle;
-static uint16_t mc_mute_state_handle_client_configuration;
+static uint16_t mics_server_mute_state_handle;
+static uint16_t mics_server_mute_state_handle_client_configuration;
 
 static btstack_packet_handler_t mics_server_callback;
 
 static audio_input_control_service_server_t aics_services[AICS_MAX_NUM_SERVICES];
 static uint8_t aics_services_num;
 
-static void microphone_control_service_server_emit_mute(gatt_microphone_control_mute_t mute_state){
+static void mics_server_emit_mute(gatt_microphone_control_mute_t mute_state){
     btstack_assert(mics_server_callback != NULL);
     uint8_t event[6];
 
@@ -83,25 +83,25 @@ static void microphone_control_service_server_emit_mute(gatt_microphone_control_
 }
 
 
-static uint16_t microphone_control_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+static uint16_t mics_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 	UNUSED(con_handle);
 
-	if (attribute_handle == mc_mute_state_handle){
-		return att_read_callback_handle_byte((uint8_t)mc_mute_state, offset, buffer, buffer_size);
+	if (attribute_handle == mics_server_mute_state_handle){
+		return att_read_callback_handle_byte((uint8_t)mics_server_mute_state, offset, buffer, buffer_size);
 	}
-	if (attribute_handle == mc_mute_state_handle_client_configuration){
-		return att_read_callback_handle_little_endian_16(mc_mute_state_client_configuration, offset, buffer, buffer_size);
+	if (attribute_handle == mics_server_mute_state_handle_client_configuration){
+		return att_read_callback_handle_little_endian_16(mics_server_mute_state_client_configuration, offset, buffer, buffer_size);
 	}
 	return 0;
 }
 
-static int microphone_control_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+static int mics_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
 	UNUSED(transaction_mode);
 	UNUSED(offset);
 	UNUSED(buffer_size);
 
 
-	if (attribute_handle == mc_mute_state_handle){
+	if (attribute_handle == mics_server_mute_state_handle){
 		if (buffer_size != 1){
 			return ATT_ERROR_VALUE_NOT_ALLOWED;
 		} 
@@ -109,11 +109,11 @@ static int microphone_control_service_write_callback(hci_con_handle_t con_handle
 		switch (mute_state){
 			case GATT_MICROPHONE_CONTROL_MUTE_OFF:
 			case GATT_MICROPHONE_CONTROL_MUTE_ON:
-				if (mc_mute_state == GATT_MICROPHONE_CONTROL_MUTE_DISABLED){
+				if (mics_server_mute_state == GATT_MICROPHONE_CONTROL_MUTE_DISABLED){
 					return ATT_ERROR_RESPONSE_MICROPHONE_CONTROL_MUTE_DISABLED;
 				}
-				mc_mute_state_client_configuration_connection = con_handle;
-				microphone_control_service_server_emit_mute(mute_state);
+				mics_server_con_handle = con_handle;
+				mics_server_emit_mute(mute_state);
 				microphone_control_service_server_set_mute(mute_state);
 				break;
 			default:
@@ -121,28 +121,28 @@ static int microphone_control_service_write_callback(hci_con_handle_t con_handle
 		}
 	}
 
-	if (attribute_handle == mc_mute_state_handle_client_configuration){
+	if (attribute_handle == mics_server_mute_state_handle_client_configuration){
 		if (buffer_size != 2){
 			return ATT_ERROR_VALUE_NOT_ALLOWED;
 		} 
-		mc_mute_state_client_configuration = little_endian_read_16(buffer, 0);
-		mc_mute_state_client_configuration_connection = con_handle;
+		mics_server_mute_state_client_configuration = little_endian_read_16(buffer, 0);
+		mics_server_con_handle = con_handle;
 		// TODO store client in a list 
 	}
 	return 0;
 }
 
-static void microphone_control_service_can_send_now(void * context){
+static void mics_server_can_send_now(void * context){
 	hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) context;
-	uint8_t value = (uint8_t) mc_mute_state;
-	att_server_notify(con_handle, mc_mute_state_handle, &value, 1);
+	uint8_t value = (uint8_t) mics_server_mute_state;
+	att_server_notify(con_handle, mics_server_mute_state_handle, &value, 1);
 }
 
 void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_state, uint8_t aics_info_num, aics_info_t * aics_info){
 	btstack_assert(aics_info_num <= AICS_MAX_NUM_SERVICES);
 	btstack_assert((aics_info_num == 0)|| (aics_info != NULL));
 
-	mc_mute_state = mute_state;
+	mics_server_mute_state = mute_state;
 	// get service handle range
 	uint16_t start_handle = 0;
 	uint16_t end_handle   = 0xffff;
@@ -151,8 +151,8 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 	UNUSED(service_found);
 
 	// get characteristic value handle and client configuration handle
-	mc_mute_state_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MUTE);
-	mc_mute_state_handle_client_configuration = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MUTE);
+	mics_server_mute_state_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MUTE);
+	mics_server_mute_state_handle_client_configuration = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MUTE);
 
 	log_info("Found MICS service 0x%02x-0x%02x", start_handle, end_handle);
 
@@ -191,8 +191,8 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 	// register service with ATT Server
 	microphone_control.start_handle   = start_handle;
 	microphone_control.end_handle     = end_handle;
-	microphone_control.read_callback  = &microphone_control_service_read_callback;
-	microphone_control.write_callback = &microphone_control_service_write_callback;
+	microphone_control.read_callback  = &mics_server_read_callback;
+	microphone_control.write_callback = &mics_server_write_callback;
 	att_server_register_service_handler(&microphone_control);
 }
 
@@ -202,17 +202,17 @@ void microphone_control_service_server_register_packet_handler(btstack_packet_ha
 }
 
 void microphone_control_service_server_set_mute(gatt_microphone_control_mute_t mute_state){
-	if (mc_mute_state == mute_state){
+	if (mics_server_mute_state == mute_state){
 		return;
 	}
-	mc_mute_state = mute_state;
+	mics_server_mute_state = mute_state;
 	// TODO extend send to all clients that registered for notify,
     // Current: notification is sent to the last one that enabled notification
 	
-	if (mc_mute_state_client_configuration != 0){
-		mc_mute_callback.callback = &microphone_control_service_can_send_now;
-		mc_mute_callback.context  = (void*) (uintptr_t) mc_mute_state_client_configuration_connection;
-		att_server_register_can_send_now_callback(&mc_mute_callback, mc_mute_state_client_configuration_connection);
+	if (mics_server_mute_state_client_configuration != 0){
+		mics_server_mute_callback.callback = &mics_server_can_send_now;
+		mics_server_mute_callback.context  = (void*) (uintptr_t) mics_server_con_handle;
+		att_server_register_can_send_now_callback(&mics_server_mute_callback, mics_server_con_handle);
 	}
 }
 
