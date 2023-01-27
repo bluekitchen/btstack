@@ -16413,7 +16413,7 @@ static inline uint16_t gattservice_subevent_pacs_disconnected_get_pacs_cid(const
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_CONNECTED
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
@@ -16422,7 +16422,7 @@ static inline hci_con_handle_t gattservice_subevent_csis_coordinator_connected_g
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_CONNECTED
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED
  * @param event packet
  * @return status
  * @note: btstack_type 1
@@ -16432,7 +16432,7 @@ static inline uint8_t gattservice_subevent_csis_coordinator_connected_get_status
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_COORDINATED_SET_MEMBER_LOCK
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_SERVER_MEMBER_LOCK
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
@@ -16441,7 +16441,7 @@ static inline hci_con_handle_t gattservice_subevent_csis_coordinated_set_member_
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field lock from event GATTSERVICE_SUBEVENT_CSIS_COORDINATED_SET_MEMBER_LOCK
+ * @brief Get field lock from event GATTSERVICE_SUBEVENT_CSIS_SERVER_MEMBER_LOCK
  * @param event packet
  * @return lock
  * @note: btstack_type 1
@@ -16451,7 +16451,7 @@ static inline uint8_t gattservice_subevent_csis_coordinated_set_member_lock_get_
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_COORDINATED_SET_SIZE
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
@@ -16460,7 +16460,7 @@ static inline hci_con_handle_t gattservice_subevent_csis_coordinated_set_size_ge
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field set_size from event GATTSERVICE_SUBEVENT_CSIS_COORDINATED_SET_SIZE
+ * @brief Get field set_size from event GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE
  * @param event packet
  * @return set_size
  * @note: btstack_type 1
@@ -16480,7 +16480,7 @@ static inline void gattservice_subevent_csis_rsi_get_rsi(const uint8_t * event, 
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_DISCONNECTED
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_SERVER_DISCONNECTED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H

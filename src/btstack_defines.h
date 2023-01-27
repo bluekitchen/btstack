@@ -4902,7 +4902,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_CONNECTED                           0x58u
+#define GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED                           0x58u
 
 /**
  * @format 1H1
@@ -4910,7 +4910,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param lock
 */
-#define GATTSERVICE_SUBEVENT_CSIS_COORDINATED_SET_MEMBER_LOCK                      0x59u
+#define GATTSERVICE_SUBEVENT_CSIS_SERVER_MEMBER_LOCK                      0x59u
 
 /**
  * @format 1H1
@@ -4918,7 +4918,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param set_size
 */
-#define GATTSERVICE_SUBEVENT_CSIS_COORDINATED_SET_SIZE                             0x5Au
+#define GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE                             0x5Au
 
 /**
  * @format 1B
@@ -4932,7 +4932,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param con_handle
 */
-#define GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_DISCONNECTED                        0x5Fu
+#define GATTSERVICE_SUBEVENT_CSIS_SERVER_DISCONNECTED                        0x5Fu
 
 
 /**
