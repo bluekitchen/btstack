@@ -188,6 +188,14 @@ static inline uint8_t hci_event_mesh_meta_get_subevent_code(const uint8_t * even
 static inline uint8_t hci_event_pbap_meta_get_subevent_code(const uint8_t * event){
     return event[2];
 }
+/***
+ * @brief Get subevent code for opp event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_opp_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
 /**
  * @brief Get field status from event HCI_EVENT_INQUIRY_COMPLETE
  * @param event packet
@@ -12875,123 +12883,123 @@ static inline uint8_t gattservice_subevent_local_mics_mute_get_state(const uint8
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_MUTE_MODE
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_aics_mute_mode_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_aics_server_mute_mode_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_MUTE_MODE
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE
  * @param event packet
  * @return index
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_aics_mute_mode_get_index(const uint8_t * event){
+static inline uint8_t gattservice_subevent_aics_server_mute_mode_get_index(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field state from event GATTSERVICE_SUBEVENT_AICS_MUTE_MODE
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE
  * @param event packet
  * @return state
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_aics_mute_mode_get_state(const uint8_t * event){
+static inline uint8_t gattservice_subevent_aics_server_mute_mode_get_state(const uint8_t * event){
     return event[6];
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_GAIN_MODE
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_aics_gain_mode_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_aics_server_gain_mode_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_GAIN_MODE
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE
  * @param event packet
  * @return index
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_aics_gain_mode_get_index(const uint8_t * event){
+static inline uint8_t gattservice_subevent_aics_server_gain_mode_get_index(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field state from event GATTSERVICE_SUBEVENT_AICS_GAIN_MODE
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE
  * @param event packet
  * @return state
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_aics_gain_mode_get_state(const uint8_t * event){
+static inline uint8_t gattservice_subevent_aics_server_gain_mode_get_state(const uint8_t * event){
     return event[6];
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_aics_gain_changed_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_aics_server_gain_changed_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED
  * @param event packet
  * @return index
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_aics_gain_changed_get_index(const uint8_t * event){
+static inline uint8_t gattservice_subevent_aics_server_gain_changed_get_index(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field gain_db from event GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED
+ * @brief Get field gain_db from event GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED
  * @param event packet
  * @return gain_db
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_aics_gain_changed_get_gain_db(const uint8_t * event){
+static inline uint8_t gattservice_subevent_aics_server_gain_changed_get_gain_db(const uint8_t * event){
     return event[6];
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_AUDIO_INPUT_DESC_CHANGED
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_aics_audio_input_desc_changed_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_aics_server_audio_input_desc_changed_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_AUDIO_INPUT_DESC_CHANGED
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
  * @param event packet
  * @return index
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_aics_audio_input_desc_changed_get_index(const uint8_t * event){
+static inline uint8_t gattservice_subevent_aics_server_audio_input_desc_changed_get_index(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field description_len from event GATTSERVICE_SUBEVENT_AICS_AUDIO_INPUT_DESC_CHANGED
+ * @brief Get field description_len from event GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
  * @param event packet
  * @return description_len
  * @note: btstack_type J
  */
-static inline uint8_t gattservice_subevent_aics_audio_input_desc_changed_get_description_len(const uint8_t * event){
+static inline uint8_t gattservice_subevent_aics_server_audio_input_desc_changed_get_description_len(const uint8_t * event){
     return event[6];
 }
 /**
- * @brief Get field description from event GATTSERVICE_SUBEVENT_AICS_AUDIO_INPUT_DESC_CHANGED
+ * @brief Get field description from event GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
  * @param event packet
  * @return description
  * @note: btstack_type V
  */
-static inline const uint8_t * gattservice_subevent_aics_audio_input_desc_changed_get_description(const uint8_t * event){
+static inline const uint8_t * gattservice_subevent_aics_server_audio_input_desc_changed_get_description(const uint8_t * event){
     return &event[7];
 }
 
@@ -14812,6 +14820,35 @@ static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_frame_bl
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_pacs_disconnected_get_pacs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_aics_server_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_AICS_SERVER_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_aics_server_connected_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_DISCONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_aics_server_disconnected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 

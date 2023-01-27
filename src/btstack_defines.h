@@ -4065,7 +4065,7 @@ typedef uint8_t sm_key_t[16];
  * @param index
  * @param state
 */
-#define GATTSERVICE_SUBEVENT_AICS_MUTE_MODE                                 0x1Cu
+#define GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE                                 0x1Cu
 
 /**
  * @format 1H11
@@ -4074,7 +4074,7 @@ typedef uint8_t sm_key_t[16];
  * @param index
  * @param state
 */
-#define GATTSERVICE_SUBEVENT_AICS_GAIN_MODE                                 0x1Du
+#define GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE                                 0x1Du
 
 /**
  * @format 1H11
@@ -4083,7 +4083,7 @@ typedef uint8_t sm_key_t[16];
  * @param index
  * @param gain_db
 */
-#define GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED                              0x1Eu
+#define GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED                              0x1Eu
 
 /**
  * @format 1H1JV
@@ -4093,7 +4093,7 @@ typedef uint8_t sm_key_t[16];
  * @param description_len
  * @param description 
 */
-#define GATTSERVICE_SUBEVENT_AICS_AUDIO_INPUT_DESC_CHANGED                   0x20u
+#define GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED                   0x20u
 
 /**
  * @format 1H12
@@ -4522,6 +4522,21 @@ typedef uint8_t sm_key_t[16];
  * @param pacs_cid
 */
 #define GATTSERVICE_SUBEVENT_PACS_DISCONNECTED                                    0x5Au
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_AICS_SERVER_CONNECTED                              0x68u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define GATTSERVICE_SUBEVENT_AICS_SERVER_DISCONNECTED                           0x69u
 
 // MAP Meta Event Group
 
