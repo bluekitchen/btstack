@@ -103,6 +103,10 @@ extern "C" {
 #define BTP_GAP_SETTING_PRIVACY                 0x00002000
 #define BTP_GAP_SETTING_CONTROLLER_CONF         0x00004000
 #define BTP_GAP_SETTING_STATIC_ADDRESS          0x00008000
+#define BTP_GAP_SETTING_STATIC_ADDRESS          0x00008000
+#define BTP_GAP_SETTING_STATIC_ADDRESS          0x00008000
+#define BTP_GAP_SETTINGS_SC_ONLY                0x00010000L
+#define BTP_GAP_SETTINGS_EXTENDED_ADVERTISING   0x00020000L
 
 #define BTP_GAP_OP_READ_CONTROLLER_INFO         0x03
 #define BTP_GAP_OP_RESET                        0x04
@@ -207,6 +211,11 @@ extern "C" {
 #define BTP_GATT_OP_CFG_INDICATE                0x1b
 #define BTP_GATT_OP_GET_ATTRIBUTES              0x1c
 #define BTP_GATT_OP_GET_ATTRIBUTE_VALUE         0x1d
+#define BTP_GAP_SET_SC_ONLY                     0x1e
+#define BTP_GAP_SET_SC                          0x1f
+#define BTP_GAP_SET_MIN_ENC_KEY_SIZE            0x20
+#define BTP_GAP_SET_EXTENDED_ADVERTISING        0x21
+
 
 #define BTP_GATT_EV_NOTIFICATION                0x80
 #define BTP_GATT_EV_ATTR_VALUE_CHANGED          0x81
