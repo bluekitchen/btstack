@@ -74,12 +74,16 @@ typedef struct {
 
     csis_sirk_calculation_state_t  encrypted_sirk_state;
     uint8_t encrypted_sirk[16];
-} coordinated_set_identification_service_server_t;
+} csis_server_connection_t;
 
 /**
  * @brief Init Coordinated Set Identification Service Server with ATT DB
+ * @param coordinators_num
+ * @param coordinators
+ * @param coordinated_set_size
+ * @param member_rank
  */
-void coordinated_set_identification_service_server_init(const uint8_t coordinators_num, coordinated_set_identification_service_server_t * coordinators,
+void coordinated_set_identification_service_server_init(const uint8_t coordinators_num, csis_server_connection_t * coordinators,
                                                         uint8_t coordinated_set_size, uint8_t member_rank);
 
 /**
