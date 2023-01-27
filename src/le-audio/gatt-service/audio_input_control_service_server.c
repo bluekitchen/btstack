@@ -123,67 +123,76 @@ static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribu
     return 0;
 }
 
-static void aics_emit_mute_mode(audio_input_control_service_server_t * aics){
-    btstack_assert(aics->info->packet_handler != NULL);
+
+static void aics_server_emit_mute_mode(audio_input_control_service_server_t * connection){
+    btstack_assert(connection != NULL);
+    btstack_assert(connection->info != NULL);
+    btstack_assert(connection->info->packet_handler != NULL);
     
     uint8_t event[7];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE;
-    little_endian_store_16(event, pos, aics->con_handle);
+    little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
-    event[pos++] = aics->index;
-    event[pos++] = (uint8_t)aics->info->audio_input_state.mute_mode;
-    (*aics->info->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    event[pos++] = connection->index;
+    event[pos++] = (uint8_t)connection->info->audio_input_state.mute_mode;
+    (*connection->info->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void aics_emit_gain_mode(audio_input_control_service_server_t * aics){
-    btstack_assert(aics->info->packet_handler != NULL);
+static void aics_server_emit_gain_mode(audio_input_control_service_server_t * connection){
+    btstack_assert(connection != NULL);
+    btstack_assert(connection->info != NULL);
+    btstack_assert(connection->info->packet_handler != NULL);
     
     uint8_t event[7];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE;
-    little_endian_store_16(event, pos, aics->con_handle);
+    little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
-    event[pos++] = aics->index;
-    event[pos++] = (uint8_t)aics->info->audio_input_state.gain_mode;
-    (*aics->info->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    event[pos++] = connection->index;
+    event[pos++] = (uint8_t)connection->info->audio_input_state.gain_mode;
+    (*connection->info->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void aics_emit_gain(audio_input_control_service_server_t * aics){
-    btstack_assert(aics->info->packet_handler != NULL);
+static void aics_server_emit_gain(audio_input_control_service_server_t * connection){
+    btstack_assert(connection != NULL);
+    btstack_assert(connection->info != NULL);
+    btstack_assert(connection->info->packet_handler != NULL);
     
     uint8_t event[7];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED;
-    little_endian_store_16(event, pos, aics->con_handle);
+    little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
-    event[pos++] = aics->index;
-    event[pos++] = (uint8_t)aics->info->audio_input_state.gain_setting_db;
-    (*aics->info->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    event[pos++] = connection->index;
+    event[pos++] = (uint8_t)connection->info->audio_input_state.gain_setting_db;
+    (*connection->info->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void aics_emit_audio_input_description(audio_input_control_service_server_t * aics){
-    btstack_assert(aics->info->packet_handler != NULL);
+static void aics_emit_audio_input_description(audio_input_control_service_server_t * connection){
+    btstack_assert(connection != NULL);
+    btstack_assert(connection->info != NULL);
+    btstack_assert(connection->info->packet_handler != NULL);
     
     uint8_t event[7 + AICS_MAX_AUDIO_INPUT_DESCRIPTION_LENGTH];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED;
-    little_endian_store_16(event, pos, aics->con_handle);
+    little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
-    event[pos++] = aics->index;
-    event[pos++] = aics->audio_input_description_len;
-    memcpy(&event[pos], (uint8_t *)aics->info->audio_input_description, aics->audio_input_description_len + 1);
-    pos += aics->audio_input_description_len;
+    event[pos++] = connection->index;
+    event[pos++] = connection->audio_input_description_len;
+    memcpy(&event[pos], (uint8_t *)connection->info->audio_input_description, connection->audio_input_description_len + 1);
+    pos += connection->audio_input_description_len;
     event[pos++] = 0;
-    (*aics->info->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->info->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static bool audio_input_control_service_server_set_gain(audio_input_control_service_server_t * aics, int8_t gain_db){
@@ -293,7 +302,7 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 switch (aics->info->audio_input_state.gain_mode){
                     case AICS_GAIN_MODE_MANUAL_ONLY:
                     case AICS_GAIN_MODE_MANUAL:
-                        aics_emit_gain(aics);
+                        aics_server_emit_gain(aics);
                         break;
                     default:
                         break;
@@ -303,11 +312,11 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
             case AICS_OPCODE_UMUTE:
                 switch (aics->info->audio_input_state.mute_mode){
                     case AICS_MUTE_MODE_DISABLED:
-                        aics_emit_mute_mode(aics);
+                        aics_server_emit_mute_mode(aics);
                         return AICS_ERROR_CODE_MUTE_DISABLED;
                     case AICS_MUTE_MODE_MUTED:
                         aics->info->audio_input_state.mute_mode = AICS_MUTE_MODE_NOT_MUTED;
-                        aics_emit_mute_mode(aics);
+                        aics_server_emit_mute_mode(aics);
                         break;
                     default:
                         break;
@@ -317,11 +326,11 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
             case AICS_OPCODE_MUTE:
                 switch (aics->info->audio_input_state.mute_mode){
                     case AICS_MUTE_MODE_DISABLED:
-                        aics_emit_mute_mode(aics);
+                        aics_server_emit_mute_mode(aics);
                         return AICS_ERROR_CODE_MUTE_DISABLED;
                     case AICS_MUTE_MODE_NOT_MUTED:
                         aics->info->audio_input_state.mute_mode = AICS_MUTE_MODE_MUTED;
-                        aics_emit_mute_mode(aics);
+                        aics_server_emit_mute_mode(aics);
                         break;
                     default:
                         break;
@@ -332,7 +341,7 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 switch (aics->info->audio_input_state.gain_mode){
                     case AICS_GAIN_MODE_AUTOMATIC:
                         aics->info->audio_input_state.gain_mode = AICS_GAIN_MODE_MANUAL;
-                        aics_emit_gain_mode(aics);
+                        aics_server_emit_gain_mode(aics);
                         break;
                     default:
                         return AICS_ERROR_CODE_GAIN_MODE_CHANGE_NOT_ALLOWED;
@@ -343,7 +352,7 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 switch (aics->info->audio_input_state.gain_mode){
                     case AICS_GAIN_MODE_MANUAL:
                         aics->info->audio_input_state.gain_mode = AICS_GAIN_MODE_AUTOMATIC;
-                        aics_emit_gain_mode(aics);
+                        aics_server_emit_gain_mode(aics);
                         break;
                     default:
                         return AICS_ERROR_CODE_GAIN_MODE_CHANGE_NOT_ALLOWED;
