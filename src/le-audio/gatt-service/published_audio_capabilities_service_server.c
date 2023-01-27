@@ -191,8 +191,8 @@ static uint8_t pacs_server_codec_capability_virtual_memcpy_capabilities(const pa
                     break;
                 case LE_AUDIO_CODEC_CAPABILITY_TYPE_OCTETS_PER_CODEC_FRAME:
                     field_data[0] = 5;
-                    little_endian_store_16(field_data, 2, codec_capability->octets_per_frame_max_num);
-                    little_endian_store_16(field_data, 4, codec_capability->octets_per_frame_min_num);
+                    little_endian_store_16(field_data, 2, codec_capability->octets_per_frame_min_num);
+                    little_endian_store_16(field_data, 4, codec_capability->octets_per_frame_max_num);
                     break;
                 case LE_AUDIO_CODEC_CAPABILITY_TYPE_CODEC_FRAME_BLOCKS_PER_SDU:
                     field_data[0] = 2;
