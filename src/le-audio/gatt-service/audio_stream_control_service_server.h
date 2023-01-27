@@ -75,7 +75,7 @@ typedef struct {
     ascs_opcode_t response_opcode;
     uint8_t       response_ases_num;
     ascs_control_point_operation_response_t response[ASCS_STREAMENDPOINTS_MAX_NUM];
-} audio_stream_control_service_server_t;
+} ascs_server_connection_t;
 
 
 /**
@@ -83,7 +83,7 @@ typedef struct {
  */
 void audio_stream_control_service_server_init(
         const uint8_t streamendpoint_characteristics_num, ascs_streamendpoint_characteristic_t * streamendpoint_characteristics,
-        const uint8_t clients_num, audio_stream_control_service_server_t * clients);
+        const uint8_t clients_num, ascs_server_connection_t * clients);
 
 /**
  * @brief Register packet handler to receive events:
