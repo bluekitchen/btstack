@@ -145,9 +145,10 @@ typedef struct {
 
 /**
  * @brief Init media Control Service Server with ATT DB
- * @param mute_state
  */
-void media_control_service_server_init(btstack_packet_handler_t callback);
+void media_control_service_server_init(void);
+
+void media_control_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
 uint8_t media_control_service_server_register_media_player(media_control_service_server_t * media_player, uint16_t * media_player_id);
 
