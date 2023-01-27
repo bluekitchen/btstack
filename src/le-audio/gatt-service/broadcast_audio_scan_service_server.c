@@ -169,27 +169,27 @@ static void bass_register_con_handle(hci_con_handle_t con_handle, uint16_t clien
     client->con_handle = (client_configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
 }
 
-static void bass_emit_remote_scan_stoped(hci_con_handle_t con_handle){
+static void bass_emit_scan_stoped(hci_con_handle_t con_handle){
     btstack_assert(bass_event_callback != NULL);
     
     uint8_t event[5];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_REMOTE_SCAN_STOPPED;
+    event[pos++] = GATTSERVICE_SUBEVENT_BASS_SERVER_SCAN_STOPPED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     (*bass_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void bass_emit_remote_scan_started(hci_con_handle_t con_handle){
+static void bass_emit_scan_started(hci_con_handle_t con_handle){
     btstack_assert(bass_event_callback != NULL);
     
     uint8_t event[5];
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_REMOTE_SCAN_STARTED;
+    event[pos++] = GATTSERVICE_SUBEVENT_BASS_SERVER_SCAN_STARTED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     (*bass_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -212,15 +212,15 @@ static void bass_emit_source_state_changed(uint8_t subevent_id, hci_con_handle_t
 }
 
 static void bass_emit_source_added(hci_con_handle_t con_handle, bass_server_source_t * source){
-    bass_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED, con_handle, source->source_id, source->data.pa_sync);
+    bass_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_ADDED, con_handle, source->source_id, source->data.pa_sync);
 }
 
 static void bass_emit_source_modified(hci_con_handle_t con_handle, bass_server_source_t * source){
-    bass_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED, con_handle, source->source_id, source->data.pa_sync);
+    bass_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED, con_handle, source->source_id, source->data.pa_sync);
 }
 
 static void bass_emit_source_deleted(hci_con_handle_t con_handle, bass_server_source_t * source){
-    bass_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SOURCE_DELETED, con_handle, source->source_id, LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA);
+    bass_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED, con_handle, source->source_id, LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA);
 }
 
 static void bass_emit_broadcast_code(hci_con_handle_t con_handle, uint8_t source_id, const uint8_t * broadcast_code){
@@ -230,7 +230,7 @@ static void bass_emit_broadcast_code(hci_con_handle_t con_handle, uint8_t source
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_BROADCAST_CODE;
+    event[pos++] = GATTSERVICE_SUBEVENT_BASS_SERVER_BROADCAST_CODE;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = source_id;
@@ -423,14 +423,14 @@ static int broadcast_audio_scan_service_write_callback(hci_con_handle_t con_hand
                 if (remote_data_size != 1){
                     return ATT_ERROR_WRITE_REQUEST_REJECTED;
                 }
-                bass_emit_remote_scan_stoped(con_handle);
+                bass_emit_scan_stoped(con_handle);
                 break;
 
             case BASS_OPCODE_REMOTE_SCAN_STARTED:
                 if (remote_data_size != 1){
                     return ATT_ERROR_WRITE_REQUEST_REJECTED;
                 }
-                bass_emit_remote_scan_started(con_handle);
+                bass_emit_scan_started(con_handle);
                 break;
 
             case BASS_OPCODE_ADD_SOURCE:
