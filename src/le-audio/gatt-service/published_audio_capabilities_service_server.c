@@ -147,7 +147,7 @@ static void pacs_emit_audio_locations_received(hci_con_handle_t con_handle, uint
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATION_RECEIVED;
+    event[pos++] = GATTSERVICE_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     little_endian_store_32(event, pos, audio_locations);
@@ -587,9 +587,9 @@ void published_audio_capabilities_service_server_init(pacs_streamendpoint_t * si
     att_server_register_service_handler(&published_audio_capabilities_service);
 }
 
-void published_audio_capabilities_service_server_register_packet_handler(btstack_packet_handler_t callback){
-    btstack_assert(callback != NULL);
-    pacs_event_callback = callback;
+void published_audio_capabilities_service_server_register_packet_handler(btstack_packet_handler_t packet_handler){
+    btstack_assert(packet_handler != NULL);
+    pacs_event_callback = packet_handler;
 }
 
 

@@ -69,10 +69,12 @@ extern "C" {
 void published_audio_capabilities_service_server_init(pacs_streamendpoint_t * sink_endpoint, pacs_streamendpoint_t * source_endpoint);
 
 /**
- * @brief Register callback.
- * @param callback
+ * @brief Register packet handler to receive events:
+ * - GATTSERVICE_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS
+ * -
+ * @param packet_handler
  */
-void published_audio_capabilities_service_server_register_packet_handler(btstack_packet_handler_t callback);
+void published_audio_capabilities_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
 /**
  * @brief Trigger notification of Sink PAC record values.
