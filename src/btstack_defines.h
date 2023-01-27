@@ -4039,7 +4039,7 @@ typedef uint8_t sm_key_t[16];
  * @param hids_cid
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_MICS_CONNECTED                               0x19u
+#define GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED                               0x19u
 
 /**
  * @format 1211
@@ -4048,7 +4048,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param state
 */
-#define GATTSERVICE_SUBEVENT_REMOTE_MICS_MUTE                              0x1Au
+#define GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE                              0x1Au
 
 /**
  * @format 1H1
@@ -4056,7 +4056,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param state
 */
-#define GATTSERVICE_SUBEVENT_MICS_SERVER_LOCAL_MUTE                                0x1Bu
+#define GATTSERVICE_SUBEVENT_MICS_SERVER_MUTE                                0x1Bu
 
 /**
  * @format 1H11
