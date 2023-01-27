@@ -68,7 +68,8 @@ extern "C" {
 void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_state, uint8_t aics_info_num, aics_info_t * aics_info);
 
 /**
- * @brief Register callback to receive updates of mute value from remote side via MICS_MUTE event
+ * @brief Register packet_handle to receive updates of mute value from remote side via event:
+ * - GATTSERVICE_SUBEVENT_MICS_SERVER_MUTE
  * @param callback
  */
 void microphone_control_service_server_register_packet_handler(btstack_packet_handler_t callback);
