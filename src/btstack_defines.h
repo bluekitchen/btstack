@@ -4714,7 +4714,7 @@ typedef uint8_t sm_key_t[16];
  * @param pacs_cid
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_PACS_CONNECTED                                      0x50u
+#define GATTSERVICE_SUBEVENT_PACS_CLIENT_CONNECTED                                      0x50u
 
 /**
  * @format 121
@@ -4722,7 +4722,7 @@ typedef uint8_t sm_key_t[16];
  * @param pacs_cid
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_PACS_OPERATION_DONE                                 0x51u
+#define GATTSERVICE_SUBEVENT_PACS_CLIENT_OPERATION_DONE                                 0x51u
 
 /**
  * @format 12114
@@ -4730,9 +4730,9 @@ typedef uint8_t sm_key_t[16];
  * @param pacs_cid
  * @param status
  * @param le_audio_role
- * @param audio_location_mask
+ * @param audio_locations_mask
 */
-#define GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATIONS                               0x52u
+#define GATTSERVICE_SUBEVENT_PACS_CLIENT_AUDIO_LOCATIONS                               0x52u
 
 /**
  * @format 12122
@@ -4742,7 +4742,7 @@ typedef uint8_t sm_key_t[16];
  * @param sink_mask
  * @param source_mask
 */
-#define GATTSERVICE_SUBEVENT_PACS_AVAILABLE_AUDIO_CONTEXTS                       0x53u
+#define GATTSERVICE_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS                       0x53u
 
 /**
  * @format 12122
@@ -4752,7 +4752,7 @@ typedef uint8_t sm_key_t[16];
  * @param sink_mask
  * @param source_mask
 */
-#define GATTSERVICE_SUBEVENT_PACS_SUPPORTED_AUDIO_CONTEXTS                       0x54u
+#define GATTSERVICE_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS                       0x54u
 
 /**
  * @format 1211221211221222JV3JV1JV2JV2JV
@@ -4787,8 +4787,7 @@ typedef uint8_t sm_key_t[16];
  * @param vendor_specific_metadata_value_length
  * @param vendor_specific_metadata_value
 */
-
-#define GATTSERVICE_SUBEVENT_PACS_PACK_RECORD                                    0x55u
+#define GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD                                    0x55u
 
 /**
  * @format 121
@@ -4796,15 +4795,14 @@ typedef uint8_t sm_key_t[16];
  * @param pacs_cid
  * @param le_audio_role
 */
-#define GATTSERVICE_SUBEVENT_PACS_PACK_RECORD_DONE                               0x56u
-
+#define GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE                               0x56u
 
 /**
  * @format 12
  * @param subevent_code
  * @param pacs_cid
 */
-#define GATTSERVICE_SUBEVENT_PACS_DISCONNECTED                                    0x57u
+#define GATTSERVICE_SUBEVENT_PACS_CLIENT_DISCONNECTED                                    0x57u
 
 
 // used by server
@@ -4879,7 +4877,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param lock
 */
-#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_REMOTE_LOCK                                     0x63u
+#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK                                     0x63u
 
 /**
  * @format 1211
