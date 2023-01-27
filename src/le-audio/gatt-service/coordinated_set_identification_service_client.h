@@ -113,13 +113,13 @@ typedef struct {
 
 /**
  * @brief Init Coordinated Set Identification Service (CSIS) Client and register packet handler to receive events:
- * - GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_CONNECTED
- * - GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_DISCONNECTED
- * - GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE
- * - GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK
- * - GATTSERVICE_SUBEVENT_CSIS_REMOTE_COORDINATED_SET_SIZE
- * - GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK
- * - GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK
+ * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED
+ * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_DISCONNECTED
+ * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE
+ * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_REMOTE_LOCK
+ * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE
+ * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK
+ * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK
  * - GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
  *              
  * @param packet_handler
@@ -137,7 +137,7 @@ void coordinated_set_identification_service_client_init(btstack_packet_handler_t
 uint8_t coordinated_set_identification_service_client_connect(csis_client_connection_t * connection, hci_con_handle_t con_handle, uint16_t * csis_cid);
 
 /**
- * @brief Read SIRK from remote CSIS server. The SIRK value is reported via the GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK event. 
+ * @brief Read SIRK from remote CSIS server. The SIRK value is reported via the GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK event.
  * @param  ascs_cid
  * @return ERROR_CODE_SUCCESS if successful, otherwise
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
@@ -147,7 +147,7 @@ uint8_t coordinated_set_identification_service_client_connect(csis_client_connec
 uint8_t coordinated_set_identification_service_client_read_sirk(uint16_t ascs_cid);
 
 /**
- * @brief Read lock from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK event. 
+ * @brief Read lock from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_CLIENT_REMOTE_LOCK event.
  * @param  ascs_cid
  * @return ERROR_CODE_SUCCESS if succesful, otherwise
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
@@ -167,7 +167,7 @@ uint8_t coordinated_set_identification_service_client_read_member_lock(uint16_t 
 uint8_t coordinated_set_identification_service_client_write_member_lock(uint16_t ascs_cid, csis_member_lock_t lock);
 
 /**
- * @brief Read coordinated set size from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_REMOTE_COORDINATED_SET_SIZE event. 
+ * @brief Read coordinated set size from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE event.
  * @param  ascs_cid
  * @return ERROR_CODE_SUCCESS if succesful, otherwise
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
@@ -177,7 +177,7 @@ uint8_t coordinated_set_identification_service_client_write_member_lock(uint16_t
 uint8_t coordinated_set_identification_service_client_read_coordinated_set_size(uint16_t ascs_cid);
 
 /**
- * @brief Read coordinator rank from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK event. 
+ * @brief Read coordinator rank from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK event.
  * @param  ascs_cid
  * @return ERROR_CODE_SUCCESS if succesful, otherwise
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
