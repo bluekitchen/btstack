@@ -187,7 +187,7 @@ static void vocs_emit_volume_offset(volume_offset_control_service_server_t * voc
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_VOLUME_OFFSET;
+    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET;
     little_endian_store_16(event, pos, vocs->con_handle);
     pos += 2;
     event[pos++] = vocs->index;
@@ -203,7 +203,7 @@ static void vocs_emit_audio_location(volume_offset_control_service_server_t * vo
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_AUDIO_LOCATION;
+    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION;
     little_endian_store_16(event, pos, vocs->con_handle);
     pos += 2;
     event[pos++] = vocs->index;
@@ -219,7 +219,7 @@ static void vocs_emit_audio_output_description(volume_offset_control_service_ser
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_AUDIO_OUTPUT_DESC_CHANGED;
+    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION;
     little_endian_store_16(event, pos, vocs->con_handle);
     pos += 2;
     event[pos++] = vocs->index;
