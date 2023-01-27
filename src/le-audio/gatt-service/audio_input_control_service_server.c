@@ -57,7 +57,7 @@
 
 static btstack_linked_list_t aics_services;
 
-static audio_input_control_service_server_t * aics_find_service_for_attribute_handle(uint16_t attribute_handle){
+static audio_input_control_service_server_t * aics_server_find_service_for_attribute_handle(uint16_t attribute_handle){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &aics_services);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -69,9 +69,9 @@ static audio_input_control_service_server_t * aics_find_service_for_attribute_ha
     return NULL;
 }
 
-static uint16_t aics_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+static uint16_t aics_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
-    audio_input_control_service_server_t * client = aics_find_service_for_attribute_handle(attribute_handle);
+    audio_input_control_service_server_t * client = aics_server_find_service_for_attribute_handle(attribute_handle);
     if (client == NULL){
         return 0;
     }
@@ -175,7 +175,7 @@ static void aics_server_emit_gain(audio_input_control_service_server_t * connect
     (*connection->info->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void aics_emit_audio_input_description(audio_input_control_service_server_t * connection){
+static void aics_server_emit_audio_input_description(audio_input_control_service_server_t * connection){
     btstack_assert(connection != NULL);
     btstack_assert(connection->info != NULL);
     btstack_assert(connection->info->packet_handler != NULL);
@@ -195,7 +195,7 @@ static void aics_emit_audio_input_description(audio_input_control_service_server
     (*connection->info->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static bool audio_input_control_service_server_set_gain(audio_input_control_service_server_t * aics, int8_t gain_db){
+static bool aics_server_set_gain(audio_input_control_service_server_t * aics, int8_t gain_db){
     if (gain_db < aics->info->gain_settings_properties.gain_settings_minimum) return false;
     if (gain_db > aics->info->gain_settings_properties.gain_settings_maximum) return false;
 
@@ -203,11 +203,11 @@ static bool audio_input_control_service_server_set_gain(audio_input_control_serv
     return true;
 }
 
-static void audio_input_control_service_update_change_counter(audio_input_control_service_server_t * aics){
+static void aics_server_update_change_counter(audio_input_control_service_server_t * aics){
     aics->audio_input_state_change_counter++;
 }
 
-static void audio_input_control_service_can_send_now(void * context){
+static void aics_server_can_send_now(void * context){
     audio_input_control_service_server_t * aics = (audio_input_control_service_server_t *) context;
 
     if ((aics->scheduled_tasks & AICS_TASK_SEND_AUDIO_INPUT_STATE) != 0){
@@ -245,7 +245,7 @@ static void audio_input_control_service_can_send_now(void * context){
     }
 }
 
-static void audio_input_control_service_server_set_callback(audio_input_control_service_server_t * aics, uint8_t task){
+static void aics_server_set_callback(audio_input_control_service_server_t * aics, uint8_t task){
     if (aics->con_handle == HCI_CON_HANDLE_INVALID){
         aics->scheduled_tasks &= ~task;
         return;
@@ -254,7 +254,7 @@ static void audio_input_control_service_server_set_callback(audio_input_control_
     uint8_t scheduled_tasks = aics->scheduled_tasks;
     aics->scheduled_tasks |= task;
     if (scheduled_tasks == 0){
-        aics->scheduled_tasks_callback.callback = &audio_input_control_service_can_send_now;
+        aics->scheduled_tasks_callback.callback = &aics_server_can_send_now;
         aics->scheduled_tasks_callback.context  = (void*) aics;
         att_server_register_can_send_now_callback(&aics->scheduled_tasks_callback, aics->con_handle);
     }
@@ -264,12 +264,12 @@ static void aics_server_set_con_handle(audio_input_control_service_server_t * ai
     aics->con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
 }
 
-static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+static int aics_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(con_handle);
     UNUSED(transaction_mode);
     UNUSED(offset);
     
-    audio_input_control_service_server_t * client = aics_find_service_for_attribute_handle(attribute_handle);
+    audio_input_control_service_server_t * client = aics_server_find_service_for_attribute_handle(attribute_handle);
     if (client == NULL){
         return 0;
     }
@@ -295,7 +295,7 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                     return AICS_ERROR_CODE_VALUE_OUT_OF_RANGE;
                 }
                 
-                if (!audio_input_control_service_server_set_gain(client, (int8_t)buffer[2])) {
+                if (!aics_server_set_gain(client, (int8_t)buffer[2])) {
                     return AICS_ERROR_CODE_VALUE_OUT_OF_RANGE;
                 }
 
@@ -363,15 +363,15 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                 return AICS_ERROR_CODE_OPCODE_NOT_SUPPORTED;
         }
 
-        audio_input_control_service_update_change_counter(client);
-        audio_input_control_service_server_set_callback(client, AICS_TASK_SEND_AUDIO_INPUT_STATE);
+        aics_server_update_change_counter(client);
+        aics_server_set_callback(client, AICS_TASK_SEND_AUDIO_INPUT_STATE);
     }
 
     if (attribute_handle == client->audio_input_description_value_handle){
         btstack_strcpy(client->info->audio_input_description, AICS_MAX_AUDIO_INPUT_DESCRIPTION_LENGTH, (char *)buffer);
         client->audio_input_description_len = (uint8_t) strlen(client->info->audio_input_description);
-        aics_emit_audio_input_description(client);
-        audio_input_control_service_server_set_callback(client, AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION);
+        aics_server_emit_audio_input_description(client);
+        aics_server_set_callback(client, AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION);
     }
 
     if (attribute_handle == client->audio_input_state_client_configuration_handle){
@@ -392,7 +392,7 @@ static int aics_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
     return 0;
 }
 
-static void aics_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void aics_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(packet);
     UNUSED(size);
@@ -463,39 +463,39 @@ void audio_input_control_service_server_init(audio_input_control_service_server_
     // register service with ATT Server
     aics->service_handler.start_handle   = aics->start_handle;
     aics->service_handler.end_handle     = aics->end_handle;
-    aics->service_handler.read_callback  = &aics_read_callback;
-    aics->service_handler.write_callback = &aics_write_callback;
-    aics->service_handler.packet_handler = aics_packet_handler;
+    aics->service_handler.read_callback  = &aics_server_read_callback;
+    aics->service_handler.write_callback = &aics_server_write_callback;
+    aics->service_handler.packet_handler = aics_server_packet_handler;
     att_server_register_service_handler(&aics->service_handler);
 }
 
 uint8_t audio_input_control_service_server_set_audio_input_state(audio_input_control_service_server_t * aics, aics_audio_input_state_t * audio_input_state){
     btstack_assert(aics != NULL);
     
-    bool valid_range = audio_input_control_service_server_set_gain(aics, audio_input_state->gain_setting_db);
+    bool valid_range = aics_server_set_gain(aics, audio_input_state->gain_setting_db);
     if (!valid_range){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
     aics->info->audio_input_state.mute_mode = audio_input_state->mute_mode;
     aics->info->audio_input_state.gain_mode = audio_input_state->gain_mode;
-    audio_input_control_service_update_change_counter(aics);
+    aics_server_update_change_counter(aics);
 
-    audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_STATE);
+    aics_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_STATE);
     return ERROR_CODE_SUCCESS;
 }
 
 void audio_input_control_service_server_set_audio_input_status(audio_input_control_service_server_t * aics, aics_audio_input_status_t audio_input_status){
     btstack_assert(aics != NULL);
     aics->audio_input_status = audio_input_status;
-    audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_STATUS);
+    aics_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_STATUS);
 }
 
 void audio_input_control_service_server_set_audio_input_description(audio_input_control_service_server_t * aics, const char * audio_input_desc){
     btstack_assert(aics != NULL);
     btstack_strcpy(aics->info->audio_input_description, AICS_MAX_AUDIO_INPUT_DESCRIPTION_LENGTH, (char *)audio_input_desc);
     aics->audio_input_description_len = (uint8_t) strlen(aics->info->audio_input_description);
-    audio_input_control_service_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION);
+    aics_server_set_callback(aics, AICS_TASK_SEND_AUDIO_INPUT_DESCRIPTION);
 }
 
 
