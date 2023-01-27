@@ -296,7 +296,7 @@ static uint8_t ase_id = 0;
 #define ASCS_NUM_CLIENTS 3
 
 static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
-static audio_stream_control_service_server_t ascs_clients[ASCS_NUM_CLIENTS];
+static ascs_server_connection_t ascs_clients[ASCS_NUM_CLIENTS];
 
 // MCS
 static uint16_t media_player_id1 = 0;
