@@ -79,22 +79,22 @@ const static uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
 static uint8_t key_ltk[16];
 
 static uint8_t                        remote_sirk[16];
-static csis_client_connection_t *     active_connection;
+static csis_client_connection_t *     csis_client_active_connection;
 static void csis_client_trigger_next_sirk_calculation(void);
 
 // RSI Calculation
-static bool csis_rsi_calculation_ongoing;
+static bool csis_client_rsi_calculation_ongoing;
 static btstack_crypto_aes128_t aes128_request;
 static uint8_t csis_hash[16];
 static uint8_t csis_sirk[16];
 static uint8_t csis_rsi[6];
 
 // CSIS Client
-static btstack_packet_handler_t csis_event_callback;
+static btstack_packet_handler_t csis_client_event_callback;
 static btstack_linked_list_t    csis_connections;
 static uint16_t                 csis_client_cid_counter = 0;
 
-static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void csis_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static btstack_packet_callback_registration_t csis_client_hci_event_callback_registration;
 
 static char * characteristic_index2name(csis_characteristic_index_t index){
@@ -120,7 +120,7 @@ static csis_client_connection_t * csis_client_get_connection_for_con_handle(hci_
     return NULL;
 }
 
-static csis_client_connection_t * csis_get_client_connection_for_cid(uint16_t csis_cid){
+static csis_client_connection_t * csis_client_get_connection_for_cid(uint16_t csis_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &csis_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -150,7 +150,7 @@ static csis_characteristic_index_t csis_get_characteristic_index_for_uuid16(uint
     }
 }
 
-static csis_characteristic_index_t csis_get_characteristic_index_for_value_handle(csis_client_connection_t * connection, uint16_t value_handle){
+static csis_characteristic_index_t csis_client_get_characteristic_index_for_value_handle(csis_client_connection_t * connection, uint16_t value_handle){
     uint8_t i;
     for (i = 0; i < (uint8_t)CSIS_CHARACTERISTIC_INDEX_RFU; i++){
         if (connection->characteristics[i].value_handle == value_handle){
@@ -165,93 +165,95 @@ static void csis_client_finalize_connection(csis_client_connection_t * connectio
 }
 
 static void csis_client_emit_connection_established(csis_client_connection_t * connection, uint8_t status){
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_client_event_callback != NULL);
 
     uint8_t event[8];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_CONNECTED;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void csis_client_emit_disconnect(uint16_t cid){
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_client_event_callback != NULL);
 
     uint8_t event[5];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_SERVER_DISCONNECTED;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_DISCONNECTED;
     little_endian_store_16(event, pos, cid);
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void csis_client_emit_write_lock_complete(csis_client_connection_t * connection, uint8_t status){
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_client_event_callback != NULL);
 
     uint8_t event[7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK_WRITE_COMPLETE;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
     event[pos++] = connection->coordinator_lock;
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void csis_client_emit_read_remote_lock(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_client_event_callback != NULL);
 
     uint8_t event[7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_LOCK;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_REMOTE_LOCK;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
     event[pos++] = (data == NULL) ? 0 : data[0];
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void csis_client_emit_read_remote_coordinated_set_size(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_client_event_callback != NULL);
 
     uint8_t event[7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_COORDINATED_SET_SIZE;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
     event[pos++] = (data == NULL) ? 0 : data[0];
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void csis_client_emit_read_remote_rank(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
+    btstack_assert(csis_client_event_callback != NULL);
+
     uint8_t event[7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_RANK;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
     event[pos++] = (data == NULL) ? 0 : data[0];
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void csis_client_emit_read_remote_sirk(csis_client_connection_t * connection, uint8_t status, csis_sirk_type_t remote_sirk_type, const uint8_t * sirk){
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_client_event_callback != NULL);
 
     uint8_t event[23];
     memset(event, 0, sizeof(event));
@@ -259,7 +261,7 @@ static void csis_client_emit_read_remote_sirk(csis_client_connection_t * connect
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_REMOTE_SIRK;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -267,11 +269,11 @@ static void csis_client_emit_read_remote_sirk(csis_client_connection_t * connect
     if (sirk != NULL){
         reverse_128(sirk, &event[pos]);
     }
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void csis_server_handle_k1(void * context){
-    if (active_connection == NULL){
+static void csis_client_handle_k1(void * context){
+    if (csis_client_active_connection == NULL){
         return;
     }
 
@@ -281,29 +283,29 @@ static void csis_server_handle_k1(void * context){
         decrypted_sirk[i] = k1[i] ^ remote_sirk[i];
     }
     memcpy(remote_sirk, decrypted_sirk, sizeof(decrypted_sirk));
-    active_connection->remote_sirk_state = CSIS_SIRK_CALCULATION_STATE_READY;
-    csis_client_emit_read_remote_sirk(active_connection, ATT_ERROR_SUCCESS, CSIS_SIRK_TYPE_ENCRYPTED, (const uint8_t *) remote_sirk);
-    
-    active_connection = NULL;
+    csis_client_active_connection->remote_sirk_state = CSIS_SIRK_CALCULATION_STATE_READY;
+    csis_client_emit_read_remote_sirk(csis_client_active_connection, ATT_ERROR_SUCCESS, CSIS_SIRK_TYPE_ENCRYPTED, (const uint8_t *) remote_sirk);
+
+    csis_client_active_connection = NULL;
     csis_client_trigger_next_sirk_calculation();
 }
 
 
-static void csis_server_handle_T(void * context){
-    if (active_connection == NULL){
+static void csis_client_handle_T(void * context){
+    if (csis_client_active_connection == NULL){
         return;
     }
     const static uint8_t csis_string[] = { 'c', 's', 'i', 's'};
-    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, T, sizeof(csis_string), csis_string, k1, csis_server_handle_k1, NULL);
+    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, T, sizeof(csis_string), csis_string, k1, csis_client_handle_k1, NULL);
 }
 
-static void csis_server_handle_s1(void * context){
-    if (active_connection == NULL){
+static void csis_client_handle_s1(void * context){
+    if (csis_client_active_connection == NULL){
         return;
     }
 
-    sm_get_ltk(active_connection->con_handle, key_ltk);
-    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, s1, sizeof(key_ltk), key_ltk, T, csis_server_handle_T, NULL);
+    sm_get_ltk(csis_client_active_connection->con_handle, key_ltk);
+    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, s1, sizeof(key_ltk), key_ltk, T, csis_client_handle_T, NULL);
 }
 
 static csis_client_connection_t * csis_client_get_next_connection_for_sirk_calculation(void){
@@ -319,17 +321,17 @@ static csis_client_connection_t * csis_client_get_next_connection_for_sirk_calcu
 }
 
 static void csis_client_trigger_next_sirk_calculation(void){
-    if (active_connection != NULL){
+    if (csis_client_active_connection != NULL){
         return;
     }
 
-    active_connection = csis_client_get_next_connection_for_sirk_calculation();
-    if (active_connection == NULL){
+    csis_client_active_connection = csis_client_get_next_connection_for_sirk_calculation();
+    if (csis_client_active_connection == NULL){
         return;
     }
 
-    active_connection->remote_sirk_state = CSIS_SIRK_CALCULATION_ACTIVE;
-    btstack_crypto_aes128_cmac_zero(&aes128_cmac_request, sizeof(s1_string), s1_string, s1, &csis_server_handle_s1, NULL);
+    csis_client_active_connection->remote_sirk_state = CSIS_SIRK_CALCULATION_ACTIVE;
+    btstack_crypto_aes128_cmac_zero(&aes128_cmac_request, sizeof(s1_string), s1_string, s1, &csis_client_handle_s1, NULL);
 }
 
 static void csis_client_emit_read_event(csis_client_connection_t * connection, csis_characteristic_index_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
@@ -399,7 +401,7 @@ static void csis_client_emit_read_event(csis_client_connection_t * connection, c
     }
 }
 
-static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void csis_client_handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
     UNUSED(channel);
     UNUSED(size);
@@ -418,7 +420,7 @@ static void handle_gatt_server_notification(uint8_t packet_type, uint16_t channe
     uint8_t * value = (uint8_t *)gatt_event_notification_get_value(packet);
 
     // get index for value_handle
-    csis_characteristic_index_t index = csis_get_characteristic_index_for_value_handle(connection, value_handle);
+    csis_characteristic_index_t index = csis_client_get_characteristic_index_for_value_handle(connection, value_handle);
     csis_client_emit_read_event(connection, index, ATT_ERROR_SUCCESS, value, value_length);
 }
 
@@ -433,7 +435,7 @@ static uint8_t csis_client_register_notification(csis_client_connection_t * conn
     characteristic.properties = connection->characteristics[connection->characteristic_index].properties;
 
     uint8_t status = gatt_client_write_client_characteristic_configuration(
-                &handle_gatt_client_event, 
+                &csis_client_handle_gatt_client_event, 
                 connection->con_handle, 
                 &characteristic, 
                 GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
@@ -442,7 +444,7 @@ static uint8_t csis_client_register_notification(csis_client_connection_t * conn
     if (status == ERROR_CODE_SUCCESS){
         gatt_client_listen_for_characteristic_value_updates(
             &connection->characteristics[connection->characteristic_index].notification_listener, 
-            &handle_gatt_server_notification, 
+            &csis_client_handle_gatt_server_notification, 
             connection->con_handle, &characteristic);
     } 
     return status;
@@ -457,7 +459,7 @@ static void csis_client_run_for_connection(csis_client_connection_t * connection
     switch (connection->state){
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE:
             connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
-            gatt_client_discover_primary_services_by_uuid16(&handle_gatt_client_event, connection->con_handle, ORG_BLUETOOTH_SERVICE_COORDINATED_SET_IDENTIFICATION_SERVICE);
+            gatt_client_discover_primary_services_by_uuid16(&csis_client_handle_gatt_client_event, connection->con_handle, ORG_BLUETOOTH_SERVICE_COORDINATED_SET_IDENTIFICATION_SERVICE);
             break;
 
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
@@ -468,7 +470,7 @@ static void csis_client_run_for_connection(csis_client_connection_t * connection
             service.uuid16 = ORG_BLUETOOTH_SERVICE_COORDINATED_SET_IDENTIFICATION_SERVICE;
 
             gatt_client_discover_characteristics_for_service(
-                &handle_gatt_client_event, 
+                &csis_client_handle_gatt_client_event, 
                 connection->con_handle, 
                 &service);
 
@@ -483,7 +485,7 @@ static void csis_client_run_for_connection(csis_client_connection_t * connection
             characteristic.properties   = connection->characteristics[connection->characteristic_index].properties;
             characteristic.end_handle   = connection->characteristics[connection->characteristic_index].end_handle;
 
-            (void) gatt_client_discover_characteristic_descriptors(&handle_gatt_client_event, connection->con_handle, &characteristic);
+            (void) gatt_client_discover_characteristic_descriptors(&csis_client_handle_gatt_client_event, connection->con_handle, &characteristic);
             break;
 
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_CONFIGURATION:
@@ -494,7 +496,7 @@ static void csis_client_run_for_connection(csis_client_connection_t * connection
 
             // result in GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
             (void) gatt_client_read_characteristic_descriptor_using_descriptor_handle(
-                &handle_gatt_client_event,
+                &csis_client_handle_gatt_client_event,
                 connection->con_handle, 
                 connection->characteristics[connection->characteristic_index].client_configuration_handle);
             break;
@@ -537,7 +539,7 @@ static void csis_client_run_for_connection(csis_client_connection_t * connection
             connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE_READ;
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
-                &handle_gatt_client_event, 
+                &csis_client_handle_gatt_client_event, 
                 connection->con_handle, 
                 connection->characteristics[connection->characteristic_index].value_handle);
             break;
@@ -547,7 +549,7 @@ static void csis_client_run_for_connection(csis_client_connection_t * connection
             value[0] = (uint8_t)connection->coordinator_lock;
 
             (void)gatt_client_write_value_of_characteristic(
-                &handle_gatt_client_event,
+                &csis_client_handle_gatt_client_event,
                 connection->con_handle, 
                 connection->characteristics[connection->characteristic_index].value_handle,
                 1, 
@@ -559,7 +561,7 @@ static void csis_client_run_for_connection(csis_client_connection_t * connection
     }
 }
 
-static bool csis_next_index_for_query(csis_client_connection_t *connection) {
+static bool csis_client_next_index_for_query(csis_client_connection_t *connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < 3)) {
         connection->characteristic_index++;
@@ -606,7 +608,7 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
             }
 
             connection->characteristic_index = 0;
-            if (csis_next_index_for_query(connection)){
+            if (csis_client_next_index_for_query(connection)){
                 connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
             } else {
                 connection->characteristic_index = 0;
@@ -651,7 +653,7 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
     return true;
 }
 
-static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void csis_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
     UNUSED(channel);
     UNUSED(size);
@@ -793,23 +795,21 @@ uint8_t coordinated_set_identification_service_client_connect(csis_client_connec
         *csis_cid = cid;
     }
 
+    csis_client_active_connection = NULL;
+
     memset(connection, 0, sizeof(csis_client_connection_t));
+    connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
     connection->cid = cid;
     connection->con_handle = con_handle;
     connection->mtu = ATT_DEFAULT_MTU;
-
     connection->service_instances_num = 0;
-    
-    connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
     btstack_linked_list_add(&csis_connections, (btstack_linked_item_t *) connection);
-    
-    active_connection = NULL;
 
     csis_client_run_for_connection(connection);
     return ERROR_CODE_SUCCESS;
 }
 
-static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void csis_client_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
 
@@ -832,8 +832,8 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     }
 }
 
-static uint8_t coordinated_set_identification_service_client_read_characteristics_value(uint16_t ascs_cid, csis_characteristic_index_t index){
-    csis_client_connection_t * connection = csis_get_client_connection_for_cid(ascs_cid);
+static uint8_t csis_client_read_characteristics_value(uint16_t ascs_cid, csis_characteristic_index_t index){
+    csis_client_connection_t * connection = csis_client_get_connection_for_cid(ascs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -852,23 +852,23 @@ static uint8_t coordinated_set_identification_service_client_read_characteristic
 }
 
 uint8_t coordinated_set_identification_service_client_read_sirk(uint16_t ascs_cid){
-    return coordinated_set_identification_service_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_SIRK);
+    return csis_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_SIRK);
 }
 
 uint8_t coordinated_set_identification_service_client_read_coordinated_set_size(uint16_t ascs_cid){
-    return coordinated_set_identification_service_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_SIZE);
+    return csis_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_SIZE);
 }
 
 uint8_t coordinated_set_identification_service_client_read_member_rank(uint16_t ascs_cid){
-    return coordinated_set_identification_service_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_RANK);
+    return csis_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_RANK);
 }
 
 uint8_t coordinated_set_identification_service_client_read_member_lock(uint16_t ascs_cid){
-    return coordinated_set_identification_service_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_LOCK);
+    return csis_client_read_characteristics_value(ascs_cid, CSIS_CHARACTERISTIC_INDEX_LOCK);
 }
 
 uint8_t coordinated_set_identification_service_client_write_member_lock(uint16_t ascs_cid, csis_member_lock_t lock){
-    csis_client_connection_t * connection = csis_get_client_connection_for_cid(ascs_cid);
+    csis_client_connection_t * connection = csis_client_get_connection_for_cid(ascs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -889,19 +889,19 @@ uint8_t coordinated_set_identification_service_client_write_member_lock(uint16_t
 
 void coordinated_set_identification_service_client_init(btstack_packet_handler_t packet_handler){
     btstack_assert(packet_handler != NULL);
-    csis_event_callback = packet_handler;
+    csis_client_event_callback = packet_handler;
 
-    csis_rsi_calculation_ongoing = false;
-    active_connection = NULL;
+    csis_client_rsi_calculation_ongoing = false;
+    csis_client_active_connection = NULL;
 
-    csis_client_hci_event_callback_registration.callback = &hci_event_handler;
+    csis_client_hci_event_callback_registration.callback = &csis_client_hci_event_handler;
     hci_add_event_handler(&csis_client_hci_event_callback_registration);
 }
 
 void coordinated_set_identification_service_client_deinit(void){
-    csis_event_callback = NULL;
-    csis_rsi_calculation_ongoing = false;
-    active_connection = NULL;
+    csis_client_event_callback = NULL;
+    csis_client_rsi_calculation_ongoing = false;
+    csis_client_active_connection = NULL;
     
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &csis_connections);
@@ -911,12 +911,12 @@ void coordinated_set_identification_service_client_deinit(void){
     }
 }
 
-static void csis_server_handle_csis_hash(void * arg){
+static void csis_client_handle_csis_hash(void * arg){
     UNUSED(arg);
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_client_event_callback != NULL);
 
     bool is_match = memcmp(&csis_rsi[3], &csis_hash[13], 3) == 0;
-    csis_rsi_calculation_ongoing = false;
+    csis_client_rsi_calculation_ongoing = false;
 
     uint8_t event[4];
     uint16_t pos = 0;
@@ -925,18 +925,18 @@ static void csis_server_handle_csis_hash(void * arg){
     event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH;
     event[pos++] = is_match ? 1u : 0u;
     
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));    
+    (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 uint8_t coordinated_set_identification_service_client_check_rsi(const uint8_t * rsi, const uint8_t * sirk){
     btstack_assert(rsi != NULL);
     btstack_assert(sirk != NULL);
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_client_event_callback != NULL);
 
-    if (csis_rsi_calculation_ongoing){
+    if (csis_client_rsi_calculation_ongoing){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    csis_rsi_calculation_ongoing = true;
+    csis_client_rsi_calculation_ongoing = true;
 
     memcpy(csis_sirk, sirk, sizeof(csis_sirk));
     memcpy(csis_rsi,   rsi, sizeof(csis_rsi));
@@ -947,7 +947,7 @@ uint8_t coordinated_set_identification_service_client_check_rsi(const uint8_t * 
     // prand_prime[13] &= 0x7F;
     // prand_prime[13] |= 0x40;
 
-    btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, prand_prime, csis_hash, &csis_server_handle_csis_hash, NULL);
+    btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, prand_prime, csis_hash, &csis_client_handle_csis_hash, NULL);
     return ERROR_CODE_SUCCESS;
 }
 
