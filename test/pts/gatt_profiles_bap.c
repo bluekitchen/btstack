@@ -285,7 +285,7 @@ static bass_source_data_t source_data1 = {
 static coordinated_set_identification_service_server_t csis_coordiantors[CSIS_COORDINATORS_MAX_NUM];
 
 static uint8_t bad_code[] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8}; 
-static broadcast_audio_scan_service_server_t bass_clients[BASS_NUM_CLIENTS];
+static bass_server_connection_t bass_clients[BASS_NUM_CLIENTS];
 
 static le_audio_pa_sync_state_t pa_sync_state = LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA;
 static uint8_t source_id = 0;
