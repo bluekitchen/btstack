@@ -591,6 +591,23 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     }
 }
 
+static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+
+    hci_con_handle_t con_handle;
+    uint8_t status;
+    uint8_t ris[6];
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        default:
+            break;
+    }
+}
+
 // ATT Client Read Callback for Dynamic Data
 // - if buffer == NULL, don't copy data, just return size of value
 // - if buffer != NULL, copy data and return number bytes copied
@@ -883,7 +900,8 @@ int btstack_main(void)
     audio_stream_control_service_server_register_packet_handler(&ascs_server_packet_handler);
 
     // setup MCS
-    media_control_service_server_init(&packet_handler);
+    media_control_service_server_init();
+    audio_stream_control_service_server_register_packet_handler(&mcs_server_packet_handler);
 
     uint8_t icon_object_id[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
     char * icon_url = "https://www.bluetooth.com/";

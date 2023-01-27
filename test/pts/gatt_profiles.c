@@ -222,9 +222,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_GATTSERVICE_META:
             switch (hci_event_gattservice_meta_get_subevent_code(packet)){
                 
-                case GATTSERVICE_SUBEVENT_LOCAL_MICS_MUTE: 
-                    printf("MICS: mute value changed by remote to %d\n", gattservice_subevent_local_mics_mute_get_state(packet));
-                    mics_mute = (gatt_microphone_control_mute_t)gattservice_subevent_local_mics_mute_get_state(packet);
+                case GATTSERVICE_SUBEVENT_MICS_SERVER_LOCAL_MUTE: 
+                    printf("MICS: mute value changed by remote to %d\n", gattservice_subevent_mics_server_local_mute_get_state(packet));
+                    mics_mute = (gatt_microphone_control_mute_t)gattservice_subevent_mics_server_local_mute_get_state(packet);
                     break;
 
                 case GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE:
