@@ -58,7 +58,7 @@ extern "C" {
  * 
  * To use with your application, add `#import <coordinated_set_identification_service.gatt>` to your .gatt file. 
  */
-
+// Coordinator Struct
 typedef struct {
     uint16_t con_handle;
 
@@ -74,13 +74,13 @@ typedef struct {
 
     csis_sirk_calculation_state_t  encrypted_sirk_state;
     uint8_t encrypted_sirk[16];
-} csis_coordinator_t;
+} coordinated_set_identification_service_server_t;
 
 /**
  * @brief Init Coordinated Set Identification Service Server with ATT DB
  */
-void coordinated_set_identification_service_server_init(const uint8_t coordinators_num, csis_coordinator_t * coordinators, 
-    uint8_t coordinated_set_size, uint8_t member_rank);
+void coordinated_set_identification_service_server_init(const uint8_t coordinators_num, coordinated_set_identification_service_server_t * coordinators,
+                                                        uint8_t coordinated_set_size, uint8_t member_rank);
 
 /**
  * @brief Register packet handler to receive events:
