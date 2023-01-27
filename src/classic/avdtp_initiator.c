@@ -283,6 +283,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
             switch (connection->initiator_signaling_packet.signal_identifier){
                 case AVDTP_SI_SET_CONFIGURATION:
                     connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
+                    sep.in_use = 0;
                     log_info("Received reject for set configuration, role changed from initiator to acceptor. TODO: implement retry.");
                     break;
                 case AVDTP_SI_RECONFIGURE:
