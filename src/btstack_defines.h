@@ -4538,6 +4538,21 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_AICS_SERVER_DISCONNECTED                           0x69u
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_AICS_SERVER_CONNECTED                              0x68u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define GATTSERVICE_SUBEVENT_AICS_SERVER_DISCONNECTED                           0x69u
+
 // MAP Meta Event Group
 
 /**
