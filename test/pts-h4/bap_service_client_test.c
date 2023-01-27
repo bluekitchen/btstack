@@ -445,16 +445,16 @@ static void bass_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED:
-            if (bap_app_client_con_handle != gattservice_subevent_bass_connected_get_con_handle(packet)){
-                printf("BASS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_bass_connected_get_con_handle(packet));
+            if (bap_app_client_con_handle != gattservice_subevent_bass_client_connected_get_con_handle(packet)){
+                printf("BASS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_bass_client_connected_get_con_handle(packet));
                 return;
             }
 
             bap_app_client_state = BAP_APP_CLIENT_STATE_CONNECTED;
 
-            if (gattservice_subevent_bass_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+            if (gattservice_subevent_bass_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 printf("BASS client: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n", bass_cid, bap_app_client_con_handle, 
-                    gattservice_subevent_bass_connected_get_status(packet));
+                    gattservice_subevent_bass_client_connected_get_status(packet));
                 return;
             }
 
@@ -468,35 +468,35 @@ static void bass_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
 
         case GATTSERVICE_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE:
-            if (bass_cid != gattservice_subevent_bass_scan_operation_complete_get_bass_cid(packet)){
+            if (bass_cid != gattservice_subevent_bass_client_scan_operation_complete_get_bass_cid(packet)){
                 return;
             }
-            if (gattservice_subevent_bass_scan_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
-                printf("BASS Client: scan operation failed, status 0x%02x\n", gattservice_subevent_bass_scan_operation_complete_get_status(packet));
+            if (gattservice_subevent_bass_client_scan_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
+                printf("BASS Client: scan operation failed, status 0x%02x\n", gattservice_subevent_bass_client_scan_operation_complete_get_status(packet));
                 return;
             }
-            printf("BASS Client: scan operation %s completed\n", bass_opcode2str(gattservice_subevent_bass_scan_operation_complete_get_opcode(packet)));
+            printf("BASS Client: scan operation %s completed\n", bass_opcode2str(gattservice_subevent_bass_client_scan_operation_complete_get_opcode(packet)));
             break;
 
         case GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE:
-            if (bass_cid != gattservice_subevent_bass_source_operation_complete_get_bass_cid(packet)){
+            if (bass_cid != gattservice_subevent_bass_client_source_operation_complete_get_bass_cid(packet)){
                 return;
             }
 
-            if (gattservice_subevent_bass_source_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
-                printf("BASS Client: source operation failed, status 0x%02x\n", gattservice_subevent_bass_source_operation_complete_get_status(packet));
+            if (gattservice_subevent_bass_client_source_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
+                printf("BASS Client: source operation failed, status 0x%02x\n", gattservice_subevent_bass_client_source_operation_complete_get_status(packet));
                 return;
             }
 
-            if ( gattservice_subevent_bass_source_operation_complete_get_opcode(packet) == (uint8_t)BASS_OPCODE_ADD_SOURCE ){
+            if ( gattservice_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t)BASS_OPCODE_ADD_SOURCE ){
                 // omit source ID, it will be received via notification
                 printf("BASS Client: source operation %s completed\n", 
-                    bass_opcode2str(gattservice_subevent_bass_source_operation_complete_get_opcode(packet)));
+                    bass_opcode2str(gattservice_subevent_bass_client_source_operation_complete_get_opcode(packet)));
             
             } else {
                 printf("BASS Client: source[%d] operation %s completed\n", 
-                    gattservice_subevent_bass_source_operation_complete_get_source_id(packet),
-                    bass_opcode2str(gattservice_subevent_bass_source_operation_complete_get_opcode(packet)));
+                    gattservice_subevent_bass_client_source_operation_complete_get_source_id(packet),
+                    bass_opcode2str(gattservice_subevent_bass_client_source_operation_complete_get_opcode(packet)));
             }
             break;
 
@@ -524,59 +524,59 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_PACS_CONNECTED:
-            if (bap_app_client_con_handle != gattservice_subevent_pacs_connected_get_con_handle(packet)){
-                printf("PACS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_pacs_connected_get_con_handle(packet));
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_CONNECTED:
+            if (bap_app_client_con_handle != gattservice_subevent_pacs_client_connected_get_con_handle(packet)){
+                printf("PACS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_pacs_client_connected_get_con_handle(packet));
                 return;
             }
 
             bap_app_client_state = BAP_APP_CLIENT_STATE_CONNECTED;
 
-            if (gattservice_subevent_pacs_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+            if (gattservice_subevent_pacs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 printf("PACS client: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n", pacs_cid, bap_app_client_con_handle, 
-                    gattservice_subevent_pacs_connected_get_status(packet));
+                    gattservice_subevent_pacs_client_connected_get_status(packet));
                 return;
             }
 
             printf("PACS client: connected, cid 0x%04x\n", pacs_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_DISCONNECTED:
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_DISCONNECTED:
             pacs_cid = 0;
             printf("PACS Client: disconnected\n");
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_OPERATION_DONE:
-            if (gattservice_subevent_pacs_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_OPERATION_DONE:
+            if (gattservice_subevent_pacs_client_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
                 printf("      Operation successful\n");
             } else {
-                printf("      Operation failed with status 0x%02x\n", gattservice_subevent_pacs_operation_done_get_status(packet));
+                printf("      Operation failed with status 0x%02x\n", gattservice_subevent_pacs_client_operation_done_get_status(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATIONS:
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_AUDIO_LOCATIONS:
             printf("PACS Client: %s Audio Locations 0x%04x \n", 
-                gattservice_subevent_pacs_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source",
-                gattservice_subevent_pacs_audio_locations_get_audio_location_mask(packet));
+                gattservice_subevent_pacs_client_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source",
+                gattservice_subevent_pacs_client_audio_locations_get_audio_locations_mask(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_AVAILABLE_AUDIO_CONTEXTS:
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS:
             printf("PACS Client: Available Audio Contexts\n");
-            printf("      Sink   0x%02x\n", gattservice_subevent_pacs_available_audio_contexts_get_sink_mask(packet));
-            printf("      Source 0x%02x\n", gattservice_subevent_pacs_available_audio_contexts_get_source_mask(packet));
+            printf("      Sink   0x%02x\n", gattservice_subevent_pacs_client_available_audio_contexts_get_sink_mask(packet));
+            printf("      Source 0x%02x\n", gattservice_subevent_pacs_client_available_audio_contexts_get_source_mask(packet));
             break;
     
-        case GATTSERVICE_SUBEVENT_PACS_SUPPORTED_AUDIO_CONTEXTS:
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS:
             printf("PACS Client: Supported Audio Contexts\n");
-            printf("      Sink   0x%02x\n", gattservice_subevent_pacs_supported_audio_contexts_get_sink_mask(packet));
-            printf("      Source 0x%02x\n", gattservice_subevent_pacs_supported_audio_contexts_get_source_mask(packet));
+            printf("      Sink   0x%02x\n", gattservice_subevent_pacs_client_supported_audio_contexts_get_sink_mask(packet));
+            printf("      Source 0x%02x\n", gattservice_subevent_pacs_client_supported_audio_contexts_get_source_mask(packet));
             break;
             
-        case GATTSERVICE_SUBEVENT_PACS_PACK_RECORD:
-            printf("PACS Client: %s PAC Record\n", gattservice_subevent_pacs_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD:
+            printf("PACS Client: %s PAC Record\n", gattservice_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
             break;
-        case GATTSERVICE_SUBEVENT_PACS_PACK_RECORD_DONE:
-            printf("      %s PAC Record DONE\n", gattservice_subevent_pacs_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE:
+            printf("      %s PAC Record DONE\n", gattservice_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
             break;
 
         default:
@@ -742,67 +742,67 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED:
-            if (bap_app_client_con_handle != gattservice_subevent_csis_remote_server_connected_get_con_handle(packet)){
-                printf("CSIS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_csis_remote_server_connected_get_con_handle(packet));
+            if (bap_app_client_con_handle != gattservice_subevent_csis_client_connected_get_con_handle(packet)){
+                printf("CSIS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_csis_client_connected_get_con_handle(packet));
                 return;
             }
 
             bap_app_client_state = BAP_APP_CLIENT_STATE_CONNECTED;
 
-            if (gattservice_subevent_csis_remote_server_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+            if (gattservice_subevent_csis_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 printf("CSIS client: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n", csis_cid, bap_app_client_con_handle, 
-                    gattservice_subevent_csis_remote_server_connected_get_status(packet));
+                    gattservice_subevent_csis_client_connected_get_status(packet));
                 return;
             }
 
             printf("CSIS client: connected, cid 0x%04x\n", csis_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_REMOTE_LOCK:
-            status = gattservice_subevent_csis_remote_lock_get_status(packet);
+        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK:
+            status = gattservice_subevent_csis_client_lock_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client: read LOCK failed, 0x%02x\n", status);
                 break;
             }
-            printf("CSIS client: remote LOCK %u\n", gattservice_subevent_csis_remote_lock_get_lock(packet));
+            printf("CSIS client: remote LOCK %u\n", gattservice_subevent_csis_client_lock_get_lock(packet));
             break;
         
         case GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK:
-            status = gattservice_subevent_csis_remote_rank_get_status(packet);
+            status = gattservice_subevent_csis_client_rank_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client: read RANK failed, 0x%02x\n", status);
                 break;
             }
-            printf("CSIS client: remote member RANK %u\n", gattservice_subevent_csis_remote_rank_get_rank(packet));
+            printf("CSIS client: remote member RANK %u\n", gattservice_subevent_csis_client_rank_get_rank(packet));
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE:
-            status = gattservice_subevent_csis_remote_coordinated_set_size_get_status(packet);
+            status = gattservice_subevent_csis_client_coordinated_set_size_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client: read COORDINATED_SET_SIZE failed, 0x%02x\n", status);
                 break;
             }
-            printf("CSIS client: remote COORDINATED_SET_SIZE %u\n", gattservice_subevent_csis_remote_coordinated_set_size_get_coordinated_set_size(packet));
+            printf("CSIS client: remote COORDINATED_SET_SIZE %u\n", gattservice_subevent_csis_client_coordinated_set_size_get_coordinated_set_size(packet));
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK:
-            status = gattservice_subevent_csis_remote_sirk_get_status(packet);
+            status = gattservice_subevent_csis_client_sirk_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client: read SIRK failed, 0x%02x\n", status);
                 break;
             }
-            gattservice_subevent_csis_remote_sirk_get_sirk(packet, sirk);
-            printf("CSIS client: remote SIRK (%s) ", (csis_sirk_type_t)gattservice_subevent_csis_remote_sirk_get_sirk_type(packet) == CSIS_SIRK_TYPE_ENCRYPTED ? "ENCRYPTED" : "PLAIN_TEXT");
+            gattservice_subevent_csis_client_sirk_get_sirk(packet, sirk);
+            printf("CSIS client: remote SIRK (%s) ", (csis_sirk_type_t)gattservice_subevent_csis_client_sirk_get_sirk_type(packet) == CSIS_SIRK_TYPE_ENCRYPTED ? "ENCRYPTED" : "PLAIN_TEXT");
             printf_hexdump(sirk, sizeof(sirk));
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE:
-            status = gattservice_subevent_csis_remote_lock_write_complete_get_status(packet);
+            status = gattservice_subevent_csis_client_lock_write_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client: write LOCK failed, 0x%02x\n", status);
                 break;
             }
-            csis_member_lock = (csis_member_lock_t) gattservice_subevent_csis_remote_lock_write_complete_get_lock(packet);
+            csis_member_lock = (csis_member_lock_t) gattservice_subevent_csis_client_lock_write_complete_get_lock(packet);
             printf("CSIS client: remote member %s\n", csis_member_lock == CSIS_MEMBER_UNLOCKED ? "UNLOCKED" : "LOCKED");
             break;
 
