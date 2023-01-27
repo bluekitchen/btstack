@@ -560,9 +560,9 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         
-        case GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_CONNECTED:
-            con_handle = gattservice_subevent_csis_coordinator_connected_get_con_handle(packet);
-            status =     gattservice_subevent_csis_coordinator_connected_get_status(packet);
+        case GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED:
+            con_handle = gattservice_subevent_csis_server_connected_get_con_handle(packet);
+            status =     gattservice_subevent_csis_server_connected_get_status(packet);
 
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS Server: connection to coordinator failed, con_handle 0x%02x, status 0x%02x\n", con_handle, status);
@@ -581,8 +581,8 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             gap_advertisements_enable(1);
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_COORDINATOR_DISCONNECTED:
-            con_handle = gattservice_subevent_csis_coordinator_disconnected_get_con_handle(packet);
+        case GATTSERVICE_SUBEVENT_CSIS_SERVER_DISCONNECTED:
+            con_handle = gattservice_subevent_csis_server_disconnected_get_con_handle(packet);
             printf("CSIS Server: RELEASED\n");
             break;
 
