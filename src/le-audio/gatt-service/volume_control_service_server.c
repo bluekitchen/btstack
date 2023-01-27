@@ -99,10 +99,10 @@ static uint16_t   vcs_control_point_value_handle;
 
 static btstack_packet_handler_t vcs_server_event_callback;
 
-static audio_input_control_service_server_t aics_services[AICS_MAX_NUM_SERVICES];
+static aics_server_connection_t aics_services[AICS_MAX_NUM_SERVICES];
 static uint8_t aics_services_num;
 
-static volume_offset_control_service_server_t vocs_services[VOCS_MAX_NUM_SERVICES];
+static vocs_server_connection_t vocs_services[VOCS_MAX_NUM_SERVICES];
 static uint8_t vocs_services_num;
 
 
@@ -356,7 +356,7 @@ static void vcs_server_init_included_aics_services(uint16_t vcs_start_handle, ui
         }
         log_info("Include AICS service 0x%02x-0x%02x", included_service_start_handle, included_service_end_handle);
 
-        audio_input_control_service_server_t * service = &aics_services[aics_services_num];
+        aics_server_connection_t * service = &aics_services[aics_services_num];
         service->start_handle = included_service_start_handle;
         service->end_handle = included_service_end_handle;
         service->index = aics_services_num;
@@ -389,7 +389,7 @@ static void vcs_server_init_included_vocs_services(uint16_t start_handle, uint16
         }
         log_info("Include VOCS service 0x%02x-0x%02x", included_service_start_handle, included_service_end_handle);
 
-        volume_offset_control_service_server_t * service = &vocs_services[vocs_services_num];
+        vocs_server_connection_t * service = &vocs_services[vocs_services_num];
         service->start_handle = included_service_start_handle;
         service->end_handle = included_service_end_handle;
         service->index = vocs_services_num;

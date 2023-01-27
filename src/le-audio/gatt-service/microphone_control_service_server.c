@@ -65,7 +65,7 @@ static uint16_t mics_server_mute_state_handle_client_configuration;
 
 static btstack_packet_handler_t mics_server_callback;
 
-static audio_input_control_service_server_t aics_services[AICS_MAX_NUM_SERVICES];
+static aics_server_connection_t aics_services[AICS_MAX_NUM_SERVICES];
 static uint8_t aics_services_num;
 
 static void mics_server_emit_mute(gatt_microphone_control_mute_t mute_state){
@@ -174,7 +174,7 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 		}
 		log_info("Include AICS service 0x%02x-0x%02x", included_service_start_handle, included_service_end_handle);
 
-		audio_input_control_service_server_t * service = &aics_services[aics_services_num];
+		aics_server_connection_t * service = &aics_services[aics_services_num];
 		service->start_handle = included_service_start_handle;
 		service->end_handle = included_service_end_handle;
 		service->index = aics_services_num;

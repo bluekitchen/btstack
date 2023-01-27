@@ -118,42 +118,42 @@ typedef struct {
     uint16_t audio_output_description_client_configuration_handle;
     uint16_t audio_output_description_client_configuration;
     btstack_context_callback_registration_t audio_output_description_callback;
-} volume_offset_control_service_server_t;
+} vocs_server_connection_t;
 
 
 /**
- * @brief Init Volume Offset Control Service Server with ATT DB. Event emitted to the event callback of the volume_offset_control_service_server_t struct:
+ * @brief Init Volume Offset Control Service Server with ATT DB. Event emitted to the event callback of the vocs_server_connection_t struct:
  * - GATTSERVICE_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET
  * - GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION
  * - GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
  * -
- * @param vocs service storage
+ * @param connection service storage
  */
-void volume_offset_control_service_server_init(volume_offset_control_service_server_t * vocs);
+void volume_offset_control_service_server_init(vocs_server_connection_t * connection);
 
 /**
  * @brief Set volume offset of the VOCS service. If successful, all registered clients will be notified of change.
- * @param vocs service
+ * @param connection service
  * @param volume_offset 
  * @return status ERROR_CODE_SUCCESS if successful
  */
-uint8_t volume_offset_control_service_server_set_volume_offset(volume_offset_control_service_server_t * vocs, int16_t volume_offset);
+uint8_t volume_offset_control_service_server_set_volume_offset(vocs_server_connection_t * connection, int16_t volume_offset);
 
 /**
  * @brief Set audio location of the VOCS service. If successful, all registered clients will be notified of change.
- * @param vocs service
+ * @param connection service
  * @param audio_location see VOCS_AUDIO_LOCATION_* defines above
  * @return status ERROR_CODE_SUCCESS if successful
  */
-uint8_t volume_offset_control_service_server_set_audio_location(volume_offset_control_service_server_t * vocs, uint32_t audio_location);
+uint8_t volume_offset_control_service_server_set_audio_location(vocs_server_connection_t * connection, uint32_t audio_location);
 
 /**
  * @brief Set audio output description of the VOCS service. If successful, all registered clients will be notified of change.
- * @param vocs service
+ * @param connection service
  * @param audio_output_desc
  * @return status ERROR_CODE_SUCCESS if successful
  */
-void volume_offset_control_service_server_set_audio_output_description(volume_offset_control_service_server_t * vocs, const char * audio_output_desc);
+void volume_offset_control_service_server_set_audio_output_description(vocs_server_connection_t * connection, const char * audio_output_desc);
 
 /* API_END */
 

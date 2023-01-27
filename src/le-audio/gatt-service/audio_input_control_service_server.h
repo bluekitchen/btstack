@@ -176,7 +176,7 @@ typedef struct {
     uint16_t audio_input_description_client_configuration;
     btstack_context_callback_registration_t audio_input_description_callback;
     
-} audio_input_control_service_server_t;
+} aics_server_connection_t;
 
 
 /**
@@ -185,9 +185,9 @@ typedef struct {
  * - GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE
  * - GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED
  * - GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
- * @param aics service storage
+ * @param connection service storage
  */
-void audio_input_control_service_server_init(audio_input_control_service_server_t * aics);
+void audio_input_control_service_server_init(aics_server_connection_t * connection);
 
 /**
  * @brief Set audio input state of the AICS service. If successful, all registered clients will be notified of change.
@@ -195,21 +195,21 @@ void audio_input_control_service_server_init(audio_input_control_service_server_
  * @param audio_input_state see aics_audio_input_state_t
  * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if gain setting is out of a valid range [gain_settings_minimum, gain_settings_maximum] .
  */
-uint8_t audio_input_control_service_server_set_audio_input_state(audio_input_control_service_server_t * aics, aics_audio_input_state_t * audio_input_state);
+uint8_t audio_input_control_service_server_set_audio_input_state(aics_server_connection_t * aics, aics_audio_input_state_t * audio_input_state);
 
 /**
  * @brief Set audio input status of the AICS service. If successful, all registered clients will be notified of change.
  * @param aics service
  * @param audio_input_status see aics_audio_input_status_t
  */
-void audio_input_control_service_server_set_audio_input_status(audio_input_control_service_server_t * aics, aics_audio_input_status_t audio_input_status);
+void audio_input_control_service_server_set_audio_input_status(aics_server_connection_t * aics, aics_audio_input_status_t audio_input_status);
 
 /**
  * @brief Set audio input description of the AICS service. If successful, all registered clients will be notified of change.
  * @param aics service
  * @param audio_input_desc
  */
-void audio_input_control_service_server_set_audio_input_description(audio_input_control_service_server_t * aics, const char * audio_input_desc);
+void audio_input_control_service_server_set_audio_input_description(aics_server_connection_t * aics, const char * audio_input_desc);
 
 /* API_END */
 
