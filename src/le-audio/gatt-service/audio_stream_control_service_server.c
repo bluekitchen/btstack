@@ -105,7 +105,7 @@ static audio_stream_control_service_server_t * ascs_get_remote_client_for_con_ha
     return NULL;
 }
 
-static audio_stream_control_service_server_t * ascs_server_add_remote_client(hci_con_handle_t con_handle){
+static audio_stream_control_service_server_t * ascs_server_add_client(hci_con_handle_t con_handle){
     uint8_t i;
     
     for (i = 0; i < ascs_clients_num; i++){
@@ -399,7 +399,7 @@ static uint16_t audio_stream_control_service_read_callback(hci_con_handle_t con_
     audio_stream_control_service_server_t * client = ascs_get_remote_client_for_con_handle(con_handle);
     
     if (client == NULL){
-        client = ascs_server_add_remote_client(con_handle);
+        client = ascs_server_add_client(con_handle);
         
         if (client == NULL){
             ascs_server_emit_connected(con_handle, ERROR_CODE_CONNECTION_LIMIT_EXCEEDED);
@@ -1072,7 +1072,7 @@ static int audio_stream_control_service_write_callback(hci_con_handle_t con_hand
 
     audio_stream_control_service_server_t * client = ascs_get_remote_client_for_con_handle(con_handle);
     if (client == NULL){
-        client = ascs_server_add_remote_client(con_handle);
+        client = ascs_server_add_client(con_handle);
         
         if (client == NULL){
             ascs_server_emit_connected(con_handle, ERROR_CODE_CONNECTION_LIMIT_EXCEEDED);
