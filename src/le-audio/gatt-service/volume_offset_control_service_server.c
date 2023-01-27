@@ -57,7 +57,7 @@
 
 static btstack_linked_list_t vocs_services;
 
-static volume_offset_control_service_server_t * vocs_find_service_for_attribute_handle(uint16_t attribute_handle){
+static volume_offset_control_service_server_t * vocs_server_find_service_for_attribute_handle(uint16_t attribute_handle){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &vocs_services);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -69,9 +69,9 @@ static volume_offset_control_service_server_t * vocs_find_service_for_attribute_
     return NULL;
 }
 
-static uint16_t vocs_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+static uint16_t vocs_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
-    volume_offset_control_service_server_t * vocs = vocs_find_service_for_attribute_handle(attribute_handle);
+    volume_offset_control_service_server_t * vocs = vocs_server_find_service_for_attribute_handle(attribute_handle);
     if (vocs == NULL){
         return 0;
     }
@@ -107,11 +107,11 @@ static uint16_t vocs_read_callback(hci_con_handle_t con_handle, uint16_t attribu
     return 0;
 }
 
-static void volume_offset_control_service_update_change_counter(volume_offset_control_service_server_t * vocs){
+static void vocs_server_update_change_counter(volume_offset_control_service_server_t * vocs){
     vocs->volume_offset_state_change_counter++;
 }
 
-static void volume_offset_control_service_can_send_now(void * context){
+static void vocs_server_can_send_now(void * context){
     volume_offset_control_service_server_t * vocs = (volume_offset_control_service_server_t *) context;
 
     if ((vocs->scheduled_tasks & VOCS_TASK_SEND_VOLUME_OFFSET) != 0){
@@ -145,7 +145,7 @@ static void volume_offset_control_service_can_send_now(void * context){
     }
 }
 
-static void volume_offset_control_service_server_set_callback(volume_offset_control_service_server_t * vocs, uint8_t task){
+static void vocs_server_set_callback(volume_offset_control_service_server_t * vocs, uint8_t task){
     if (vocs->con_handle == HCI_CON_HANDLE_INVALID){
         vocs->scheduled_tasks &= ~task;
         return;
@@ -154,17 +154,17 @@ static void volume_offset_control_service_server_set_callback(volume_offset_cont
     uint8_t scheduled_tasks = vocs->scheduled_tasks;
     vocs->scheduled_tasks |= task;
     if (scheduled_tasks == 0){
-        vocs->scheduled_tasks_callback.callback = &volume_offset_control_service_can_send_now;
+        vocs->scheduled_tasks_callback.callback = &vocs_server_can_send_now;
         vocs->scheduled_tasks_callback.context  = (void*) vocs;
         att_server_register_can_send_now_callback(&vocs->scheduled_tasks_callback, vocs->con_handle);
     }
 }
 
-static void vocs_set_con_handle(volume_offset_control_service_server_t * vocs, hci_con_handle_t con_handle, uint16_t configuration){
+static void vocs_server_set_con_handle(volume_offset_control_service_server_t * vocs, hci_con_handle_t con_handle, uint16_t configuration){
     vocs->con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
 }
 
-static bool vocs_set_volume_offset(volume_offset_control_service_server_t * vocs, int16_t volume_offset){
+static bool vocs_server_set_volume_offset(volume_offset_control_service_server_t * vocs, int16_t volume_offset){
     if (volume_offset < -255) return false;
     if (volume_offset > 255) return false;
 
@@ -172,7 +172,7 @@ static bool vocs_set_volume_offset(volume_offset_control_service_server_t * vocs
     return true;
 }
 
-static bool vocs_set_audio_location(volume_offset_control_service_server_t * vocs, uint32_t audio_location){
+static bool vocs_server_set_audio_location(volume_offset_control_service_server_t * vocs, uint32_t audio_location){
     if (audio_location == LE_AUDIO_LOCATION_MASK_NOT_ALLOWED) return false;
     if ( (audio_location & LE_AUDIO_LOCATION_MASK_RFU) != 0) return false;
 
@@ -180,7 +180,9 @@ static bool vocs_set_audio_location(volume_offset_control_service_server_t * voc
     return true;
 }
 
-static void vocs_emit_volume_offset(volume_offset_control_service_server_t * vocs){
+static void vocs_server_emit_volume_offset(volume_offset_control_service_server_t * vocs){
+    btstack_assert(vocs != NULL);
+    btstack_assert(vocs->info != NULL);
     btstack_assert(vocs->info->packet_handler != NULL);
     
     uint8_t event[8];
@@ -196,7 +198,9 @@ static void vocs_emit_volume_offset(volume_offset_control_service_server_t * voc
     (*vocs->info->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void vocs_emit_audio_location(volume_offset_control_service_server_t * vocs){
+static void vocs_server_emit_audio_location(volume_offset_control_service_server_t * vocs){
+    btstack_assert(vocs != NULL);
+    btstack_assert(vocs->info != NULL);
     btstack_assert(vocs->info->packet_handler != NULL);
     
     uint8_t event[10];
@@ -212,7 +216,9 @@ static void vocs_emit_audio_location(volume_offset_control_service_server_t * vo
     (*vocs->info->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void vocs_emit_audio_output_description(volume_offset_control_service_server_t * vocs){
+static void vocs_server_emit_audio_output_description(volume_offset_control_service_server_t * vocs){
+    btstack_assert(vocs != NULL);
+    btstack_assert(vocs->info != NULL);
     btstack_assert(vocs->info->packet_handler != NULL);
     
     uint8_t event[7 + VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH];
@@ -231,12 +237,12 @@ static void vocs_emit_audio_output_description(volume_offset_control_service_ser
 }
 
 
-static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+static int vocs_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(con_handle);
     UNUSED(transaction_mode);
     UNUSED(offset);
     
-    volume_offset_control_service_server_t * vocs = vocs_find_service_for_attribute_handle(attribute_handle);
+    volume_offset_control_service_server_t * vocs = vocs_server_find_service_for_attribute_handle(attribute_handle);
     if (vocs == NULL){
         return 0;
     }
@@ -263,18 +269,18 @@ static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
                     return VOCS_ERROR_CODE_VALUE_OUT_OF_RANGE;
                 }
 
-                if (!vocs_set_volume_offset(vocs, volume_offset)) {
+                if (!vocs_server_set_volume_offset(vocs, volume_offset)) {
                     return VOCS_ERROR_CODE_VALUE_OUT_OF_RANGE;
                 }
-                vocs_emit_volume_offset(vocs);
+                vocs_server_emit_volume_offset(vocs);
                 break;
 
             default:
                 return VOCS_ERROR_CODE_OPCODE_NOT_SUPPORTED;
         }
 
-        volume_offset_control_service_update_change_counter(vocs);
-        volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_VOLUME_OFFSET);
+        vocs_server_update_change_counter(vocs);
+        vocs_server_set_callback(vocs, VOCS_TASK_SEND_VOLUME_OFFSET);
     }
 
     if (attribute_handle == vocs->audio_location_value_handle){
@@ -282,38 +288,38 @@ static int vocs_write_callback(hci_con_handle_t con_handle, uint16_t attribute_h
             return 0;
         }
         uint32_t audio_location = little_endian_read_32(buffer, 0);
-        if (vocs_set_audio_location(vocs, audio_location)) {
-            vocs_emit_audio_location(vocs);
-            volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_LOCATION);
+        if (vocs_server_set_audio_location(vocs, audio_location)) {
+            vocs_server_emit_audio_location(vocs);
+            vocs_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_LOCATION);
         }
     }
 
     if (attribute_handle == vocs->audio_output_description_value_handle){
         btstack_strcpy(vocs->info->audio_output_description, vocs->audio_output_description_len, (char *)buffer);
         vocs->audio_output_description_len = (uint8_t) strlen(vocs->info->audio_output_description);
-        vocs_emit_audio_output_description(vocs);
-        volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION);
+        vocs_server_emit_audio_output_description(vocs);
+        vocs_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION);
     }
 
     if (attribute_handle == vocs->volume_offset_state_client_configuration_handle){
         vocs->volume_offset_state_client_configuration = little_endian_read_16(buffer, 0);
-        vocs_set_con_handle(vocs, con_handle, vocs->volume_offset_state_client_configuration);
+        vocs_server_set_con_handle(vocs, con_handle, vocs->volume_offset_state_client_configuration);
     }
     
     if (attribute_handle == vocs->audio_location_client_configuration_handle){
         vocs->audio_location_client_configuration = little_endian_read_16(buffer, 0);
-        vocs_set_con_handle(vocs, con_handle, vocs->audio_location_client_configuration);
+        vocs_server_set_con_handle(vocs, con_handle, vocs->audio_location_client_configuration);
     }
     
     if (attribute_handle == vocs->audio_output_description_client_configuration_handle){
         vocs->audio_output_description_client_configuration = little_endian_read_16(buffer, 0);
-        vocs_set_con_handle(vocs, con_handle, vocs->audio_output_description_client_configuration);
+        vocs_server_set_con_handle(vocs, con_handle, vocs->audio_output_description_client_configuration);
     }
 
     return 0;
 }
 
-static void vocs_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void vocs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(packet);
     UNUSED(size);
@@ -379,24 +385,24 @@ void volume_offset_control_service_server_init(volume_offset_control_service_ser
     // register service with ATT Server
     vocs->service_handler.start_handle   = vocs->start_handle;
     vocs->service_handler.end_handle     = vocs->end_handle;
-    vocs->service_handler.read_callback  = &vocs_read_callback;
-    vocs->service_handler.write_callback = &vocs_write_callback;
-    vocs->service_handler.packet_handler = vocs_packet_handler;
+    vocs->service_handler.read_callback  = &vocs_server_read_callback;
+    vocs->service_handler.write_callback = &vocs_server_write_callback;
+    vocs->service_handler.packet_handler = vocs_server_packet_handler;
     att_server_register_service_handler(&vocs->service_handler);
 }
 
 uint8_t volume_offset_control_service_server_set_volume_offset(volume_offset_control_service_server_t * vocs, int16_t volume_offset){
     btstack_assert(vocs != NULL);
     vocs->info->volume_offset = volume_offset;
-    volume_offset_control_service_update_change_counter(vocs);
-    volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_VOLUME_OFFSET);
+    vocs_server_update_change_counter(vocs);
+    vocs_server_set_callback(vocs, VOCS_TASK_SEND_VOLUME_OFFSET);
     return ERROR_CODE_SUCCESS;
 }
 
 uint8_t volume_offset_control_service_server_set_audio_location(volume_offset_control_service_server_t * vocs, uint32_t audio_location){
     btstack_assert(vocs != NULL);
     vocs->info->audio_location = audio_location;
-    volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_LOCATION);
+    vocs_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_LOCATION);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -404,5 +410,5 @@ void volume_offset_control_service_server_set_audio_output_description(volume_of
     btstack_assert(vocs != NULL);
     btstack_strcpy(vocs->info->audio_output_description, vocs->audio_output_description_len, (char *)audio_output_desc);
     vocs->audio_output_description_len = (uint8_t) strlen(vocs->info->audio_output_description);
-    volume_offset_control_service_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION);
+    vocs_server_set_callback(vocs, VOCS_TASK_SEND_AUDIO_OUTPUT_DESCRIPTION);
 }
