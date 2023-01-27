@@ -113,7 +113,6 @@ typedef struct {
     uint16_t receive_state_end_handle;
 } bass_client_source_t;
 
-
 typedef struct {
     btstack_linked_item_t item;
     
@@ -152,17 +151,18 @@ typedef struct {
 
 /**
  * @brief Init Broadcast Audio Scan Service Client. Register packet handler to receive events:
- * - GATTSERVICE_SUBEVENT_BASS_CONNECTED
- * - GATTSERVICE_SUBEVENT_BASS_SCAN_OPERATION_COMPLETE
- * - GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE
- * - GATTSERVICE_SUBEVENT_BASS_NOTIFICATION_COMPLETE
+ * - GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED
+ * - GATTSERVICE_SUBEVENT_BASS_CLIENT_DISCONNECTED
+ * - GATTSERVICE_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE
+ * - GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
+ * - GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE
  * @param packet_handler for events
  */
 void    broadcast_audio_scan_service_client_init(btstack_packet_handler_t packet_handler);
 
 /**
  * @brief Connect to BASS Service on remote device
- * @note GATTSERVICE_SUBEVENT_BASS_CONNECTED will be emitted
+ * @note GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED will be emitted
  * @param connection struct provided by user, needs to stay valid until disconnect event is received
  * @param sources buffer to store information on Broadcast Sources on the service
  * @param num_sources
@@ -181,7 +181,7 @@ uint8_t broadcast_audio_scan_service_client_scanning_started(uint16_t bass_cid);
 
 /**
  * @brief Notify BASS Service that scanning has stopped
- * @note emits GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE
+ * @note emits GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
  * @param bass_cid
  * @return status
  */
@@ -191,7 +191,7 @@ uint8_t broadcast_audio_scan_service_client_scanning_stopped(uint16_t bass_cid);
  * @brief Add Broadcast Source on service
  * @note GATTSERVICE_SUBEVENT_BASS_NOTIFICATION_COMPLETE will contain source_id for other functions
  * @param bass_cid
- * @param add_source_data data to add, needs to stay valid until GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE
+ * @param add_source_data data to add, needs to stay valid until GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
  * @return status
  */
 uint8_t broadcast_audio_scan_service_client_add_source(uint16_t bass_cid, const bass_source_data_t * add_source_data);
@@ -200,7 +200,7 @@ uint8_t broadcast_audio_scan_service_client_add_source(uint16_t bass_cid, const 
  * @brief Modify information about Broadcast Source on service
  * @param bass_cid
  * @param source_id
- * @param modify_source_data data to modify, needs to stay valid until GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE
+ * @param modify_source_data data to modify, needs to stay valid until GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
  * @return status
  */
 uint8_t broadcast_audio_scan_service_client_modify_source(uint16_t bass_cid, uint8_t source_id, const bass_source_data_t * modify_source_data);
