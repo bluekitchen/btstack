@@ -16542,7 +16542,7 @@ static inline hci_con_handle_t gattservice_subevent_csis_server_disconnected_get
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_csis_remote_server_connected_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_csis_client_connected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -16551,7 +16551,7 @@ static inline hci_con_handle_t gattservice_subevent_csis_remote_server_connected
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_remote_server_connected_get_csis_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_csis_client_connected_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 5);
 }
 /**
@@ -16560,7 +16560,7 @@ static inline uint16_t gattservice_subevent_csis_remote_server_connected_get_csi
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_remote_server_connected_get_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_client_connected_get_status(const uint8_t * event){
     return event[7];
 }
 
@@ -16570,7 +16570,7 @@ static inline uint8_t gattservice_subevent_csis_remote_server_connected_get_stat
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_remote_server_disconnected_get_csis_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_csis_client_disconnected_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
@@ -16580,7 +16580,7 @@ static inline uint16_t gattservice_subevent_csis_remote_server_disconnected_get_
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_remote_lock_write_complete_get_csis_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_csis_client_lock_write_complete_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -16589,7 +16589,7 @@ static inline uint16_t gattservice_subevent_csis_remote_lock_write_complete_get_
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_remote_lock_write_complete_get_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_client_lock_write_complete_get_status(const uint8_t * event){
     return event[5];
 }
 /**
@@ -16598,7 +16598,7 @@ static inline uint8_t gattservice_subevent_csis_remote_lock_write_complete_get_s
  * @return lock
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_remote_lock_write_complete_get_lock(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_client_lock_write_complete_get_lock(const uint8_t * event){
     return event[6];
 }
 
@@ -16608,7 +16608,7 @@ static inline uint8_t gattservice_subevent_csis_remote_lock_write_complete_get_l
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_remote_lock_get_csis_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_csis_client_remote_lock_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -16617,7 +16617,7 @@ static inline uint16_t gattservice_subevent_csis_remote_lock_get_csis_cid(const 
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_remote_lock_get_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_client_remote_lock_get_status(const uint8_t * event){
     return event[5];
 }
 /**
@@ -16626,7 +16626,7 @@ static inline uint8_t gattservice_subevent_csis_remote_lock_get_status(const uin
  * @return lock
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_remote_lock_get_lock(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_client_remote_lock_get_lock(const uint8_t * event){
     return event[6];
 }
 
@@ -16636,7 +16636,7 @@ static inline uint8_t gattservice_subevent_csis_remote_lock_get_lock(const uint8
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_remote_coordinated_set_size_get_csis_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_csis_client_coordinated_set_size_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -16645,7 +16645,7 @@ static inline uint16_t gattservice_subevent_csis_remote_coordinated_set_size_get
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_remote_coordinated_set_size_get_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_client_coordinated_set_size_get_status(const uint8_t * event){
     return event[5];
 }
 /**
@@ -16654,7 +16654,7 @@ static inline uint8_t gattservice_subevent_csis_remote_coordinated_set_size_get_
  * @return coordinated_set_size
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_remote_coordinated_set_size_get_coordinated_set_size(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_client_coordinated_set_size_get_coordinated_set_size(const uint8_t * event){
     return event[6];
 }
 
@@ -16664,7 +16664,7 @@ static inline uint8_t gattservice_subevent_csis_remote_coordinated_set_size_get_
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_remote_rank_get_csis_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_csis_client_rank_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -16673,7 +16673,7 @@ static inline uint16_t gattservice_subevent_csis_remote_rank_get_csis_cid(const 
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_remote_rank_get_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_client_rank_get_status(const uint8_t * event){
     return event[5];
 }
 /**
@@ -16682,7 +16682,7 @@ static inline uint8_t gattservice_subevent_csis_remote_rank_get_status(const uin
  * @return rank
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_remote_rank_get_rank(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_client_rank_get_rank(const uint8_t * event){
     return event[6];
 }
 
@@ -16692,7 +16692,7 @@ static inline uint8_t gattservice_subevent_csis_remote_rank_get_rank(const uint8
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_remote_sirk_get_csis_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_csis_client_sirk_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -16701,7 +16701,7 @@ static inline uint16_t gattservice_subevent_csis_remote_sirk_get_csis_cid(const 
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_remote_sirk_get_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_client_sirk_get_status(const uint8_t * event){
     return event[5];
 }
 /**
@@ -16710,7 +16710,7 @@ static inline uint8_t gattservice_subevent_csis_remote_sirk_get_status(const uin
  * @return sirk_type
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_remote_sirk_get_sirk_type(const uint8_t * event){
+static inline uint8_t gattservice_subevent_csis_client_sirk_get_sirk_type(const uint8_t * event){
     return event[6];
 }
 /**
@@ -16719,7 +16719,7 @@ static inline uint8_t gattservice_subevent_csis_remote_sirk_get_sirk_type(const 
  * @param Pointer to storage for sirk
  * @note: btstack_type K
  */
-static inline void gattservice_subevent_csis_remote_sirk_get_sirk(const uint8_t * event, uint8_t * sirk){
+static inline void gattservice_subevent_csis_client_sirk_get_sirk(const uint8_t * event, uint8_t * sirk){
     reverse_bytes(&event[7], sirk, 16);
 }
 
