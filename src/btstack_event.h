@@ -15583,30 +15583,30 @@ static inline uint8_t gattservice_subevent_ascs_client_control_point_operation_r
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATION_RECEIVED
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_pacs_audio_location_received_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_pacs_server_audio_locations_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field audio_locations from event GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATION_RECEIVED
+ * @brief Get field audio_locations from event GATTSERVICE_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS
  * @param event packet
  * @return audio_locations
  * @note: btstack_type 4
  */
-static inline uint32_t gattservice_subevent_pacs_audio_location_received_get_audio_locations(const uint8_t * event){
+static inline uint32_t gattservice_subevent_pacs_server_audio_locations_get_audio_locations(const uint8_t * event){
     return little_endian_read_32(event, 5);
 }
 /**
- * @brief Get field role from event GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATION_RECEIVED
+ * @brief Get field role from event GATTSERVICE_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS
  * @param event packet
  * @return role
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_pacs_audio_location_received_get_role(const uint8_t * event){
+static inline uint8_t gattservice_subevent_pacs_server_audio_locations_get_role(const uint8_t * event){
     return event[9];
 }
 
