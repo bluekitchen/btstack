@@ -71,7 +71,7 @@ static uint16_t msc_get_next_media_player_id(void){
 	return mcs_media_player_counter;
 }
 
-static mcs_media_player_t * msc_media_player_registered(uint16_t start_handle){
+static media_control_service_server_t * msc_media_player_registered(uint16_t start_handle){
 	if (start_handle == 0xffff) {
 		return NULL;
 	}
@@ -79,18 +79,18 @@ static mcs_media_player_t * msc_media_player_registered(uint16_t start_handle){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &mcs_media_players);
     while (btstack_linked_list_iterator_has_next(&it)){
-        mcs_media_player_t * media_player = (mcs_media_player_t *)btstack_linked_list_iterator_next(&it);
+        media_control_service_server_t * media_player = (media_control_service_server_t *)btstack_linked_list_iterator_next(&it);
         if (media_player->service.start_handle != start_handle) continue;
         return media_player;
     }
     return NULL;
 }
 
-static mcs_media_player_t * msc_find_media_player_for_id(uint16_t media_player_id){
+static media_control_service_server_t * msc_find_media_player_for_id(uint16_t media_player_id){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &mcs_media_players);
     while (btstack_linked_list_iterator_has_next(&it)){
-        mcs_media_player_t * media_player = (mcs_media_player_t *)btstack_linked_list_iterator_next(&it);
+        media_control_service_server_t * media_player = (media_control_service_server_t *)btstack_linked_list_iterator_next(&it);
         if (media_player_id == media_player->player_id){
         	return media_player;
         } 
@@ -98,11 +98,11 @@ static mcs_media_player_t * msc_find_media_player_for_id(uint16_t media_player_i
     return NULL;
 }
 
-static mcs_media_player_t * msc_find_media_player_for_con_handle(hci_con_handle_t con_handle){
+static media_control_service_server_t * msc_find_media_player_for_con_handle(hci_con_handle_t con_handle){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &mcs_media_players);
     while (btstack_linked_list_iterator_has_next(&it)){
-        mcs_media_player_t * media_player = (mcs_media_player_t *)btstack_linked_list_iterator_next(&it);
+        media_control_service_server_t * media_player = (media_control_service_server_t *)btstack_linked_list_iterator_next(&it);
         if (con_handle == media_player->con_handle){
         	return media_player;
         } 
@@ -110,11 +110,11 @@ static mcs_media_player_t * msc_find_media_player_for_con_handle(hci_con_handle_
     return NULL;
 }
 
-static mcs_media_player_t * msc_find_media_player_for_attribute_handle(uint16_t attribute_handle){
+static media_control_service_server_t * msc_find_media_player_for_attribute_handle(uint16_t attribute_handle){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &mcs_media_players);
     while (btstack_linked_list_iterator_has_next(&it)){
-        mcs_media_player_t * media_player = (mcs_media_player_t *)btstack_linked_list_iterator_next(&it);
+        media_control_service_server_t * media_player = (media_control_service_server_t *)btstack_linked_list_iterator_next(&it);
         if ((attribute_handle > media_player->service.start_handle) && (attribute_handle <= media_player->service.end_handle)){
         	return media_player;
         } 
@@ -122,7 +122,7 @@ static mcs_media_player_t * msc_find_media_player_for_attribute_handle(uint16_t 
     return NULL;
 }
 
-static msc_characteristic_id_t msc_find_index_for_attribute_handle(mcs_media_player_t * media_player, uint16_t attribute_handle, handle_type_t * type){
+static msc_characteristic_id_t msc_find_index_for_attribute_handle(media_control_service_server_t * media_player, uint16_t attribute_handle, handle_type_t * type){
     uint8_t i;
     for (i = 0; i < NUM_MCS_CHARACTERISTICS; i++){
 		if (attribute_handle == media_player->characteristics[i].client_configuration_handle){
@@ -139,12 +139,12 @@ static msc_characteristic_id_t msc_find_index_for_attribute_handle(mcs_media_pla
 
 
 
-static void mcs_set_con_handle(mcs_media_player_t * media_player, uint16_t characteristic_index, hci_con_handle_t con_handle, uint16_t configuration){
+static void mcs_set_con_handle(media_control_service_server_t * media_player, uint16_t characteristic_index, hci_con_handle_t con_handle, uint16_t configuration){
     media_player->characteristics[characteristic_index].client_configuration = configuration;
     media_player->con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
 }
 
-static void mcs_server_reset_values(mcs_media_player_t * media_player){
+static void mcs_server_reset_values(media_control_service_server_t * media_player){
 	if (media_player == NULL){
 		return;
 	}
@@ -165,7 +165,7 @@ static void mcs_disconnection_packet_handler(uint8_t packet_type, uint16_t chann
     }
 
     hci_con_handle_t con_handle;
-    mcs_media_player_t * media_player;
+    media_control_service_server_t * media_player;
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -188,7 +188,7 @@ static uint16_t mcs_max_value_len(hci_con_handle_t con_handle, uint16_t value_le
 }
 
 static void mcs_server_can_send_now(void * context){
-    mcs_media_player_t * media_player = (mcs_media_player_t *) context;
+    media_control_service_server_t * media_player = (media_control_service_server_t *) context;
     
     if (media_player->con_handle == HCI_CON_HANDLE_INVALID){
         media_player->scheduled_tasks = 0;
@@ -226,7 +226,7 @@ static void mcs_server_can_send_now(void * context){
     }
 }
 
-static bool mcs_can_schedule_task(mcs_media_player_t * media_player, uint8_t task_id){
+static bool mcs_can_schedule_task(media_control_service_server_t * media_player, uint8_t task_id){
 	switch (task_id){
     	case TRACK_DURATION:
     		if ((media_player->data.media_state == MCS_MEDIA_STATE_PLAYING) && (media_player->data.playback_speed == 1)){
@@ -265,7 +265,7 @@ static bool mcs_can_schedule_task(mcs_media_player_t * media_player, uint8_t tas
     return true;
 }
 
-static void mcs_schedule_task(mcs_media_player_t * media_player, uint8_t task_id){
+static void mcs_schedule_task(media_control_service_server_t * media_player, uint8_t task_id){
     // skip if already scheduled
     if ( (media_player->scheduled_tasks & task_id) != 0){
         return;
@@ -290,7 +290,7 @@ static void mcs_schedule_task(mcs_media_player_t * media_player, uint8_t task_id
 static uint16_t media_control_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 	UNUSED(con_handle);
 
-	mcs_media_player_t * media_player = msc_find_media_player_for_attribute_handle(attribute_handle);
+	media_control_service_server_t * media_player = msc_find_media_player_for_attribute_handle(attribute_handle);
 	if (media_player == NULL) {
 		return 0;
 	}
@@ -329,7 +329,7 @@ static int media_control_service_write_callback(hci_con_handle_t con_handle, uin
 	UNUSED(offset);
 	UNUSED(buffer_size);
 	
-	mcs_media_player_t * media_player = msc_find_media_player_for_attribute_handle(attribute_handle);
+	media_control_service_server_t * media_player = msc_find_media_player_for_attribute_handle(attribute_handle);
 	if (media_player == NULL) {
 		return 0;
 	}
@@ -367,14 +367,14 @@ void media_control_service_server_init(btstack_packet_handler_t callback){
 	mcs_media_players = NULL;
 }
 
-static void mcs_reset_media_player(mcs_media_player_t * media_player){
+static void mcs_reset_media_player(media_control_service_server_t * media_player){
 	media_player->con_handle = HCI_CON_HANDLE_INVALID;
 	
 	memset(&media_player->data, 0, sizeof(mcs_media_player_data_t));
 	media_player->data.track_duration_10ms = 0xFFFFFFFF;
 }
 
-uint8_t media_control_service_server_register_media_player(mcs_media_player_t * media_player,  uint16_t * media_player_id){
+uint8_t media_control_service_server_register_media_player(media_control_service_server_t * media_player, uint16_t * media_player_id){
 	// search service with global start handle
 	btstack_assert(media_player != NULL);
 	
@@ -441,7 +441,7 @@ uint8_t media_control_service_server_register_media_player(mcs_media_player_t * 
             return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
         }
 
-        mcs_media_player_t * media_player_registered = msc_media_player_registered(start_handle);
+        media_control_service_server_t * media_player_registered = msc_media_player_registered(start_handle);
         if (media_player_registered == NULL){
 			log_info("Found MCS service 0x%02x-0x%02x", start_handle, end_handle);
 
@@ -497,7 +497,7 @@ uint8_t media_control_service_server_register_media_player(mcs_media_player_t * 
 }
 
 uint8_t media_control_service_server_set_media_player_name(uint16_t media_player_id, char * name){
-	mcs_media_player_t * media_player = msc_find_media_player_for_id(media_player_id);
+	media_control_service_server_t * media_player = msc_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
@@ -516,7 +516,7 @@ uint8_t media_control_service_server_set_icon_object_id(uint16_t media_player_id
 		return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
 	}
 
-	mcs_media_player_t * media_player = msc_find_media_player_for_id(media_player_id);
+	media_control_service_server_t * media_player = msc_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
@@ -526,7 +526,7 @@ uint8_t media_control_service_server_set_icon_object_id(uint16_t media_player_id
 }
 
 uint8_t media_control_service_server_set_icon_url(uint16_t media_player_id, const char * icon_url){
-	mcs_media_player_t * media_player = msc_find_media_player_for_id(media_player_id);
+	media_control_service_server_t * media_player = msc_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
@@ -535,7 +535,7 @@ uint8_t media_control_service_server_set_icon_url(uint16_t media_player_id, cons
 }
 
 uint8_t media_control_service_server_set_media_track_changed(uint16_t media_player_id){
-	mcs_media_player_t * media_player = msc_find_media_player_for_id(media_player_id);
+	media_control_service_server_t * media_player = msc_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
@@ -547,7 +547,7 @@ uint8_t media_control_service_server_set_media_track_changed(uint16_t media_play
 }
 
 uint8_t media_control_service_server_set_track_title(uint16_t media_player_id, const char * track_title){
-	mcs_media_player_t * media_player = msc_find_media_player_for_id(media_player_id);
+	media_control_service_server_t * media_player = msc_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
@@ -560,7 +560,7 @@ uint8_t media_control_service_server_set_track_title(uint16_t media_player_id, c
 }
 
 uint8_t media_control_service_server_set_track_duration(uint16_t media_player_id, uint32_t track_duration_10ms){
-	mcs_media_player_t * media_player = msc_find_media_player_for_id(media_player_id);
+	media_control_service_server_t * media_player = msc_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
@@ -575,7 +575,7 @@ uint8_t media_control_service_server_set_track_duration(uint16_t media_player_id
 
 uint8_t media_control_service_server_set_track_position_offset(uint16_t media_player_id, int32_t track_position_offset_10ms){
 	UNUSED(track_position_offset_10ms);
-	mcs_media_player_t * media_player = msc_find_media_player_for_id(media_player_id);
+	media_control_service_server_t * media_player = msc_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
@@ -588,7 +588,7 @@ uint8_t media_control_service_server_set_track_position_offset(uint16_t media_pl
 }
 
 uint8_t media_control_service_server_set_playback_speed(uint16_t media_player_id, int8_t playback_speed){
-	mcs_media_player_t * media_player = msc_find_media_player_for_id(media_player_id);
+	media_control_service_server_t * media_player = msc_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
@@ -604,7 +604,7 @@ uint8_t media_control_service_server_set_playback_speed(uint16_t media_player_id
 }
 
 uint8_t media_control_service_server_set_seeking_speed(uint16_t media_player_id, int8_t seeking_speed){
-	mcs_media_player_t * media_player = msc_find_media_player_for_id(media_player_id);
+	media_control_service_server_t * media_player = msc_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
@@ -617,7 +617,7 @@ uint8_t media_control_service_server_set_seeking_speed(uint16_t media_player_id,
 }
 
 uint8_t media_control_service_server_set_media_state(uint16_t media_player_id, mcs_media_state_t media_state){
-	mcs_media_player_t * media_player = msc_find_media_player_for_id(media_player_id);
+	media_control_service_server_t * media_player = msc_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
@@ -633,7 +633,7 @@ uint8_t media_control_service_server_set_media_state(uint16_t media_player_id, m
 }
 
 
-uint8_t media_control_service_server_unregister_media_player(mcs_media_player_t * media_player){
+uint8_t media_control_service_server_unregister_media_player(media_control_service_server_t * media_player){
 	if (media_player == NULL){
 		return ERROR_CODE_SUCCESS;
 	}
