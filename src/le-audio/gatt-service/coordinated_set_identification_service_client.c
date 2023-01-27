@@ -214,7 +214,7 @@ static void csis_client_emit_read_remote_lock(csis_client_connection_t * connect
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_REMOTE_LOCK;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
