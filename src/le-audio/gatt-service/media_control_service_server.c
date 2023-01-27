@@ -63,7 +63,7 @@ typedef enum {
 } handle_type_t;
 
 static btstack_linked_list_t    mcs_media_players;
-static btstack_packet_handler_t mcs_client_callback;
+static btstack_packet_handler_t mcs_server_callback;
 static uint16_t mcs_media_player_counter = 0;
 
 static uint16_t msc_get_next_media_player_id(void){
@@ -345,6 +345,30 @@ static int media_control_service_write_callback(hci_con_handle_t con_handle, uin
 			break;
 	}
 
+/*
+ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME                    ,
+        ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_OBJECT_ID          ,
+        ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL                ,
+        ORG_BLUETOOTH_CHARACTERISTIC_TRACK_CHANGED                        ,
+        ORG_BLUETOOTH_CHARACTERISTIC_TRACK_TITLE                          ,
+        ORG_BLUETOOTH_CHARACTERISTIC_TRACK_DURATION                       ,
+        ORG_BLUETOOTH_CHARACTERISTIC_TRACK_POSITION                       ,
+        ORG_BLUETOOTH_CHARACTERISTIC_PLAYBACK_SPEED                       ,
+        ORG_BLUETOOTH_CHARACTERISTIC_SEEKING_SPEED                        ,
+        ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_SEGMENTS_OBJECT_ID     ,
+        ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_OBJECT_ID              ,
+        ORG_BLUETOOTH_CHARACTERISTIC_NEXT_TRACK_OBJECT_ID                 ,
+        ORG_BLUETOOTH_CHARACTERISTIC_PARENT_GROUP_OBJECT_ID               ,
+        ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_GROUP_OBJECT_ID              ,
+        ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDER                        ,
+        ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDERS_SUPPORTED             ,
+        ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_STATE                          ,
+        ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT                  ,
+        ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT_OPCODES_SUPPORTED,
+        ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_RESULTS_OBJECT_ID             ,
+        ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_CONTROL_POINT                 ,
+        ORG_BLUETOOTH_CHARACTERISTIC_CONTENT_CONTROL_ID                   
+*/
 	switch (characteristic_id){
 		case MEDIA_PLAYER_NAME: 
 			btstack_strcpy(media_player->data.name, sizeof(media_player->data.name), (const char *)buffer);
@@ -359,12 +383,15 @@ static int media_control_service_write_callback(hci_con_handle_t con_handle, uin
 	return 0;
 }
 
-void media_control_service_server_init(btstack_packet_handler_t callback){
-	btstack_assert(callback != NULL);
-	mcs_client_callback = callback;
+void media_control_service_server_init(void){
 	mcs_media_player_counter = 0;
 	// get service handle range
 	mcs_media_players = NULL;
+}
+
+void media_control_service_server_register_packet_handler(btstack_packet_handler_t packet_handler){
+    btstack_assert(packet_handler != NULL);
+    mcs_server_callback = packet_handler;
 }
 
 static void mcs_reset_media_player(media_control_service_server_t * media_player){
