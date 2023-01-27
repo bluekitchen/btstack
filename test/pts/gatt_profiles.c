@@ -63,16 +63,16 @@
 
 #define BASS_NUM_CLIENTS 1
 #define BASS_NUM_SOURCES 2
-static bass_server_source_t bass_sources[BASS_NUM_SOURCES];
-static bass_remote_client_t bass_clients[BASS_NUM_CLIENTS];
 static bass_server_source_t bass_source_1;
 static bass_server_source_t bass_source_2;
+static bass_server_source_t bass_sources[BASS_NUM_SOURCES];
+static broadcast_audio_scan_service_server_t bass_clients[BASS_NUM_CLIENTS];
 
 
 #define ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS 5
 #define ASCS_NUM_CLIENTS 3
 static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
-static ascs_remote_client_t ascs_clients[ASCS_NUM_CLIENTS];
+static audio_stream_control_service_server_t ascs_clients[ASCS_NUM_CLIENTS];
 
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -227,43 +227,43 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     mics_mute = (gatt_microphone_control_mute_t)gattservice_subevent_local_mics_mute_get_state(packet);
                     break;
 
-                case GATTSERVICE_SUBEVENT_AICS_MUTE_MODE:
-                    switch ((aics_mute_mode_t)gattservice_subevent_aics_mute_mode_get_state(packet)){
+                case GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE:
+                    switch ((aics_mute_mode_t)gattservice_subevent_aics_server_mute_mode_get_state(packet)){
                         case AICS_MUTE_MODE_NOT_MUTED:
-                            printf("AICS[%d]: mute mode NOT_MUTED\n", gattservice_subevent_aics_mute_mode_get_index(packet));
+                            printf("AICS[%d]: mute mode NOT_MUTED\n", gattservice_subevent_aics_server_mute_mode_get_index(packet));
                             break;
                         case AICS_MUTE_MODE_MUTED:
-                            printf("AICS[%d]: mute mode MUTED\n", gattservice_subevent_aics_mute_mode_get_index(packet));
+                            printf("AICS[%d]: mute mode MUTED\n", gattservice_subevent_aics_server_mute_mode_get_index(packet));
                             break;
                         case AICS_MUTE_MODE_DISABLED:
-                            printf("AICS[%d]: mute mode DISABLED\n", gattservice_subevent_aics_mute_mode_get_index(packet));
+                            printf("AICS[%d]: mute mode DISABLED\n", gattservice_subevent_aics_server_mute_mode_get_index(packet));
                             break;
                         default:
                             break;
                     } 
                     break;
 
-                case GATTSERVICE_SUBEVENT_AICS_GAIN_MODE:
-                    switch ((aics_gain_mode_t)gattservice_subevent_aics_gain_mode_get_state(packet)) {
+                case GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE:
+                    switch ((aics_gain_mode_t)gattservice_subevent_aics_server_gain_mode_get_state(packet)) {
                         case AICS_GAIN_MODE_MANUAL:
-                            printf("AICS[%d]: gain mode MANUAL\n", gattservice_subevent_aics_gain_mode_get_index(packet));
+                            printf("AICS[%d]: gain mode MANUAL\n", gattservice_subevent_aics_server_gain_mode_get_index(packet));
                             break;
                         case AICS_GAIN_MODE_AUTOMATIC:
-                            printf("AICS[%d]: gain mode AUTOMATIC\n", gattservice_subevent_aics_gain_mode_get_index(packet));
+                            printf("AICS[%d]: gain mode AUTOMATIC\n", gattservice_subevent_aics_server_gain_mode_get_index(packet));
                             break;
                         case AICS_GAIN_MODE_MANUAL_ONLY:
-                            printf("AICS[%d]: gain mode MANUAL_ONLY\n", gattservice_subevent_aics_gain_mode_get_index(packet));
+                            printf("AICS[%d]: gain mode MANUAL_ONLY\n", gattservice_subevent_aics_server_gain_mode_get_index(packet));
                             break;
                         case AICS_GAIN_MODE_AUTOMATIC_ONLY:
-                            printf("AICS[%d]: gain mode AUTOMATIC_ONLY\n", gattservice_subevent_aics_gain_mode_get_index(packet));
+                            printf("AICS[%d]: gain mode AUTOMATIC_ONLY\n", gattservice_subevent_aics_server_gain_mode_get_index(packet));
                             break;
                         default:
                             break;
                     }
                     break;
                 
-                case GATTSERVICE_SUBEVENT_AICS_GAIN_CHANGED:
-                    printf("AICS: gain for AICS %d changed to %ddB\n", gattservice_subevent_aics_gain_changed_get_index(packet), gattservice_subevent_aics_gain_changed_get_gain_db(packet));
+                case GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED:
+                    printf("AICS: gain for AICS %d changed to %ddB\n", gattservice_subevent_aics_server_gain_changed_get_index(packet), gattservice_subevent_aics_server_gain_changed_get_gain_db(packet));
                     break;
 
                 default:
