@@ -67,7 +67,7 @@ static uint8_t  bass_logic_time = 0;
 
 static bass_server_source_t * bass_sources;
 static uint8_t  bass_sources_num = 0;
-static bass_remote_client_t * bass_clients;
+static broadcast_audio_scan_service_server_t * bass_clients;
 static uint8_t  bass_clients_num = 0;
 static btstack_context_callback_registration_t  scheduled_tasks_callback;
 
@@ -147,7 +147,7 @@ static bass_server_source_t * bass_find_source_for_source_id(uint8_t source_id){
     return NULL;
 }
 
-static bass_remote_client_t * bass_find_client_for_con_handle(hci_con_handle_t con_handle){
+static broadcast_audio_scan_service_server_t * bass_find_client_for_con_handle(hci_con_handle_t con_handle){
     uint16_t i;
     for (i = 0; i < bass_clients_num; i++){
         if (bass_clients[i].con_handle == con_handle) {
@@ -158,7 +158,7 @@ static bass_remote_client_t * bass_find_client_for_con_handle(hci_con_handle_t c
 }
 
 static void bass_register_con_handle(hci_con_handle_t con_handle, uint16_t client_configuration){
-    bass_remote_client_t * client = bass_find_client_for_con_handle(con_handle);
+    broadcast_audio_scan_service_server_t * client = bass_find_client_for_con_handle(con_handle);
     if (client == NULL){
         client = bass_find_client_for_con_handle(HCI_CON_HANDLE_INVALID);
         if (client == NULL){
@@ -347,7 +347,7 @@ static void bass_reset_source(bass_server_source_t * source){
     memset(source->data.subgroups, 0, sizeof(source->data.subgroups));
 }
 
-static void bass_reset_client_long_write_buffer(bass_remote_client_t * client){
+static void bass_reset_client_long_write_buffer(broadcast_audio_scan_service_server_t * client){
     memset(client->long_write_buffer, 0, sizeof(client->long_write_buffer));
     client->long_write_value_size = 0;
 }
@@ -365,7 +365,7 @@ static int broadcast_audio_scan_service_write_callback(hci_con_handle_t con_hand
     }     
     
 
-    bass_remote_client_t * client = bass_find_client_for_con_handle(con_handle);
+    broadcast_audio_scan_service_server_t * client = bass_find_client_for_con_handle(con_handle);
     if (client == NULL){
         return ATT_ERROR_WRITE_REQUEST_REJECTED;
     }
@@ -515,7 +515,7 @@ static void broadcast_audio_scan_service_packet_handler(uint8_t packet_type, uin
     }
 
     hci_con_handle_t con_handle;
-    bass_remote_client_t * client;
+    broadcast_audio_scan_service_server_t * client;
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -526,7 +526,7 @@ static void broadcast_audio_scan_service_packet_handler(uint8_t packet_type, uin
                 break;
             }
             
-            memset(client, 0, sizeof(bass_remote_client_t));
+            memset(client, 0, sizeof(broadcast_audio_scan_service_server_t));
             client->con_handle = HCI_CON_HANDLE_INVALID;
             break;
         default:
@@ -534,7 +534,7 @@ static void broadcast_audio_scan_service_packet_handler(uint8_t packet_type, uin
     }
 }
 
-void broadcast_audio_scan_service_server_init(const uint8_t sources_num, bass_server_source_t * sources, const uint8_t clients_num, bass_remote_client_t * clients){
+void broadcast_audio_scan_service_server_init(const uint8_t sources_num, bass_server_source_t * sources, const uint8_t clients_num, broadcast_audio_scan_service_server_t * clients){
     // get service handle range
     btstack_assert(sources_num != 0);
     btstack_assert(clients_num != 0);
@@ -583,7 +583,7 @@ void broadcast_audio_scan_service_server_init(const uint8_t sources_num, bass_se
 
     bass_clients_num = clients_num;
     bass_clients = clients;
-    memset(bass_clients, 0, sizeof(bass_remote_client_t) * bass_clients_num);
+    memset(bass_clients, 0, sizeof(broadcast_audio_scan_service_server_t) * bass_clients_num);
     uint8_t i;
     for (i = 0; i < bass_clients_num; i++){
         bass_clients[i].con_handle = HCI_CON_HANDLE_INVALID;
@@ -606,7 +606,7 @@ void broadcast_audio_scan_service_server_register_packet_handler(btstack_packet_
 }
 
 static void bass_service_can_send_now(void * context){
-    bass_remote_client_t * client = (bass_remote_client_t *) context;
+    broadcast_audio_scan_service_server_t * client = (broadcast_audio_scan_service_server_t *) context;
     btstack_assert(client != NULL);
 
     uint8_t source_index;
@@ -643,7 +643,7 @@ static void bass_set_callback(uint8_t source_index){
     uint8_t scheduled_tasks = 0;
 
     for (i = 0; i < bass_clients_num; i++){
-        bass_remote_client_t * client = &bass_clients[i];
+        broadcast_audio_scan_service_server_t * client = &bass_clients[i];
 
         if (client->con_handle == HCI_CON_HANDLE_INVALID){
             client->sources_to_notify &= ~task;

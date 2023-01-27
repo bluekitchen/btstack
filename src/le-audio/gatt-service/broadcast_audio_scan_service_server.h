@@ -86,7 +86,7 @@ typedef struct {
     uint8_t  long_write_buffer[512];
     uint16_t long_write_value_size;
     uint16_t long_write_attribute_handle;
-} bass_remote_client_t;
+} broadcast_audio_scan_service_server_t;
 
 /**
  * @brief Init Broadcast Audio Scan Service Server with ATT DB
@@ -95,7 +95,7 @@ typedef struct {
  * @param clients_num
  * @param clients
  */
-void broadcast_audio_scan_service_server_init(uint8_t const sources_num, bass_server_source_t * sources, uint8_t const clients_num, bass_remote_client_t * clients);
+void broadcast_audio_scan_service_server_init(uint8_t const sources_num, bass_server_source_t * sources, uint8_t const clients_num, broadcast_audio_scan_service_server_t * clients);
 
 /**
  * @brief Register packet handler to receive events:
