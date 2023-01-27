@@ -4725,7 +4725,7 @@ typedef uint8_t sm_key_t[16];
  * @param audio_locations
  * @param role              see le_audio_role_t
 */
-#define GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATION_RECEIVED                      0x44u
+#define GATTSERVICE_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS                      0x44u
 
 /**
  * @format 1H21
@@ -5037,7 +5037,6 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_BASS_SERVER_DISCONNECTED                           0x71u
 
 
-
 /**
  * @format 1H1
  * @param subevent_code
@@ -5061,7 +5060,7 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_PACS_SERVER_CONNECTED                              0x74u
 
-/**GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
+/**
  * @format 1H
  * @param subevent_code
  * @param con_handle
