@@ -61,7 +61,7 @@
 
 
 static att_service_handler_t    coordinated_set_identification_service;
-static btstack_packet_handler_t csis_event_callback;
+static btstack_packet_handler_t csis_server_event_callback;
 static coordinated_set_identification_service_server_t     * csis_coordinators;
 static uint8_t                  csis_coordinators_max_num;
 
@@ -99,12 +99,12 @@ const static uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
 
 static uint8_t key_ltk[16];
 
-static coordinated_set_identification_service_server_t * active_coordinator;
+static coordinated_set_identification_service_server_t * csis_server_active_coordinator;
 
 static void csis_server_trigger_next_sirk_calculation(void);
 
 static void csis_server_emit_rsi(const uint8_t * rsi){
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_server_event_callback != NULL);
 
     uint8_t event[9];
     uint16_t pos = 0;
@@ -112,7 +112,7 @@ static void csis_server_emit_rsi(const uint8_t * rsi){
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RSI;
     reverse_48(rsi, &event[pos]);
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*csis_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void csis_server_handle_csis_hash(void * arg){
@@ -125,7 +125,7 @@ static void csis_server_handle_csis_hash(void * arg){
     csis_rsi_calculation_ongoing = false;
 }
 
-static void csis_handle_prand_provisioner(void * arg){
+static void csis_server_handle_prand_provisioner(void * arg){
     UNUSED(arg);
 
     // CSIS 4.8: The two most significant bits (MSBs) of prand shall be equal to 0 and 1
@@ -149,7 +149,7 @@ uint8_t coordinated_set_identification_service_server_generate_rsi(void){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     csis_rsi_calculation_ongoing = true;
-    btstack_crypto_random_generate(&random_request, csis_prand_data, 3, &csis_handle_prand_provisioner, NULL);
+    btstack_crypto_random_generate(&random_request, csis_prand_data, 3, &csis_server_handle_prand_provisioner, NULL);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -167,24 +167,24 @@ static coordinated_set_identification_service_server_t * csis_server_get_next_co
 }
 
 static void csis_server_handle_k1(void * context){
-    if (active_coordinator == NULL){
+    if (csis_server_active_coordinator == NULL){
         return;
     }
 
     uint8_t i;
     for(i = 0; i < sizeof(k1); i++){
-        active_coordinator->encrypted_sirk[i] = k1[i] ^ csis_sirk[i];
+        csis_server_active_coordinator->encrypted_sirk[i] = k1[i] ^ csis_sirk[i];
     }
 
-    active_coordinator->encrypted_sirk_state = CSIS_SIRK_CALCULATION_STATE_READY;
-    (void)att_server_response_ready(active_coordinator->con_handle);
-    active_coordinator = NULL;
+    csis_server_active_coordinator->encrypted_sirk_state = CSIS_SIRK_CALCULATION_STATE_READY;
+    (void)att_server_response_ready(csis_server_active_coordinator->con_handle);
+    csis_server_active_coordinator = NULL;
 
     csis_server_trigger_next_sirk_calculation();
 }
 
 static void csis_server_handle_T(void * context){
-    if (active_coordinator == NULL){
+    if (csis_server_active_coordinator == NULL){
         return;
     }
     const static uint8_t csis_string[] = { 'c', 's', 'i', 's'};
@@ -192,29 +192,29 @@ static void csis_server_handle_T(void * context){
 }
 
 static void csis_server_handle_s1(void * context){
-    if (active_coordinator == NULL){
+    if (csis_server_active_coordinator == NULL){
         return;
     }
 
-    sm_get_ltk(active_coordinator->con_handle, key_ltk);
+    sm_get_ltk(csis_server_active_coordinator->con_handle, key_ltk);
     btstack_crypto_aes128_cmac_message(&aes128_cmac_request, s1, sizeof(key_ltk), key_ltk, T, csis_server_handle_T, NULL);
 }
 
 static void csis_server_trigger_next_sirk_calculation(void){
-    if (active_coordinator != NULL){
+    if (csis_server_active_coordinator != NULL){
         return;
     }
 
-    active_coordinator = csis_server_get_next_coordinator_for_sirk_calculation();
-    if (active_coordinator == NULL){
+    csis_server_active_coordinator = csis_server_get_next_coordinator_for_sirk_calculation();
+    if (csis_server_active_coordinator == NULL){
         return;
     }
 
-    active_coordinator->encrypted_sirk_state = CSIS_SIRK_CALCULATION_ACTIVE;
+    csis_server_active_coordinator->encrypted_sirk_state = CSIS_SIRK_CALCULATION_ACTIVE;
     btstack_crypto_aes128_cmac_zero(&aes128_cmac_request, sizeof(s1_string), s1_string, s1, &csis_server_handle_s1, NULL);
 }
 
-static coordinated_set_identification_service_server_t * csis_get_coordinator_for_con_handle(hci_con_handle_t con_handle){
+static coordinated_set_identification_service_server_t * csis_server_get_coordinator_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
         return NULL;
     }
@@ -227,7 +227,7 @@ static coordinated_set_identification_service_server_t * csis_get_coordinator_fo
     return NULL;
 }
 
-static bool csis_coordinator_bonded(coordinated_set_identification_service_server_t * coordinator){
+static bool csis_server_coordinator_bonded(coordinated_set_identification_service_server_t * coordinator){
     return sm_le_device_index(coordinator->con_handle) != -1; 
 }
 
@@ -245,7 +245,7 @@ static coordinated_set_identification_service_server_t * csis_server_add_coordin
 }
 
 static void csis_server_emit_coordinator_disconnected(hci_con_handle_t con_handle){
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_server_event_callback != NULL);
 
     uint8_t event[5];
     uint16_t pos = 0;
@@ -254,11 +254,11 @@ static void csis_server_emit_coordinator_disconnected(hci_con_handle_t con_handl
     event[pos++] = GATTSERVICE_SUBEVENT_CSIS_SERVER_DISCONNECTED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*csis_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void csis_server_emit_coordinator_connected(hci_con_handle_t con_handle, uint8_t status){
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_server_event_callback != NULL);
 
     uint8_t event[6];
     uint16_t pos = 0;
@@ -268,11 +268,11 @@ static void csis_server_emit_coordinator_connected(hci_con_handle_t con_handle, 
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = status;
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*csis_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void csis_server_emit_lock(hci_con_handle_t con_handle){
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_server_event_callback != NULL);
 
     uint8_t event[6];
     uint16_t pos = 0;
@@ -282,11 +282,11 @@ static void csis_server_emit_lock(hci_con_handle_t con_handle){
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = (uint8_t)csis_member_lock;
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*csis_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void csis_server_emit_set_size(hci_con_handle_t con_handle){
-    btstack_assert(csis_event_callback != NULL);
+    btstack_assert(csis_server_event_callback != NULL);
 
     uint8_t event[6];
     uint16_t pos = 0;
@@ -295,11 +295,11 @@ static void csis_server_emit_set_size(hci_con_handle_t con_handle){
     event[pos++] = GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE;
     little_endian_store_16(event, pos, con_handle);
     event[pos++] = csis_coordinated_set_member_rank;
-    (*csis_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*csis_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static uint16_t coordinated_set_identification_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){    
-    coordinated_set_identification_service_server_t * coordinator = csis_get_coordinator_for_con_handle(con_handle);
+static uint16_t csis_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){    
+    coordinated_set_identification_service_server_t * coordinator = csis_server_get_coordinator_for_con_handle(con_handle);
     if (coordinator == NULL){
         coordinator = csis_server_add_coordinator(con_handle);
         
@@ -461,7 +461,7 @@ static void csis_lock_timer_start(coordinated_set_identification_service_server_
     btstack_run_loop_add_timer(&coordinator->lock_timer);
 }
 
-static uint8_t csis_set_member_lock(coordinated_set_identification_service_server_t * coordinator, csis_member_lock_t lock){
+static uint8_t csis_server_set_member_lock(coordinated_set_identification_service_server_t * coordinator, csis_member_lock_t lock){
     coordinated_set_identification_service_server_t * lock_owner = csis_get_lock_owner_coordinator();
 
     if ( (lock_owner != NULL) && (lock_owner != coordinator)){
@@ -490,8 +490,8 @@ static uint8_t csis_set_member_lock(coordinated_set_identification_service_serve
     return ERROR_CODE_SUCCESS;
 }
 
-static int coordinated_set_identification_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    coordinated_set_identification_service_server_t * coordinator = csis_get_coordinator_for_con_handle(con_handle);
+static int csis_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    coordinated_set_identification_service_server_t * coordinator = csis_server_get_coordinator_for_con_handle(con_handle);
     if (coordinator == NULL){
         coordinator = csis_server_add_coordinator(con_handle);
         
@@ -507,7 +507,7 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
 
     if (attribute_handle == sirk_configuration_handle){
         coordinator->sirk_configuration = little_endian_read_16(buffer, 0);
-        if ((coordinator->sirk_configuration != 0) && csis_coordinator_bonded(coordinator)) {
+        if ((coordinator->sirk_configuration != 0) && csis_server_coordinator_bonded(coordinator)) {
             if (!csis_sirk_exposed_via_oob){
                 csis_server_set_callback(CSIS_TASK_SEND_SIRK);
             }
@@ -517,7 +517,7 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
 
     if (attribute_handle == coordinated_set_size_configuration_handle){
         coordinator->coordinated_set_size_configuration = little_endian_read_16(buffer, 0);
-        if ((coordinator->coordinated_set_size_configuration != 0) && csis_coordinator_bonded(coordinator)) {
+        if ((coordinator->coordinated_set_size_configuration != 0) && csis_server_coordinator_bonded(coordinator)) {
             csis_server_set_callback(CSIS_TASK_SEND_COORDINATED_SET_SIZE);
         }
         return 0;
@@ -525,14 +525,14 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
    
     if (attribute_handle == member_lock_configuration_handle){
         coordinator->member_lock_configuration = little_endian_read_16(buffer, 0);
-        if ((coordinator->member_lock_configuration != 0) && csis_coordinator_bonded(coordinator)) {
+        if ((coordinator->member_lock_configuration != 0) && csis_server_coordinator_bonded(coordinator)) {
             csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
         }
         return 0;
     }
 
     if (attribute_handle == member_lock_handle){
-        uint8_t status = csis_set_member_lock(coordinator, (csis_member_lock_t) buffer[0]);
+        uint8_t status = csis_server_set_member_lock(coordinator, (csis_member_lock_t) buffer[0]);
 
         if (status == ERROR_CODE_SUCCESS){
             csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
@@ -550,22 +550,22 @@ static int coordinated_set_identification_service_write_callback(hci_con_handle_
     return 0;
 }
 
-static void csis_coordinator_reset(coordinated_set_identification_service_server_t * coordinator){
-    if (!csis_coordinator_bonded(coordinator) && csis_get_lock_owner_coordinator() == coordinator){
+static void csis_server_coordinator_reset(coordinated_set_identification_service_server_t * coordinator){
+    if (!csis_server_coordinator_bonded(coordinator) && csis_get_lock_owner_coordinator() == coordinator){
         csis_member_lock = CSIS_MEMBER_UNLOCKED;
         csis_server_emit_lock(coordinator->con_handle);
         btstack_run_loop_remove_timer(&coordinator->lock_timer);
         memset(coordinator, 0, sizeof(coordinated_set_identification_service_server_t));
     }
-    if (active_coordinator == coordinator){
-        active_coordinator = NULL;
+    if (csis_server_active_coordinator == coordinator){
+        csis_server_active_coordinator = NULL;
     }
     coordinator->encrypted_sirk_state = CSIS_SIRK_CALCULATION_STATE_IDLE;
     coordinator->scheduled_tasks = 0;
     coordinator->con_handle = HCI_CON_HANDLE_INVALID;
 }
 
-static void coordinated_set_identification_service_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(packet);
     UNUSED(size);
@@ -581,11 +581,11 @@ static void coordinated_set_identification_service_packet_handler(uint8_t packet
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
             
-            coordinator = csis_get_coordinator_for_con_handle(con_handle);
+            coordinator = csis_server_get_coordinator_for_con_handle(con_handle);
             if (coordinator == NULL){
                 break;
             }
-            csis_coordinator_reset(coordinator);
+            csis_server_coordinator_reset(coordinator);
             csis_server_emit_coordinator_disconnected(con_handle);
             break;
         default:
@@ -646,20 +646,20 @@ void coordinated_set_identification_service_server_init(
     
     uint8_t i;
     for (i = 0; i < csis_coordinators_max_num; i++){
-        csis_coordinator_reset(&csis_coordinators[i]);
+        csis_server_coordinator_reset(&csis_coordinators[i]);
     }
     // register service with ATT Server
     coordinated_set_identification_service.start_handle   = start_handle;
     coordinated_set_identification_service.end_handle     = end_handle;
-    coordinated_set_identification_service.read_callback  = &coordinated_set_identification_service_read_callback;
-    coordinated_set_identification_service.write_callback = &coordinated_set_identification_service_write_callback;
-    coordinated_set_identification_service.packet_handler = coordinated_set_identification_service_packet_handler;
+    coordinated_set_identification_service.read_callback  = &csis_server_read_callback;
+    coordinated_set_identification_service.write_callback = &csis_server_write_callback;
+    coordinated_set_identification_service.packet_handler = csis_server_packet_handler;
     att_server_register_service_handler(&coordinated_set_identification_service);
 }
 
 void coordinated_set_identification_service_server_register_packet_handler(btstack_packet_handler_t packet_handler){
     btstack_assert(packet_handler != NULL);
-    csis_event_callback = packet_handler;
+    csis_server_event_callback = packet_handler;
 }
 
 void coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t sirk_type, const uint8_t * sirk, bool exposed_via_oob){
@@ -685,23 +685,23 @@ void coordinated_set_identification_service_server_set_rank(uint8_t coordinated_
 }
 
 uint8_t coordinated_set_identification_service_server_simulate_set_lock(hci_con_handle_t con_handle, csis_member_lock_t coordinated_set_member_lock){
-    coordinated_set_identification_service_server_t * coordinator = csis_get_coordinator_for_con_handle(con_handle);
+    coordinated_set_identification_service_server_t * coordinator = csis_server_get_coordinator_for_con_handle(con_handle);
     if (coordinator == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    return csis_set_member_lock(coordinator, coordinated_set_member_lock);
+    return csis_server_set_member_lock(coordinator, coordinated_set_member_lock);
 }
 
 void coordinated_set_identification_service_server_deinit(void){
     memset(csis_sirk, 0, sizeof(csis_sirk));
     csis_member_lock = CSIS_MEMBER_UNLOCKED;
-    active_coordinator = NULL;
-    csis_event_callback = NULL;
+    csis_server_active_coordinator = NULL;
+    csis_server_event_callback = NULL;
     csis_rsi_calculation_ongoing = false;
 }
 
 uint8_t coordinated_set_identification_service_server_simulate_member_connected(hci_con_handle_t con_handle){
-    coordinated_set_identification_service_server_t * coordinator = csis_get_coordinator_for_con_handle(con_handle);
+    coordinated_set_identification_service_server_t * coordinator = csis_server_get_coordinator_for_con_handle(con_handle);
     if (coordinator != NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     } 
