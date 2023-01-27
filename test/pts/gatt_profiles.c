@@ -66,7 +66,7 @@
 static bass_server_source_t bass_source_1;
 static bass_server_source_t bass_source_2;
 static bass_server_source_t bass_sources[BASS_NUM_SOURCES];
-static broadcast_audio_scan_service_server_t bass_clients[BASS_NUM_CLIENTS];
+static bass_server_connection_t bass_clients[BASS_NUM_CLIENTS];
 
 
 #define ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS 5
