@@ -35,6 +35,7 @@ include_directories(../../platform/lwip)
 include_directories(../../platform/lwip/port)
 include_directories(.)
 include_directories(..)
+include_directories(${CMAKE_BINARY_DIR})
 
 # find src files
 file(GLOB SOURCES_BCM       "../../chipset/bcm/*.c")
@@ -93,10 +94,23 @@ add_library(btstack STATIC ${SOURCES})
 set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
 
+function(compile_gatt PROFILE_GATT PROFILE_H)
+	add_custom_command(
+		OUTPUT ${PROFILE_H}
+		DEPENDS ${PROFILE_GATT}
+		COMMAND ${CMAKE_SOURCE_DIR}/../../tool/compile_gatt.py
+		ARGS ${PROFILE_GATT} ${PROFILE_H}
+	)
+	message("${PROFILE_GATT} -> ${PROFILE_H}")
+endfunction()
+
+# GATT BAP
+compile_gatt(${CMAKE_SOURCE_DIR}/../pts/gatt_profiles_bap.gatt  ${CMAKE_CURRENT_BINARY_DIR}/gatt_profiles_bap.h)
+
 # target btpclient-usb
-add_executable(btpclient-usb btpclient.c ../../port/libusb/main.c btp_socket.c btp_le_audio.c)
+add_executable(btpclient-usb btpclient.c ../../port/libusb/main.c btp_socket.c btp_le_audio.c ${CMAKE_CURRENT_BINARY_DIR}/gatt_profiles_bap.h)
 target_link_libraries(btpclient-usb btstack)
 
 # target btpclient-h4
-add_executable(btpclient-h4 btpclient.c ../../port/posix-h4/main.c btp_socket.c btp_le_audio.c)
+add_executable(btpclient-h4 btpclient.c ../../port/posix-h4/main.c btp_socket.c btp_le_audio.c ${CMAKE_CURRENT_BINARY_DIR}/gatt_profiles_bap.h)
 target_link_libraries(btpclient-h4 btstack)
