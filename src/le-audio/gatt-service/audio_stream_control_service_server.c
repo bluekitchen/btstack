@@ -125,6 +125,7 @@ static ascs_streamendpoint_t * ascs_server_get_streamendpoint_for_ase_id(ascs_se
             return &connection->streamendpoints[i];
         }
     }
+    log_debug("No streamendpoint for ASE ID %u", ase_id);
     return NULL;
 }
 
@@ -601,17 +602,20 @@ static void ascs_server_control_point_operation_prepare_response_for_codec_confi
     }
 
     if (codec_config.target_latency >= LE_AUDIO_CLIENT_TARGET_LATENCY_RFU){
+		log_debug("Target Latency");
         ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_CONFIGURATION_PARAMETER_VALUE, ASCS_REJECT_REASON_MAX_TRANSPORT_LATENCY);
         return;
     }
 
     if (codec_config.target_phy >= LE_AUDIO_CLIENT_TARGET_PHY_RFU){
+	 	log_debug("Target PHY");
         ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_CONFIGURATION_PARAMETER_VALUE, ASCS_REJECT_REASON_PHY);
         return;
     }
 
     if (codec_config.coding_format >= HCI_AUDIO_CODING_FORMAT_RFU &&
         codec_config.coding_format !=  HCI_AUDIO_CODING_FORMAT_VENDOR_SPECIFIC){
+		log_debug("Coding Format");
         ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_CONFIGURATION_PARAMETER_VALUE, ASCS_REJECT_REASON_CODEC_ID);
         return;
     }
@@ -619,10 +623,12 @@ static void ascs_server_control_point_operation_prepare_response_for_codec_confi
     switch (codec_config.coding_format){
         case HCI_AUDIO_CODING_FORMAT_LC3:
             if (codec_config.company_id != 0){
+				log_debug("Company ID");
                 ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_CONFIGURATION_PARAMETER_VALUE, ASCS_REJECT_REASON_CODEC_ID);
                 return;
             }
             if (codec_config.vendor_specific_codec_id != 0){
+				log_debug("Vendor Specific Codec ID");
                 ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_CONFIGURATION_PARAMETER_VALUE, ASCS_REJECT_REASON_CODEC_ID);
                 return;
             }
@@ -643,6 +649,7 @@ static void ascs_server_control_point_operation_prepare_response_for_codec_confi
                 case LE_AUDIO_CODEC_CONFIGURATION_TYPE_SAMPLING_FREQUENCY:
                     if ((specific_codec_config->sampling_frequency_index == LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_INVALID) ||
                         (specific_codec_config->sampling_frequency_index >= LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_RFU)) {
+                        log_debug("Sampling Frequency Index");
                         reject_reason = ASCS_REJECT_REASON_CODEC_SPECIFIC_CONFIGURATION;
                         break;
                     }
@@ -650,12 +657,14 @@ static void ascs_server_control_point_operation_prepare_response_for_codec_confi
                 case LE_AUDIO_CODEC_CONFIGURATION_TYPE_FRAME_DURATION:
                     if ((specific_codec_config->frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_INVALID) ||
                         (specific_codec_config->frame_duration_index >= LE_AUDIO_CODEC_FRAME_DURATION_INDEX_RFU)){
+                        log_debug("Frame Duration");
                         reject_reason = ASCS_REJECT_REASON_CODEC_SPECIFIC_CONFIGURATION;
                         break;
                     }
                     break;
                 case LE_AUDIO_CODEC_CONFIGURATION_TYPE_AUDIO_CHANNEL_ALLOCATION:
                     if (specific_codec_config->audio_channel_allocation_mask >= LE_AUDIO_LOCATION_MASK_RFU){
+                        log_debug("Channel Allocation");
                         reject_reason = ASCS_REJECT_REASON_CODEC_SPECIFIC_CONFIGURATION;
                         break;
                     }
