@@ -5096,6 +5096,12 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_VOCS_SERVER_DISCONNECTED                           0x79u
 
 
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param mics_cid
+*/
+#define GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED                           0x7Au
 
 // MAP Meta Event Group
 
