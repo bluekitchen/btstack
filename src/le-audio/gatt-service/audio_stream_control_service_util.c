@@ -238,11 +238,7 @@ uint16_t ascs_util_specific_codec_configuration_serialize_to_tlv(ascs_specific_c
                 tlv_buffer[pos] = codec_configuration->sampling_frequency_index;
                 break;
             case LE_AUDIO_CODEC_CONFIGURATION_TYPE_FRAME_DURATION:
-                if (codec_configuration->frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US){
-                    tlv_buffer[pos] = LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US;
-                } else {
-                    tlv_buffer[pos] = LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US;
-                }
+                tlv_buffer[pos] = codec_configuration->frame_duration_index;
                 break;
             case LE_AUDIO_CODEC_CONFIGURATION_TYPE_AUDIO_CHANNEL_ALLOCATION:
                 little_endian_store_32(tlv_buffer, pos, codec_configuration->audio_channel_allocation_mask);
