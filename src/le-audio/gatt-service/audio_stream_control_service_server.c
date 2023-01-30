@@ -160,6 +160,8 @@ static bool ascs_server_streamendpoint_can_transit_to_state(ascs_streamendpoint_
 
         case ASCS_STATE_QOS_CONFIGURED:
             switch (opcode) {
+                case ASCS_OPCODE_CONFIG_CODEC:
+                    return target_state == ASCS_STATE_CODEC_CONFIGURED;
                 case ASCS_OPCODE_CONFIG_QOS:
                     return target_state == ASCS_STATE_QOS_CONFIGURED;
                 case ASCS_OPCODE_ENABLE:
