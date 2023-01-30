@@ -5103,6 +5103,21 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED                           0x7Au
 
+/**
+ * @format 121
+ * @param subevent_code
+ * @param mcs_cid
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED                               0x7Bu
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param mcs_cid
+*/
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED                            0x7Cu
+
 // MAP Meta Event Group
 
 /**
