@@ -16879,6 +16879,16 @@ static inline hci_con_handle_t gattservice_subevent_vocs_server_disconnected_get
 }
 
 /**
+ * @brief Get field mics_cid from event GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return mics_cid
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_mics_client_disconnected_get_mics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid
