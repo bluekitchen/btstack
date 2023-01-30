@@ -47,6 +47,7 @@
 #include "btpclient.h"
 #include "btp.h"
 #include "btstack.h"
+#include "gatt_profiles_bap.h"
 
 #define ASCS_CLIENT_NUM_STREAMENDPOINTS 4
 #define ASCS_CLIENT_COUNT 2
@@ -57,7 +58,8 @@
 #define MAX_LC3_FRAME_BYTES   155
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-// ASCS
+
+// ASCS Client
 static ascs_client_connection_t ascs_connections[ASCS_CLIENT_COUNT];
 static ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_COUNT * ASCS_CLIENT_NUM_STREAMENDPOINTS];
 
@@ -73,8 +75,125 @@ static ascs_client_codec_configuration_request_t ascs_codec_configuration_reques
 static ascs_qos_configuration_t ascs_qos_configuration;
 static le_audio_metadata_t ascs_metadata;
 
-// PACS
+
+// ASCS Server
+#define ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS 5
+#define ASCS_NUM_CLIENTS 3
+
+static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
+static ascs_remote_client_t ascs_clients[ASCS_NUM_CLIENTS];
+
+
+// PACS Client
 static pacs_client_connection_t pacs_connections[PACS_CLIENT_COUNT];
+
+// PACS Server
+static ascs_codec_configuration_t ascs_codec_configuration = {
+        0x01, 0x00, 0x00, 0x0FA0,
+        0x000005, 0x00FFAA, 0x000000, 0x000000,
+        HCI_AUDIO_CODING_FORMAT_LC3, 0x0000, 0x0000,
+        {   0x1E,
+            0x03, 0x01, 0x00000001, 0x0028, 0x00
+        }
+};
+
+static pacs_record_t sink_pac_records[] = {
+        // sink_record_0
+        {
+                // codec ID
+                {HCI_AUDIO_CODING_FORMAT_LC3, 0x0000, 0x0000},
+                // capabilities
+                {
+                        0x3E,
+                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_8000_HZ |
+                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_16000_HZ |
+                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_32000_HZ |
+                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_44100_HZ |
+                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_48000_HZ,
+                        LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US | LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US,
+                        LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_4 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_8,
+                        26,
+                        155,
+                        2
+                },
+                // metadata length
+                45,
+                // metadata
+                {
+                        // all metadata set
+                        0x0FFE,
+                        // (2) preferred_audio_contexts_mask
+                        LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+                        // (2) streaming_audio_contexts_mask
+                        LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+                        // program_info
+                        3, {0xA1, 0xA2, 0xA3},
+                        // language_code
+                        0x0000DE,
+                        // ccids_num
+                        3, {0xB1, 0xB2, 0xB3},
+                        // parental_rating
+                        LE_AUDIO_PARENTAL_RATING_NO_RATING,
+                        // program_info_uri_length
+                        3, {0xC1, 0xC2, 0xC3},
+                        // extended_metadata_type
+                        0x0001, 3, {0xD1, 0xD2, 0xD3},
+                        // vendor_specific_metadata_type
+                        0x0002, 3, {0xE1, 0xE2, 0xE3},
+                }
+        }
+};
+
+static pacs_record_t source_pac_records[] = {
+        // sink_record_0
+        {
+                // codec ID
+                {HCI_AUDIO_CODING_FORMAT_LC3, 0x0000, 0x0000},
+                // capabilities
+                {
+                        0x3E,
+                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_8000_HZ |
+                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_16000_HZ |
+                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_32000_HZ |
+                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_44100_HZ |
+                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_48000_HZ,
+                        LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US | LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US,
+                        LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_4 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_8,
+                        26,
+                        155,
+                        2
+                },
+                // metadata length
+                45,
+                // metadata
+                {
+                        // all metadata set
+                        0x0FFE,
+                        // (2) preferred_audio_contexts_mask
+                        LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+                        // (2) streaming_audio_contexts_mask
+                        LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+                        // program_info
+                        3, {0xA1, 0xA2, 0xA3},
+                        // language_code
+                        0x0000DE,
+                        // ccids_num
+                        3, {0xB1, 0xB2, 0xB3},
+                        // parental_rating
+                        LE_AUDIO_PARENTAL_RATING_NO_RATING,
+                        // program_info_uri_length
+                        3, {0xC1, 0xC2, 0xC3},
+                        // extended_metadata_type
+                        0x0001, 3, {0xD1, 0xD2, 0xD3},
+                        // vendor_specific_metadata_type
+                        0x0002, 3, {0xE1, 0xE2, 0xE3},
+                }
+        }
+};
+
+static pacs_streamendpoint_t sink_node;
+static pacs_streamendpoint_t source_node;
+
 
 // CIG/CIS
 static le_audio_cig_t        cig;
@@ -108,6 +227,155 @@ static void send_iso_packet(uint8_t cis_index){
 
     packet_sequence_numbers[cis_index]++;
 }
+
+// PACS Server Handler
+static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATION_RECEIVED:
+            printf("PACS: audio location received\n");
+            break;
+
+        default:
+            break;
+    }
+}
+
+// ASCS Server Handler
+static uint8_t ase_id = 0;
+static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+
+    hci_con_handle_t con_handle;
+    uint8_t status;
+
+    ascs_codec_configuration_t codec_configuration;
+    ascs_qos_configuration_t   qos_configuration;
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+
+        case GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_CONNECTED:
+            con_handle = gattservice_subevent_ascs_remote_client_connected_get_con_handle(packet);
+            status =     gattservice_subevent_ascs_remote_client_connected_get_status(packet);
+
+            if (status != ERROR_CODE_SUCCESS){
+                MESSAGE("ASCS Server: connection to client failed, con_handle 0x%02x, status 0x%02x", con_handle, status);
+                return;
+            }
+            MESSAGE("ASCS Server: connected, con_handle 0x%02x", con_handle);
+            break;
+
+        case GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_DISCONNECTED:
+            con_handle = gattservice_subevent_ascs_remote_client_disconnected_get_con_handle(packet);
+            MESSAGE("ASCS Server: disconnected, con_handle 0x%02xn", con_handle);
+            break;
+
+        case GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION_REQUEST:
+            ase_id = gattservice_subevent_ascs_codec_configuration_request_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_codec_configuration_request_get_con_handle(packet);
+            codec_configuration.framing = 0;    // no framing
+            codec_configuration.preferred_phy = LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE;
+            codec_configuration.preferred_retransmission_number = 0;
+            codec_configuration.max_transport_latency_ms = 0x0FA0;
+            codec_configuration.presentation_delay_min_us = 0x0005;
+            codec_configuration.presentation_delay_max_us = 0xFFAA;
+            codec_configuration.preferred_presentation_delay_min_us = 0;
+            codec_configuration.preferred_presentation_delay_max_us = 0;
+
+            // codec id:
+            codec_configuration.coding_format =  gattservice_subevent_ascs_codec_configuration_request_get_coding_format(packet);;
+            codec_configuration.company_id = gattservice_subevent_ascs_codec_configuration_request_get_company_id(packet);
+            codec_configuration.vendor_specific_codec_id = gattservice_subevent_ascs_codec_configuration_request_get_vendor_specific_codec_id(packet);
+
+            codec_configuration.specific_codec_configuration.codec_configuration_mask = gattservice_subevent_ascs_codec_configuration_request_get_specific_codec_configuration_mask(packet);
+            codec_configuration.specific_codec_configuration.sampling_frequency_index = gattservice_subevent_ascs_codec_configuration_request_get_sampling_frequency_index(packet);
+            codec_configuration.specific_codec_configuration.frame_duration_index = gattservice_subevent_ascs_codec_configuration_request_get_frame_duration_index(packet);
+            codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = gattservice_subevent_ascs_codec_configuration_request_get_audio_channel_allocation_mask(packet);
+            codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_codec_configuration_request_get_octets_per_frame(packet);
+            codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_codec_configuration_request_get_frame_blocks_per_sdu(packet);
+
+            MESSAGE("ASCS: CODEC_CONFIGURATION_RECEIVED ase_id %d, con_handle 0x%02x", ase_id, con_handle);
+            audio_stream_control_service_server_streamendpoint_configure_codec(con_handle, ase_id, codec_configuration);
+            break;
+
+        // TODO: will change to get_con_handle
+        // TODO: use gatt_service_subevent_ascs_qos_configuration_request_...
+        case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION:
+        case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION_REQUEST:
+            ase_id = gattservice_subevent_ascs_qos_configuration_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_qos_configuration_get_ascs_cid(packet);
+
+            qos_configuration.cig_id = gattservice_subevent_ascs_qos_configuration_get_cig_id(packet);
+            qos_configuration.cis_id = gattservice_subevent_ascs_qos_configuration_get_cis_id(packet);
+            qos_configuration.sdu_interval = gattservice_subevent_ascs_qos_configuration_get_sdu_interval(packet);
+            qos_configuration.framing = gattservice_subevent_ascs_qos_configuration_get_framing(packet);
+            qos_configuration.phy = gattservice_subevent_ascs_qos_configuration_get_phy(packet);
+            qos_configuration.max_sdu = gattservice_subevent_ascs_qos_configuration_get_max_sdu(packet);
+            qos_configuration.retransmission_number = gattservice_subevent_ascs_qos_configuration_get_retransmission_number(packet);
+            qos_configuration.max_transport_latency_ms = gattservice_subevent_ascs_qos_configuration_get_max_transport_latency(packet);
+            qos_configuration.presentation_delay_us = gattservice_subevent_ascs_qos_configuration_get_presentation_delay_us(packet);
+
+            MESSAGE("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ase_id, qos_configuration);
+            break;
+
+        // TODO: will change to get_con_handle
+        // TODO: use gatt_service_subevent_ascs_metadata_request_...
+        case GATTSERVICE_SUBEVENT_ASCS_METADATA:
+        case GATTSERVICE_SUBEVENT_ASCS_METADATA_REQUEST:
+            ase_id = gattservice_subevent_ascs_metadata_get_ase_id(packet);
+            // TODO: will change to get_con_handle
+            // TODO: use gatt_service_subevent_ascs_metadata_request_...
+            con_handle = gattservice_subevent_ascs_metadata_get_ascs_cid(packet);
+            MESSAGE("ASCS: METADATA_RECEIVED ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id);
+            break;
+        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_START_READY:
+            ase_id = gattservice_subevent_ascs_client_start_ready_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_client_start_ready_get_con_handle(packet);
+            MESSAGE("ASCS: START_READY ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_receiver_start_ready(con_handle, ase_id);
+            break;
+        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_STOP_READY:
+            ase_id = gattservice_subevent_ascs_client_stop_ready_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_client_stop_ready_get_con_handle(packet);
+            MESSAGE("ASCS: STOP_READY ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_receiver_stop_ready(con_handle, ase_id);
+            break;
+        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISABLING:
+            ase_id = gattservice_subevent_ascs_client_disabling_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_client_disabling_get_con_handle(packet);
+            MESSAGE("ASCS: DISABLING ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_disable(con_handle, ase_id);
+            break;
+        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASING:
+            ase_id = gattservice_subevent_ascs_client_releasing_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_client_releasing_get_con_handle(packet);
+            MESSAGE("ASCS: RELEASING ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_release(con_handle, ase_id);
+            break;
+
+        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASED:
+            ase_id = gattservice_subevent_ascs_client_released_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_client_released_get_con_handle(packet);
+            MESSAGE("ASCS: RELEASED ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_released(con_handle, ase_id, false);
+            break;
+
+        default:
+            break;
+    }
+}
+
 
 // HCI Handler
 
@@ -740,7 +1008,34 @@ void btp_le_audio_init(void){
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+    // Clients
     audio_stream_control_service_client_init(&ascs_client_event_handler);
     published_audio_capabilities_service_client_init(&pacs_client_event_handler);
+
+    // setup ATT server
+    att_server_init(profile_data, NULL, NULL);
+
+    // Servers
+    // TODO: initialize all servers until BTP API to enable/disable is available
+
+    // PACS Server
+    sink_node.records = &sink_pac_records[0];
+    sink_node.records_num = 1;
+    sink_node.audio_locations_mask = LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
+    sink_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+    sink_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+
+    source_node.records = &source_pac_records[0];
+    source_node.records_num = 1;
+    source_node.audio_locations_mask = LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
+    source_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+    source_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+
+    published_audio_capabilities_service_server_init(&sink_node, &source_node);
+    published_audio_capabilities_service_server_register_packet_handler(&pacs_server_packet_handler);
+
+    // ASCS Server
+    audio_stream_control_service_server_init(ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS, ascs_streamendpoint_characteristics, ASCS_NUM_CLIENTS, ascs_clients);
+    audio_stream_control_service_server_register_packet_handler(&ascs_server_packet_handler);
 }
 
