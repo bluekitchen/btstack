@@ -1045,10 +1045,10 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                     btp_advertising_parameters.own_address_type = BD_ADDR_TYPE_LE_PUBLIC;
                     btp_advertising_parameters.advertising_filter_policy = 0;
                     btp_advertising_parameters.advertising_tx_power = 10;
-                    btp_advertising_parameters.primary_advertising_phy = gap_ext_adv_primary_phy;
+                    btp_advertising_parameters.primary_advertising_phy = 1;
                     btp_advertising_parameters.secondary_advertising_max_skip = 0;
-                    btp_advertising_parameters.secondary_advertising_phy = gap_ext_adv_secondary_phy;
-                    btp_advertising_parameters.advertising_sid = gap_ext_adv_sid;
+                    btp_advertising_parameters.secondary_advertising_phy = 1;
+                    btp_advertising_parameters.advertising_sid = 0;
                     btp_advertising_parameters.scan_request_notification_enable = 0;
 
                     gap_extended_advertising_setup(&btp_advertising_set, &btp_advertising_parameters, &btp_advertising_handle);
@@ -1241,9 +1241,6 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
             if (controller_index == 0) {
                 MESSAGE("BTP_GAP_OP_CONNECTION_PARAM_UPDATE");
                 gap_ext_adv_enable = data[0];
-                gap_ext_adv_primary_phy = data[1];
-                gap_ext_adv_secondary_phy = data[2];
-                gap_ext_adv_sid = data[3];
 
                 // update settings
                 if (gap_ext_adv_enable){
