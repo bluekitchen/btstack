@@ -68,13 +68,16 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "btstack_sample_rate_compensation.h"
 #include "btstack_resample.h"
 
 //#define AVRCP_BROWSING_ENABLED
 
 #ifdef HAVE_BTSTACK_STDIN
 #include "btstack_stdin.h"
+#endif
+
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+#include "btstack_sample_rate_compensation.h"
 #endif
 
 #include "btstack_ring_buffer.h"
@@ -317,8 +320,9 @@ static int a2dp_and_avrcp_setup(void){
     return 0;
 }
 /* LISTING_END */
-
-btstack_sample_rate_compensation_t sample_rate_adaption;
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+btstack_sample_rate_compensation_t sample_rate_compensation;
+#endif
 
 static void playback_handler(int16_t * buffer, uint16_t num_audio_frames){
 
@@ -391,9 +395,9 @@ static void handle_pcm_data(int16_t * data, int num_audio_frames, int num_channe
 
 static int media_processing_init(media_codec_configuration_sbc_t * configuration){
     if (media_initialized) return 0;
-
-    btstack_sample_rate_compensation_init( &sample_rate_adaption, btstack_run_loop_get_time_ms(), configuration->sampling_frequency, FLOAT_TO_Q15(1.f) );
-
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+    btstack_sample_rate_compensation_init( &sample_rate_compensation, btstack_run_loop_get_time_ms(), configuration->sampling_frequency, FLOAT_TO_Q15(1.f) );
+#endif
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
 
 #ifdef STORE_TO_WAV_FILE
@@ -417,8 +421,9 @@ static int media_processing_init(media_codec_configuration_sbc_t * configuration
 
 static void media_processing_start(void){
     if (!media_initialized) return;
-
-    btstack_sample_rate_compensation_reset( &sample_rate_adaption, btstack_run_loop_get_time_ms() );
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+    btstack_sample_rate_compensation_reset( &sample_rate_compensation, btstack_run_loop_get_time_ms() );
+#endif
     // setup audio playback
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (audio){
@@ -490,12 +495,6 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
         return;
     }
 
-    // update sample rate compensation
-    if( audio_stream_started && (audio != NULL)) {
-        uint32_t resampling_factor = btstack_sample_rate_compensation_update( &sample_rate_adaption, btstack_run_loop_get_time_ms(), sbc_header.num_frames*128, audio->get_samplerate() );
-        btstack_resample_set_factor(&resample_instance, resampling_factor);
-//        printf("sbc buffer level :            %d\n", btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer));
-    }
 
     // store sbc frame size for buffer management
     sbc_frame_size = (size-pos)/ sbc_header.num_frames;
@@ -507,7 +506,14 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
 
     // decide on audio sync drift based on number of sbc frames in queue
     int sbc_frames_in_buffer = btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer) / sbc_frame_size;
-#if 0
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+    // update sample rate compensation
+    if( audio_stream_started && (audio != NULL)) {
+        uint32_t resampling_factor = btstack_sample_rate_compensation_update( &sample_rate_compensation, btstack_run_loop_get_time_ms(), sbc_header.num_frames*128, audio->get_samplerate() );
+        btstack_resample_set_factor(&resample_instance, resampling_factor);
+//        printf("sbc buffer level :            %d\n", btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer));
+    }
+#else
     uint32_t resampling_factor;
 
     // nominal factor (fixed-point 2^16) and compensation offset

@@ -13,6 +13,9 @@
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
 #define HAVE_POSIX_TIME
+#ifdef HAVE_PORTAUDIO
+#define HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+#endif
 
 // BTstack features that can be enabled
 #define ENABLE_ATT_DELAYED_RESPONSE
