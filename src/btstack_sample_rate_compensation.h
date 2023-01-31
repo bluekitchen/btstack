@@ -35,6 +35,17 @@
  *
  */
 
+/**
+ * @title Sample rate compensation
+ *
+ * Prevents buffer over/under-run at the audio receiver by compensating for varying/different playback/receiving sample rates.
+ *
+ * Intended to measure the L2CAP packet sample rate and with the provided playback sample rate calculates a compensation ratio
+ * which compensates for drift between playback and reception.
+ *
+ * Requires the audio interface to provide the current playback sample rate.
+ *
+ */
 
 #ifndef BTSTACK_SAMPLE_RATE_COMPENSATION_H_
 #define BTSTACK_SAMPLE_RATE_COMPENSATION_H_
@@ -44,6 +55,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 #define FLOAT_TO_Q15(a)   ((signed)((a)*(UINT16_C(1)<<15)+0.5f))
 #define FLOAT_TO_Q8(a)    ((signed)((a)*(UINT16_C(1)<<8)+0.5f))
@@ -68,9 +81,30 @@ typedef struct {
 #endif
 } btstack_sample_rate_compensation_t;
 
-void btstack_sample_rate_compensation_reset( btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms );
+/**
+ * @brief Initialize sample rate compensation
+ * @param self pointer to current instance
+ * @param time stamp at which to start sample rate measurement
+ */
 void btstack_sample_rate_compensation_init( btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms, uint32_t sample_rate, uint32_t ratioQ15 );
+
+/**
+ * @brief reset sample rate compensation
+ * @param self pointer to current instance
+ * @param time stamp at which to start sample rate measurement
+ */
+void btstack_sample_rate_compensation_reset( btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms );
+
+/**
+ * @brief update sample rate compensation with the current playback sample rate decoded samples
+ * @param self pointer to current instance
+ * @param time stamp for current samples
+ * @param samples for current time stamp
+ * @param playback sample rate
+ */
 uint32_t btstack_sample_rate_compensation_update( btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms, uint32_t samples, uint32_t playback_sample_rate );
+
+/* API_END */
 
 #if defined __cplusplus
 }

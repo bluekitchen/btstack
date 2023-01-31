@@ -37,17 +37,17 @@
 
 #define BTSTACK_FILE__ "btstack_sample_rate_comnpensation.h"
 
-#include <stdio.h>
+#include "btstack.h"
 #include "btstack_sample_rate_compensation.h"
 
-void btstack_sample_rate_compensation_reset( btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms ) {
+void btstack_sample_rate_compensation_reset(btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms) {
     self->count = 0;
     self->last  = timestamp_ms;
 }
 
-void btstack_sample_rate_compensation_init( btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms, uint32_t sample_rate, uint32_t ratioQ15 ) {
+void btstack_sample_rate_compensation_init(btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms, uint32_t sample_rate, uint32_t ratio_Q15) {
     btstack_sample_rate_compensation_reset( self, timestamp_ms );
-    self->ratio_state = ratioQ15 << 1; // Q15 to Q16 is one left shift
+    self->ratio_state = ratio_Q15 << 1; // Q15 to Q16 is one left shift
     self->rate_state = sample_rate << 8;
 #ifdef DEBUG_RATIO_CALCULATION
     self->ratio = Q15_TO_FLOAT(ratioQ15);
@@ -55,10 +55,10 @@ void btstack_sample_rate_compensation_init( btstack_sample_rate_compensation_t *
 #endif
 }
 
-uint32_t btstack_sample_rate_compensation_update( btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms, uint32_t samples, uint32_t playback_sample_rate ) {
+uint32_t btstack_sample_rate_compensation_update(btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms, uint32_t samples, uint32_t playback_sample_rate) {
     int32_t delta = timestamp_ms - self->last;
     if( delta >= 1000 ) {
-        printf("current playback sample rate: %d\n", playback_sample_rate );
+        log_debug("current playback sample rate: %d", playback_sample_rate );
 
 #ifdef DEBUG_RATIO_CALCULATION
         {
@@ -80,7 +80,7 @@ uint32_t btstack_sample_rate_compensation_update( btstack_sample_rate_compensati
 #endif
         uint32_t fixed_rate = (self->count*(UINT16_C(1)<<15))/delta*1000;  // sample rate as Q15
         uint32_t fixed_ratio = (self->rate_state<<7)/playback_sample_rate; // Q15
-        printf("fp current l2cap sample rate: %f (%d %d)\n", Q15_TO_FLOAT(fixed_rate), delta, self->count);
+        log_debug("fp current l2cap sample rate: %f (%d %d)", Q15_TO_FLOAT(fixed_rate), delta, self->count);
 
         self->last = timestamp_ms;
         self->count = 0;
@@ -94,9 +94,9 @@ uint32_t btstack_sample_rate_compensation_update( btstack_sample_rate_compensati
         const int16_t ratio_decay = FLOAT_TO_Q8(1.3f);
         self->ratio_state += (ratio_decay * (int32_t)((fixed_ratio<<1)-self->ratio_state)) >> (16-8); // Q16
 
-        printf("fp current ratio :            %f\n", Q15_TO_FLOAT(fixed_ratio));
-        printf("fp calculated ratio:          %f\n", Q16_TO_FLOAT(self->ratio_state));
-        printf("scale factor Q16:             %d\n", self->ratio_state);
+        log_debug("fp current ratio :            %f", Q15_TO_FLOAT(fixed_ratio));
+        log_debug("fp calculated ratio:          %f", Q16_TO_FLOAT(self->ratio_state));
+        log_debug("scale factor Q16:             %d", self->ratio_state);
     }
 
     self->count += samples;
