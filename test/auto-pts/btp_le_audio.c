@@ -107,6 +107,7 @@ static pacs_record_t sink_pac_records[] = {
                         0x3E,
                         LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_8000_HZ |
                         LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_16000_HZ |
+                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_24000_HZ |
                         LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_32000_HZ |
                         LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_44100_HZ |
                         LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_48000_HZ,
@@ -154,6 +155,7 @@ static pacs_record_t source_pac_records[] = {
                         0x3E,
                         LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_8000_HZ |
                         LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_16000_HZ |
+                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_24000_HZ |
                         LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_32000_HZ |
                         LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_44100_HZ |
                         LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_48000_HZ,
@@ -282,7 +284,10 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
         case GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION_REQUEST:
             ase_id = gattservice_subevent_ascs_codec_configuration_request_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_codec_configuration_request_get_con_handle(packet);
-            codec_configuration.framing = 0;    // no framing
+
+            // use framing for 441
+            codec_configuration.framing = gattservice_subevent_ascs_codec_configuration_request_get_sampling_frequency_index(packet) == LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ ? 1 : 0;
+
             codec_configuration.preferred_phy = LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE;
             codec_configuration.preferred_retransmission_number = 0;
             codec_configuration.max_transport_latency_ms = 0x0FA0;
