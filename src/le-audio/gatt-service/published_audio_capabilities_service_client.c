@@ -56,6 +56,7 @@ static btstack_linked_list_t pacs_connections;
 
 static uint16_t pacs_client_cid_counter = 0;
 static btstack_packet_handler_t pacs_client_event_callback;
+static btstack_packet_callback_registration_t pacs_client_hci_event_callback_registration;
 
 static void pacs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -114,6 +115,18 @@ static void pacs_client_emit_connection_established(pacs_client_connection_t * c
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
+    (*pacs_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void pacs_client_emit_disconnect(uint16_t cid){
+    btstack_assert(pacs_client_event_callback != NULL);
+
+    uint8_t event[5];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_PACS_CLIENT_DISCONNECTED;
+    little_endian_store_16(event, pos, cid);
     (*pacs_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -792,10 +805,35 @@ static void pacs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     }
 }
 
+static void pacs_client_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    
+    hci_con_handle_t con_handle;
+    pacs_client_connection_t * connection;
+    
+    switch (hci_event_packet_get_type(packet)){
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            connection = pacs_client_get_connection_for_con_handle(con_handle);
+            if (connection != NULL){
+                pacs_client_emit_disconnect(connection->cid);
+                pacs_client_finalize_connection(connection);
+            }
+            break;
+        default:
+            break;
+    }
+}
 
 void published_audio_capabilities_service_client_init(btstack_packet_handler_t packet_handler){
     btstack_assert(packet_handler != NULL);
     pacs_client_event_callback = packet_handler;
+
+    pacs_client_hci_event_callback_registration.callback = &pacs_client_hci_event_handler;
+    hci_add_event_handler(&pacs_client_hci_event_callback_registration);
 }
 
 uint8_t published_audio_capabilities_service_client_connect(pacs_client_connection_t * connection, hci_con_handle_t con_handle, uint16_t * pacs_cid){
