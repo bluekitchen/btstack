@@ -59,8 +59,9 @@
 #include "btstack_run_loop.h"
 #include "gap.h"
 
-static mics_client_connection_t mic_client;
+static mics_client_connection_t mics_client;
 static uint16_t mics_client_cid_counter = 0;
+static btstack_packet_callback_registration_t mics_client_hci_event_callback_registration;
 
 static void mics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -69,28 +70,31 @@ static uint16_t mics_client_get_next_cid(void){
     return mics_client_cid_counter;
 }
 
-static void mics_client_finalize_client(mics_client_connection_t * client){
-    client->cid = 0;
-    client->con_handle = HCI_CON_HANDLE_INVALID;
-    client->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_IDLE;
-    client->need_polling = false;
+static void mics_client_finalize_connection(mics_client_connection_t * connection){
+    connection->cid = 0;
+    connection->con_handle = HCI_CON_HANDLE_INVALID;
+    connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_IDLE;
+    connection->need_polling = false;
 }
 
 static mics_client_connection_t * mics_client_get_connection_for_con_handle(hci_con_handle_t con_handle){
-    if (mic_client.con_handle == con_handle){
-        return &mic_client;
+    if (mics_client.con_handle == con_handle){
+        return &mics_client;
     }
     return NULL;
 }
 
 static mics_client_connection_t * mics_client_get_connection_for_cid(uint16_t microphone_control_service_cid){
-    if (mic_client.cid == microphone_control_service_cid){
-        return &mic_client;
+    if (mics_client.cid == microphone_control_service_cid){
+        return &mics_client;
     }
     return NULL;
 }
 
 static void mics_client_emit_connection_established(mics_client_connection_t * client, uint8_t status){
+    btstack_assert(client != NULL);
+    btstack_assert(client->client_handler != NULL);
+
     uint8_t event[6];
     int pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -103,6 +107,9 @@ static void mics_client_emit_connection_established(mics_client_connection_t * c
 }
 
 static void mics_client_emit_mute_state(mics_client_connection_t * client, uint16_t value_handle, uint8_t att_status, uint8_t mute_state){
+    btstack_assert(client != NULL);
+    btstack_assert(client->client_handler != NULL);
+    
     if (value_handle != client->mute_value_handle){
         return;
     }
@@ -115,6 +122,20 @@ static void mics_client_emit_mute_state(mics_client_connection_t * client, uint1
     pos += 2;
     event[pos++] = att_status;
     event[pos++] = mute_state;
+    (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void mics_client_emit_disconnect(mics_client_connection_t * client){
+    btstack_assert(client != NULL);
+    btstack_assert(client->client_handler != NULL);
+
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED;
+    little_endian_store_16(event, pos, client->cid);
+    pos += 2;
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -249,13 +270,13 @@ static bool mics_client_handle_query_complete(mics_client_connection_t * client,
         case MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             if (status != ATT_ERROR_SUCCESS){
                 mics_client_emit_connection_established(client, status);
-                mics_client_finalize_client(client);
+                mics_client_finalize_connection(client);
                 return false;
             }
 
             if (client->num_instances == 0){
                 mics_client_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
-                mics_client_finalize_client(client);
+                mics_client_finalize_connection(client);
                 return false;
             }
 
@@ -265,13 +286,13 @@ static bool mics_client_handle_query_complete(mics_client_connection_t * client,
         case MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
             if (status != ATT_ERROR_SUCCESS){
                 mics_client_emit_connection_established(client, status);
-                mics_client_finalize_client(client);
+                mics_client_finalize_connection(client);
                 return false;
             }
 
             if ((client->num_instances == 0) || (client->mute_value_handle == 0)){
                 mics_client_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
-                mics_client_finalize_client(client);
+                mics_client_finalize_connection(client);
                 return false;
             }
 
@@ -466,7 +487,8 @@ uint8_t microphone_control_service_client_disconnect(uint16_t mics_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     // finalize connections
-    mics_client_finalize_client(client);
+    mics_client_emit_disconnect(client);
+    mics_client_finalize_connection(client);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -506,10 +528,36 @@ uint8_t microphone_control_service_client_mute_turn_off(uint16_t mics_cid){
     return microphone_control_service_client_mute_write(mics_cid, GATT_MICROPHONE_CONTROL_MUTE_OFF);
 }
 
-void microphone_control_service_client_init(void){}
+static void mics_client_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    
+    hci_con_handle_t con_handle;
+    mics_client_connection_t * connection;
+    
+    switch (hci_event_packet_get_type(packet)){
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            connection = mics_client_get_connection_for_con_handle(con_handle);
+            if (connection != NULL){
+                mics_client_emit_disconnect(connection);
+                mics_client_finalize_connection(connection);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+void microphone_control_service_client_init(void){
+    mics_client_hci_event_callback_registration.callback = &mics_client_hci_event_handler;
+    hci_add_event_handler(&mics_client_hci_event_callback_registration);
+}
 
 void microphone_control_service_client_deinit(void){
     mics_client_cid_counter = 0;
-    mics_client_finalize_client(&mic_client);
+    mics_client_finalize_connection(&mics_client);
 }
 
