@@ -138,11 +138,11 @@ void microphone_control_service_client_init(void);
 
 /**
  * @brief Connect to Microphone Control Services of remote device. The client will automatically register for notifications. 
- * The mute state is received via GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE event.
+ * The mute state is received via GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE event.
  * The mute state can be 0 - off, 1 - on, 2 - disabeled and it is valid if the ATTT status is equal to ATT_ERROR_SUCCESS, 
  * see ATT errors (see bluetooth.h) for other values.
  *   
- * Event GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
+ * Event GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
  * GATT_CLIENT_IN_WRONG_STATE, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no microphone control service is found, or ATT errors (see bluetooth.h). 
  *
  * @param con_handle
@@ -153,7 +153,7 @@ void microphone_control_service_client_init(void);
 uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, uint16_t * mics_cid);
 
 /**
- * @brief Read mute state. The mute state is received via GATTSERVICE_SUBEVENT_MICROPHONE_CONTROL_SERVICE_MUTE event.
+ * @brief Read mute state. The mute state is received via GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE event.
  * @param mics_cid
  * @return status
  */
