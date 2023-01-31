@@ -57,6 +57,9 @@ extern "C" {
  * @text The Media Control Service Client connects to the Media Control Services of a remote device 
  * and it can query or set mute value if mute value on the remote side is enabled. The Mute updates are received via notifications.
  */
+
+#define LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM 15
+
 typedef enum {
     LE_AUDIO_SERVICE_CLIENT_STATE_IDLE,
     LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
@@ -80,28 +83,68 @@ typedef enum {
 } le_audio_service_client_state_t;
 
 typedef struct {
+    uint16_t value_handle;
+    uint16_t client_configuration_handle; 
+    uint16_t properties;
+    uint16_t uuid16; 
+    uint16_t end_handle;
+    gatt_client_notification_t notification_listener;
+} le_audio_service_characteristic_t;
+
+typedef struct {
     btstack_linked_item_t item;
-    
+
     hci_con_handle_t  con_handle;
     uint16_t          cid;
     le_audio_service_client_state_t  state;
 
+    // service
+    uint16_t num_instances;
+    uint16_t start_handle;
+    uint16_t end_handle;
+    
+    le_audio_service_characteristic_t characteristics[LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM];
+    uint8_t num_characteristics;
+    
     btstack_packet_handler_t event_callback;
 } le_audio_service_client_connection_t;
 
+
 typedef struct {
+    btstack_linked_item_t item;
+
     btstack_linked_list_t connections;
     uint16_t cid_counter;
     
-    uint8_t disconnect_subevent;
-    uint8_t connect_subevent;
+    uint8_t  connect_subevent;
+    uint8_t  disconnect_subevent;
     
+    // service
+    uint16_t service_uuid;
+
     btstack_packet_callback_registration_t hci_event_callback_registration;
 } le_audio_service_client_t;
 
 typedef enum {
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_IDLE,
+//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
+//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
+//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS,
+//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
+
+// #ifdef ENABLE_TESTING_SUPPORT
+//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS,
+//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT,
+// #endif
+
+//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION,
+//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_CONNECTED,
+
+// #ifdef ENABLE_TESTING_SUPPORT
+//     MEDIA_CONTROL_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
+//     MEDIA_CONTROL_SERVICE_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT,
+// #endif
 } media_service_client_state_t;
 
 
@@ -127,7 +170,8 @@ typedef struct {
 #endif
     
     bool need_polling;
-    uint16_t num_instances;
+
+    
     uint8_t  requested_mute;
 
     gatt_client_notification_t notification_listener;
