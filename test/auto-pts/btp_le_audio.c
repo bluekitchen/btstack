@@ -404,6 +404,10 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
                 case HCI_EVENT_LE_META:
                     switch (hci_event_le_meta_get_subevent_code(packet)){
+                        case HCI_SUBEVENT_LE_CIS_REQUEST:
+                            cis_con_handle = hci_subevent_le_cis_request_get_cis_connection_handle(packet);
+                            gap_cis_accept(cis_con_handle);
+                            break;
                         default:
                             break;
                     }
