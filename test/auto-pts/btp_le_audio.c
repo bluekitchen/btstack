@@ -71,6 +71,7 @@ static uint8_t sink_ase_count;
 // - ascs configure codec
 static uint8_t ase_id_used_by_configure_codec = 0;
 static ascs_client_codec_configuration_request_t ascs_codec_configuration_request;
+
 // - ascs configure qos
 static ascs_qos_configuration_t ascs_qos_configuration;
 static le_audio_metadata_t ascs_metadata;
@@ -250,6 +251,8 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
 // ASCS Server Handler
 static uint8_t ase_id = 0;
+static hci_con_handle_t ascs_server_current_client_con_handle = HCI_CON_HANDLE_INVALID;
+
 static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -268,11 +271,8 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
         case GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_CONNECTED:
             con_handle = gattservice_subevent_ascs_remote_client_connected_get_con_handle(packet);
             status =     gattservice_subevent_ascs_remote_client_connected_get_status(packet);
-
-            if (status != ERROR_CODE_SUCCESS){
-                MESSAGE("ASCS Server: connection to client failed, con_handle 0x%02x, status 0x%02x", con_handle, status);
-                return;
-            }
+            btstack_assert(status == ERROR_CODE_SUCCESS);
+            ascs_server_current_client_con_handle = con_handle;
             MESSAGE("ASCS Server: connected, con_handle 0x%02x", con_handle);
             break;
 
@@ -786,8 +786,14 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 MESSAGE("BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC ase_id %u, format %x, freq %u, duration %u, locations 0x%0x, octets %u",
                         ase_id_used_by_configure_codec, coding_format, frequency_hz, frame_duration_us, audio_locations, octets_per_frame);
 
-                ascs_specific_codec_configuration_t * sc_config = &ascs_codec_configuration_request.specific_codec_configuration;
-                sc_config->codec_configuration_mask = coding_format == HCI_AUDIO_CODING_FORMAT_LC3 ? 0x3E : 0x1e;
+                ascs_specific_codec_configuration_t * sc_config = NULL;
+                ascs_codec_configuration_t ascs_server_codec_configuration;
+                if (ascs_cid > 0) {
+                    sc_config = &ascs_codec_configuration_request.specific_codec_configuration;
+                } else {
+                    sc_config = &ascs_server_codec_configuration.specific_codec_configuration;
+                }
+
                 le_audio_codec_sampling_frequency_index_t frequency_index = 0;
                 switch(frequency_hz){
                     case 8000:
@@ -812,6 +818,8 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                         btstack_unreachable();
                         break;
                 }
+
+                sc_config->codec_configuration_mask = coding_format == HCI_AUDIO_CODING_FORMAT_LC3 ? 0x3E : 0x1e;
                 sc_config->sampling_frequency_index = frequency_index;
                 sc_config->frame_duration_index =  frame_duration_us == 7500
                                                    ? LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US : LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US;
@@ -819,14 +827,37 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 sc_config->audio_channel_allocation_mask = audio_locations;
                 sc_config->codec_frame_blocks_per_sdu = 1;
 
-                ascs_codec_configuration_request.target_latency = LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY;
-                ascs_codec_configuration_request.target_phy = LE_AUDIO_CLIENT_TARGET_PHY_BALANCED;
-                ascs_codec_configuration_request.coding_format = coding_format;
-                ascs_codec_configuration_request.company_id = 0;
-                ascs_codec_configuration_request.vendor_specific_codec_id = 0;
+                if (ascs_cid > 0){
+                    ascs_codec_configuration_request.target_latency = LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY;
+                    ascs_codec_configuration_request.target_phy = LE_AUDIO_CLIENT_TARGET_PHY_BALANCED;
+                    ascs_codec_configuration_request.coding_format = coding_format;
+                    ascs_codec_configuration_request.company_id = 0;
+                    ascs_codec_configuration_request.vendor_specific_codec_id = 0;
 
-                uint8_t status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_id_used_by_configure_codec, &ascs_codec_configuration_request);
-                expect_status_no_error(status);
+                    uint8_t status = audio_stream_control_service_client_streamendpoint_configure_codec(ascs_cid, ase_id_used_by_configure_codec, &ascs_codec_configuration_request);
+                    expect_status_no_error(status);
+                } else {
+
+                    ascs_server_codec_configuration.coding_format = coding_format;
+                    ascs_server_codec_configuration.company_id = 0;
+                    ascs_server_codec_configuration.vendor_specific_codec_id = 0;
+                    ascs_server_codec_configuration.preferred_phy = LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE;
+                    ascs_server_codec_configuration.preferred_retransmission_number = 0;
+                    ascs_server_codec_configuration.max_transport_latency_ms = 0x0FA0;
+                    ascs_server_codec_configuration.presentation_delay_min_us = 0x0005;
+                    ascs_server_codec_configuration.presentation_delay_max_us = 0xFFAA;
+                    ascs_server_codec_configuration.preferred_presentation_delay_min_us = 0;
+                    ascs_server_codec_configuration.preferred_presentation_delay_max_us = 0;
+
+                    ascs_server_codec_configuration.framing = frequency_index == LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ ? 1 : 0;
+                    audio_stream_control_service_server_streamendpoint_configure_codec(ascs_server_current_client_con_handle,
+                                                                                       ase_id_used_by_configure_codec, ascs_server_codec_configuration);
+
+                    response_len = 0;
+                    btp_append_uint24(0);
+                    btp_append_uint24(0);
+                    btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC, 0, response_len, response_buffer);
+                }
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_CONFIGURE_QOS:
