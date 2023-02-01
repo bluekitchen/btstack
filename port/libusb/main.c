@@ -82,6 +82,7 @@ static bool tlv_reset;
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 static bd_addr_t             local_addr;
+static uint16_t              subopcode = 0;
 
 int btstack_main(int argc, const char * argv[]);
 
@@ -124,7 +125,29 @@ static void local_version_information_handler(uint8_t * packet){
             break;
     }
 }
-
+static void realtek_vendor_read_information_handler(uint8_t * packet){
+    const uint8_t * return_para = hci_event_command_complete_get_return_parameters(packet);
+    uint16_t vendor_read_lmp_subversion;
+    uint16_t vendor_read_hci_revision;
+    switch (subopcode){
+        case READ_LMP_SUB_VERSION:
+            vendor_read_lmp_subversion = return_para[1] | (return_para[2] << 8);
+            printf("Vendor read LMP Subversion 0x%04x\n", vendor_read_lmp_subversion);
+            subopcode = READ_CHIP_VER;
+            break;
+        case READ_CHIP_VER:
+            vendor_read_hci_revision = return_para[1] | (return_para[2] << 8);
+            printf("Vendor read HCI Revision   0x%04x\n", vendor_read_hci_revision);
+            if (vendor_read_hci_revision == 0x0e) {
+                btstack_chipset_realtek_set_lmp_subversion(0x8822);
+                hci_set_chipset(btstack_chipset_realtek_instance());
+                subopcode = READ_SEC_PROJ;
+            }
+            break;
+        default:
+            break;
+    }
+}
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -132,6 +155,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     uint8_t usb_path_len;
     const uint8_t * usb_path;
     uint16_t product_id;
+    uint16_t vendor_id;
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
@@ -141,8 +165,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             usb_path = hci_event_transport_usb_info_get_path(packet);
             // print device path
             product_id = hci_event_transport_usb_info_get_product_id(packet);
+            vendor_id = hci_event_transport_usb_info_get_vendor_id(packet);
             printf("USB device 0x%04x/0x%04x, path: ",
-                   hci_event_transport_usb_info_get_vendor_id(packet), product_id);
+                   vendor_id, product_id);
             for (i=0;i<usb_path_len;i++){
                 if (i) printf("-");
                 printf("%02x", usb_path[i]);
@@ -150,6 +175,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             printf("\n");
             // set Product ID for Realtek Controllers
             btstack_chipset_realtek_set_product_id(product_id);
+            if (vendor_id == 0x0bda) {
+                subopcode = READ_LMP_SUB_VERSION;
+                hci_set_vendor_id(vendor_id);
+            }
             break;
         case BTSTACK_EVENT_STATE:
             switch (btstack_event_state_get_state(packet)){
@@ -196,6 +225,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_COMMAND_COMPLETE:
             if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION){
                 local_version_information_handler(packet);
+            }
+            if (hci_event_command_complete_get_command_opcode(packet) == HCI_VENDOR_READ_CMD){
+                realtek_vendor_read_information_handler(packet);
             }
             if (memcmp(packet, read_static_address_command_complete_prefix, sizeof(read_static_address_command_complete_prefix)) == 0){
                 reverse_48(&packet[7], static_address);

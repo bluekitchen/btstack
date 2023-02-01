@@ -261,6 +261,10 @@ static hci_stack_t   hci_stack_static;
 #endif
 static hci_stack_t * hci_stack = NULL;
 
+static uint16_t            vendor_id = 0;
+void hci_set_vendor_id(uint16_t vid){
+    vendor_id = vid;
+}
 #ifdef ENABLE_CLASSIC
 // default name
 static const char * default_classic_name = "BTstack 00:00:00:00:00:00";
@@ -1781,7 +1785,27 @@ static void hci_init_done(void){
     hci_stack->state = HCI_STATE_WORKING;
     hci_emit_state();
 }
-
+static uint16_t                               sub_opcode = 0;
+int realtek_vendor_read(uint8_t* hci_cmd_buffer, uint16_t subopc)
+{
+    uint8_t cmd_lmp_sub_version_buf[] = {
+        0x61, 0xfc, 0x05, 0x10, 0x38, 0x04, 0x28, 0x80
+    };
+    uint8_t cmd_chip_version_buf[] =  {
+        0x61, 0xfc, 0x05, 0x10, 0x3A, 0x04, 0x28, 0x80
+    };
+    switch (subopc) {
+    case READ_LMP_SUB_VERSION:
+        memcpy(hci_cmd_buffer, cmd_lmp_sub_version_buf, sizeof(cmd_lmp_sub_version_buf));
+        break;
+    case READ_CHIP_VER:
+        memcpy(hci_cmd_buffer, cmd_chip_version_buf, sizeof(cmd_chip_version_buf));
+        break;
+    default:
+        break;
+    }
+    return 0;
+}
 // assumption: hci_can_send_command_packet_now() == true
 static void hci_initializing_run(void){
     log_debug("hci_initializing_run: substate %u, can send %u", hci_stack->substate, hci_can_send_command_packet_now());
@@ -1797,6 +1821,21 @@ static void hci_initializing_run(void){
 #endif
 
     switch (hci_stack->substate){
+        case HCI_INIT_VENDOR_READ_LMP_SUBVER:
+            hci_state_reset();
+            sub_opcode = READ_LMP_SUB_VERSION;
+            realtek_vendor_read(hci_stack->hci_packet_buffer, sub_opcode);
+            hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
+            hci_stack->substate = HCI_INIT_W4_VENDOR_READ_LMP_SUBVER;
+            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3u + hci_stack->hci_packet_buffer[2u]);
+            break;
+        case HCI_INIT_VENDOR_READ_HCI_REVISION:
+            sub_opcode = READ_CHIP_VER;
+            realtek_vendor_read(hci_stack->hci_packet_buffer, sub_opcode);
+            hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
+            hci_stack->substate = HCI_INIT_W4_VENDOR_READ_HCI_REVISION;
+            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3u + hci_stack->hci_packet_buffer[2u]);
+            break;
         case HCI_INIT_SEND_RESET:
             hci_state_reset();
 
@@ -2277,6 +2316,9 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
     UNUSED(size);   // ok: less than 6 bytes are read from our buffer
     
     bool command_completed =  hci_initializing_event_handler_command_completed(packet);
+    const uint8_t * return_para = hci_event_command_complete_get_return_parameters(packet);
+    uint16_t vendor_read_lmp_subversion;
+    uint16_t vendor_read_hci_revision;
 
 #ifndef HAVE_HOST_CONTROLLER_API
 
@@ -2360,6 +2402,24 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             /* fall through */
 #endif
 
+        case HCI_INIT_W4_VENDOR_READ_LMP_SUBVER:
+            vendor_read_lmp_subversion = return_para[1] | (return_para[2] << 8);
+            if (vendor_read_lmp_subversion == 0x8822) {
+                hci_stack->substate = HCI_INIT_VENDOR_READ_HCI_REVISION;
+                return;
+            } else {
+                hci_stack->substate = HCI_INIT_SEND_RESET;
+                return;
+            }
+        case HCI_INIT_W4_VENDOR_READ_HCI_REVISION:
+            vendor_read_hci_revision = return_para[1] | (return_para[2] << 8);
+            if (vendor_read_hci_revision == 0x0e) {
+                hci_stack->substate = HCI_INIT_CUSTOM_INIT;
+                return;
+            } else {
+                hci_stack->substate = HCI_INIT_SEND_RESET;
+                return;
+            }
         case HCI_INIT_W4_SEND_RESET:
             btstack_run_loop_remove_timer(&hci_stack->timeout);
             hci_stack->substate = HCI_INIT_SEND_READ_LOCAL_VERSION_INFORMATION;
@@ -4896,7 +4956,11 @@ static void hci_power_enter_initializing_state(void){
     hci_stack->num_cmd_packets = 1; // assume that one cmd can be sent
     hci_stack->hci_packet_buffer_reserved = false;
     hci_stack->state = HCI_STATE_INITIALIZING;
-    hci_stack->substate = HCI_INIT_SEND_RESET;
+    if (vendor_id == 0x0bda) {
+        hci_stack->substate = HCI_INIT_VENDOR_READ_LMP_SUBVER;
+    } else {
+        hci_stack->substate = HCI_INIT_SEND_RESET;
+    }
 }
 
 static void hci_power_enter_halting_state(void){

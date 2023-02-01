@@ -74,7 +74,7 @@
 #define HCI_READ_ROM_VERSION 0xFC6D
 #define HCI_READ_LMP_VERSION 0x1001
 #define HCI_RESET 0x0C03
-#define HCI_VENDOR_READ_CMD 0xFC61
+
 
 #define FILL_COMMAND(buf, command) ((int16_t *)buf)[0] = command
 #define FILL_LENGTH(buf, length) buf[2] = length
@@ -141,13 +141,6 @@ enum {
     STATE_LOAD_FIRMWARE,
     STATE_RESET,
     STATE_DONE,
-};
-enum rtk_read_class {
-    READ_NONE = 0,
-    READ_CHIP_TYPE = 1,
-    READ_LMP_SUB_VERSION = 2,
-    READ_CHIP_VER = 3,
-    READ_SEC_PROJ = 4
 };
 enum { FW_DONE, FW_MORE_TO_DO };
 
@@ -363,17 +356,6 @@ struct list_head {
     struct list_head *next, *prev;
 };
 
-static __inline uint16_t get_unaligned_le16(uint8_t * p)
-{
-    return (uint16_t) (*p) + ((uint16_t) (*(p + 1)) << 8);
-}
-
-static __inline uint32_t get_unaligned_le32(uint8_t * p)
-{
-    return (uint32_t) (*p) + ((uint32_t) (*(p + 1)) << 8) +
-        ((uint32_t) (*(p + 2)) << 16) + ((uint32_t) (*(p + 3)) << 24);
-}
-
 /* list head from kernel */
 //#define offsetof(TYPE, MEMBER)	((size_t)&((TYPE *)0)->MEMBER)
 
@@ -454,12 +436,6 @@ const uint8_t FW_SIGNATURE[8]        = {0x52, 0x65, 0x61, 0x6C, 0x74, 0x65, 0x63
 const uint8_t FW_SIGNATURE_NEW[8]    = {0x52, 0x54, 0x42, 0x54, 0x43, 0x6F, 0x72, 0x65};
 const uint8_t EXTENSION_SIGNATURE[4] = {0x51, 0x04, 0xFD, 0x77};
 
-int check_fw_version(void) {
-    if (patch->lmp_sub != lmp_subversion)
-        return 1;
-    return 0;
-}
-
 static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(channel);
     UNUSED(size);
@@ -470,34 +446,16 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     const uint8_t * return_para = hci_event_command_complete_get_return_parameters(packet);
     switch (opcode) {
     case HCI_READ_ROM_VERSION:
-        rom_version = hci_event_command_complete_get_return_parameters(packet)[1];
+        rom_version = return_para[1];
         log_info("Received ROM version 0x%02x", rom_version);
         printf("Received ROM version 0x%02x\n", rom_version);
+        if (patch->lmp_sub != lmp_subversion) {
+            printf("Firmware already exists\n");
+            state = STATE_DONE;
+        }
         break;
     case HCI_VENDOR_READ_CMD:
-        if (subopcode == READ_CHIP_VER) {
-            uint16_t vendor_read_hci_revision = return_para[1] | (return_para[2] << 8);
-            printf("Received vendor read hci revision 0x%02x\n", vendor_read_hci_revision);
-            if (vendor_read_hci_revision != 0x000e) {
-                int ret_val = check_fw_version();
-                if (ret_val == 1) {
-                    printf("Firmware already exists\n");
-                    state = STATE_DONE;
-                }
-            }
-        } else if (subopcode == READ_LMP_SUB_VERSION) {
-            uint16_t vendor_read_lmp_subversion = return_para[1] | (return_para[2] << 8);
-            printf("Received vendor read lmp subver 0x%02x\n", vendor_read_lmp_subversion);
-            if (vendor_read_lmp_subversion == 0x8822) {
-                state = STATE_READ_CHIP_VER;
-            } else {
-                int ret_val = check_fw_version();
-                if (ret_val == 1) {
-                    printf("Firmware already exists\n");
-                    state = STATE_DONE;
-                }
-            }
-        } else if (subopcode == READ_SEC_PROJ) {
+        if (subopcode == READ_SEC_PROJ) {
             g_key_id = return_para[1];
             printf("Received key id 0x%02x\n", g_key_id);
         }
@@ -697,7 +655,7 @@ static int insert_patch(struct patch_node *patch_node_hdr, uint8_t *section_pos,
     uint8_t eco = 0;
     uint8_t *pos = section_pos + 8;
 
-    numbers = get_unaligned_le16(pos);
+    numbers = little_endian_read_16(pos, 0);
     log_info("number 0x%04x", numbers);
 
     pos += 4;
@@ -711,7 +669,7 @@ static int insert_patch(struct patch_node *patch_node_hdr, uint8_t *section_pos,
             if(opcode == PATCH_SECURITY_HEADER)
                 tmp->key_id = (uint8_t)*(pos + 1);
 
-            section_len = get_unaligned_le32(pos + 4);
+            section_len = little_endian_read_32(pos, 4);
             tmp->len =  section_len;
             *patch_len += section_len;
             log_info("Pri:%d, Patch length 0x%04x", tmp->pri, tmp->len);
@@ -729,7 +687,7 @@ static int insert_patch(struct patch_node *patch_node_hdr, uint8_t *section_pos,
                 }
             }
         } else {
-            section_len =  get_unaligned_le32(pos + 4);
+            section_len =  little_endian_read_32(pos, 4);
             log_info("Patch length 0x%04x", section_len);
         }
         pos += (8 + section_len);
@@ -764,8 +722,8 @@ static uint8_t *rtb_get_patch_header(uint32_t *len,
     section_pos = epatch_buf + 20;
 
     for (i = 0; i < number_of_section; i++) {
-        section_hdr.opcode = get_unaligned_le32(section_pos);
-        section_hdr.section_len = get_unaligned_le32(section_pos + 4);
+        section_hdr.opcode = little_endian_read_32(section_pos, 0);
+        section_hdr.section_len = little_endian_read_32(section_pos, 4);
         log_info("opcode 0x%04x", section_hdr.opcode);
         switch (section_hdr.opcode) {
         case PATCH_SNIPPETS:
@@ -782,8 +740,8 @@ static uint8_t *rtb_get_patch_header(uint32_t *len,
                 break;
 
             for (i = 0; i < number_of_section; i++) {
-                section_hdr.opcode = get_unaligned_le32(section_pos);
-                section_hdr.section_len = get_unaligned_le32(section_pos + 4);
+                section_hdr.opcode = little_endian_read_32(section_pos, 0);
+                section_hdr.section_len = little_endian_read_32(section_pos, 4);
                 if(section_hdr.opcode == PATCH_DUMMY_HEADER) {
                     insert_patch(patch_node_hdr, section_pos, PATCH_DUMMY_HEADER, &patch_len, NULL);
                 }
@@ -798,12 +756,12 @@ static uint8_t *rtb_get_patch_header(uint32_t *len,
             break;
         case PATCH_OTA_FLAG:
             ota_flag_pos = section_pos + 4;
-            number_of_ota_flag = get_unaligned_le32(ota_flag_pos);
+            number_of_ota_flag = little_endian_read_32(ota_flag_pos, 0);
             ota_flag.eco = (uint8_t)*(ota_flag_pos + 1);
             if (ota_flag.eco == rom_version + 1) {
                 for (j = 0; j < number_of_ota_flag; j++) {
                     if (ota_flag.eco == rom_version + 1) {
-                        ota_flag.enable = get_unaligned_le32(ota_flag_pos + 4);
+                        ota_flag.enable = little_endian_read_32(ota_flag_pos, 4);
                     }
                 }
             }
@@ -1041,29 +999,10 @@ static uint8_t update_firmware(const char *firmware, const char *config, uint8_t
 
 int rtb_vendor_read(uint8_t* hci_cmd_buffer, uint16_t subopc)
 {
-    uint8_t cmd_chip_type_buff[] = {
-        0x61, 0xfc, 0x05, 0x10, 0xA6, 0xAD, 0x00, 0xB0
-    };
-    uint8_t cmd_lmp_sub_version_buf[] = {
-        0x61, 0xfc, 0x05, 0x10, 0x38, 0x04, 0x28, 0x80
-    };
-    uint8_t cmd_chip_version_buf[] =  {
-        0x61, 0xfc, 0x05, 0x10, 0x3A, 0x04, 0x28, 0x80
-    };
     uint8_t cmd_sec_buf[] = {
         0x61, 0xfc, 0x05, 0x10, 0xA4, 0x0D, 0x00, 0xb0
     };
-
     switch (subopc) {
-    case READ_CHIP_TYPE:
-        memcpy(hci_cmd_buffer, cmd_chip_type_buff, sizeof(cmd_chip_type_buff));
-        break;
-    case READ_LMP_SUB_VERSION:
-        memcpy(hci_cmd_buffer, cmd_lmp_sub_version_buf, sizeof(cmd_lmp_sub_version_buf));
-        break;
-    case READ_CHIP_VER:
-        memcpy(hci_cmd_buffer, cmd_chip_version_buf, sizeof(cmd_chip_version_buf));
-        break;
     case READ_SEC_PROJ:
         memcpy(hci_cmd_buffer, cmd_sec_buf, sizeof(cmd_sec_buf));
         break;
@@ -1081,16 +1020,6 @@ static btstack_chipset_result_t chipset_next_command(uint8_t *hci_cmd_buffer) {
         case STATE_READ_ROM_VERSION:
             FILL_COMMAND(hci_cmd_buffer, HCI_READ_ROM_VERSION);
             FILL_LENGTH(hci_cmd_buffer, 0);
-            state = STATE_READ_LMP_SUB_VERSION;
-            break;
-        case STATE_READ_CHIP_VER:
-            subopcode = READ_CHIP_VER;
-            rtb_vendor_read(hci_cmd_buffer, subopcode);
-            state = STATE_READ_SEC_PROJ;
-            break;
-        case STATE_READ_LMP_SUB_VERSION:
-            subopcode = READ_LMP_SUB_VERSION;
-            rtb_vendor_read(hci_cmd_buffer, subopcode);
             state = STATE_READ_SEC_PROJ;
             break;
         case STATE_READ_SEC_PROJ:

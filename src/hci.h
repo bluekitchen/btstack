@@ -741,7 +741,11 @@ typedef struct {
  * HCI Inititizlization State Machine
  */
 typedef enum hci_init_state{
-    HCI_INIT_SEND_RESET = 0,
+    HCI_INIT_VENDOR_READ_LMP_SUBVER = 0,
+    HCI_INIT_W4_VENDOR_READ_LMP_SUBVER,
+    HCI_INIT_VENDOR_READ_HCI_REVISION,
+    HCI_INIT_W4_VENDOR_READ_HCI_REVISION,
+    HCI_INIT_SEND_RESET,
     HCI_INIT_W4_SEND_RESET,
     HCI_INIT_SEND_READ_LOCAL_VERSION_INFORMATION,
     HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION,
@@ -869,6 +873,16 @@ typedef enum hci_init_state{
     HCI_HALTING_CLOSE_DISCARDING_CONNECTIONS,
 
 } hci_substate_t;
+
+#define HCI_VENDOR_READ_CMD 0xFC61
+enum rtk_read_class {
+    READ_NONE = 0,
+    READ_CHIP_TYPE = 1,
+    READ_LMP_SUB_VERSION = 2,
+    READ_CHIP_VER = 3,
+    READ_SEC_PROJ = 4
+};
+void hci_set_vendor_id(uint16_t vid);
 
 #define GAP_TASK_SET_LOCAL_NAME               0x01
 #define GAP_TASK_SET_EIR_DATA                 0x02
