@@ -23,6 +23,7 @@
 #define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SOFTWARE_AES128
 #define ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+#define ENABLE_LE_SET_ADV_PARAMS_ON_RANDOM_ADDRESS_CHANGE
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE (512 + 4) //Max official att size + l2cap header size
