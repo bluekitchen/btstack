@@ -5948,6 +5948,10 @@ static bool hci_run_general_gap_le(void){
         {
             hci_send_cmd(&hci_le_set_random_address, hci_stack->le_random_address);
         }
+#ifdef ENABLE_LE_SET_ADV_PARAMS_ON_RANDOM_ADDRESS_CHANGE
+        // workaround: on some Controllers, address in advertisements is updated only after next dv params set
+        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+#endif
         return true;
     }
 
