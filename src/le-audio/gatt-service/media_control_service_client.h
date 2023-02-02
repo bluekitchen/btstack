@@ -88,13 +88,14 @@ typedef struct {
     gatt_service_client_state_t  state;
 
     // service
-    uint16_t services_num;
+    // used to restrict the number of found services to 1
+    uint16_t service_instances_num;
     uint16_t start_handle;
     uint16_t end_handle;
     
     uint8_t characteristics_num;
-    gatt_service_client_characteristic_t * characteristics;
     uint8_t characteristic_index;
+    gatt_service_client_characteristic_t * characteristics;
 
     btstack_packet_handler_t event_callback;
     void (*handle_gatt_server_notification)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);

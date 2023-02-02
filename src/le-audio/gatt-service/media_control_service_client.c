@@ -300,7 +300,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_connec
 
     switch (connection->state){
         case GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
-            if (connection->services_num == 0){
+            if (connection->service_instances_num == 0){
                 gatt_service_client_emit_connected(connection->event_callback, connection->con_handle, connection->cid, gatt_service_active_client->connect_subevent, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                 gatt_service_client_finalize_connection(gatt_service_active_client, connection);
                 return false;
@@ -388,7 +388,7 @@ static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, ui
             connection = gatt_service_client_get_connection_for_con_handle(gatt_service_active_client, gatt_event_service_query_result_get_handle(packet));
             btstack_assert(connection != NULL);
 
-            if (connection->services_num < 1){
+            if (connection->service_instances_num < 1){
                 gatt_event_service_query_result_get_service(packet, &service);
                 connection->start_handle = service.start_group_handle;
                 connection->end_handle   = service.end_group_handle;
@@ -396,7 +396,7 @@ static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, ui
 #ifdef ENABLE_TESTING_SUPPORT
                 printf("Service: start handle 0x%04X, end handle 0x%04X\n", connection->start_handle, connection->end_handle);
 #endif          
-                connection->services_num++;
+                connection->service_instances_num++;
             } else {
                 log_info("Found more then one Service instance.");
             }
