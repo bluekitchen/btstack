@@ -16882,12 +16882,21 @@ static inline hci_con_handle_t gattservice_subevent_vocs_server_disconnected_get
  * @brief Get field mics_cid from event GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED
  * @param event packet
  * @return mics_cid
- * @note: btstack_type H
+ * @note: btstack_type 2
  */
-static inline hci_con_handle_t gattservice_subevent_mics_client_disconnected_get_mics_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_mics_client_disconnected_get_mics_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_mcs_client_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED
  * @param event packet
@@ -16895,7 +16904,7 @@ static inline hci_con_handle_t gattservice_subevent_mics_client_disconnected_get
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_mcs_client_connected_get_mcs_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
+    return little_endian_read_16(event, 5);
 }
 /**
  * @brief Get field status from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED
@@ -16904,17 +16913,64 @@ static inline uint16_t gattservice_subevent_mcs_client_connected_get_mcs_cid(con
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_mcs_client_connected_get_status(const uint8_t * event){
-    return event[5];
+    return event[7];
 }
 
 /**
  * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED
  * @param event packet
  * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_disconnected_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED
+ * @param event packet
+ * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_mcs_client_disconnected_get_mcs_cid(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_client_connected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_client_connected_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_client_connected_get_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_client_disconnected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_client_disconnected_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
 }
 
 /**
