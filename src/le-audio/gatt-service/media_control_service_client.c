@@ -412,7 +412,6 @@ static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, ui
                 connection->characteristics[characteristic_index].value_handle = characteristic.value_handle;
                 connection->characteristics[characteristic_index].properties = characteristic.properties;
                 connection->characteristics[characteristic_index].end_handle = characteristic.end_handle;
-                connection->characteristics[characteristic_index].uuid16     = characteristic.uuid16;
                 connection->characteristics_num++;
 
 #ifdef ENABLE_TESTING_SUPPORT
