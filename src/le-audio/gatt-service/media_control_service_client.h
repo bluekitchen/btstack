@@ -61,17 +61,17 @@ extern "C" {
 #define LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM 25
 
 typedef enum {
-    LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
-    LE_AUDIO_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
-    LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS,
-    LE_AUDIO_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
-    LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS,
-    LE_AUDIO_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT,
+    GATT_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
+    GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
+    GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS,
+    GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
+    GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS,
+    GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT,
 
-    LE_AUDIO_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION,
-    LE_AUDIO_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED,
-    LE_AUDIO_SERVICE_CLIENT_STATE_CONNECTED
-} le_audio_service_client_state_t;
+    GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION,
+    GATT_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED,
+    GATT_SERVICE_CLIENT_STATE_CONNECTED
+} gatt_service_client_state_t;
 
 typedef struct {
     uint16_t value_handle;
@@ -80,7 +80,7 @@ typedef struct {
     uint16_t uuid16; 
     uint16_t end_handle;
     gatt_client_notification_t notification_listener;
-} le_audio_service_characteristic_t;
+} gatt_service_client_characteristic_t;
 
 typedef struct {
     btstack_linked_item_t item;
@@ -88,7 +88,7 @@ typedef struct {
     hci_con_handle_t  con_handle;
     uint16_t          cid;
     uint16_t          mtu;
-    le_audio_service_client_state_t  state;
+    gatt_service_client_state_t  state;
 
     // service
     uint16_t services_num;
@@ -96,16 +96,16 @@ typedef struct {
     uint16_t end_handle;
     
     uint8_t characteristics_num;
-    le_audio_service_characteristic_t characteristics[LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM];
+    gatt_service_client_characteristic_t characteristics[LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM];
     uint8_t characteristic_index;
 
     btstack_packet_handler_t event_callback;
     void (*handle_gatt_server_notification)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-} le_audio_service_client_connection_t;
+} gatt_service_client_connection_helper_t;
 
 typedef struct {
     uint16_t uuid16;
-} le_audio_service_characteristic_desc_t;
+} gatt_service_client_characteristic_desc16_t;
 
 typedef struct {
     btstack_linked_item_t item;
@@ -119,13 +119,13 @@ typedef struct {
     // service
     uint16_t service_uuid16;
     // characteristics
-    le_audio_service_characteristic_desc_t characteristics_desc[LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM];
-    uint8_t  characteristics_desc_num;
+    uint8_t  characteristics_desc16_num;
+    gatt_service_client_characteristic_desc16_t characteristics_desc16[LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM];
     // control point
     uint16_t control_point_uuid;
     
     btstack_packet_callback_registration_t hci_event_callback_registration;
-} le_audio_service_client_t;
+} gatt_service_client_helper_t;
 
 
 typedef enum {
@@ -134,7 +134,7 @@ typedef enum {
 } media_service_client_state_t;
 
 typedef struct {
-    le_audio_service_client_connection_t basic_connection;
+    gatt_service_client_connection_helper_t basic_connection;
     
     media_service_client_state_t  client_state;
     btstack_packet_handler_t client_handler;
