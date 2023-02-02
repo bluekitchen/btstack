@@ -119,7 +119,7 @@ typedef struct {
     uint16_t service_uuid16;
     // characteristics
     uint8_t  characteristics_desc16_num;
-    gatt_service_client_characteristic_desc16_t characteristics_desc16[LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM];
+    const gatt_service_client_characteristic_desc16_t * characteristics_desc16;
     // control point
     uint16_t control_point_uuid;
     
