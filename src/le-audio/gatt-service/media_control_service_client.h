@@ -48,6 +48,7 @@
 #include "bluetooth.h"
 #include "btstack_linked_list.h"
 #include "ble/gatt_client.h"
+#include "le-audio/gatt-service/gatt_service_client_helper.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -56,76 +57,6 @@ extern "C" {
 /** 
  * @text The Media Control Service Client 
  */
-
-
-typedef enum {
-    GATT_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
-    GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
-    GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS,
-    GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
-    GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS,
-    GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT,
-
-    GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION,
-    GATT_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED,
-    GATT_SERVICE_CLIENT_STATE_CONNECTED
-} gatt_service_client_state_t;
-
-typedef struct {
-    uint16_t value_handle;
-    uint16_t client_configuration_handle; 
-    uint16_t properties;
-    uint16_t end_handle;
-    gatt_client_notification_t notification_listener;
-} gatt_service_client_characteristic_t;
-
-typedef struct {
-    btstack_linked_item_t item;
-
-    hci_con_handle_t  con_handle;
-    uint16_t          cid;
-    uint16_t          mtu;
-    gatt_service_client_state_t  state;
-
-    // service
-    // used to restrict the number of found services to 1
-    uint16_t service_instances_num;
-    uint16_t start_handle;
-    uint16_t end_handle;
-    
-    uint8_t characteristics_num;
-    uint8_t characteristic_index;
-    gatt_service_client_characteristic_t * characteristics;
-
-    btstack_packet_handler_t event_callback;
-    void (*handle_gatt_server_notification)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-} gatt_service_client_connection_helper_t;
-
-typedef struct {
-    uint16_t uuid16;
-} gatt_service_client_characteristic_desc16_t;
-
-typedef struct {
-    btstack_linked_item_t item;
-
-    btstack_linked_list_t connections;
-    uint16_t cid_counter;
-    
-    uint8_t  connect_subevent;
-    uint8_t  disconnect_subevent;
-    
-    // service
-    uint16_t service_uuid16;
-    // characteristics
-    uint8_t  characteristics_desc16_num;
-    const gatt_service_client_characteristic_desc16_t * characteristics_desc16;
-    // control point
-    uint16_t control_point_uuid;
-    
-    btstack_packet_callback_registration_t hci_event_callback_registration;
-} gatt_service_client_helper_t;
-
-
 typedef enum {
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_IDLE,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_CONNECTED,
