@@ -60,12 +60,12 @@
 #include "gap.h"
 
 // active gatt client query
-static le_audio_service_client_t * le_audio_active_client;
+static gatt_service_client_helper_t * le_audio_active_client;
 
-static void le_audio_service_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // LE Audio Service Client helper functions
-static void le_audio_service_client_finalize_connection(le_audio_service_client_t * client, le_audio_service_client_connection_t * connection){
+static void gatt_service_client_finalize_connection(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection){
     if (client == NULL){
         return;
     }
@@ -73,29 +73,29 @@ static void le_audio_service_client_finalize_connection(le_audio_service_client_
     le_audio_active_client = NULL;
 }
 
-static le_audio_service_client_connection_t * le_audio_service_client_get_connection_for_con_handle(le_audio_service_client_t * client, hci_con_handle_t con_handle){
+static gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_con_handle(gatt_service_client_helper_t * client, hci_con_handle_t con_handle){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
-        le_audio_service_client_connection_t * connection = (le_audio_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        gatt_service_client_connection_helper_t * connection = (gatt_service_client_connection_helper_t *)btstack_linked_list_iterator_next(&it);
         if (connection->con_handle != con_handle) continue;
         return connection;
     }
     return NULL;
 }
 
-static le_audio_service_client_connection_t * le_audio_service_client_get_connection_for_cid(le_audio_service_client_t * client, uint16_t connection_cid){
+static gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_cid(gatt_service_client_helper_t * client, uint16_t connection_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
-        le_audio_service_client_connection_t * connection = (le_audio_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        gatt_service_client_connection_helper_t * connection = (gatt_service_client_connection_helper_t *)btstack_linked_list_iterator_next(&it);
         if (connection->cid != connection_cid) continue;
         return connection;
     }
     return NULL;
 }
 
-static void le_audio_service_client_emit_connected(btstack_packet_handler_t event_callback, hci_con_handle_t con_handle, uint16_t cid, uint8_t subevent, uint8_t status){
+static void gatt_service_client_emit_connected(btstack_packet_handler_t event_callback, hci_con_handle_t con_handle, uint16_t cid, uint8_t subevent, uint8_t status){
     btstack_assert(event_callback != NULL);
 
     uint8_t event[8];
@@ -111,7 +111,7 @@ static void le_audio_service_client_emit_connected(btstack_packet_handler_t even
     (*event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void le_audio_service_client_emit_disconnected(btstack_packet_handler_t event_callback, uint16_t cid, uint8_t subevent){
+static void gatt_service_client_emit_disconnected(btstack_packet_handler_t event_callback, uint16_t cid, uint8_t subevent){
     btstack_assert(event_callback != NULL);
 
     uint8_t event[5];
@@ -124,27 +124,27 @@ static void le_audio_service_client_emit_disconnected(btstack_packet_handler_t e
     (*event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static uint16_t le_audio_service_client_get_next_cid(le_audio_service_client_t * client){
+static uint16_t gatt_service_client_get_next_cid(gatt_service_client_helper_t * client){
     client->cid_counter = btstack_next_cid_ignoring_zero(client->cid_counter);
     return client->cid_counter;
 }
 
-void le_audio_service_client_hci_event_handler(le_audio_service_client_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
     
     hci_con_handle_t con_handle;
-    le_audio_service_client_connection_t * connection;
+    gatt_service_client_connection_helper_t * connection;
     
     switch (hci_event_packet_get_type(packet)){
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
-            connection = le_audio_service_client_get_connection_for_con_handle(client, con_handle);
+            connection = gatt_service_client_get_connection_for_con_handle(client, con_handle);
             if (connection != NULL){
-                le_audio_service_client_emit_disconnected(connection->event_callback, connection->cid, GATTSERVICE_SUBEVENT_LE_AUDIO_CLIENT_DISCONNECTED);
-                le_audio_service_client_finalize_connection(client, connection);
+                gatt_service_client_emit_disconnected(connection->event_callback, connection->cid, GATTSERVICE_SUBEVENT_LE_AUDIO_CLIENT_DISCONNECTED);
+                gatt_service_client_finalize_connection(client, connection);
             }
             break;
         default:
@@ -152,7 +152,7 @@ void le_audio_service_client_hci_event_handler(le_audio_service_client_t * clien
     }
 }
 
-static bool le_audio_service_client_next_index_for_descriptor_query(le_audio_service_client_t * client, le_audio_service_client_connection_t * connection) {
+static bool gatt_service_client_next_index_for_descriptor_query(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < connection->characteristics_num)) {
         if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY) == 1u){
@@ -164,7 +164,7 @@ static bool le_audio_service_client_next_index_for_descriptor_query(le_audio_ser
     return next_query_found;
 }
 
-static bool le_audio_service_client_next_index_for_notification_query(le_audio_service_client_t * client, le_audio_service_client_connection_t * connection) {
+static bool gatt_service_client_next_index_for_notification_query(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < connection->characteristics_num)) {
         if (connection->characteristics[connection->characteristic_index].client_configuration_handle != 0) {
@@ -176,7 +176,7 @@ static bool le_audio_service_client_next_index_for_notification_query(le_audio_s
     return next_query_found;
 }
 
-static uint8_t le_audio_service_client_register_notification(le_audio_service_client_connection_t * connection){
+static uint8_t gatt_service_client_register_notification(gatt_service_client_connection_helper_t * connection){
     gatt_client_characteristic_t characteristic;
     uint8_t status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     
@@ -186,7 +186,7 @@ static uint8_t le_audio_service_client_register_notification(le_audio_service_cl
         characteristic.properties = connection->characteristics[connection->characteristic_index].properties;
 
         status = gatt_client_write_client_characteristic_configuration(
-                    &le_audio_service_client_handle_gatt_client_event, 
+                    &gatt_service_client_handle_gatt_client_event, 
                     connection->con_handle, 
                     &characteristic, 
                     GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
@@ -203,63 +203,63 @@ static uint8_t le_audio_service_client_register_notification(le_audio_service_cl
 }
 
 
-static void le_audio_service_client_run_for_client(le_audio_service_client_t * client, le_audio_service_client_connection_t * connection){
+static void gatt_service_client_run_for_client(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection){
     uint8_t status = ATT_ERROR_SUCCESS;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
 
     switch (connection->state){
-        case LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE:
-            connection->state = LE_AUDIO_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
+        case GATT_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE:
+            connection->state = GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
             status = gatt_client_discover_primary_services_by_uuid16(
-                &le_audio_service_client_handle_gatt_client_event, 
+                &gatt_service_client_handle_gatt_client_event, 
                 connection->con_handle, 
                 client->service_uuid16);
             break;
 
-        case LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
+        case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
 #ifdef ENABLE_TESTING_SUPPORT
             printf("Read characteristics [service 0x%04x]:\n", client->service_uuid16);
 #endif
-            connection->state = LE_AUDIO_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT;
+            connection->state = GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT;
 
             service.start_group_handle = connection->start_handle;
             service.end_group_handle = connection->end_handle;
             service.uuid16 = client->service_uuid16;
 
             status = gatt_client_discover_characteristics_for_service(
-                &le_audio_service_client_handle_gatt_client_event, 
+                &gatt_service_client_handle_gatt_client_event, 
                 connection->con_handle, 
                 &service);
             break;
 
-        case LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS:
+        case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS:
 #ifdef ENABLE_TESTING_SUPPORT
             printf("Read client characteristic descriptors for characteristic[%u, uuid16 0x%04x, value_handle 0x%04x]:\n", 
                 connection->characteristic_index, 
-                client->characteristics_desc[connection->characteristic_index].uuid16,
+                client->characteristics_desc16[connection->characteristic_index].uuid16,
                 connection->characteristics[connection->characteristic_index].value_handle);
 #endif
-            connection->state = LE_AUDIO_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT;
+            connection->state = GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT;
             characteristic.value_handle = connection->characteristics[connection->characteristic_index].value_handle;
             characteristic.properties   = connection->characteristics[connection->characteristic_index].properties;
             characteristic.end_handle   = connection->characteristics[connection->characteristic_index].end_handle;
 
             (void) gatt_client_discover_characteristic_descriptors(
-                &le_audio_service_client_handle_gatt_client_event, 
+                &gatt_service_client_handle_gatt_client_event, 
                 connection->con_handle, 
                 &characteristic);
             break;
 
-        case LE_AUDIO_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION:
+        case GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION:
 #ifdef ENABLE_TESTING_SUPPORT
             printf("Register notification for characteristic[%u, uuid16 0x%04x, ccd handle 0x%04x]:\n", 
                 connection->characteristic_index, 
-                client->characteristics_desc[connection->characteristic_index].uuid16,
+                client->characteristics_desc16[connection->characteristic_index].uuid16,
                 connection->characteristics[connection->characteristic_index].client_configuration_handle);
 #endif
-            connection->state = LE_AUDIO_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
-            status = le_audio_service_client_register_notification(connection);
+            connection->state = GATT_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
+            status = gatt_service_client_register_notification(connection);
             connection->characteristic_index++;
     
 #ifdef ENABLE_TESTING_SUPPORT
@@ -269,7 +269,7 @@ static void le_audio_service_client_run_for_client(le_audio_service_client_t * c
 #endif
             return;
 
-        case LE_AUDIO_SERVICE_CLIENT_STATE_CONNECTED:
+        case GATT_SERVICE_CLIENT_STATE_CONNECTED:
             // TODO
             break;
         default:
@@ -277,21 +277,21 @@ static void le_audio_service_client_run_for_client(le_audio_service_client_t * c
     }
 
     if (status != ATT_ERROR_SUCCESS){
-        le_audio_service_client_emit_connected(connection->event_callback, connection->con_handle, connection->cid, client->connect_subevent, status);
-        le_audio_service_client_finalize_connection(client, connection);
+        gatt_service_client_emit_connected(connection->event_callback, connection->con_handle, connection->cid, client->connect_subevent, status);
+        gatt_service_client_finalize_connection(client, connection);
     }
 }
 
 // @return true if client valid / run function should be called
-static bool le_audio_service_client_handle_query_complete(le_audio_service_client_connection_t * connection, uint8_t status){
+static bool gatt_service_client_handle_query_complete(gatt_service_client_connection_helper_t * connection, uint8_t status){
     btstack_assert(le_audio_active_client != NULL);
 
     if (status != ATT_ERROR_SUCCESS){
         switch (connection->state){
-            case LE_AUDIO_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
-            case LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
-                le_audio_service_client_emit_connected(connection->event_callback, connection->con_handle, connection->cid, le_audio_active_client->connect_subevent, status);
-                le_audio_service_client_finalize_connection(le_audio_active_client, connection);
+            case GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
+            case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
+                gatt_service_client_emit_connected(connection->event_callback, connection->con_handle, connection->cid, le_audio_active_client->connect_subevent, status);
+                gatt_service_client_finalize_connection(le_audio_active_client, connection);
                 return false;
             default:
                 break;
@@ -299,45 +299,45 @@ static bool le_audio_service_client_handle_query_complete(le_audio_service_clien
     }
 
     switch (connection->state){
-        case LE_AUDIO_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
+        case GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             if (connection->services_num == 0){
-                le_audio_service_client_emit_connected(connection->event_callback, connection->con_handle, connection->cid, le_audio_active_client->connect_subevent, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
-                le_audio_service_client_finalize_connection(le_audio_active_client, connection);
+                gatt_service_client_emit_connected(connection->event_callback, connection->con_handle, connection->cid, le_audio_active_client->connect_subevent, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
+                gatt_service_client_finalize_connection(le_audio_active_client, connection);
                 return false;
             }
-            connection->state = LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
+            connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
             break;
         
-        case LE_AUDIO_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
-            connection->state = LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
+        case GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
+            connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
             connection->characteristic_index = 0;
             break;
 
-        case LE_AUDIO_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT:
-            if (le_audio_service_client_next_index_for_descriptor_query(le_audio_active_client, connection)){
-                connection->state = LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
+        case GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT:
+            if (gatt_service_client_next_index_for_descriptor_query(le_audio_active_client, connection)){
+                connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
                 break;
             }
 
             connection->characteristic_index = 0;
-            if (le_audio_service_client_next_index_for_notification_query(le_audio_active_client, connection)){
-                connection->state = LE_AUDIO_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
+            if (gatt_service_client_next_index_for_notification_query(le_audio_active_client, connection)){
+                connection->state = GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
             } else {
                 connection->characteristic_index = 0;
-                connection->state = LE_AUDIO_SERVICE_CLIENT_STATE_CONNECTED;
-                le_audio_service_client_emit_connected(connection->event_callback, connection->con_handle, connection->cid, le_audio_active_client->connect_subevent, ERROR_CODE_SUCCESS);
+                connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
+                gatt_service_client_emit_connected(connection->event_callback, connection->con_handle, connection->cid, le_audio_active_client->connect_subevent, ERROR_CODE_SUCCESS);
             }
             break;
 
-        case LE_AUDIO_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED:
-            if (le_audio_service_client_next_index_for_notification_query(le_audio_active_client, connection)){
-                connection->state = LE_AUDIO_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
+        case GATT_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED:
+            if (gatt_service_client_next_index_for_notification_query(le_audio_active_client, connection)){
+                connection->state = GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
                 break;
             }
 
             connection->characteristic_index = 0;
-            connection->state = LE_AUDIO_SERVICE_CLIENT_STATE_CONNECTED;
-            le_audio_service_client_emit_connected(connection->event_callback, connection->con_handle, connection->cid, le_audio_active_client->connect_subevent, ERROR_CODE_SUCCESS);
+            connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
+            gatt_service_client_emit_connected(connection->event_callback, connection->con_handle, connection->cid, le_audio_active_client->connect_subevent, ERROR_CODE_SUCCESS);
             break;
 
         default:
@@ -348,14 +348,14 @@ static bool le_audio_service_client_handle_query_complete(le_audio_service_clien
     return true;
 }
 
-static uint8_t le_audio_service_client_get_characteristic_index_for_uuid16(
-    le_audio_service_client_t * client,
-    uint16_t uuid16){
+static uint8_t gatt_service_client_get_characteristic_index_for_uuid16(
+        gatt_service_client_helper_t * client,
+        uint16_t uuid16){
         uint8_t index = 0xff;
 
         uint8_t i;
-        for (i = 0; i < client->characteristics_desc_num; i++){
-            if (client->characteristics_desc[i].uuid16 == uuid16){
+        for (i = 0; i < client->characteristics_desc16_num; i++){
+            if (client->characteristics_desc16[i].uuid16 == uuid16){
                 index = i;
                 break;
             }
@@ -363,14 +363,14 @@ static uint8_t le_audio_service_client_get_characteristic_index_for_uuid16(
         return index;
 }
 
-static void le_audio_service_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
     UNUSED(channel);
     UNUSED(size);
     
     btstack_assert(le_audio_active_client != NULL);
 
-    le_audio_service_client_connection_t * connection = NULL;
+    gatt_service_client_connection_helper_t * connection = NULL;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
     gatt_client_characteristic_descriptor_t characteristic_descriptor;
@@ -379,13 +379,13 @@ static void le_audio_service_client_handle_gatt_client_event(uint8_t packet_type
 
     switch (hci_event_packet_get_type(packet)){
         case GATT_EVENT_MTU:
-            connection = le_audio_service_client_get_connection_for_con_handle(le_audio_active_client, gatt_event_mtu_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(le_audio_active_client, gatt_event_mtu_get_handle(packet));
             btstack_assert(connection != NULL);
             connection->mtu = gatt_event_mtu_get_MTU(packet);
             break;
 
         case GATT_EVENT_SERVICE_QUERY_RESULT:
-            connection = le_audio_service_client_get_connection_for_con_handle(le_audio_active_client, gatt_event_service_query_result_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(le_audio_active_client, gatt_event_service_query_result_get_handle(packet));
             btstack_assert(connection != NULL);
 
             if (connection->services_num < 1){
@@ -403,12 +403,12 @@ static void le_audio_service_client_handle_gatt_client_event(uint8_t packet_type
             break;
  
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-            connection = le_audio_service_client_get_connection_for_con_handle(le_audio_active_client, gatt_event_characteristic_query_result_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(le_audio_active_client, gatt_event_characteristic_query_result_get_handle(packet));
             btstack_assert(connection != NULL);
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
       
-            characteristic_index = le_audio_service_client_get_characteristic_index_for_uuid16(le_audio_active_client, characteristic.uuid16);
-            if (characteristic_index < le_audio_active_client->characteristics_desc_num){
+            characteristic_index = gatt_service_client_get_characteristic_index_for_uuid16(le_audio_active_client, characteristic.uuid16);
+            if (characteristic_index < le_audio_active_client->characteristics_desc16_num){
                 connection->characteristics[characteristic_index].value_handle = characteristic.value_handle;
                 connection->characteristics[characteristic_index].properties = characteristic.properties;
                 connection->characteristics[characteristic_index].end_handle = characteristic.end_handle;
@@ -425,14 +425,14 @@ static void le_audio_service_client_handle_gatt_client_event(uint8_t packet_type
             break;
 
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
-            connection = le_audio_service_client_get_connection_for_con_handle(le_audio_active_client, gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(le_audio_active_client, gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
             btstack_assert(connection != NULL);
             gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &characteristic_descriptor);
             
             if (characteristic_descriptor.uuid16 != ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION){
                 break;
             }
-            btstack_assert(connection->state == LE_AUDIO_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT);
+            btstack_assert(connection->state == GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT);
 
             connection->characteristics[connection->characteristic_index].client_configuration_handle = characteristic_descriptor.handle;
             connection->characteristic_index++;
@@ -445,9 +445,9 @@ static void le_audio_service_client_handle_gatt_client_event(uint8_t packet_type
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
-            connection = le_audio_service_client_get_connection_for_con_handle(le_audio_active_client, gatt_event_query_complete_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(le_audio_active_client, gatt_event_query_complete_get_handle(packet));
             btstack_assert(connection != NULL);
-            call_run = le_audio_service_client_handle_query_complete(connection, gatt_event_query_complete_get_att_status(packet));
+            call_run = gatt_service_client_handle_query_complete(connection, gatt_event_query_complete_get_att_status(packet));
             break;
 
         default:
@@ -455,36 +455,36 @@ static void le_audio_service_client_handle_gatt_client_event(uint8_t packet_type
     }
 
     if (call_run && (connection != NULL)){
-        le_audio_service_client_run_for_client(le_audio_active_client, connection);
+        gatt_service_client_run_for_client(le_audio_active_client, connection);
     }
 }
 
-static void le_audio_service_client_init(le_audio_service_client_t * client,
-    void (*hci_event_handler_trampoline)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+static void gatt_service_client_init(gatt_service_client_helper_t * client,
+                                         void (*hci_event_handler_trampoline)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
     client->cid_counter = 0;
-    client->characteristics_desc_num = 0;
+    client->characteristics_desc16_num = 0;
     client->hci_event_callback_registration.callback = hci_event_handler_trampoline;
     hci_add_event_handler(&client->hci_event_callback_registration);
 }
 
-static uint8_t le_audio_service_client_connect(
-    le_audio_service_client_t * client, le_audio_service_client_connection_t * connection, hci_con_handle_t con_handle, 
-    btstack_packet_handler_t packet_handler, uint16_t * connection_cid){
+static uint8_t gatt_service_client_connect(
+        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection, hci_con_handle_t con_handle,
+        btstack_packet_handler_t packet_handler, uint16_t * connection_cid){
     
     btstack_assert(client         != NULL);
     btstack_assert(connection     != NULL);
     btstack_assert(packet_handler != NULL);
     
-    if (le_audio_service_client_get_connection_for_con_handle(client, con_handle) != NULL){
+    if (gatt_service_client_get_connection_for_con_handle(client, con_handle) != NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    uint16_t cid = le_audio_service_client_get_next_cid(client);
+    uint16_t cid = gatt_service_client_get_next_cid(client);
     if (connection_cid != NULL) {
         *connection_cid = cid;
     }
     
-    connection->state = LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
+    connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
     connection->cid = *connection_cid;
     connection->con_handle = con_handle;
     connection->event_callback = packet_handler; 
@@ -492,99 +492,99 @@ static uint8_t le_audio_service_client_connect(
 
     le_audio_active_client = client;
 
-    le_audio_service_client_run_for_client(client, connection);
+    gatt_service_client_run_for_client(client, connection);
 
     return ERROR_CODE_SUCCESS;
 }
 
-static void le_audio_service_client_add_characteristic(le_audio_service_client_t * client, uint16_t characteristic_uuid16, bool notify){
+static void gatt_service_client_add_characteristic(gatt_service_client_helper_t * client, uint16_t characteristic_uuid16, bool notify){
     btstack_assert(client != NULL);
-    if (client->characteristics_desc_num < LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM){
-        client->characteristics_desc[client->characteristics_desc_num].uuid16 = characteristic_uuid16;
-        client->characteristics_desc_num++;
+    if (client->characteristics_desc16_num < LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM){
+        client->characteristics_desc16[client->characteristics_desc16_num].uuid16 = characteristic_uuid16;
+        client->characteristics_desc16_num++;
     }
 }
 
-static uint8_t le_audio_service_client_disconnect(le_audio_service_client_t * client, uint16_t connection_cid){
+static uint8_t gatt_service_client_disconnect(gatt_service_client_helper_t * client, uint16_t connection_cid){
     btstack_assert(client != NULL);
 
-    le_audio_service_client_connection_t * connection = le_audio_service_client_get_connection_for_cid(client, connection_cid);
+    gatt_service_client_connection_helper_t * connection = gatt_service_client_get_connection_for_cid(client, connection_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     // finalize connections
-    le_audio_service_client_emit_disconnected(connection->event_callback, connection->cid, GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED);
-    le_audio_service_client_finalize_connection(client, connection);
+    gatt_service_client_emit_disconnected(connection->event_callback, connection->cid, GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED);
+    gatt_service_client_finalize_connection(client, connection);
     return ERROR_CODE_SUCCESS;
 }
 
-static void le_audio_service_client_deinit(le_audio_service_client_t * client){
+static void gatt_service_client_deinit(gatt_service_client_helper_t * client){
     btstack_assert(client != NULL);
 
     client->cid_counter = 0;
-    client->characteristics_desc_num = 0;
+    client->characteristics_desc16_num = 0;
     
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
-        le_audio_service_client_connection_t * connection = (le_audio_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
-        le_audio_service_client_finalize_connection(client, connection);
+        gatt_service_client_connection_helper_t * connection = (gatt_service_client_connection_helper_t *)btstack_linked_list_iterator_next(&it);
+        gatt_service_client_finalize_connection(client, connection);
     }
 }
 
 // MSC Client
-static le_audio_service_client_t msc_service;
+static gatt_service_client_helper_t msc_service;
 
 static void mcs_client_packet_handler_trampoline(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    le_audio_service_client_hci_event_handler(&msc_service, packet_type, channel, packet, size);
+    gatt_service_client_hci_event_handler(&msc_service, packet_type, channel, packet, size);
 }
 
 uint8_t media_control_service_client_connect(hci_con_handle_t con_handle, mcs_client_connection_t * connection, btstack_packet_handler_t packet_handler, uint16_t * mcs_cid){
-    return le_audio_service_client_connect(&msc_service, &connection->basic_connection, con_handle, packet_handler, mcs_cid);
+    return gatt_service_client_connect(&msc_service, &connection->basic_connection, con_handle, packet_handler, mcs_cid);
 }
 
 uint8_t media_control_service_client_disconnect(uint16_t mcs_cid){
-    return le_audio_service_client_disconnect(&msc_service, mcs_cid);
+    return gatt_service_client_disconnect(&msc_service, mcs_cid);
 }
 
 void media_control_service_client_init(void){
-    le_audio_service_client_init(&msc_service, &mcs_client_packet_handler_trampoline);
+    gatt_service_client_init(&msc_service, &mcs_client_packet_handler_trampoline);
     
     msc_service.disconnect_subevent = GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED;
     msc_service.connect_subevent    = GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED;
     msc_service.service_uuid16        = ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE;
 
     // TODO: read from file
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_OBJECT_ID,
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_OBJECT_ID,
                                                false);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL, false);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_TRACK_CHANGED, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_TRACK_TITLE, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_TRACK_DURATION, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_TRACK_POSITION, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_PLAYBACK_SPEED, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_SEEKING_SPEED, true);
-    le_audio_service_client_add_characteristic(&msc_service,
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL, false);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_TRACK_CHANGED, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_TRACK_TITLE, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_TRACK_DURATION, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_TRACK_POSITION, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_PLAYBACK_SPEED, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_SEEKING_SPEED, true);
+    gatt_service_client_add_characteristic(&msc_service,
                                                ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_SEGMENTS_OBJECT_ID, false);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_OBJECT_ID, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_NEXT_TRACK_OBJECT_ID, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_PARENT_GROUP_OBJECT_ID, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_GROUP_OBJECT_ID, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDER, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDERS_SUPPORTED,
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_OBJECT_ID, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_NEXT_TRACK_OBJECT_ID, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_PARENT_GROUP_OBJECT_ID, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_GROUP_OBJECT_ID, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDER, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDERS_SUPPORTED,
                                                false);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_STATE, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT, true);
-    le_audio_service_client_add_characteristic(&msc_service,
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_STATE, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT, true);
+    gatt_service_client_add_characteristic(&msc_service,
                                                ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT_OPCODES_SUPPORTED, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_RESULTS_OBJECT_ID,
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_RESULTS_OBJECT_ID,
                                                true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_CONTROL_POINT, true);
-    le_audio_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_CONTENT_CONTROL_ID, false);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_CONTROL_POINT, true);
+    gatt_service_client_add_characteristic(&msc_service, ORG_BLUETOOTH_CHARACTERISTIC_CONTENT_CONTROL_ID, false);
 }
 
 void media_control_service_client_deinit(void){
-    le_audio_service_client_deinit(&msc_service);
+    gatt_service_client_deinit(&msc_service);
 }
 
