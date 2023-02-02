@@ -54,11 +54,9 @@ extern "C" {
 #endif
 
 /** 
- * @text The Media Control Service Client connects to the Media Control Services of a remote device 
- * and it can query or set mute value if mute value on the remote side is enabled. The Mute updates are received via notifications.
+ * @text The Media Control Service Client 
  */
 
-#define LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM 25
 
 typedef enum {
     GATT_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
@@ -95,7 +93,7 @@ typedef struct {
     uint16_t end_handle;
     
     uint8_t characteristics_num;
-    gatt_service_client_characteristic_t characteristics[LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM];
+    gatt_service_client_characteristic_t * characteristics;
     uint8_t characteristic_index;
 
     btstack_packet_handler_t event_callback;
@@ -166,12 +164,15 @@ void media_control_service_client_init(void);
  *
  * @param con_handle
  * @param connection
+ * @param characteristics       storage for characteristics
+ * @param characteristics_num
  * @param packet_handler
  * @param mcs_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED 
  */
 uint8_t media_control_service_client_connect(
-   hci_con_handle_t con_handle, mcs_client_connection_t * connection, 
+    hci_con_handle_t con_handle, mcs_client_connection_t * connection, 
+    gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
     btstack_packet_handler_t packet_handler, uint16_t * mcs_cid);
 
 /**

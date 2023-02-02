@@ -467,12 +467,15 @@ static void gatt_service_client_init(gatt_service_client_helper_t * client,
 }
 
 static uint8_t gatt_service_client_connect(
-        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection, hci_con_handle_t con_handle,
+        hci_con_handle_t con_handle,
+        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection, 
+        gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler, uint16_t * connection_cid){
     
-    btstack_assert(client         != NULL);
-    btstack_assert(connection     != NULL);
-    btstack_assert(packet_handler != NULL);
+    btstack_assert(client          != NULL);
+    btstack_assert(connection      != NULL);
+    btstack_assert(packet_handler  != NULL);
+    btstack_assert(characteristics != NULL);
     
     if (gatt_service_client_get_connection_for_con_handle(client, con_handle) != NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -484,9 +487,11 @@ static uint8_t gatt_service_client_connect(
     }
     
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
-    connection->cid = *connection_cid;
-    connection->con_handle = con_handle;
-    connection->event_callback = packet_handler; 
+    connection->cid                 = *connection_cid;
+    connection->con_handle          = con_handle;
+    connection->event_callback      = packet_handler; 
+    connection->characteristics_num = characteristics_num;
+    connection->characteristics     = characteristics;
     btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
 
     gatt_service_active_client = client;
@@ -556,8 +561,14 @@ static void mcs_client_packet_handler_trampoline(uint8_t packet_type, uint16_t c
     gatt_service_client_hci_event_handler(&msc_service_client, packet_type, channel, packet, size);
 }
 
-uint8_t media_control_service_client_connect(hci_con_handle_t con_handle, mcs_client_connection_t * connection, btstack_packet_handler_t packet_handler, uint16_t * mcs_cid){
-    return gatt_service_client_connect(&msc_service_client, &connection->basic_connection, con_handle, packet_handler, mcs_cid);
+uint8_t media_control_service_client_connect(hci_con_handle_t con_handle, mcs_client_connection_t * connection, 
+    gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
+    btstack_packet_handler_t packet_handler, uint16_t * mcs_cid){
+
+    btstack_assert(msc_service_client.characteristics_desc16_num > 0);
+    return gatt_service_client_connect(con_handle,
+        &msc_service_client, &connection->basic_connection, 
+        characteristics, characteristics_num, packet_handler, mcs_cid);
 }
 
 uint8_t media_control_service_client_disconnect(uint16_t mcs_cid){
@@ -569,7 +580,7 @@ void media_control_service_client_init(void){
     
     msc_service_client.disconnect_subevent = GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED;
     msc_service_client.connect_subevent    = GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED;
-    msc_service_client.service_uuid16        = ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE;
+    msc_service_client.service_uuid16      = ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE;
 
     msc_service_client.characteristics_desc16_num = sizeof(mcs_characteristics_desc16)/sizeof(gatt_service_client_characteristic_desc16_t);
     msc_service_client.characteristics_desc16 = mcs_characteristics_desc16;
