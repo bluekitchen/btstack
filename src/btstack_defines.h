@@ -5097,26 +5097,44 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 1H
+ * @format 12
  * @param subevent_code
  * @param mics_cid
 */
 #define GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED                           0x7Au
 
 /**
- * @format 121
+ * @format 1H21
  * @param subevent_code
+ * @param con_handle
  * @param mcs_cid
  * @param status
 */
 #define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED                               0x7Bu
 
 /**
- * @format 1H
+ * @format 12
  * @param subevent_code
  * @param mcs_cid
 */
 #define GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED                            0x7Cu
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param con_handle
+ * @param mcs_cid
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_CLIENT_CONNECTED                               0x7Du
+
+/**
+ * @format 1H2
+ * @param subevent_code
+ * @param con_handle
+ * @param mcs_cid
+*/
+#define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                            0x7Eu
 
 // MAP Meta Event Group
 
