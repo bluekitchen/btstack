@@ -58,28 +58,19 @@ extern "C" {
  * and it can query or set mute value if mute value on the remote side is enabled. The Mute updates are received via notifications.
  */
 
-#define LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM 15
+#define LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM 25
 
 typedef enum {
-    LE_AUDIO_SERVICE_CLIENT_STATE_IDLE,
     LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
     LE_AUDIO_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
     LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS,
     LE_AUDIO_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
-
-#ifdef ENABLE_TESTING_SUPPORT
     LE_AUDIO_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS,
     LE_AUDIO_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT,
-#endif
 
     LE_AUDIO_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION,
     LE_AUDIO_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED,
-    LE_AUDIO_SERVICE_CLIENT_STATE_CONNECTED,
-
-#ifdef ENABLE_TESTING_SUPPORT
-    LE_AUDIO_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
-    LE_AUDIO_SERVICE_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT
-#endif
+    LE_AUDIO_SERVICE_CLIENT_STATE_CONNECTED
 } le_audio_service_client_state_t;
 
 typedef struct {
@@ -96,19 +87,26 @@ typedef struct {
 
     hci_con_handle_t  con_handle;
     uint16_t          cid;
+    uint16_t          mtu;
     le_audio_service_client_state_t  state;
 
     // service
-    uint16_t num_instances;
+    uint16_t services_num;
     uint16_t start_handle;
     uint16_t end_handle;
     
+    uint8_t characteristics_num;
     le_audio_service_characteristic_t characteristics[LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM];
-    uint8_t num_characteristics;
-    
+    uint8_t characteristic_index;
+
     btstack_packet_handler_t event_callback;
+    void (*handle_gatt_server_notification)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 } le_audio_service_client_connection_t;
 
+typedef struct {
+    uint16_t uuid16;
+    bool     notify;
+} le_audio_service_characteristic_desc_t;
 
 typedef struct {
     btstack_linked_item_t item;
@@ -120,60 +118,34 @@ typedef struct {
     uint8_t  disconnect_subevent;
     
     // service
-    uint16_t service_uuid;
-
+    uint16_t service_uuid16;
+    // characteristics
+    le_audio_service_characteristic_desc_t characteristics_desc[LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM];
+    uint8_t  characteristics_desc_num;
+    // control point
+    uint16_t control_point_uuid;
+    
     btstack_packet_callback_registration_t hci_event_callback_registration;
 } le_audio_service_client_t;
 
+
 typedef enum {
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_IDLE,
-//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
-//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
-//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS,
-//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
-
-// #ifdef ENABLE_TESTING_SUPPORT
-//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS,
-//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT,
-// #endif
-
-//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION,
-//     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_CONNECTED,
-
-// #ifdef ENABLE_TESTING_SUPPORT
-//     MEDIA_CONTROL_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
-//     MEDIA_CONTROL_SERVICE_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT,
-// #endif
 } media_service_client_state_t;
 
-
 typedef struct {
-    btstack_linked_item_t item;
-    hci_con_handle_t  con_handle;
-    uint16_t          cid;
-    le_audio_service_client_state_t  state;
-
+    le_audio_service_client_connection_t basic_connection;
+    
     media_service_client_state_t  client_state;
     btstack_packet_handler_t client_handler;
  
-    // service
-    uint16_t start_handle;
-    uint16_t end_handle;
-
     // characteristic
     uint16_t properties;
     uint16_t mute_value_handle;
 
-#ifdef ENABLE_TESTING_SUPPORT
-    uint16_t ccc_handle;
-#endif
-    
     bool need_polling;
-
-    
     uint8_t  requested_mute;
-
     gatt_client_notification_t notification_listener;
 } mcs_client_connection_t;
 
@@ -195,12 +167,14 @@ void media_control_service_client_init(void);
  * GATT_CLIENT_IN_WRONG_STATE, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no media control service is found, or ATT errors (see bluetooth.h). 
  *
  * @param con_handle
+ * @param connection
  * @param packet_handler
  * @param mcs_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED 
  */
-uint8_t media_control_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, uint16_t * mcs_cid);
-
+uint8_t media_control_service_client_connect(
+   hci_con_handle_t con_handle, mcs_client_connection_t * connection, 
+    btstack_packet_handler_t packet_handler, uint16_t * mcs_cid);
 
 /**
  * @brief Disconnect.
