@@ -155,7 +155,7 @@ void le_audio_service_client_hci_event_handler(le_audio_service_client_t * clien
 static bool le_audio_service_client_next_index_for_descriptor_query(le_audio_service_client_t * client, le_audio_service_client_connection_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < connection->characteristics_num)) {
-        if (client->characteristics_desc[connection->characteristic_index].notify){
+        if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY) == 1u){
             next_query_found = true;
             break;
         }
@@ -501,7 +501,6 @@ static void le_audio_service_client_add_characteristic(le_audio_service_client_t
     btstack_assert(client != NULL);
     if (client->characteristics_desc_num < LE_AUDIO_SERVICE_CHARACTERISTICS_MAX_NUM){
         client->characteristics_desc[client->characteristics_desc_num].uuid16 = characteristic_uuid16;
-        client->characteristics_desc[client->characteristics_desc_num].notify = notify;
         client->characteristics_desc_num++;
     }
 }

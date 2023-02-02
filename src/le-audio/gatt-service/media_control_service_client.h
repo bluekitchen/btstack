@@ -105,7 +105,6 @@ typedef struct {
 
 typedef struct {
     uint16_t uuid16;
-    bool     notify;
 } le_audio_service_characteristic_desc_t;
 
 typedef struct {
