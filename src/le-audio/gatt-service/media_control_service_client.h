@@ -77,7 +77,6 @@ typedef struct {
     uint16_t value_handle;
     uint16_t client_configuration_handle; 
     uint16_t properties;
-    uint16_t uuid16; 
     uint16_t end_handle;
     gatt_client_notification_t notification_listener;
 } gatt_service_client_characteristic_t;
