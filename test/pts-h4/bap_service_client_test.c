@@ -102,11 +102,18 @@ static hci_con_handle_t cis_con_handles[MAX_CHANNELS];
 static bool cis_established[MAX_CHANNELS];
 static unsigned int     cis_setup_next_index;
 
+// MCS
+#define MCS_CLIENT_CHARACTERISTICS_MAX_NUM 25
+static uint16_t mcs_cid;
+static mcs_client_connection_t mcs_connection;
+static gatt_service_client_characteristic_t mcs_connection_characteristics[MCS_CLIENT_CHARACTERISTICS_MAX_NUM];
+
 typedef enum {
     BAP_APP_CLIENT_STATE_IDLE = 0,
     BAP_APP_CLIENT_STATE_W4_GAP_CONNECTED,
     BAP_APP_CLIENT_STATE_W4_BASS_CONNECTED,
     BAP_APP_CLIENT_STATE_W4_PACS_CONNECTED,
+    BAP_APP_CLIENT_STATE_W4_MCS_CONNECTED,
     BAP_APP_CLIENT_STATE_CONNECTED,
     BAP_APP_W4_CIG_COMPLETE,
     BAP_APP_W4_CIS_CREATED,
@@ -816,6 +823,41 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+static void mcs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED:
+            if (bap_app_client_con_handle != gattservice_subevent_mcs_client_connected_get_con_handle(packet)){
+                printf("MCS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_mcs_client_connected_get_con_handle(packet));
+                return;
+            }
+
+            bap_app_client_state = BAP_APP_CLIENT_STATE_CONNECTED;
+
+            if (gattservice_subevent_mcs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+                printf("MCS client: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n", mcs_cid, bap_app_client_con_handle, 
+                    gattservice_subevent_mcs_client_connected_get_status(packet));
+                return;
+            }
+
+            printf("MCS client: connected, cid 0x%04x\n", mcs_cid);
+            break;
+
+        case GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED:
+            mcs_cid = 0;
+            printf("MCS Client: disconnected\n");
+            break;
+
+        default:
+            break;
+    }
+}
+
 static void print_config(void) {
     const le_audio_codec_configuration_t * setting = le_audio_util_get_codec_setting(menu_sampling_frequency_index, menu_frame_duration_index, menu_audio_quality);
 
@@ -889,6 +931,8 @@ static void show_usage(void){
     printf("3   - read Member Rank\n");
     printf("4   - toggle Member Lock\n");
     
+    printf("\n--- MCS Client Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("t   - connect to %s\n", bap_app_server_addr_string);    
     printf("\n");
     printf(" \n");
     printf(" \n");
@@ -1195,6 +1239,15 @@ static void stdin_process(char cmd){
             coordinated_set_identification_service_client_write_member_lock(csis_cid, lock);
             break;
         }
+
+        case 't':
+            printf("MCS: connect 0x%02x\n", bap_app_client_con_handle);
+            bap_app_client_state = BAP_APP_CLIENT_STATE_W4_MCS_CONNECTED;
+            status = media_control_service_client_connect(
+                bap_app_client_con_handle, 
+                &mcs_connection, mcs_connection_characteristics, MCS_CLIENT_CHARACTERISTICS_MAX_NUM,
+                &mcs_client_event_handler, &mcs_cid);
+            break;
         case '\n':
         case '\r':
             break;
@@ -1232,6 +1285,7 @@ int btstack_main(int argc, const char * argv[]){
     published_audio_capabilities_service_client_init(&pacs_client_event_handler);
     audio_stream_control_service_client_init(&ascs_client_event_handler);
     coordinated_set_identification_service_client_init(&csis_client_event_handler);
+    media_control_service_client_init();
 
 
     hci_event_callback_registration.callback = &hci_event_handler;
