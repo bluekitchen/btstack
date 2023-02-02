@@ -151,6 +151,7 @@
 #ifdef ENABLE_BLE
 #include "le-audio/le_audio.h"
 #include "le-audio/le_audio_util.h"
+#include "le-audio/gatt-service/gatt_service_client_helper.h"
 #include "le-audio/gatt-service/audio_input_control_service_server.h"
 #include "le-audio/gatt-service/audio_stream_control_service_client.h"
 #include "le-audio/gatt-service/audio_stream_control_service_server.h"
