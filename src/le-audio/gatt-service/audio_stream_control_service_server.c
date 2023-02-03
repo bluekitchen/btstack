@@ -223,8 +223,17 @@ static bool ascs_server_streamendpoint_can_transit_to_state(ascs_streamendpoint_
         case ASCS_STATE_RELEASING:
             switch (opcode) {
                 case ASCS_OPCODE_RELEASED:
-                    // TODO: if (caching) return target_state == ASCS_STATE_CODEC_CONFIGURED;
-                    return target_state == ASCS_STATE_IDLE;
+                    switch (target_state){
+                        case ASCS_STATE_IDLE:
+                            // TODO: requires caching == false
+                            return true;
+                        case ASCS_STATE_CODEC_CONFIGURED:
+                            // TODO: requires caching == true
+                            return true;
+                        default:
+                            break;
+                    }
+                    break;
                 default:
                     break;
             }
@@ -1055,6 +1064,7 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                     }
                 }
                 break;
+
             case ASCS_OPCODE_RELEASED:
                 for (i = 0; i < connection->response_ases_num; i++){
                     ase_id = buffer[pos++];
@@ -1275,9 +1285,10 @@ static bool ascs_server_streamendpoint_transit_to_state(hci_con_handle_t con_han
         return false;
     }
     if (!ascs_server_streamendpoint_can_transit_to_state(streamendpoint, opcode, target_state)){
-        log_info("streamendpoint %d for con_handle 0x%02x in wrong state %d", ase_id, con_handle, streamendpoint->state);
+        log_info("streamendpoint %d for con_handle 0x%02x in wrong state %d for opcode %u", ase_id, con_handle, streamendpoint->state, opcode);
         return false;
     }
+    log_info("transition ASE ID %d / con_handle 0x%02x from state %u to state %u - opcode %u", ase_id, con_handle, streamendpoint->state, target_state, opcode);
     btstack_assert(streamendpoint != NULL);
     streamendpoint->state = target_state;
     *out_client = client;
@@ -1377,10 +1388,7 @@ void audio_stream_control_service_server_streamendpoint_released(hci_con_handle_
     ascs_server_connection_t  * client;
     ascs_streamendpoint_t * streamendpoint;
 
-    ascs_state_t target_state = ASCS_STATE_IDLE;
-    if (caching){
-        target_state = ASCS_STATE_QOS_CONFIGURED;
-    }
+    ascs_state_t target_state = caching ? ASCS_STATE_CODEC_CONFIGURED : ASCS_STATE_IDLE;
 
     if (!ascs_server_streamendpoint_transit_to_state(con_handle, ase_id, ASCS_OPCODE_RELEASED, target_state, &client, &streamendpoint)){
         return;
