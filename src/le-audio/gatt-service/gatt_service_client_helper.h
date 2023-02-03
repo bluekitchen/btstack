@@ -97,6 +97,7 @@ typedef struct {
     uint8_t characteristic_index;
     gatt_service_client_characteristic_t * characteristics;
 
+    btstack_packet_handler_t event_callback;
     void (*handle_gatt_server_notification)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 } gatt_service_client_connection_helper_t;
 
