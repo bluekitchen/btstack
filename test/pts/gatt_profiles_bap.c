@@ -522,16 +522,16 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             printf("ASCS: STOP_READY ase_id %d\n", ase_id);
             audio_stream_control_service_server_streamendpoint_receiver_stop_ready(con_handle, ase_id);
             break;
-        case GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLING:
-            ase_id = gattservice_subevent_ascs_server_disabling_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_server_disabling_get_con_handle(packet);
-            printf("ASCS: DISABLING ase_id %d\n", ase_id);
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE:
+            ase_id = gattservice_subevent_ascs_server_disable_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_disable_get_con_handle(packet);
+            printf("ASCS: DISABLE ase_id %d\n", ase_id);
             audio_stream_control_service_server_streamendpoint_disable(con_handle, ase_id);
             break;
-        case GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASING:
-            ase_id = gattservice_subevent_ascs_server_releasing_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_server_releasing_get_con_handle(packet);
-            printf("ASCS: RELEASING ase_id %d\n", ase_id);
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE:
+            ase_id = gattservice_subevent_ascs_server_release_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_release_get_con_handle(packet);
+            printf("ASCS: RELEASE ase_id %d\n", ase_id);
             audio_stream_control_service_server_streamendpoint_release(con_handle, ase_id);
             break;
 
