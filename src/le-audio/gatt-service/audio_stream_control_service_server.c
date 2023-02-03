@@ -993,7 +993,7 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                 for (i = 0; i < connection->response_ases_num; i++){
                     ase_id = buffer[data_offset++];
                     if (ascs_server_request_successfully_processed(connection, i)){
-                        ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLING);
+                        ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE);
                     }
                 }
                 break;
@@ -1040,7 +1040,7 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                 for (i = 0; i < connection->response_ases_num; i++){
                     ase_id = buffer[data_offset++];
                     if (ascs_server_request_successfully_processed(connection, i)){
-                        ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASING);
+                        ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE);
                     }
                 }
                 break;
