@@ -15358,40 +15358,40 @@ static inline uint8_t gattservice_subevent_ascs_server_start_ready_get_ase_id(co
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLING
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_ascs_server_disabling_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_ascs_server_disable_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field ase_id from event GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLING
+ * @brief Get field ase_id from event GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE
  * @param event packet
  * @return ase_id
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_ascs_server_disabling_get_ase_id(const uint8_t * event){
+static inline uint8_t gattservice_subevent_ascs_server_disable_get_ase_id(const uint8_t * event){
     return event[5];
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASING
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_ascs_server_releasing_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_ascs_server_release_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field ase_id from event GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASING
+ * @brief Get field ase_id from event GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE
  * @param event packet
  * @return ase_id
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_ascs_server_releasing_get_ase_id(const uint8_t * event){
+static inline uint8_t gattservice_subevent_ascs_server_release_get_ase_id(const uint8_t * event){
     return event[5];
 }
 
