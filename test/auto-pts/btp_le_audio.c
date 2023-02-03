@@ -82,7 +82,7 @@ static le_audio_metadata_t ascs_metadata;
 #define ASCS_NUM_CLIENTS 3
 
 static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
-static ascs_remote_client_t ascs_clients[ASCS_NUM_CLIENTS];
+static ascs_server_connection_t ascs_clients[ASCS_NUM_CLIENTS];
 
 
 // PACS Client
@@ -240,7 +240,7 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATION_RECEIVED:
+        case GATTSERVICE_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS:
             printf("PACS: audio location received\n");
             break;
 
@@ -278,25 +278,25 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
 
-        case GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_CONNECTED:
-            con_handle = gattservice_subevent_ascs_remote_client_connected_get_con_handle(packet);
-            status =     gattservice_subevent_ascs_remote_client_connected_get_status(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_CONNECTED:
+            con_handle = gattservice_subevent_ascs_server_connected_get_con_handle(packet);
+            status =     gattservice_subevent_ascs_server_connected_get_status(packet);
             btstack_assert(status == ERROR_CODE_SUCCESS);
             ascs_server_current_client_con_handle = con_handle;
             MESSAGE("ASCS Server: connected, con_handle 0x%02x", con_handle);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_DISCONNECTED:
-            con_handle = gattservice_subevent_ascs_remote_client_disconnected_get_con_handle(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_DISCONNECTED:
+            con_handle = gattservice_subevent_ascs_server_disconnected_get_con_handle(packet);
             MESSAGE("ASCS Server: disconnected, con_handle 0x%02xn", con_handle);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION_REQUEST:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_codec_configuration_request_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_codec_configuration_request_get_con_handle(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION:
+            ascs_server_current_ase_id = gattservice_subevent_ascs_server_codec_configuration_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_codec_configuration_get_con_handle(packet);
 
             // use framing for 441
-            codec_configuration.framing = gattservice_subevent_ascs_codec_configuration_request_get_sampling_frequency_index(packet) == LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ ? 1 : 0;
+            codec_configuration.framing = gattservice_subevent_ascs_server_codec_configuration_get_sampling_frequency_index(packet) == LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ ? 1 : 0;
 
             codec_configuration.preferred_phy = LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE;
             codec_configuration.preferred_retransmission_number = 0;
@@ -307,16 +307,16 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             codec_configuration.preferred_presentation_delay_max_us = 0;
 
             // codec id:
-            codec_configuration.coding_format =  gattservice_subevent_ascs_codec_configuration_request_get_coding_format(packet);;
-            codec_configuration.company_id = gattservice_subevent_ascs_codec_configuration_request_get_company_id(packet);
-            codec_configuration.vendor_specific_codec_id = gattservice_subevent_ascs_codec_configuration_request_get_vendor_specific_codec_id(packet);
+            codec_configuration.coding_format =  gattservice_subevent_ascs_server_codec_configuration_get_coding_format(packet);;
+            codec_configuration.company_id = gattservice_subevent_ascs_server_codec_configuration_get_company_id(packet);
+            codec_configuration.vendor_specific_codec_id = gattservice_subevent_ascs_server_codec_configuration_get_vendor_specific_codec_id(packet);
 
-            codec_configuration.specific_codec_configuration.codec_configuration_mask = gattservice_subevent_ascs_codec_configuration_request_get_specific_codec_configuration_mask(packet);
-            codec_configuration.specific_codec_configuration.sampling_frequency_index = gattservice_subevent_ascs_codec_configuration_request_get_sampling_frequency_index(packet);
-            codec_configuration.specific_codec_configuration.frame_duration_index = gattservice_subevent_ascs_codec_configuration_request_get_frame_duration_index(packet);
-            codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = gattservice_subevent_ascs_codec_configuration_request_get_audio_channel_allocation_mask(packet);
-            codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_codec_configuration_request_get_octets_per_frame(packet);
-            codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_codec_configuration_request_get_frame_blocks_per_sdu(packet);
+            codec_configuration.specific_codec_configuration.codec_configuration_mask = gattservice_subevent_ascs_server_codec_configuration_get_specific_codec_configuration_mask(packet);
+            codec_configuration.specific_codec_configuration.sampling_frequency_index = gattservice_subevent_ascs_server_codec_configuration_get_sampling_frequency_index(packet);
+            codec_configuration.specific_codec_configuration.frame_duration_index = gattservice_subevent_ascs_server_codec_configuration_get_frame_duration_index(packet);
+            codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = gattservice_subevent_ascs_server_codec_configuration_get_audio_channel_allocation_mask(packet);
+            codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_server_codec_configuration_get_octets_per_frame(packet);
+            codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_server_codec_configuration_get_frame_blocks_per_sdu(packet);
 
             MESSAGE("ASCS: CODEC_CONFIGURATION_RECEIVED ase_id %d, con_handle 0x%02x", ascs_server_current_ase_id, con_handle);
             audio_stream_control_service_server_streamendpoint_configure_codec(con_handle, ascs_server_current_ase_id, codec_configuration);
@@ -324,20 +324,19 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
         // TODO: will change to get_con_handle
         // TODO: use gatt_service_subevent_ascs_qos_configuration_request_...
-        case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION:
-        case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION_REQUEST:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_qos_configuration_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_qos_configuration_get_ascs_cid(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_QOS_CONFIGURATION:
+            ascs_server_current_ase_id = gattservice_subevent_ascs_server_qos_configuration_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_qos_configuration_get_con_handle(packet);
 
-            qos_configuration.cig_id = gattservice_subevent_ascs_qos_configuration_get_cig_id(packet);
-            qos_configuration.cis_id = gattservice_subevent_ascs_qos_configuration_get_cis_id(packet);
-            qos_configuration.sdu_interval = gattservice_subevent_ascs_qos_configuration_get_sdu_interval(packet);
-            qos_configuration.framing = gattservice_subevent_ascs_qos_configuration_get_framing(packet);
-            qos_configuration.phy = gattservice_subevent_ascs_qos_configuration_get_phy(packet);
-            qos_configuration.max_sdu = gattservice_subevent_ascs_qos_configuration_get_max_sdu(packet);
-            qos_configuration.retransmission_number = gattservice_subevent_ascs_qos_configuration_get_retransmission_number(packet);
-            qos_configuration.max_transport_latency_ms = gattservice_subevent_ascs_qos_configuration_get_max_transport_latency(packet);
-            qos_configuration.presentation_delay_us = gattservice_subevent_ascs_qos_configuration_get_presentation_delay_us(packet);
+            qos_configuration.cig_id = gattservice_subevent_ascs_server_qos_configuration_get_cig_id(packet);
+            qos_configuration.cis_id = gattservice_subevent_ascs_server_qos_configuration_get_cis_id(packet);
+            qos_configuration.sdu_interval = gattservice_subevent_ascs_server_qos_configuration_get_sdu_interval(packet);
+            qos_configuration.framing = gattservice_subevent_ascs_server_qos_configuration_get_framing(packet);
+            qos_configuration.phy = gattservice_subevent_ascs_server_qos_configuration_get_phy(packet);
+            qos_configuration.max_sdu = gattservice_subevent_ascs_server_qos_configuration_get_max_sdu(packet);
+            qos_configuration.retransmission_number = gattservice_subevent_ascs_server_qos_configuration_get_retransmission_number(packet);
+            qos_configuration.max_transport_latency_ms = gattservice_subevent_ascs_server_qos_configuration_get_max_transport_latency(packet);
+            qos_configuration.presentation_delay_us = gattservice_subevent_ascs_server_qos_configuration_get_presentation_delay_us(packet);
 
             MESSAGE("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ascs_server_current_ase_id, qos_configuration);
@@ -345,45 +344,44 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
         // TODO: will change to get_con_handle
         // TODO: use gatt_service_subevent_ascs_metadata_request_...
-        case GATTSERVICE_SUBEVENT_ASCS_METADATA:
-        case GATTSERVICE_SUBEVENT_ASCS_METADATA_REQUEST:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_metadata_get_ase_id(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_METADATA:
+            ascs_server_current_ase_id = gattservice_subevent_ascs_server_metadata_get_ase_id(packet);
             // TODO: will change to get_con_handle
             // TODO: use gatt_service_subevent_ascs_metadata_request_...
-            con_handle = gattservice_subevent_ascs_metadata_get_ascs_cid(packet);
+            con_handle = gattservice_subevent_ascs_server_metadata_get_con_handle(packet);
             MESSAGE("ASCS: METADATA_RECEIVED ase_id %d", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_enable(con_handle, ascs_server_current_ase_id);
             break;
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_START_READY:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_client_start_ready_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_client_start_ready_get_con_handle(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_START_READY:
+            ascs_server_current_ase_id = gattservice_subevent_ascs_server_start_ready_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_start_ready_get_con_handle(packet);
             MESSAGE("ASCS: START_READY ase_id %d", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_receiver_start_ready(con_handle, ascs_server_current_ase_id);
             break;
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_STOP_READY:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_client_stop_ready_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_client_stop_ready_get_con_handle(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_STOP_READY:
+            ascs_server_current_ase_id = gattservice_subevent_ascs_server_stop_ready_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_stop_ready_get_con_handle(packet);
             MESSAGE("ASCS: STOP_READY ase_id %d", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_receiver_stop_ready(con_handle, ascs_server_current_ase_id);
             break;
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISABLING:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_client_disabling_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_client_disabling_get_con_handle(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE:
+            ascs_server_current_ase_id = gattservice_subevent_ascs_server_disable_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_disable_get_con_handle(packet);
             MESSAGE("ASCS: DISABLING ase_id %d", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_disable(con_handle, ascs_server_current_ase_id);
             break;
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASING:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_client_releasing_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_client_releasing_get_con_handle(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE:
+            ascs_server_current_ase_id = gattservice_subevent_ascs_server_release_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_release_get_con_handle(packet);
             MESSAGE("ASCS: RELEASING ase_id %d -> RELEASED", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_release(con_handle, ascs_server_current_ase_id);
             // Client request: Release. Accept (enter Releasing State), and trigger Releasing
             audio_stream_control_service_server_streamendpoint_released(con_handle, ascs_server_current_ase_id, true);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASED:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_client_released_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_client_released_get_con_handle(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASED:
+            ascs_server_current_ase_id = gattservice_subevent_ascs_server_released_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_released_get_con_handle(packet);
             MESSAGE("ASCS: RELEASED ase_id %d", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_released(con_handle, ascs_server_current_ase_id, true);
             break;
@@ -523,17 +521,17 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     uint8_t opcode;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_CONNECTED:
-            ascs_cid = gattservice_subevent_ascs_remote_server_connected_get_ascs_cid(packet);
-            con_handle = gattservice_subevent_ascs_remote_server_connected_get_con_handle(packet);
-            if (gattservice_subevent_ascs_remote_server_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_CONNECTED:
+            ascs_cid = gattservice_subevent_ascs_client_connected_get_ascs_cid(packet);
+            con_handle = gattservice_subevent_ascs_client_connected_get_con_handle(packet);
+            if (gattservice_subevent_ascs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 // TODO send error response
                 MESSAGE("ASCS Client: connection failed, cid 0x%02x, con_handle 0x%04x, status 0x%02x", ascs_cid, con_handle,
-                        gattservice_subevent_ascs_remote_server_connected_get_status(packet));
+                        gattservice_subevent_ascs_client_connected_get_status(packet));
                 return;
             }
-            source_ase_count = gattservice_subevent_ascs_remote_server_connected_get_source_ase_num(packet);
-            sink_ase_count = gattservice_subevent_ascs_remote_server_connected_get_sink_ase_num(packet);
+            source_ase_count = gattservice_subevent_ascs_client_connected_get_source_ase_num(packet);
+            sink_ase_count = gattservice_subevent_ascs_client_connected_get_sink_ase_num(packet);
             num_ases = sink_ase_count + source_ase_count;
             MESSAGE("ASCS Client: connected, cid 0x%02x, con_handle 0x%04x, num Sink ASEs: %u, num Source ASEs: %u",
                     ascs_cid, con_handle, sink_ase_count, source_ase_count);
@@ -549,36 +547,36 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONNECT, 0, response_len,  response_buffer);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_REMOTE_SERVER_DISCONNECTED:
-            MESSAGE("ASCS Client: disconnected, cid 0x%02x", gattservice_subevent_ascs_remote_server_disconnected_get_ascs_cid(packet));
+        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISCONNECTED:
+            MESSAGE("ASCS Client: disconnected, cid 0x%02x", gattservice_subevent_ascs_client_disconnected_get_ascs_cid(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION:
-            ase_id = gattservice_subevent_ascs_codec_configuration_get_ase_id(packet);
-            ascs_cid = gattservice_subevent_ascs_codec_configuration_get_ascs_cid(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION:
+            ase_id = gattservice_subevent_ascs_client_codec_configuration_get_ase_id(packet);
+            ascs_cid = gattservice_subevent_ascs_client_codec_configuration_get_ascs_cid(packet);
 
             // codec id:
-            codec_configuration.coding_format =  gattservice_subevent_ascs_codec_configuration_get_coding_format(packet);;
-            codec_configuration.company_id = gattservice_subevent_ascs_codec_configuration_get_company_id(packet);
-            codec_configuration.vendor_specific_codec_id = gattservice_subevent_ascs_codec_configuration_get_vendor_specific_codec_id(packet);
+            codec_configuration.coding_format =  gattservice_subevent_ascs_client_codec_configuration_get_coding_format(packet);;
+            codec_configuration.company_id = gattservice_subevent_ascs_client_codec_configuration_get_company_id(packet);
+            codec_configuration.vendor_specific_codec_id = gattservice_subevent_ascs_client_codec_configuration_get_vendor_specific_codec_id(packet);
 
-            codec_configuration.specific_codec_configuration.codec_configuration_mask = gattservice_subevent_ascs_codec_configuration_get_specific_codec_configuration_mask(packet);
-            codec_configuration.specific_codec_configuration.sampling_frequency_index = gattservice_subevent_ascs_codec_configuration_get_sampling_frequency_index(packet);
-            codec_configuration.specific_codec_configuration.frame_duration_index = gattservice_subevent_ascs_codec_configuration_get_frame_duration_index(packet);
-            codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = gattservice_subevent_ascs_codec_configuration_get_audio_channel_allocation_mask(packet);
-            codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_codec_configuration_get_octets_per_frame(packet);
-            codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_codec_configuration_get_frame_blocks_per_sdu(packet);
+            codec_configuration.specific_codec_configuration.codec_configuration_mask = gattservice_subevent_ascs_client_codec_configuration_get_specific_codec_configuration_mask(packet);
+            codec_configuration.specific_codec_configuration.sampling_frequency_index = gattservice_subevent_ascs_client_codec_configuration_get_sampling_frequency_index(packet);
+            codec_configuration.specific_codec_configuration.frame_duration_index = gattservice_subevent_ascs_client_codec_configuration_get_frame_duration_index(packet);
+            codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = gattservice_subevent_ascs_client_codec_configuration_get_audio_channel_allocation_mask(packet);
+            codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_client_codec_configuration_get_octets_per_frame(packet);
+            codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_client_codec_configuration_get_frame_blocks_per_sdu(packet);
 
             MESSAGE("ASCS Client: CODEC CONFIGURATION - ase_id %d, ascs_cid 0x%02x", ase_id, ascs_cid);
             response_len = 0;
-            btp_append_uint24(gattservice_subevent_ascs_codec_configuration_get_presentation_delay_min(packet));
-            btp_append_uint24(gattservice_subevent_ascs_codec_configuration_get_presentation_delay_max(packet));
+            btp_append_uint24(gattservice_subevent_ascs_client_codec_configuration_get_presentation_delay_min(packet));
+            btp_append_uint24(gattservice_subevent_ascs_client_codec_configuration_get_presentation_delay_max(packet));
             btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC, 0, response_len, response_buffer);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION:
-            ase_id  = gattservice_subevent_ascs_qos_configuration_get_ase_id(packet);
-            ascs_cid = gattservice_subevent_ascs_qos_configuration_get_ascs_cid(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION:
+            ase_id  = gattservice_subevent_ascs_server_qos_configuration_get_ase_id(packet);
+            ascs_cid = gattservice_subevent_ascs_server_qos_configuration_get_con_handle(packet);
 
             MESSAGE("ASCS Client: QOS CONFIGURATION - ase_id %d, ascs_cid 0x%02x", ase_id, ascs_cid);
             if (response_op != 0){
@@ -587,19 +585,19 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_METADATA:
-            ase_id  = gattservice_subevent_ascs_metadata_get_ase_id(packet);
-            ascs_cid = gattservice_subevent_ascs_metadata_get_ascs_cid(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_METADATA:
+            ase_id  = gattservice_subevent_ascs_client_metadata_get_ase_id(packet);
+            ascs_cid = gattservice_subevent_ascs_client_metadata_get_ascs_cid(packet);
 
             printf("ASCS Client: METADATA UPDATE - ase_id %d, ascs_cid 0x%02x\n", ase_id, ascs_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_CONTROL_POINT_OPERATION_RESPONSE:
-            ase_id  = gattservice_subevent_ascs_control_point_operation_response_get_ase_id(packet);
-            ascs_cid    = gattservice_subevent_ascs_control_point_operation_response_get_ascs_cid(packet);
-            response_code = gattservice_subevent_ascs_control_point_operation_response_get_response_code(packet);
-            reason        = gattservice_subevent_ascs_control_point_operation_response_get_reason(packet);
-            opcode        = gattservice_subevent_ascs_control_point_operation_response_get_opcode(packet);
+        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_CONTROL_POINT_OPERATION_RESPONSE:
+            ase_id        = gattservice_subevent_ascs_client_control_point_operation_response_get_ase_id(packet);
+            ascs_cid      = gattservice_subevent_ascs_client_control_point_operation_response_get_ascs_cid(packet);
+            response_code = gattservice_subevent_ascs_client_control_point_operation_response_get_response_code(packet);
+            reason        = gattservice_subevent_ascs_client_control_point_operation_response_get_reason(packet);
+            opcode        = gattservice_subevent_ascs_client_control_point_operation_response_get_opcode(packet);
             printf("ASCS Client: Operation complete - ase_id %d, opcode %u, response [0x%02x, 0x%02x], ascs_cid 0x%02x\n", ase_id, opcode, response_code, reason, ascs_cid);
             if ((opcode == ASCS_OPCODE_RECEIVER_START_READY) && (response_op != 0)){
                 MESSAGE("Receiver Start Ready completed");
@@ -608,11 +606,11 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE:
+        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_STREAMENDPOINT_STATE:
             log_info("GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE");
-            ascs_cid   = gattservice_subevent_ascs_streamendpoint_state_get_ascs_cid(packet);
-            ase_id     = gattservice_subevent_ascs_streamendpoint_state_get_ase_id(packet);
-            ase_state  = gattservice_subevent_ascs_streamendpoint_state_get_state(packet);
+            ascs_cid   = gattservice_subevent_ascs_client_streamendpoint_state_get_ascs_cid(packet);
+            ase_id     = gattservice_subevent_ascs_client_streamendpoint_state_get_ase_id(packet);
+            ase_state  = gattservice_subevent_ascs_client_streamendpoint_state_get_state(packet);
             log_info("ASCS Client: ASE STATE (%s) - ase_id %d, ascs_cid 0x%02x, role %s", ascs_util_ase_state2str(ase_state), ase_id, ascs_cid,
                      (audio_stream_control_service_client_get_ase_role(ascs_cid, ase_id) == LE_AUDIO_ROLE_SOURCE) ? "SOURCE" : "SINK" );
             // send done
@@ -688,10 +686,10 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     uint8_t status;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_PACS_CONNECTED:
-            pacs_cid = gattservice_subevent_pacs_connected_get_pacs_cid(packet);
-            con_handle = gattservice_subevent_pacs_connected_get_con_handle(packet);
-            status = gattservice_subevent_pacs_connected_get_status(packet);
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_CONNECTED:
+            pacs_cid = gattservice_subevent_pacs_client_connected_get_pacs_cid(packet);
+            con_handle = gattservice_subevent_pacs_client_connected_get_con_handle(packet);
+            status = gattservice_subevent_pacs_client_connected_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 // TODO send error response
                 MESSAGE("PACS Client: connection failed, cid 0x%02x, con_handle 0x%02x, status 0x%02x", pacs_cid, con_handle, status);
@@ -714,43 +712,43 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONNECT, 0, response_len,  response_buffer);
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_DISCONNECTED:
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_DISCONNECTED:
             pacs_cid = 0;
             MESSAGE("PACS Client: disconnected\n");
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_OPERATION_DONE:
-            if (gattservice_subevent_pacs_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_OPERATION_DONE:
+            if (gattservice_subevent_pacs_client_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
                 MESSAGE("      Operation successful");
             } else {
-                MESSAGE("      Operation failed with status 0x%02X", gattservice_subevent_pacs_operation_done_get_status(packet));
+                MESSAGE("      Operation failed with status 0x%02X", gattservice_subevent_pacs_client_operation_done_get_status(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_AUDIO_LOCATIONS:
-            audio_allocation_mask = gattservice_subevent_pacs_audio_locations_get_audio_location_mask(packet);
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_AUDIO_LOCATIONS:
+            audio_allocation_mask = gattservice_subevent_pacs_client_audio_locations_get_audio_locations_mask(packet);
             MESSAGE("PACS Client: %s Audio Locations 0x%04x",
-                gattservice_subevent_pacs_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source", audio_allocation_mask);
+                gattservice_subevent_pacs_client_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source", audio_allocation_mask);
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_AVAILABLE_AUDIO_CONTEXTS:
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS:
             MESSAGE("PACS Client: Available Audio Contexts");
-            MESSAGE("      Sink   0x%02X", gattservice_subevent_pacs_available_audio_contexts_get_sink_mask(packet));
-            MESSAGE("      Source 0x%02X", gattservice_subevent_pacs_available_audio_contexts_get_source_mask(packet));
+            MESSAGE("      Sink   0x%02X", gattservice_subevent_pacs_client_available_audio_contexts_get_sink_mask(packet));
+            MESSAGE("      Source 0x%02X", gattservice_subevent_pacs_client_available_audio_contexts_get_source_mask(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_SUPPORTED_AUDIO_CONTEXTS:
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS:
             MESSAGE("PACS Client: Supported Audio Contexts\n");
-            MESSAGE("      Sink   0x%02X\n", gattservice_subevent_pacs_supported_audio_contexts_get_sink_mask(packet));
-            MESSAGE("      Source 0x%02X\n", gattservice_subevent_pacs_supported_audio_contexts_get_source_mask(packet));
+            MESSAGE("      Sink   0x%02X\n", gattservice_subevent_pacs_client_supported_audio_contexts_get_sink_mask(packet));
+            MESSAGE("      Source 0x%02X\n", gattservice_subevent_pacs_client_supported_audio_contexts_get_source_mask(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_PACK_RECORD:
-            MESSAGE("PACS Client: %s PAC Record\n", gattservice_subevent_pacs_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
-            MESSAGE("      %s PAC Record DONE\n", gattservice_subevent_pacs_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD:
+            MESSAGE("PACS Client: %s PAC Record\n", gattservice_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+            MESSAGE("      %s PAC Record DONE\n", gattservice_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
             break;
-        case GATTSERVICE_SUBEVENT_PACS_PACK_RECORD_DONE:
-            MESSAGE("      %s PAC Record DONE\n", gattservice_subevent_pacs_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+        case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE:
+            MESSAGE("      %s PAC Record DONE\n", gattservice_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
             break;
 
         default:
