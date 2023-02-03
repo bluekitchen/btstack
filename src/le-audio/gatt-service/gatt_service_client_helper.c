@@ -84,7 +84,7 @@ static gatt_service_client_connection_helper_t * gatt_service_client_get_connect
     return NULL;
 }
 
-static gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_cid(gatt_service_client_helper_t * client, uint16_t connection_cid){
+gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_cid(gatt_service_client_helper_t * client, uint16_t connection_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
