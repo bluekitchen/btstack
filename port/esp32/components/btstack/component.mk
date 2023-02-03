@@ -15,7 +15,6 @@ COMPONENT_ADD_INCLUDEDIRS := \
 	3rd-party/bluedroid/encoder/include \
 	3rd-party/hxcmod-player \
 	3rd-party/hxcmod-player/mods \
-	../lwip/lwip/src/include \
 	3rd-party/lwip/dhcp-server \
 	3rd-party/md5 \
 	3rd-party/yxml \
@@ -24,6 +23,7 @@ COMPONENT_ADD_INCLUDEDIRS := \
 	platform/embedded \
 	platform/freertos \
 	platform/lwip \
+	../lwip/lwip/src/include \
 	include \
 
 COMPONENT_PRIV_INCLUDEDIRS := \
@@ -34,10 +34,10 @@ COMPONENT_SRCDIRS := \
 	3rd-party/bluedroid/encoder/srce \
 	3rd-party/hxcmod-player \
 	3rd-party/hxcmod-player/mods \
-	../lwip/lwip/src/apps/http \
 	3rd-party/lwip/dhcp-server \
 	3rd-party/micro-ecc \
 	3rd-party/md5 \
+	3rd-party/yxml \
 	src/ble/gatt-service \
 	src/ble \
 	src/mesh \
@@ -45,6 +45,7 @@ COMPONENT_SRCDIRS := \
 	platform/embedded \
 	platform/freertos \
 	platform/lwip \
+	../lwip/lwip/src/apps/http \
 	. \
 
 ifdef CONFIG_IDF_TARGET_ESP32
