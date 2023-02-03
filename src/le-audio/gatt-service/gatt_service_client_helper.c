@@ -154,10 +154,10 @@ void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client
     }
 }
 
-static bool gatt_service_client_next_index_for_descriptor_query(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection) {
+static bool gatt_service_client_next_index_for_descriptor_query(gatt_service_client_connection_helper_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < connection->characteristics_num)) {
-        if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY) == 1u){
+        if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY) != 0u){
             next_query_found = true;
             break;
         }
@@ -166,7 +166,7 @@ static bool gatt_service_client_next_index_for_descriptor_query(gatt_service_cli
     return next_query_found;
 }
 
-static bool gatt_service_client_next_index_for_notification_query(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection) {
+static bool gatt_service_client_next_index_for_notification_query(gatt_service_client_connection_helper_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < connection->characteristics_num)) {
         if (connection->characteristics[connection->characteristic_index].client_configuration_handle != 0) {
@@ -266,7 +266,7 @@ static void gatt_service_client_run_for_client(gatt_service_client_helper_t * cl
     
 #ifdef ENABLE_TESTING_SUPPORT
             if (status != ERROR_CODE_SUCCESS) {
-                    printf("Notification not supported, status 0%02X\n.", status);
+                printf("Notification not supported, status 0%02X\n.", status);
             }
 #endif
             return;
@@ -287,6 +287,7 @@ static void gatt_service_client_run_for_client(gatt_service_client_helper_t * cl
 // @return true if client valid / run function should be called
 static bool gatt_service_client_handle_query_complete(gatt_service_client_connection_helper_t * connection, uint8_t status){
     btstack_assert(gatt_service_active_client != NULL);
+    btstack_assert(connection != NULL);
 
     if (status != ATT_ERROR_SUCCESS){
         switch (connection->state){
@@ -308,6 +309,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_connec
                 return false;
             }
             connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
+            connection->characteristic_index = 0;
             break;
         
         case GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
@@ -316,13 +318,13 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_connec
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT:
-            if (gatt_service_client_next_index_for_descriptor_query(gatt_service_active_client, connection)){
+            if (gatt_service_client_next_index_for_descriptor_query(connection)){
                 connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
                 break;
             }
 
             connection->characteristic_index = 0;
-            if (gatt_service_client_next_index_for_notification_query(gatt_service_active_client, connection)){
+            if (gatt_service_client_next_index_for_notification_query(connection)){
                 connection->state = GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
             } else {
                 connection->characteristic_index = 0;
@@ -332,7 +334,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_connec
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED:
-            if (gatt_service_client_next_index_for_notification_query(gatt_service_active_client, connection)){
+            if (gatt_service_client_next_index_for_notification_query(connection)){
                 connection->state = GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
                 break;
             }
@@ -417,10 +419,9 @@ static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, ui
                 connection->characteristics_num++;
 
 #ifdef ENABLE_TESTING_SUPPORT
-                printf("    Found Characteristic:\n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X\n",
-                    characteristic.start_handle, 
-                    characteristic.properties, 
-                    characteristic.value_handle, characteristic.uuid16);
+                printf("    [%u] Attribute Handle 0x%04X, Properties 0x%02X, Value Handle 0x%04X, UUID 0x%04X\n",
+                       characteristic_index, characteristic.start_handle,
+                       characteristic.properties, characteristic.value_handle, characteristic.uuid16);
 #endif
             }
             break;
@@ -502,7 +503,7 @@ uint8_t gatt_service_client_connect(
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
     connection->cid                 = *connection_cid;
     connection->con_handle          = con_handle;
-    connection->characteristics_num = characteristics_num;
+    connection->characteristics_num = 0;
     connection->characteristics     = characteristics;
     btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
 
