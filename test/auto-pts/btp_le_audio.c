@@ -375,15 +375,17 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
         case GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASING:
             ascs_server_current_ase_id = gattservice_subevent_ascs_client_releasing_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_client_releasing_get_con_handle(packet);
-            MESSAGE("ASCS: RELEASING ase_id %d", ascs_server_current_ase_id);
+            MESSAGE("ASCS: RELEASING ase_id %d -> RELEASED", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_release(con_handle, ascs_server_current_ase_id);
+            // Client request: Release. Accept (enter Releasing State), and trigger Releasing
+            audio_stream_control_service_server_streamendpoint_released(con_handle, ascs_server_current_ase_id, true);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_CLIENT_RELEASED:
             ascs_server_current_ase_id = gattservice_subevent_ascs_client_released_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_client_released_get_con_handle(packet);
             MESSAGE("ASCS: RELEASED ase_id %d", ascs_server_current_ase_id);
-            audio_stream_control_service_server_streamendpoint_released(con_handle, ascs_server_current_ase_id, false);
+            audio_stream_control_service_server_streamendpoint_released(con_handle, ascs_server_current_ase_id, true);
             break;
 
         default:
@@ -943,8 +945,14 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 uint16_t ascs_cid = data[0];
                 ase_id = data[1];
                 MESSAGE("BTP_LE_AUDIO_OP_ASCS_DISABLE ase_id %u", ase_id);
-                uint8_t status = audio_stream_control_service_client_streamendpoint_disable(ascs_cid, ase_id);
-                expect_status_no_error(status);
+                if (ascs_cid > 0){
+                    uint8_t status = audio_stream_control_service_client_streamendpoint_disable(ascs_cid, ase_id);
+                    expect_status_no_error(status);
+                } else {
+                    audio_stream_control_service_server_streamendpoint_disable(ascs_server_current_client_con_handle, ase_id);
+                    response_len = 0;
+                    btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_DISABLE, 0, response_len, response_buffer);
+                }
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_RELEASE:
@@ -952,8 +960,14 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 uint16_t ascs_cid = data[0];
                 ase_id = data[1];
                 MESSAGE("BTP_LE_AUDIO_OP_ASCS_RELEASE ase_id %u", ase_id);
-                uint8_t status = audio_stream_control_service_client_streamendpoint_release(ascs_cid, ase_id, false);
-                expect_status_no_error(status);
+                if (ascs_cid > 0){
+                    uint8_t status = audio_stream_control_service_client_streamendpoint_release(ascs_cid, ase_id, false);
+                    expect_status_no_error(status);
+                } else {
+                    audio_stream_control_service_server_streamendpoint_release(ascs_server_current_client_con_handle, ase_id);
+                    response_len = 0;
+                    btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_RELEASE, 0, response_len, response_buffer);
+                }
             }
             break;
         case BTP_LE_AUDIO_OP_ASCS_UPDATE_METADATA:
