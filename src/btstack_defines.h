@@ -4645,7 +4645,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param ase_id
 */ 
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLING                             0x3Bu
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE                             0x3Bu
 
 /**
  * @format 1H1
@@ -4653,7 +4653,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param ase_id
 */ 
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASING                             0x3Cu
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE                             0x3Cu
 
 /**
  * @format 1H1
