@@ -135,6 +135,7 @@ void gatt_service_client_init(gatt_service_client_helper_t * client,
  * @param packet_handler
  */
 void gatt_service_client_register_packet_handler(gatt_service_client_helper_t * client, btstack_packet_handler_t packet_handler);
+gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_cid(gatt_service_client_helper_t * client, uint16_t connection_cid);
 
 uint8_t gatt_service_client_connect(
         hci_con_handle_t con_handle,
