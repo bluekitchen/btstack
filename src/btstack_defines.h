@@ -5018,7 +5018,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1H21
  * @param subevent_code
  * @param con_handle
- * @param mcs_cid
+ * @param cid
  * @param status
 */
 #define GATTSERVICE_SUBEVENT_CLIENT_CONNECTED                               0x7Du
@@ -5027,7 +5027,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1H2
  * @param subevent_code
  * @param con_handle
- * @param mcs_cid
+ * @param cid
 */
 #define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                            0x7Eu
 
