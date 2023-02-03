@@ -505,6 +505,7 @@ uint8_t gatt_service_client_connect(
     connection->con_handle          = con_handle;
     connection->characteristics_num = 0;
     connection->characteristics     = characteristics;
+    connection->event_callback = packet_handler;
     btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
 
     gatt_service_active_client = client;
