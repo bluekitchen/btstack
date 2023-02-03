@@ -105,8 +105,6 @@ static void msc_service_client_packet_handler_internal(uint8_t packet_type, uint
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
-    hci_con_handle_t con_handle;
-    uint8_t status;
     gatt_service_client_connection_helper_t * connection;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
