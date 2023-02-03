@@ -164,6 +164,8 @@ void Error_Handler(void)
   /* User can add his own implementation to report the HAL error return state */
 
   /* USER CODE END Error_Handler_Debug */
+  while (1)
+    printf("enter error handler!");
 }
 
 #ifdef  USE_FULL_ASSERT
@@ -182,5 +184,33 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+void system_deinit(void)
+{
+    __disable_irq();
+    SysTick->CTRL = 0;
+    SysTick->LOAD = 0;
+    SysTick->VAL = 0;
+    __set_PRIMASK(1);
+
+    for (uint8_t i = 0; i < 8; i++) {
+        NVIC->ICER[i]=0xFFFFFFFF;
+        NVIC->ICPR[i]=0xFFFFFFFF;
+    }
+
+    MX_DMA_DeInit();
+    HAL_UART_DeInit(&huart2);
+    HAL_UART_DeInit(&huart3);
+    /* GPIO Ports Clock Disable */
+    __HAL_RCC_GPIOE_CLK_DISABLE();
+    __HAL_RCC_GPIOC_CLK_DISABLE();
+    __HAL_RCC_GPIOH_CLK_DISABLE();
+    __HAL_RCC_GPIOA_CLK_DISABLE();
+    __HAL_RCC_GPIOB_CLK_DISABLE();
+    __HAL_RCC_GPIOD_CLK_DISABLE();
+
+    HAL_RCC_DeInit();
+    HAL_DeInit();
+}
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -38,15 +38,17 @@ VPATH += ${BTSTACK_ROOT}/example
 # compile variables
 ######################################
 
-BR_EDR_ENABLE = y
+BR_EDR_ENABLE = n
 
 BLE_ENABLE = y
 
-EXAMPLE_PLUS_ENABLE = y
+EXAMPLE_PLUS_ENABLE = n
 
 FREERTOS_ENABLE = n
 
 3RD_PARTY_ENABLE = y
+
+MCUBOOT_ENALBE = y
 
 #######################################
 # paths
@@ -62,6 +64,7 @@ VPATH += ${BTSTACK_ROOT}/example
 ######################################
 # C sources
 ifeq (${BLE_ENABLE}, y)
+C_DEFS += -DBLE_ENABLE
 C_SOURCES += ${BTSTACK_ROOT}/src/ad_parser.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/att_db.c
 C_SOURCES += ${BTSTACK_ROOT}/src/ble/att_dispatch.c
@@ -80,6 +83,7 @@ C_SOURCES += ${BTSTACK_ROOT}/src/ble/sm.c
 endif
 
 ifeq (${BR_EDR_ENABLE}, y)
+C_DEFS += -DBR_EDR_ENABLE
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/a2dp_sink.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/a2dp_source.c
 C_SOURCES += ${BTSTACK_ROOT}/src/classic/avdtp.c
@@ -145,6 +149,7 @@ else
 endif
 
 ifeq (${3RD_PARTY_ENABLE}, y)
+ifeq (${BR_EDR_ENABLE}, y)
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c
@@ -180,6 +185,44 @@ C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c
 endif
 
+ifeq (${MCUBOOT_ENALBE}, y)
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/boot_record.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/bootutil_misc.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/bootutil_public.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/caps.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/encrypted.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/fault_injection_hardening.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/fault_injection_hardening_delay_rng_mbedtls.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/image_ec.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/image_ec256.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/image_ed25519.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/image_rsa.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/image_validate.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/loader.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/swap_misc.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/swap_move.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/swap_scratch.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/tlv.c
+
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/mcuboot_main.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/board/stm32f407_mcuboot_port.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/base64_port.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_assert_port.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_heap_port.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_log_port.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_serial_port.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_startup_port.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_wdt_port.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/crc16_port.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/system_port.c
+#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_shell.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/sha256.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/utils.c
+#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/ecc.c
+#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/ecc_dsa.c
+endif
+endif
+
 VPATH += ${BTSTACK_ROOT}/example/nordic_dfu
 VPATH += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb
 
@@ -199,18 +242,20 @@ C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_common.c
 C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_decode.c
 C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_encode.c
 #C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_common.c
-
+ifeq (${BR_EDR_ENABLE}, y)
 C_SOURCES += ${BTSTACK_ROOT}/example/sco_demo_util.c
 C_SOURCES += ${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c
 C_SOURCES += ${BTSTACK_ROOT}/platform/lwip/bnep_lwip.c
-C_SOURCES += ${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_audio.c
+C_SOURCES += ${BTSTACK_ROOT}/src/btstack_resample.c
+endif
+C_SOURCES += ${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_crypto.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_hid_parser.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_linked_list.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_memory.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_memory_pool.c
-C_SOURCES += ${BTSTACK_ROOT}/src/btstack_resample.c
+
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_ring_buffer.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_run_loop.c
 C_SOURCES += ${BTSTACK_ROOT}/src/btstack_tlv.c
@@ -223,43 +268,42 @@ C_SOURCES += ${BTSTACK_ROOT}/src/l2cap.c
 C_SOURCES += ${BTSTACK_ROOT}/src/l2cap_signaling.c
 
 #customize
-C_SOURCES +=	\
-bsp/audio.c \
-bsp/cs43l22.c \
-bsp/stm32f4_discovery.c \
-bsp/stm32f4_discovery_audio.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
-port/hal_audio_f4discovery.c \
-port/hal_flash_bank_stm32.c \
-port/port.c \
-Src/dma.c \
-Src/gpio.c \
-Src/main.c \
-Src/spi.c \
-Src/stm32f4xx_hal_msp.c \
-Src/stm32f4xx_it.c \
-Src/system_stm32f4xx.c \
-Src/usart.c \
+C_SOURCES += bsp/audio.c
+C_SOURCES += bsp/cs43l22.c
+C_SOURCES += bsp/stm32f4_discovery.c
+C_SOURCES += bsp/stm32f4_discovery_audio.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c
+C_SOURCES += Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
+C_SOURCES += port/hal_audio_f4discovery.c
+C_SOURCES += port/hal_flash_bank_stm32.c
+C_SOURCES += port/port.c
+C_SOURCES += Src/dma.c
+C_SOURCES += Src/gpio.c
+C_SOURCES += Src/main.c
+C_SOURCES += Src/spi.c
+C_SOURCES += Src/stm32f4xx_hal_msp.c
+C_SOURCES += Src/stm32f4xx_it.c
+C_SOURCES += Src/system_stm32f4xx.c
+C_SOURCES += Src/usart.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -306,7 +350,7 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 AS_DEFS = 
 
 # C defines
-C_DEFS =  \
+C_DEFS +=  \
 -DUSE_HAL_DRIVER \
 -DSTM32F407xx
 
@@ -337,6 +381,22 @@ C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/md5
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/yxml
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
+
+ifeq (${MCUBOOT_ENALBE}, y)
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/include
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/include/bootutil/crypto
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/boot_serial/include/boot_serial
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include/mcuboot_config
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include/flash_map_backend
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include/sysflash
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include/os
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include/port
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/sim/mcuboot-sys/csupport
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/include
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/include/tinycrypt
+endif
+
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip/port
@@ -375,49 +435,22 @@ LIBDIR = -Lpdm
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
+ifeq (${EXAMPLE_PLUS_ENABLE}, y)
+ifeq (${BLE_ENABLE}, y)
 EXAMPLES += 				\
-	audio_duplex            \
-	a2dp_sink_demo			\
-	headset_demo			\
-	a2dp_source_demo        \
 	ancs_client_demo		\
-	dut_mode_classic        \
-	gap_dedicated_bonding	\
-	gap_inquiry 			\
 	gap_le_advertisements   \
 	gatt_battery_query		\
 	gatt_browser            \
 	gatt_counter            \
 	gatt_streamer_server    \
-	hfp_ag_demo             \
-	hfp_hf_demo             \
-	hid_host_demo           \
-	hid_keyboard_demo 	    \
-	hid_mouse_demo          \
-	hog_keyboard_demo       \
-	hog_mouse_demo          \
-	hsp_ag_demo             \
-	hsp_hs_demo             \
-	mod_player              \
 	le_streamer_client      \
-	pan_lwip_http_server    \
-	pbap_client_demo		\
-	sdp_bnep_query 			\
-	sdp_general_query		\
-	sdp_rfcomm_query		\
-	sine_player             \
 	sm_pairing_central      \
 	sm_pairing_peripheral   \
-	spp_and_gatt_counter 	\
-	spp_and_gatt_streamer   \
-	spp_counter 			\
-	spp_streamer			\
-	spp_streamer_client     \
 	nordic_spp_le_counter	\
 	nordic_dfu_demo			\
 
-
-GATT_FILES = \
+GATT_FILES += \
 	ancs_client_demo.gatt \
 	gatt_counter.gatt \
 	gatt_streamer_server.gatt \
@@ -428,10 +461,63 @@ GATT_FILES = \
 	hog_mouse_demo.gatt \
 	sm_pairing_peripheral.gatt \
 	sm_pairing_central.gatt \
-	spp_and_gatt_counter.gatt \
-	spp_and_gatt_streamer.gatt \
 	nordic_spp_le_counter.gatt	\
 	nordic_dfu_demo.gatt	   \
+
+endif
+ifeq (${BR_EDR_ENABLE}, y)
+EXAMPLES += 				\
+	audio_duplex            \
+	a2dp_sink_demo			\
+	headset_demo			\
+	a2dp_source_demo        \
+	dut_mode_classic        \
+	gap_dedicated_bonding	\
+	gap_inquiry 			\
+	hfp_ag_demo             \
+	hfp_hf_demo             \
+	hid_host_demo           \
+	hid_keyboard_demo 	    \
+	hid_mouse_demo          \
+	hog_keyboard_demo       \
+	hog_mouse_demo          \
+	hsp_ag_demo             \
+	hsp_hs_demo             \
+	mod_player              \
+	pan_lwip_http_server    \
+	pbap_client_demo		\
+	sdp_bnep_query 			\
+	sdp_general_query		\
+	sdp_rfcomm_query		\
+	sine_player             \
+	sm_pairing_central      \
+	sm_pairing_peripheral   \
+	spp_counter 			\
+	spp_streamer			\
+	spp_streamer_client     \
+
+endif
+ifeq (${BLE_ENABLE}, y)
+ifeq (${BR_EDR_ENABLE}, y)
+EXAMPLES += 				\
+	spp_and_gatt_counter 	\
+	spp_and_gatt_streamer   \
+
+GATT_FILES += \
+	spp_and_gatt_counter.gatt 	\
+	spp_and_gatt_streamer.gatt   \
+
+endif
+endif
+
+else
+
+ifeq (${BLE_ENABLE}, y)
+EXAMPLES += nordic_dfu_demo
+GATT_FILES += nordic_dfu_demo.gatt
+endif
+
+endif
 
 # SBC codec
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc

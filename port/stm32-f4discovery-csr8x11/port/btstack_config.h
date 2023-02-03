@@ -10,16 +10,23 @@
 // Port related features
 #define HAVE_BTSTACK_STDIN
 #define HAVE_EMBEDDED_TIME_MS
-#define HAVE_HAL_AUDIO
-#define HAVE_HAL_AUDIO_SINK_STEREO_ONLY
 // BTstack features that can be enabled
+
+#ifdef BLE_ENABLE
 #define ENABLE_BLE
+#endif
+
+#ifdef BR_EDR_ENABLE
 #define ENABLE_CLASSIC
+#endif
 //#define ENABLE_BTSTACK_ASSERT
 
+#ifdef ENABLE_BLE
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_DATA_CHANNELS
 #define ENABLE_LE_PERIPHERAL
+#endif
+
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 #define ENABLE_LOG_DEBUG
@@ -27,6 +34,9 @@
 //#define ENABLE_SEGGER_RTT
 
 #ifdef ENABLE_CLASSIC
+#define HAVE_HAL_AUDIO
+#define HAVE_HAL_AUDIO_SINK_STEREO_ONLY
+
 #define ENABLE_HFP_WIDE_BAND_SPEECH
 #define ENABLE_GATT_OVER_CLASSIC
 #define MAX_NR_AVDTP_CONNECTIONS 1

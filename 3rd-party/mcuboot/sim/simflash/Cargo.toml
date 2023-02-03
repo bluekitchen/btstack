@@ -1,0 +1,10 @@
+[package]
+name = "simflash"
+version = "0.1.0"
+authors = ["David Brown <david.brown@linaro.org>"]
+edition = "2018"
+
+[dependencies]
+rand = "0.7"
+log = "0.4"
+thiserror = "1.0"

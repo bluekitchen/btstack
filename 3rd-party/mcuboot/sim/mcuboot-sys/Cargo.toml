@@ -1,0 +1,73 @@
+[package]
+name = "mcuboot-sys"
+version = "0.1.0"
+authors = ["David Brown <david.brown@linaro.org>"]
+description = "A simple wrapper around the mcuboot code."
+build = "build.rs"
+publish = false
+edition = "2018"
+
+[features]
+# By default, build with simplistic signature verification.
+default = []
+
+# Verify RSA signatures.  Note that at this time, the C code will not
+# compile with both sig-rsa and sig-ecdsa enabled.
+sig-rsa = []
+
+# Verify RSA-3072 signatures.
+sig-rsa3072 = []
+
+# Verify ECDSA (secp256r1) signatures.
+sig-ecdsa = []
+
+# Verify ECDSA (secp256r1) signatures using mbed TLS
+sig-ecdsa-mbedtls = []
+
+# Verify ED25519 signatures.
+sig-ed25519 = []
+
+# Overwrite only upgrade
+overwrite-only = []
+
+swap-move = []
+
+# Disable validation of the primary slot
+validate-primary-slot = []
+
+# Encrypt image in the secondary slot using RSA-OAEP-2048
+enc-rsa = []
+
+# Encrypt image in the secondary slot using AES-KW-128
+enc-kw = []
+
+# Encrypt image in the secondary slot using ECIES-P256
+enc-ec256 = []
+
+# Encrypt image in the secondary slot using ECIES-P256 using Mbed TLS
+enc-ec256-mbedtls = []
+
+# Encrypt image in the secondary slot using ECIES-X25519
+enc-x25519 = []
+
+# Allow bootstrapping an empty/invalid primary slot from a valid secondary slot
+bootstrap = []
+
+# Support multiple images (currently 2 instead of 1).
+multiimage = []
+
+# Check (in software) against version downgrades.
+downgrade-prevention = []
+
+[build-dependencies]
+cc = "1.0.25"
+
+[dependencies]
+libc = "0.2"
+log = "0.4"
+simflash = { path = "../simflash" }
+
+# Optimize some, even when building for debugging, otherwise the tests
+# are too slow.
+[profile.test]
+opt-level = 1

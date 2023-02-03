@@ -1,0 +1,103 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+# Package: boot/mynewt/mcuboot_config
+
+syscfg.defs:
+    BOOTUTIL_IMAGE_NUMBER:
+        description: 'Number of images for multi-image (0 and 1 mean single image).'
+        value: 0
+    BOOTUTIL_VALIDATE_SLOT0:
+        description: 'Validate image at slot 0 on each boot.'
+        value: 0
+    BOOTUTIL_SIGN_RSA:
+        description: 'Images are signed using RSA.'
+        value: 0
+    BOOTUTIL_SIGN_RSA_LEN:
+        description: 'Key size for RSA keys (2048 or 3072).'
+        value: 2048
+    BOOTUTIL_SIGN_EC:
+        description: 'Images are signed using ECDSA NIST P-224.'
+        value: 0
+    BOOTUTIL_SIGN_EC256:
+        description: 'Images are signed using ECDSA NIST P-256.'
+        value: 0
+    BOOTUTIL_SIGN_ED25519:
+        description: 'Images are signed using ED25519.'
+        value: 0
+    BOOTUTIL_ENCRYPT_RSA:
+        description: 'Support for encrypted images using RSA-2048-OAEP.'
+        value: 0
+    BOOTUTIL_ENCRYPT_KW:
+        description: 'Support for encrypted images using AES-128-Keywrap.'
+        value: 0
+    BOOTUTIL_ENCRYPT_EC256:
+        description: 'Support for encrypted images using ECIES-P256.'
+        value: 0
+    BOOTUTIL_ENCRYPT_X25519:
+        description: 'Support for encrypted images using ECIES-X25519.'
+        value: 0
+    BOOTUTIL_USE_MBED_TLS:
+        description: 'Use mbed TLS for crypto operations.'
+        value: 1
+    BOOTUTIL_USE_TINYCRYPT:
+        description: 'Use tinycrypt for crypto operations.'
+        value: 0
+    BOOTUTIL_SWAP_USING_MOVE:
+        description: 'Perform swap without requiring scratch.'
+        value: 0
+    BOOTUTIL_SWAP_SAVE_ENCTLV:
+        description: 'Save TLVs instead of plaintext encryption keys in swap status.'
+        value: 0
+    BOOTUTIL_OVERWRITE_ONLY:
+        description: 'Non-swapping upgrades, copy from slot 1 to slot 0 only.'
+        value: 0
+    BOOTUTIL_OVERWRITE_ONLY_FAST:
+        description: 'Use faster copy only upgrade.'
+        value: 1
+    BOOTUTIL_IMAGE_FORMAT_V2:
+        description: 'Indicates that system is using v2 of image format.'
+        value: 1
+    BOOTUTIL_MAX_IMG_SECTORS:
+        description: 'Maximum number of sectors that are swapped.'
+        value: 128
+    BOOTUTIL_HAVE_LOGGING:
+        description: 'Enable serial logging'
+        value: 0
+        restrictions:
+            - "!BOOTUTIL_NO_LOGGING"
+    BOOTUTIL_NO_LOGGING:
+        description: 'No serial logging'
+        value: 1
+        restrictions:
+            - "!BOOTUTIL_HAVE_LOGGING"
+    BOOTUTIL_LOG_LEVEL:
+        description: >
+            Default console log level. Valid values are:
+                BOOTUTIL_LOG_LEVEL_OFF
+                BOOTUTIL_LOG_LEVEL_ERROR
+                BOOTUTIL_LOG_LEVEL_WARNING
+                BOOTUTIL_LOG_LEVEL_INFO
+                BOOTUTIL_LOG_LEVEL_DEBUG
+        value: 'BOOTUTIL_LOG_LEVEL_INFO'
+    BOOTUTIL_BOOTSTRAP:
+        description: 'Support bootstrapping slot0 from slot1, if slot0 is empty'
+        value: 0
+    BOOTUTIL_FEED_WATCHDOG:
+        description: 'Enable watchdog feeding while performing a swap upgrade'
+        value: 0

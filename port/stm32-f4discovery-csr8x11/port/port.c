@@ -110,28 +110,6 @@ static void dummy_handler(void){};
 static int hal_uart_needed_during_sleep;
 
 void hal_uart_dma_set_sleep(uint8_t sleep){
-#if 0
-	// RTS is on PD12 - manually set it during sleep
-	GPIO_InitTypeDef RTS_InitStruct;
-	RTS_InitStruct.Pin = GPIO_PIN_12;
-    RTS_InitStruct.Pull = GPIO_NOPULL;
-    RTS_InitStruct.Alternate = GPIO_AF7_USART3;
-	if (sleep){
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
-		RTS_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	    RTS_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	} else {
-		RTS_InitStruct.Mode = GPIO_MODE_AF_PP;
-	    RTS_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-	}
-
-	HAL_GPIO_Init(GPIOD, &RTS_InitStruct);
-
-//	if (sleep){
-//		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
-//	}
-	hal_uart_needed_during_sleep = !sleep;
-#endif
 }
 
 // reset Bluetooth using n_shutdown
@@ -174,41 +152,9 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
 }
 
 void EXTI15_10_IRQHandler(void){
-#if 0
-	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_11);
-	if (cts_irq_handler){
-		(*cts_irq_handler)();
-	}
-#endif
 }
 
 void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
-#if 0
-	GPIO_InitTypeDef CTS_InitStruct = {
-		.Pin       = GPIO_PIN_11,
-		.Mode      = GPIO_MODE_AF_PP,
-		.Pull      = GPIO_PULLUP,
-		.Speed     = GPIO_SPEED_FREQ_VERY_HIGH,
-		.Alternate = GPIO_AF7_USART3,
-	};
-
-	if( the_irq_handler )  {
-		/* Configure the EXTI11 interrupt (USART3_CTS is on PD11) */
-		HAL_NVIC_EnableIRQ( EXTI15_10_IRQn );
-		CTS_InitStruct.Mode = GPIO_MODE_IT_RISING;
-		CTS_InitStruct.Pull = GPIO_NOPULL;
-		HAL_GPIO_Init( GPIOD, &CTS_InitStruct );
-		log_info("enabled CTS irq");
-	}
-	else  {
-		CTS_InitStruct.Mode = GPIO_MODE_AF_PP;
-		CTS_InitStruct.Pull = GPIO_PULLUP;
-		HAL_GPIO_Init( GPIOD, &CTS_InitStruct );
-		HAL_NVIC_DisableIRQ( EXTI15_10_IRQn );
-		log_info("disabled CTS irq");
-	}
-    cts_irq_handler = the_irq_handler;
-#endif
 }
 
 int hal_uart_dma_set_baud(uint32_t baud) {
@@ -401,8 +347,13 @@ static hal_flash_bank_stm32_t   hal_flash_bank_context;
 
 //
 int btstack_main(int argc, char ** argv);
-void port_main(void){
-
+int main_boot( void );
+void port_main(void) {
+#if 1
+    printf("I am mcuboot bootloader!\r\n");
+    main_boot();
+#else
+    printf("I am mcuboot 1st slot!\r\n");
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
@@ -413,7 +364,6 @@ void port_main(void){
 #else
     hci_dump_init(hci_dump_embedded_stdout_get_instance());
 #endif
-
 	// init HCI
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
     hci_set_chipset(btstack_chipset_csr_instance());
@@ -433,11 +383,11 @@ void port_main(void){
 
     // setup global tlv
     btstack_tlv_set_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
-
+#ifdef ENABLE_CLASSIC   
     // setup Link Key DB using TLV
-    const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
+    const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context); 
     hci_set_link_key_db(btstack_link_key_db);
-
+#endif
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 
@@ -456,4 +406,5 @@ void port_main(void){
 
     // go
     btstack_run_loop_execute();
+#endif
 }

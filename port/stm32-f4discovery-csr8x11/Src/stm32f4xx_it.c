@@ -170,6 +170,11 @@ void USART3_IRQHandler(void)
   /* USER CODE END USART3_IRQn 1 */
 }
 
+void HardFault_Handler(void)
+{
+    for (uint8_t i = 0;i < 100;i++)
+        printf("HardFault_Handler\n");
+}
 /* USER CODE BEGIN 1 */
 
 /* USER CODE END 1 */
