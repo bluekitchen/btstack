@@ -89,6 +89,15 @@ static const gatt_service_client_characteristic_desc16_t mcs_characteristics_des
     ORG_BLUETOOTH_CHARACTERISTIC_CONTENT_CONTROL_ID,
 };
 
+
+static void msc_service_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
+    UNUSED(size);
+    btstack_assert(callback != NULL);
+    // execute callback
+    packet[2] = subevent_id;
+    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
+}
+
 static void msc_service_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -98,14 +107,19 @@ static void msc_service_client_packet_handler_internal(uint8_t packet_type, uint
 
     hci_con_handle_t con_handle;
     uint8_t status;
+    gatt_service_client_connection_helper_t * connection;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
-            
+            connection = gatt_service_client_get_connection_for_cid(&msc_service_client, gattservice_subevent_client_connected_get_cid(packet));
+            btstack_assert(connection != NULL);
+            msc_service_client_replace_subevent_id_and_emit(connection->event_callback, packet, size, GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED);
             break;
 
         case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
-            
+            connection = gatt_service_client_get_connection_for_cid(&msc_service_client, gattservice_subevent_client_disconnected_get_cid(packet));
+            btstack_assert(connection != NULL);
+            msc_service_client_replace_subevent_id_and_emit(connection->event_callback, packet, size, GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED);
             break;
 
         default:
