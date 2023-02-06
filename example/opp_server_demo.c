@@ -197,7 +197,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("[+] Connection closed\n");
                             break;
                         case OPP_SUBEVENT_PUSH_OBJECT:
-                            object_size = opp_subevent_push_object_get_object_length (packet);
+                            object_size = opp_subevent_push_object_get_object_size(packet);
 
                             printf("PUSH: \"%.*s\" (%.*s, %d bytes)\n",
                                    packet[9], &packet[10],
