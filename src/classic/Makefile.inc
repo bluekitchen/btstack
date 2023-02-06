@@ -36,6 +36,7 @@ SRC_CLASSIC_FILES = \
     hsp_ag.c \
     hsp_hs.c \
     obex_iterator.c \
+    opp_client.c \
     pan.c \
     pbap_client.c \
     rfcomm.c \
