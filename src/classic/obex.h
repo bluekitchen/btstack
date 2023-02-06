@@ -57,6 +57,9 @@
 #define OBEX_RESP_FORBIDDEN                0xC3
 #define OBEX_RESP_NOT_FOUND                0xC4
 #define OBEX_RESP_NOT_ACCEPTABLE           0xC6
+#define OBEX_RESP_UNSUPPORTED_MEDIA_TYPE   0xCF
+#define OBEX_RESP_ENTITY_TOO_LARGE         0xCD
+#define OBEX_RESP_NOT_IMPLEMENTED          0xD1
 
 #define OBEX_HEADER_BODY                           0x48
 #define OBEX_HEADER_END_OF_BODY                    0x49
