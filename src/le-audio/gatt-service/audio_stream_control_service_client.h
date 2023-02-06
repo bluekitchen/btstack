@@ -51,7 +51,7 @@
 extern "C" {
 #endif
 
-/* API_START */
+
 typedef enum {
     AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_IDLE,
     AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
@@ -82,7 +82,6 @@ typedef enum {
 
     AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE,
     AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN,
-    
 } audio_stream_control_service_client_state_t;
 
 typedef struct {
