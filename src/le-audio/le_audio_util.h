@@ -60,6 +60,8 @@ uint16_t le_audio_util_metadata_parse(uint8_t * buffer, uint8_t buffer_size, le_
 
 uint16_t le_audio_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_t * event, uint16_t event_size);
 
+uint16_t le_audio_util_metadata_serialize_using_mask(le_audio_metadata_t * metadata, uint8_t * tlv_buffer, uint16_t tlv_buffer_size);
+
 #if defined __cplusplus
 }
 #endif

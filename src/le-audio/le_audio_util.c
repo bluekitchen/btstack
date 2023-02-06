@@ -291,3 +291,93 @@ uint16_t le_audio_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_
 
     return pos;
 }
+
+static uint16_t le_audio_util_get_value_size_for_metadata_type(le_audio_metadata_t * metadata, le_audio_metadata_type_t metadata_type){
+    switch (metadata_type){
+        case LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS:
+        case LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS:
+            return 2;
+
+        case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO:
+            return metadata->program_info_length;
+
+        case LE_AUDIO_METADATA_TYPE_LANGUAGE:
+            return 3;
+
+        case LE_AUDIO_METADATA_TYPE_CCID_LIST:
+            return metadata->ccids_num;
+
+        case LE_AUDIO_METADATA_TYPE_PARENTAL_RATING:
+            return 1;
+
+        case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO_URI:
+            return metadata->program_info_uri_length;
+
+        case LE_AUDIO_METADATA_TYPE_MAPPED_EXTENDED_METADATA_BIT_POSITION:
+            return 2 + metadata->extended_metadata_length;
+
+        case LE_AUDIO_METADATA_TYPE_MAPPED_VENDOR_SPECIFIC_METADATA_BIT_POSITION:
+            return 2 + metadata->vendor_specific_metadata_length;
+        default:
+            break;
+    }
+    return 0;
+}
+
+uint16_t le_audio_util_metadata_serialize_using_mask(le_audio_metadata_t * metadata, uint8_t * tlv_buffer, uint16_t tlv_buffer_size){
+    uint16_t metadata_type;
+    uint16_t pos = 0;
+
+    uint16_t remaining_bytes = tlv_buffer_size;
+
+    for (metadata_type = (uint16_t)LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS; metadata_type < (uint16_t) LE_AUDIO_METADATA_TYPE_RFU; metadata_type++){
+        if ((metadata->metadata_mask & (1 << metadata_type)) == 0){
+            continue;
+        }
+
+        uint8_t payload_length = le_audio_util_get_value_size_for_metadata_type(metadata, (le_audio_metadata_type_t)metadata_type);
+        // ensure that there is enough space in TLV to store length (1), type(1) and payload
+        if (remaining_bytes < (2 + payload_length)){
+            return pos;
+        }
+
+        tlv_buffer[pos++] = 1 + payload_length; // add one extra byte to count size of type (1 byte)
+        tlv_buffer[pos++] = metadata_type;
+
+        switch ((le_audio_metadata_type_t)metadata_type){
+            case LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS:
+                little_endian_store_16(tlv_buffer, pos, metadata->preferred_audio_contexts_mask);
+                break;
+            case LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS:
+                little_endian_store_16(tlv_buffer, pos, metadata->streaming_audio_contexts_mask);
+                break;
+            case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO:
+                memcpy(&tlv_buffer[pos], metadata->program_info, metadata->program_info_length);
+                break;
+            case LE_AUDIO_METADATA_TYPE_LANGUAGE:
+                little_endian_store_24(tlv_buffer, pos, metadata->language_code);
+                break;
+            case LE_AUDIO_METADATA_TYPE_CCID_LIST:
+                memcpy(&tlv_buffer[pos], metadata->ccids, metadata->ccids_num);
+                break;
+            case LE_AUDIO_METADATA_TYPE_PARENTAL_RATING:
+                break;
+            case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO_URI:
+                memcpy(&tlv_buffer[pos], metadata->program_info_uri, metadata->program_info_uri_length);
+                break;
+            case LE_AUDIO_METADATA_TYPE_MAPPED_EXTENDED_METADATA_BIT_POSITION:
+                little_endian_store_16(tlv_buffer, pos, metadata->extended_metadata_type);
+                memcpy(&tlv_buffer[pos + 2], metadata->extended_metadata, metadata->extended_metadata_length);
+                break;
+            case LE_AUDIO_METADATA_TYPE_MAPPED_VENDOR_SPECIFIC_METADATA_BIT_POSITION:
+                little_endian_store_16(tlv_buffer, pos, metadata->vendor_specific_company_id);
+                memcpy(&tlv_buffer[pos + 2], metadata->vendor_specific_metadata, metadata->vendor_specific_metadata_length);
+                break;
+            default:
+                break;
+        }
+        pos += payload_length;
+        remaining_bytes -= (payload_length + 2);
+    }
+    return pos;
+}
