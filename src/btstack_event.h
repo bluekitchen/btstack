@@ -14189,13 +14189,22 @@ static inline uint8_t gattservice_subevent_ascs_qos_configuration_get_ase_id(con
     return event[5];
 }
 /**
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ascs_qos_configuration_get_state(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field cig_id from event GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION
  * @param event packet
  * @return cig_id
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_qos_configuration_get_cig_id(const uint8_t * event){
-    return event[6];
+    return event[7];
 }
 /**
  * @brief Get field cis_id from event GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION
@@ -14204,7 +14213,7 @@ static inline uint8_t gattservice_subevent_ascs_qos_configuration_get_cig_id(con
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_qos_configuration_get_cis_id(const uint8_t * event){
-    return event[7];
+    return event[8];
 }
 /**
  * @brief Get field sdu_interval from event GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION
@@ -14213,7 +14222,7 @@ static inline uint8_t gattservice_subevent_ascs_qos_configuration_get_cis_id(con
  * @note: btstack_type 3
  */
 static inline uint32_t gattservice_subevent_ascs_qos_configuration_get_sdu_interval(const uint8_t * event){
-    return little_endian_read_24(event, 8);
+    return little_endian_read_24(event, 9);
 }
 /**
  * @brief Get field framing from event GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION
@@ -14222,7 +14231,7 @@ static inline uint32_t gattservice_subevent_ascs_qos_configuration_get_sdu_inter
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_qos_configuration_get_framing(const uint8_t * event){
-    return event[11];
+    return event[12];
 }
 /**
  * @brief Get field phy from event GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION
@@ -14231,7 +14240,7 @@ static inline uint8_t gattservice_subevent_ascs_qos_configuration_get_framing(co
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_qos_configuration_get_phy(const uint8_t * event){
-    return event[12];
+    return event[13];
 }
 /**
  * @brief Get field max_sdu from event GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION
@@ -14240,7 +14249,7 @@ static inline uint8_t gattservice_subevent_ascs_qos_configuration_get_phy(const 
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_ascs_qos_configuration_get_max_sdu(const uint8_t * event){
-    return little_endian_read_16(event, 13);
+    return little_endian_read_16(event, 14);
 }
 /**
  * @brief Get field retransmission_number from event GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION
@@ -14249,7 +14258,7 @@ static inline uint16_t gattservice_subevent_ascs_qos_configuration_get_max_sdu(c
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_qos_configuration_get_retransmission_number(const uint8_t * event){
-    return event[15];
+    return event[16];
 }
 /**
  * @brief Get field max_transport_latency from event GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION
@@ -14258,7 +14267,7 @@ static inline uint8_t gattservice_subevent_ascs_qos_configuration_get_retransmis
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_ascs_qos_configuration_get_max_transport_latency(const uint8_t * event){
-    return little_endian_read_16(event, 16);
+    return little_endian_read_16(event, 17);
 }
 /**
  * @brief Get field presentation_delay_us from event GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION
@@ -14267,7 +14276,7 @@ static inline uint16_t gattservice_subevent_ascs_qos_configuration_get_max_trans
  * @note: btstack_type 3
  */
 static inline uint32_t gattservice_subevent_ascs_qos_configuration_get_presentation_delay_us(const uint8_t * event){
-    return little_endian_read_24(event, 18);
+    return little_endian_read_24(event, 19);
 }
 
 /**
@@ -14289,13 +14298,22 @@ static inline uint8_t gattservice_subevent_ascs_metadata_get_ase_id(const uint8_
     return event[5];
 }
 /**
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_ASCS_METADATA
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ascs_metadata_get_state(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field metadata_mask from event GATTSERVICE_SUBEVENT_ASCS_METADATA
  * @param event packet
  * @return metadata_mask
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_metadata_get_metadata_mask(const uint8_t * event){
-    return event[6];
+    return event[7];
 }
 /**
  * @brief Get field preferred_audio_contexts_mask from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14304,7 +14322,7 @@ static inline uint8_t gattservice_subevent_ascs_metadata_get_metadata_mask(const
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_ascs_metadata_get_preferred_audio_contexts_mask(const uint8_t * event){
-    return little_endian_read_16(event, 7);
+    return little_endian_read_16(event, 8);
 }
 /**
  * @brief Get field streaming_audio_contexts_mask from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14313,7 +14331,7 @@ static inline uint16_t gattservice_subevent_ascs_metadata_get_preferred_audio_co
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_ascs_metadata_get_streaming_audio_contexts_mask(const uint8_t * event){
-    return little_endian_read_16(event, 9);
+    return little_endian_read_16(event, 10);
 }
 /**
  * @brief Get field program_info_length from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14322,7 +14340,7 @@ static inline uint16_t gattservice_subevent_ascs_metadata_get_streaming_audio_co
  * @note: btstack_type J
  */
 static inline uint8_t gattservice_subevent_ascs_metadata_get_program_info_length(const uint8_t * event){
-    return event[11];
+    return event[12];
 }
 /**
  * @brief Get field program_info from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14331,7 +14349,7 @@ static inline uint8_t gattservice_subevent_ascs_metadata_get_program_info_length
  * @note: btstack_type V
  */
 static inline const uint8_t * gattservice_subevent_ascs_metadata_get_program_info(const uint8_t * event){
-    return &event[12];
+    return &event[13];
 }
 /**
  * @brief Get field language_code from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14340,7 +14358,7 @@ static inline const uint8_t * gattservice_subevent_ascs_metadata_get_program_inf
  * @note: btstack_type 3
  */
 static inline uint32_t gattservice_subevent_ascs_metadata_get_language_code(const uint8_t * event){
-    return little_endian_read_24(event, 12u + event[11]);
+    return little_endian_read_24(event, 13u + event[12]);
 }
 /**
  * @brief Get field ccids_num from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14349,7 +14367,7 @@ static inline uint32_t gattservice_subevent_ascs_metadata_get_language_code(cons
  * @note: btstack_type J
  */
 static inline uint8_t gattservice_subevent_ascs_metadata_get_ccids_num(const uint8_t * event){
-    return event[12u + event[11] + 3u];
+    return event[13u + event[12] + 3u];
 }
 /**
  * @brief Get field ccids from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14358,7 +14376,7 @@ static inline uint8_t gattservice_subevent_ascs_metadata_get_ccids_num(const uin
  * @note: btstack_type V
  */
 static inline const uint8_t * gattservice_subevent_ascs_metadata_get_ccids(const uint8_t * event){
-    return &event[12u + event[11] + 3u + 1u];
+    return &event[13u + event[12] + 3u + 1u];
 }
 /**
  * @brief Get field parental_rating from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14367,7 +14385,7 @@ static inline const uint8_t * gattservice_subevent_ascs_metadata_get_ccids(const
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_metadata_get_parental_rating(const uint8_t * event){
-    return event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u]];
+    return event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u]];
 }
 /**
  * @brief Get field program_info_uri_length from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14376,7 +14394,7 @@ static inline uint8_t gattservice_subevent_ascs_metadata_get_parental_rating(con
  * @note: btstack_type J
  */
 static inline uint8_t gattservice_subevent_ascs_metadata_get_program_info_uri_length(const uint8_t * event){
-    return event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u];
+    return event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u];
 }
 /**
  * @brief Get field program_info_uri from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14385,7 +14403,7 @@ static inline uint8_t gattservice_subevent_ascs_metadata_get_program_info_uri_le
  * @note: btstack_type V
  */
 static inline const uint8_t * gattservice_subevent_ascs_metadata_get_program_info_uri(const uint8_t * event){
-    return &event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u + 1u];
+    return &event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u + 1u];
 }
 /**
  * @brief Get field extended_metadata_type from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14394,7 +14412,7 @@ static inline const uint8_t * gattservice_subevent_ascs_metadata_get_program_inf
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_ascs_metadata_get_extended_metadata_type(const uint8_t * event){
-    return little_endian_read_16(event, 12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u + 1u + event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u]);
+    return little_endian_read_16(event, 13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u + 1u + event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u]);
 }
 /**
  * @brief Get field extended_metadata_value_length from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14403,7 +14421,7 @@ static inline uint16_t gattservice_subevent_ascs_metadata_get_extended_metadata_
  * @note: btstack_type J
  */
 static inline uint8_t gattservice_subevent_ascs_metadata_get_extended_metadata_value_length(const uint8_t * event){
-    return event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u + 1u + event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u] + 2u];
+    return event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u + 1u + event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u] + 2u];
 }
 /**
  * @brief Get field extended_metadata_value from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14412,7 +14430,7 @@ static inline uint8_t gattservice_subevent_ascs_metadata_get_extended_metadata_v
  * @note: btstack_type V
  */
 static inline const uint8_t * gattservice_subevent_ascs_metadata_get_extended_metadata_value(const uint8_t * event){
-    return &event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u + 1u + event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u] + 2u + 1u];
+    return &event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u + 1u + event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u] + 2u + 1u];
 }
 /**
  * @brief Get field vendor_specific_metadata_type from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14421,7 +14439,7 @@ static inline const uint8_t * gattservice_subevent_ascs_metadata_get_extended_me
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_ascs_metadata_get_vendor_specific_metadata_type(const uint8_t * event){
-    return little_endian_read_16(event, 12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u + 1u + event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u] + 2u + 1u + event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u + 1u + event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u] + 2u]);
+    return little_endian_read_16(event, 13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u + 1u + event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u] + 2u + 1u + event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u + 1u + event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u] + 2u]);
 }
 /**
  * @brief Get field vendor_specific_metadata_value_length from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14430,7 +14448,7 @@ static inline uint16_t gattservice_subevent_ascs_metadata_get_vendor_specific_me
  * @note: btstack_type J
  */
 static inline uint8_t gattservice_subevent_ascs_metadata_get_vendor_specific_metadata_value_length(const uint8_t * event){
-    return event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u + 1u + event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u] + 2u + 1u + event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u + 1u + event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u] + 2u] + 2u];
+    return event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u + 1u + event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u] + 2u + 1u + event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u + 1u + event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u] + 2u] + 2u];
 }
 /**
  * @brief Get field vendor_specific_metadata_value from event GATTSERVICE_SUBEVENT_ASCS_METADATA
@@ -14439,7 +14457,7 @@ static inline uint8_t gattservice_subevent_ascs_metadata_get_vendor_specific_met
  * @note: btstack_type V
  */
 static inline const uint8_t * gattservice_subevent_ascs_metadata_get_vendor_specific_metadata_value(const uint8_t * event){
-    return &event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u + 1u + event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u] + 2u + 1u + event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u + 1u + event[12u + event[11] + 3u + 1u + event[12u + event[11] + 3u] + 1u] + 2u] + 2u + 1u];
+    return &event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u + 1u + event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u] + 2u + 1u + event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u + 1u + event[13u + event[12] + 3u + 1u + event[13u + event[12] + 3u] + 1u] + 2u] + 2u + 1u];
 }
 
 /**
@@ -15372,6 +15390,35 @@ static inline uint8_t gattservice_subevent_pacs_pack_record_done_get_le_audio_ro
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_ascs_remote_client_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ascs_remote_client_connected_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_ascs_remote_client_disconnected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_ASCS_CONNECTED
  * @param event packet
  * @return con_handle
@@ -15410,6 +15457,34 @@ static inline uint16_t gattservice_subevent_ascs_disconnected_get_ascs_cid(const
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_NOT_CONFIGURED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_ascs_streamendpoint_not_configured_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field ase_id from event GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_NOT_CONFIGURED
+ * @param event packet
+ * @return ase_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ascs_streamendpoint_not_configured_get_ase_id(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_NOT_CONFIGURED
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ascs_streamendpoint_not_configured_get_state(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
  * @param event packet
  * @return con_handle
@@ -15428,13 +15503,22 @@ static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_ase_id(c
     return event[5];
 }
 /**
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_state(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field framing from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
  * @param event packet
  * @return framing
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_framing(const uint8_t * event){
-    return event[6];
+    return event[7];
 }
 /**
  * @brief Get field preferred_phy from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15443,7 +15527,7 @@ static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_framing(
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_preferred_phy(const uint8_t * event){
-    return event[7];
+    return event[8];
 }
 /**
  * @brief Get field preferred_retransmission_number from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15452,7 +15536,7 @@ static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_preferre
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_preferred_retransmission_number(const uint8_t * event){
-    return event[8];
+    return event[9];
 }
 /**
  * @brief Get field max_transport_latency from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15461,7 +15545,7 @@ static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_preferre
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_ascs_codec_configuration_get_max_transport_latency(const uint8_t * event){
-    return little_endian_read_16(event, 9);
+    return little_endian_read_16(event, 10);
 }
 /**
  * @brief Get field presentation_delay_min from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15470,7 +15554,7 @@ static inline uint16_t gattservice_subevent_ascs_codec_configuration_get_max_tra
  * @note: btstack_type 3
  */
 static inline uint32_t gattservice_subevent_ascs_codec_configuration_get_presentation_delay_min(const uint8_t * event){
-    return little_endian_read_24(event, 11);
+    return little_endian_read_24(event, 12);
 }
 /**
  * @brief Get field presentation_delay_max from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15479,7 +15563,7 @@ static inline uint32_t gattservice_subevent_ascs_codec_configuration_get_present
  * @note: btstack_type 3
  */
 static inline uint32_t gattservice_subevent_ascs_codec_configuration_get_presentation_delay_max(const uint8_t * event){
-    return little_endian_read_24(event, 14);
+    return little_endian_read_24(event, 15);
 }
 /**
  * @brief Get field preferred_presentation_delay_min from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15488,7 +15572,7 @@ static inline uint32_t gattservice_subevent_ascs_codec_configuration_get_present
  * @note: btstack_type 3
  */
 static inline uint32_t gattservice_subevent_ascs_codec_configuration_get_preferred_presentation_delay_min(const uint8_t * event){
-    return little_endian_read_24(event, 17);
+    return little_endian_read_24(event, 18);
 }
 /**
  * @brief Get field preferred_presentation_delay_max from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15497,7 +15581,7 @@ static inline uint32_t gattservice_subevent_ascs_codec_configuration_get_preferr
  * @note: btstack_type 3
  */
 static inline uint32_t gattservice_subevent_ascs_codec_configuration_get_preferred_presentation_delay_max(const uint8_t * event){
-    return little_endian_read_24(event, 20);
+    return little_endian_read_24(event, 21);
 }
 /**
  * @brief Get field coding_format from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15506,7 +15590,7 @@ static inline uint32_t gattservice_subevent_ascs_codec_configuration_get_preferr
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_coding_format(const uint8_t * event){
-    return event[23];
+    return event[24];
 }
 /**
  * @brief Get field company_id from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15515,7 +15599,7 @@ static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_coding_f
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_ascs_codec_configuration_get_company_id(const uint8_t * event){
-    return little_endian_read_16(event, 24);
+    return little_endian_read_16(event, 25);
 }
 /**
  * @brief Get field vendor_specific_codec_id from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15524,7 +15608,7 @@ static inline uint16_t gattservice_subevent_ascs_codec_configuration_get_company
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_ascs_codec_configuration_get_vendor_specific_codec_id(const uint8_t * event){
-    return little_endian_read_16(event, 26);
+    return little_endian_read_16(event, 27);
 }
 /**
  * @brief Get field specific_codec_configuration_mask from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15533,7 +15617,7 @@ static inline uint16_t gattservice_subevent_ascs_codec_configuration_get_vendor_
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_specific_codec_configuration_mask(const uint8_t * event){
-    return event[28];
+    return event[29];
 }
 /**
  * @brief Get field sampling_frequency_index from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15542,7 +15626,7 @@ static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_specific
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_sampling_frequency_index(const uint8_t * event){
-    return event[29];
+    return event[30];
 }
 /**
  * @brief Get field frame_duration_index from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15551,7 +15635,7 @@ static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_sampling
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_frame_duration_index(const uint8_t * event){
-    return event[30];
+    return event[31];
 }
 /**
  * @brief Get field audio_channel_allocation_mask from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15560,7 +15644,7 @@ static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_frame_du
  * @note: btstack_type 4
  */
 static inline uint32_t gattservice_subevent_ascs_codec_configuration_get_audio_channel_allocation_mask(const uint8_t * event){
-    return little_endian_read_32(event, 31);
+    return little_endian_read_32(event, 32);
 }
 /**
  * @brief Get field octets_per_frame from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15569,7 +15653,7 @@ static inline uint32_t gattservice_subevent_ascs_codec_configuration_get_audio_c
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_ascs_codec_configuration_get_octets_per_frame(const uint8_t * event){
-    return little_endian_read_16(event, 35);
+    return little_endian_read_16(event, 36);
 }
 /**
  * @brief Get field frame_blocks_per_sdu from event GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION
@@ -15578,7 +15662,7 @@ static inline uint16_t gattservice_subevent_ascs_codec_configuration_get_octets_
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_ascs_codec_configuration_get_frame_blocks_per_sdu(const uint8_t * event){
-    return event[37];
+    return event[38];
 }
 
 /**
