@@ -4556,10 +4556,11 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION_REQUEST                  0x32u
 
 /**
- * @format 1H1113112123
+ * @format 1H11113112123
  * @param subevent_code
  * @param con_handle
  * @param ase_id
+ * @param state
  * @param cig_id
  * @param cis_id
  * @param sdu_interval
@@ -4573,10 +4574,11 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_ASCS_QOS_CONFIGURATION                           0x033u
 
 /**
- * @format 1H1122JV3JV1JV2JV2JV
+ * @format 1H11122JV3JV1JV2JV2JV
  * @param subevent_code
  * @param con_handle
  * @param ase_id
+ * @param state
  * @param metadata_mask
  * @param preferred_audio_contexts_mask
  * @param streaming_audio_contexts_mask
@@ -4821,26 +4823,51 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_CONNECTED                        0x57u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_REMOTE_CLIENT_DISCONNECTED                     0x58u
+
+/**
  * @format 1H21
  * @param subevent_code
  * @param con_handle
  * @param ascs_cid
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CONNECTED                                      0x57u
+#define GATTSERVICE_SUBEVENT_ASCS_CONNECTED                                      0x59u
 
 /**
  * @format 12
  * @param subevent_code
  * @param ascs_cid
 */
-#define GATTSERVICE_SUBEVENT_ASCS_DISCONNECTED                                   0x58u
+#define GATTSERVICE_SUBEVENT_ASCS_DISCONNECTED                                    0x5Au
 
 /**
- * @format 1H111123333122111421
+ * @format 1H11
  * @param subevent_code
  * @param con_handle
  * @param ase_id
+ * @param state
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_NOT_CONFIGURED                   0x5Bu
+
+/**
+ * @format 1H1111123333122111421
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+ * @param state
  * @param framing
  * @param preferred_phy
  * @param preferred_retransmission_number
@@ -4859,14 +4886,14 @@ typedef uint8_t sm_key_t[16];
  * @param octets_per_frame 
  * @param frame_blocks_per_sdu 
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION                             0x59u
+#define GATTSERVICE_SUBEVENT_ASCS_CODEC_CONFIGURATION                             0x5Cu
 
 /**
  * @format 12
  * @param subevent_code
  * @param pacs_cid
 */
-#define GATTSERVICE_SUBEVENT_PACS_DISCONNECTED                                    0x5Au
+#define GATTSERVICE_SUBEVENT_PACS_DISCONNECTED                                    0x5Du
 
 /**
  * @format 1H1
