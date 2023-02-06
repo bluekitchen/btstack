@@ -580,6 +580,13 @@ void goep_client_body_add_static(uint16_t goep_cid, const uint8_t * data, uint32
     obex_message_builder_body_add_static(buffer, buffer_len, data, length);
 }
 
+uint16_t goep_client_body_get_outgoing_buffer_len(uint16_t goep_cid) {
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+
+    return goep_client_get_outgoing_buffer_len(context);
+};
+
 void goep_client_body_fillup_static(uint16_t goep_cid, const uint8_t * data, uint32_t length, uint32_t * ret_length){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;

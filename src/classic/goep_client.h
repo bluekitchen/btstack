@@ -261,6 +261,13 @@ void goep_client_header_add_challenge_response(uint16_t goep_cid, const uint8_t 
 void goep_client_body_add_static(uint16_t goep_cid, const uint8_t * data, uint32_t length);
 
 /**
+ * @brief Query remaining buffer size
+ * @param goep_cid
+ * @return size
+ */
+uint16_t goep_client_body_get_outgoing_buffer_len(uint16_t goep_cid);
+
+/**
  * @brief Add body
  * @param goep_cid
  * @param data
