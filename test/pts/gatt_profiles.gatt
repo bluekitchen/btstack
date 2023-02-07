@@ -1,0 +1,32 @@
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "GATT Profiles"
+
+// add Battery Service
+// Battery Service 180F
+PRIMARY_SERVICE, ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE
+CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, DYNAMIC | READ | NOTIFY,
+CHARACTERISTIC_FORMAT, READ, 04, 00, 27AD, 01, 01
+
+// add device information service
+#import <device_information_service.gatt>
+
+// add tx power service
+#import <tx_power_service.gatt>
+
+// add bond management service
+#import <bond_management_service.gatt>
+
+// add microphone control service (MICS)
+// #import <audio_input_control_service.gatt>
+// #import <audio_input_control_service.gatt>
+// #import <audio_input_control_service.gatt>
+#import <microphone_control_service.gatt>
+
+// add three AICS and two VOCS services for VCS
+#import <audio_input_control_service.gatt>
+#import <audio_input_control_service.gatt>
+#import <audio_input_control_service.gatt>
+#import <volume_offset_control_service.gatt>
+#import <volume_offset_control_service.gatt>
+#import <volume_control_service.gatt>
+

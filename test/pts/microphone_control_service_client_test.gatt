@@ -1,0 +1,9 @@
+// add Audio Input Control Service (it will be included into MICS bellow)
+#import <audio_input_control_service.gatt>
+
+// add Audio Input Control Service (it will be included into MICS bellow)
+#import <audio_input_control_service.gatt>
+
+// add Microphone Control Service
+#import <microphone_control_service.gatt>
+
