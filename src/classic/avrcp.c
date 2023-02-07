@@ -151,7 +151,7 @@ static const char * avrcp_play_status_name[] = {
     "ERROR" // 0xFF
 };
 const char * avrcp_play_status2str(uint8_t index){
-    if ((index >= 1) && (index <= 4)) return avrcp_play_status_name[index];
+    if ((index >= 0) && (index <= 4)) return avrcp_play_status_name[index];
     return avrcp_play_status_name[5];
 }
 
@@ -203,6 +203,31 @@ static const char * avrcp_repeat_mode_name[] = {
 const char * avrcp_repeat2str(uint8_t index){
     if ((index >= 1) && (index <= 4)) return avrcp_repeat_mode_name[index-1];
     return "NONE";
+}
+
+static const char * notification_name[] = {
+    "INVALID_INDEX",
+    "PLAYBACK_STATUS_CHANGED",
+    "TRACK_CHANGED",
+    "TRACK_REACHED_END",
+    "TRACK_REACHED_START",
+    "PLAYBACK_POS_CHANGED",
+    "BATT_STATUS_CHANGED",
+    "SYSTEM_STATUS_CHANGED",
+    "PLAYER_APPLICATION_SETTING_CHANGED",
+    "NOW_PLAYING_CONTENT_CHANGED",
+    "AVAILABLE_PLAYERS_CHANGED",
+    "ADDRESSED_PLAYER_CHANGED",
+    "UIDS_CHANGED",
+    "VOLUME_CHANGED",
+    "MAX_VALUE"
+};
+
+const char * avrcp_notification2str(avrcp_notification_event_id_t index){
+    if ((index >= AVRCP_NOTIFICATION_EVENT_FIRST_INDEX) && (index <= AVRCP_NOTIFICATION_EVENT_LAST_INDEX)){
+        return notification_name[index];
+    } 
+    return notification_name[0];
 }
 
 btstack_linked_list_t avrcp_get_connections(void){

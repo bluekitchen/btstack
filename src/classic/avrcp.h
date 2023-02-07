@@ -666,7 +666,7 @@ const char * avrcp_play_status2str(uint8_t index);
 const char * avrcp_ctype2str(uint8_t index);
 const char * avrcp_repeat2str(uint8_t index);
 const char * avrcp_shuffle2str(uint8_t index);
-
+const char * avrcp_notification2str(avrcp_notification_event_id_t index);
 
 avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint16_t * max_payload_size);
 avrcp_packet_type_t avrcp_get_packet_type(avrcp_connection_t * connection);
