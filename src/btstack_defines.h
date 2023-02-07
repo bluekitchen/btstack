@@ -4308,14 +4308,14 @@ typedef uint8_t sm_key_t[16];
  * @param bass_cid
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_BASS_CONNECTED                                    0x43u
+#define GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED                                    0x43u
 
 /**
  * @format 12
  * @param subevent_code
  * @param bass_cid
 */
-#define GATTSERVICE_SUBEVENT_BASS_DISCONNECTED                                 0x44u
+#define GATTSERVICE_SUBEVENT_BASS_CLIENT_DISCONNECTED                                 0x44u
 
 /**
  * @format 1211
@@ -4324,7 +4324,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param opcode
 */
-#define GATTSERVICE_SUBEVENT_BASS_SCAN_OPERATION_COMPLETE                       0x45u
+#define GATTSERVICE_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE                       0x45u
 
 /**
  * @format 1211B1311P1
@@ -4366,7 +4366,7 @@ typedef uint8_t sm_key_t[16];
  * @param vendor_specific_metadata_value_length
  * @param vendor_specific_metadata_value
 */
-#define GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_SUBGROUP                 0x47u
+#define GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_SUBGROUP                 0x47u
 
 /**
  * @format 121
@@ -4374,7 +4374,7 @@ typedef uint8_t sm_key_t[16];
  * @param bass_cid
  * @param source_id
 */
-#define GATTSERVICE_SUBEVENT_BASS_NOTIFICATION_COMPLETE                         0x48u
+#define GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE                         0x48u
 
 /**
  * @format 12111
@@ -4384,7 +4384,7 @@ typedef uint8_t sm_key_t[16];
  * @param opcode
  * @param source_id
 */
-#define GATTSERVICE_SUBEVENT_BASS_SOURCE_OPERATION_COMPLETE                     0x49u
+#define GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE                     0x49u
 
 /**
  * @format 1H21
