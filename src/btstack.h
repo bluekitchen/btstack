@@ -145,13 +145,8 @@
 
 #include "le-audio/le_audio.h"
 #include "le-audio/le_audio_util.h"
-#include "le-audio/gatt-service/audio_input_control_service_server.h"
 #include "le-audio/gatt-service/broadcast_audio_scan_service_client.h"
 #include "le-audio/gatt-service/broadcast_audio_scan_service_server.h"
-#include "le-audio/gatt-service/microphone_control_service_client.h"
-#include "le-audio/gatt-service/microphone_control_service_server.h"
-#include "le-audio/gatt-service/volume_control_service_server.h"
-#include "le-audio/gatt-service/volume_offset_control_service_server.h"
 
 #ifdef ENABLE_MESH
 #include "mesh/adv_bearer.h"

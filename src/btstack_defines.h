@@ -4034,114 +4034,6 @@ typedef uint8_t sm_key_t[16];
 // LE Audio
 
 /**
- * @format 121
- * @param subevent_code
- * @param hids_cid
- * @param status
-*/
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED                               0x19u
-
-/**
- * @format 1211
- * @param subevent_code
- * @param cid
- * @param status
- * @param state
-*/
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE                              0x1Au
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param state
-*/
-#define GATTSERVICE_SUBEVENT_MICS_SERVER_MUTE                                0x1Bu
-
-/**
- * @format 1H11
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param state
-*/
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE                                 0x1Cu
-
-/**
- * @format 1H11
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param state
-*/
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE                                 0x1Du
-
-/**
- * @format 1H11
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param gain_db
-*/
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED                              0x1Eu
-
-/**
- * @format 1H1JV
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param description_len
- * @param description 
-*/
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED                   0x20u
-
-/**
- * @format 1H12
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param volume_offset
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET                              0x21u
-
-/**
- * @format 1H14
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param audio_location
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION                             0x22u
-
-/**
- * @format 1H1JV
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param description_len
- * @param description 
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION                   0x23u
-
-/**
- * @format 1H111
- * @param subevent_code
- * @param con_handle
- * @param volume_setting
- * @param volume_change_step
- * @param mute 
-*/
-#define GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_STATE                                 0x24u
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param flags
-*/
-#define GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS                                 0x25u
-
-/**
  * @format 1H
  * @param subevent_code
  * @param con_handle
@@ -4529,21 +4421,6 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_CONNECTED                              0x68u
-
-/**
- * @format 1H
- * @param subevent_code
- * @param con_handle
-*/
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_DISCONNECTED                           0x69u
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param status
-*/
 #define GATTSERVICE_SUBEVENT_BASS_SERVER_CONNECTED                              0x70u
 
 /**
@@ -4552,23 +4429,6 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
 */
 #define GATTSERVICE_SUBEVENT_BASS_SERVER_DISCONNECTED                           0x71u
-
-
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param status
-*/
-#define GATTSERVICE_SUBEVENT_MICS_SERVER_CONNECTED                              0x72u
-
-/**
- * @format 1H
- * @param subevent_code
- * @param con_handle
-*/
-#define GATTSERVICE_SUBEVENT_MICS_SERVER_DISCONNECTED                           0x73u
 
 /**
  * @format 1H1
@@ -4584,39 +4444,6 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
 */
 #define GATTSERVICE_SUBEVENT_PACS_SERVER_DISCONNECTED                           0x75u
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param status
-*/
-#define GATTSERVICE_SUBEVENT_VCS_SERVER_CONNECTED                              0x76u
-
-/**
- * @format 1H
- * @param subevent_code
- * @param con_handle
-*/
-#define GATTSERVICE_SUBEVENT_VCS_SERVER_DISCONNECTED                           0x77u
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param status
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_SERVER_CONNECTED                              0x78u
-
-/**
- * @format 1H
- * @param subevent_code
- * @param con_handle
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_SERVER_DISCONNECTED                           0x79u
-
-
-
 // MAP Meta Event Group
 
 /**
