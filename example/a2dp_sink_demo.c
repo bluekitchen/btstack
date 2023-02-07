@@ -183,6 +183,7 @@ typedef struct {
     bd_addr_t addr;
     uint16_t  avrcp_cid;
     bool playing;
+    uint16_t notifications_supported_by_target;
 } a2dp_sink_demo_avrcp_connection_t;
 static a2dp_sink_demo_avrcp_connection_t a2dp_sink_demo_avrcp_connection;
 
@@ -624,17 +625,16 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             avrcp_target_support_event(connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
             avrcp_target_support_event(connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
             avrcp_target_battery_status_changed(connection->avrcp_cid, battery_status);
-    
-            // automatically enable notifications
-            avrcp_controller_enable_notification(connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
-            avrcp_controller_enable_notification(connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
-            avrcp_controller_enable_notification(connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+        
+            // query supported events:
+            avrcp_controller_get_supported_events(connection->avrcp_cid);
             return;
         }
         
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("AVRCP: Channel released: cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             connection->avrcp_cid = 0;
+            connection->notifications_supported_by_target = 0;
             return;
         default:
             break;
@@ -648,6 +648,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     // helper to print c strings
     uint8_t avrcp_subevent_value[256];
     uint8_t play_status;
+    uint8_t event_id;
 
     a2dp_sink_demo_avrcp_connection_t * avrcp_connection = &a2dp_sink_demo_avrcp_connection;
 
@@ -657,6 +658,30 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 
     memset(avrcp_subevent_value, 0, sizeof(avrcp_subevent_value));
     switch (packet[2]){
+        case AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID:
+            avrcp_connection->notifications_supported_by_target |= (1 << avrcp_subevent_get_capability_event_id_get_event_id(packet));
+            break;
+        case AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE:
+            
+            printf("\nSupported remote AVRCP Target notifications:\n");
+            for (event_id = (uint8_t) AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; event_id < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; event_id++){
+                printf("   - [%s] %s\n", 
+                    (avrcp_connection->notifications_supported_by_target & (1 << event_id)) != 0 ? "X" : " ", 
+                    avrcp_notification2str((avrcp_notification_event_id_t)event_id));
+            }
+            printf("\n\n");
+
+            // automatically enable notifications
+            avrcp_controller_enable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+            avrcp_controller_enable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
+            avrcp_controller_enable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            break;
+
+        case AVRCP_SUBEVENT_NOTIFICATION_STATE:
+            event_id = (avrcp_notification_event_id_t)avrcp_subevent_notification_state_get_event_id(packet);
+            printf("AVRCP Controller: %s notification registered\n", avrcp_notification2str(event_id));
+            break;
+
         case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED:
             printf("AVRCP Controller: Playback position changed, position %d ms\n", (unsigned int) avrcp_subevent_notification_playback_pos_changed_get_playback_position_ms(packet));
             break;
