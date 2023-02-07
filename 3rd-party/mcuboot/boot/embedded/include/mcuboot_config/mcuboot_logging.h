@@ -19,7 +19,7 @@ extern int printf( const char *pcFormat, ...);
 #if MCUBOOT_LOG_LEVEL >= MCUBOOT_LOG_LEVEL_ERROR
 #define MCUBOOT_LOG_ERR(_fmt, ...)                                      \
     do {                                                                \
-            printf(" [ERR] [%s] line:%d " _fmt "\n", __func__, __LINE__, ##__VA_ARGS__);         \
+            printf("[ERR] [%s] line:%d " _fmt "\n", __func__, __LINE__, ##__VA_ARGS__);         \
     } while (0)
 #else
 #define MCUBOOT_LOG_ERR(_fmt, ...)
@@ -28,7 +28,7 @@ extern int printf( const char *pcFormat, ...);
 #if MCUBOOT_LOG_LEVEL >= MCUBOOT_LOG_LEVEL_WARNING
 #define MCUBOOT_LOG_WRN(_fmt, ...)                                      \
     do {                                                                \
-            printf(" [WRN] [%s] line:%d " _fmt "\n", __func__, __LINE__, ##__VA_ARGS__);         \
+            printf("[WRN] [%s] line:%d " _fmt "\n", __func__, __LINE__, ##__VA_ARGS__);         \
     } while (0)
 #else
 #define MCUBOOT_LOG_WRN(_fmt, ...)
@@ -37,7 +37,7 @@ extern int printf( const char *pcFormat, ...);
 #if MCUBOOT_LOG_LEVEL >= MCUBOOT_LOG_LEVEL_INFO
 #define MCUBOOT_LOG_INF(_fmt, ...)                                      \
     do {                                                                \
-            printf(" [INF] [%s] line:%d " _fmt "\n", __func__, __LINE__, ##__VA_ARGS__);         \
+            printf("[INF] [%s] line:%d " _fmt "\n", __func__, __LINE__, ##__VA_ARGS__);         \
     } while (0)
 #else
 #define MCUBOOT_LOG_INF(_fmt, ...)
@@ -46,7 +46,7 @@ extern int printf( const char *pcFormat, ...);
 #if MCUBOOT_LOG_LEVEL >= MCUBOOT_LOG_LEVEL_DEBUG
 #define MCUBOOT_LOG_DBG(_fmt, ...)                                      \
     do {                                                                \
-            printf(" [DBG] [%s] line:%d " _fmt "\n", __func__, __LINE__, ##__VA_ARGS__);         \
+            printf("[DBG] [%s] line:%d " _fmt "\n", __func__, __LINE__, ##__VA_ARGS__);         \
     } while (0)
 #else
 #define MCUBOOT_LOG_DBG(_fmt, ...)

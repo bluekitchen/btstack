@@ -1,0 +1,5 @@
+how to generate gatt database:
+python tool/compile_gatt.py example/nordic_dfu_demo.gatt example/nordic_dfu_demo.h
+
+how to generate mcuboot image:
+python 3rd-party/mcuboot/scripts/imgtool.py sign --header-size 0x200 --align 4 --slot-size 0x20000 --version 1.0.0 --pad-header port/stm32-f4discovery-csr8x11/build/nordic_dfu_demo.bin port/stm32-f4discovery-csr8x11/build/mcuboot_primary.bin

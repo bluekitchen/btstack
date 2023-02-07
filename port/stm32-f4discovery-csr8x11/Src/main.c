@@ -88,10 +88,10 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
+  //MX_GPIO_Init();
+  //MX_DMA_Init();
   MX_USART2_UART_Init();
-  MX_USART3_UART_Init();
+  //MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   // jump to BTstack port
   port_main();
@@ -168,6 +168,12 @@ void Error_Handler(void)
     printf("enter error handler!");
 }
 
+void HardFault_Handler(void)
+{
+    while (1)
+        printf("HardFault_Handler\n");
+}
+
 #ifdef  USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
@@ -187,13 +193,20 @@ void assert_failed(uint8_t *file, uint32_t line)
 
 void system_deinit(void)
 {
-    __disable_irq();
+  //HAL_UART_DeInit(&huart2);
+  /*HAL_RCC_DeInit();
+  for (uint8_t i = 0; i < 8; i++) {
+      NVIC->ICER[i]=0xFFFFFFFF;
+      NVIC->ICPR[i]=0xFFFFFFFF;
+  }*/
+  //__disable_irq();
+#if 0
     SysTick->CTRL = 0;
     SysTick->LOAD = 0;
     SysTick->VAL = 0;
     __set_PRIMASK(1);
 
-    for (uint8_t i = 0; i < 8; i++) {
+    for (uint8_t i = 0; i < 3; i++) {
         NVIC->ICER[i]=0xFFFFFFFF;
         NVIC->ICPR[i]=0xFFFFFFFF;
     }
@@ -211,6 +224,8 @@ void system_deinit(void)
 
     HAL_RCC_DeInit();
     HAL_DeInit();
+    __disable_irq();
+#endif
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

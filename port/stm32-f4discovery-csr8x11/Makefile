@@ -50,6 +50,9 @@ FREERTOS_ENABLE = n
 
 MCUBOOT_ENALBE = y
 
+#primary | bootloader
+MCUBOOT_IMG_TYPE = bootloader
+
 #######################################
 # paths
 #######################################
@@ -220,6 +223,14 @@ C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/sha256.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/utils.c
 #C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/ecc.c
 #C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/ecc_dsa.c
+
+ifeq (${MCUBOOT_IMG_TYPE}, bootloader)
+C_DEFS += -DMCUBOOT_IMG_BOOTLOADER
+endif
+
+ifeq (${MCUBOOT_IMG_TYPE}, primary)
+C_DEFS += -DMCUBOOT_IMG_PRIMARY
+endif
 endif
 endif
 

@@ -45,7 +45,7 @@
                 "C:/Program Files (x86)/OpenOCD-20211118-0.11.0/share/openocd/scripts/interface/stlink.cfg",
                 "C:/Program Files (x86)/OpenOCD-20211118-0.11.0/share/openocd/scripts/target/stm32f4x.cfg",
             ],
-            "svdFile":"STM32F407xx.svd",
+            "svdFile":"STM32F407.svd",
             "runToMain": true
         },
     ]

@@ -2141,7 +2141,7 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
         huart->ErrorCallback(huart);
 #else
         /*Call legacy weak error callback*/
-        HAL_UART_ErrorCallback(huart);
+        HAL_UART_ErrorCallback(huart); 
 #endif /* USE_HAL_UART_REGISTER_CALLBACKS */
 
         huart->ErrorCode = HAL_UART_ERROR_NONE;
