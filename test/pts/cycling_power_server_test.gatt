@@ -1,5 +1,0 @@
-PRIMARY_SERVICE, GAP_SERVICE
-CHARACTERISTIC, GAP_DEVICE_NAME, READ, "Cycling Power Server"
-
-// add Cycling Power Service
-#import <cycling_power_service.gatt>
