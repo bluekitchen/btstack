@@ -4,33 +4,15 @@
 #include "bootutil/bootutil_log.h"
 #include "port/boot_startup_port.h"
 
-typedef void (*pFunction)(void);
-pFunction JumpToApplication;
+extern void system_deinit(void);
 
 static void start_app(uint32_t pc, uint32_t sp) {
-    if ((sp & 0x2FFE0000 ) == 0x20020000)
-    {
-        printf("before system deinit\n");
-        void system_deinit(void);
+    if ((sp & 0x2FFE0000 ) == 0x20020000) {
         system_deinit();
-        printf("after system deinit\n");
-#if 0
-        uint32_t JumpAddress;
-        printf("before get jumpaddr\n");
-        /* Jump to user application */
-        JumpAddress = *(volatile uint32_t*) (sp + 4);
-        printf("jump_addr:0x%x\n", JumpAddress);
-        JumpToApplication = (pFunction) JumpAddress;
-        /* Initialize user application's Stack Pointer */
-        __asm volatile ("MSR msp, %0" : : "r" (sp) : );
-        JumpToApplication();
-#else
         __asm volatile ("MSR msp, %0" : : "r" (sp) : );
         void (*application_reset_handler)(void) = (void *)pc;
         application_reset_handler();
-#endif
     }
-
 }
 
 static void do_boot(struct boot_rsp *rsp) {

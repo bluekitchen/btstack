@@ -269,7 +269,7 @@ int _write(int file, char *ptr, int len){
 		for (i = 0; i < len; i++) {
 			if (ptr[i] == '\n') {
 				HAL_UART_Transmit( &SYSTEM_LOG_UART, &cr, 1, HAL_MAX_DELAY );
-			} c    
+			}
 			HAL_UART_Transmit( &SYSTEM_LOG_UART, (uint8_t *) &ptr[i], 1, HAL_MAX_DELAY );
 		}
 		return i;
@@ -349,13 +349,7 @@ static hal_flash_bank_stm32_t   hal_flash_bank_context;
 int btstack_main(int argc, char ** argv);
 int main_boot( void );
 void port_main(void) {
-#if defined(MCUBOOT_IMG_BOOTLOADER)
-    printf("I am mcuboot bootloader!\r\n");
-    main_boot();
-#elif defined(MCUBOOT_IMG_PRIMARY)
-    printf("I am mcuboot primary slot!\r\n");
-#endif
-#if 0
+#if !defined(MCUBOOT_IMG_BOOTLOADER)
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
@@ -398,15 +392,13 @@ void port_main(void) {
    	btstack_audio_sink_set_instance(btstack_audio_embedded_sink_get_instance());
     btstack_audio_source_set_instance(btstack_audio_embedded_source_get_instance());
 #endif
-   	
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
+#endif
 	// hand over to btstack embedded code
     btstack_main(0, NULL);
 
     // go
     btstack_run_loop_execute();
-#endif
 }

@@ -33,7 +33,7 @@
     "configurations": [
         {
             "cwd": "${workspaceRoot}/port/stm32-f4discovery-csr8x11",//work directory 
-            "executable": "build/nordic_dfu_demo.elf",
+            "executable": "build/mcuboot_bootloader_demo.elf",
             "name": "STM32 Debug",
             "request": "launch",
             "type": "cortex-debug",

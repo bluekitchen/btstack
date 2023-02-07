@@ -45,7 +45,7 @@
                 "-f",
                 "target/stm32f4x.cfg",
                 "-c",
-                "program build/nordic_dfu_demo.hex verify reset exit"
+                "program build/mcuboot_bootloader_demo.hex verify reset exit"
             ],
             //"group": "build",
             "dependsOn": "build",

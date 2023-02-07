@@ -86,12 +86,11 @@ int main(void)
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
-
   /* Initialize all configured peripherals */
-  //MX_GPIO_Init();
-  //MX_DMA_Init();
+  MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
-  //MX_USART3_UART_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   // jump to BTstack port
   port_main();
@@ -193,20 +192,12 @@ void assert_failed(uint8_t *file, uint32_t line)
 
 void system_deinit(void)
 {
-  //HAL_UART_DeInit(&huart2);
-  /*HAL_RCC_DeInit();
-  for (uint8_t i = 0; i < 8; i++) {
-      NVIC->ICER[i]=0xFFFFFFFF;
-      NVIC->ICPR[i]=0xFFFFFFFF;
-  }*/
-  //__disable_irq();
-#if 0
     SysTick->CTRL = 0;
     SysTick->LOAD = 0;
     SysTick->VAL = 0;
-    __set_PRIMASK(1);
+    //__set_PRIMASK(1);
 
-    for (uint8_t i = 0; i < 3; i++) {
+    for (uint8_t i = 0; i < 8; i++) {
         NVIC->ICER[i]=0xFFFFFFFF;
         NVIC->ICPR[i]=0xFFFFFFFF;
     }
@@ -222,10 +213,9 @@ void system_deinit(void)
     __HAL_RCC_GPIOB_CLK_DISABLE();
     __HAL_RCC_GPIOD_CLK_DISABLE();
 
-    HAL_RCC_DeInit();
     HAL_DeInit();
-    __disable_irq();
-#endif
+    HAL_RCC_DeInit();
+    //__disable_irq();
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -50,8 +50,7 @@ FREERTOS_ENABLE = n
 
 MCUBOOT_ENALBE = y
 
-#primary | bootloader
-MCUBOOT_IMG_TYPE = bootloader
+mcuboot = none
 
 #######################################
 # paths
@@ -224,12 +223,12 @@ C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/utils.c
 #C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/ecc.c
 #C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/ecc_dsa.c
 
-ifeq (${MCUBOOT_IMG_TYPE}, bootloader)
+ifeq (${mcuboot}, boot)
 C_DEFS += -DMCUBOOT_IMG_BOOTLOADER
 endif
 
-ifeq (${MCUBOOT_IMG_TYPE}, primary)
-C_DEFS += -DMCUBOOT_IMG_PRIMARY
+ifeq (${mcuboot}, app)
+C_DEFS += -DMCUBOOT_IMG_APPLICATION
 endif
 endif
 endif
@@ -508,6 +507,7 @@ EXAMPLES += 				\
 	spp_streamer_client     \
 
 endif
+
 ifeq (${BLE_ENABLE}, y)
 ifeq (${BR_EDR_ENABLE}, y)
 EXAMPLES += 				\
@@ -516,16 +516,22 @@ EXAMPLES += 				\
 
 GATT_FILES += \
 	spp_and_gatt_counter.gatt 	\
-	spp_and_gatt_streamer.gatt   \
+	spp_and_gatt_streamer.gatt  \
 
 endif
 endif
 
-else
+else #EXAMPLE_PLUS_ENABLE=n
 
-ifeq (${BLE_ENABLE}, y)
-EXAMPLES += nordic_dfu_demo
-GATT_FILES += nordic_dfu_demo.gatt
+ifeq (${mcuboot}, boot)
+EXAMPLES += mcuboot_bootloader_demo
+endif
+ifeq (${mcuboot}, app)
+EXAMPLES += mcuboot_application_demo
+
+GATT_FILES += \
+	mcuboot_application_demo.gatt 	\
+
 endif
 
 endif
@@ -575,9 +581,17 @@ $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(BIN) $< $@	
-	
+
 $(BUILD_DIR)/%.jdebug: ozone.jdebug | $(BUILD_DIR)
 	sed -e "s|EXAMPLE|$(basename $(notdir $@))|" $<  > $@
+
+#$(BUILD_DIR)/mcuboot_bootloader_demo.bin: $(BUILD_DIR)/mcuboot_bootloader_demo.elf
+#	$(CP) --pad-to=0x2000 --gap-fill=0xFF -O binary $< $@
+#	$(SZ) $<
+
+# Makefile conjunction bootloader with application
+#$(BUILD_DIR)/mcuboot.bin: $(BUILD_DIR)/mcuboot_bootloader_demo.bin $(BUILD_DIR)/mcuboot_application_demo.bin
+#	cat $^ > $@
 
 $(BUILD_DIR):
 	mkdir $@		
@@ -587,6 +601,14 @@ $(BUILD_DIR):
 #######################################
 clean:
 	-rm -fR $(BUILD_DIR)
+
+####################################### 
+# Delete the intermediate products
+#######################################
+remove:
+	rm $(BUILD_DIR)/*.o
+	rm $(BUILD_DIR)/*.lst
+	rm $(BUILD_DIR)/*.d
 
 #######################################
 # dependencies
