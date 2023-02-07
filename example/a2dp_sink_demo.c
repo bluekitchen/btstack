@@ -646,7 +646,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     UNUSED(size);
 
     // helper to print c strings
-    uint8_t  avrcp_subevent_value[256];
+    uint8_t avrcp_subevent_value[256];
     uint8_t play_status;
 
     a2dp_sink_demo_avrcp_connection_t * avrcp_connection = &a2dp_sink_demo_avrcp_connection;
@@ -671,16 +671,20 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
                     avrcp_connection->playing = false;
                     break;
             }
-            printf("AVRCP Controller: Playback status changed %s\n", avrcp_play_status2str(play_status));            return;
+            break;
+
         case AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED:
             printf("AVRCP Controller: Playing content changed\n");
-            return;
+            break;
+
         case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
             printf("AVRCP Controller: Track changed\n");
-            return;
+            break;
+
         case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
-            printf("AVRCP Controller: Changed\n");
-            return; 
+            printf("AVRCP Controller: Available Players Changed\n");
+            break;
+
         case AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE:{
             uint8_t shuffle_mode = avrcp_subevent_shuffle_and_repeat_mode_get_shuffle_mode(packet);
             uint8_t repeat_mode  = avrcp_subevent_shuffle_and_repeat_mode_get_repeat_mode(packet);
@@ -688,38 +692,38 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             break;
         }
         case AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO:
-            printf("AVRCP Controller:     Track: %d\n", avrcp_subevent_now_playing_track_info_get_track(packet));
+            printf("AVRCP Controller: Track %d\n", avrcp_subevent_now_playing_track_info_get_track(packet));
             break;
 
         case AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO:
-            printf("AVRCP Controller:     Total Tracks: %d\n", avrcp_subevent_now_playing_total_tracks_info_get_total_tracks(packet));
+            printf("AVRCP Controller: Total Tracks %d\n", avrcp_subevent_now_playing_total_tracks_info_get_total_tracks(packet));
             break;
 
         case AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO:
             if (avrcp_subevent_now_playing_title_info_get_value_len(packet) > 0){
                 memcpy(avrcp_subevent_value, avrcp_subevent_now_playing_title_info_get_value(packet), avrcp_subevent_now_playing_title_info_get_value_len(packet));
-                printf("AVRCP Controller:     Title: %s\n", avrcp_subevent_value);
+                printf("AVRCP Controller: Title %s\n", avrcp_subevent_value);
             }  
             break;
 
         case AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO:
             if (avrcp_subevent_now_playing_artist_info_get_value_len(packet) > 0){
                 memcpy(avrcp_subevent_value, avrcp_subevent_now_playing_artist_info_get_value(packet), avrcp_subevent_now_playing_artist_info_get_value_len(packet));
-                printf("AVRCP Controller:     Artist: %s\n", avrcp_subevent_value);
+                printf("AVRCP Controller: Artist %s\n", avrcp_subevent_value);
             }  
             break;
         
         case AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO:
             if (avrcp_subevent_now_playing_album_info_get_value_len(packet) > 0){
                 memcpy(avrcp_subevent_value, avrcp_subevent_now_playing_album_info_get_value(packet), avrcp_subevent_now_playing_album_info_get_value_len(packet));
-                printf("AVRCP Controller:     Album: %s\n", avrcp_subevent_value);
+                printf("AVRCP Controller: Album %s\n", avrcp_subevent_value);
             }  
             break;
         
         case AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO:
             if (avrcp_subevent_now_playing_genre_info_get_value_len(packet) > 0){
                 memcpy(avrcp_subevent_value, avrcp_subevent_now_playing_genre_info_get_value(packet), avrcp_subevent_now_playing_genre_info_get_value_len(packet));
-                printf("AVRCP Controller:     Genre: %s\n", avrcp_subevent_value);
+                printf("AVRCP Controller: Genre %s\n", avrcp_subevent_value);
             }  
             break;
         
