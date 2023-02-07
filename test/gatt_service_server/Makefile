@@ -24,8 +24,9 @@ VPATH += ${BTSTACK_ROOT}/test/mock
 COMMON = 										\
 	ad_parser.c                 				\
 	att_db.c 				 	    			\
-	btstack_hid_parser.c						\
+	audio_input_control_service_server.c 		\
 	battery_service_server.c 					\
+	btstack_hid_parser.c						\
 	btstack_linked_list.c       				\
 	btstack_memory.c            				\
 	btstack_memory_pool.c       				\
@@ -36,6 +37,7 @@ COMMON = 										\
 	hci_dump.c                  				\
 	heart_rate_service_server.c 				\
 	hids_device.c 								\
+	microphone_control_service_server.c 		\
 	mock_att_server.c           				\
 	nordic_spp_service_server.c 				\
 	tx_power_service_server.c 					\
@@ -57,6 +59,7 @@ all: build-coverage/battery_service_server_test 			build-asan/battery_service_se
 	 build-coverage/device_information_service_server_test 	build-asan/device_information_service_server_test 	\
 	 build-coverage/tx_power_service_server_test 			build-asan/tx_power_service_server_test 			\
 	 build-coverage/bond_management_service_server_test 	build-asan/bond_management_service_server_test 		\
+	 build-coverage/microphone_control_service_server_test 	build-asan/microphone_control_service_server_test 	\
 	 build-coverage/heart_rate_service_server_test 			build-asan/heart_rate_service_server_test 			\
 
 build-%:
@@ -72,6 +75,9 @@ build-%/tx_power_service_server_test.h: tx_power_service_server_test.gatt| build
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 build-%/bond_management_service_server_test.h: bond_management_service_server_test.gatt| build-%
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+
+build-%/microphone_control_service_server_test.h: microphone_control_service_server_test.gatt| build-%
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 build-%/heart_rate_service_server_test.h: heart_rate_service_server_test.gatt| build-%
@@ -113,6 +119,12 @@ build-coverage/bond_management_service_server_test: build-coverage/bond_manageme
 build-asan/bond_management_service_server_test: build-asan/bond_management_service_server_test.h ${COMMON_OBJ_ASAN} build-asan/bond_management_service_server.o  build-asan/bond_management_service_server_test.o  | build-asan
 	${CXX} $(filter-out build-asan/bond_management_service_server_test.h,$^) ${LDFLAGS_ASAN} -o $@
 
+build-coverage/microphone_control_service_server_test: build-coverage/microphone_control_service_server_test.h ${COMMON_OBJ_COVERAGE} build-coverage/microphone_control_service_server.o build-coverage/microphone_control_service_server_test.o  | build-coverage
+	${CXX} $(filter-out build-coverage/microphone_control_service_server_test.h,$^) ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/microphone_control_service_server_test: build-asan/microphone_control_service_server_test.h ${COMMON_OBJ_ASAN} build-asan/microphone_control_service_server.o  build-asan/microphone_control_service_server_test.o  | build-asan
+	${CXX} $(filter-out build-asan/microphone_control_service_server_test.h,$^) ${LDFLAGS_ASAN} -o $@
+
 build-coverage/heart_rate_service_server_test: build-coverage/heart_rate_service_server_test.h ${COMMON_OBJ_COVERAGE} build-coverage/heart_rate_service_server.o build-coverage/heart_rate_service_server_test.o  | build-coverage
 	${CXX} $(filter-out build-coverage/heart_rate_service_server_test.h,$^) ${LDFLAGS_COVERAGE} -o $@
 
@@ -124,6 +136,7 @@ test: all
 	build-asan/device_information_service_server_test
 	build-asan/tx_power_service_server_test
 	build-asan/bond_management_service_server_test
+	build-asan/microphone_control_service_server_test
 	build-asan/heart_rate_service_server_test
 		
 coverage: all
@@ -132,6 +145,7 @@ coverage: all
 	build-coverage/device_information_service_server_test
 	build-coverage/tx_power_service_server_test
 	build-coverage/bond_management_service_server_test
+	build-coverage/microphone_control_service_server_test
 	build-coverage/heart_rate_service_server_test
 
 clean:

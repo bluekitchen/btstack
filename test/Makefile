@@ -26,6 +26,7 @@ SUBDIRS =  \
 	l2cap-ecbm \
 	le_device_db_tlv \
 	linked_list \
+	map_test \
 	mesh \
 	obex \
 	pts \
