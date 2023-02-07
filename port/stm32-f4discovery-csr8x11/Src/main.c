@@ -195,7 +195,6 @@ void system_deinit(void)
     SysTick->CTRL = 0;
     SysTick->LOAD = 0;
     SysTick->VAL = 0;
-    //__set_PRIMASK(1);
 
     for (uint8_t i = 0; i < 8; i++) {
         NVIC->ICER[i]=0xFFFFFFFF;
@@ -215,7 +214,6 @@ void system_deinit(void)
 
     HAL_DeInit();
     HAL_RCC_DeInit();
-    //__disable_irq();
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
