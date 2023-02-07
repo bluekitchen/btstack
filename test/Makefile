@@ -28,6 +28,7 @@ SUBDIRS =  \
 	linked_list \
 	mesh \
 	obex \
+	pts \
 	ring_buffer \
 	sdp \
 	sdp_client \
