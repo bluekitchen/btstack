@@ -4443,60 +4443,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param con_handle
 */
-#define GATTSERVICE_SUBEVENT_PACS_SERVER_DISCONNECTED                           0x75u
-// MAP Meta Event Group
-
-/**
- * @format 121BH1
- * @param subevent_code
- * @param map_cid
- * @param status
- * @param bd_addr
- * @param con_handle
- * @param incoming
- */
-#define MAP_SUBEVENT_CONNECTION_OPENED                                    0x01u
-
-/**
- * @format 12
- * @param subevent_code
- * @param map_cid
-*/
-#define MAP_SUBEVENT_CONNECTION_CLOSED                                    0x02u
-
-/**
- * @format 121
- * @param subevent_code
- * @param map_cid
- * @param status
- */
-#define MAP_SUBEVENT_OPERATION_COMPLETED                                  0x03u
-
-
-/**
- * @format 12LV
- * @param subevent_code
- * @param map_cid
- * @param name_len
- * @param name
- */
-#define MAP_SUBEVENT_FOLDER_LISTING_ITEM                                  0x04u
-
-/**
- * @format 12D
- * @param subevent_code
- * @param map_cid
- * @param handle
- */
-#define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                                 0x05u
-
-/**
- * @format 12
- * @param subevent_code
- * @param map_cid
- */
-#define MAP_SUBEVENT_PARSING_DONE                                         0x06u
-
+#define GATTSERVICE_SUBEVENT_PACS_SERVER_DISCONNECTED                           0x75u0
 
 // MESH Meta Event Group
 
