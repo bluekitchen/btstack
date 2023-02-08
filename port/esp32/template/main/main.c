@@ -45,6 +45,18 @@
 
 #include <stddef.h>
 
+// warn about unsuitable sdkconfig
+#include "sdkconfig.h"
+#if !CONFIG_BT_ENABLED
+#error "Bluetooth disabled - please set CONFIG_BT_ENABLED via menuconfig -> Component Config -> Bluetooth -> [x] Bluetooth"
+#endif
+#if !CONFIG_BT_CONTROLLER_ONLY
+#error "Different Bluetooth Host stack selected - please set CONFIG_BT_CONTROLLER_ONLY via menuconfig -> Component Config -> Bluetooth -> Host -> Disabled"
+#endif
+#if !CONFIG_BT_CONTROLLER_ENABLED
+#error "Different Bluetooth Host stack selected - please set CONFIG_BT_CONTROLLER_ENABLED via menuconfig -> Component Config -> Bluetooth -> Controller -> Enabled"
+#endif
+
 extern int btstack_main(int argc, const char * argv[]);
 
 int app_main(void){
