@@ -5153,6 +5153,22 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                            0x7Eu
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE                             0x7Fu
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_ENABLE                             0x80u
+
 // MAP Meta Event Group
 
 /**
