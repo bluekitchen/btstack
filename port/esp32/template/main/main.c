@@ -53,12 +53,12 @@
 #if !CONFIG_BT_CONTROLLER_ONLY
 #error "Different Bluetooth Host stack selected - please set CONFIG_BT_CONTROLLER_ONLY via menuconfig -> Component Config -> Bluetooth -> Host -> Disabled"
 #endif
-if ESP_IDF_VERSION_MAJOR >= 5
+#if ESP_IDF_VERSION_MAJOR >= 5
 #if !CONFIG_BT_CONTROLLER_ENABLED
 #error "Different Bluetooth Host stack selected - please set CONFIG_BT_CONTROLLER_ENABLED via menuconfig -> Component Config -> Bluetooth -> Controller -> Enabled"
 #endif
 #endif
-    
+
 extern int btstack_main(int argc, const char * argv[]);
 
 int app_main(void){
