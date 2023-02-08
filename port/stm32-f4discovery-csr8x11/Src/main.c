@@ -163,14 +163,14 @@ void Error_Handler(void)
   /* User can add his own implementation to report the HAL error return state */
 
   /* USER CODE END Error_Handler_Debug */
-  while (1)
     printf("enter error handler!");
+    while(1);
 }
 
 void HardFault_Handler(void)
 {
-    while (1)
-        printf("HardFault_Handler\n");
+    printf("HardFault_Handler\n");
+    while(1);
 }
 
 #ifdef  USE_FULL_ASSERT

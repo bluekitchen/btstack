@@ -106,9 +106,7 @@
 /*!< Uncomment the following line if you need to relocate your vector Table in
      Internal SRAM. */
 /* #define VECT_TAB_SRAM */
-#if defined(MCUBOOT_IMG_BOOTLOADER)
-#define VECT_TAB_OFFSET  0x00 /*!< Vector Table base offset field. */
-#elif defined(MCUBOOT_IMG_APPLICATION)
+#if defined(MCUBOOT_IMG_APPLICATION1) || defined(MCUBOOT_IMG_APPLICATION2)
 #define VECT_TAB_OFFSET  0x20200 /*!< Vector Table base offset field. */
 #else
 #define VECT_TAB_OFFSET  0x00 /*!< Vector Table base offset field. */

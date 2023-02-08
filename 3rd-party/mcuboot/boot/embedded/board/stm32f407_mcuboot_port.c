@@ -7,28 +7,39 @@
 #include "bootutil/bootutil.h"
 #include "stm32f4xx_hal.h"
 
+/* Base address of the Flash sectors */
+#define ADDR_FLASH_SECTOR_0     ((uint32_t)0x08000000) /* Base address of Sector 0, 16 Kbytes   */
+#define ADDR_FLASH_SECTOR_1     ((uint32_t)0x08004000) /* Base address of Sector 1, 16 Kbytes   */
+#define ADDR_FLASH_SECTOR_2     ((uint32_t)0x08008000) /* Base address of Sector 2, 16 Kbytes   */
+#define ADDR_FLASH_SECTOR_3     ((uint32_t)0x0800C000) /* Base address of Sector 3, 16 Kbytes   */
+#define ADDR_FLASH_SECTOR_4     ((uint32_t)0x08010000) /* Base address of Sector 4, 64 Kbytes   */
+#define ADDR_FLASH_SECTOR_5     ((uint32_t)0x08020000) /* Base address of Sector 5, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_6     ((uint32_t)0x08040000) /* Base address of Sector 6, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_7     ((uint32_t)0x08060000) /* Base address of Sector 7, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_8     ((uint32_t)0x08080000) /* Base address of Sector 8, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_9     ((uint32_t)0x080A0000) /* Base address of Sector 9, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_10    ((uint32_t)0x080C0000) /* Base address of Sector 10, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_11    ((uint32_t)0x080E0000) /* Base address of Sector 11, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_END   (ADDR_FLASH_SECTOR_11 + (128 * 1024))
+
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
-#define BOOTLOADER_START_ADDRESS            (0x08000000)
 #define BOOTLOADER_SIZE                     (64 * 1024 )
 #define APPLICATION_SIZE                    (128 * 1024)
-#define APPLICATION_PRIMARY_START_ADDRESS   (0x08020000)
-#define APPLICATION_SECONDARY_START_ADDRESS (APPLICATION_PRIMARY_START_ADDRESS + APPLICATION_SIZE)
+#define SCRATCH_SIZE                        (128 * 1024)
 
-#define SCRATCH_OFFSET                      0xE0000
-#define SCRATCH_SIZE                        0x10000
+#define BOOTLOADER_START_ADDRESS            (ADDR_FLASH_SECTOR_0)
+#define APPLICATION_PRIMARY_START_ADDRESS   (ADDR_FLASH_SECTOR_5)
+#define APPLICATION_SECONDARY_START_ADDRESS (ADDR_FLASH_SECTOR_6)
+#define SCRATCH_START_ADDRESS               (ADDR_FLASH_SECTOR_8)
 
 #define BOOTLOADER_SECTOR_SIZE              (16 * 1024)
 #define APPLICATION_SECTOR_SIZE             (128 * 1024)
+#define SCRATCH_SECTOR_SIZE                 (128 * 1024)
 
 #define VALIDATE_PROGRAM_OP                 1
-
-extern int printf(const char *fmt, ...);
-
-/* Max MTU for boot_serial. Unfortunately can't be shared as it's not exposed in a header */
-static uint8_t __attribute__((aligned(4))) align_buf[512] = { 0 };
 
 static const struct flash_area bootloader = {
     .fa_id = FLASH_AREA_BOOTLOADER,
@@ -51,36 +62,19 @@ static const struct flash_area secondary_img0 = {
     .fa_size = APPLICATION_SIZE,
 };
 
-#if 0
 static const struct flash_area scratch_img0 = {
     .fa_id = FLASH_AREA_IMAGE_SCRATCH,
     .fa_device_id = FLASH_DEVICE_INTERNAL_FLASH,
-    .fa_off = SCRATCH_OFFSET,
+    .fa_off = SCRATCH_START_ADDRESS,
     .fa_size = SCRATCH_SIZE,
 };
-#endif
+
 static const struct flash_area *s_flash_areas[] = {
     &bootloader,
     &primary_img0,
     &secondary_img0,
-    //&scratch_img0,
+    &scratch_img0,
 };
-
-
-/* Base address of the Flash sectors */
-#define ADDR_FLASH_SECTOR_0     ((uint32_t)0x08000000) /* Base address of Sector 0, 16 Kbytes   */
-#define ADDR_FLASH_SECTOR_1     ((uint32_t)0x08004000) /* Base address of Sector 1, 16 Kbytes   */
-#define ADDR_FLASH_SECTOR_2     ((uint32_t)0x08008000) /* Base address of Sector 2, 16 Kbytes   */
-#define ADDR_FLASH_SECTOR_3     ((uint32_t)0x0800C000) /* Base address of Sector 3, 16 Kbytes   */
-#define ADDR_FLASH_SECTOR_4     ((uint32_t)0x08010000) /* Base address of Sector 4, 64 Kbytes   */
-#define ADDR_FLASH_SECTOR_5     ((uint32_t)0x08020000) /* Base address of Sector 5, 128 Kbytes  */
-#define ADDR_FLASH_SECTOR_6     ((uint32_t)0x08040000) /* Base address of Sector 6, 128 Kbytes  */
-#define ADDR_FLASH_SECTOR_7     ((uint32_t)0x08060000) /* Base address of Sector 7, 128 Kbytes  */
-#define ADDR_FLASH_SECTOR_8     ((uint32_t)0x08080000) /* Base address of Sector 8, 128 Kbytes  */
-#define ADDR_FLASH_SECTOR_9     ((uint32_t)0x080A0000) /* Base address of Sector 9, 128 Kbytes  */
-#define ADDR_FLASH_SECTOR_10    ((uint32_t)0x080C0000) /* Base address of Sector 10, 128 Kbytes  */
-#define ADDR_FLASH_SECTOR_11    ((uint32_t)0x080E0000) /* Base address of Sector 11, 128 Kbytes  */
-#define ADDR_FLASH_SECTOR_END   (ADDR_FLASH_SECTOR_11 + (128 * 1024))
 
 static uint32_t stm32f407_get_sector_from_address(uint32_t addr)
 {
@@ -233,37 +227,7 @@ int flash_area_write(const struct flash_area *fa, uint32_t off, const void *src,
     }
 
     const uint32_t start_addr = fa->fa_off + off;
-    MCUBOOT_LOG_DBG("Addr: 0x%08x Length: %d", (int)start_addr, (int)len);
-#if 0
-    if (len < 4) {
-        flash_area_read(fa, start_addr, &write_data, sizeof(uint32_t));
-        memcpy(&write_data, src, len);
-        write_ptr = (void *)&write_data;
-        write_len = sizeof(uint32_t);
-    }
-#ifdef CONFIG_ARM64
-    if ( (uint64_t)write_ptr % 8 )
-#else
-    if ( (uint32_t)write_ptr % 4 )
-#endif
-    {
-        if ( write_len <= sizeof(align_buf) )
-        {
-            memcpy( align_buf, src, write_len );
-            write_ptr = (void *)align_buf;
-        }
-        else
-        {
-            MCUBOOT_LOG_DBG("Attempt to write with unaligned src buffer which was too long to fix. %d > %d", write_len, sizeof(align_buf));
-            return -1;
-        }
-    }
-
-    if (xSpiNandWrite(start_addr, write_len, write_ptr) != 0) {
-        MCUBOOT_LOG_ERR("%s: Flash write failed", __func__);
-        return -1;
-    }
-#endif
+    MCUBOOT_LOG_DBG("Addr: 0x%08x Length: 0x%x", (int)start_addr, (int)len);
     stm32f407_flash_write(src, start_addr, len);
 
     return 0;
@@ -285,16 +249,23 @@ int flash_area_erase(const struct flash_area *fa, uint32_t off, uint32_t len)
         }
         sector_size = BOOTLOADER_SECTOR_SIZE;
     } else if (fa->fa_id == FLASH_AREA_IMAGE_PRIMARY(0) 
-        || fa->fa_id == FLASH_AREA_IMAGE_SECONDARY(0)) {
+        || fa->fa_id == FLASH_AREA_IMAGE_SECONDARY(0)
+        || fa->fa_id == FLASH_AREA_IMAGE_SCRATCH) {
         if ((len % APPLICATION_SECTOR_SIZE) != 0 || (off % APPLICATION_SECTOR_SIZE) != 0) {
             MCUBOOT_LOG_ERR("Not aligned on sector Offset: 0x%x Length: 0x%x", (int)off, (int)len);
             return -1;
         }
-        sector_size = APPLICATION_SECTOR_SIZE;            
+        sector_size = APPLICATION_SECTOR_SIZE;
+    } else if (fa->fa_id == FLASH_AREA_IMAGE_SCRATCH) {
+        if ((len % SCRATCH_SECTOR_SIZE) != 0 || (off % SCRATCH_SECTOR_SIZE) != 0) {
+            MCUBOOT_LOG_ERR("Not aligned on sector Offset: 0x%x Length: 0x%x", (int)off, (int)len);
+            return -1;
+        }
+        sector_size = SCRATCH_SECTOR_SIZE;
     }
 
     const uint32_t start_addr = fa->fa_off + off;
-    MCUBOOT_LOG_DBG("%s: Addr: 0x%08x Length: %d", __func__, (int)start_addr, (int)len);
+    MCUBOOT_LOG_DBG("%s: Addr: 0x%08x Length: 0x%x", __func__, (int)start_addr, (int)len);
 
     for (uint32_t i = 0; i < (len / sector_size); i++) {
         ret = stm32f407_flash_erase(start_addr + i * sector_size, sector_size);
@@ -332,6 +303,8 @@ int flash_area_get_sectors(int fa_id, uint32_t *count,
         sector_size = BOOTLOADER_SECTOR_SIZE;
     else if (fa_id == FLASH_AREA_IMAGE_PRIMARY(0) || fa_id == FLASH_AREA_IMAGE_SECONDARY(0))
         sector_size = APPLICATION_SECTOR_SIZE;
+    else if (fa_id == FLASH_AREA_IMAGE_SCRATCH)
+        sector_size = SCRATCH_SECTOR_SIZE;
 
     for (size_t off = 0; off < fa->fa_size; off += sector_size) {
         // Note: Offset here is relative to flash area, not device

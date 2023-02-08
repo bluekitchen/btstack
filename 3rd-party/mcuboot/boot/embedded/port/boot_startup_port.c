@@ -34,7 +34,7 @@ static void do_boot(struct boot_rsp *rsp) {
   *vtor = (vector_table & 0xFFFFFFF8);
   start_app(app_start, app_sp);
   while (1) {
-      printf("after jump to app, should never get to there\n");
+      MCUBOOT_LOG_INF("should never get to there!\n");
   }
 }
 
@@ -48,7 +48,5 @@ void boot_port_startup( struct boot_rsp *rsp )
 {
     MCUBOOT_LOG_INF("br_image_off = 0x%x", rsp->br_image_off);
     MCUBOOT_LOG_INF("ih_hdr_size = 0x%x", rsp->br_hdr->ih_hdr_size);
-//    int slot = (rsp->br_image_off == CONFIG_ESP_APPLICATION_PRIMARY_START_ADDRESS) ? 0 : 1;
-//    esp_app_image_load(slot, rsp->br_hdr->ih_hdr_size);
     do_boot(rsp);
 }

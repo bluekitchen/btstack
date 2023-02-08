@@ -347,7 +347,6 @@ static hal_flash_bank_stm32_t   hal_flash_bank_context;
 
 //
 int btstack_main(int argc, char ** argv);
-int main_boot( void );
 void port_main(void) {
 #if !defined(MCUBOOT_IMG_BOOTLOADER)
     // start with BTstack init - especially configure HCI Transport
@@ -395,6 +394,8 @@ void port_main(void) {
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+#else
+    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 #endif
 	// hand over to btstack embedded code
     btstack_main(0, NULL);

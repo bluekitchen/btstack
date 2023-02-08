@@ -1,0 +1,517 @@
+I am mcuboot bootloader!
+mcuboot trigger do boot!
+[INF] [main_boot] line:19 Starting bootloader...
+[INF] [main_boot] line:23 Bootloader port initialized.
+[INF] [main_boot] line:25 Bootloader logging initialized.
+[INF] [main_boot] line:46 Starting boot...
+[INF] [boot_go] line:2510 enter boot_go func
+[INF] [context_boot_go] line:1720 context_boot_go
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=3
+[INF] [swap_status_source] line:390 Primary image: magic=good, swap_type=0x3, copy_done=0x1, image_ok=0x1
+[INF] [swap_status_source] line:392 Scratch: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+[INF] [swap_status_source] line:419 Boot source: none
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=2
+[INF] [boot_swap_type_multi] line:459 Swap type: none
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[INF] [boot_port_startup] line:49 br_image_off = 0x8020000
+[INF] [boot_port_startup] line:50 ih_hdr_size = 0x200
+[INF] [do_boot] line:19 Starting Main Application
+[INF] [do_boot] line:20 Image Start Offset: 0x8020000
+[INF] [do_boot] line:29 Vector Table Start Address: 0x8020200. PC=0x80284d1, SP=0x20020000
+[00:00:00.000] LOG -- btstack_tlv_flash_bank.c.443: found bank 0
+[00:00:00.001] LOG -- btstack_tlv_flash_bank.c.211: test erased: bank 0, offset 8
+[00:00:00.014] LOG -- btstack_tlv_flash_bank.c.472: Flash clean after last found tag
+[00:00:00.015] LOG -- btstack_tlv_flash_bank.c.487: write offset 8
+[00:00:00.016] LOG -- btstack_tlv.c.48: TLV Instance 0x80288a0
+[00:00:00.017] LOG -- le_device_db_tlv.c.159: num valid le device entries 0
+I am mcuboot application1!
+system reset!
+I am mcuboot bootloader!
+mcuboot trigger image swap permanent!
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [boot_write_magic] line:321 writing magic; fa_id=2 off=0x1fff0 (0x805fff0)
+[DBG] [flash_area_write] line:230 Addr: 0x0805fff0 Length: 0x10
+[DBG] [boot_write_image_ok] line:378 writing image_ok; fa_id=2 off=0x1ffe8 (0x805ffe8)
+[DBG] [flash_area_write] line:230 Addr: 0x0805ffe8 Length: 0x4
+[DBG] [boot_write_swap_info] line:404 writing swap_info; fa_id=2 off=0x1ffd8 (0x805ffd8), swap_type=0x3 image_num=0x0
+[DBG] [flash_area_write] line:230 Addr: 0x0805ffd8 Length: 0x4
+mcuboot trigger do boot!
+[INF] [main_boot] line:19 Starting bootloader...
+[INF] [main_boot] line:23 Bootloader port initialized.
+[INF] [main_boot] line:25 Bootloader logging initialized.
+[INF] [main_boot] line:46 Starting boot...
+[INF] [boot_go] line:2510 enter boot_go func
+[INF] [context_boot_go] line:1720 context_boot_go
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=3
+[INF] [swap_status_source] line:390 Primary image: magic=good, swap_type=0x3, copy_done=0x1, image_ok=0x1
+[INF] [swap_status_source] line:392 Scratch: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+[INF] [swap_status_source] line:419 Boot source: none
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=2
+[INF] [boot_swap_type_multi] line:445 Swap type: perm
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [boot_swap_sectors] line:543 erasing scratch area
+[DBG] [flash_area_erase] line:268 flash_area_erase: Addr: 0x08080000 Length: 0x20000
+[DBG] [swap_status_init] line:97 initializing status; fa_id=3
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [boot_write_swap_info] line:404 writing swap_info; fa_id=3 off=0x1ffd8 (0x809ffd8), swap_type=0x3 image_num=0x0
+[DBG] [flash_area_write] line:230 Addr: 0x0809ffd8 Length: 0x4
+[DBG] [boot_write_image_ok] line:378 writing image_ok; fa_id=3 off=0x1ffe8 (0x809ffe8)
+[DBG] [flash_area_write] line:230 Addr: 0x0809ffe8 Length: 0x4
+[DBG] [boot_write_swap_size] line:315 writing swap_size; fa_id=3 off=0x1ffd0 (0x809ffd0)
+[DBG] [flash_area_write] line:230 Addr: 0x0809ffd0 Length: 0x4
+[DBG] [boot_write_magic] line:321 writing magic; fa_id=3 off=0x1fff0 (0x809fff0)
+[DBG] [flash_area_write] line:230 Addr: 0x0809fff0 Length: 0x10
+[DBG] [flash_area_write] line:230 Addr: 0x08080000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08080400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08080800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08080c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08081000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08081400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08081800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08081c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08082000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08082400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08082800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08082c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08083000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08083400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08083800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08083c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08084000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08084400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08084800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08084c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08085000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08085400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08085800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08085c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08086000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08086400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08086800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08086c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08087000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08087400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08087800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08087c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08088000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08088400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08088800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08088c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08089000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08089400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08089800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08089c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808a000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808a400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808a800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808ac00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808b000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808b400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808b800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808bc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808c000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808c400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808c800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808cc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808d000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808d400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808d800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808dc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808e000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808e400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808e800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808ec00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808f000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808f400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808f800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808fc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08090000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08090400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08090800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08090c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08091000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08091400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08091800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08091c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08092000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08092400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08092800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08092c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08093000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08093400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08093800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08093c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08094000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08094400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08094800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08094c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08095000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08095400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08095800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08095c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08096000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08096400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08096800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08096c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08097000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08097400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08097800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08097c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08098000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08098400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08098800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08098c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08099000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08099400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08099800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08099c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809a000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809a400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809a800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809ac00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809b000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809b400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809b800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809bc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809c000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809c400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809c800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809cc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809d000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809d400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809d800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809dc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809e000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809e400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809e800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809ec00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809f000 Length: 0x3d0
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [flash_area_write] line:230 Addr: 0x0809f3d0 Length: 0x4
+[DBG] [flash_area_erase] line:268 flash_area_erase: Addr: 0x08040000 Length: 0x20000
+[DBG] [flash_area_write] line:230 Addr: 0x08040000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08040400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08040800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08040c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08041000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08041400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08041800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08041c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08042000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08042400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08042800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08042c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08043000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08043400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08043800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08043c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08044000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08044400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08044800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08044c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08045000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08045400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08045800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08045c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08046000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08046400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08046800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08046c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08047000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08047400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08047800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08047c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08048000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08048400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08048800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08048c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08049000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08049400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08049800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08049c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804a000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804a400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804a800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804ac00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804b000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804b400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804b800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804bc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804c000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804c400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804c800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804cc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804d000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804d400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804d800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804dc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804e000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804e400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804e800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804ec00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804f000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804f400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804f800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804fc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08050000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08050400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08050800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08050c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08051000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08051400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08051800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08051c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08052000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08052400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08052800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08052c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08053000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08053400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08053800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08053c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08054000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08054400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08054800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08054c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08055000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08055400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08055800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08055c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08056000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08056400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08056800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08056c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08057000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08057400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08057800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08057c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08058000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08058400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08058800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08058c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08059000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08059400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08059800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08059c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805a000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805a400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805a800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805ac00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805b000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805b400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805b800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805bc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805c000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805c400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805c800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805cc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805d000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805d400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805d800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805dc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805e000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805e400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805e800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805ec00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805f000 Length: 0x3d0
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [flash_area_write] line:230 Addr: 0x0809f3d4 Length: 0x4
+[DBG] [flash_area_erase] line:268 flash_area_erase: Addr: 0x08020000 Length: 0x20000
+[DBG] [flash_area_write] line:230 Addr: 0x08020000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08020400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08020800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08020c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08021000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08021400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08021800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08021c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08022000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08022400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08022800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08022c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08023000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08023400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08023800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08023c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08024000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08024400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08024800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08024c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08025000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08025400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08025800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08025c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08026000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08026400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08026800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08026c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08027000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08027400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08027800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08027c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08028000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08028400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08028800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08028c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08029000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08029400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08029800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08029c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802a000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802a400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802a800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802ac00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802b000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802b400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802b800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802bc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802c000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802c400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802c800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802cc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802d000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802d400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802d800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802dc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802e000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802e400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802e800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802ec00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802f000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802f400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802f800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802fc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08030000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08030400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08030800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08030c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08031000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08031400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08031800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08031c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08032000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08032400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08032800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08032c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08033000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08033400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08033800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08033c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08034000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08034400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08034800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08034c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08035000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08035400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08035800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08035c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08036000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08036400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08036800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08036c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08037000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08037400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08037800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08037c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08038000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08038400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08038800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08038c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08039000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08039400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08039800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08039c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803a000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803a400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803a800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803ac00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803b000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803b400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803b800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803bc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803c000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803c400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803c800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803cc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803d000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803d400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803d800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803dc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803e000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803e400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803e800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803ec00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803f000 Length: 0x3d0
+[DBG] [flash_area_write] line:230 Addr: 0x0803f3d0 Length: 0x8
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [boot_write_image_ok] line:378 writing image_ok; fa_id=1 off=0x1ffe8 (0x803ffe8)
+[DBG] [flash_area_write] line:230 Addr: 0x0803ffe8 Length: 0x4
+[DBG] [boot_write_swap_info] line:404 writing swap_info; fa_id=1 off=0x1ffd8 (0x803ffd8), swap_type=0x3 image_num=0x0
+[DBG] [flash_area_write] line:230 Addr: 0x0803ffd8 Length: 0x4
+[DBG] [boot_write_swap_size] line:315 writing swap_size; fa_id=1 off=0x1ffd0 (0x803ffd0)
+[DBG] [flash_area_write] line:230 Addr: 0x0803ffd0 Length: 0x4
+[DBG] [boot_write_magic] line:321 writing magic; fa_id=1 off=0x1fff0 (0x803fff0)
+[DBG] [flash_area_write] line:230 Addr: 0x0803fff0 Length: 0x10
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_write] line:230 Addr: 0x0803f3d8 Length: 0x4
+[DBG] [flash_area_erase] line:268 flash_area_erase: Addr: 0x08080000 Length: 0x20000
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [boot_write_copy_done] line:303 writing copy_done; fa_id=1 off=0x1ffe0 (0x803ffe0)
+[DBG] [flash_area_write] line:230 Addr: 0x0803ffe0 Length: 0x4
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:325 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[INF] [boot_port_startup] line:49 br_image_off = 0x8020000
+[INF] [boot_port_startup] line:50 ih_hdr_size = 0x200
+[INF] [do_boot] line:19 Starting Main Application
+[INF] [do_boot] line:20 Image Start Offset: 0x8020000
+[INF] [do_boot] line:29 Vector Table Start Address: 0x8020200. PC=0x80284d1, SP=0x20020000
+[00:00:00.000] LOG -- btstack_tlv_flash_bank.c.443: found bank 0
+[00:00:00.001] LOG -- btstack_tlv_flash_bank.c.211: test erased: bank 0, offset 8
+[00:00:00.014] LOG -- btstack_tlv_flash_bank.c.472: Flash clean after last found tag
+[00:00:00.015] LOG -- btstack_tlv_flash_bank.c.487: write offset 8
+[00:00:00.016] LOG -- btstack_tlv.c.48: TLV Instance 0x80288a0
+[00:00:00.017] LOG -- le_device_db_tlv.c.159: num valid le device entries 0
+I am mcuboot application2!

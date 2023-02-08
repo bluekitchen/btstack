@@ -43,12 +43,12 @@
  */
 
 /* Uncomment to enable the overwrite-only code path. */
-#define MCUBOOT_OVERWRITE_ONLY
+//#define MCUBOOT_OVERWRITE_ONLY
 
 #ifdef MCUBOOT_OVERWRITE_ONLY
 /* Uncomment to only erase and overwrite those primary slot sectors needed
  * to install the new image, rather than the entire image slot. */
-/* #define MCUBOOT_OVERWRITE_ONLY_FAST */
+#define MCUBOOT_OVERWRITE_ONLY_FAST
 #endif
 
 /* Uncomment to enable the direct-xip code path. */

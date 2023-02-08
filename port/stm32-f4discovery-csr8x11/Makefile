@@ -226,10 +226,13 @@ C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/utils.c
 ifeq (${mcuboot}, boot)
 C_DEFS += -DMCUBOOT_IMG_BOOTLOADER
 endif
-
-ifeq (${mcuboot}, app)
-C_DEFS += -DMCUBOOT_IMG_APPLICATION
+ifeq (${mcuboot}, app1)
+C_DEFS += -DMCUBOOT_IMG_APPLICATION1
 endif
+ifeq (${mcuboot}, app2)
+C_DEFS += -DMCUBOOT_IMG_APPLICATION2
+endif
+
 endif
 endif
 
@@ -394,6 +397,7 @@ C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
 
 ifeq (${MCUBOOT_ENALBE}, y)
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/include
+#C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/include/bootutil/crypto
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/boot_serial/include/boot_serial
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include
@@ -437,7 +441,18 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # LDFLAGS
 #######################################
 # link script
+#LDSCRIPT = STM32F407VGTx_FLASH.ld
+
+ifeq (${mcuboot}, boot)
+LDSCRIPT = STM32F407VGTx_FLASH_bootloader.ld
+else ifeq (${mcuboot}, app1)
+LDSCRIPT = STM32F407VGTx_FLASH_application1.ld
+else ifeq (${mcuboot}, app2)
+LDSCRIPT = STM32F407VGTx_FLASH_application2.ld
+else
 LDSCRIPT = STM32F407VGTx_FLASH.ld
+endif
+
 
 # libraries
 LIBS = -lPDMFilter_CM4_GCC -lc -lm -lnosys 
@@ -526,14 +541,12 @@ else #EXAMPLE_PLUS_ENABLE=n
 ifeq (${mcuboot}, boot)
 EXAMPLES += mcuboot_bootloader_demo
 endif
-ifeq (${mcuboot}, app)
-EXAMPLES += mcuboot_application_demo
-
-GATT_FILES += \
-	mcuboot_application_demo.gatt 	\
-
+ifeq (${mcuboot}, app1)
+EXAMPLES += mcuboot_application1_demo
 endif
-
+ifeq (${mcuboot}, app2)
+EXAMPLES += mcuboot_application2_demo
+endif
 endif
 
 # SBC codec

@@ -35,9 +35,9 @@
  *
  */
 
-#define BTSTACK_FILE__ "mcuboot_bootloader_demo.c"
+#define BTSTACK_FILE__ "mcuboot_application2_demo.c"
 
-
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,31 +47,11 @@
 #ifdef HAVE_BTSTACK_STDIN
 static void show_usage(void) {
     printf("writ usage ---\n");
-    printf("A: mcuboot do boot!\n");
-    printf("B: mcuboot trigger image swap permanent!\n");
-    printf("C: mcuboot trigger image swap temporary!\n");
-    printf("D: mcuboot trigger image swap permanent from temporary!\n");
     printf("R: system reset!\n");
 }
 
 static void stdin_process(char cmd){
     switch (cmd){
-        case 'A':
-            printf("mcuboot trigger do boot!\r\n");
-            main_boot();
-            break;
-        case 'B':
-            printf("mcuboot trigger image swap permanent!\r\n");
-            boot_set_pending(1);
-            break;
-        case 'C':
-            printf("mcuboot trigger image swap temporary!\r\n");
-            boot_set_pending(0);
-            break;
-        case 'D':
-            printf("mcuboot trigger image swap permanent from temporary!\r\n");
-            boot_set_confirmed();
-            break;
         case 'R':
             printf("system reset!\r\n");
             volatile uint32_t *SCB_AIRCR = (uint32_t *)0xE000ED0C; //0xE000ED0C:SCB->AIRCR
@@ -84,18 +64,13 @@ static void stdin_process(char cmd){
 }
 #endif
 
-int btstack_main(int argc, const char * argv[]);
-int btstack_main(int argc, const char * argv[]) {
-    (void)argc;
-    (void)argv;
-#if defined(MCUBOOT_IMG_BOOTLOADER)
-    printf("I am mcuboot bootloader!\r\n");
+int btstack_main(void);
+int btstack_main(void) {
+#if defined(MCUBOOT_IMG_APPLICATION2)
+    printf("I am mcuboot application2!\r\n");
 #endif
-
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif
-
     return 0;
 }
-
