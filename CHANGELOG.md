@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - example: gatt_streamer_server and le_streamer_client report DLE and PHY changes
 - gatt_client: queue requests with gatt_client_request_to_send_gatt_query and gatt_client_request_to_write_without_response 
 - esp32: warn about unsuitable sdkconfig
+- esp32: drop support for Makefile projects from esp-idf 3.x
 
 ## Fixed
 - hci: fix set extended scan response
