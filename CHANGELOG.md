@@ -15,8 +15,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - example: gatt_streamer_server and le_streamer_client report DLE and PHY changes
 - gatt_client: queue requests with gatt_client_request_to_send_gatt_query and gatt_client_request_to_write_without_response 
 - esp32: warn about unsuitable sdkconfig
-- esp32: drop support for Makefile projects from esp-idf 3.x
-
+- esp32: add BTstack component config options via menuconfig
+- esp32: allow to disable default audio i2s driver via component config
+- 
 ## Fixed
 - hci: fix set extended scan response
 - btstack_stdin_embedded: use timer to poll RTT input, fix for tickless RTOS
@@ -28,7 +29,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - bluetooth: indicated identity address in resolved address type names
 - btstack_audio: added get_samplerate function to help with audio sample rate synchronization 
 - btstack_flash_bank: write empty tag instead of overwriting existing tag with ENABLE_TLV_FLASH_WRITE_ONCE
-
+- esp32: drop support for Makefile projects from esp-idf 3.x
 
 ## Release v1.5.5
 

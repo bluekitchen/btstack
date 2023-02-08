@@ -413,9 +413,11 @@ uint8_t btstack_init(void){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+#if CONFIG_BTSTACK_AUDIO
     // setup i2s audio for sink and source
     btstack_audio_sink_set_instance(btstack_audio_esp32_sink_get_instance());
     btstack_audio_source_set_instance(btstack_audio_esp32_source_get_instance());
+#endif
 
     return ERROR_CODE_SUCCESS;
 }

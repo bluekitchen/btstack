@@ -1,0 +1,9 @@
+menu "BTstack Configuration"
+
+config BTSTACK_AUDIO
+    bool "I2S Audio driver"
+    default y
+    help
+        Select this option to enable BTstack's default audio driver
+
+endmenu
