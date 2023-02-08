@@ -508,19 +508,24 @@ static void ascs_server_can_send_now(void * context){
 
 static void ascs_server_schedule_task(ascs_server_connection_t * connection, uint8_t task){
     if (connection->con_handle == HCI_CON_HANDLE_INVALID){
+        log_debug("HCI_CON_HANDLE_INVALID");
         ascs_server_reset_client(connection);
         return;
     }
 
     if (task == ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE){
         // check if control point chr notification enabled
+        log_debug("ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE");
         if (connection->ase_control_point_client_configuration == 0){
+            log_debug("ase_control_point_client_configuration == 0");
             return;
         }
     } 
 
     uint16_t scheduled_tasks = connection->scheduled_tasks;
     connection->scheduled_tasks |= task;
+
+    log_debug("scheduled tasks 0x%02x", connection->scheduled_tasks);
 
     if (scheduled_tasks == 0){
         connection->scheduled_tasks_callback.callback = &ascs_server_can_send_now;
@@ -1262,10 +1267,12 @@ static void ascs_server_streamendpoint_schedule_value_changed_task(ascs_server_c
     btstack_assert(streamendpoint != NULL);
     // skip if already scheduled
     if (streamendpoint->ase_characteristic_value_changed_w2_notify == true){
+        log_debug("streamendpoint already w2 notify");
         return;
     }
 
     if (streamendpoint->ase_characteristic_client_configuration != 0){
+        log_debug("streamendpoint ase_characteristic_client_configuration %u", streamendpoint->ase_characteristic_client_configuration);
         if (!streamendpoint->ase_characteristic_value_changed_w2_notify){
             streamendpoint->ase_characteristic_value_changed_w2_notify = true;
             ascs_server_schedule_task(client, ASCS_TASK_SEND_CODEC_CONFIGURATION_VALUE_CHANGED);
@@ -1406,6 +1413,7 @@ void audio_stream_control_service_server_streamendpoint_metadata_update(hci_con_
     if (streamendpoint == NULL){
         return;
     }
+    log_debug("streamendpoint state: %u", streamendpoint->state);
     switch (streamendpoint->state){
         case ASCS_STATE_ENABLING:
         case ASCS_STATE_STREAMING:
