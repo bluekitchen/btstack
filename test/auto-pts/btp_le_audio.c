@@ -975,6 +975,11 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                     audio_stream_control_service_server_streamendpoint_release(ascs_server_current_client_con_handle, ase_id);
                     response_len = 0;
                     btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_RELEASE, 0, response_len, response_buffer);
+                    // PTS is waiting for RELEASED operation
+                    btstack_run_loop_remove_timer(&ascs_server_released_timer);
+                    btstack_run_loop_set_timer_handler(&ascs_server_released_timer, &ascs_server_released_timer_handler);
+                    btstack_run_loop_set_timer(&ascs_server_released_timer, 100);
+                    btstack_run_loop_add_timer(&ascs_server_released_timer);
                 }
             }
             break;
