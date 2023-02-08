@@ -1129,13 +1129,13 @@ void btp_le_audio_init(void){
     // PACS Server
     sink_node.records = &sink_pac_records[0];
     sink_node.records_num = 1;
-    sink_node.audio_locations_mask = LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
+    sink_node.audio_locations_mask = LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
     sink_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
     sink_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
 
     source_node.records = &source_pac_records[0];
     source_node.records_num = 1;
-    source_node.audio_locations_mask = LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
+    source_node.audio_locations_mask = LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
     source_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
     source_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
 
