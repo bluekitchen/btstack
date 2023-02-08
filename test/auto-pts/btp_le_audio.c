@@ -252,7 +252,9 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 // ASCS Server Handler
 static uint8_t          ascs_server_current_ase_id = 0;
 static hci_con_handle_t ascs_server_current_client_con_handle = HCI_CON_HANDLE_INVALID;
+static hci_con_handle_t ascs_server_current_cis_con_handle = HCI_CON_HANDLE_INVALID;
 static btstack_timer_source_t  ascs_server_released_timer;
+static le_audio_metadata_t     ascs_server_audio_metadata;
 
 static const ascs_streamendpoint_characteristic_t * ascs_server_get_streamenpoint_characteristic_for_ase_id(uint8_t ase_id){
     uint8_t i;
@@ -409,6 +411,22 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
+                case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    for (i=0;i<MAX_NUM_CIS;i++){
+                        con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+                        if (cis_con_handles[i] == con_handle){
+                            MESSAGE("HCI Disconnect for cis_con_handle 0x%04x, with index %u", cis_con_handle, i);
+                            cis_con_handles[i] = HCI_CON_HANDLE_INVALID;
+                        }
+                    }
+                    if (ascs_server_current_cis_con_handle == con_handle){
+                        // disconnect was for a CIS con handle
+                        MESSAGE("HCI Disconnect for main cis_con_handle 0x%04x-> DISABLE ase %u", con_handle, ascs_server_current_ase_id);
+                        ascs_server_current_cis_con_handle = HCI_CON_HANDLE_INVALID;
+                        audio_stream_control_service_server_streamendpoint_disable(ascs_server_current_client_con_handle,
+                                                                                   ascs_server_current_ase_id);
+                    }
+                    break;
                 case HCI_EVENT_CIS_CAN_SEND_NOW:
                     cis_con_handle = hci_event_cis_can_send_now_get_cis_con_handle(packet);
                     for (i = 0; i < cig.num_cis; i++) {
@@ -449,6 +467,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                                 btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_CIS_CREATE, 0, 0, NULL);
                             } else {
                                 // TODO: lookup ASE by { ACL Handle, CIG ID, CIS ID, Role == SINK }
+                                ascs_server_current_cis_con_handle = gap_subevent_cis_created_get_cis_con_handle(packet);
                                 const ascs_streamendpoint_characteristic_t * ase = ascs_server_get_streamenpoint_characteristic_for_ase_id(ascs_server_current_ase_id);
                                 if ((ase != NULL) && (ase->role == LE_AUDIO_ROLE_SINK)){
                                     audio_stream_control_service_server_streamendpoint_receiver_start_ready(ascs_server_current_client_con_handle, ascs_server_current_ase_id);
@@ -1126,5 +1145,11 @@ void btp_le_audio_init(void){
     // ASCS Server
     audio_stream_control_service_server_init(ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS, ascs_streamendpoint_characteristics, ASCS_NUM_CLIENTS, ascs_clients);
     audio_stream_control_service_server_register_packet_handler(&ascs_server_packet_handler);
+
+    // CIS
+    uint8_t i;
+    for (i=0;i<MAX_NUM_CIS;i++){
+        cis_con_handles[i] = HCI_CON_HANDLE_INVALID;
+    }
 }
 
