@@ -671,8 +671,7 @@ static void ascs_server_control_point_operation_prepare_response_for_codec_confi
                     }
                     break;
                 case LE_AUDIO_CODEC_CONFIGURATION_TYPE_FRAME_DURATION:
-                    if ((specific_codec_config->frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_INVALID) ||
-                        (specific_codec_config->frame_duration_index >= LE_AUDIO_CODEC_FRAME_DURATION_INDEX_RFU)){
+                    if (specific_codec_config->frame_duration_index >= LE_AUDIO_CODEC_FRAME_DURATION_INDEX_RFU){
                         log_debug("Frame Duration");
                         reject_reason = ASCS_REJECT_REASON_CODEC_SPECIFIC_CONFIGURATION;
                         break;
