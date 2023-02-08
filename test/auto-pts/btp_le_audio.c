@@ -252,6 +252,7 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 // ASCS Server Handler
 static uint8_t          ascs_server_current_ase_id = 0;
 static hci_con_handle_t ascs_server_current_client_con_handle = HCI_CON_HANDLE_INVALID;
+static btstack_timer_source_t  ascs_server_released_timer;
 
 static const ascs_streamendpoint_characteristic_t * ascs_server_get_streamenpoint_characteristic_for_ase_id(uint8_t ase_id){
     uint8_t i;
@@ -261,6 +262,11 @@ static const ascs_streamendpoint_characteristic_t * ascs_server_get_streamenpoin
         }
     }
     return NULL;
+}
+
+static void ascs_server_released_timer_handler(btstack_timer_source_t * ts){
+    UNUSED(ts);
+    audio_stream_control_service_server_streamendpoint_released(ascs_server_current_client_con_handle, ascs_server_current_ase_id, true);
 }
 
 static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -371,12 +377,16 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             audio_stream_control_service_server_streamendpoint_disable(con_handle, ascs_server_current_ase_id);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_server_release_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_server_release_get_con_handle(packet);
-            MESSAGE("ASCS: RELEASING ase_id %d -> RELEASED", ascs_server_current_ase_id);
-            audio_stream_control_service_server_streamendpoint_release(con_handle, ascs_server_current_ase_id);
+            ascs_server_current_ase_id            = gattservice_subevent_ascs_server_release_get_ase_id(packet);
+            ascs_server_current_client_con_handle = gattservice_subevent_ascs_server_release_get_con_handle(packet);
+            MESSAGE("ASCS: RELEASE ase_id %d", ascs_server_current_ase_id);
+            audio_stream_control_service_server_streamendpoint_release(ascs_server_current_client_con_handle, ascs_server_current_ase_id);
             // Client request: Release. Accept (enter Releasing State), and trigger Releasing
-            audio_stream_control_service_server_streamendpoint_released(con_handle, ascs_server_current_ase_id, true);
+            // TODO: find better approach
+            btstack_run_loop_remove_timer(&ascs_server_released_timer);
+            btstack_run_loop_set_timer_handler(&ascs_server_released_timer, &ascs_server_released_timer_handler);
+            btstack_run_loop_set_timer(&ascs_server_released_timer, 100);
+            btstack_run_loop_add_timer(&ascs_server_released_timer);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASED:
