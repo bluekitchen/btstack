@@ -17003,6 +17003,44 @@ static inline uint16_t gattservice_subevent_client_disconnected_get_cid(const ui
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_ascs_server_enable_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field ase_id from event GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE
+ * @param event packet
+ * @return ase_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ascs_server_enable_get_ase_id(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_ASCS_CLIENT_ENABLE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_ascs_client_enable_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field ase_id from event GATTSERVICE_SUBEVENT_ASCS_CLIENT_ENABLE
+ * @param event packet
+ * @return ase_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ascs_client_enable_get_ase_id(const uint8_t * event){
+    return event[5];
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid
