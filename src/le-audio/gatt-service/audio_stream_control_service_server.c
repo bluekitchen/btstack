@@ -983,12 +983,11 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                     ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_ENABLING);
                 }
                 ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-                
+
                 for (i = 0; i < connection->response_ases_num; i++){
                     ase_id = buffer[data_offset++];
-                    data_offset += le_audio_util_metadata_parse(&buffer[data_offset], buffer_size-data_offset, &metadata_config);
                     if (ascs_server_request_successfully_processed(connection, i)){
-                        ascs_server_emit_client_metadata_request(ascs_server_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &metadata_config);
+                        ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE);
                     }
                 }
                 break;
