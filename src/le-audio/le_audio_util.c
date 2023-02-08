@@ -495,8 +495,6 @@ uint16_t le_audio_get_frame_duration_us(le_audio_codec_frame_duration_index_t fr
 
 le_audio_codec_frame_duration_index_t le_audio_get_frame_duration_index(uint16_t frame_duration_us){
     switch (frame_duration_us){
-        case 0:
-            return LE_AUDIO_CODEC_FRAME_DURATION_INDEX_INVALID;
         case 7500:
             return LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US;
         case 10000:
@@ -535,7 +533,7 @@ uint32_t le_audio_get_sampling_frequency_hz(le_audio_codec_sampling_frequency_in
         case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_384000_HZ:
                 return 384000;
         default:
-            return 0;
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_INVALID;
     }
 }
 
