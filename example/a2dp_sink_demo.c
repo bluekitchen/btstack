@@ -96,6 +96,10 @@ static const char * device_addr_string = "5C:F3:70:60:7B:87"; // pts
 static bd_addr_t device_addr;
 #endif
 
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+static btstack_sample_rate_compensation_t sample_rate_compensation;
+#endif
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static uint8_t  sdp_avdtp_sink_service_buffer[150];
@@ -194,7 +198,7 @@ static a2dp_sink_demo_avrcp_connection_t a2dp_sink_demo_avrcp_connection;
  * - hci_packet_handler - handles legacy pairing, here by using fixed '0000' pin code.
  * - a2dp_sink_packet_handler - handles events on stream connection status (established, released), the media codec configuration, and, the status of the stream itself (opened, paused, stopped).
  * - handle_l2cap_media_data_packet - used to receive streaming data. If STORE_TO_WAV_FILE directive (check btstack_config.h) is used, the SBC decoder will be used to decode the SBC data into PCM frames. The resulting PCM frames are then processed in the SBC Decoder callback.
- * - avrcp_packet_handler - receives connect/disconnect event.
+ * - avrcp_packet_handler - receives AVRCP connect/disconnect event.
  * - avrcp_controller_packet_handler - receives answers for sent AVRCP commands.
  * - avrcp_target_packet_handler - receives AVRCP commands, and registered notifications.
  * - stdin_process - used to trigger AVRCP commands to the A2DP Source device, such are get now playing info, start, stop, volume control. Requires HAVE_BTSTACK_STDIN.
@@ -220,94 +224,101 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 static void stdin_process(char cmd);
 #endif
 
-static int a2dp_and_avrcp_setup(void){
+static int setup_demo(void){
 
+    // init protocols
     l2cap_init();
-
+    sdp_init();
 #ifdef ENABLE_BLE
     // Initialize LE Security Manager. Needed for cross-transport key derivation
     sm_init();
 #endif
 
-    // Initialize AVDTP Sink
+
+    // Init profiles
     a2dp_sink_init();
+    avrcp_init();
+    avrcp_controller_init();
+    avrcp_target_init();
+
+
+    // Configure A2DP Sink
     a2dp_sink_register_packet_handler(&a2dp_sink_packet_handler);
     a2dp_sink_register_media_handler(&handle_l2cap_media_data_packet);
-
-    // Create stream endpoint
     a2dp_sink_demo_stream_endpoint_t * stream_endpoint = &a2dp_sink_demo_stream_endpoint;
     avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_sink_create_stream_endpoint(AVDTP_AUDIO,
                                                                                        AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities),
                                                                                        stream_endpoint->media_sbc_codec_configuration, sizeof(stream_endpoint->media_sbc_codec_configuration));
-    if (!local_stream_endpoint){
-        printf("A2DP Sink: not enough memory to create local stream endpoint\n");
-        return 1;
-    }
-
-    // Store stream enpoint's SEP ID, as it is used by A2DP API to identify the stream endpoint
+    btstack_assert(local_stream_endpoint != NULL);
+    // - Store stream enpoint's SEP ID, as it is used by A2DP API to identify the stream endpoint
     stream_endpoint->a2dp_local_seid = avdtp_local_seid(local_stream_endpoint);
 
-    // Initialize AVRCP service
-    avrcp_init();
-    avrcp_register_packet_handler(&avrcp_packet_handler);
 
-    // Initialize AVRCP Controller
-    avrcp_controller_init();
+    // Configure AVRCP Controller + Target
+    avrcp_register_packet_handler(&avrcp_packet_handler);
     avrcp_controller_register_packet_handler(&avrcp_controller_packet_handler);
-    
-     // Initialize AVRCP Target
-    avrcp_target_init();
     avrcp_target_register_packet_handler(&avrcp_target_packet_handler);
     
-    // Initialize SDP 
-    sdp_init();
 
-    // Create A2DP Sink service record and register it with SDP
+    // Configure SDP
+
+    // - Create and register A2DP Sink service record
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, AVDTP_SINK_FEATURE_MASK_HEADPHONE, NULL, NULL);
+    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, sdp_create_service_record_handle(),
+                                AVDTP_SINK_FEATURE_MASK_HEADPHONE, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
 
-    // Create AVRCP Controller service record and register it with SDP. We send Category 1 commands to the media player, e.g. play/pause
+    // - Create AVRCP Controller service record and register it with SDP. We send Category 1 commands to the media player, e.g. play/pause
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
     uint16_t controller_supported_features = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
 #ifdef AVRCP_BROWSING_ENABLED
     controller_supported_features |= AVRCP_FEATURE_MASK_BROWSING;
 #endif
-    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10002, controller_supported_features, NULL, NULL);
+    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, sdp_create_service_record_handle(),
+                                       controller_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
-    
-    // Create AVRCP Target service record and register it with SDP. We receive Category 2 commands from the media player, e.g. volume up/down
+
+    // - Create and register A2DP Sink service record
+    //   -  We receive Category 2 commands from the media player, e.g. volume up/down
     memset(sdp_avrcp_target_service_buffer, 0, sizeof(sdp_avrcp_target_service_buffer));
     uint16_t target_supported_features = AVRCP_FEATURE_MASK_CATEGORY_MONITOR_OR_AMPLIFIER;
-    avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10003, target_supported_features, NULL, NULL);
+    avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer,
+                                   sdp_create_service_record_handle(), target_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_target_service_buffer);
 
-    // Create Device ID (PnP) service record and register it with SDP
+    // - Create and register Device ID (PnP) service record
     memset(device_id_sdp_service_buffer, 0, sizeof(device_id_sdp_service_buffer));
-    device_id_create_sdp_record(device_id_sdp_service_buffer, 0x10004, DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
+    device_id_create_sdp_record(device_id_sdp_service_buffer,
+                                sdp_create_service_record_handle(), DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
     sdp_register_service(device_id_sdp_service_buffer);
 
-    // Set local name with a template Bluetooth address, that will be automatically
-    // replaced with an actual address once it is available, i.e. when BTstack boots
-    // up and starts talking to a Bluetooth module.
+
+    // Configure GAP - discovery / connection
+
+    // - Set local name with a template Bluetooth address, that will be automatically
+    //   replaced with an actual address once it is available, i.e. when BTstack boots
+    //   up and starts talking to a Bluetooth module.
     gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");
 
-    // allot to show up in Bluetooth inquiry
+    // - Allow to show up in Bluetooth inquiry
     gap_discoverable_control(1);
 
-    // Service Class: Audio, Major Device Class: Audio, Minor: Loudspeaker
+    // - Set Class of Device - Service Class: Audio, Major Device Class: Audio, Minor: Loudspeaker
     gap_set_class_of_device(0x200414);
 
-    // allow for role switch in general and sniff mode
+    // - Allow for role switch in general and sniff mode
     gap_set_default_link_policy_settings( LM_LINK_POLICY_ENABLE_ROLE_SWITCH | LM_LINK_POLICY_ENABLE_SNIFF_MODE );
 
-    // allow for role switch on outgoing connections - this allows A2DP Source, e.g. smartphone, to become master when we re-connect to it
+    // - Allow for role switch on outgoing connections
+    //   - This allows A2DP Source, e.g. smartphone, to become master when we re-connect to it.
     gap_set_allow_role_switch(true);
+
 
     // Register for HCI events
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+    // Inform about audio playback / test options
 #ifdef HAVE_POSIX_FILE_IO
     if (!btstack_audio_sink_get_instance()){
         printf("No audio playback.\n");
@@ -321,9 +332,7 @@ static int a2dp_and_avrcp_setup(void){
     return 0;
 }
 /* LISTING_END */
-#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
-btstack_sample_rate_compensation_t sample_rate_compensation;
-#endif
+
 
 static void playback_handler(int16_t * buffer, uint16_t num_audio_frames){
 
@@ -1174,7 +1183,7 @@ int btstack_main(int argc, const char * argv[]){
     UNUSED(argc);
     (void)argv;
 
-    a2dp_and_avrcp_setup();
+    setup_demo();
 
 #ifdef HAVE_BTSTACK_STDIN
     // parse human-readable Bluetooth address
