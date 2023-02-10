@@ -67,10 +67,10 @@
 
 uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
-    2, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    2, BLUETOOTH_DATA_TYPE_FLAGS, 0x06,
     // Name
     9, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'D', 'f', 'u', '0', '0', '0', '0', '0',
-    // UUID DFU
+// UUID DFU
     3, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, 0x59, 0xfe,
     // Device name
     //8, BLUETOOTH_DATA_TYPE_LE_BLUETOOTH_DEVICE_ADDRESS, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
@@ -112,9 +112,13 @@ const uint8_t bootloader_profile_data[] =
 }; // total size 89 bytes 
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-
+#if defined(MCUBOOT_IMG_APPLICATION1)
+static uint8_t bootloader_name[8] = {'D', 'f', 'u', '0', '0', '0', '0', '1'};
+#elif defined(MCUBOOT_IMG_APPLICATION2)
+static uint8_t bootloader_name[8] = {'D', 'f', 'u', '0', '0', '0', '0', '2'};
+#else
 static uint8_t bootloader_name[8] = {'D', 'f', 'u', '0', '0', '0', '0', '0'};
-
+#endif
 static bd_addr_t le_public_addr = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xF0};
 
 static hci_con_handle_t con_handle;
@@ -245,6 +249,10 @@ static void nordic_dfu_evt_observer(nrf_dfu_evt_type_t evt, uint8_t *packet, uin
         case NRF_DFU_EVT_ENTER_BOOTLOADER_MODE:
             hci_power_control(HCI_POWER_OFF);
             att_server_init(bootloader_profile_data, NULL, NULL);
+            break;
+        case NRF_DFU_EVT_DFU_COMPLETED:
+            boot_set_pending(1);
+            hal_cpu_reset();
             break;
         default:
             break;

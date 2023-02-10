@@ -64,7 +64,7 @@ void nrf_dfu_softdevice_invalidate(void)
 
     if (SD_PRESENT && !NRF_DFU_IN_APP)
     {
-#if NRF_DFU_FLASH
+#if NRF_DFU_SETTING
         err_code = nrf_dfu_flash_store(SD_MAGIC_NUMBER_ABS_OFFSET_GET(MBR_SIZE), &all_zero, 4, NULL);
 #endif
         if (err_code != NRF_SUCCESS)
@@ -90,6 +90,8 @@ void nrf_dfu_softdevice_invalidate(void)
 
 uint32_t nrf_dfu_bank0_start_addr(void)
 {
+    return NRF_DFU_BANK0_START_ADDR;
+#if 0
     if (SD_PRESENT)
     {
         return ALIGN_TO_PAGE(SD_SIZE_GET(MBR_SIZE));
@@ -98,13 +100,17 @@ uint32_t nrf_dfu_bank0_start_addr(void)
     {
         return MBR_SIZE;
     }
+#endif
 }
 
 
 uint32_t nrf_dfu_bank1_start_addr(void)
 {
+    return NRF_DFU_BANK1_START_ADDR;
+#if 0
     uint32_t bank0_addr = nrf_dfu_bank0_start_addr();
     return ALIGN_TO_PAGE(bank0_addr + s_dfu_settings.bank_0.image_size);
+#endif
 }
 
 

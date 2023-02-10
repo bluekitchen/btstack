@@ -124,6 +124,9 @@ void Error_Handler(void);
 #define Audio_SDA_GPIO_Port GPIOB
 #define MEMS_INT2_Pin GPIO_PIN_1
 #define MEMS_INT2_GPIO_Port GPIOE
+
+//#define RCC_PLLSOURCE_WITH_HSE
+#define RCC_PLLSOURCE_WITH_HSI
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

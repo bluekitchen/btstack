@@ -52,7 +52,10 @@ extern "C" {
 void hal_cpu_disable_irqs(void);
 void hal_cpu_enable_irqs(void);
 void hal_cpu_enable_irqs_and_sleep(void);
-
+void hal_cpu_reset(void);
+void hal_cpu_deinit(void);
+void hal_cpu_remap_vecotr_table(uint32_t vector_table);
+uint8_t hal_cpu_is_msp_valid(uint32_t msp);
 #if defined __cplusplus
 }
 #endif

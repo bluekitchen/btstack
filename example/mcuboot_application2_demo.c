@@ -43,8 +43,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "btstack.h"
+#include "hal_cpu.h"
 
 #ifdef HAVE_BTSTACK_STDIN
+__attribute__((weak)) void hal_cpu_reset(void)
+{
+}
+
 static void show_usage(void) {
     printf("writ usage ---\n");
     printf("R: system reset!\n");
@@ -54,8 +59,7 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'R':
             printf("system reset!\r\n");
-            volatile uint32_t *SCB_AIRCR = (uint32_t *)0xE000ED0C; //0xE000ED0C:SCB->AIRCR
-            *SCB_AIRCR = 0x05FA0000|(uint32_t)0x04;
+            hal_cpu_reset();
             break;
         default:
             show_usage();

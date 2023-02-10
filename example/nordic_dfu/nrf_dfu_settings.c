@@ -331,7 +331,7 @@ static ret_code_t settings_write(void                   * p_dst,
 
     // Not setting the callback function because ERASE is required before STORE
     // Only report completion on successful STORE.
-#if NRF_DFU_FLASH
+#if NRF_DFU_SETTING
     err_code = nrf_dfu_flash_erase((uint32_t)p_dst, 1, NULL);
 #endif
     if (err_code != NRF_SUCCESS)
@@ -343,7 +343,7 @@ static ret_code_t settings_write(void                   * p_dst,
     ASSERT(p_dfu_settings_buffer != NULL);
     memcpy(p_dfu_settings_buffer, p_src, sizeof(nrf_dfu_settings_t));
 
-#if NRF_DFU_FLASH
+#if NRF_DFU_SETTING
     err_code = nrf_dfu_flash_store((uint32_t)p_dst,
                                    p_dfu_settings_buffer,
                                    sizeof(nrf_dfu_settings_t),

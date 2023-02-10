@@ -69,6 +69,9 @@
 #define NRF_DFU_PROTOCOL_REDUCED 1
 #endif
 
+#ifndef CEIL_DIV
+#define CEIL_DIV(A, B) (((A) + (B) - 1) / (B))
+#endif
 //ASSERT(DFU_SIGNED_COMMAND_SIZE <= INIT_COMMAND_MAX_SIZE);
 
 static uint32_t m_firmware_start_addr;          /**< Start address of the current firmware image. */
@@ -450,7 +453,7 @@ static void on_data_obj_create_request(nrf_dfu_request_t * p_req, nrf_dfu_respon
     s_dfu_settings.progress.firmware_image_offset = s_dfu_settings.progress.firmware_image_offset_last;
     s_dfu_settings.write_offset                   = s_dfu_settings.progress.firmware_image_offset_last;
 
-#ifdef NRF_DFU_FLASH_EN
+#if NRF_DFU_FLASH_EN
     /* Erase the page we're at. */
     if (nrf_dfu_flash_erase((m_firmware_start_addr + s_dfu_settings.progress.firmware_image_offset),
                             CEIL_DIV(p_req->create.object_size, CODE_PAGE_SIZE), NULL) != NRF_SUCCESS)
@@ -500,7 +503,7 @@ static void on_data_obj_write_request(nrf_dfu_request_t * p_req, nrf_dfu_respons
 
     ASSERT(p_req->callback.write);
 
-#ifdef NRF_DFU_FLASH_EN
+#if NRF_DFU_FLASH_EN
     ret_code_t ret =
         nrf_dfu_flash_store(write_addr, p_req->write.p_data, p_req->write.len, p_req->callback.write);
     if (ret != NRF_SUCCESS)
@@ -583,6 +586,9 @@ static void on_data_obj_execute_request_sched(void * p_evt, uint16_t event_lengt
         p_req->callback.response(&res, p_req->p_context);
 
         ret = nrf_dfu_settings_write_and_backup((nrf_dfu_flash_callback_t)on_dfu_complete);
+#if     NRF_DFU_DEBUG_EN
+        on_dfu_complete(NULL);
+#endif
         UNUSED_RETURN_VALUE(ret);
     }
     else
@@ -824,7 +830,7 @@ ret_code_t nrf_dfu_req_handler_init(nrf_dfu_observer_t observer)
     {
         return NRF_ERROR_INVALID_PARAM;
     }
-#ifdef NRF_DFU_FLASH_EN
+#if NRF_DFU_FLASH_EN
 #if defined(BLE_STACK_SUPPORT_REQD) || defined(ANT_STACK_SUPPORT_REQD)
     ret_val  = nrf_dfu_flash_init(true);
 #else

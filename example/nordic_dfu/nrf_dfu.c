@@ -61,6 +61,12 @@ uint32_t nrf_dfu_init(nrf_dfu_observer_t observer)
 
     m_user_observer(NRF_DFU_EVT_DFU_INITIALIZED, NULL, 0);
 
+    ret_val = nrf_dfu_settings_init(false);
+    if (ret_val != NRF_SUCCESS)
+    {
+        NRF_LOG_ERROR("nrf dfu setting init fail, ret: 0x%08x", ret_val);
+        return NRF_ERROR_INTERNAL;
+    }
     // Initializing transports
     ret_val = nrf_dfu_transports_init(observer, &m_dfu_tran);
     if (ret_val != NRF_SUCCESS)

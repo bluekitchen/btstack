@@ -207,7 +207,7 @@ C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/swap_scratch.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/tlv.c
 
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/mcuboot_main.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/board/stm32f407_mcuboot_port.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/boot_flash_port.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/base64_port.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_assert_port.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_heap_port.c
@@ -246,7 +246,7 @@ C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_req_handler.c
 C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_settings.c
 C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_utils.c
 C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/dfu-cc.pb.c
-#C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_flash.c
+C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_flash.c
 C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_validation.c
 C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_handling_error.c
 C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/crc32.c
@@ -443,12 +443,10 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # link script
 #LDSCRIPT = STM32F407VGTx_FLASH.ld
 
-ifeq (${mcuboot}, boot)
-LDSCRIPT = STM32F407VGTx_FLASH_bootloader.ld
-else ifeq (${mcuboot}, app1)
-LDSCRIPT = STM32F407VGTx_FLASH_application1.ld
+ifeq (${mcuboot}, app1)
+LDSCRIPT = STM32F407VGTx_FLASH_mcuboot.ld
 else ifeq (${mcuboot}, app2)
-LDSCRIPT = STM32F407VGTx_FLASH_application2.ld
+LDSCRIPT = STM32F407VGTx_FLASH_mcuboot.ld
 else
 LDSCRIPT = STM32F407VGTx_FLASH.ld
 endif
@@ -540,12 +538,15 @@ else #EXAMPLE_PLUS_ENABLE=n
 
 ifeq (${mcuboot}, boot)
 EXAMPLES += mcuboot_bootloader_demo
-endif
-ifeq (${mcuboot}, app1)
-EXAMPLES += mcuboot_application1_demo
-endif
-ifeq (${mcuboot}, app2)
-EXAMPLES += mcuboot_application2_demo
+else ifeq (${mcuboot}, app1)
+EXAMPLES += nordic_dfu_demo
+GATT_FILES += nordic_dfu_demo.gatt
+else ifeq (${mcuboot}, app2)
+EXAMPLES += nordic_dfu_demo
+GATT_FILES += nordic_dfu_demo.gatt
+else
+EXAMPLES += nordic_dfu_demo
+GATT_FILES += nordic_dfu_demo.gatt
 endif
 endif
 
@@ -598,13 +599,12 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 $(BUILD_DIR)/%.jdebug: ozone.jdebug | $(BUILD_DIR)
 	sed -e "s|EXAMPLE|$(basename $(notdir $@))|" $<  > $@
 
-#$(BUILD_DIR)/mcuboot_bootloader_demo.bin: $(BUILD_DIR)/mcuboot_bootloader_demo.elf
-#	$(CP) --pad-to=0x2000 --gap-fill=0xFF -O binary $< $@
-#	$(SZ) $<
-
-# Makefile conjunction bootloader with application
-#$(BUILD_DIR)/mcuboot.bin: $(BUILD_DIR)/mcuboot_bootloader_demo.bin $(BUILD_DIR)/mcuboot_application_demo.bin
-#	cat $^ > $@
+ifeq (${mcuboot}, app1)
+	python3 ${BTSTACK_ROOT}/3rd-party/mcuboot/scripts/imgtool.py sign --header-size 0x200 --align 4 --slot-size 0x20000 --version 1.0.0 --pad-header $(BUILD_DIR)/${EXAMPLES}.bin $(BUILD_DIR)/mcuboot_primary_slot.bin
+else ifeq (${mcuboot}, app2)
+	python3 ${BTSTACK_ROOT}/3rd-party/mcuboot/scripts/imgtool.py sign --header-size 0x200 --align 4 --slot-size 0x20000 --version 1.0.0 --pad-header $(BUILD_DIR)/${EXAMPLES}.bin $(BUILD_DIR)/mcuboot_secondary_slot.bin
+	./nrfutil-linux pkg generate --hw-version 52 --sd-req 0x0103 --application $(BUILD_DIR)/mcuboot_secondary_slot.bin --application-version 1 $(BUILD_DIR)/nrf_dfu_mcuboot.zip
+endif
 
 $(BUILD_DIR):
 	mkdir $@		
@@ -622,6 +622,9 @@ remove:
 	rm $(BUILD_DIR)/*.o
 	rm $(BUILD_DIR)/*.lst
 	rm $(BUILD_DIR)/*.d
+	rm $(BUILD_DIR)/*.elf
+	rm $(BUILD_DIR)/*.jdebug
+	rm $(BUILD_DIR)/*.map
 
 #######################################
 # dependencies

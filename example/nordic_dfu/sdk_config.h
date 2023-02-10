@@ -49,13 +49,19 @@
 // <h> nRF_ANT 
 
 #define NRF_DFU_VALIDATION_EN   1
-#define NRF_DFU_FLASH           0
+#define NRF_DFU_SETTING         0
+#define NRF_DFU_FLASH           1
+#define NRF_DFU_FLASH_EN        1
+#define NRF_DFU_DEBUG_EN        1
 
+#define NRF_DFU_BANK0_START_ADDR    0x08020000
+#define NRF_DFU_BANK1_START_ADDR    0x08040000
+#define NRF_DFU_BANK0_SIZE          (128 * 1024)
+#define NRF_DFU_BANK1_SIZE          (128 * 1024)
+#define NRF_DFU_FLASH_SECTOR_SIZE   (128 * 1024)
 
 #define NRF52_SERIES
-
 #define NRF_DFU_SETTINGS_VERSION    0x00000001
-
 #define __WEAK __attribute__((weak))
 
 #define UNUSED_VARIABLE(X)  ((void)(X))

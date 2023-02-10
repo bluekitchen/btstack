@@ -2,6 +2,7 @@
 
 // include STM32 first to avoid warning about redefinition of UNUSED
 #include "stm32f4xx_hal.h"
+#include "core_cm4.h"
 #include "main.h"
 
 #include "port.h"
@@ -45,7 +46,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static const hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    1152000,
+    0,
     1,
     NULL
 };
@@ -70,6 +71,24 @@ void hal_cpu_enable_irqs(void){
 void hal_cpu_enable_irqs_and_sleep(void){
 	__enable_irq();
 	__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+}
+
+void hal_cpu_reset(void){
+    NVIC_SystemReset();
+}
+
+/*close all peripherals that opend at bootup*/
+void hal_cpu_deinit(void){
+    HAL_DeInit();
+    HAL_RCC_DeInit();
+}
+
+void hal_cpu_remap_vecotr_table(uint32_t vector_table){
+    SCB->VTOR = (vector_table & 0xFFFFFFF8);
+}
+
+uint8_t hal_cpu_is_msp_valid(uint32_t msp){
+    return ((msp & 0x2FFE0000 ) == 0x20020000);
 }
 
 #ifndef ENABLE_SEGGER_RTT

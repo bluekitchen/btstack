@@ -53,6 +53,6 @@ int main_boot( void )
 	}
 	boot_port_startup( &rsp );
 
-	BOOT_LOG_ERR("Returned after image startup. Should never should get here.");
+	BOOT_LOG_ERR("Returned after image startup. Should never get here.");
 	while (1);
 }

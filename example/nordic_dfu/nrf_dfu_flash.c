@@ -41,76 +41,112 @@
 #include "nrf_dfu_flash.h"
 #include "nrf_dfu_types.h"
 
-#include "nrf_fstorage.h"
-#include "nrf_fstorage_sd.h"
-#include "nrf_fstorage_nvmc.h"
-
 #include "nrf_log.h"
+#include "stm32f4xx_hal.h"
 
+/* Base address of the Flash sectors */
+#define ADDR_FLASH_SECTOR_0     ((uint32_t)0x08000000) /* Base address of Sector 0, 16 Kbytes   */
+#define ADDR_FLASH_SECTOR_1     ((uint32_t)0x08004000) /* Base address of Sector 1, 16 Kbytes   */
+#define ADDR_FLASH_SECTOR_2     ((uint32_t)0x08008000) /* Base address of Sector 2, 16 Kbytes   */
+#define ADDR_FLASH_SECTOR_3     ((uint32_t)0x0800C000) /* Base address of Sector 3, 16 Kbytes   */
+#define ADDR_FLASH_SECTOR_4     ((uint32_t)0x08010000) /* Base address of Sector 4, 64 Kbytes   */
+#define ADDR_FLASH_SECTOR_5     ((uint32_t)0x08020000) /* Base address of Sector 5, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_6     ((uint32_t)0x08040000) /* Base address of Sector 6, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_7     ((uint32_t)0x08060000) /* Base address of Sector 7, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_8     ((uint32_t)0x08080000) /* Base address of Sector 8, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_9     ((uint32_t)0x080A0000) /* Base address of Sector 9, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_10    ((uint32_t)0x080C0000) /* Base address of Sector 10, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_11    ((uint32_t)0x080E0000) /* Base address of Sector 11, 128 Kbytes  */
+#define ADDR_FLASH_SECTOR_END   (ADDR_FLASH_SECTOR_11 + (128 * 1024))
 
+#define NRF_DFU_FLASH_VALIDATION    1
 
-void dfu_fstorage_evt_handler(nrf_fstorage_evt_t * p_evt);
-
-
-NRF_FSTORAGE_DEF(nrf_fstorage_t m_fs) =
+static uint32_t hal_get_sector_from_address(uint32_t addr)
 {
-    .evt_handler = dfu_fstorage_evt_handler,
-    .start_addr  = MBR_SIZE,
-    .end_addr    = BOOTLOADER_SETTINGS_ADDRESS + BOOTLOADER_SETTINGS_PAGE_SIZE
-};
+    uint32_t sector = 0xFF;
 
-static uint32_t m_flash_operations_pending;
-
-void dfu_fstorage_evt_handler(nrf_fstorage_evt_t * p_evt)
-{
-    if (NRF_LOG_ENABLED && (m_flash_operations_pending > 0))
-    {
-        m_flash_operations_pending--;
+    if ((addr < ADDR_FLASH_SECTOR_1) && (addr >= ADDR_FLASH_SECTOR_0)) {
+        sector = FLASH_SECTOR_0;
+    } else if((addr < ADDR_FLASH_SECTOR_2) && (addr >= ADDR_FLASH_SECTOR_1)) {
+        sector = FLASH_SECTOR_1;
+    } else if ((addr < ADDR_FLASH_SECTOR_3) && (addr >= ADDR_FLASH_SECTOR_2)) {
+        sector = FLASH_SECTOR_2;
+    } else if ((addr < ADDR_FLASH_SECTOR_4) && (addr >= ADDR_FLASH_SECTOR_3)) {
+        sector = FLASH_SECTOR_3;
+    } else if ((addr < ADDR_FLASH_SECTOR_5) && (addr >= ADDR_FLASH_SECTOR_4)) {
+        sector = FLASH_SECTOR_4;
+    } else if ((addr < ADDR_FLASH_SECTOR_6) && (addr >= ADDR_FLASH_SECTOR_5)) {
+        sector = FLASH_SECTOR_5;
+    } else if ((addr < ADDR_FLASH_SECTOR_7) && (addr >= ADDR_FLASH_SECTOR_6)) {
+        sector = FLASH_SECTOR_6;
+    } else if ((addr < ADDR_FLASH_SECTOR_8) && (addr >= ADDR_FLASH_SECTOR_7)) { 
+        sector = FLASH_SECTOR_7;
+    } else if ((addr < ADDR_FLASH_SECTOR_9) && (addr >= ADDR_FLASH_SECTOR_8)) { 
+        sector = FLASH_SECTOR_8;
+    } else if ((addr < ADDR_FLASH_SECTOR_10) && (addr >= ADDR_FLASH_SECTOR_9)) { 
+        sector = FLASH_SECTOR_9;
+    } else if ((addr < ADDR_FLASH_SECTOR_11) && (addr >= ADDR_FLASH_SECTOR_10)) { 
+        sector = FLASH_SECTOR_10;
+    } else if ((addr < ADDR_FLASH_SECTOR_END) && (addr >= ADDR_FLASH_SECTOR_11)) {
+        sector = FLASH_SECTOR_11;
     }
-
-    if (p_evt->result == NRF_SUCCESS)
-    {
-        NRF_LOG_DEBUG("Flash %s success: addr=%p, pending %d",
-                      (p_evt->id == NRF_FSTORAGE_EVT_WRITE_RESULT) ? "write" : "erase",
-                      p_evt->addr, m_flash_operations_pending);
-    }
-    else
-    {
-        NRF_LOG_DEBUG("Flash %s failed (0x%x): addr=%p, len=0x%x bytes, pending %d",
-                      (p_evt->id == NRF_FSTORAGE_EVT_WRITE_RESULT) ? "write" : "erase",
-                      p_evt->result, p_evt->addr, p_evt->len, m_flash_operations_pending);
-    }
-
-    if (p_evt->p_param)
-    {
-        //lint -save -e611 (Suspicious cast)
-        ((nrf_dfu_flash_callback_t)(p_evt->p_param))((void*)p_evt->p_src);
-        //lint -restore
-    }
+    return sector;
 }
 
+static uint32_t hal_flash_write(void *src, uint32_t addr, uint32_t len)
+{
+	unsigned int i;
+	HAL_FLASH_Unlock();
+	for (i = 0;i < len;i+=1){
+		HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, addr + i, *(uint8_t *)(src+i));
+	}
+
+	HAL_FLASH_Lock();
+#if NRF_DFU_FLASH_VALIDATION
+    if (memcmp((void *)addr, src, len) != 0) {
+        NRF_LOG_ERROR("Program Failed");
+        return NRF_ERROR_INTERNAL;
+    }
+#endif
+    return 0;
+}
+
+static uint32_t hal_flash_erase(uint32_t addr, uint32_t len)
+{
+    uint32_t sector;
+    FLASH_EraseInitTypeDef eraseInit;
+
+    sector = hal_get_sector_from_address(addr);
+    if (sector > FLASH_SECTOR_11) {
+        NRF_LOG_ERROR("get sector fail by invalid addr 0x%x ", addr);
+        return NRF_ERROR_INTERNAL;
+    }
+	eraseInit.TypeErase = FLASH_TYPEERASE_SECTORS;
+	eraseInit.Sector = sector;
+	eraseInit.NbSectors = 1;
+	eraseInit.VoltageRange = FLASH_VOLTAGE_RANGE_1;	// safe value
+	uint32_t sectorError;
+	HAL_FLASH_Unlock();
+	HAL_FLASHEx_Erase(&eraseInit, &sectorError);
+	HAL_FLASH_Lock();
+
+#if NRF_DFU_FLASH_VALIDATION
+    for (size_t i = 0; i < len; i++) {
+        uint8_t *val = (void *)(addr + i);
+        if (*val != 0xff) {
+            NRF_LOG_ERROR("Erase at 0x%x Failed", (int)val);
+            return NRF_ERROR_INTERNAL;
+        }
+    }
+#endif
+    return 0;
+}
 
 ret_code_t nrf_dfu_flash_init(bool sd_irq_initialized)
 {
-    nrf_fstorage_api_t * p_api_impl;
-
-    /* Setup the desired API implementation. */
-#if defined(BLE_STACK_SUPPORT_REQD) || defined(ANT_STACK_SUPPORT_REQD)
-    if (sd_irq_initialized)
-    {
-        NRF_LOG_DEBUG("Initializing nrf_fstorage_sd backend.");
-        p_api_impl = &nrf_fstorage_sd;
-    }
-    else
-#endif
-    {
-        NRF_LOG_DEBUG("Initializing nrf_fstorage_nvmc backend.");
-        p_api_impl = &nrf_fstorage_nvmc;
-    }
-
-    return nrf_fstorage_init(&m_fs, p_api_impl, NULL);
+    NRF_LOG_DEBUG("nrf_dfu_flash_init, nothing to do!");
+    return NRF_SUCCESS;
 }
-
 
 ret_code_t nrf_dfu_flash_store(uint32_t                   dest,
                                void               const * p_src,
@@ -119,21 +155,12 @@ ret_code_t nrf_dfu_flash_store(uint32_t                   dest,
 {
     ret_code_t rc;
 
-    NRF_LOG_DEBUG("nrf_fstorage_write(addr=%p, src=%p, len=%d bytes), queue usage: %d",
-                  dest, p_src, len, m_flash_operations_pending);
+    NRF_LOG_DEBUG("nrf_fstorage_write(addr=%p, src=%p, len=%d bytes)",
+                  dest, p_src, len);
 
     //lint -save -e611 (Suspicious cast)
-    rc = nrf_fstorage_write(&m_fs, dest, p_src, len, (void *)callback);
+    rc = hal_flash_write(p_src, dest, len);
     //lint -restore
-
-    if ((NRF_LOG_ENABLED) && (rc == NRF_SUCCESS))
-    {
-        m_flash_operations_pending++;
-    }
-    else
-    {
-        NRF_LOG_WARNING("nrf_fstorage_write() failed with error 0x%x.", rc);
-    }
 
     return rc;
 }
@@ -144,22 +171,31 @@ ret_code_t nrf_dfu_flash_erase(uint32_t                 page_addr,
                                nrf_dfu_flash_callback_t callback)
 {
     ret_code_t rc;
+    uint32_t len = num_pages * CODE_PAGE_SIZE;
+    NRF_LOG_DEBUG("nrf_fstorage_erase(addr=0x%p, len=%d pages)", page_addr, num_pages);
 
-    NRF_LOG_DEBUG("nrf_fstorage_erase(addr=0x%p, len=%d pages), queue usage: %d",
-                  page_addr, num_pages, m_flash_operations_pending);
+    if ((page_addr + len) > (NRF_DFU_BANK1_START_ADDR + NRF_DFU_BANK1_SIZE)) {
+        NRF_LOG_ERROR("out of boundary, start_addr:0x%x, len:0x%x", page_addr, len);
+        return NRF_ERROR_INVALID_PARAM;
+    }
 
+    if (page_addr % NRF_DFU_FLASH_SECTOR_SIZE) {
+        NRF_LOG_WARNING("start addr not alignd, start_addr:0x%x", page_addr);
+        return NRF_SUCCESS;
+    }
+    if (len < NRF_DFU_FLASH_SECTOR_SIZE) {
+        len = NRF_DFU_FLASH_SECTOR_SIZE;
+    }
     //lint -save -e611 (Suspicious cast)
-    rc = nrf_fstorage_erase(&m_fs, page_addr, num_pages, (void *)callback);
+    for (uint32_t i = 0; i < (len / NRF_DFU_FLASH_SECTOR_SIZE); i++) {
+        rc = hal_flash_erase(page_addr + i * NRF_DFU_FLASH_SECTOR_SIZE, NRF_DFU_FLASH_SECTOR_SIZE);
+        if (rc != 0) {
+            NRF_LOG_ERROR("Erase fail at addr: 0x%x ", page_addr + NRF_DFU_FLASH_SECTOR_SIZE * i);
+            return NRF_ERROR_INTERNAL;
+        }
+    }
     //lint -restore
-
-    if ((NRF_LOG_ENABLED) && (rc == NRF_SUCCESS))
-    {
-        m_flash_operations_pending++;
-    }
-    else
-    {
-        NRF_LOG_WARNING("nrf_fstorage_erase() failed with error 0x%x.", rc);
-    }
 
     return rc;
 }
+
