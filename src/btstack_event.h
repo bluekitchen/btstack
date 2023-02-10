@@ -16918,44 +16918,6 @@ static inline uint16_t gattservice_subevent_mics_client_disconnected_get_mics_ci
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_mcs_client_connected_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED
- * @param event packet
- * @return mcs_cid
- * @note: btstack_type 2
- */
-static inline uint16_t gattservice_subevent_mcs_client_connected_get_mcs_cid(const uint8_t * event){
-    return little_endian_read_16(event, 5);
-}
-/**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_mcs_client_connected_get_status(const uint8_t * event){
-    return event[7];
-}
-
-/**
- * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED
- * @param event packet
- * @return mcs_cid
- * @note: btstack_type 2
- */
-static inline uint16_t gattservice_subevent_mcs_client_disconnected_get_mcs_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-
-/**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED
  * @param event packet
  * @return con_handle
@@ -17000,6 +16962,524 @@ static inline hci_con_handle_t gattservice_subevent_client_disconnected_get_con_
  */
 static inline uint16_t gattservice_subevent_client_disconnected_get_cid(const uint8_t * event){
     return little_endian_read_16(event, 5);
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_mcs_client_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_connected_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_client_connected_get_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_disconnected_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_media_player_name_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_mcs_client_media_player_name_get_value_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_mcs_client_media_player_name_get_value(const uint8_t * event){
+    return &event[6];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_media_player_icon_object_id_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_mcs_client_media_player_icon_object_id_get_value_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_mcs_client_media_player_icon_object_id_get_value(const uint8_t * event){
+    return &event[6];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_URL
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_media_player_icon_object_url_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_URL
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_mcs_client_media_player_icon_object_url_get_value_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_URL
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_mcs_client_media_player_icon_object_url_get_value(const uint8_t * event){
+    return &event[6];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_CHANGED
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_track_changed_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_track_title_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_mcs_client_track_title_get_value_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_mcs_client_track_title_get_value(const uint8_t * event){
+    return &event[6];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_DURATION
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_track_duration_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field duration_10ms from event GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_DURATION
+ * @param event packet
+ * @return duration_10ms
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_mcs_client_track_duration_get_duration_10ms(const uint8_t * event){
+    return little_endian_read_32(event, 5);
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_track_position_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field position_10ms from event GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION
+ * @param event packet
+ * @return position_10ms
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_mcs_client_track_position_get_position_10ms(const uint8_t * event){
+    return little_endian_read_32(event, 5);
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MSC_CLIENT_TRACK_SPEED
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_msc_client_track_speed_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field speed from event GATTSERVICE_SUBEVENT_MSC_CLIENT_TRACK_SPEED
+ * @param event packet
+ * @return speed
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_msc_client_track_speed_get_speed(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MSC_CLIENT_SEEKING_SPEED
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_msc_client_seeking_speed_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field multiplier from event GATTSERVICE_SUBEVENT_MSC_CLIENT_SEEKING_SPEED
+ * @param event packet
+ * @return multiplier
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_msc_client_seeking_speed_get_multiplier(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_current_track_segments_object_id_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_mcs_client_current_track_segments_object_id_get_value_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_mcs_client_current_track_segments_object_id_get_value(const uint8_t * event){
+    return &event[6];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_current_track_object_id_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_mcs_client_current_track_object_id_get_value_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_mcs_client_current_track_object_id_get_value(const uint8_t * event){
+    return &event[6];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_next_track_object_id_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_mcs_client_next_track_object_id_get_value_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_mcs_client_next_track_object_id_get_value(const uint8_t * event){
+    return &event[6];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_parent_group_object_id_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_mcs_client_parent_group_object_id_get_value_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_mcs_client_parent_group_object_id_get_value(const uint8_t * event){
+    return &event[6];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_playing_order_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field order from event GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER
+ * @param event packet
+ * @return order
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_client_playing_order_get_order(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_playing_order_supported_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field bitmap from event GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED
+ * @param event packet
+ * @return bitmap
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_playing_order_supported_get_bitmap(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_STATE
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_media_state_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_STATE
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_client_media_state_get_state(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_control_point_opcodes_supported_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field bitmap from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED
+ * @param event packet
+ * @return bitmap
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_mcs_client_control_point_opcodes_supported_get_bitmap(const uint8_t * event){
+    return little_endian_read_32(event, 5);
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_NOTIFICATION
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_control_point_notification_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field requested_opcode from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_NOTIFICATION
+ * @param event packet
+ * @return requested_opcode
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_client_control_point_notification_get_requested_opcode(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field result_code from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_NOTIFICATION
+ * @param event packet
+ * @return result_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_client_control_point_notification_get_result_code(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_search_control_point_notification_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field requested_opcode from event GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION
+ * @param event packet
+ * @return requested_opcode
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_client_search_control_point_notification_get_requested_opcode(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_search_result_object_id_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_mcs_client_search_result_object_id_get_value_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_mcs_client_search_result_object_id_get_value(const uint8_t * event){
+    return &event[6];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_content_control_id_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field ccid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID
+ * @param event packet
+ * @return ccid
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_client_content_control_id_get_ccid(const uint8_t * event){
+    return event[5];
 }
 
 /**

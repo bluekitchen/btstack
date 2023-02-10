@@ -5124,26 +5124,10 @@ typedef uint8_t sm_key_t[16];
  * @format 1H21
  * @param subevent_code
  * @param con_handle
- * @param mcs_cid
- * @param status
-*/
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED                               0x7Bu
-
-/**
- * @format 12
- * @param subevent_code
- * @param mcs_cid
-*/
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED                            0x7Cu
-
-/**
- * @format 1H21
- * @param subevent_code
- * @param con_handle
  * @param cid
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_CLIENT_CONNECTED                               0x7Du
+#define GATTSERVICE_SUBEVENT_CLIENT_CONNECTED                                  0x7Bu
 
 /**
  * @format 1H2
@@ -5151,7 +5135,202 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param cid
 */
-#define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                            0x7Eu
+#define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                               0x7Cu
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param con_handle
+ * @param mcs_cid
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED                               0x7Du
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param mcs_cid
+*/
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED                            0x7Eu
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param mcs_cid
+ * @param value_len        // Capped at ATT_MTU - 3
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME                           0x7Fu
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param mcs_cid
+ * @param value_len         // If the media player has an icon, the length of the characteristic is six octets, otherwise 0
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID                  0x80u
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param mcs_cid
+ * @param value_len
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_URL                 0x81u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param mcs_cid
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_CHANGED                                 0x82u
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param mcs_cid
+ * @param value_len
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE                                   0x83u
+
+/**
+ * @format 124
+ * @param subevent_code
+ * @param mcs_cid
+ * @param duration_10ms     // The length of the current track in 0.01-second resolution as a 32-bit signed integer.
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_DURATION                                0x84u
+
+/**
+ * @format 124
+ * @param subevent_code
+ * @param mcs_cid
+ * @param position_10ms     //  The offset from the start of the track to the current playing position in 0.01-second resolution as a 32-bit signed integer.
+ *                          //  If the media player has no current track, the Track Position characteristic value shall be 0xFFFFFFFF.
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION                                0x85u
+
+/**
+ * @format 122
+ * @param subevent_code
+ * @param mcs_cid
+ * @param speed
+ */
+#define GATTSERVICE_SUBEVENT_MSC_CLIENT_TRACK_SPEED                                   0x86u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param mcs_cid
+ * @param multiplier
+ */
+#define GATTSERVICE_SUBEVENT_MSC_CLIENT_SEEKING_SPEED                                 0x87u
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param mcs_cid
+ * @param value_len             // If the media player has a current track, the length of the characteristic is six octets, otherwise 0
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID              0x88u
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param mcs_cid
+ * @param value_len             // If the media player has a current track, the length of the characteristic is six octets, otherwise 0
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID                       0x89u
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param mcs_cid
+ * @param value_len             // If the media player has a next track, the length of the characteristic is six octets, otherwise 0
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID                       0x8Au
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param mcs_cid
+ * @param value_len             // If the media player has a parent group, the length of the characteristic is six octets, otherwise 0
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID                       0x8Bu
+
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param mcs_cid
+ * @param order
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER                                 0x8Cu
+
+/**
+ * @format 122
+ * @param subevent_code
+ * @param mcs_cid
+ * @param bitmap
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED                        0x8Du
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param mcs_cid
+ * @param state
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_STATE                                    0x8Eu
+
+/**
+ * @format 124
+ * @param subevent_code
+ * @param mcs_cid
+ * @param bitmap
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED                0x8Fu
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param mcs_cid
+ * @param requested_opcode
+ * @param result_code
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_NOTIFICATION                     0x90u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param mcs_cid
+ * @param requested_opcode
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION               0x91u
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param mcs_cid
+ * @param value_len             //  If there are search results, the length of the characteristic is six octets
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID                         0x92u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param mcs_cid
+ * @param ccid
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID                              0x93u
 
 /**
  * @format 1H1
