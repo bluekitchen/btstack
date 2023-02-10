@@ -58,23 +58,20 @@ extern "C" {
  * @text The Media Control Service Client 
  */
 typedef enum {
-    MEDIA_CONTROL_SERVICE_CLIENT_STATE_IDLE,
-    MEDIA_CONTROL_SERVICE_CLIENT_STATE_CONNECTED,
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE,
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT,
 } media_service_client_state_t;
 
 typedef struct {
     gatt_service_client_connection_helper_t basic_connection;
     
-    media_service_client_state_t  client_state;
-    btstack_packet_handler_t client_handler;
- 
-    // characteristic
-    uint16_t properties;
-    uint16_t mute_value_handle;
+    media_service_client_state_t state;
+    // btstack_packet_handler_t client_handler;
+    // gatt_client_notification_t notification_listener;
 
-    bool need_polling;
-    uint8_t  requested_mute;
-    gatt_client_notification_t notification_listener;
+    // Used for read characteristic queries
+    uint8_t characteristic_index;
+
 } mcs_client_connection_t;
 
 /* API_START */
@@ -106,6 +103,16 @@ uint8_t media_control_service_client_connect(
     hci_con_handle_t con_handle, mcs_client_connection_t * connection, 
     gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
     btstack_packet_handler_t packet_handler, uint16_t * mcs_cid);
+
+/**
+ * @brief Get the name of the media player application that is providing media tracks. 
+ * The value is reported via the event.  
+ * If the name size is greater than ATT_MTU-3, then the first ATT_MTU-3 octets shall be returned. 
+ *
+ * @param mcs_cid
+ * @return status
+ */
+uint8_t media_control_service_client_get_media_player_name(uint16_t mcs_cid);
 
 /**
  * @brief Disconnect.
