@@ -71,7 +71,7 @@ static void gatt_service_client_finalize_connection(gatt_service_client_helper_t
     btstack_linked_list_remove(&client->connections, (btstack_linked_item_t*) connection);
 }
 
-static gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_con_handle(gatt_service_client_helper_t * client, hci_con_handle_t con_handle){
+gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_con_handle(const gatt_service_client_helper_t * client, hci_con_handle_t con_handle){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -92,6 +92,10 @@ gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for
         return connection;
     }
     return NULL;
+}
+
+uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_client_helper_t * client, uint8_t index){
+    return client->characteristics_desc16[index].uuid16;
 }
 
 static void gatt_service_client_emit_connected(btstack_packet_handler_t event_callback, hci_con_handle_t con_handle, uint16_t cid, uint8_t status){
@@ -470,7 +474,13 @@ void gatt_service_client_init(
     hci_add_event_handler(&client->hci_event_callback_registration);
 }
 
-// static btstack_packet_handler_t gatt_service_client_callback;
+btstack_packet_handler_t gatt_service_client_get_event_callback_for_connection(const gatt_service_client_connection_helper_t * connection){
+    return connection->event_callback;
+}
+
+uint16_t gatt_service_client_get_cid_for_connection(const gatt_service_client_connection_helper_t * connection){
+    return connection->cid;
+}
 
 void gatt_service_client_register_packet_handler(gatt_service_client_helper_t * client, btstack_packet_handler_t packet_hander){
     btstack_assert(client != NULL);

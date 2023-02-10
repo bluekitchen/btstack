@@ -156,8 +156,12 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_helper_t 
  * @param packet_handler
  */
 void gatt_service_client_register_packet_handler(gatt_service_client_helper_t * client, btstack_packet_handler_t packet_handler);
-gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_cid(
-        const gatt_service_client_helper_t *client, uint16_t connection_cid);
+
+gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_cid(const gatt_service_client_helper_t * client, uint16_t connection_cid);
+gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_con_handle(const gatt_service_client_helper_t * client, hci_con_handle_t con_handle);
+uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_client_helper_t * client, uint8_t index);
+btstack_packet_handler_t gatt_service_client_get_event_callback_for_connection(const gatt_service_client_connection_helper_t * connection);
+uint16_t gatt_service_client_get_cid_for_connection(const gatt_service_client_connection_helper_t * connection);
 
 uint8_t gatt_service_client_connect(
         hci_con_handle_t con_handle,
