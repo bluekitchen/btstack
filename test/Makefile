@@ -86,6 +86,8 @@ clean:
 	for dir in $(SUBDIRS); do \
 	  $(MAKE) -C $$dir clean; \
 	done
+	rm -f *.info
+	rm -rf coverage coverage-unit-ble
 
 subdirs-coverage:
 	echo Run all tests for coverage
