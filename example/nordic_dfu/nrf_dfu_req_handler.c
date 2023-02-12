@@ -586,7 +586,7 @@ static void on_data_obj_execute_request_sched(void * p_evt, uint16_t event_lengt
         p_req->callback.response(&res, p_req->p_context);
 
         ret = nrf_dfu_settings_write_and_backup((nrf_dfu_flash_callback_t)on_dfu_complete);
-#if     NRF_DFU_DEBUG_EN
+#if     !NRF_DFU_SETTING
         on_dfu_complete(NULL);
 #endif
         UNUSED_RETURN_VALUE(ret);

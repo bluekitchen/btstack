@@ -248,9 +248,8 @@ int flash_area_erase(const struct flash_area *fa, uint32_t off, uint32_t len)
             return -1;
         }
         sector_size = BOOTLOADER_SECTOR_SIZE;
-    } else if (fa->fa_id == FLASH_AREA_IMAGE_PRIMARY(0) 
-        || fa->fa_id == FLASH_AREA_IMAGE_SECONDARY(0)
-        || fa->fa_id == FLASH_AREA_IMAGE_SCRATCH) {
+    } else if (fa->fa_id == FLASH_AREA_IMAGE_PRIMARY(0)
+        || fa->fa_id == FLASH_AREA_IMAGE_SECONDARY(0)) {
         if ((len % APPLICATION_SECTOR_SIZE) != 0 || (off % APPLICATION_SECTOR_SIZE) != 0) {
             MCUBOOT_LOG_ERR("Not aligned on sector Offset: 0x%x Length: 0x%x", (int)off, (int)len);
             return -1;
