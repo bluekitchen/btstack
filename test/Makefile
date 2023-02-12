@@ -102,11 +102,6 @@ subdirs-coverage-ble:
 	done
 
 
-coverage-sm-sc.info:
-	# download sm_sc_replay coverage and fix paths
-	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-sm-sc.info | sed "s|/Users/mringwal/buildbot-worker/test-develop-sm-sc-replay/btstack|`realpath ..`|" > coverage-sm-sc.info
-
-
 coverage-unit.info: subdirs-coverage
 	# delete trace data
 	find . -name "*.gcda" -type f -delete
@@ -124,42 +119,16 @@ coverage-unit-ble.info: subdirs-coverage-ble
 	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit-ble.info
 
 
-coverage-ble.info: coverage-sm-sc.info coverage-unit-ble.info
-	# combine unit-ble and sm-sc-replay
-	lcov --rc lcov_branch_coverage=1 -a coverage-sm-sc.info -a coverage-unit-ble.info --output-file coverage-ble.info
-
-
-coverage-bat.info: coverage-ble.info
-	# create bat subset from ble subset
-	./coverage_subset_bat.py coverage-ble.info coverage-bat.info
-
-
-coverage.info: coverage-sm-sc.info coverage-unit.info
-	# combine unit-ble and sm-sc-replay
-	lcov --rc lcov_branch_coverage=1 -a coverage-sm-sc.info -a coverage-unit.info --output-file coverage.info
-
-
-coverage-all: coverage.info
+coverage-all: coverage-unit.info
 	# generate html output
-	genhtml coverage.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage
-
-coverage-bat: coverage-bat.info
-	# generate html output
-	genhtml coverage-bat.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-bat
-
-coverage-ble: coverage-ble.info
-	# generate html output
-	genhtml coverage-ble.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-ble
+	genhtml coverage-unit.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage
 
 coverage-unit-ble: coverage-unit-ble.info
 	# generate html output
 	genhtml coverage-unit-ble.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-unit-ble
 
-coverage-sm-sc: coverage-sm-sc.info
-	# generate html output
-	genhtml coverage-sm-sc.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-sm-sc
 
-coverage: coverage-all coverage-ble coverage-bat
+coverage: coverage-all coverage-unit-ble
 
 test:
 	echo Run all tests with ASAN
