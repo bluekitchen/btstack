@@ -603,7 +603,7 @@ ifeq (${mcuboot}, app1)
 	python3 ${BTSTACK_ROOT}/3rd-party/mcuboot/scripts/imgtool.py sign --header-size 0x200 --align 4 --slot-size 0x20000 --version 1.0.0 --pad-header $(BUILD_DIR)/${EXAMPLES}.bin $(BUILD_DIR)/mcuboot_primary_slot.bin
 else ifeq (${mcuboot}, app2)
 	python3 ${BTSTACK_ROOT}/3rd-party/mcuboot/scripts/imgtool.py sign --header-size 0x200 --align 4 --slot-size 0x20000 --version 1.0.0 --pad-header $(BUILD_DIR)/${EXAMPLES}.bin $(BUILD_DIR)/mcuboot_secondary_slot.bin
-	./nrfutil-linux pkg generate --hw-version 52 --sd-req 0x0103 --application $(BUILD_DIR)/mcuboot_secondary_slot.bin --application-version 1 $(BUILD_DIR)/nrf_dfu_mcuboot.zip
+	./${BTSTACK_ROOT}/example/nordic_dfu/tools/nrfutil-linux pkg generate --hw-version 52 --sd-req 0x0103 --application $(BUILD_DIR)/mcuboot_secondary_slot.bin --application-version 1 $(BUILD_DIR)/nrf_dfu_mcuboot.zip
 endif
 
 $(BUILD_DIR):

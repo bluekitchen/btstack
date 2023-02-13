@@ -1,0 +1,242 @@
+system reset!
+I am mcuboot bootloader!
+mcuboot trigger do boot!
+[INF] [main_boot] line:19 Starting bootloader...
+[INF] [main_boot] line:23 Bootloader port initialized.
+[INF] [main_boot] line:25 Bootloader logging initialized.
+[INF] [main_boot] line:46 Starting boot...
+[INF] [boot_go] line:2510 enter boot_go func
+[INF] [context_boot_go] line:1720 context_boot_go
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=3
+[INF] [swap_status_source] line:390 Primary image: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+[INF] [swap_status_source] line:392 Scratch: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+[INF] [swap_status_source] line:419 Boot source: primary slot
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=2
+[INF] [boot_swap_type_multi] line:459 Swap type: none
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[INF] [boot_port_startup] line:46 br_image_off = 0x8020000
+[INF] [boot_port_startup] line:47 ih_hdr_size = 0x200
+[INF] [do_boot] line:17 Starting Main Application
+[INF] [do_boot] line:18 Image Start Offset: 0x8020000
+[INF] [do_boot] line:27 Vector Table Start Address: 0x8020200. PC=0x8031f79, SP=0x20020000
+[00:00:00.000] LOG -- btstack_tlv_flash_bank.c.443: found bank -1
+[00:00:00.001] LOG -- btstack_tlv_flash_bank.c.211: test erased: bank 0, offset 0
+[00:00:00.035] LOG -- btstack_tlv_flash_bank.c.233: bank 0 already erased
+[00:00:00.036] LOG -- btstack_tlv_flash_bank.c.487: write offset 8
+[00:00:00.038] LOG -- btstack_tlv.c.48: TLV Instance 0x80339a0
+[00:00:00.039] LOG -- le_device_db_tlv.c.159: num valid le device entries 0
+[00:00:00.040] LOG -- att_db.c.209: att_set_db 0x80374d7
+[00:00:00.041] LOG -- ../../example/nordic_dfu/nrf_dfu.c.60: Entering DFU mode in application.
+nordic_dfu_evt_observer evt:0 
+[00:00:00.043] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.274: Calling nrf_dfu_settings_init()...
+[00:00:00.045] LOG -- ../../example/nordic_dfu/nrf_dfu_flash.c.147: nrf_dfu_flash_init, nothing to do!
+[00:00:00.047] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.246: Resetting bootloader settings since neither the settings page nor the backup are valid (CRC error).
+[00:00:00.049] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.254: Old settings page detected. Upgrading info.
+[00:00:00.052] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.329: Writing settings...
+[00:00:00.053] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.330: Erasing old settings at: 0x200000b8
+[00:00:00.055] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.380: Backing up settings page to address 0x200008b8.
+[00:00:00.057] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.329: Writing settings...
+[00:00:00.058] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.330: Erasing old settings at: 0x200008b8
+[00:00:00.060] LOG -- ../../example/nordic_dfu/nrf_dfu_transport.c.55: Initializing transports (found: 2000006c)
+[00:00:00.062] LOG -- nrf_dfu_ble.c.188: dfu_ctrl_point_value_handle 	0x06
+[00:00:00.063] LOG -- nrf_dfu_ble.c.189: dfu_ctrl_point_cccd_handle 	0x07
+[00:00:00.065] LOG -- nrf_dfu_ble.c.190: dfu_data_point_value_handle 	0x09
+[00:00:00.066] LOG -- nrf_dfu_ble.c.191: dfu_buttonless_value_handle 	0x0b
+[00:00:00.067] LOG -- nrf_dfu_ble.c.192: dfu_buttonless_cccd_handle 	0x0c
+[00:00:00.068] LOG -- ../../example/nordic_dfu/nrf_dfu_flash.c.147: nrf_dfu_flash_init, nothing to do!
+[00:00:00.070] LOG -- hci.c.3879: hci_power_control: 1, current mode 0
+Bluetooth power cycle
+[00:00:00.824] LOG -- hci.c.5342: BTSTACK_EVENT_STATE 1
+[00:00:00.825] EVT <= 60 01 01 
+[00:00:00.825] LOG -- hci.c.1304: hci_initializing_run: substate 0, can send 1
+[00:00:00.826] CMD => 03 0C 00 
+[00:00:00.827] EVT <= 6E 00 
+[00:00:01.027] LOG -- hci.c.1253: Resend HCI Reset
+[00:00:01.027] LOG -- hci.c.1304: hci_initializing_run: substate 0, can send 1
+[00:00:01.029] CMD => 03 0C 00 
+[00:00:01.032] EVT <= 6E 00 
+[00:00:01.053] EVT <= 0F 04 00 01 00 00 
+[00:00:01.054] LOG -- hci.c.1698: Command status for opcode 0000, expected 0c03
+[00:00:01.055] LOG -- hci.c.1304: hci_initializing_run: substate 1, can send 1
+[00:00:01.230] LOG -- hci.c.1253: Resend HCI Reset
+[00:00:01.230] LOG -- hci.c.1304: hci_initializing_run: substate 0, can send 1
+[00:00:01.232] CMD => 03 0C 00 
+[00:00:01.233] EVT <= 6E 00 
+[00:00:01.348] EVT <= 0E 04 01 03 0C 00 
+[00:00:01.349] LOG -- hci.c.1681: Command complete for expected opcode 0c03 at substate 1
+[00:00:01.351] LOG -- hci.c.1304: hci_initializing_run: substate 2, can send 1
+[00:00:01.352] CMD => 01 10 00 
+[00:00:01.353] EVT <= 6E 00 
+[00:00:01.355] EVT <= 0E 0C 01 01 10 00 06 31 20 06 0A 00 31 20 
+[00:00:01.356] LOG -- hci.c.2233: Manufacturer: 0x000a
+[00:00:01.357] LOG -- hci.c.1681: Command complete for expected opcode 1001 at substate 3
+[00:00:01.359] LOG -- hci.c.1304: hci_initializing_run: substate 4, can send 1
+[00:00:01.360] CMD => 14 0C 00 
+[00:00:01.361] EVT <= 6E 00 
+[00:00:01.387] EVT <= 0E FC 01 14 0C 00 43 53 52 20 2D 20 62 63 37 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:01.402] LOG -- hci.c.2139: local name: CSR - bc7
+[00:00:01.403] LOG -- hci.c.1681: Command complete for expected opcode 0c14 at substate 5
+[00:00:01.404] LOG -- hci.c.1811: Received local name, need baud change 0
+[00:00:01.406] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.407] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x01fe
+[00:00:01.408] CMD => 00 FC 13 C2 02 00 09 00 01 00 03 70 00 00 FE 01 01 00 08 00 90 65 
+[00:00:01.412] EVT <= 6E 00 
+[00:00:01.412] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.415] EVT <= FF 13 C2 01 00 09 00 01 00 03 70 00 00 FE 01 01 00 08 00 90 65 
+[00:00:01.417] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.418] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x00f2
+[00:00:01.420] CMD => 00 FC 13 C2 02 00 09 00 01 00 03 70 00 00 F2 00 01 00 08 00 01 00 
+[00:00:01.423] EVT <= 6E 00 
+[00:00:01.424] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.427] EVT <= FF 13 C2 01 00 09 00 01 00 03 70 00 00 F2 00 01 00 08 00 01 00 
+[00:00:01.429] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.430] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x01bf
+[00:00:01.431] CMD => 00 FC 13 C2 02 00 09 00 01 00 03 70 00 00 BF 01 01 00 08 00 0E 08 
+[00:00:01.435] EVT <= 6E 00 
+[00:00:01.435] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.439] EVT <= FF 13 C2 01 00 09 00 01 00 03 70 00 00 BF 01 01 00 08 00 0E 08 
+[00:00:01.440] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.442] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x01ea
+[00:00:01.443] CMD => 00 FC 15 C2 02 00 0A 00 02 00 03 70 00 00 EA 01 02 00 08 00 01 00 00 C2 
+[00:00:01.447] EVT <= 6E 00 
+[00:00:01.447] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.451] EVT <= FF 15 C2 01 00 0A 00 02 00 03 70 00 00 EA 01 02 00 08 00 01 00 00 C2 
+[00:00:01.453] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.454] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x0001
+[00:00:01.455] CMD => 00 FC 19 C2 02 00 0A 00 03 00 03 70 00 00 01 00 04 00 08 00 DD 00 F0 EE CC 00 BB AA 
+[00:00:01.459] EVT <= 6E 00 
+[00:00:01.460] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.463] EVT <= FF 15 C2 01 00 0A 00 03 00 03 70 00 00 01 00 04 00 08 00 DD 00 F0 EE 
+[00:00:01.465] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.467] LOG -- hci.c.1381: CSR Warm Boot
+[00:00:01.467] CMD => 00 FC 13 C2 02 00 09 00 03 0E 02 40 00 00 00 00 00 00 08 00 00 00 
+[00:00:01.471] EVT <= 6E 00 
+[00:00:01.472] LOG -- hci.c.1304: hci_initializing_run: substate 12, can send 1
+[00:00:01.668] LOG -- hci.c.1259: Resend HCI Reset - CSR Warm Boot with Link Reset
+[00:00:01.669] LOG -- hci.c.1266: Resend HCI Reset - CSR Warm Boot
+[00:00:01.670] LOG -- hci.c.1304: hci_initializing_run: substate 10, can send 1
+[00:00:01.671] CMD => 03 0C 00 
+[00:00:01.674] EVT <= 6E 00 
+[00:00:01.872] LOG -- hci.c.1266: Resend HCI Reset - CSR Warm Boot
+[00:00:01.873] LOG -- hci.c.1304: hci_initializing_run: substate 10, can send 1
+[00:00:01.874] CMD => 03 0C 00 
+[00:00:01.875] EVT <= 6E 00 
+[00:00:02.066] EVT <= 0E 04 01 03 0C 00 
+[00:00:02.066] LOG -- hci.c.1681: Command complete for expected opcode 0c03 at substate 11
+[00:00:02.068] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:02.069] LOG -- hci.c.1407: Init script done
+[00:00:02.070] CMD => 02 10 00 
+[00:00:02.071] EVT <= 6E 00 
+[00:00:02.079] EVT <= 0E 44 01 02 10 00 FF FF FF 03 FE FF FF FF FF FF FF FF F3 0F E8 FE 3F F7 83 FF 1C 00 00 00 61 F7 FF FF 7F 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.083] LOG -- hci.c.2251: Local supported commands summary 87 - 01
+[00:00:02.084] LOG -- hci.c.1681: Command complete for expected opcode 1002 at substate 15
+[00:00:02.086] LOG -- btstack_crypto.c.1112: controller supports ECDH operation: 0
+[00:00:02.087] LOG -- hci.c.1304: hci_initializing_run: substate 22, can send 1
+[00:00:02.089] CMD => 09 10 00 
+[00:00:02.090] EVT <= 6E 00 
+[00:00:02.091] EVT <= 0E 0A 01 09 10 00 F0 EE DD CC BB AA 
+[00:00:02.092] LOG -- hci.c.2194: Local Address, Status: 0x00: Addr: AA:BB:CC:DD:EE:F0
+[00:00:02.094] LOG -- hci.c.1681: Command complete for expected opcode 1009 at substate 23
+[00:00:02.095] LOG -- hci.c.1304: hci_initializing_run: substate 24, can send 1
+[00:00:02.097] CMD => 05 10 00 
+[00:00:02.098] EVT <= 6E 00 
+[00:00:02.099] EVT <= 0E 0B 01 05 10 00 36 01 40 0A 00 08 00 
+[00:00:02.101] LOG -- hci.c.2154: hci_read_buffer_size: ACL size module 310 -> used 310, count 10 / SCO size 64, count 8
+[00:00:02.103] LOG -- hci.c.1681: Command complete for expected opcode 1005 at substate 25
+[00:00:02.104] LOG -- hci.c.1304: hci_initializing_run: substate 26, can send 1
+[00:00:02.105] CMD => 03 10 00 
+[00:00:02.106] EVT <= 6E 00 
+[00:00:02.108] EVT <= 0E 0C 01 03 10 00 FF FF 8F FE DB FF 5B 87 
+[00:00:02.109] LOG -- hci.c.2222: BR/EDR support 0, LE support 1
+[00:00:02.111] LOG -- hci.c.1681: Command complete for expected opcode 1003 at substate 27
+[00:00:02.112] LOG -- hci.c.1304: hci_initializing_run: substate 28, can send 1
+[00:00:02.113] CMD => 01 0C 08 FF FF FF FF FF FF FF 3F 
+[00:00:02.115] EVT <= 6E 00 
+[00:00:02.117] EVT <= 0E 04 01 01 0C 00 
+[00:00:02.117] LOG -- hci.c.1681: Command complete for expected opcode 0c01 at substate 29
+[00:00:02.119] LOG -- hci.c.1304: hci_initializing_run: substate 56, can send 1
+[00:00:02.120] CMD => 02 20 00 
+[00:00:02.121] EVT <= 6E 00 
+[00:00:02.122] EVT <= 0E 07 01 02 20 00 00 00 00 
+[00:00:02.123] LOG -- hci.c.2176: hci_le_read_buffer_size: size 0, count 0
+[00:00:02.125] LOG -- hci.c.1681: Command complete for expected opcode 2002 at substate 57
+[00:00:02.126] LOG -- hci.c.1304: hci_initializing_run: substate 58, can send 1
+[00:00:02.128] CMD => 6D 0C 02 01 00 
+[00:00:02.129] EVT <= 6E 00 
+[00:00:02.131] EVT <= 0E 04 01 6D 0C 00 
+[00:00:02.132] LOG -- hci.c.1681: Command complete for expected opcode 0c6d at substate 59
+[00:00:02.133] LOG -- hci.c.1304: hci_initializing_run: substate 60, can send 1
+[00:00:02.134] CMD => 01 20 08 FF 09 08 00 00 00 00 00 
+[00:00:02.136] EVT <= 6E 00 
+[00:00:02.137] EVT <= 0E 04 01 01 20 12 
+[00:00:02.138] LOG -- hci.c.1681: Command complete for expected opcode 2001 at substate 61
+[00:00:02.140] LOG -- hci.c.1304: hci_initializing_run: substate 62, can send 1
+[00:00:02.141] CMD => 0F 20 00 
+[00:00:02.142] EVT <= 6E 00 
+[00:00:02.143] EVT <= 0E 05 01 0F 20 00 19 
+[00:00:02.144] LOG -- hci.c.2189: hci_le_read_white_list_size: size 25
+[00:00:02.145] LOG -- hci.c.1681: Command complete for expected opcode 200f at substate 63
+[00:00:02.147] LOG -- hci.c.1304: hci_initializing_run: substate 64, can send 1
+[00:00:02.148] CMD => 0B 20 07 01 E0 01 30 00 00 00 
+[00:00:02.150] EVT <= 6E 00 
+[00:00:02.151] EVT <= 0E 04 01 0B 20 00 
+[00:00:02.152] LOG -- hci.c.1681: Command complete for expected opcode 200b at substate 65
+[00:00:02.153] LOG -- hci.c.1669: hci_init_done -> HCI_STATE_WORKING
+[00:00:02.155] LOG -- hci.c.5342: BTSTACK_EVENT_STATE 2
+[00:00:02.156] EVT <= 60 01 02 
+BTstack up and running on AA:BB:CC:DD:EE:F0.
+[00:00:02.157] CMD => 06 20 0F 30 00 30 00 00 00 00 00 00 00 00 00 00 07 00 
+[00:00:02.158] LOG -- hci.c.1227: Num LE Peripheral roles: 0 of 1
+[00:00:02.159] LOG -- sm.c.3467: HCI Working!
+[00:00:02.160] LOG -- hci.c.5919: hci_le_set_own_address_type: old 0, new 0
+[00:00:02.162] EVT <= 6E 00 
+[00:00:02.163] EVT <= 0E 04 01 06 20 00 
+[00:00:02.163] CMD => 18 20 00 
+[00:00:02.164] EVT <= 6E 00 
+[00:00:02.168] EVT <= 0E 0C 01 18 20 00 7B 92 25 F4 CC DF E1 A0 
+[00:00:02.169] CMD => 18 20 00 
+[00:00:02.170] EVT <= 6E 00 
+[00:00:02.174] EVT <= 0E 0C 01 18 20 00 A5 DC E4 C0 55 5F 4B EE 
+[00:00:02.175] LOG -- btstack_tlv_flash_bank.c.378: write '534d4552', len 16 at 8
+[00:00:02.177] LOG -- sm.c.3433: Generated ER key. Store in TLV status: 0
+[00:00:02.178] LOG -- btstack_util.c.292: ER     7B9225F4CCDFE1A0A5DCE4C0555F4BEE
+[00:00:02.180] CMD => 18 20 00 
+[00:00:02.181] EVT <= 6E 00 
+[00:00:02.184] EVT <= 0E 0C 01 18 20 00 97 B2 42 B1 E0 30 51 A7 
+[00:00:02.186] CMD => 18 20 00 
+[00:00:02.187] EVT <= 6E 00 
+[00:00:02.190] EVT <= 0E 0C 01 18 20 00 CF 29 FF 52 46 87 63 3A 
+[00:00:02.192] LOG -- btstack_tlv_flash_bank.c.378: write '534d4952', len 16 at 32
+[00:00:02.194] LOG -- sm.c.3414: Generated IR key. Store in TLV status: 0
+[00:00:02.195] LOG -- btstack_util.c.292: IR     97B242B1E03051A7CF29FF524687633A
+[00:00:02.196] CMD => 08 20 20 11 02 01 06 09 09 44 66 75 30 30 30 30 31 03 03 59 FE 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.202] EVT <= 6E 00 
+[00:00:02.203] EVT <= 0E 04 01 08 20 00 
+[00:00:02.204] LOG -- sm.c.2047: DKG_CALC_IRK started
+[00:00:02.205] CMD => 17 20 20 3A 63 87 46 52 FF 29 CF A7 51 30 E0 B1 42 B2 97 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.210] EVT <= 6E 00 
+[00:00:02.213] EVT <= 0E 14 01 17 20 00 0E 76 31 0D 51 57 26 73 FC F7 67 D4 B4 03 63 DE 
+[00:00:02.215] LOG -- btstack_util.c.292: irk    DE6303B4D467F7FC732657510D31760E
+[00:00:02.217] CMD => 0A 20 01 01 
+[00:00:02.218] EVT <= 6E 00 
+[00:00:02.220] EVT <= 0E 04 01 0A 20 00 
+[00:00:02.221] LOG -- sm.c.2058: DKG_CALC_DHK started
+[00:00:02.222] CMD => 17 20 20 3A 63 87 46 52 FF 29 CF A7 51 30 E0 B1 42 B2 97 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.227] EVT <= 6E 00 
+[00:00:02.231] EVT <= 0E 14 01 17 20 00 77 7E 96 F6 E5 88 4F 20 03 F5 81 E5 1D E2 A9 83 
+[00:00:02.232] LOG -- btstack_util.c.292: dhk    83A9E21DE581F503204F88E5F6967E77
