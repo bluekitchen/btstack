@@ -269,6 +269,9 @@ int main(int argc, const char * argv[]){
         if (c < 0) {
             break;
         }
+        if (c == '?'){
+            break;
+        }
         switch (c) {
             case 'u':
                 usb_path_string = optarg;
@@ -279,7 +282,6 @@ int main(int argc, const char * argv[]){
             case 'r':
                 tlv_reset = true;
                 break;
-            case '?':
             case 'h':
             default:
                 usage(argv[0]);
