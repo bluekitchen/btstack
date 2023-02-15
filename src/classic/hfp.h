@@ -759,6 +759,37 @@ int get_bit(uint16_t bitmap, int position);
 int store_bit(uint32_t bitmap, int position, uint8_t value);
 // UTILS_END
 
+// HFP H2
+
+#define HFP_H2_SYNC_FRAME_SIZE 60
+
+typedef struct {
+    // callback returns true if data was valid
+    bool        (*callback)(bool bad_frame, const uint8_t * frame_data, uint16_t frame_len);
+    uint8_t     frame_data[HFP_H2_SYNC_FRAME_SIZE];
+    uint16_t    frame_len;
+    uint16_t    dropped_bytes;
+} hfp_h2_sync_t;
+
+/**
+ * @brief Init HFP H2 Sync state
+ * @param hfp_h2_sync
+ * @param callback
+ */
+void hfp_h2_sync_init(hfp_h2_sync_t * hfp_h2_sync,
+                      bool (*callback)(bool bad_frame, const uint8_t * frame_data, uint16_t frame_len));
+/**
+ * @brief Process H2 data and execute callback for frames with valid H2 header
+ * @param hfp_h2_sync
+ * @param bad_frame
+ * @param frame_data
+ * @param frame_len
+ */
+void hfp_h2_sync_process(hfp_h2_sync_t *hfp_h2_sync, bool bad_frame, const uint8_t *frame_data, uint16_t frame_len);
+
+
+// other
+
 void hfp_finalize_connection_context(hfp_connection_t * hfp_connection);
 void hfp_emit_sco_connection_established(hfp_connection_t *hfp_connection, uint8_t status, uint8_t negotiated_codec,
                                          uint16_t rx_packet_length, uint16_t tx_packet_length);

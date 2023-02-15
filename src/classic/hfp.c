@@ -2104,3 +2104,106 @@ void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size){
 void hfp_register_custom_ag_command(hfp_custom_at_command_t * custom_at_command){
     btstack_linked_list_add(&hfp_custom_commands_ag, (btstack_linked_item_t *) custom_at_command);
 }
+
+// HFP H2 Synchronization - might get moved into a hfp_h2.c
+
+// find position of h2 sync header, returns -1 if not found, or h2 sync position
+static int16_t hfp_h2_sync_find(const uint8_t * frame_data, uint16_t frame_len){
+    uint16_t i;
+    for (i=0;i<(frame_len - 1);i++){
+        // check: first byte == 1
+        uint8_t h2_first_byte = frame_data[i];
+        if (h2_first_byte == 0x01) {
+            uint8_t h2_second_byte = frame_data[i + 1];
+            // check lower nibble of second byte == 0x08
+            if ((h2_second_byte & 0x0F) == 8) {
+                // check if bits 0+2 == bits 1+3
+                uint8_t hn = h2_second_byte >> 4;
+                if (((hn >> 1) & 0x05) == (hn & 0x05)) {
+                    return (int16_t) i;
+                }
+            }
+        }
+    }
+    return -1;
+}
+
+static void hfp_h2_sync_reset(hfp_h2_sync_t * hfp_h2_sync){
+    hfp_h2_sync->frame_len = 0;
+}
+
+void hfp_h2_sync_init(hfp_h2_sync_t * hfp_h2_sync,
+                      bool (*callback)(bool bad_frame, const uint8_t * frame_data, uint16_t frame_len)){
+    hfp_h2_sync->callback = callback;
+    hfp_h2_sync->dropped_bytes = 0;
+    hfp_h2_sync_reset(hfp_h2_sync);
+}
+
+static void hfp_h2_report_bad_frames(hfp_h2_sync_t *hfp_h2_sync){
+    // report bad frames
+    while (hfp_h2_sync->dropped_bytes >= HFP_H2_SYNC_FRAME_SIZE){
+        hfp_h2_sync->dropped_bytes -= HFP_H2_SYNC_FRAME_SIZE;
+        (void)(*hfp_h2_sync->callback)(true,NULL, HFP_H2_SYNC_FRAME_SIZE);
+    }
+}
+
+static void hfp_h2_sync_drop_bytes(hfp_h2_sync_t * hfp_h2_sync, uint16_t bytes_to_drop){
+    btstack_assert(bytes_to_drop <= hfp_h2_sync->frame_len);
+    memmove(hfp_h2_sync->frame_data, &hfp_h2_sync->frame_data[bytes_to_drop], hfp_h2_sync->frame_len - bytes_to_drop);
+    hfp_h2_sync->dropped_bytes += bytes_to_drop;
+    hfp_h2_sync->frame_len     -= bytes_to_drop;
+    hfp_h2_report_bad_frames(hfp_h2_sync);
+}
+
+void hfp_h2_sync_process(hfp_h2_sync_t *hfp_h2_sync, bool bad_frame, const uint8_t *frame_data, uint16_t frame_len) {
+
+    if (bad_frame){
+        // drop all data
+        hfp_h2_sync->dropped_bytes += hfp_h2_sync->frame_len;
+        hfp_h2_sync->frame_len = 0;
+        // all new data is bad, too
+        hfp_h2_sync->dropped_bytes += frame_len;
+        // report frames
+        hfp_h2_report_bad_frames(hfp_h2_sync);
+        return;
+    }
+
+    while (frame_len > 0){
+        // Fill hfp_h2_sync->frame_buffer
+        uint16_t bytes_free_in_frame_buffer = HFP_H2_SYNC_FRAME_SIZE - hfp_h2_sync->frame_len;
+        uint16_t bytes_to_append = btstack_min(frame_len, bytes_free_in_frame_buffer);
+        memcpy(&hfp_h2_sync->frame_data[hfp_h2_sync->frame_len], frame_data, bytes_to_append);
+        frame_data             += bytes_to_append;
+        frame_len              -= bytes_to_append;
+        hfp_h2_sync->frame_len += bytes_to_append;
+        // check complete frame for h2 sync
+        if (hfp_h2_sync->frame_len == HFP_H2_SYNC_FRAME_SIZE){
+            bool valid_frame = true;
+            int16_t h2_pos = hfp_h2_sync_find(hfp_h2_sync->frame_data, hfp_h2_sync->frame_len);
+            if (h2_pos < 0){
+                // no h2 sync, no valid frame, keep last byte if it is 0x01
+                if (hfp_h2_sync->frame_data[HFP_H2_SYNC_FRAME_SIZE-1] == 0x01){
+                    hfp_h2_sync_drop_bytes(hfp_h2_sync, HFP_H2_SYNC_FRAME_SIZE - 1);
+                } else {
+                    hfp_h2_sync_drop_bytes(hfp_h2_sync, HFP_H2_SYNC_FRAME_SIZE);
+                }
+                valid_frame = false;
+            }
+            else if (h2_pos > 0){
+                // drop data before h2 sync
+                hfp_h2_sync_drop_bytes(hfp_h2_sync, h2_pos);
+                valid_frame = false;
+            }
+            if (valid_frame) {
+                // h2 sync at pos 0 and complete frame
+                bool codec_ok = (*hfp_h2_sync->callback)(false, hfp_h2_sync->frame_data, hfp_h2_sync->frame_len);
+                if (codec_ok){
+                    hfp_h2_sync_reset(hfp_h2_sync);
+                } else {
+                    // drop first two bytes
+                    hfp_h2_sync_drop_bytes(hfp_h2_sync, 2);
+                }
+            }
+        }
+    }
+}
