@@ -3030,6 +3030,7 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
 
 #if defined(ENABLE_CLASSIC) || defined(ENABLE_LE_CENTRAL)
     bd_addr_type_t addr_type;
+    bd_addr_t addr;
 #endif
 
     switch (opcode){
@@ -3043,6 +3044,7 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
 #endif
 #if defined(ENABLE_CLASSIC) || defined(ENABLE_LE_CENTRAL)
             addr_type = hci_stack->outgoing_addr_type;
+            memcpy(addr, hci_stack->outgoing_addr, 6);
 
             // reset outgoing address info
             memset(hci_stack->outgoing_addr, 0, 6);
@@ -3057,7 +3059,7 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
                 }
 #endif
                 // error => outgoing connection failed
-                hci_connection_t * conn = hci_connection_for_bd_addr_and_type(hci_stack->outgoing_addr, addr_type);
+                hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
                 if (conn != NULL){
                     hci_handle_connection_failed(conn, status);
                 }
