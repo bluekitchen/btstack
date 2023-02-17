@@ -110,7 +110,7 @@ swap_read_status_bytes(const struct flash_area *fap,
     found_idx = 0;
     invalid = 0;
     for (i = 0; i < max_entries; i++) {
-        rc = flash_area_read(fap, off + i * BOOT_WRITE_SZ(state),
+        rc = flash_area_read(fap, off + i * BOOT_WRITE_SZ(state),//BOOT_WRITE_SZ(state) = 4
                 &status, 1);
         if (rc < 0) {
             return BOOT_EFLASH;
@@ -118,9 +118,9 @@ swap_read_status_bytes(const struct flash_area *fap,
 
         if (bootutil_buffer_is_erased(fap, &status, 1)) {
             if (found && !found_idx) {
-                found_idx = i;
+                found_idx = i;//update the index of status table
             }
-        } else if (!found) {
+        } else if (!found) {//found a swap status that indicates the swap is on going
             found = 1;
         } else if (found_idx) {
             invalid = 1;
@@ -539,6 +539,11 @@ boot_swap_sectors(int idx, uint32_t sz, struct boot_loader_state *state,
     rc = flash_area_open(FLASH_AREA_IMAGE_SCRATCH, &fap_scratch);
     assert (rc == 0);
 
+    BOOT_LOG_BOOT_STATUS(bs);
+
+    //初始状态下，先擦除scratch，然后将secondary slot copy到scratch
+    //在scratch status region 写上bs->state == BOOT_STATUS_STATE_0
+    //之后bs state跳转到BOOT_STATUS_STATE_1，进入到下一步操作
     if (bs->state == BOOT_STATUS_STATE_0) {
         BOOT_LOG_DBG("erasing scratch area");
         rc = boot_erase_region(fap_scratch, 0, fap_scratch->fa_size);
@@ -549,6 +554,7 @@ boot_swap_sectors(int idx, uint32_t sz, struct boot_loader_state *state,
              * scratch area for status.  We need a temporary place to store the
              * `swap-type` while we erase the primary trailer.
              */
+             //将secondary slot image swap state写到scratch上
             rc = swap_status_init(state, fap_scratch, bs);
             assert(rc == 0);
 
@@ -568,7 +574,7 @@ boot_swap_sectors(int idx, uint32_t sz, struct boot_loader_state *state,
                 assert(rc == 0);
             }
         }
-
+        //将secondary slot copy到scratch，然后再scratch trailer写上BOOT_STATUS_STATE_0
         rc = boot_copy_region(state, fap_secondary_slot, fap_scratch,
                               img_off, 0, copy_sz);
         assert(rc == 0);
@@ -578,6 +584,8 @@ boot_swap_sectors(int idx, uint32_t sz, struct boot_loader_state *state,
         BOOT_STATUS_ASSERT(rc == 0);
     }
 
+    //第二状态下，先擦除secondary slot，然后将primary slot copy to secondary slot
+    //然后再scratch trailer写上BOOT_STATUS_STATE_1
     if (bs->state == BOOT_STATUS_STATE_1) {
         rc = boot_erase_region(fap_secondary_slot, img_off, sz);
         assert(rc == 0);
@@ -598,7 +606,8 @@ boot_swap_sectors(int idx, uint32_t sz, struct boot_loader_state *state,
         bs->state = BOOT_STATUS_STATE_2;
         BOOT_STATUS_ASSERT(rc == 0);
     }
-
+    //第三状态下，先擦除primary slot，然后将scratch copy to primary slot
+    //将scratch trailer的信息都搬运到primary slot上
     if (bs->state == BOOT_STATUS_STATE_2) {
         rc = boot_erase_region(fap_primary_slot, img_off, sz);
         assert(rc == 0);
@@ -656,6 +665,7 @@ boot_swap_sectors(int idx, uint32_t sz, struct boot_loader_state *state,
         erase_scratch = bs->use_scratch;
         bs->use_scratch = 0;
 
+        //set primary slot trailer status as BOOT_STATUS_STATE_2
         rc = boot_write_status(state, bs);
         bs->idx++;
         bs->state = BOOT_STATUS_STATE_0;

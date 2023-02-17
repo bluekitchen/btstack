@@ -66,6 +66,17 @@ const uint32_t boot_img_magic[] = {
 #define BOOT_MAGIC_ARR_SZ \
     (sizeof boot_img_magic / sizeof boot_img_magic[0])
 
+#define BOOT_LOG_SWAP_STATE(area, state)                            \
+    BOOT_LOG_INF("%s: magic=%s, swap_type=0x%x, copy_done=0x%x, "   \
+                 "image_ok=0x%x",                                   \
+                 (area),                                            \
+                 ((state)->magic == BOOT_MAGIC_GOOD ? "good" :      \
+                  (state)->magic == BOOT_MAGIC_UNSET ? "unset" :    \
+                  "bad"),                                           \
+                 (state)->swap_type,                                \
+                 (state)->copy_done,                                \
+                 (state)->image_ok)
+
 struct boot_swap_table {
     uint8_t magic_primary_slot;
     uint8_t magic_secondary_slot;
@@ -428,6 +439,9 @@ boot_swap_type_multi(int image_index)
     if (rc) {
         return BOOT_SWAP_TYPE_PANIC;
     }
+
+    BOOT_LOG_SWAP_STATE("Primary image", &primary_slot);
+    BOOT_LOG_SWAP_STATE("Secondary image", &secondary_slot);
 
     for (i = 0; i < BOOT_SWAP_TABLES_COUNT; i++) {
         table = boot_swap_tables + i;

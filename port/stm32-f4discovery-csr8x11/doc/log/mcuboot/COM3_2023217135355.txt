@@ -1,0 +1,941 @@
+mcuboot trigger do boot!
+[INF] [main_boot] line:19 Starting bootloader...
+[INF] [main_boot] line:23 Bootloader port initialized.
+[INF] [main_boot] line:25 Bootloader logging initialized.
+[INF] [main_boot] line:46 Starting boot...
+[INF] [boot_go] line:2518 enter boot_go func
+[INF] [context_boot_go] line:1726 context_boot_go
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=3
+[INF] [swap_status_source] line:390 Primary image: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+[INF] [swap_status_source] line:392 Scratch: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+[INF] [swap_status_source] line:419 Boot source: primary slot
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [swap_read_status] line:181 idx:0x1, state:0x1, op:0x1, use_scratch:0x0, swap_type:0x1, swap_size:0x0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=2
+[INF] [boot_swap_type_multi] line:443 Primary image: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+[INF] [boot_swap_type_multi] line:444 Secondary image: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+[INF] [boot_swap_type_multi] line:473 Swap type: none
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [boot_validate_slot] line:624 slot:Primary   magic:0x96f3b83d, load_addr:0x0, header_size:0x200, protect_tlv_size:0x0, img_size:0x184bc, flag:0x0, version=1.0.0+0
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [context_boot_go] line:1963 slot:Primary   magic:0x96f3b83d, load_addr:0x0, header_size:0x200, protect_tlv_size:0x0, img_size:0x184bc, flag:0x0, version=1.0.0+0
+[INF] [context_boot_go] line:1964 dump boot_rsp, br_flash_dev_id:0x0, br_image_off:0x8020000
+[INF] [boot_port_startup] line:46 br_image_off = 0x8020000
+[INF] [boot_port_startup] line:47 ih_hdr_size = 0x200
+[INF] [do_boot] line:17 Starting Main Application
+[INF] [do_boot] line:18 Image Start Offset: 0x8020000
+[INF] [do_boot] line:27 Vector Table Start Address: 0x8020200. PC=0x8031f79, SP=0x20020000
+[00:00:00.000] LOG -- btstack_tlv_flash_bank.c.443: found bank -1
+[00:00:00.001] LOG -- btstack_tlv_flash_bank.c.211: test erased: bank 0, offset 0
+[00:00:00.035] LOG -- btstack_tlv_flash_bank.c.233: bank 0 already erased
+[00:00:00.036] LOG -- btstack_tlv_flash_bank.c.487: write offset 8
+[00:00:00.038] LOG -- btstack_tlv.c.48: TLV Instance 0x80339a0
+[00:00:00.039] LOG -- le_device_db_tlv.c.159: num valid le device entries 0
+[00:00:00.040] LOG -- att_db.c.209: att_set_db 0x80374d7
+[00:00:00.041] LOG -- ../../example/nordic_dfu/nrf_dfu.c.60: Entering DFU mode in application.
+nordic_dfu_evt_observer evt:0 
+[00:00:00.043] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.274: Calling nrf_dfu_settings_init()...
+[00:00:00.045] LOG -- ../../example/nordic_dfu/nrf_dfu_flash.c.147: nrf_dfu_flash_init, nothing to do!
+[00:00:00.047] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.246: Resetting bootloader settings since neither the settings page nor the backup are valid (CRC error).
+[00:00:00.049] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.254: Old settings page detected. Upgrading info.
+[00:00:00.052] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.329: Writing settings...
+[00:00:00.053] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.330: Erasing old settings at: 0x200000b8
+[00:00:00.055] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.380: Backing up settings page to address 0x200008b8.
+[00:00:00.057] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.329: Writing settings...
+[00:00:00.058] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.330: Erasing old settings at: 0x200008b8
+[00:00:00.060] LOG -- ../../example/nordic_dfu/nrf_dfu_transport.c.55: Initializing transports (found: 2000006c)
+[00:00:00.062] LOG -- nrf_dfu_ble.c.188: dfu_ctrl_point_value_handle 	0x06
+[00:00:00.063] LOG -- nrf_dfu_ble.c.189: dfu_ctrl_point_cccd_handle 	0x07
+[00:00:00.065] LOG -- nrf_dfu_ble.c.190: dfu_data_point_value_handle 	0x09
+[00:00:00.066] LOG -- nrf_dfu_ble.c.191: dfu_buttonless_value_handle 	0x0b
+[00:00:00.067] LOG -- nrf_dfu_ble.c.192: dfu_buttonless_cccd_handle 	0x0c
+[00:00:00.068] LOG -- ../../example/nordic_dfu/nrf_dfu_flash.c.147: nrf_dfu_flash_init, nothing to do!
+[00:00:00.070] LOG -- hci.c.3879: hci_power_control: 1, current mode 0
+Bluetooth power cycle
+[00:00:00.824] LOG -- hci.c.5342: BTSTACK_EVENT_STATE 1
+[00:00:00.825] EVT <= 60 01 01 
+[00:00:00.825] LOG -- hci.c.1304: hci_initializing_run: substate 0, can send 1
+[00:00:00.826] CMD => 03 0C 00 
+[00:00:00.827] EVT <= 6E 00 
+[00:00:01.027] LOG -- hci.c.1253: Resend HCI Reset
+[00:00:01.027] LOG -- hci.c.1304: hci_initializing_run: substate 0, can send 1
+[00:00:01.029] CMD => 03 0C 00 
+[00:00:01.032] EVT <= 6E 00 
+[00:00:01.053] EVT <= 0F 04 00 01 00 00 
+[00:00:01.054] LOG -- hci.c.1698: Command status for opcode 0000, expected 0c03
+[00:00:01.055] LOG -- hci.c.1304: hci_initializing_run: substate 1, can send 1
+[00:00:01.230] LOG -- hci.c.1253: Resend HCI Reset
+[00:00:01.230] LOG -- hci.c.1304: hci_initializing_run: substate 0, can send 1
+[00:00:01.232] CMD => 03 0C 00 
+[00:00:01.233] EVT <= 6E 00 
+[00:00:01.349] EVT <= 0E 04 01 03 0C 00 
+[00:00:01.349] LOG -- hci.c.1681: Command complete for expected opcode 0c03 at substate 1
+[00:00:01.351] LOG -- hci.c.1304: hci_initializing_run: substate 2, can send 1
+[00:00:01.352] CMD => 01 10 00 
+[00:00:01.353] EVT <= 6E 00 
+[00:00:01.355] EVT <= 0E 0C 01 01 10 00 06 31 20 06 0A 00 31 20 
+[00:00:01.356] LOG -- hci.c.2233: Manufacturer: 0x000a
+[00:00:01.357] LOG -- hci.c.1681: Command complete for expected opcode 1001 at substate 3
+[00:00:01.359] LOG -- hci.c.1304: hci_initializing_run: substate 4, can send 1
+[00:00:01.360] CMD => 14 0C 00 
+[00:00:01.361] EVT <= 6E 00 
+[00:00:01.387] EVT <= 0E FC 01 14 0C 00 43 53 52 20 2D 20 62 63 37 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:01.402] LOG -- hci.c.2139: local name: CSR - bc7
+[00:00:01.403] LOG -- hci.c.1681: Command complete for expected opcode 0c14 at substate 5
+[00:00:01.404] LOG -- hci.c.1811: Received local name, need baud change 0
+[00:00:01.406] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.407] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x01fe
+[00:00:01.408] CMD => 00 FC 13 C2 02 00 09 00 01 00 03 70 00 00 FE 01 01 00 08 00 90 65 
+[00:00:01.412] EVT <= 6E 00 
+[00:00:01.412] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.415] EVT <= FF 13 C2 01 00 09 00 01 00 03 70 00 00 FE 01 01 00 08 00 90 65 
+[00:00:01.417] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.418] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x00f2
+[00:00:01.420] CMD => 00 FC 13 C2 02 00 09 00 01 00 03 70 00 00 F2 00 01 00 08 00 01 00 
+[00:00:01.423] EVT <= 6E 00 
+[00:00:01.424] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.427] EVT <= FF 13 C2 01 00 09 00 01 00 03 70 00 00 F2 00 01 00 08 00 01 00 
+[00:00:01.429] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.430] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x01bf
+[00:00:01.431] CMD => 00 FC 13 C2 02 00 09 00 01 00 03 70 00 00 BF 01 01 00 08 00 0E 08 
+[00:00:01.435] EVT <= 6E 00 
+[00:00:01.435] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.439] EVT <= FF 13 C2 01 00 09 00 01 00 03 70 00 00 BF 01 01 00 08 00 0E 08 
+[00:00:01.440] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.442] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x01ea
+[00:00:01.443] CMD => 00 FC 15 C2 02 00 0A 00 02 00 03 70 00 00 EA 01 02 00 08 00 01 00 00 C2 
+[00:00:01.447] EVT <= 6E 00 
+[00:00:01.447] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.451] EVT <= FF 15 C2 01 00 0A 00 02 00 03 70 00 00 EA 01 02 00 08 00 01 00 00 C2 
+[00:00:01.453] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.454] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x0001
+[00:00:01.455] CMD => 00 FC 19 C2 02 00 0A 00 03 00 03 70 00 00 01 00 04 00 08 00 DD 00 F0 EE CC 00 BB AA 
+[00:00:01.459] EVT <= 6E 00 
+[00:00:01.460] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.463] EVT <= FF 15 C2 01 00 0A 00 03 00 03 70 00 00 01 00 04 00 08 00 DD 00 F0 EE 
+[00:00:01.465] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.467] LOG -- hci.c.1381: CSR Warm Boot
+[00:00:01.467] CMD => 00 FC 13 C2 02 00 09 00 03 0E 02 40 00 00 00 00 00 00 08 00 00 00 
+[00:00:01.471] EVT <= 6E 00 
+[00:00:01.472] LOG -- hci.c.1304: hci_initializing_run: substate 12, can send 1
+[00:00:01.668] LOG -- hci.c.1259: Resend HCI Reset - CSR Warm Boot with Link Reset
+[00:00:01.669] LOG -- hci.c.1266: Resend HCI Reset - CSR Warm Boot
+[00:00:01.670] LOG -- hci.c.1304: hci_initializing_run: substate 10, can send 1
+[00:00:01.671] CMD => 03 0C 00 
+[00:00:01.674] EVT <= 6E 00 
+[00:00:01.872] LOG -- hci.c.1266: Resend HCI Reset - CSR Warm Boot
+[00:00:01.873] LOG -- hci.c.1304: hci_initializing_run: substate 10, can send 1
+[00:00:01.874] CMD => 03 0C 00 
+[00:00:01.875] EVT <= 6E 00 
+[00:00:02.075] LOG -- hci.c.1266: Resend HCI Reset - CSR Warm Boot
+[00:00:02.076] LOG -- hci.c.1304: hci_initializing_run: substate 10, can send 1
+[00:00:02.077] CMD => 03 0C 00 
+[00:00:02.078] EVT <= 6E 00 
+[00:00:02.078] EVT <= 0E 04 01 03 0C 00 
+[00:00:02.079] LOG -- hci.c.1681: Command complete for expected opcode 0c03 at substate 11
+[00:00:02.081] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:02.082] LOG -- hci.c.1407: Init script done
+[00:00:02.083] CMD => 02 10 00 
+[00:00:02.084] EVT <= 6E 00 
+[00:00:02.193] EVT <= 0E 04 01 03 0C 00 
+[00:00:02.194] LOG -- hci.c.1683: Command complete for different opcode 0c03, expected 1002, at substate 15
+[00:00:02.196] LOG -- hci.c.1304: hci_initializing_run: substate 14, can send 1
+[00:00:02.197] LOG -- hci.c.1451: Resend hci_read_local_supported_commands after CSR Warm Boot double reset
+[00:00:02.199] CMD => 02 10 00 
+[00:00:02.200] EVT <= 6E 00 
+[00:00:02.207] EVT <= 0E 44 01 02 10 00 FF FF FF 03 FE FF FF FF FF FF FF FF F3 0F E8 FE 3F F7 83 FF 1C 00 00 00 61 F7 FF FF 7F 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.212] LOG -- hci.c.2251: Local supported commands summary 87 - 01
+[00:00:02.213] LOG -- hci.c.1681: Command complete for expected opcode 1002 at substate 15
+[00:00:02.214] LOG -- btstack_crypto.c.1112: controller supports ECDH operation: 0
+[00:00:02.216] LOG -- hci.c.1304: hci_initializing_run: substate 22, can send 1
+[00:00:02.217] CMD => 09 10 00 
+[00:00:02.218] EVT <= 6E 00 
+[00:00:02.220] EVT <= 0E 0A 01 09 10 00 F0 EE DD CC BB AA 
+[00:00:02.221] LOG -- hci.c.2194: Local Address, Status: 0x00: Addr: AA:BB:CC:DD:EE:F0
+[00:00:02.222] LOG -- hci.c.1681: Command complete for expected opcode 1009 at substate 23
+[00:00:02.224] LOG -- hci.c.1304: hci_initializing_run: substate 24, can send 1
+[00:00:02.225] CMD => 05 10 00 
+[00:00:02.226] EVT <= 6E 00 
+[00:00:02.228] EVT <= 0E 0B 01 05 10 00 36 01 40 0A 00 08 00 
+[00:00:02.229] LOG -- hci.c.2154: hci_read_buffer_size: ACL size module 310 -> used 310, count 10 / SCO size 64, count 8
+[00:00:02.231] LOG -- hci.c.1681: Command complete for expected opcode 1005 at substate 25
+[00:00:02.232] LOG -- hci.c.1304: hci_initializing_run: substate 26, can send 1
+[00:00:02.234] CMD => 03 10 00 
+[00:00:02.235] EVT <= 6E 00 
+[00:00:02.237] EVT <= 0E 0C 01 03 10 00 FF FF 8F FE DB FF 5B 87 
+[00:00:02.238] LOG -- hci.c.2222: BR/EDR support 0, LE support 1
+[00:00:02.239] LOG -- hci.c.1681: Command complete for expected opcode 1003 at substate 27
+[00:00:02.240] LOG -- hci.c.1304: hci_initializing_run: substate 28, can send 1
+[00:00:02.242] CMD => 01 0C 08 FF FF FF FF FF FF FF 3F 
+[00:00:02.244] EVT <= 6E 00 
+[00:00:02.245] EVT <= 0E 04 01 01 0C 00 
+[00:00:02.246] LOG -- hci.c.1681: Command complete for expected opcode 0c01 at substate 29
+[00:00:02.247] LOG -- hci.c.1304: hci_initializing_run: substate 56, can send 1
+[00:00:02.249] CMD => 02 20 00 
+[00:00:02.250] EVT <= 6E 00 
+[00:00:02.251] EVT <= 0E 07 01 02 20 00 00 00 00 
+[00:00:02.252] LOG -- hci.c.2176: hci_le_read_buffer_size: size 0, count 0
+[00:00:02.253] LOG -- hci.c.1681: Command complete for expected opcode 2002 at substate 57
+[00:00:02.255] LOG -- hci.c.1304: hci_initializing_run: substate 58, can send 1
+[00:00:02.256] CMD => 6D 0C 02 01 00 
+[00:00:02.257] EVT <= 6E 00 
+[00:00:02.259] EVT <= 0E 04 01 6D 0C 00 
+[00:00:02.260] LOG -- hci.c.1681: Command complete for expected opcode 0c6d at substate 59
+[00:00:02.261] LOG -- hci.c.1304: hci_initializing_run: substate 60, can send 1
+[00:00:02.263] CMD => 01 20 08 FF 09 08 00 00 00 00 00 
+[00:00:02.265] EVT <= 6E 00 
+[00:00:02.266] EVT <= 0E 04 01 01 20 12 
+[00:00:02.267] LOG -- hci.c.1681: Command complete for expected opcode 2001 at substate 61
+[00:00:02.268] LOG -- hci.c.1304: hci_initializing_run: substate 62, can send 1
+[00:00:02.270] CMD => 0F 20 00 
+[00:00:02.270] EVT <= 6E 00 
+[00:00:02.272] EVT <= 0E 05 01 0F 20 00 19 
+[00:00:02.272] LOG -- hci.c.2189: hci_le_read_white_list_size: size 25
+[00:00:02.274] LOG -- hci.c.1681: Command complete for expected opcode 200f at substate 63
+[00:00:02.275] LOG -- hci.c.1304: hci_initializing_run: substate 64, can send 1
+[00:00:02.277] CMD => 0B 20 07 01 E0 01 30 00 00 00 
+[00:00:02.278] EVT <= 6E 00 
+[00:00:02.280] EVT <= 0E 04 01 0B 20 00 
+[00:00:02.280] LOG -- hci.c.1681: Command complete for expected opcode 200b at substate 65
+[00:00:02.282] LOG -- hci.c.1669: hci_init_done -> HCI_STATE_WORKING
+[00:00:02.283] LOG -- hci.c.5342: BTSTACK_EVENT_STATE 2
+[00:00:02.284] EVT <= 60 01 02 
+BTstack up and running on AA:BB:CC:DD:EE:F0.
+[00:00:02.285] CMD => 06 20 0F 30 00 30 00 00 00 00 00 00 00 00 00 00 07 00 
+[00:00:02.287] LOG -- hci.c.1227: Num LE Peripheral roles: 0 of 1
+[00:00:02.288] LOG -- sm.c.3467: HCI Working!
+[00:00:02.289] LOG -- hci.c.5919: hci_le_set_own_address_type: old 0, new 0
+[00:00:02.290] EVT <= 6E 00 
+[00:00:02.291] EVT <= 0E 04 01 06 20 00 
+[00:00:02.292] CMD => 18 20 00 
+[00:00:02.293] EVT <= 6E 00 
+[00:00:02.297] EVT <= 0E 0C 01 18 20 00 D1 22 A7 6C 1C D3 93 34 
+[00:00:02.298] CMD => 18 20 00 
+[00:00:02.299] EVT <= 6E 00 
+[00:00:02.302] EVT <= 0E 0C 01 18 20 00 7C B7 9B A7 C4 AD 2C D2 
+[00:00:02.304] LOG -- btstack_tlv_flash_bank.c.378: write '534d4552', len 16 at 8
+[00:00:02.306] LOG -- sm.c.3433: Generated ER key. Store in TLV status: 0
+[00:00:02.307] LOG -- btstack_util.c.292: ER     D122A76C1CD393347CB79BA7C4AD2CD2
+[00:00:02.308] CMD => 18 20 00 
+[00:00:02.309] EVT <= 6E 00 
+[00:00:02.313] EVT <= 0E 0C 01 18 20 00 CD 28 EB 6D 12 DE A5 89 
+[00:00:02.314] CMD => 18 20 00 
+[00:00:02.315] EVT <= 6E 00 
+[00:00:02.319] EVT <= 0E 0C 01 18 20 00 41 D8 59 DC 37 4C BF ED 
+[00:00:02.320] LOG -- btstack_tlv_flash_bank.c.378: write '534d4952', len 16 at 32
+[00:00:02.322] LOG -- sm.c.3414: Generated IR key. Store in TLV status: 0
+[00:00:02.323] LOG -- btstack_util.c.292: IR     CD28EB6D12DEA58941D859DC374CBFED
+[00:00:02.325] CMD => 08 20 20 11 02 01 06 09 09 44 66 75 30 30 30 30 32 03 03 59 FE 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.330] EVT <= 6E 00 
+[00:00:02.331] EVT <= 0E 04 01 08 20 00 
+[00:00:02.332] LOG -- sm.c.2047: DKG_CALC_IRK started
+[00:00:02.333] CMD => 17 20 20 ED BF 4C 37 DC 59 D8 41 89 A5 DE 12 6D EB 28 CD 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.338] EVT <= 6E 00 
+[00:00:02.342] EVT <= 0E 14 01 17 20 00 35 B3 86 E0 37 DA 8B 6E 4A 22 22 1C 57 DC 1A B5 
+[00:00:02.344] LOG -- btstack_util.c.292: irk    B51ADC571C22224A6E8BDA37E086B335
+[00:00:02.345] CMD => 0A 20 01 01 
+[00:00:02.346] EVT <= 6E 00 
+[00:00:02.348] EVT <= 0E 04 01 0A 20 00 
+[00:00:02.349] LOG -- sm.c.2058: DKG_CALC_DHK started
+[00:00:02.350] CMD => 17 20 20 ED BF 4C 37 DC 59 D8 41 89 A5 DE 12 6D EB 28 CD 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.356] EVT <= 6E 00 
+[00:00:02.359] EVT <= 0E 14 01 17 20 00 F5 9B 58 24 CE 66 AA BF EB 2B A3 C3 2A 73 5A C8 
+[00:00:02.361] LOG -- btstack_util.c.292: dhk    C85A732AC3A32BEBBFAA66CE24589BF5
+I am mcuboot bootloader!
+mcuboot trigger image swap permanent!
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [boot_write_magic] line:332 writing magic; fa_id=2 off=0x1fff0 (0x805fff0)
+[DBG] [flash_area_write] line:230 Addr: 0x0805fff0 Length: 0x10
+[DBG] [boot_write_image_ok] line:389 writing image_ok; fa_id=2 off=0x1ffe8 (0x805ffe8)
+[DBG] [flash_area_write] line:230 Addr: 0x0805ffe8 Length: 0x4
+[DBG] [boot_write_swap_info] line:415 writing swap_info; fa_id=2 off=0x1ffd8 (0x805ffd8), swap_type=0x3 image_num=0x0
+[DBG] [flash_area_write] line:230 Addr: 0x0805ffd8 Length: 0x4
+mcuboot trigger do boot!
+[INF] [main_boot] line:19 Starting bootloader...
+[INF] [main_boot] line:23 Bootloader port initialized.
+[INF] [main_boot] line:25 Bootloader logging initialized.
+[INF] [main_boot] line:46 Starting boot...
+[INF] [boot_go] line:2518 enter boot_go func
+[INF] [context_boot_go] line:1726 context_boot_go
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=3
+[INF] [swap_status_source] line:390 Primary image: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+[INF] [swap_status_source] line:392 Scratch: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+[INF] [swap_status_source] line:419 Boot source: primary slot
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [swap_read_status] line:181 idx:0x1, state:0x1, op:0x1, use_scratch:0x0, swap_type:0x1, swap_size:0x0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=2
+[INF] [boot_swap_type_multi] line:443 Primary image: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+[INF] [boot_swap_type_multi] line:444 Secondary image: magic=good, swap_type=0x3, copy_done=0x3, image_ok=0x1
+[INF] [boot_swap_type_multi] line:459 Swap type: perm
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [boot_validate_slot] line:624 slot:Secondary magic:0x96f3b83d, load_addr:0x0, header_size:0x200, protect_tlv_size:0x0, img_size:0x184bc, flag:0x0, version=1.0.0+0
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [boot_swap_image] line:1082 idx:0x1, state:0x1, op:0x1, use_scratch:0x0, swap_type:0x3, swap_size:0x0
+[DBG] [boot_swap_image] line:1093 slot:Primary   magic:0x96f3b83d, load_addr:0x0, header_size:0x200, protect_tlv_size:0x0, img_size:0x184bc, flag:0x0, version=1.0.0+0
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [boot_swap_image] line:1141 primary_slot_size:0x186e4, secondary_slot_size:0x186e4
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [boot_swap_sectors] line:542 idx:0x1, state:0x1, op:0x1, use_scratch:0x1, swap_type:0x3, swap_size:0x186e4
+[DBG] [boot_swap_sectors] line:548 erasing scratch area
+[DBG] [flash_area_erase] line:267 flash_area_erase: Addr: 0x08080000 Length: 0x20000
+[DBG] [swap_status_init] line:97 initializing status; fa_id=3
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [swap_status_init] line:103 slot:Secondary magic:0x1, swap_type:0x3, copy_done:0x3, img_ok:0x1, img_num:0x0
+[DBG] [boot_write_swap_info] line:415 writing swap_info; fa_id=3 off=0x1ffd8 (0x809ffd8), swap_type=0x3 image_num=0x0
+[DBG] [flash_area_write] line:230 Addr: 0x0809ffd8 Length: 0x4
+[DBG] [boot_write_image_ok] line:389 writing image_ok; fa_id=3 off=0x1ffe8 (0x809ffe8)
+[DBG] [flash_area_write] line:230 Addr: 0x0809ffe8 Length: 0x4
+[DBG] [boot_write_swap_size] line:315 writing swap_size; fa_id=3 off=0x1ffd0 (0x809ffd0)
+[DBG] [flash_area_write] line:230 Addr: 0x0809ffd0 Length: 0x4
+[DBG] [boot_write_magic] line:332 writing magic; fa_id=3 off=0x1fff0 (0x809fff0)
+[DBG] [flash_area_write] line:230 Addr: 0x0809fff0 Length: 0x10
+[DBG] [flash_area_write] line:230 Addr: 0x08080000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08080400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08080800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08080c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08081000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08081400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08081800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08081c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08082000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08082400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08082800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08082c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08083000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08083400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08083800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08083c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08084000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08084400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08084800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08084c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08085000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08085400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08085800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08085c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08086000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08086400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08086800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08086c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08087000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08087400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08087800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08087c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08088000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08088400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08088800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08088c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08089000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08089400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08089800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08089c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808a000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808a400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808a800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808ac00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808b000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808b400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808b800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808bc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808c000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808c400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808c800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808cc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808d000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808d400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808d800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808dc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808e000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808e400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808e800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808ec00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808f000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808f400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808f800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0808fc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08090000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08090400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08090800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08090c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08091000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08091400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08091800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08091c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08092000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08092400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08092800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08092c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08093000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08093400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08093800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08093c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08094000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08094400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08094800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08094c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08095000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08095400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08095800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08095c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08096000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08096400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08096800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08096c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08097000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08097400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08097800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08097c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08098000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08098400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08098800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08098c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08099000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08099400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08099800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08099c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809a000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809a400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809a800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809ac00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809b000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809b400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809b800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809bc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809c000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809c400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809c800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809cc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809d000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809d400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809d800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809dc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809e000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809e400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809e800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809ec00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0809f000 Length: 0x3d0
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [flash_area_write] line:230 Addr: 0x0809f3d0 Length: 0x4
+[DBG] [flash_area_erase] line:267 flash_area_erase: Addr: 0x08040000 Length: 0x20000
+[DBG] [flash_area_write] line:230 Addr: 0x08040000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08040400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08040800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08040c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08041000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08041400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08041800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08041c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08042000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08042400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08042800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08042c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08043000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08043400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08043800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08043c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08044000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08044400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08044800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08044c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08045000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08045400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08045800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08045c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08046000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08046400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08046800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08046c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08047000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08047400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08047800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08047c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08048000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08048400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08048800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08048c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08049000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08049400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08049800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08049c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804a000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804a400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804a800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804ac00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804b000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804b400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804b800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804bc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804c000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804c400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804c800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804cc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804d000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804d400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804d800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804dc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804e000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804e400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804e800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804ec00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804f000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804f400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804f800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0804fc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08050000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08050400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08050800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08050c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08051000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08051400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08051800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08051c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08052000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08052400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08052800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08052c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08053000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08053400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08053800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08053c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08054000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08054400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08054800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08054c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08055000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08055400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08055800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08055c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08056000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08056400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08056800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08056c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08057000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08057400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08057800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08057c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08058000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08058400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08058800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08058c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08059000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08059400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08059800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08059c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805a000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805a400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805a800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805ac00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805b000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805b400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805b800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805bc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805c000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805c400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805c800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805cc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805d000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805d400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805d800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805dc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805e000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805e400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805e800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805ec00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0805f000 Length: 0x3d0
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [flash_area_write] line:230 Addr: 0x0809f3d4 Length: 0x4
+[DBG] [flash_area_erase] line:267 flash_area_erase: Addr: 0x08020000 Length: 0x20000
+[DBG] [flash_area_write] line:230 Addr: 0x08020000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08020400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08020800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08020c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08021000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08021400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08021800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08021c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08022000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08022400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08022800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08022c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08023000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08023400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08023800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08023c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08024000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08024400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08024800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08024c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08025000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08025400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08025800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08025c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08026000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08026400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08026800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08026c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08027000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08027400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08027800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08027c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08028000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08028400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08028800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08028c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08029000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08029400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08029800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08029c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802a000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802a400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802a800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802ac00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802b000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802b400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802b800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802bc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802c000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802c400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802c800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802cc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802d000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802d400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802d800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802dc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802e000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802e400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802e800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802ec00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802f000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802f400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802f800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0802fc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08030000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08030400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08030800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08030c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08031000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08031400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08031800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08031c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08032000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08032400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08032800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08032c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08033000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08033400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08033800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08033c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08034000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08034400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08034800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08034c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08035000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08035400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08035800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08035c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08036000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08036400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08036800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08036c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08037000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08037400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08037800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08037c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08038000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08038400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08038800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08038c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08039000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08039400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08039800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x08039c00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803a000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803a400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803a800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803ac00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803b000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803b400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803b800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803bc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803c000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803c400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803c800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803cc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803d000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803d400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803d800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803dc00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803e000 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803e400 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803e800 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803ec00 Length: 0x400
+[DBG] [flash_area_write] line:230 Addr: 0x0803f000 Length: 0x3d0
+[DBG] [flash_area_write] line:230 Addr: 0x0803f3d0 Length: 0x8
+[DBG] [flash_area_open] line:179 ID=3
+[DBG] [boot_write_image_ok] line:389 writing image_ok; fa_id=1 off=0x1ffe8 (0x803ffe8)
+[DBG] [flash_area_write] line:230 Addr: 0x0803ffe8 Length: 0x4
+[DBG] [boot_write_swap_info] line:415 writing swap_info; fa_id=1 off=0x1ffd8 (0x803ffd8), swap_type=0x3 image_num=0x0
+[DBG] [flash_area_write] line:230 Addr: 0x0803ffd8 Length: 0x4
+[DBG] [boot_write_swap_size] line:315 writing swap_size; fa_id=1 off=0x1ffd0 (0x803ffd0)
+[DBG] [flash_area_write] line:230 Addr: 0x0803ffd0 Length: 0x4
+[DBG] [boot_write_magic] line:332 writing magic; fa_id=1 off=0x1fff0 (0x803fff0)
+[DBG] [flash_area_write] line:230 Addr: 0x0803fff0 Length: 0x10
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_write] line:230 Addr: 0x0803f3d8 Length: 0x4
+[DBG] [flash_area_erase] line:267 flash_area_erase: Addr: 0x08080000 Length: 0x20000
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [boot_write_copy_done] line:303 writing copy_done; fa_id=1 off=0x1ffe0 (0x803ffe0)
+[DBG] [flash_area_write] line:230 Addr: 0x0803ffe0 Length: 0x4
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:1
+[DBG] [flash_area_open] line:179 ID=2
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [boot_validate_slot] line:624 slot:Primary   magic:0x96f3b83d, load_addr:0x0, header_size:0x200, protect_tlv_size:0x0, img_size:0x184bc, flag:0x0, version=1.0.0+0
+[DBG] [flash_area_id_from_multi_image_slot] line:324 img_index:0, slot:0
+[DBG] [flash_area_open] line:179 ID=1
+[DBG] [context_boot_go] line:1963 slot:Primary   magic:0x96f3b83d, load_addr:0x0, header_size:0x200, protect_tlv_size:0x0, img_size:0x184bc, flag:0x0, version=1.0.0+0
+[INF] [context_boot_go] line:1964 dump boot_rsp, br_flash_dev_id:0x0, br_image_off:0x8020000
+[INF] [boot_port_startup] line:46 br_image_off = 0x8020000
+[INF] [boot_port_startup] line:47 ih_hdr_size = 0x200
+[INF] [do_boot] line:17 Starting Main Application
+[INF] [do_boot] line:18 Image Start Offset: 0x8020000
+[INF] [do_boot] line:27 Vector Table Start Address: 0x8020200. PC=0x8031f79, SP=0x20020000
+[00:00:00.000] LOG -- btstack_tlv_flash_bank.c.443: found bank 0
+[00:00:00.001] LOG -- btstack_tlv_flash_bank.c.211: test erased: bank 0, offset 56
+[00:00:00.035] LOG -- btstack_tlv_flash_bank.c.472: Flash clean after last found tag
+[00:00:00.036] LOG -- btstack_tlv_flash_bank.c.487: write offset 56
+[00:00:00.038] LOG -- btstack_tlv.c.48: TLV Instance 0x80339a0
+[00:00:00.039] LOG -- le_device_db_tlv.c.159: num valid le device entries 0
+[00:00:00.040] LOG -- att_db.c.209: att_set_db 0x80374d7
+[00:00:00.041] LOG -- ../../example/nordic_dfu/nrf_dfu.c.60: Entering DFU mode in application.
+nordic_dfu_evt_observer evt:0 
+[00:00:00.043] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.274: Calling nrf_dfu_settings_init()...
+[00:00:00.045] LOG -- ../../example/nordic_dfu/nrf_dfu_flash.c.147: nrf_dfu_flash_init, nothing to do!
+[00:00:00.047] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.246: Resetting bootloader settings since neither the settings page nor the backup are valid (CRC error).
+[00:00:00.050] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.254: Old settings page detected. Upgrading info.
+[00:00:00.052] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.329: Writing settings...
+[00:00:00.053] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.330: Erasing old settings at: 0x200000b8
+[00:00:00.055] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.380: Backing up settings page to address 0x200008b8.
+[00:00:00.057] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.329: Writing settings...
+[00:00:00.058] LOG -- ../../example/nordic_dfu/nrf_dfu_settings.c.330: Erasing old settings at: 0x200008b8
+[00:00:00.060] LOG -- ../../example/nordic_dfu/nrf_dfu_transport.c.55: Initializing transports (found: 2000006c)
+[00:00:00.062] LOG -- nrf_dfu_ble.c.188: dfu_ctrl_point_value_handle 	0x06
+[00:00:00.064] LOG -- nrf_dfu_ble.c.189: dfu_ctrl_point_cccd_handle 	0x07
+[00:00:00.065] LOG -- nrf_dfu_ble.c.190: dfu_data_point_value_handle 	0x09
+[00:00:00.066] LOG -- nrf_dfu_ble.c.191: dfu_buttonless_value_handle 	0x0b
+[00:00:00.067] LOG -- nrf_dfu_ble.c.192: dfu_buttonless_cccd_handle 	0x0c
+[00:00:00.069] LOG -- ../../example/nordic_dfu/nrf_dfu_flash.c.147: nrf_dfu_flash_init, nothing to do!
+[00:00:00.070] LOG -- hci.c.3879: hci_power_control: 1, current mode 0
+Bluetooth power cycle
+[00:00:00.824] LOG -- hci.c.5342: BTSTACK_EVENT_STATE 1
+[00:00:00.825] EVT <= 60 01 01 
+[00:00:00.825] LOG -- hci.c.1304: hci_initializing_run: substate 0, can send 1
+[00:00:00.826] CMD => 03 0C 00 
+[00:00:00.827] EVT <= 6E 00 
+[00:00:01.027] LOG -- hci.c.1253: Resend HCI Reset
+[00:00:01.027] LOG -- hci.c.1304: hci_initializing_run: substate 0, can send 1
+[00:00:01.029] CMD => 03 0C 00 
+[00:00:01.032] EVT <= 6E 00 
+[00:00:01.053] EVT <= 0F 04 00 01 00 00 
+[00:00:01.054] LOG -- hci.c.1698: Command status for opcode 0000, expected 0c03
+[00:00:01.055] LOG -- hci.c.1304: hci_initializing_run: substate 1, can send 1
+[00:00:01.230] LOG -- hci.c.1253: Resend HCI Reset
+[00:00:01.230] LOG -- hci.c.1304: hci_initializing_run: substate 0, can send 1
+[00:00:01.232] CMD => 03 0C 00 
+[00:00:01.233] EVT <= 6E 00 
+[00:00:01.349] EVT <= 0E 04 01 03 0C 00 
+[00:00:01.349] LOG -- hci.c.1681: Command complete for expected opcode 0c03 at substate 1
+[00:00:01.351] LOG -- hci.c.1304: hci_initializing_run: substate 2, can send 1
+[00:00:01.352] CMD => 01 10 00 
+[00:00:01.353] EVT <= 6E 00 
+[00:00:01.355] EVT <= 0E 0C 01 01 10 00 06 31 20 06 0A 00 31 20 
+[00:00:01.356] LOG -- hci.c.2233: Manufacturer: 0x000a
+[00:00:01.357] LOG -- hci.c.1681: Command complete for expected opcode 1001 at substate 3
+[00:00:01.359] LOG -- hci.c.1304: hci_initializing_run: substate 4, can send 1
+[00:00:01.360] CMD => 14 0C 00 
+[00:00:01.361] EVT <= 6E 00 
+[00:00:01.387] EVT <= 0E FC 01 14 0C 00 43 53 52 20 2D 20 62 63 37 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:01.402] LOG -- hci.c.2139: local name: CSR - bc7
+[00:00:01.403] LOG -- hci.c.1681: Command complete for expected opcode 0c14 at substate 5
+[00:00:01.404] LOG -- hci.c.1811: Received local name, need baud change 0
+[00:00:01.406] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.407] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x01fe
+[00:00:01.408] CMD => 00 FC 13 C2 02 00 09 00 01 00 03 70 00 00 FE 01 01 00 08 00 90 65 
+[00:00:01.412] EVT <= 6E 00 
+[00:00:01.412] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.415] EVT <= FF 13 C2 01 00 09 00 01 00 03 70 00 00 FE 01 01 00 08 00 90 65 
+[00:00:01.417] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.418] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x00f2
+[00:00:01.420] CMD => 00 FC 13 C2 02 00 09 00 01 00 03 70 00 00 F2 00 01 00 08 00 01 00 
+[00:00:01.423] EVT <= 6E 00 
+[00:00:01.424] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.427] EVT <= FF 13 C2 01 00 09 00 01 00 03 70 00 00 F2 00 01 00 08 00 01 00 
+[00:00:01.429] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.430] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x01bf
+[00:00:01.431] CMD => 00 FC 13 C2 02 00 09 00 01 00 03 70 00 00 BF 01 01 00 08 00 0E 08 
+[00:00:01.435] EVT <= 6E 00 
+[00:00:01.435] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.439] EVT <= FF 13 C2 01 00 09 00 01 00 03 70 00 00 BF 01 01 00 08 00 0E 08 
+[00:00:01.440] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.442] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x01ea
+[00:00:01.443] CMD => 00 FC 15 C2 02 00 0A 00 02 00 03 70 00 00 EA 01 02 00 08 00 01 00 00 C2 
+[00:00:01.447] EVT <= 6E 00 
+[00:00:01.447] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.451] EVT <= FF 15 C2 01 00 0A 00 02 00 03 70 00 00 EA 01 02 00 08 00 01 00 00 C2 
+[00:00:01.453] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.454] LOG -- btstack_chipset_csr.c.171: csr: pskey 0x0001
+[00:00:01.455] CMD => 00 FC 19 C2 02 00 0A 00 03 00 03 70 00 00 01 00 04 00 08 00 DD 00 F0 EE CC 00 BB AA 
+[00:00:01.459] EVT <= 6E 00 
+[00:00:01.460] LOG -- hci.c.1304: hci_initializing_run: substate 9, can send 1
+[00:00:01.464] EVT <= FF 15 C2 01 00 0A 00 03 00 03 70 00 00 01 00 04 00 08 00 DD 00 F0 EE 
+[00:00:01.465] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:01.467] LOG -- hci.c.1381: CSR Warm Boot
+[00:00:01.467] CMD => 00 FC 13 C2 02 00 09 00 03 0E 02 40 00 00 00 00 00 00 08 00 00 00 
+[00:00:01.471] EVT <= 6E 00 
+[00:00:01.472] LOG -- hci.c.1304: hci_initializing_run: substate 12, can send 1
+[00:00:01.668] LOG -- hci.c.1259: Resend HCI Reset - CSR Warm Boot with Link Reset
+[00:00:01.669] LOG -- hci.c.1266: Resend HCI Reset - CSR Warm Boot
+[00:00:01.670] LOG -- hci.c.1304: hci_initializing_run: substate 10, can send 1
+[00:00:01.671] CMD => 03 0C 00 
+[00:00:01.674] EVT <= 6E 00 
+[00:00:01.872] LOG -- hci.c.1266: Resend HCI Reset - CSR Warm Boot
+[00:00:01.873] LOG -- hci.c.1304: hci_initializing_run: substate 10, can send 1
+[00:00:01.874] CMD => 03 0C 00 
+[00:00:01.875] EVT <= 6E 00 
+[00:00:02.075] LOG -- hci.c.1266: Resend HCI Reset - CSR Warm Boot
+[00:00:02.076] LOG -- hci.c.1304: hci_initializing_run: substate 10, can send 1
+[00:00:02.077] CMD => 03 0C 00 
+[00:00:02.078] EVT <= 6E 00 
+[00:00:02.079] EVT <= 0E 04 01 03 0C 00 
+[00:00:02.079] LOG -- hci.c.1681: Command complete for expected opcode 0c03 at substate 11
+[00:00:02.081] LOG -- hci.c.1304: hci_initializing_run: substate 8, can send 1
+[00:00:02.082] LOG -- hci.c.1407: Init script done
+[00:00:02.083] CMD => 02 10 00 
+[00:00:02.084] EVT <= 6E 00 
+[00:00:02.193] EVT <= 0E 04 01 03 0C 00 
+[00:00:02.194] LOG -- hci.c.1683: Command complete for different opcode 0c03, expected 1002, at substate 15
+[00:00:02.196] LOG -- hci.c.1304: hci_initializing_run: substate 14, can send 1
+[00:00:02.197] LOG -- hci.c.1451: Resend hci_read_local_supported_commands after CSR Warm Boot double reset
+[00:00:02.199] CMD => 02 10 00 
+[00:00:02.200] EVT <= 6E 00 
+[00:00:02.207] EVT <= 0E 44 01 02 10 00 FF FF FF 03 FE FF FF FF FF FF FF FF F3 0F E8 FE 3F F7 83 FF 1C 00 00 00 61 F7 FF FF 7F 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.212] LOG -- hci.c.2251: Local supported commands summary 87 - 01
+[00:00:02.213] LOG -- hci.c.1681: Command complete for expected opcode 1002 at substate 15
+[00:00:02.214] LOG -- btstack_crypto.c.1112: controller supports ECDH operation: 0
+[00:00:02.216] LOG -- hci.c.1304: hci_initializing_run: substate 22, can send 1
+[00:00:02.217] CMD => 09 10 00 
+[00:00:02.218] EVT <= 6E 00 
+[00:00:02.220] EVT <= 0E 0A 01 09 10 00 F0 EE DD CC BB AA 
+[00:00:02.221] LOG -- hci.c.2194: Local Address, Status: 0x00: Addr: AA:BB:CC:DD:EE:F0
+[00:00:02.222] LOG -- hci.c.1681: Command complete for expected opcode 1009 at substate 23
+[00:00:02.224] LOG -- hci.c.1304: hci_initializing_run: substate 24, can send 1
+[00:00:02.225] CMD => 05 10 00 
+[00:00:02.226] EVT <= 6E 00 
+[00:00:02.228] EVT <= 0E 0B 01 05 10 00 36 01 40 0A 00 08 00 
+[00:00:02.229] LOG -- hci.c.2154: hci_read_buffer_size: ACL size module 310 -> used 310, count 10 / SCO size 64, count 8
+[00:00:02.231] LOG -- hci.c.1681: Command complete for expected opcode 1005 at substate 25
+[00:00:02.233] LOG -- hci.c.1304: hci_initializing_run: substate 26, can send 1
+[00:00:02.234] CMD => 03 10 00 
+[00:00:02.235] EVT <= 6E 00 
+[00:00:02.237] EVT <= 0E 0C 01 03 10 00 FF FF 8F FE DB FF 5B 87 
+[00:00:02.238] LOG -- hci.c.2222: BR/EDR support 0, LE support 1
+[00:00:02.239] LOG -- hci.c.1681: Command complete for expected opcode 1003 at substate 27
+[00:00:02.240] LOG -- hci.c.1304: hci_initializing_run: substate 28, can send 1
+[00:00:02.242] CMD => 01 0C 08 FF FF FF FF FF FF FF 3F 
+[00:00:02.244] EVT <= 6E 00 
+[00:00:02.245] EVT <= 0E 04 01 01 0C 00 
+[00:00:02.246] LOG -- hci.c.1681: Command complete for expected opcode 0c01 at substate 29
+[00:00:02.247] LOG -- hci.c.1304: hci_initializing_run: substate 56, can send 1
+[00:00:02.249] CMD => 02 20 00 
+[00:00:02.250] EVT <= 6E 00 
+[00:00:02.251] EVT <= 0E 07 01 02 20 00 00 00 00 
+[00:00:02.252] LOG -- hci.c.2176: hci_le_read_buffer_size: size 0, count 0
+[00:00:02.253] LOG -- hci.c.1681: Command complete for expected opcode 2002 at substate 57
+[00:00:02.255] LOG -- hci.c.1304: hci_initializing_run: substate 58, can send 1
+[00:00:02.256] CMD => 6D 0C 02 01 00 
+[00:00:02.257] EVT <= 6E 00 
+[00:00:02.259] EVT <= 0E 04 01 6D 0C 00 
+[00:00:02.260] LOG -- hci.c.1681: Command complete for expected opcode 0c6d at substate 59
+[00:00:02.261] LOG -- hci.c.1304: hci_initializing_run: substate 60, can send 1
+[00:00:02.263] CMD => 01 20 08 FF 09 08 00 00 00 00 00 
+[00:00:02.265] EVT <= 6E 00 
+[00:00:02.266] EVT <= 0E 04 01 01 20 12 
+[00:00:02.267] LOG -- hci.c.1681: Command complete for expected opcode 2001 at substate 61
+[00:00:02.268] LOG -- hci.c.1304: hci_initializing_run: substate 62, can send 1
+[00:00:02.270] CMD => 0F 20 00 
+[00:00:02.270] EVT <= 6E 00 
+[00:00:02.272] EVT <= 0E 05 01 0F 20 00 19 
+[00:00:02.273] LOG -- hci.c.2189: hci_le_read_white_list_size: size 25
+[00:00:02.274] LOG -- hci.c.1681: Command complete for expected opcode 200f at substate 63
+[00:00:02.275] LOG -- hci.c.1304: hci_initializing_run: substate 64, can send 1
+[00:00:02.277] CMD => 0B 20 07 01 E0 01 30 00 00 00 
+[00:00:02.278] EVT <= 6E 00 
+[00:00:02.280] EVT <= 0E 04 01 0B 20 00 
+[00:00:02.280] LOG -- hci.c.1681: Command complete for expected opcode 200b at substate 65
+[00:00:02.282] LOG -- hci.c.1669: hci_init_done -> HCI_STATE_WORKING
+[00:00:02.283] LOG -- hci.c.5342: BTSTACK_EVENT_STATE 2
+[00:00:02.284] EVT <= 60 01 02 
+BTstack up and running on AA:BB:CC:DD:EE:F0.
+[00:00:02.285] CMD => 06 20 0F 30 00 30 00 00 00 00 00 00 00 00 00 00 07 00 
+[00:00:02.287] LOG -- hci.c.1227: Num LE Peripheral roles: 0 of 1
+[00:00:02.288] LOG -- sm.c.3467: HCI Working!
+[00:00:02.289] LOG -- btstack_tlv_flash_bank.c.333: Found tag '534d4552' at position 8
+[00:00:02.290] LOG -- sm.c.3475: ER from TLV
+[00:00:02.291] LOG -- btstack_util.c.292: ER     D122A76C1CD393347CB79BA7C4AD2CD2
+[00:00:02.292] LOG -- btstack_tlv_flash_bank.c.333: Found tag '534d4952' at position 32
+[00:00:02.294] LOG -- sm.c.3442: IR from TLV
+[00:00:02.295] LOG -- btstack_util.c.292: IR     CD28EB6D12DEA58941D859DC374CBFED
+[00:00:02.296] LOG -- hci.c.5919: hci_le_set_own_address_type: old 0, new 0
+[00:00:02.297] EVT <= 6E 00 
+[00:00:02.298] EVT <= 0E 04 01 06 20 00 
+[00:00:02.299] LOG -- sm.c.2047: DKG_CALC_IRK started
+[00:00:02.300] CMD => 17 20 20 ED BF 4C 37 DC 59 D8 41 89 A5 DE 12 6D EB 28 CD 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.306] EVT <= 6E 00 
+[00:00:02.309] EVT <= 0E 14 01 17 20 00 35 B3 86 E0 37 DA 8B 6E 4A 22 22 1C 57 DC 1A B5 
+[00:00:02.311] LOG -- btstack_util.c.292: irk    B51ADC571C22224A6E8BDA37E086B335
+[00:00:02.312] CMD => 08 20 20 11 02 01 06 09 09 44 66 75 30 30 30 30 31 03 03 59 FE 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.318] EVT <= 6E 00 
+[00:00:02.319] EVT <= 0E 04 01 08 20 00 
+[00:00:02.320] LOG -- sm.c.2058: DKG_CALC_DHK started
+[00:00:02.320] CMD => 17 20 20 ED BF 4C 37 DC 59 D8 41 89 A5 DE 12 6D EB 28 CD 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[00:00:02.326] EVT <= 6E 00 
+[00:00:02.329] EVT <= 0E 14 01 17 20 00 F5 9B 58 24 CE 66 AA BF EB 2B A3 C3 2A 73 5A C8 
+[00:00:02.331] LOG -- btstack_util.c.292: dhk    C85A732AC3A32BEBBFAA66CE24589BF5
+[00:00:02.332] CMD => 0A 20 01 01 
+[00:00:02.334] EVT <= 6E 00 
+[00:00:02.336] EVT <= 0E 04 01 0A 20 00 

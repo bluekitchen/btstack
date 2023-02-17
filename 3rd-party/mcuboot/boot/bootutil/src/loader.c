@@ -621,6 +621,8 @@ boot_validate_slot(struct boot_loader_state *state, int slot,
     }
 
     hdr = boot_img_hdr(state, slot);
+    BOOT_LOG_IMAGE_HEADER(slot, hdr);
+
     if (boot_check_header_erased(state, slot) == 0 ||
         (hdr->ih_flags & IMAGE_F_NON_BOOTABLE)) {
 
@@ -1077,6 +1079,7 @@ boot_swap_image(struct boot_loader_state *state, struct boot_status *bs)
     int rc;
 
     /* FIXME: just do this if asked by user? */
+    BOOT_LOG_BOOT_STATUS(bs);
 
     size = copy_size = 0;
     image_index = BOOT_CURR_IMG(state);
@@ -1087,6 +1090,8 @@ boot_swap_image(struct boot_loader_state *state, struct boot_status *bs)
          * will be used to determine the amount of sectors to swap.
          */
         hdr = boot_img_hdr(state, BOOT_PRIMARY_SLOT);
+        BOOT_LOG_IMAGE_HEADER(BOOT_PRIMARY_SLOT, hdr);
+
         if (hdr->ih_magic == IMAGE_MAGIC) {
             rc = boot_read_image_size(state, BOOT_PRIMARY_SLOT, &copy_size);
             assert(rc == 0);
@@ -1133,6 +1138,7 @@ boot_swap_image(struct boot_loader_state *state, struct boot_status *bs)
         }
 #endif
 
+        BOOT_LOG_DBG("primary_slot_size:0x%x, secondary_slot_size:0x%x", copy_size, size);
         if (size > copy_size) {
             copy_size = size;
         }
@@ -1876,6 +1882,7 @@ context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
 #ifdef MCUBOOT_VALIDATE_PRIMARY_SLOT
         FIH_CALL(boot_validate_slot, fih_rc, state, BOOT_PRIMARY_SLOT, NULL);
         if (fih_not_eq(fih_rc, FIH_SUCCESS)) {
+            BOOT_LOG_ERR("validate fail, fih_rc:0x%x", fih_rc);
             goto out;
         }
 #else
@@ -1952,8 +1959,9 @@ context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
     rsp->br_flash_dev_id = BOOT_IMG_AREA(state, BOOT_PRIMARY_SLOT)->fa_device_id;
     rsp->br_image_off = boot_img_slot_off(state, BOOT_PRIMARY_SLOT);
     rsp->br_hdr = boot_img_hdr(state, BOOT_PRIMARY_SLOT);
-
     fih_rc = FIH_SUCCESS;
+    BOOT_LOG_IMAGE_HEADER(BOOT_PRIMARY_SLOT, rsp->br_hdr);
+    BOOT_LOG_INF("dump boot_rsp, br_flash_dev_id:0x%x, br_image_off:0x%x", rsp->br_flash_dev_id, rsp->br_image_off);
 out:
     IMAGES_ITER(BOOT_CURR_IMG(state)) {
 #if MCUBOOT_SWAP_USING_SCRATCH

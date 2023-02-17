@@ -1,12 +1,3 @@
-#if 0
-#include "btstack_debug.h"
-#define MCUBOOT_LOG_ERR(_fmt, ...)  log_error(_fmt, ##__VA_ARGS__)
-#define MCUBOOT_LOG_WRN(_fmt, ...)  log_error(_fmt, ##__VA_ARGS__)
-#define MCUBOOT_LOG_INF(_fmt, ...)  log_info(_fmt, ##__VA_ARGS__)     
-#define MCUBOOT_LOG_DBG(_fmt, ...)  log_debug(_fmt, ##__VA_ARGS__) 
-#define MCUBOOT_LOG_MODULE_DECLARE(...)
-#define MCUBOOT_LOG_MODULE_REGISTER(...)
-#else
 #define MCUBOOT_LOG_LEVEL_OFF      0
 #define MCUBOOT_LOG_LEVEL_ERROR    1
 #define MCUBOOT_LOG_LEVEL_WARNING  2
@@ -54,5 +45,4 @@ extern int printf( const char *pcFormat, ...);
 
 #define MCUBOOT_LOG_MODULE_DECLARE(...)
 #define MCUBOOT_LOG_MODULE_REGISTER(...)
-#endif
 

@@ -100,6 +100,8 @@ swap_status_init(const struct boot_loader_state *state,
             &swap_state);
     assert(rc == 0);
 
+    BOOT_LOG_BOOT_SWAP_STATE(BOOT_SECONDARY_SLOT, &swap_state);
+
     if (bs->swap_type != BOOT_SWAP_TYPE_NONE) {
         rc = boot_write_swap_info(fap, bs->swap_type, image_index);
         assert(rc == 0);
@@ -176,6 +178,7 @@ swap_read_status(struct boot_loader_state *state, struct boot_status *bs)
 
         /* Extract the swap type info */
         bs->swap_type = BOOT_GET_SWAP_TYPE(swap_info);
+        BOOT_LOG_BOOT_STATUS(bs);
     }
 
     flash_area_close(fap);

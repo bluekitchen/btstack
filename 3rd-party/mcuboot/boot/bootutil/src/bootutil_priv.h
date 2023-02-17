@@ -161,6 +161,38 @@ _Static_assert(BOOT_IMAGE_NUMBER > 0, "Invalid value for BOOT_IMAGE_NUMBER");
                  (hdr)->ih_ver.iv_revision,                               \
                  (hdr)->ih_ver.iv_build_num)
 
+#define BOOT_LOG_IMAGE_HEADER(slot, hdr)                                \
+    BOOT_LOG_DBG("slot:%-9s magic:0x%x, load_addr:0x%x, header_size:0x%x, protect_tlv_size:0x%x, img_size:0x%x, flag:0x%x, version=%u.%u.%u+%u",\
+             ((slot) == BOOT_PRIMARY_SLOT) ? "Primary" : "Secondary",   \
+             (hdr)->ih_magic,                                           \
+             (hdr)->ih_load_addr,                                       \
+             (hdr)->ih_hdr_size,                                        \
+             (hdr)->ih_protect_tlv_size,                                \
+             (hdr)->ih_img_size,                                        \
+             (hdr)->ih_flags,                                           \
+             (hdr)->ih_ver.iv_major,                                    \
+             (hdr)->ih_ver.iv_minor,                                    \
+             (hdr)->ih_ver.iv_revision,                                 \
+             (hdr)->ih_ver.iv_build_num)
+
+#define BOOT_LOG_BOOT_STATUS(bs)                                       \
+    BOOT_LOG_DBG("idx:0x%x, state:0x%x, op:0x%x, use_scratch:0x%x, swap_type:0x%x, swap_size:0x%x",\
+             (bs)->idx,                                                \
+             (bs)->state,                                              \
+             (bs)->op,                                                 \
+             (bs)->use_scratch,                                        \
+             (bs)->swap_type,                                          \
+             (bs)->swap_size)
+
+#define BOOT_LOG_BOOT_SWAP_STATE(slot, state)                          \
+    BOOT_LOG_DBG("slot:%-9s magic:0x%x, swap_type:0x%x, copy_done:0x%x, img_ok:0x%x, img_num:0x%x",\
+            ((slot) == BOOT_PRIMARY_SLOT) ? "Primary" : "Secondary",   \
+            (state)->magic,                                            \
+            (state)->swap_type,                                        \
+            (state)->copy_done,                                        \
+            (state)->image_ok,                                         \
+            (state)->image_num)
+
 /*
  * The current flashmap API does not check the amount of space allocated when
  * loading sector data from the flash device, allowing for smaller counts here
