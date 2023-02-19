@@ -5,6 +5,9 @@
 		}
 	],
 	"settings": {
-		"cortex-debug.variableUseNaturalFormat": false
+		"cortex-debug.variableUseNaturalFormat": false,
+		"files.associations": {
+			"nrf_dfu_flash_port.h": "c"
+		}
 	}
 }

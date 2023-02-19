@@ -55,6 +55,11 @@
 extern "C" {
 #endif
 
+typedef struct {
+  void (*read)(void *dst, uint32_t addr, uint32_t len);
+  uint32_t (*write)(void *src, uint32_t addr, uint32_t len);
+  uint32_t (*erase)(uint32_t addr, uint32_t len);
+} nrf_dfu_flash_interface_t;
 
 /**@brief   nrf_fstorage event handler function for DFU fstorage operations.
  *
@@ -68,11 +73,11 @@ typedef void (*nrf_dfu_flash_callback_t)(void * p_buf);
  * Depending on whether or not the SoftDevice is present and its IRQ have been initialized,
  * this function initializes the correct @ref nrf_fstorage backend.
  *
- * @param[in]   sd_irq_initialized  Whether or not the SoftDevice IRQ have been initialized.
+ * @param[in]   flash_interface  porting of flash interface.
  *
  * @retval NRF_SUCCESS  If the operation was successful.
   */
-ret_code_t nrf_dfu_flash_init(bool sd_irq_initialized);
+ret_code_t nrf_dfu_flash_init(nrf_dfu_flash_interface_t *flash_interface);
 
 
 /**@brief Function for storing data to flash.

@@ -273,16 +273,9 @@ ret_code_t nrf_dfu_settings_init(bool sd_irq_initialized)
 {
     NRF_LOG_DEBUG("Calling nrf_dfu_settings_init()...");
 
-    ret_code_t err_code = nrf_dfu_flash_init(sd_irq_initialized);
-    if (err_code != NRF_SUCCESS)
-    {
-        NRF_LOG_ERROR("nrf_dfu_flash_init() failed with error: %x", err_code);
-        return NRF_ERROR_INTERNAL;
-    }
-
     nrf_dfu_settings_reinit();
 
-    err_code = nrf_dfu_settings_write_and_backup(NULL);
+    ret_code_t err_code = nrf_dfu_settings_write_and_backup(NULL);
 
     if (err_code != NRF_SUCCESS)
     {

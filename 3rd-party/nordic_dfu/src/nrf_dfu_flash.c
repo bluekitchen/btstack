@@ -37,43 +37,68 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#include "nrf_dfu.h"
 
-#include "nrf_dfu_utils.h"
-#include "nrf_dfu_transport.h"
-#include "nrf_dfu_req_handler.h"
-#include "nrf_dfu_ble.h"
+#include "nrf_dfu_flash.h"
+#include "nrf_dfu_types.h"
 #include "nrf_log.h"
 
-static nrf_dfu_observer_t m_user_observer; //<! Observer callback set by the user.
-static nrf_dfu_transport_t m_dfu_tran = {
-    .init_func = nrf_dfu_ble_init,
-    .close_func = NULL,
-};
+static nrf_dfu_flash_interface_t *flash_if;
 
-uint32_t nrf_dfu_init(nrf_dfu_observer_t observer)
+ret_code_t nrf_dfu_flash_init(nrf_dfu_flash_interface_t *flash_interface)
 {
-    uint32_t ret_val;
-
-    m_user_observer = observer;
-
-    NRF_LOG_INFO("Entering DFU mode in application.");
-
-    m_user_observer(NRF_DFU_EVT_DFU_INITIALIZED, NULL, 0);
-
-    ret_val = nrf_dfu_settings_init(false);
-    if (ret_val != NRF_SUCCESS)
-    {
-        NRF_LOG_ERROR("nrf dfu setting init fail, ret: 0x%08x", ret_val);
-        return NRF_ERROR_INTERNAL;
-    }
-    // Initializing transports
-    ret_val = nrf_dfu_transports_init(observer, &m_dfu_tran);
-    if (ret_val != NRF_SUCCESS)
-    {
-        NRF_LOG_ERROR("Could not initalize DFU transport: 0x%08x", ret_val);
-        return ret_val;
-    }
-
-    return nrf_dfu_req_handler_init(observer);
+    NRF_LOG_DEBUG("nrf_dfu_flash_init!");
+    flash_if = flash_interface;
+    return NRF_SUCCESS;
 }
+
+ret_code_t nrf_dfu_flash_store(uint32_t                   dest,
+                               void               const * p_src,
+                               uint32_t                   len,
+                               nrf_dfu_flash_callback_t   callback)
+{
+    ret_code_t rc;
+
+    NRF_LOG_DEBUG("nrf_fstorage_write(addr=%p, src=%p, len=%d bytes)",
+                  dest, p_src, len);
+
+    //lint -save -e611 (Suspicious cast)
+    rc = flash_if->write(p_src, dest, len);
+    //lint -restore
+
+    return rc;
+}
+
+
+ret_code_t nrf_dfu_flash_erase(uint32_t                 page_addr,
+                               uint32_t                 num_pages,
+                               nrf_dfu_flash_callback_t callback)
+{
+    ret_code_t rc;
+    uint32_t len = num_pages * CODE_PAGE_SIZE;
+    NRF_LOG_DEBUG("nrf_fstorage_erase(addr=0x%p, len=%d pages)", page_addr, num_pages);
+
+    if ((page_addr + len) > (NRF_DFU_BANK1_START_ADDR + NRF_DFU_BANK1_SIZE)) {
+        NRF_LOG_ERROR("out of boundary, start_addr:0x%x, len:0x%x", page_addr, len);
+        return NRF_ERROR_INVALID_PARAM;
+    }
+
+    if (page_addr % NRF_DFU_FLASH_SECTOR_SIZE) {
+        NRF_LOG_WARNING("start addr not alignd, start_addr:0x%x", page_addr);
+        return NRF_SUCCESS;
+    }
+    if (len < NRF_DFU_FLASH_SECTOR_SIZE) {
+        len = NRF_DFU_FLASH_SECTOR_SIZE;
+    }
+    //lint -save -e611 (Suspicious cast)
+    for (uint32_t i = 0; i < (len / NRF_DFU_FLASH_SECTOR_SIZE); i++) {
+        rc = flash_if->erase(page_addr + i * NRF_DFU_FLASH_SECTOR_SIZE, NRF_DFU_FLASH_SECTOR_SIZE);
+        if (rc != 0) {
+            NRF_LOG_ERROR("Erase fail at addr: 0x%x ", page_addr + NRF_DFU_FLASH_SECTOR_SIZE * i);
+            return NRF_ERROR_INTERNAL;
+        }
+    }
+    //lint -restore
+
+    return rc;
+}
+
