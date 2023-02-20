@@ -1,5 +1,3 @@
-#define BTSTACK_FILE__ "nrf_dfu_flash_port.c"
-
 #include "nrf_dfu_types.h"
 #include "nrf_log.h"
 #include "stm32f4xx_hal.h"
@@ -59,7 +57,7 @@ static void hal_flash_read(void *dst, uint32_t addr, uint32_t len)
     memcpy(dst, (void *)((uint32_t *)addr), len);
 }
 
-static uint32_t hal_flash_write(void *src, uint32_t addr, uint32_t len)
+static ret_code_t hal_flash_write(void *src, uint32_t addr, uint32_t len)
 {
 	unsigned int i;
 	HAL_FLASH_Unlock();
@@ -74,27 +72,45 @@ static uint32_t hal_flash_write(void *src, uint32_t addr, uint32_t len)
         return NRF_ERROR_INTERNAL;
     }
 #endif
-    return 0;
+    return NRF_SUCCESS;
 }
 
-static uint32_t hal_flash_erase(uint32_t addr, uint32_t len)
+static ret_code_t hal_flash_erase(uint32_t addr, uint32_t len)
 {
     uint32_t sector;
     FLASH_EraseInitTypeDef eraseInit;
+    uint32_t sectorError;
 
-    sector = hal_get_sector_from_address(addr);
-    if (sector > FLASH_SECTOR_11) {
-        NRF_LOG_ERROR("get sector fail by invalid addr 0x%x ", addr);
-        return NRF_ERROR_INTERNAL;
+    eraseInit.TypeErase = FLASH_TYPEERASE_SECTORS;
+    eraseInit.NbSectors = 1;
+    eraseInit.VoltageRange = FLASH_VOLTAGE_RANGE_1;	// safe value
+
+    if ((addr + len) > (NRF_DFU_BANK1_START_ADDR + NRF_DFU_BANK1_SIZE)) {
+        NRF_LOG_ERROR("out of boundary, start_addr:0x%x, len:0x%x", addr, len);
+        return NRF_ERROR_INVALID_PARAM;
     }
-	eraseInit.TypeErase = FLASH_TYPEERASE_SECTORS;
-	eraseInit.Sector = sector;
-	eraseInit.NbSectors = 1;
-	eraseInit.VoltageRange = FLASH_VOLTAGE_RANGE_1;	// safe value
-	uint32_t sectorError;
-	HAL_FLASH_Unlock();
-	HAL_FLASHEx_Erase(&eraseInit, &sectorError);
-	HAL_FLASH_Lock();
+
+    if (addr % NRF_DFU_FLASH_SECTOR_SIZE && len < NRF_DFU_FLASH_SECTOR_SIZE) {
+        NRF_LOG_WARNING("start addr(0x%x) not alignd, and erase len is samller than one sector size(0x%x)",
+                    addr, NRF_DFU_FLASH_SECTOR_SIZE);
+        //which means this scope has been erased before, so just return success.
+        return NRF_SUCCESS;
+    }
+    if (len < NRF_DFU_FLASH_SECTOR_SIZE) {
+        len = NRF_DFU_FLASH_SECTOR_SIZE;
+    }
+    //lint -save -e611 (Suspicious cast)
+    for (uint32_t i = 0; i < (len / NRF_DFU_FLASH_SECTOR_SIZE); i++) {
+        sector = hal_get_sector_from_address(addr + i * NRF_DFU_FLASH_SECTOR_SIZE);
+        if (sector > FLASH_SECTOR_11) {
+            NRF_LOG_ERROR("get sector fail by invalid addr 0x%x ", addr + i * NRF_DFU_FLASH_SECTOR_SIZE);
+            return NRF_ERROR_INTERNAL;
+        }
+        eraseInit.Sector = sector;
+        HAL_FLASH_Unlock();
+        HAL_FLASHEx_Erase(&eraseInit, &sectorError);
+        HAL_FLASH_Lock();
+    }
 
 #if NRF_DFU_FLASH_VALIDATION
     for (size_t i = 0; i < len; i++) {
@@ -105,16 +121,16 @@ static uint32_t hal_flash_erase(uint32_t addr, uint32_t len)
         }
     }
 #endif
-    return 0;
+    return NRF_SUCCESS;
 }
 
-static nrf_dfu_flash_interface_t flash_interface = {
+static nrf_dfu_flash_hal_t flash_interface = {
     .read = hal_flash_read,
     .write = hal_flash_write,
     .erase = hal_flash_erase
 };
 
-nrf_dfu_flash_interface_t *nrf_dfu_flash_port_get_interface(void)
+nrf_dfu_flash_hal_t *nrf_dfu_flash_port_get_interface(void)
 {
     return &flash_interface;
 }

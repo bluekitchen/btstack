@@ -57,9 +57,9 @@ extern "C" {
 
 typedef struct {
   void (*read)(void *dst, uint32_t addr, uint32_t len);
-  uint32_t (*write)(void *src, uint32_t addr, uint32_t len);
-  uint32_t (*erase)(uint32_t addr, uint32_t len);
-} nrf_dfu_flash_interface_t;
+  ret_code_t (*write)(void *src, uint32_t addr, uint32_t len);
+  ret_code_t (*erase)(uint32_t addr, uint32_t len);
+} nrf_dfu_flash_hal_t;
 
 /**@brief   nrf_fstorage event handler function for DFU fstorage operations.
  *
@@ -77,7 +77,7 @@ typedef void (*nrf_dfu_flash_callback_t)(void * p_buf);
  *
  * @retval NRF_SUCCESS  If the operation was successful.
   */
-ret_code_t nrf_dfu_flash_init(nrf_dfu_flash_interface_t *flash_interface);
+ret_code_t nrf_dfu_flash_init(nrf_dfu_flash_hal_t *flash_interface);
 
 
 /**@brief Function for storing data to flash.

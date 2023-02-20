@@ -42,11 +42,11 @@
 #include "nrf_dfu_types.h"
 #include "nrf_log.h"
 
-static nrf_dfu_flash_interface_t *flash_if;
+static nrf_dfu_flash_hal_t *flash_if;
 
-ret_code_t nrf_dfu_flash_init(nrf_dfu_flash_interface_t *flash_interface)
+ret_code_t nrf_dfu_flash_init(nrf_dfu_flash_hal_t *flash_interface)
 {
-    NRF_LOG_DEBUG("nrf_dfu_flash_init!");
+    NRF_LOG_DEBUG("nrf_dfu_flash_init, interface:0x%x", flash_interface);
     flash_if = flash_interface;
     return NRF_SUCCESS;
 }
@@ -64,7 +64,14 @@ ret_code_t nrf_dfu_flash_store(uint32_t                   dest,
     //lint -save -e611 (Suspicious cast)
     rc = flash_if->write(p_src, dest, len);
     //lint -restore
-
+    if (rc == NRF_SUCCESS)
+    {
+        /* If a callback to free the request payload buffer was provided, invoke it now. */
+        if (callback)
+        {
+            callback(p_src);
+        }
+    }
     return rc;
 }
 
@@ -73,32 +80,9 @@ ret_code_t nrf_dfu_flash_erase(uint32_t                 page_addr,
                                uint32_t                 num_pages,
                                nrf_dfu_flash_callback_t callback)
 {
-    ret_code_t rc;
     uint32_t len = num_pages * CODE_PAGE_SIZE;
-    NRF_LOG_DEBUG("nrf_fstorage_erase(addr=0x%p, len=%d pages)", page_addr, num_pages);
+    NRF_LOG_DEBUG("nrf_fstorage_erase(addr=0x%p, len=0x%x, pages=%d)", page_addr, len, num_pages);
 
-    if ((page_addr + len) > (NRF_DFU_BANK1_START_ADDR + NRF_DFU_BANK1_SIZE)) {
-        NRF_LOG_ERROR("out of boundary, start_addr:0x%x, len:0x%x", page_addr, len);
-        return NRF_ERROR_INVALID_PARAM;
-    }
-
-    if (page_addr % NRF_DFU_FLASH_SECTOR_SIZE) {
-        NRF_LOG_WARNING("start addr not alignd, start_addr:0x%x", page_addr);
-        return NRF_SUCCESS;
-    }
-    if (len < NRF_DFU_FLASH_SECTOR_SIZE) {
-        len = NRF_DFU_FLASH_SECTOR_SIZE;
-    }
-    //lint -save -e611 (Suspicious cast)
-    for (uint32_t i = 0; i < (len / NRF_DFU_FLASH_SECTOR_SIZE); i++) {
-        rc = flash_if->erase(page_addr + i * NRF_DFU_FLASH_SECTOR_SIZE, NRF_DFU_FLASH_SECTOR_SIZE);
-        if (rc != 0) {
-            NRF_LOG_ERROR("Erase fail at addr: 0x%x ", page_addr + NRF_DFU_FLASH_SECTOR_SIZE * i);
-            return NRF_ERROR_INTERNAL;
-        }
-    }
-    //lint -restore
-
-    return rc;
+    return flash_if->erase(page_addr, len);
 }
 

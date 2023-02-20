@@ -71,13 +71,13 @@ This is the offset where the first byte of the SoftDevice hex file is written. *
 #define MBR_BOOTLOADER_ADDR      (0xFF8)
 
 /** @brief Location (in UICR) of the bootloader address. */
-#define MBR_UICR_BOOTLOADER_ADDR (&(NRF_UICR->NRFFW[0]))
+#define MBR_UICR_BOOTLOADER_ADDR //(&(NRF_UICR->NRFFW[0]))
 
 /** @brief Location (in the flash memory) of the address of the MBR parameter page. */
 #define MBR_PARAM_PAGE_ADDR      (0xFFC)
 
 /** @brief Location (in UICR) of the address of the MBR parameter page. */
-#define MBR_UICR_PARAM_PAGE_ADDR (&(NRF_UICR->NRFFW[1]))
+#define MBR_UICR_PARAM_PAGE_ADDR //(&(NRF_UICR->NRFFW[1]))
 
 
 /** @} */

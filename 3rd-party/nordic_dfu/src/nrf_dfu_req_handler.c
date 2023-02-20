@@ -526,12 +526,6 @@ static void on_data_obj_write_request(nrf_dfu_request_t * p_req, nrf_dfu_respons
      */
     p_res->write.crc    = s_dfu_settings.progress.firmware_image_crc;
     p_res->write.offset = s_dfu_settings.progress.firmware_image_offset;
-
-    /* If a callback to free the request payload buffer was provided, invoke it now. */
-    if (p_req->callback.write)
-    {
-        p_req->callback.write((void*)p_req->write.p_data);
-    }
 }
 
 
@@ -830,17 +824,17 @@ ret_code_t nrf_dfu_req_handler_init(nrf_dfu_observer_t observer)
     {
         return NRF_ERROR_INVALID_PARAM;
     }
-#if NRF_DFU_FLASH_EN
+#if 0//NRF_DFU_FLASH_EN
 #if defined(BLE_STACK_SUPPORT_REQD) || defined(ANT_STACK_SUPPORT_REQD)
-    ret_val  = nrf_dfu_flash_init(true);
+    ret_val  = nrf_dfu_flash_init(nrf_dfu_flash_port_get_interface());
 #else
-    ret_val = nrf_dfu_flash_init(false);
-#endif
+    ret_val = nrf_dfu_flash_init(nrf_dfu_flash_port_get_interface());
 #endif
     if (ret_val != NRF_SUCCESS)
     {
         return ret_val;
     }
+#endif
 
     nrf_dfu_validation_init();
 

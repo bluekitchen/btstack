@@ -1,5 +1,3 @@
-#define BTSTACK_FILE__ "nrf_dfu_ble.c"
-
 /**
  * Implementation of the nordic DFU ble port
  *
@@ -332,7 +330,7 @@ static void nrf_dfu_req_handler_callback(nrf_dfu_response_t * p_res, void * p_co
 
 static void on_flash_write(void * p_buf)
 {
-    NRF_LOG_DEBUG("Freeing buffer %p", p_buf);
+    NRF_LOG_DEBUG("flash operation complete! freeing buffer %p", p_buf);
     free(p_buf);
 }
 

@@ -51,12 +51,8 @@
 #include <stddef.h>
 
 #include "nrf_errors.h"
-#if 0
 #include "nrf_mbr.h"
-#include "sdk_common.h"
-#include "app_util_platform.h"
 #include "sdk_config.h"
-#endif
 
 #if defined(NRF_DFU_TRANSPORT_BLE) && NRF_DFU_TRANSPORT_BLE
 #include "ble_gap.h"
