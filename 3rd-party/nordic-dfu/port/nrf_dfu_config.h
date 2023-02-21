@@ -41,9 +41,11 @@
 #ifndef NRF_DFU_CONFIG_H
 #define NRF_DFU_CONFIG_H
 
-#define NRF_DFU_VALIDATION_EN   1
-#define NRF_DFU_SETTING         0
-#define NRF_DFU_FLASH_EN        1
+#define NRF_DFU_SETTINGS_VERSION    0x00000001
+
+#define NRF_DFU_VALIDATION_EN       1
+#define NRF_DFU_SETTING             0
+#define NRF_DFU_FLASH_EN            1
 
 #define NRF_DFU_BANK0_START_ADDR    0x08020000
 #define NRF_DFU_BANK1_START_ADDR    0x08040000

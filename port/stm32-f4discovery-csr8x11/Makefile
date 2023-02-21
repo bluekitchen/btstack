@@ -188,21 +188,21 @@ C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c
 endif
 
 ifeq (${BLE_ENABLE}, y)
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/port/nrf_dfu_ble.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/port/nrf_dfu_flash_port.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/nrf_dfu.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/nrf_dfu_transport.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/nrf_dfu_req_handler.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/nrf_dfu_settings.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/nrf_dfu_utils.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/dfu-cc.pb.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/nrf_dfu_flash.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/nrf_dfu_validation.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/nrf_dfu_handling_error.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/crc32.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/nano-pb/pb_common.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/nano-pb/pb_decode.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/nano-pb/pb_encode.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/port/nrf_dfu_ble.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/port/nrf_dfu_flash_port.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_transport.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_req_handler.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_settings.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_utils.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/dfu-cc.pb.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_flash.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_validation.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_handling_error.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/crc32.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nano-pb/pb_common.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nano-pb/pb_decode.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nano-pb/pb_encode.c
 endif
 
 
@@ -421,9 +421,9 @@ C_INCLUDES += -I pdm
 C_INCLUDES += -I port
 C_INCLUDES += -I src
 C_INCLUDES += -I${BTSTACK_ROOT}/tool
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/nordic_dfu/src
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/nordic_dfu/port
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/nordic_dfu/src/nano-pb
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/nordic-dfu/src
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/nordic-dfu/port
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nano-pb
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
@@ -604,7 +604,7 @@ ifeq (${mcuboot}, app1)
 	python3 ${BTSTACK_ROOT}/3rd-party/mcuboot/scripts/imgtool.py sign --header-size 0x200 --align 4 --slot-size 0x20000 --version 1.0.0 --pad-header $(BUILD_DIR)/${EXAMPLES}.bin $(BUILD_DIR)/mcuboot_primary_slot.bin
 else ifeq (${mcuboot}, app2)
 	python3 ${BTSTACK_ROOT}/3rd-party/mcuboot/scripts/imgtool.py sign --header-size 0x200 --align 4 --slot-size 0x20000 --version 1.0.0 --pad-header $(BUILD_DIR)/${EXAMPLES}.bin $(BUILD_DIR)/mcuboot_secondary_slot.bin
-	./${BTSTACK_ROOT}/3rd-party/nordic_dfu/tools/nrfutil-linux pkg generate --hw-version 52 --sd-req 0x0103 --application $(BUILD_DIR)/mcuboot_secondary_slot.bin --application-version 1 $(BUILD_DIR)/nrf_dfu_mcuboot.zip
+	./${BTSTACK_ROOT}/3rd-party/nordic-dfu/tools/nrfutil-linux pkg generate --hw-version 52 --sd-req 0x0103 --application $(BUILD_DIR)/mcuboot_secondary_slot.bin --application-version 1 $(BUILD_DIR)/nrf_dfu_mcuboot.zip
 endif
 
 $(BUILD_DIR):

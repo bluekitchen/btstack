@@ -51,7 +51,7 @@
 // <h> nRF_ANT 
 
 #define NRF52_SERIES
-#define NRF_DFU_SETTINGS_VERSION    0x00000001
+
 #define __WEAK __attribute__((weak))
 
 #define UNUSED_VARIABLE(X)  ((void)(X))
