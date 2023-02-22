@@ -850,7 +850,6 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    bd_addr_t address;
     uint8_t status;
 
     uint8_t allocation_method;
@@ -901,22 +900,21 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
         }
 
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
-            a2dp_subevent_stream_established_get_bd_addr(packet, a2dp_conn->addr);
-
             status = a2dp_subevent_stream_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("A2DP  Sink      : Streaming connection failed, status 0x%02x\n", status);
                 break;
             }
 
+            a2dp_subevent_stream_established_get_bd_addr(packet, a2dp_conn->addr);
             a2dp_conn->a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
             a2dp_conn->stream_state = STREAM_STATE_OPEN;
 
             printf("A2DP  Sink      : Streaming connection is established, address %s, cid 0x%02x, local seid %d\n",
-                   bd_addr_to_str(address), a2dp_conn->a2dp_cid, a2dp_conn->a2dp_local_seid);
+                   bd_addr_to_str(a2dp_conn->addr), a2dp_conn->a2dp_cid, a2dp_conn->a2dp_local_seid);
 #ifdef HAVE_BTSTACK_STDIN
             // use address for outgoing connections
-            memcpy(device_addr, address, 6);
+            memcpy(device_addr, a2dp_conn->addr, 6);
 #endif
             break;
         
