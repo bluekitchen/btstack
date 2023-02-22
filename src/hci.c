@@ -7112,12 +7112,6 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
 #ifdef ENABLE_LE_CENTRAL
     uint8_t initiator_filter_policy;
 #endif
-#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-    uint8_t i;
-    uint8_t num_cis;
-    hci_con_handle_t cis_handle;
-    uint8_t status;
-#endif
 
     uint16_t opcode = little_endian_read_16(packet, 0);
     switch (opcode) {
