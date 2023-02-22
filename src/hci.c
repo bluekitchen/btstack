@@ -1863,10 +1863,12 @@ static void hci_initializing_run(void){
                }
                break;
             }
+            hci_stack->substate = HCI_INIT_CUSTOM_INIT;
 
             /* fall through */
 
         case HCI_INIT_CUSTOM_INIT:
+        case HCI_INIT_CUSTOM_PRE_INIT:
             // Custom initialization
             if (hci_stack->chipset && hci_stack->chipset->next_command){
                 hci_stack->chipset_result = (*hci_stack->chipset->next_command)(hci_stack->hci_packet_buffer);
@@ -1874,7 +1876,17 @@ static void hci_initializing_run(void){
                 switch (hci_stack->chipset_result){
                     case BTSTACK_CHIPSET_VALID_COMMAND:
                         send_cmd = true;
-                        hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT;
+                        switch (hci_stack->substate){
+                            case HCI_INIT_CUSTOM_INIT:
+                                hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT;
+                                break;
+                            case HCI_INIT_CUSTOM_PRE_INIT:
+                                hci_stack->substate = HCI_INIT_W4_CUSTOM_PRE_INIT;
+                                break;
+                            default:
+                                btstack_assert(false);
+                                break;
+                        }
                         break;
                     case BTSTACK_CHIPSET_WARMSTART_REQUIRED:
                         send_cmd = true;
@@ -1906,6 +1918,13 @@ static void hci_initializing_run(void){
                     break;
                 }
                 log_info("Init script done");
+
+                // Custom Pre-Init complete, start regular init with HCI Reset
+                if (hci_stack->substate == HCI_INIT_CUSTOM_PRE_INIT){
+                    hci_stack->substate = HCI_INIT_W4_SEND_RESET;
+                    hci_send_cmd(&hci_reset);
+                    break;
+                }
 
                 // Init script download on Broadcom chipsets causes:
                 if ( (hci_stack->chipset_result != BTSTACK_CHIPSET_NO_INIT_SCRIPT) &&
@@ -2377,6 +2396,10 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
         case HCI_INIT_W4_CUSTOM_INIT:
             // repeat custom init
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
+            return;
+        case HCI_INIT_W4_CUSTOM_PRE_INIT:
+            // repeat custom init
+            hci_stack->substate = HCI_INIT_CUSTOM_PRE_INIT;
             return;
 #endif
 
@@ -4650,6 +4673,10 @@ void hci_set_chipset(const btstack_chipset_t *chipset_driver){
     }
 }
 
+void hci_enable_custom_pre_init(void){
+    hci_stack->chipset_pre_init = true;
+}
+
 /**
  * @brief Configure Bluetooth hardware control. Has to be called after hci_init() but before power on.
  */
@@ -4906,7 +4933,12 @@ static void hci_power_enter_initializing_state(void){
     hci_stack->num_cmd_packets = 1; // assume that one cmd can be sent
     hci_stack->hci_packet_buffer_reserved = false;
     hci_stack->state = HCI_STATE_INITIALIZING;
-    hci_stack->substate = HCI_INIT_SEND_RESET;
+
+    if (hci_stack->chipset_pre_init) {
+        hci_stack->substate = HCI_INIT_CUSTOM_PRE_INIT;
+    } else {
+        hci_stack->substate = HCI_INIT_SEND_RESET;
+    }
 }
 
 static void hci_power_enter_halting_state(void){

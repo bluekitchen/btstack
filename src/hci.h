@@ -754,10 +754,16 @@ typedef enum hci_init_state{
     HCI_INIT_W4_SEND_BAUD_CHANGE,
     HCI_INIT_CUSTOM_INIT,
     HCI_INIT_W4_CUSTOM_INIT,
+
     HCI_INIT_SEND_RESET_CSR_WARM_BOOT,
     HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT,
     HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT_LINK_RESET,
+
     HCI_INIT_W4_CUSTOM_INIT_BCM_DELAY,
+
+    // Support for Pre-Init before HCI Reset
+    HCI_INIT_CUSTOM_PRE_INIT,
+    HCI_INIT_W4_CUSTOM_PRE_INIT,
 #endif
 
     HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS,
@@ -948,6 +954,9 @@ typedef struct {
     
     // chipset driver
     const btstack_chipset_t * chipset;
+
+    // chipset driver requires pre-init
+    bool chipset_pre_init;
 
     // hardware power controller
     const btstack_control_t * control;
@@ -1283,6 +1292,11 @@ void hci_init(const hci_transport_t *transport, const void *config);
  * @brief Configure Bluetooth chipset driver. Has to be called before power on, or right after receiving the local version information.
  */
 void hci_set_chipset(const btstack_chipset_t *chipset_driver);
+
+/**
+ * @brief Enable custom init for chipset driver to send HCI commands before HCI Reset
+ */
+void hci_enable_custom_pre_init(void);
 
 /**
  * @brief Configure Bluetooth hardware control. Has to be called before power on.
@@ -1700,8 +1714,8 @@ uint8_t gap_periodic_advertising_create_sync_cancel(void);
 uint8_t gap_periodic_advertising_terminate_sync(uint16_t sync_handle);
 
 /**
- * @brief Get Manufactured
- * @return manufacturer id
+ * @brief Get Controller Manufacturer
+ * @returns company_id - see bluetooth_company_id.h
  */
 uint16_t hci_get_manufacturer(void);
 
