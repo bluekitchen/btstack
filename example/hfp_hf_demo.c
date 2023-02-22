@@ -66,6 +66,8 @@ uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "HFP HF Demo";
 
+#undef HAVE_BTSTACK_STDIN
+
 #ifdef HAVE_BTSTACK_STDIN
 // static const char * device_addr_string = "6C:72:E7:10:22:EE";
 static const char * device_addr_string = "00:02:72:DC:31:C1";
@@ -117,6 +119,14 @@ static void dump_supported_codecs(void){
     }
 }
 
+static void report_status(uint8_t status, const char * message){
+    if (status != ERROR_CODE_SUCCESS){
+        printf("%s command failed, status 0x%02x\n", message, status);
+    } else {
+        printf("%s command successful\n", message);
+    }
+}
+
 #ifdef HAVE_BTSTACK_STDIN
 
 // Testig User Interface 
@@ -158,14 +168,6 @@ static void show_usage(void){
     printf("? - Query Subscriber Number (NUM)\n");
     printf("! - Update HF indicator with assigned number 1 (HFI)\n");
     printf("\n");
-}
-
-static void report_status(uint8_t status, const char * message){
-    if (status != ERROR_CODE_SUCCESS){
-        printf("%s command failed, status 0x%02x\n", message, status);
-    } else {
-        printf("%s command successful\n", message);
-    }
 }
 
 static void stdin_process(char c){
