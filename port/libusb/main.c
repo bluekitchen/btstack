@@ -75,6 +75,8 @@
 #include "hci_transport.h"
 #include "hci_transport_usb.h"
 
+#define USB_VENDOR_ID_REALTEK 0x0bda
+
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
 static char tlv_db_path[100];
@@ -115,11 +117,6 @@ static void local_version_information_handler(uint8_t * packet){
             // sm required to setup static random Bluetooth address
             sm_init();
             break;
-        case BLUETOOTH_COMPANY_ID_REALTEK_SEMICONDUCTOR_CORPORATION:
-            printf("- Realtek controller - provide firmware and config\n");
-            btstack_chipset_realtek_set_lmp_subversion(lmp_subversion);
-            hci_set_chipset(btstack_chipset_realtek_instance());
-            break;
         default:
             break;
     }
@@ -132,6 +129,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     uint8_t usb_path_len;
     const uint8_t * usb_path;
     uint16_t product_id;
+    uint16_t vendor_id;
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
@@ -141,15 +139,21 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             usb_path = hci_event_transport_usb_info_get_path(packet);
             // print device path
             product_id = hci_event_transport_usb_info_get_product_id(packet);
-            printf("USB device 0x%04x/0x%04x, path: ",
-                   hci_event_transport_usb_info_get_vendor_id(packet), product_id);
+            vendor_id = hci_event_transport_usb_info_get_vendor_id(packet);
+            printf("USB device 0x%04x/0x%04x, path: ", vendor_id, product_id);
             for (i=0;i<usb_path_len;i++){
                 if (i) printf("-");
                 printf("%02x", usb_path[i]);
             }
             printf("\n");
-            // set Product ID for Realtek Controllers
-            btstack_chipset_realtek_set_product_id(product_id);
+
+            // set Product ID for Realtek Controllers and use Realtek-specific stack startup
+            if (vendor_id == USB_VENDOR_ID_REALTEK) {
+                printf("Realtek Controller - requires firmware and config download\n");
+                btstack_chipset_realtek_set_product_id(product_id);
+                hci_set_chipset(btstack_chipset_realtek_instance());
+                hci_enable_custom_pre_init();
+            }
             break;
         case BTSTACK_EVENT_STATE:
             switch (btstack_event_state_get_state(packet)){
