@@ -139,7 +139,7 @@ static void ascs_client_finalize_connection(ascs_client_connection_t * connectio
     btstack_linked_list_remove(&ascs_client_connections, (btstack_linked_item_t*) connection);
 }
 
-static void ascs_client_emit_streamendpoint_state(uint16_t con_identifier, uint8_t ase_id, ascs_state_t state){
+static void ascs_client_emit_streamendpoint_state(uint16_t ascs_cid, uint8_t ase_id, ascs_state_t state){
     btstack_assert(ascs_client_event_callback != NULL);
     uint8_t event[7];
     
@@ -147,7 +147,7 @@ static void ascs_client_emit_streamendpoint_state(uint16_t con_identifier, uint8
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CLIENT_STREAMENDPOINT_STATE;
-    little_endian_store_16(event, pos, con_identifier);
+    little_endian_store_16(event, pos, ascs_cid);
     pos += 2;
     event[pos++] = ase_id;
     event[pos++] = (uint8_t)state;
@@ -177,7 +177,7 @@ static void ascs_client_emit_ase(ascs_client_connection_t * connection, ascs_str
             break;           
     }
 
-    ascs_client_emit_streamendpoint_state(connection->con_handle, (uint16_t) connection->cid, streamendpoint->state);
+    ascs_client_emit_streamendpoint_state(connection->cid, ase_id, streamendpoint->state);
 }
 
 static void ascs_client_emit_connection_established(ascs_client_connection_t * connection, uint8_t status){
