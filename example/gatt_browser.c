@@ -228,7 +228,6 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
  */
 
 /* LISTING_START(GATTBrowserQueryHandler): Handling of the GATT client queries */
-static int search_services = 1;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
@@ -238,7 +237,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
     switch(hci_event_packet_get_type(packet)){
-        case GATT_EVENT_SERVICE_QUERY_RESULT:\
+        case GATT_EVENT_SERVICE_QUERY_RESULT:
             gatt_event_service_query_result_get_service(packet, &service);
             dump_service(&service);
             services[service_count++] = service;
@@ -248,24 +247,15 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             dump_characteristic(&characteristic);
             break;
         case GATT_EVENT_QUERY_COMPLETE:
-            if (search_services){
-                // GATT_EVENT_QUERY_COMPLETE of search services 
-                service_index = 0;
-                printf("\nGATT browser - CHARACTERISTIC for SERVICE %s\n", uuid128_to_str(service.uuid128));
-                search_services = 0;
-                gatt_client_discover_characteristics_for_service(handle_gatt_client_event, connection_handler, &services[service_index]);
-            } else {
-                // GATT_EVENT_QUERY_COMPLETE of search characteristics
-                if (service_index < service_count) {
-                    service = services[service_index++];
-                    printf("\nGATT browser - CHARACTERISTIC for SERVICE %s, [0x%04x-0x%04x]\n",
-                        uuid128_to_str(service.uuid128), service.start_group_handle, service.end_group_handle);
-                    gatt_client_discover_characteristics_for_service(handle_gatt_client_event, connection_handler, &service);
-                    break;
-                }
-                service_index = 0;
-                gap_disconnect(connection_handler); 
+            // GATT_EVENT_QUERY_COMPLETE of search characteristics
+            if (service_index < service_count) {
+                service = services[service_index++];
+                printf("\nGATT browser - CHARACTERISTIC for SERVICE %s, [0x%04x-0x%04x]\n",
+                    uuid128_to_str(service.uuid128), service.start_group_handle, service.end_group_handle);
+                gatt_client_discover_characteristics_for_service(handle_gatt_client_event, connection_handler, &service);
+                break;
             }
+            service_index = 0;
             break;
         default:
             break;
