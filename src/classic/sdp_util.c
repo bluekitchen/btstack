@@ -687,10 +687,12 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
             default:
                 break;
         }
-        printf("len %u (0x%02x)\n", len, len);
-#ifdef ENABLE_PRINTF_HEXDUMP
-        printf_hexdump(&element[pos], len);
-#endif
+        printf(", len %2u, value: '", len);
+        for (i=0;i<len;i++){
+            char c = element[pos + i];
+            printf("%c", (c >= 0x20 && c <= 0x7f) ? c : '.');
+        }
+        printf("'\n");
     } else {
         uint32_t value = 0;
         switch (de_size) {
