@@ -23,7 +23,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - btstack_stdin_embedded: use timer to poll RTT input, fix for tickless RTOS
 - gatt_client: return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER for invalid connection handle
 - A2DP: emit A2DP_SUBEVENT_STREAM_ESTABLISHED with if connection fails, e.g. because of Page Timeout
-
+- PBAP Client: make pbap_set_property_selector work for Pull Phonebook
+ 
 ## Changed
 - GAP: add gap_set_peer_privacy_mode with default LE_PRIVACY_MODE_DEVICE
 - bluetooth: indicated identity address in resolved address type names
