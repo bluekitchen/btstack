@@ -316,7 +316,7 @@ ant_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ant_test.c
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-map_client_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} obex_iterator.o obex_message_builder.o goep_client.o map_client.o map_server.o map_client_demo.o
+map_client_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} obex_parser.o obex_message_builder.o goep_client.o map_client.o map_server.o map_client_demo.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 opp_client_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} obex_parser.o obex_message_builder.o goep_client.o opp_client.o opp_client_demo.o
