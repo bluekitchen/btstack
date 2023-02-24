@@ -193,6 +193,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     int value_len;
     char value[MAP_MAX_VALUE_LEN];
     memset(value, 0, MAP_MAX_VALUE_LEN);
+    bd_addr_t event_addr;
 
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -204,12 +205,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     }
                     break;
 
+                case HCI_EVENT_PIN_CODE_REQUEST:
+                    // inform about pin code request
+                    printf("Pin code request - using '0000'\n");
+                    hci_event_pin_code_request_get_bd_addr(packet, event_addr);
+                    gap_pin_code_response(event_addr, "0000");
+                    break;
+
                  case RFCOMM_EVENT_INCOMING_CONNECTION:
                     rfcomm_channel_id = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
                     printf("RFCOMM connection opened\n");
                     rfcomm_accept_connection(rfcomm_channel_id);
                     break;
-               
+
                 case RFCOMM_EVENT_CHANNEL_OPENED:
                     // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
                     if (rfcomm_event_channel_opened_get_status(packet)) {
@@ -240,6 +248,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("[+] Connection closed\n");
                             break;
                         case MAP_SUBEVENT_OPERATION_COMPLETED:
+                            printf("\n");
                             printf("[+] Operation complete\n");
                             break;
                         case MAP_SUBEVENT_FOLDER_LISTING_ITEM:
@@ -263,13 +272,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
             }
             break;
-   
+
         case RFCOMM_DATA_PACKET:
             printf("RFCOMM data packet: '");
             for (i=0;i<size;i++){
                 printf("%02x ", packet[i]);
             }
-            printf("'\n"); 
+            printf("'\n");
             obex_server_success_response(rfcomm_channel_id);
             break;
 
@@ -277,7 +286,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             for (i=0;i<size;i++){
                 printf("%c", packet[i]);
             }
-            printf("\n");
             break;
         default:
             break;
