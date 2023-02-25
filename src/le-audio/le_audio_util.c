@@ -260,7 +260,7 @@ uint16_t le_audio_util_metadata_virtual_memcpy(const le_audio_metadata_t * metad
 }
 
 
-uint16_t le_audio_util_metadata_parse(uint8_t * buffer, uint8_t buffer_size, le_audio_metadata_t * metadata){
+uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size, le_audio_metadata_t * metadata){
     // parse config to get sampling frequency and frame duration
     uint8_t offset = 0;
     uint8_t metadata_config_lenght = buffer[offset++];
@@ -336,7 +336,7 @@ uint16_t le_audio_util_metadata_parse(uint8_t * buffer, uint8_t buffer_size, le_
     return offset;
 }
 
-uint16_t le_audio_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_t * event, uint16_t event_size){
+uint16_t le_audio_util_metadata_serialize(const le_audio_metadata_t *metadata, uint8_t * event, uint16_t event_size){
     uint8_t pos = 0;
     
     event[pos++] = (uint8_t)metadata->metadata_mask;
@@ -379,7 +379,7 @@ uint16_t le_audio_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_
     return pos;
 }
 
-static uint16_t le_audio_util_get_value_size_for_metadata_type(le_audio_metadata_t * metadata, le_audio_metadata_type_t metadata_type){
+static uint16_t le_audio_util_get_value_size_for_metadata_type(const le_audio_metadata_t *metadata, le_audio_metadata_type_t metadata_type){
     switch (metadata_type){
         case LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS:
         case LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS:
@@ -411,7 +411,7 @@ static uint16_t le_audio_util_get_value_size_for_metadata_type(le_audio_metadata
     return 0;
 }
 
-uint16_t le_audio_util_metadata_serialize_using_mask(le_audio_metadata_t * metadata, uint8_t * tlv_buffer, uint16_t tlv_buffer_size){
+uint16_t le_audio_util_metadata_serialize_using_mask(const le_audio_metadata_t *metadata, uint8_t * tlv_buffer, uint16_t tlv_buffer_size){
     uint16_t metadata_type;
     uint16_t pos = 0;
 
