@@ -472,7 +472,7 @@ void volume_control_service_server_set_volume_change_step(uint8_t volume_change_
     vcs_volume_change_step_size = volume_change_step;
 }
 
-uint8_t volume_control_service_server_set_audio_input_state_for_aics(uint8_t aics_index, aics_audio_input_state_t * audio_input_state){
+uint8_t volume_control_service_server_set_audio_input_state_for_aics(uint8_t aics_index, const aics_audio_input_state_t *audio_input_state){
     if (aics_index >= aics_services_num){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
