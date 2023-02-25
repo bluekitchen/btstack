@@ -669,7 +669,7 @@ void broadcast_audio_scan_service_server_set_pa_sync_state(uint8_t source_index,
     }
 }
 
-void broadcast_audio_scan_service_server_add_source(bass_source_data_t source_data, uint8_t * source_index){
+void broadcast_audio_scan_service_server_add_source(const bass_source_data_t *source_data, uint8_t * source_index){
     *source_index = bass_server_find_empty_or_last_used_source_index();
     if (*source_index == BASS_INVALID_SOURCE_INDEX){
         return;
@@ -678,7 +678,7 @@ void broadcast_audio_scan_service_server_add_source(bass_source_data_t source_da
     last_used_source->update_counter = bass_server_get_next_update_counter();
     last_used_source->in_use = true;
     last_used_source->source_id = *source_index;
-    memcpy(&last_used_source->data, &source_data, sizeof(bass_source_data_t));
+    memcpy(&last_used_source->data, source_data, sizeof(bass_source_data_t));
 }
 
 void broadcast_audio_scan_service_server_deinit(void){

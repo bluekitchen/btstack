@@ -121,7 +121,7 @@ void broadcast_audio_scan_service_server_set_pa_sync_state(uint8_t source_index,
  * @param source_data
  * @param source_index
  */
-void broadcast_audio_scan_service_server_add_source(bass_source_data_t source_data, uint8_t * source_index);
+void broadcast_audio_scan_service_server_add_source(const bass_source_data_t *source_data, uint8_t * source_index);
 
 /**
  * @brief Deinit Broadcast Audio Scan Service Server
