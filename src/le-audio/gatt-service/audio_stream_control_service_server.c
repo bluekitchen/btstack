@@ -1419,9 +1419,8 @@ void audio_stream_control_service_server_streamendpoint_metadata_update(hci_con_
             ascs_server_streamendpoint_schedule_value_changed_task(client, streamendpoint);
             break;
         default:
-            return;
+            break;
     }
-    ascs_server_streamendpoint_schedule_value_changed_task(client, streamendpoint);
 }
 
 void audio_stream_control_service_server_deinit(void){
