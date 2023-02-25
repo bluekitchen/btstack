@@ -388,7 +388,8 @@ static bool ascs_client_register_notification(ascs_client_connection_t * connect
     return ERROR_CODE_SUCCESS;
 }
 
-static uint16_t asce_client_codec_configuration_request_serialize(ascs_client_codec_configuration_request_t * codec_configuration, uint8_t * value, uint16_t value_size){
+static uint16_t asce_client_codec_configuration_request_serialize(
+        const ascs_client_codec_configuration_request_t *codec_configuration, uint8_t * value, uint16_t value_size){
     btstack_assert(value_size > 6);
 
     uint16_t pos = 0;
@@ -937,7 +938,7 @@ uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_ci
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint16_t ascs_cid, uint8_t ase_id, ascs_client_codec_configuration_request_t * codec_configuration){
+uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint16_t ascs_cid, uint8_t ase_id, const ascs_client_codec_configuration_request_t *codec_configuration){
     ascs_client_connection_t * connection = NULL;
     uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
@@ -968,7 +969,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint1
  * @param ase_id
  * @param qos_configuration
  */
-uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_t ascs_cid, uint8_t ase_id, ascs_qos_configuration_t * qos_configuration){
+uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_t ascs_cid, uint8_t ase_id, const ascs_qos_configuration_t *qos_configuration){
     ascs_client_connection_t * connection = NULL;
     uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
@@ -999,7 +1000,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_
  * @param ase_id
  * @param metadata_configuration
  */
-uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint16_t ascs_cid, uint8_t ase_id, le_audio_metadata_t * metadata){
+uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint16_t ascs_cid, uint8_t ase_id, const le_audio_metadata_t *metadata){
     ascs_client_connection_t * connection = NULL;
     uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
