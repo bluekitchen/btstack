@@ -1301,25 +1301,25 @@ static bool ascs_server_streamendpoint_transit_to_state(hci_con_handle_t con_han
     return true;
 }
 
-void audio_stream_control_service_server_streamendpoint_configure_codec(hci_con_handle_t con_handle, uint8_t ase_id, ascs_codec_configuration_t codec_configuration){
+void audio_stream_control_service_server_streamendpoint_configure_codec(hci_con_handle_t con_handle, uint8_t ase_id, const ascs_codec_configuration_t *codec_configuration){
     ascs_server_connection_t  * client;
     ascs_streamendpoint_t * streamendpoint;
     if (!ascs_server_streamendpoint_transit_to_state(con_handle, ase_id, ASCS_OPCODE_CONFIG_CODEC, ASCS_STATE_CODEC_CONFIGURED, &client, &streamendpoint)){
         return;
     }
 
-    memcpy(&streamendpoint->codec_configuration, &codec_configuration, sizeof(ascs_codec_configuration_t));
+    memcpy(&streamendpoint->codec_configuration, codec_configuration, sizeof(ascs_codec_configuration_t));
     ascs_server_streamendpoint_schedule_value_changed_task(client, streamendpoint);
 }
 
-void audio_stream_control_service_server_streamendpoint_configure_qos(hci_con_handle_t con_handle, uint8_t ase_id, ascs_qos_configuration_t qos_configuration){
+void audio_stream_control_service_server_streamendpoint_configure_qos(hci_con_handle_t con_handle, uint8_t ase_id, const ascs_qos_configuration_t *qos_configuration){
     ascs_server_connection_t  * client;
     ascs_streamendpoint_t * streamendpoint;
 
     if (!ascs_server_streamendpoint_transit_to_state(con_handle, ase_id, ASCS_OPCODE_CONFIG_QOS, ASCS_STATE_QOS_CONFIGURED, &client, &streamendpoint)){
         return;
     }
-    memcpy(&streamendpoint->qos_configuration, &qos_configuration, sizeof(ascs_qos_configuration_t));
+    memcpy(&streamendpoint->qos_configuration, qos_configuration, sizeof(ascs_qos_configuration_t));
     ascs_server_streamendpoint_schedule_value_changed_task(client, streamendpoint);
 }
 
@@ -1402,7 +1402,7 @@ void audio_stream_control_service_server_streamendpoint_released(hci_con_handle_
     // TODO reset values
 }
 
-void audio_stream_control_service_server_streamendpoint_metadata_update(hci_con_handle_t con_handle, uint8_t ase_id, le_audio_metadata_t metadata){
+void audio_stream_control_service_server_streamendpoint_metadata_update(hci_con_handle_t con_handle, uint8_t ase_id, const le_audio_metadata_t *metadata){
     ascs_server_connection_t * client = ascs_server_get_remote_client_for_con_handle(con_handle);
     if (client == NULL){
         return;
@@ -1415,7 +1415,7 @@ void audio_stream_control_service_server_streamendpoint_metadata_update(hci_con_
     switch (streamendpoint->state){
         case ASCS_STATE_ENABLING:
         case ASCS_STATE_STREAMING:
-            memcpy(&streamendpoint->metadata, &metadata, sizeof(le_audio_metadata_t));
+            memcpy(&streamendpoint->metadata, metadata, sizeof(le_audio_metadata_t));
             ascs_server_streamendpoint_schedule_value_changed_task(client, streamendpoint);
             break;
         default:
