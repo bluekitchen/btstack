@@ -191,7 +191,7 @@ uint16_t ascs_util_codec_configuration_parse(const uint8_t * buffer, uint8_t buf
     return pos;
 }
 
-uint16_t ascs_util_codec_configuration_request_parse(uint8_t * buffer, uint8_t buffer_size, ascs_client_codec_configuration_request_t * codec_config_request){
+uint16_t ascs_util_codec_configuration_request_parse(const uint8_t *buffer, uint8_t buffer_size, ascs_client_codec_configuration_request_t * codec_config_request){
     btstack_assert(buffer_size > 8);
 
     uint16_t offset = 0;
@@ -209,7 +209,8 @@ uint16_t ascs_util_codec_configuration_request_parse(uint8_t * buffer, uint8_t b
     return offset;
 }
 
-uint16_t ascs_util_specific_codec_configuration_serialize_to_tlv(ascs_specific_codec_configuration_t * codec_configuration, uint8_t * tlv_buffer, uint16_t tlv_buffer_size){
+uint16_t ascs_util_specific_codec_configuration_serialize_to_tlv(
+        const ascs_specific_codec_configuration_t *codec_configuration, uint8_t * tlv_buffer, uint16_t tlv_buffer_size){
     btstack_assert(tlv_buffer_size > 11);
     uint16_t pos = 0;
     // reserve place for config length
@@ -260,7 +261,8 @@ uint16_t ascs_util_specific_codec_configuration_serialize_to_tlv(ascs_specific_c
     return pos;
 }
 
-uint16_t ascs_util_specific_codec_configuration_serialize(ascs_specific_codec_configuration_t * specific_codec_configuration, uint8_t * event, uint16_t event_size){
+uint16_t ascs_util_specific_codec_configuration_serialize(
+        const ascs_specific_codec_configuration_t *specific_codec_configuration, uint8_t * event, uint16_t event_size){
     btstack_assert(event_size > 9);
     uint8_t pos = 0;
 
@@ -275,7 +277,7 @@ uint16_t ascs_util_specific_codec_configuration_serialize(ascs_specific_codec_co
     return pos;
 }
 
-uint16_t ascs_util_codec_configuration_serialize(ascs_codec_configuration_t * codec_configuration, uint8_t * event, uint16_t event_size){
+uint16_t ascs_util_codec_configuration_serialize(const ascs_codec_configuration_t *codec_configuration, uint8_t * event, uint16_t event_size){
     btstack_assert(event_size > 22);
     uint16_t pos = 0;
 
@@ -303,7 +305,7 @@ uint16_t ascs_util_codec_configuration_serialize(ascs_codec_configuration_t * co
     return pos;
 }
 
-uint16_t ascs_util_qos_configuration_serialize(ascs_qos_configuration_t * qos_configuration, uint8_t * event, uint16_t event_size){
+uint16_t ascs_util_qos_configuration_serialize(const ascs_qos_configuration_t *qos_configuration, uint8_t * event, uint16_t event_size){
     btstack_assert(event_size > 14);
     uint16_t pos = 0;
 
@@ -323,7 +325,7 @@ uint16_t ascs_util_qos_configuration_serialize(ascs_qos_configuration_t * qos_co
     return pos;
 }
 
-uint16_t asce_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_t * value, uint16_t value_size){
+uint16_t asce_util_metadata_serialize(const le_audio_metadata_t *metadata, uint8_t * value, uint16_t value_size){
     btstack_assert(value_size > 0);
     uint16_t pos = 0;
 
@@ -341,7 +343,7 @@ uint16_t asce_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_t * 
     return pos;
 }
 
-void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, ascs_codec_configuration_t * codec_configuration){
+void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const ascs_codec_configuration_t *codec_configuration){
     btstack_assert(ascs_event_callback != NULL);
     
     uint8_t event[39];
@@ -361,7 +363,7 @@ void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_call
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, ascs_qos_configuration_t * qos_configuration){
+void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const ascs_qos_configuration_t *qos_configuration){
     btstack_assert(ascs_event_callback != NULL);
     
     uint8_t event[21];
@@ -381,7 +383,7 @@ void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callba
 }
 
 
-void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, le_audio_metadata_t * metadata){
+void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const le_audio_metadata_t *metadata){
     btstack_assert(ascs_event_callback != NULL);
 
     uint8_t event[25 + LE_AUDIO_PROGRAM_INFO_MAX_LENGTH
