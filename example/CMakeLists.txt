@@ -26,6 +26,7 @@ set(EXAMPLES_CLASSIC_ONLY
 	hid_mouse_demo
 	hsp_ag_demo
 	hsp_hs_demo
+	map_client_demo
 	pbap_client_demo
 	sdp_bnep_query
 	sdp_general_query      
