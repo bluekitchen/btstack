@@ -107,7 +107,7 @@ void audio_stream_control_service_server_register_packet_handler(btstack_packet_
  * @param ase_id
  * @param codec_configuration
  */
-void audio_stream_control_service_server_streamendpoint_configure_codec(hci_con_handle_t con_handle, uint8_t ase_id, ascs_codec_configuration_t codec_configuration);
+void audio_stream_control_service_server_streamendpoint_configure_codec(hci_con_handle_t con_handle, uint8_t ase_id, const ascs_codec_configuration_t *codec_configuration);
 
 /**
  * @brief Configure QoS.
@@ -115,7 +115,7 @@ void audio_stream_control_service_server_streamendpoint_configure_codec(hci_con_
  * @param ase_id
  * @param qos_configuration
  */
-void audio_stream_control_service_server_streamendpoint_configure_qos(hci_con_handle_t con_handle, uint8_t ase_id, ascs_qos_configuration_t qos_configuration);
+void audio_stream_control_service_server_streamendpoint_configure_qos(hci_con_handle_t con_handle, uint8_t ase_id, const ascs_qos_configuration_t *qos_configuration);
 
 /**
  * @brief Enable streamendpoint.
@@ -166,7 +166,7 @@ void audio_stream_control_service_server_streamendpoint_disable(hci_con_handle_t
  * @param ase_id
  * @param metadata_configuration
  */
-void audio_stream_control_service_server_streamendpoint_metadata_update(hci_con_handle_t con_handle, uint8_t ase_id, le_audio_metadata_t metadata);
+void audio_stream_control_service_server_streamendpoint_metadata_update(hci_con_handle_t con_handle, uint8_t ase_id, const le_audio_metadata_t *metadata);
 
 /**
  * @brief Release streamendpoint.
