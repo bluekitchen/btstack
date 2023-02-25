@@ -118,9 +118,9 @@ typedef struct {
     uint8_t streamendpoints_index;
 
     // used for write requests
-    ascs_client_codec_configuration_request_t * codec_configuration;
-    ascs_qos_configuration_t   * qos_configuration;
-    le_audio_metadata_t        * metadata;
+    const ascs_client_codec_configuration_request_t * codec_configuration;
+    const ascs_qos_configuration_t   * qos_configuration;
+    const le_audio_metadata_t        * metadata;
     ascs_opcode_t              command_opcode;
 
 } ascs_client_connection_t;
@@ -218,7 +218,7 @@ uint8_t audio_stream_control_service_client_read_streamendpoint(uint16_t ascs_ci
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint16_t ascs_cid, uint8_t ase_id, ascs_client_codec_configuration_request_t * codec_configuration);
+uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint16_t ascs_cid, uint8_t ase_id, const ascs_client_codec_configuration_request_t *codec_configuration);
 
 /**
  * @brief Request a CIS configuration preference with the server and assign identifiers to the CIS. 
@@ -235,7 +235,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint1
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_t ascs_cid, uint8_t ase_id, ascs_qos_configuration_t * qos_configuration);
+uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_t ascs_cid, uint8_t ase_id, const ascs_qos_configuration_t *qos_configuration);
 
 /**
  * @brief Request the server to enable an ASE and to provide any Metadata applicable for that ASE. 
@@ -345,7 +345,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_released(uint16_t asc
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint16_t ascs_cid, uint8_t ase_id, le_audio_metadata_t * metadata);
+uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint16_t ascs_cid, uint8_t ase_id, const le_audio_metadata_t *metadata);
 
 
 /**
