@@ -191,18 +191,18 @@ void audio_input_control_service_server_init(aics_server_connection_t * connecti
 
 /**
  * @brief Set audio input state of the AICS service. If successful, all registered clients will be notified of change.
- * @param aics service
+ * @param connection service
  * @param audio_input_state see aics_audio_input_state_t
  * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if gain setting is out of a valid range [gain_settings_minimum, gain_settings_maximum] .
  */
-uint8_t audio_input_control_service_server_set_audio_input_state(aics_server_connection_t * aics, aics_audio_input_state_t * audio_input_state);
+uint8_t audio_input_control_service_server_set_audio_input_state(aics_server_connection_t * connection, const aics_audio_input_state_t *audio_input_state);
 
 /**
  * @brief Set audio input status of the AICS service. If successful, all registered clients will be notified of change.
- * @param aics service
+ * @param connection service
  * @param audio_input_status see aics_audio_input_status_t
  */
-void audio_input_control_service_server_set_audio_input_status(aics_server_connection_t * aics, aics_audio_input_status_t audio_input_status);
+void audio_input_control_service_server_set_audio_input_status(aics_server_connection_t * connection, const aics_audio_input_status_t audio_input_status);
 
 /**
  * @brief Set audio input description of the AICS service. If successful, all registered clients will be notified of change.

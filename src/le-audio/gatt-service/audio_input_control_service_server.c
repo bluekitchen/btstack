@@ -469,7 +469,7 @@ void audio_input_control_service_server_init(aics_server_connection_t * connecti
     att_server_register_service_handler(&connection->service_handler);
 }
 
-uint8_t audio_input_control_service_server_set_audio_input_state(aics_server_connection_t * connection, aics_audio_input_state_t * audio_input_state){
+uint8_t audio_input_control_service_server_set_audio_input_state(aics_server_connection_t * connection, const aics_audio_input_state_t *audio_input_state){
     btstack_assert(connection != NULL);
     
     bool valid_range = aics_server_set_gain(connection, audio_input_state->gain_setting_db);
@@ -485,7 +485,7 @@ uint8_t audio_input_control_service_server_set_audio_input_state(aics_server_con
     return ERROR_CODE_SUCCESS;
 }
 
-void audio_input_control_service_server_set_audio_input_status(aics_server_connection_t * connection, aics_audio_input_status_t audio_input_status){
+void audio_input_control_service_server_set_audio_input_status(aics_server_connection_t * connection, const aics_audio_input_status_t audio_input_status){
     btstack_assert(connection != NULL);
     connection->audio_input_status = audio_input_status;
     aics_server_set_callback(connection, AICS_TASK_SEND_AUDIO_INPUT_STATUS);
