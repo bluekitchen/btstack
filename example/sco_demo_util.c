@@ -53,6 +53,12 @@
 #include "classic/hfp.h"
 #include "classic/hfp_codec.h"
 
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+#include "btstack_lc3.h"
+#include "btstack_lc3_google.h"
+#endif
+
+
 #ifdef _MSC_VER
 // ignore deprecated warning for fopen
 #pragma warning(disable : 4996)
@@ -84,14 +90,19 @@
 #define NUM_CHANNELS            1
 #define SAMPLE_RATE_8KHZ        8000
 #define SAMPLE_RATE_16KHZ       16000
+#define SAMPLE_RATE_32KHZ       32000
 #define BYTES_PER_FRAME         2
 
-// pre-buffer for CVSD and mSBC - also defines latency
+// audio pre-buffer - also defines latency
 #define SCO_PREBUFFER_MS      50
 #define PREBUFFER_BYTES_8KHZ  (SCO_PREBUFFER_MS *  SAMPLE_RATE_8KHZ/1000 * BYTES_PER_FRAME)
 #define PREBUFFER_BYTES_16KHZ (SCO_PREBUFFER_MS * SAMPLE_RATE_16KHZ/1000 * BYTES_PER_FRAME)
+#define PREBUFFER_BYTES_32KHZ (SCO_PREBUFFER_MS * SAMPLE_RATE_32KHZ/1000 * BYTES_PER_FRAME)
 
-#if defined(ENABLE_HFP_WIDE_BAND_SPEECH)
+#if defined(ENABLE_HFP_SUPER_WIDE_BAND_SPEECH)
+#define PREBUFFER_BYTES_MAX PREBUFFER_BYTES_32KHZ
+#define SAMPLES_PER_FRAME_MAX 240
+#elif defined(ENABLE_HFP_WIDE_BAND_SPEECH)
 #define PREBUFFER_BYTES_MAX PREBUFFER_BYTES_16KHZ
 #define SAMPLES_PER_FRAME_MAX 120
 #else
@@ -113,6 +124,7 @@ static btstack_ring_buffer_t audio_output_ring_buffer;
 #define USE_ADUIO_GENERATOR
 static void (*sco_demo_audio_generator)(uint16_t num_samples, int16_t * data);
 #endif
+
 static int                   audio_input_paused  = 0;
 static uint8_t               audio_input_ring_buffer_storage[2 * PREBUFFER_BYTES_MAX];
 static btstack_ring_buffer_t audio_input_ring_buffer;
@@ -127,12 +139,17 @@ static modcontext mod_context;
 static int count_sent = 0;
 static int count_received = 0;
 
+static btstack_cvsd_plc_state_t cvsd_plc_state;
+
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-#define MSBC_MAX_NUM_SAMPLES (16*8)
-static btstack_sbc_decoder_state_t decoder_state;
+static btstack_sbc_decoder_state_t msbc_decoder_state;
 #endif
 
-static btstack_cvsd_plc_state_t cvsd_plc_state;
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+static const btstack_lc3_decoder_t * lc3_decoder;
+static btstack_lc3_decoder_google_t lc3_decoder_context;
+static hfp_h2_sync_t    hfp_h2_sync;
+#endif
 
 int num_samples_to_write;
 int num_audio_frames;
@@ -158,24 +175,30 @@ static hfp_codec_t hfp_codec;
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 static uint16_t sine_wave_phase;
 static uint16_t sine_wave_steps_per_sample;
-#define SINE_WAVE_SAMPLE_RATE SAMPLE_RATE_16KHZ
+#define SINE_WAVE_SAMPLE_RATE SAMPLE_RATE_32KHZ
 
-// input signal: pre-computed sine wave, 266 Hz at 16000 kHz
-static const int16_t sine_int16_at_16000hz[] = {
-     0,   3135,   6237,   9270,  12202,  14999,  17633,  20073,  22294,  24270,
- 25980,  27406,  28531,  29344,  29835,  30000,  29835,  29344,  28531,  27406,
- 25980,  24270,  22294,  20073,  17633,  14999,  12202,   9270,   6237,   3135,
-     0,  -3135,  -6237,  -9270, -12202, -14999, -17633, -20073, -22294, -24270,
--25980, -27406, -28531, -29344, -29835, -30000, -29835, -29344, -28531, -27406,
--25980, -24270, -22294, -20073, -17633, -14999, -12202,  -9270,  -6237,  -3135,
+// input signal: pre-computed int16 sine wave, 32000 Hz at 266 Hz
+static const int16_t sine_int16[] = {
+     0,   1715,   3425,   5126,   6813,   8481,  10126,  11743,  13328,  14876,
+ 16383,  17846,  19260,  20621,  21925,  23170,  24351,  25465,  26509,  27481,
+ 28377,  29196,  29934,  30591,  31163,  31650,  32051,  32364,  32587,  32722,
+ 32767,  32722,  32587,  32364,  32051,  31650,  31163,  30591,  29934,  29196,
+ 28377,  27481,  26509,  25465,  24351,  23170,  21925,  20621,  19260,  17846,
+ 16383,  14876,  13328,  11743,  10126,   8481,   6813,   5126,   3425,   1715,
+     0,  -1715,  -3425,  -5126,  -6813,  -8481, -10126, -11743, -13328, -14876,
+-16384, -17846, -19260, -20621, -21925, -23170, -24351, -25465, -26509, -27481,
+-28377, -29196, -29934, -30591, -31163, -31650, -32051, -32364, -32587, -32722,
+-32767, -32722, -32587, -32364, -32051, -31650, -31163, -30591, -29934, -29196,
+-28377, -27481, -26509, -25465, -24351, -23170, -21925, -20621, -19260, -17846,
+-16384, -14876, -13328, -11743, -10126,  -8481,  -6813,  -5126,  -3425,  -1715,
 };
 
 static void sco_demo_sine_wave_host_endian(uint16_t num_samples, int16_t * data){
     unsigned int i;
     for (i=0; i < num_samples; i++){
-        data[i] = sine_int16_at_16000hz[sine_wave_phase];
+        data[i] = sine_int16[sine_wave_phase];
         sine_wave_phase += sine_wave_steps_per_sample;
-        if (sine_wave_phase >= (sizeof(sine_int16_at_16000hz) / sizeof(int16_t))){
+        if (sine_wave_phase >= (sizeof(sine_int16) / sizeof(int16_t))){
             sine_wave_phase = 0;
         }
     }
@@ -372,6 +395,32 @@ static const codec_support_t codec_cvsd = {
         .sample_rate = SAMPLE_RATE_8KHZ
 };
 
+// encode using hfp_codec
+#if defined(ENABLE_HFP_WIDE_BAND_SPEECH) || defined(ENABLE_HFP_SUPER_WIDE_BAND_SPEECH)
+void sco_demo_codec_fill_payload(uint8_t * payload_buffer, uint16_t sco_payload_length){
+    if (!audio_input_paused){
+        int num_samples = hfp_codec_num_audio_samples_per_frame(&hfp_codec);
+        btstack_assert(num_samples <= SAMPLES_PER_FRAME_MAX);
+        uint16_t samples_available = btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) / BYTES_PER_FRAME;
+        if (hfp_codec_can_encode_audio_frame_now(&hfp_codec) && samples_available >= num_samples){
+            int16_t sample_buffer[SAMPLES_PER_FRAME_MAX];
+            uint32_t bytes_read;
+            btstack_ring_buffer_read(&audio_input_ring_buffer, (uint8_t*) sample_buffer, num_samples * BYTES_PER_FRAME, &bytes_read);
+            hfp_codec_encode_audio_frame(&hfp_codec, sample_buffer);
+            num_audio_frames++;
+        }
+    }
+    // get data from encoder, fill with 0 if not enough
+    if (audio_input_paused || hfp_codec_num_bytes_available(&hfp_codec) < sco_payload_length){
+        // just send '0's
+        memset(payload_buffer, 0, sco_payload_length);
+        audio_input_paused = 1;
+    } else {
+        hfp_codec_read_from_stream(&hfp_codec, payload_buffer, sco_payload_length);
+    }
+}
+#endif
+
 // mSBC - 16 kHz
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
@@ -399,51 +448,97 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 
 static void sco_demo_msbc_init(void){
     printf("SCO Demo: Init mSBC\n");
-    btstack_sbc_decoder_init(&decoder_state, SBC_MODE_mSBC, &handle_pcm_data, NULL);
+    btstack_sbc_decoder_init(&msbc_decoder_state, SBC_MODE_mSBC, &handle_pcm_data, NULL);
     hfp_codec_init(&hfp_codec, HFP_CODEC_MSBC);
 }
 
 static void sco_demo_msbc_receive(const uint8_t * packet, uint16_t size){
-    btstack_sbc_decoder_process_data(&decoder_state, (packet[1] >> 4) & 3, packet+3, size-3);
-}
-
-void sco_demo_msbc_fill_payload(uint8_t * payload_buffer, uint16_t sco_payload_length){
-    if (!audio_input_paused){
-        int num_samples = hfp_codec_num_audio_samples_per_frame(&hfp_codec);
-        btstack_assert(num_samples <= SAMPLES_PER_FRAME_MAX);
-        uint16_t samples_available = btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) / BYTES_PER_FRAME;
-        if (hfp_codec_can_encode_audio_frame_now(&hfp_codec) && samples_available >= num_samples){
-            int16_t sample_buffer[SAMPLES_PER_FRAME_MAX];
-            uint32_t bytes_read;
-            btstack_ring_buffer_read(&audio_input_ring_buffer, (uint8_t*) sample_buffer, num_samples * BYTES_PER_FRAME, &bytes_read);
-            hfp_codec_encode_audio_frame(&hfp_codec, sample_buffer);
-            num_audio_frames++;
-        }
-    }
-
-    // get data from encoder, fill with 0 if not enough
-    if (audio_input_paused || hfp_codec_num_bytes_available(&hfp_codec) < sco_payload_length){
-        // just send '0's
-        memset(payload_buffer, 0, sco_payload_length);
-        audio_input_paused = 1;
-    } else {
-        hfp_codec_read_from_stream(&hfp_codec, payload_buffer, sco_payload_length);
-    }
+    btstack_sbc_decoder_process_data(&msbc_decoder_state, (packet[1] >> 4) & 3, packet + 3, size - 3);
 }
 
 static void sco_demo_msbc_close(void){
-    printf("Used mSBC with PLC, number of processed frames: \n - %d good frames, \n - %d zero frames, \n - %d bad frames.\n", decoder_state.good_frames_nr, decoder_state.zero_frames_nr, decoder_state.bad_frames_nr);
+    printf("Used mSBC with PLC, number of processed frames: \n - %d good frames, \n - %d zero frames, \n - %d bad frames.\n", msbc_decoder_state.good_frames_nr, msbc_decoder_state.zero_frames_nr, msbc_decoder_state.bad_frames_nr);
 }
 
 static const codec_support_t codec_msbc = {
         .init         = &sco_demo_msbc_init,
         .receive      = &sco_demo_msbc_receive,
-        .fill_payload = &sco_demo_msbc_fill_payload,
+        .fill_payload = &sco_demo_codec_fill_payload,
         .close        = &sco_demo_msbc_close,
         .sample_rate = SAMPLE_RATE_16KHZ
 };
 
 #endif /* ENABLE_HFP_WIDE_BAND_SPEECH */
+
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+
+#define LC3_SWB_SAMPLES_PER_FRAME 240
+#define LC3_SWB_OCTETS_PER_FRAME   58
+
+static bool sco_demo_lc3swb_frame_callback(bool bad_frame, const uint8_t * frame_data, uint16_t frame_len){
+
+    // skip H2 header for good frames
+    if (bad_frame == false){
+        btstack_assert(frame_data != NULL);
+        frame_data += 2;
+    }
+
+    uint8_t tmp_BEC_detect = 0;
+    uint8_t BFI = bad_frame ? 1 : 0;
+    int16_t samples[LC3_SWB_SAMPLES_PER_FRAME];
+    (void) lc3_decoder->decode_signed_16(&lc3_decoder_context, frame_data, BFI,
+                                         samples, 1, &tmp_BEC_detect);
+
+    // samples in callback in host endianess, ready for playback
+    btstack_ring_buffer_write(&audio_output_ring_buffer, (uint8_t *)samples, LC3_SWB_SAMPLES_PER_FRAME*2);
+
+#ifdef SCO_WAV_FILENAME
+    if (num_samples_to_write > 0){
+        uint16_t num_samples = btstack_min(LC3_SWB_SAMPLES_PER_FRAME, num_samples_to_write);
+        num_samples_to_write -= num_samples;
+        wav_writer_write_int16(num_samples, samples);
+        if (num_samples_to_write == 0){
+            wav_writer_close();
+        }
+    }
+#endif /* SCO_WAV_FILENAME */
+
+    // frame is good, if it isn't a bad frame and we didn't detect other errors
+    return (bad_frame == false) && (tmp_BEC_detect == 0);
+}
+
+static void sco_demo_lc3swb_init(void){
+
+    printf("SCO Demo: Init LC3-SWB\n");
+
+    hfp_codec_init(&hfp_codec, HFP_CODEC_LC3_SWB);
+
+    // init lc3 decoder
+    lc3_decoder = btstack_lc3_decoder_google_init_instance(&lc3_decoder_context);
+    lc3_decoder->configure(&lc3_decoder_context, SAMPLE_RATE_32KHZ, BTSTACK_LC3_FRAME_DURATION_7500US, LC3_SWB_OCTETS_PER_FRAME);
+
+    // init HPF H2 framing
+    hfp_h2_sync_init(&hfp_h2_sync, &sco_demo_lc3swb_frame_callback);
+}
+
+static void sco_demo_lc3swb_receive(const uint8_t * packet, uint16_t size){
+    uint8_t packet_status = (packet[1] >> 4) & 3;
+    bool bad_frame = packet_status != 0;
+    hfp_h2_sync_process(&hfp_h2_sync, bad_frame, &packet[3], size-3);
+}
+
+static void sco_demo_lc3swb_close(void){
+    // TODO: report
+}
+
+static const codec_support_t codec_lc3swb = {
+        .init         = &sco_demo_lc3swb_init,
+        .receive      = &sco_demo_lc3swb_receive,
+        .fill_payload = &sco_demo_codec_fill_payload,
+        .close        = &sco_demo_lc3swb_close,
+        .sample_rate = SAMPLE_RATE_32KHZ
+};
+#endif
 
 void sco_demo_init(void){
 
@@ -452,22 +547,18 @@ void sco_demo_init(void){
     gap_secure_connections_enable(false);
 #endif
 
-	// status
+    // Set SCO for CVSD (mSBC or other codecs automatically use 8-bit transparent mode)
+    hci_set_sco_voice_setting(0x60);    // linear, unsigned, 16-bit, CVSD
+
+    // status
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
     printf("SCO Demo: Sending and receiving audio via btstack_audio.\n");
 #endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-    if (btstack_audio_sink_get_instance()){
-        printf("SCO Demo: Sending sine wave, audio output via btstack_audio.\n");
-    } else {
-        printf("SCO Demo: Sending sine wave, hexdump received data.\n");
-    }
+    printf("SCO Demo: Sending sine wave, audio output via btstack_audio.\n");
 #endif
-
-    // Set SCO for CVSD (mSBC or other codecs automatically use 8-bit transparent mode)
-    hci_set_sco_voice_setting(0x60);    // linear, unsigned, 16-bit, CVSD
-
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
+    printf("SCO Demo: Sending modplayer wave, audio output via btstack_audio.\n");
     // init mod
     int hxcmod_initialized = hxcmod_init(&mod_context);
     btstack_assert(hxcmod_initialized != 0);
@@ -482,6 +573,11 @@ void sco_demo_set_codec(uint8_t negotiated_codec){
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
         case HFP_CODEC_MSBC:
             codec_current = &codec_msbc;
+            break;
+#endif
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+        case HFP_CODEC_LC3_SWB:
+            codec_current = &codec_lc3swb;
             break;
 #endif
         default:
