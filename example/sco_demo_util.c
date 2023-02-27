@@ -101,6 +101,9 @@ static btstack_ring_buffer_t audio_output_ring_buffer;
 // input
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
 #define USE_AUDIO_INPUT
+#else
+#define USE_ADUIO_GENERATOR
+static void (*sco_demo_audio_generator)(uint16_t num_samples, int16_t * data);
 #endif
 static int                   audio_input_paused  = 0;
 static uint8_t               audio_input_ring_buffer_storage[2*8000];  // full second input buffer
@@ -121,9 +124,10 @@ static btstack_cvsd_plc_state_t cvsd_plc_state;
 int num_samples_to_write;
 int num_audio_frames;
 
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+// sine generator
 
-unsigned int phase;
+#ifdef USE_ADUIO_GENERATOR
+static unsigned int phase;
 
 // input signal: pre-computed sine wave, 266 Hz at 16000 kHz
 static const int16_t sine_int16_at_16000hz[] = {
@@ -136,7 +140,7 @@ static const int16_t sine_int16_at_16000hz[] = {
 };
 
 // 8 kHz samples for CVSD/SCO packets in little endian
-static void sco_demo_sine_wave_int16_at_8000_hz_host_endian(unsigned int num_samples, int16_t * data){
+static void sco_demo_sine_wave_int16_at_8000_hz_host_endian(uint16_t num_samples, int16_t * data){
     unsigned int i;
     for (i=0; i < num_samples; i++){
         data[i] = sine_int16_at_16000hz[phase];
@@ -150,7 +154,7 @@ static void sco_demo_sine_wave_int16_at_8000_hz_host_endian(unsigned int num_sam
 
 // 16 kHz samples for mSBC encoder in host endianess
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(unsigned int num_samples, int16_t * data){
+static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(uint16_t num_samples, int16_t * data){
     unsigned int i;
     for (i=0; i < num_samples; i++){
         data[i] = sine_int16_at_16000hz[phase++];
@@ -311,14 +315,14 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
 
 void sco_demo_fill_payload_CVSD(uint8_t * payload_buffer, uint16_t sco_payload_length){
 
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+#ifdef USE_ADUIO_GENERATOR
 #define REFILL_SAMPLES 16
     // re-fill with sine
     uint16_t samples_free = btstack_ring_buffer_bytes_free(&audio_input_ring_buffer) / 2;
     while (samples_free > 0){
         int16_t samples_buffer[REFILL_SAMPLES];
         uint16_t samples_to_add = btstack_min(samples_free, REFILL_SAMPLES);
-        sco_demo_sine_wave_int16_at_8000_hz_host_endian(samples_to_add, samples_buffer);
+        (*sco_demo_audio_generator)(samples_to_add, samples_buffer);
         btstack_ring_buffer_write(&audio_input_ring_buffer, (uint8_t *)samples_buffer, samples_to_add * 2);
         samples_free -= samples_to_add;
     }
@@ -406,14 +410,14 @@ static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
 
 void sco_demo_fill_payload_mSBC(uint8_t * payload_buffer, uint16_t sco_payload_length){
 
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+#ifdef USE_ADUIO_GENERATOR
 #define REFILL_SAMPLES 16
     // re-fill with sine
     uint16_t samples_free = btstack_ring_buffer_bytes_free(&audio_input_ring_buffer) / 2;
     while (samples_free > 0){
         int16_t samples_buffer[REFILL_SAMPLES];
         uint16_t samples_to_add = btstack_min(samples_free, REFILL_SAMPLES);
-        sco_demo_sine_wave_int16_at_16000_hz_host_endian(samples_to_add, samples_buffer);
+        (*sco_demo_audio_generator)(samples_to_add, samples_buffer);
         btstack_ring_buffer_write(&audio_input_ring_buffer, (uint8_t *)samples_buffer, samples_to_add * 2);
         samples_free -= samples_to_add;
     }
@@ -480,10 +484,16 @@ void sco_demo_set_codec(uint8_t codec){
 
     switch (negotiated_codec){
         case HFP_CODEC_CVSD:
+#ifdef USE_ADUIO_GENERATOR
+            sco_demo_audio_generator = &sco_demo_sine_wave_int16_at_8000_hz_host_endian;
+#endif
             sco_demo_init_CVSD();
             break;
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
         case HFP_CODEC_MSBC:
+#ifdef USE_ADUIO_GENERATOR
+            sco_demo_audio_generator = &sco_demo_sine_wave_int16_at_16000_hz_host_endian;
+#endif
             sco_demo_init_mSBC();
             break;
 #endif
