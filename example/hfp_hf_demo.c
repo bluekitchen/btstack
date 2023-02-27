@@ -66,7 +66,6 @@ uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "HFP HF Demo";
 
-#undef HAVE_BTSTACK_STDIN
 
 #ifdef HAVE_BTSTACK_STDIN
 // static const char * device_addr_string = "6C:72:E7:10:22:EE";
