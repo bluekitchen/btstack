@@ -64,11 +64,7 @@
 
 // test modes
 #define SCO_DEMO_MODE_SINE		 0
-#define SCO_DEMO_MODE_ASCII		 1
-#define SCO_DEMO_MODE_COUNTER	 2
-#define SCO_DEMO_MODE_55         3
-#define SCO_DEMO_MODE_00         4
-#define SCO_DEMO_MODE_MICROPHONE 5
+#define SCO_DEMO_MODE_MICROPHONE 1
 
 // SCO demo configuration
 #define SCO_DEMO_MODE               SCO_DEMO_MODE_MICROPHONE
@@ -81,10 +77,6 @@
 // length and name of wav file on disk
 #define SCO_WAV_DURATION_IN_SECONDS 15
 #define SCO_WAV_FILENAME            "sco_input.wav"
-
-// name of sbc test files
-#define SCO_MSBC_OUT_FILENAME       "sco_output.msbc"
-#define SCO_MSBC_IN_FILENAME        "sco_input.msbc"
 #endif
 
 
@@ -102,13 +94,9 @@
 #define MSBC_PA_PREBUFFER_BYTES (SCO_MSBC_PA_PREBUFFER_MS * MSBC_SAMPLE_RATE/1000 * BYTES_PER_FRAME)
 
 // output
-
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
 static int                   audio_output_paused  = 0;
 static uint8_t               audio_output_ring_buffer_storage[2*MSBC_PA_PREBUFFER_BYTES];
 static btstack_ring_buffer_t audio_output_ring_buffer;
-#endif
-
 
 // input
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
@@ -118,19 +106,12 @@ static uint8_t               audio_input_ring_buffer_storage[2*8000];  // full s
 static btstack_ring_buffer_t audio_input_ring_buffer;
 #endif
 
-static int dump_data = 1;
 static int count_sent = 0;
 static int count_received = 0;
 static int negotiated_codec = -1; 
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 static btstack_sbc_decoder_state_t decoder_state;
-
-#ifdef HAVE_POSIX_FILE_IO
-FILE * msbc_file_in;
-FILE * msbc_file_out;
-#endif
-
 #endif
 
 static btstack_cvsd_plc_state_t cvsd_plc_state;
@@ -139,9 +120,10 @@ static btstack_cvsd_plc_state_t cvsd_plc_state;
 
 int num_samples_to_write;
 int num_audio_frames;
-unsigned int phase;
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+
+unsigned int phase;
 
 // input signal: pre-computed sine wave, 266 Hz at 16000 kHz
 static const int16_t sine_int16_at_16000hz[] = {
@@ -178,22 +160,12 @@ static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(unsigned int num_sa
         }
     }
 }
-
-static void sco_demo_msbc_fill_sine_audio_frame(void){
-    if (!hfp_msbc_can_encode_audio_frame_now()) return;
-    int num_samples = hfp_msbc_num_audio_samples_per_frame();
-    if (num_samples > MAX_NUM_MSBC_SAMPLES) return;
-    int16_t sample_buffer[MAX_NUM_MSBC_SAMPLES];
-    sco_demo_sine_wave_int16_at_16000_hz_host_endian(num_samples, sample_buffer);
-    hfp_msbc_encode_audio_frame(sample_buffer);
-    num_audio_frames++;
-}
 #endif
 #endif
 
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
+// Audio Playback / Recording
 
-static void playback_callback(int16_t * buffer, uint16_t num_samples){
+static void audio_playback_callback(int16_t * buffer, uint16_t num_samples){
 
     uint32_t prebuffer_bytes;
     switch (negotiated_codec){
@@ -231,7 +203,7 @@ static void playback_callback(int16_t * buffer, uint16_t num_samples){
 }
 
 #ifdef USE_AUDIO_INPUT
-static void recording_callback(const int16_t * buffer, uint16_t num_samples){
+static void audio_recording_callback(const int16_t * buffer, uint16_t num_samples){
     btstack_ring_buffer_write(&audio_input_ring_buffer, (uint8_t *)buffer, num_samples * 2);
 }
 #endif
@@ -249,7 +221,7 @@ static int audio_initialize(int sample_rate){
     const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
     if (!audio_sink) return 0;
 
-    audio_sink->init(1, sample_rate, &playback_callback);
+    audio_sink->init(1, sample_rate, &audio_playback_callback);
     audio_sink->start_stream();
 
     audio_output_paused  = 1;
@@ -265,7 +237,7 @@ static int audio_initialize(int sample_rate){
     const btstack_audio_source_t * audio_source = btstack_audio_source_get_instance();
     if (!audio_source) return 0;
 
-    audio_source->init(1, sample_rate, &recording_callback);
+    audio_source->init(1, sample_rate, &audio_recording_callback);
     audio_source->start_stream();
 
     audio_input_paused  = 1;
@@ -286,79 +258,8 @@ static void audio_terminate(void){
 #endif
 }
 
-#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 
-static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
-    UNUSED(context);
-    UNUSED(sample_rate);
-    UNUSED(data);
-    UNUSED(num_samples);
-    UNUSED(num_channels);
-
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
-
-    // printf("handle_pcm_data num samples %u, sample rate %d\n", num_samples, num_channels);
-
-    // samples in callback in host endianess, ready for playback
-    btstack_ring_buffer_write(&audio_output_ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
-
-#ifdef SCO_WAV_FILENAME
-    if (!num_samples_to_write) return;
-    num_samples = btstack_min(num_samples, num_samples_to_write);
-    num_samples_to_write -= num_samples;
-    wav_writer_write_int16(num_samples, data);
-    if (num_samples_to_write == 0){
-        wav_writer_close();
-    }
-#endif /* SCO_WAV_FILENAME */
-
-#endif /* Demo mode sine or microphone */
-}
-#endif /* ENABLE_HFP_WIDE_BAND_SPEECH */
-
-
-#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-
-static void sco_demo_init_mSBC(void){
-    printf("SCO Demo: Init mSBC\n");
-
-    btstack_sbc_decoder_init(&decoder_state, SBC_MODE_mSBC, &handle_pcm_data, NULL);    
-    hfp_msbc_init();
-
-#ifdef SCO_WAV_FILENAME
-    num_samples_to_write = MSBC_SAMPLE_RATE * SCO_WAV_DURATION_IN_SECONDS;
-    wav_writer_open(SCO_WAV_FILENAME, 1, MSBC_SAMPLE_RATE);
-#endif
-
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-    sco_demo_msbc_fill_sine_audio_frame();
-#endif
-
-#ifdef SCO_MSBC_IN_FILENAME
-    msbc_file_in = fopen(SCO_MSBC_IN_FILENAME, "wb");
-    printf("SCO Demo: creating mSBC in file %s, %p\n", SCO_MSBC_IN_FILENAME, msbc_file_in);
-#endif   
-
-#ifdef SCO_MSBC_OUT_FILENAME
-    msbc_file_out = fopen(SCO_MSBC_OUT_FILENAME, "wb");
-    printf("SCO Demo: creating mSBC out file %s, %p\n", SCO_MSBC_OUT_FILENAME, msbc_file_out);
-#endif   
-
-    audio_initialize(MSBC_SAMPLE_RATE);
-}
-
-static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
-#ifdef HAVE_POSIX_FILE_IO
-    if (num_samples_to_write){
-        if (msbc_file_in){
-            // log incoming mSBC data for testing
-            fwrite(packet+3, size-3, 1, msbc_file_in);
-        }
-    }
-#endif
-    btstack_sbc_decoder_process_data(&decoder_state, (packet[1] >> 4) & 3, packet+3, size-3);  
-}
-#endif
+// CVSD - 8 kHz
 
 static void sco_demo_init_CVSD(void){
     printf("SCO Demo: Init CVSD\n");
@@ -375,7 +276,7 @@ static void sco_demo_init_CVSD(void){
 
 static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
 
-    int16_t audio_frame_out[128];    // 
+    int16_t audio_frame_out[128];    //
 
     if (size > sizeof(audio_frame_out)){
         printf("sco_demo_receive_CVSD: SCO packet larger than local output buffer - dropping data.\n");
@@ -410,49 +311,163 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
     btstack_ring_buffer_write(&audio_output_ring_buffer, (uint8_t *)audio_frame_out, audio_bytes_read);
 }
 
+void sco_demo_fill_payload_CVSD(uint8_t * payload_buffer, uint16_t sco_payload_length){
+
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+    const int audio_samples_per_packet = sco_payload_length / BYTES_PER_FRAME;
+    sco_demo_sine_wave_int16_at_8000_hz_little_endian(audio_samples_per_packet, payload_buffer);
 #endif
 
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
+    if (btstack_audio_source_get_instance()){
+        // CVSD
+        log_debug("send: bytes avail %u, free %u", btstack_ring_buffer_bytes_available(&audio_input_ring_buffer), btstack_ring_buffer_bytes_free(&audio_input_ring_buffer));
+        // fill with silence while paused
+        int bytes_to_copy = sco_payload_length;
+        if (audio_input_paused){
+            if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= CVSD_PA_PREBUFFER_BYTES){
+                // resume sending
+                audio_input_paused = 0;
+            }
+        }
 
-void sco_demo_close(void){    
-    printf("SCO demo close\n");
+        // get data from ringbuffer
+        uint16_t pos = 0;
+        uint8_t * sample_data = payload_buffer;
+        if (!audio_input_paused){
+            uint32_t bytes_read = 0;
+            btstack_ring_buffer_read(&audio_input_ring_buffer, sample_data, bytes_to_copy, &bytes_read);
+            // flip 16 on big endian systems
+            // @note We don't use (uint16_t *) casts since all sample addresses are odd which causes crahses on some systems
+            if (btstack_is_big_endian()){
+                unsigned int i;
+                for (i=0;i<bytes_read;i+=2){
+                    uint8_t tmp        = sample_data[i*2];
+                    sample_data[i*2]   = sample_data[i*2+1];
+                    sample_data[i*2+1] = tmp;
+                }
+            }
+            bytes_to_copy -= bytes_read;
+            pos           += bytes_read;
+        }
 
-    printf("SCO demo statistics: ");
-#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-    if (negotiated_codec == HFP_CODEC_MSBC){
-        printf("Used mSBC with PLC, number of processed frames: \n - %d good frames, \n - %d zero frames, \n - %d bad frames.\n", decoder_state.good_frames_nr, decoder_state.zero_frames_nr, decoder_state.bad_frames_nr);
-    } else 
-#endif
-    {
-        printf("Used CVSD with PLC, number of proccesed frames: \n - %d good frames, \n - %d bad frames.\n", cvsd_plc_state.good_frames_nr, cvsd_plc_state.bad_frames_nr);
+        // fill with 0 if not enough
+        if (bytes_to_copy){
+            memset(sample_data + pos, 0, bytes_to_copy);
+            audio_input_paused = 1;
+        }
     }
-
-    negotiated_codec = -1;
-
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
-
-#if defined(SCO_WAV_FILENAME)
-    wav_writer_close();
-#endif
-
-    audio_terminate();
-
+    else {
+        // just send '0's
+        memset(payload_buffer, 0, sco_payload_length);
+    }
 #endif
 }
 
-void sco_demo_set_codec(uint8_t codec){
-    if (negotiated_codec == codec) return;
-    negotiated_codec = codec;
+// mSBC - 16 kHz
 
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
-    if (negotiated_codec == HFP_CODEC_MSBC){
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-        sco_demo_init_mSBC();
+
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+static void sco_demo_msbc_fill_sine_audio_frame(void){
+    if (!hfp_msbc_can_encode_audio_frame_now()) return;
+    int num_samples = hfp_msbc_num_audio_samples_per_frame();
+    if (num_samples > MAX_NUM_MSBC_SAMPLES) return;
+    int16_t sample_buffer[MAX_NUM_MSBC_SAMPLES];
+    sco_demo_sine_wave_int16_at_16000_hz_host_endian(num_samples, sample_buffer);
+    hfp_msbc_encode_audio_frame(sample_buffer);
+    num_audio_frames++;
+}
 #endif
+
+static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
+    UNUSED(context);
+    UNUSED(sample_rate);
+    UNUSED(data);
+    UNUSED(num_samples);
+    UNUSED(num_channels);
+
+    // samples in callback in host endianess, ready for playback
+    btstack_ring_buffer_write(&audio_output_ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
+
+#ifdef SCO_WAV_FILENAME
+    if (!num_samples_to_write) return;
+    num_samples = btstack_min(num_samples, num_samples_to_write);
+    num_samples_to_write -= num_samples;
+    wav_writer_write_int16(num_samples, data);
+    if (num_samples_to_write == 0){
+        wav_writer_close();
+    }
+#endif /* SCO_WAV_FILENAME */
+}
+
+static void sco_demo_init_mSBC(void){
+    printf("SCO Demo: Init mSBC\n");
+
+    btstack_sbc_decoder_init(&decoder_state, SBC_MODE_mSBC, &handle_pcm_data, NULL);
+    hfp_msbc_init();
+
+#ifdef SCO_WAV_FILENAME
+    num_samples_to_write = MSBC_SAMPLE_RATE * SCO_WAV_DURATION_IN_SECONDS;
+    wav_writer_open(SCO_WAV_FILENAME, 1, MSBC_SAMPLE_RATE);
+#endif
+
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+    sco_demo_msbc_fill_sine_audio_frame();
+#endif
+
+    audio_initialize(MSBC_SAMPLE_RATE);
+}
+
+static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
+    btstack_sbc_decoder_process_data(&decoder_state, (packet[1] >> 4) & 3, packet+3, size-3);
+}
+
+void sco_demo_fill_payload_mSBC(uint8_t * payload_buffer, uint16_t sco_payload_length){
+
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+    if (hfp_msbc_num_bytes_in_stream() < sco_payload_length){
+        log_error("mSBC stream is empty.");
+    }
+    hfp_msbc_read_from_stream(payload_buffer, sco_payload_length);
+    sco_demo_msbc_fill_sine_audio_frame();
+#endif
+
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
+    if (btstack_audio_source_get_instance()){
+        // mSBC
+        if (audio_input_paused){
+            if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= MSBC_PA_PREBUFFER_BYTES){
+                // resume sending
+                audio_input_paused = 0;
+            }
+        }
+        if (!audio_input_paused){
+            int num_samples = hfp_msbc_num_audio_samples_per_frame();
+            if (num_samples > MAX_NUM_MSBC_SAMPLES) return; // assert
+            if (hfp_msbc_can_encode_audio_frame_now() && btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= (unsigned int)(num_samples * BYTES_PER_FRAME)){
+                int16_t sample_buffer[MAX_NUM_MSBC_SAMPLES];
+                uint32_t bytes_read;
+                btstack_ring_buffer_read(&audio_input_ring_buffer, (uint8_t*) sample_buffer, num_samples * BYTES_PER_FRAME, &bytes_read);
+                hfp_msbc_encode_audio_frame(sample_buffer);
+                num_audio_frames++;
+            }
+            if (hfp_msbc_num_bytes_in_stream() < sco_payload_length){
+                log_error("mSBC stream should not be empty.");
+            }
+        }
+    }
+    if (audio_input_paused || hfp_msbc_num_bytes_in_stream() < sco_payload_length){
+        // just send '0's
+        memset(payload_buffer, 0, sco_payload_length);
+        audio_input_paused = 1;
     } else {
-        sco_demo_init_CVSD();
+        hfp_msbc_read_from_stream(payload_buffer, sco_payload_length);
     }
 #endif
 }
+
+#endif /* ENABLE_HFP_WIDE_BAND_SPEECH */
 
 void sco_demo_init(void){
 
@@ -472,216 +487,37 @@ void sco_demo_init(void){
         printf("SCO Demo: Sending sine wave, hexdump received data.\n");
     }
 #endif
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
-	printf("SCO Demo: Sending ASCII blocks, print received data.\n");
-#endif
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_COUNTER
-	printf("SCO Demo: Sending counter value, hexdump received data.\n");
-#endif
 
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
+    // Set SCO for CVSD (mSBC or other codecs automatically use 8-bit transparent mode)
     hci_set_sco_voice_setting(0x60);    // linear, unsigned, 16-bit, CVSD
-#else
-    hci_set_sco_voice_setting(0x03);    // linear, unsigned, 8-bit, transparent
-#endif
 }
 
-void sco_report(void);
-void sco_report(void){
-    printf("SCO: sent %u, received %u\n", count_sent, count_received);
-}
+void sco_demo_set_codec(uint8_t codec){
+    if (negotiated_codec == codec) return;
+    negotiated_codec = codec;
 
-void sco_demo_send(hci_con_handle_t sco_handle){
-
-    if (sco_handle == HCI_CON_HANDLE_INVALID) return;
-    
-    int sco_packet_length = hci_get_sco_packet_length();
-    int sco_payload_length = sco_packet_length - 3;
-
-    hci_reserve_packet_buffer();
-    uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+    switch (negotiated_codec){
+        case HFP_CODEC_CVSD:
+            sco_demo_init_CVSD();
+            break;
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-    if (negotiated_codec == HFP_CODEC_MSBC){
-
-        if (hfp_msbc_num_bytes_in_stream() < sco_payload_length){
-            log_error("mSBC stream is empty.");
-        }
-        hfp_msbc_read_from_stream(sco_packet + 3, sco_payload_length);
-#ifdef HAVE_POSIX_FILE_IO
-        if (msbc_file_out){
-            // log outgoing mSBC data for testing
-            fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file_out);
-        }
+        case HFP_CODEC_MSBC:
+            sco_demo_init_mSBC();
+            break;
 #endif
-        sco_demo_msbc_fill_sine_audio_frame();
-    } else
-#endif
-    {
-        const int audio_samples_per_packet = sco_payload_length / BYTES_PER_FRAME;  
-        sco_demo_sine_wave_int16_at_8000_hz_little_endian(audio_samples_per_packet, &sco_packet[3]);
+        default:
+            btstack_assert(false);
+            break;
     }
-#endif
-
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
-
-    if (btstack_audio_source_get_instance()){
-
-        if (negotiated_codec == HFP_CODEC_MSBC){
-            // MSBC
-
-            if (audio_input_paused){
-                if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= MSBC_PA_PREBUFFER_BYTES){
-                    // resume sending
-                    audio_input_paused = 0;
-                }
-            }
-
-            if (!audio_input_paused){
-                int num_samples = hfp_msbc_num_audio_samples_per_frame();
-                if (num_samples > MAX_NUM_MSBC_SAMPLES) return; // assert
-                if (hfp_msbc_can_encode_audio_frame_now() && btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= (unsigned int)(num_samples * BYTES_PER_FRAME)){
-                    int16_t sample_buffer[MAX_NUM_MSBC_SAMPLES];
-                    uint32_t bytes_read;
-                    btstack_ring_buffer_read(&audio_input_ring_buffer, (uint8_t*) sample_buffer, num_samples * BYTES_PER_FRAME, &bytes_read);
-                    hfp_msbc_encode_audio_frame(sample_buffer);
-                    num_audio_frames++;
-                }
-                if (hfp_msbc_num_bytes_in_stream() < sco_payload_length){
-                    log_error("mSBC stream should not be empty.");
-                }
-            }
-
-            if (audio_input_paused || hfp_msbc_num_bytes_in_stream() < sco_payload_length){
-                memset(sco_packet + 3, 0, sco_payload_length);
-                audio_input_paused = 1;
-            } else {
-                hfp_msbc_read_from_stream(sco_packet + 3, sco_payload_length);
-#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-#ifdef HAVE_POSIX_FILE_IO
-                if (msbc_file_out){
-                    // log outgoing mSBC data for testing
-                    fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file_out);
-                }
-#endif
-#endif
-            }
-
-        } else {
-            // CVSD
-
-            log_debug("send: bytes avail %u, free %u", btstack_ring_buffer_bytes_available(&audio_input_ring_buffer), btstack_ring_buffer_bytes_free(&audio_input_ring_buffer));
-            // fill with silence while paused
-            int bytes_to_copy = sco_payload_length;
-            if (audio_input_paused){
-                if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= CVSD_PA_PREBUFFER_BYTES){
-                    // resume sending
-                    audio_input_paused = 0;
-                }
-            }
-
-            // get data from ringbuffer
-            uint16_t pos = 0;
-            uint8_t * sample_data = &sco_packet[3];
-            if (!audio_input_paused){
-                uint32_t bytes_read = 0;
-                btstack_ring_buffer_read(&audio_input_ring_buffer, sample_data, bytes_to_copy, &bytes_read);
-                // flip 16 on big endian systems
-                // @note We don't use (uint16_t *) casts since all sample addresses are odd which causes crahses on some systems
-                if (btstack_is_big_endian()){
-                    unsigned int i;
-                    for (i=0;i<bytes_read;i+=2){
-                        uint8_t tmp        = sample_data[i*2];
-                        sample_data[i*2]   = sample_data[i*2+1];
-                        sample_data[i*2+1] = tmp;
-                    }
-                }
-                bytes_to_copy -= bytes_read;
-                pos           += bytes_read;
-            }
-
-            // fill with 0 if not enough
-            if (bytes_to_copy){
-                memset(sample_data + pos, 0, bytes_to_copy);
-                audio_input_paused = 1;
-            }
-        }
-    }
-    else {
-        // just send '0's
-        memset(sco_packet + 3, 0, sco_payload_length);
-    }
-#endif
-
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
-    // store packet counter-xxxx
-    snprintf((char *)&sco_packet[3], 5, "%04u", phase++);
-    uint8_t ascii = (phase & 0x0f) + 'a';
-    sco_packet[3+4] = '-';
-    memset(&sco_packet[3+5], ascii, sco_payload_length-5);
-#endif
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_COUNTER
-    int j;
-    for (j=0;j<sco_payload_length;j++){
-        sco_packet[3+j] = phase++;
-    }
-#endif
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_55
-    int j;
-    for (j=0;j<sco_payload_length;j++){
-        // sco_packet[3+j] = j & 1 ? 0x35 : 0x53;
-        sco_packet[3+j] = 0x55;
-    }
-#endif
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_00
-    int j;
-    for (j=0;j<sco_payload_length;j++){
-        sco_packet[3+j] = 0x00;
-    }
-    // additional hack
-    // big_endian_store_16(sco_packet, 5, phase++);
-    (void) phase;
-#endif
-
-    // test silence
-    // memset(sco_packet+3, 0, sco_payload_length);
-
-    // set handle + flags
-    little_endian_store_16(sco_packet, 0, sco_handle);
-    // set len
-    sco_packet[2] = sco_payload_length;
-    // finally send packet 
-    hci_send_sco_packet_buffer(sco_packet_length);
-
-    // request another send event
-    hci_request_sco_can_send_now_event();
-
-    count_sent++;
-#if SCO_DEMO_MODE != SCO_DEMO_MODE_55
-    if ((count_sent % SCO_REPORT_PERIOD) == 0) sco_report();
-#endif
 }
-
-/**
- * @brief Process received data
- */
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_YELLOW  "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
 
 void sco_demo_receive(uint8_t * packet, uint16_t size){
-
-    dump_data = 1;
-
-    count_received++;
     static uint32_t packets = 0;
     static uint32_t crc_errors = 0;
     static uint32_t data_received = 0;
     static uint32_t byte_errors = 0;
+
+    count_received++;
 
     data_received += size - 3;
     packets++;
@@ -693,79 +529,84 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
         packets = 0;
     }
 
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
     switch (negotiated_codec){
+        case HFP_CODEC_CVSD:
+            sco_demo_receive_CVSD(packet, size);
+            break;
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
         case HFP_CODEC_MSBC:
             sco_demo_receive_mSBC(packet, size);
             break;
 #endif
-        case HFP_CODEC_CVSD:
-            sco_demo_receive_CVSD(packet, size);
-            break;
         default:
+            btstack_assert(false);
             break;
     }
-    dump_data = 0;
+}
+
+void sco_demo_send(hci_con_handle_t sco_handle){
+
+    if (sco_handle == HCI_CON_HANDLE_INVALID) return;
+
+    int sco_packet_length = hci_get_sco_packet_length();
+    int sco_payload_length = sco_packet_length - 3;
+
+    hci_reserve_packet_buffer();
+    uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
+
+    switch (negotiated_codec){
+        case HFP_CODEC_CVSD:
+            sco_demo_fill_payload_CVSD(&sco_packet[3], sco_payload_length);
+            break;
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+        case HFP_CODEC_MSBC:
+            sco_demo_fill_payload_mSBC(&sco_packet[3], sco_payload_length);
+            break;
+#endif
+        default:
+            btstack_assert(false);
+            break;
+    }
+
+    // set handle + flags
+    little_endian_store_16(sco_packet, 0, sco_handle);
+    // set len
+    sco_packet[2] = sco_payload_length;
+    // finally send packet
+    hci_send_sco_packet_buffer(sco_packet_length);
+
+    // request another send event
+    hci_request_sco_can_send_now_event();
+
+    count_sent++;
+    if ((count_sent % SCO_REPORT_PERIOD) == 0) {
+        printf("SCO: sent %u, received %u\n", count_sent, count_received);
+    }
+}
+
+void sco_demo_close(void){
+    printf("SCO demo close\n");
+
+    printf("SCO demo statistics: ");
+    switch (negotiated_codec){
+        case HFP_CODEC_CVSD:
+            printf("Used CVSD with PLC, number of proccesed frames: \n - %d good frames, \n - %d bad frames.\n", cvsd_plc_state.good_frames_nr, cvsd_plc_state.bad_frames_nr);
+            break;
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+        case HFP_CODEC_MSBC:
+            printf("Used mSBC with PLC, number of processed frames: \n - %d good frames, \n - %d zero frames, \n - %d bad frames.\n", decoder_state.good_frames_nr, decoder_state.zero_frames_nr, decoder_state.bad_frames_nr);
+            break;
+#endif
+        default:
+            btstack_assert(false);
+            break;
+    }
+
+    negotiated_codec = -1;
+
+#if defined(SCO_WAV_FILENAME)
+    wav_writer_close();
 #endif
 
-#if 0
-    if (packet[1] & 0x30){
-        crc_errors++;
-        printf("SCO CRC Error: %x - data: ", (packet[1] & 0x30) >> 4);
-        printf_hexdump(&packet[3], size-3);
-        return;
-    }
-#endif
-
-    if (dump_data){
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
-        printf("data: ");
-        int i;
-        for (i=3;i<size;i++){
-            printf("%c", packet[i]);
-        }
-        printf("\n");
-        dump_data = 0;
-#endif
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_COUNTER
-        // colored hexdump with expected
-        static uint8_t expected_byte = 0;
-        int i;
-        printf("data: ");
-        for (i=3;i<size;i++){
-            if (packet[i] != expected_byte){
-                printf(ANSI_COLOR_RED "%02x " ANSI_COLOR_RESET, packet[i]);
-            } else {
-                printf("%02x ", packet[i]);
-            }
-            expected_byte = packet[i]+1;
-        }
-        printf("\n");
-#endif
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_55 || SCO_DEMO_MODE == SCO_DEMO_MODE_00
-        int i;
-        int contains_error = 0;
-        for (i=3;i<size;i++){
-            if (packet[i] != 0x00 && packet[i] != 0x35 && packet[i] != 0x53 && packet[i] != 0x55){
-                contains_error = 1;
-                byte_errors++;
-            }
-        }
-        if (contains_error){
-            printf("data: ");
-            for (i=0;i<3;i++){
-                printf("%02x ", packet[i]);
-            }
-            for (i=3;i<size;i++){
-                if (packet[i] != 0x00 && packet[i] != 0x35 && packet[i] != 0x53 && packet[i] != 0x55){
-                    printf(ANSI_COLOR_RED "%02x " ANSI_COLOR_RESET, packet[i]);
-                } else {
-                    printf("%02x ", packet[i]);
-                }
-            }
-            printf("\n");
-        }
-#endif
-    }
+    audio_terminate();
 }
