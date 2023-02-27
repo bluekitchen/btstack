@@ -101,10 +101,10 @@ static btstack_ring_buffer_t audio_output_ring_buffer;
 // input
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
 #define USE_AUDIO_INPUT
+#endif
 static int                   audio_input_paused  = 0;
 static uint8_t               audio_input_ring_buffer_storage[2*8000];  // full second input buffer
 static btstack_ring_buffer_t audio_input_ring_buffer;
-#endif
 
 static int count_sent = 0;
 static int count_received = 0;
@@ -136,11 +136,10 @@ static const int16_t sine_int16_at_16000hz[] = {
 };
 
 // 8 kHz samples for CVSD/SCO packets in little endian
-static void sco_demo_sine_wave_int16_at_8000_hz_little_endian(unsigned int num_samples, uint8_t * data){
+static void sco_demo_sine_wave_int16_at_8000_hz_host_endian(unsigned int num_samples, int16_t * data){
     unsigned int i;
     for (i=0; i < num_samples; i++){
-        int16_t sample = sine_int16_at_16000hz[phase];
-        little_endian_store_16(data, i * 2, sample);
+        data[i] = sine_int16_at_16000hz[phase];
         // ony use every second sample from 16khz table to get 8khz
         phase += 2;
         if (phase >= (sizeof(sine_int16_at_16000hz) / sizeof(int16_t))){
@@ -228,19 +227,18 @@ static int audio_initialize(int sample_rate){
 
     // -- input -- //
 
-#ifdef USE_AUDIO_INPUT
     // init buffers
     memset(audio_input_ring_buffer_storage, 0, sizeof(audio_input_ring_buffer_storage));
     btstack_ring_buffer_init(&audio_input_ring_buffer, audio_input_ring_buffer_storage, sizeof(audio_input_ring_buffer_storage));
+    audio_input_paused  = 1;
 
+#ifdef USE_AUDIO_INPUT
     // config and setup audio recording
     const btstack_audio_source_t * audio_source = btstack_audio_source_get_instance();
     if (!audio_source) return 0;
 
     audio_source->init(1, sample_rate, &audio_recording_callback);
     audio_source->start_stream();
-
-    audio_input_paused  = 1;
 #endif
 
     return 1;
@@ -314,54 +312,53 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
 void sco_demo_fill_payload_CVSD(uint8_t * payload_buffer, uint16_t sco_payload_length){
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-    const int audio_samples_per_packet = sco_payload_length / BYTES_PER_FRAME;
-    sco_demo_sine_wave_int16_at_8000_hz_little_endian(audio_samples_per_packet, payload_buffer);
-#endif
-
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
-    if (btstack_audio_source_get_instance()){
-        // CVSD
-        log_debug("send: bytes avail %u, free %u", btstack_ring_buffer_bytes_available(&audio_input_ring_buffer), btstack_ring_buffer_bytes_free(&audio_input_ring_buffer));
-        // fill with silence while paused
-        int bytes_to_copy = sco_payload_length;
-        if (audio_input_paused){
-            if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= CVSD_PA_PREBUFFER_BYTES){
-                // resume sending
-                audio_input_paused = 0;
-            }
-        }
-
-        // get data from ringbuffer
-        uint16_t pos = 0;
-        uint8_t * sample_data = payload_buffer;
-        if (!audio_input_paused){
-            uint32_t bytes_read = 0;
-            btstack_ring_buffer_read(&audio_input_ring_buffer, sample_data, bytes_to_copy, &bytes_read);
-            // flip 16 on big endian systems
-            // @note We don't use (uint16_t *) casts since all sample addresses are odd which causes crahses on some systems
-            if (btstack_is_big_endian()){
-                unsigned int i;
-                for (i=0;i<bytes_read;i+=2){
-                    uint8_t tmp        = sample_data[i*2];
-                    sample_data[i*2]   = sample_data[i*2+1];
-                    sample_data[i*2+1] = tmp;
-                }
-            }
-            bytes_to_copy -= bytes_read;
-            pos           += bytes_read;
-        }
-
-        // fill with 0 if not enough
-        if (bytes_to_copy){
-            memset(sample_data + pos, 0, bytes_to_copy);
-            audio_input_paused = 1;
-        }
-    }
-    else {
-        // just send '0's
-        memset(payload_buffer, 0, sco_payload_length);
+#define REFILL_SAMPLES 16
+    // re-fill with sine
+    uint16_t samples_free = btstack_ring_buffer_bytes_free(&audio_input_ring_buffer) / 2;
+    while (samples_free > 0){
+        int16_t samples_buffer[REFILL_SAMPLES];
+        uint16_t samples_to_add = btstack_min(samples_free, REFILL_SAMPLES);
+        sco_demo_sine_wave_int16_at_8000_hz_host_endian(samples_to_add, samples_buffer);
+        btstack_ring_buffer_write(&audio_input_ring_buffer, (uint8_t *)samples_buffer, samples_to_add * 2);
+        samples_free -= samples_to_add;
     }
 #endif
+
+    // resume if pre-buffer is filled
+    if (audio_input_paused){
+        if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= CVSD_PA_PREBUFFER_BYTES){
+            // resume sending
+            audio_input_paused = 0;
+        }
+    }
+
+    uint16_t bytes_to_copy = sco_payload_length;
+
+    // get data from ringbuffer
+    uint16_t pos = 0;
+    if (!audio_input_paused){
+        uint16_t samples_to_copy = sco_payload_length / 2;
+        uint32_t bytes_read = 0;
+        btstack_ring_buffer_read(&audio_input_ring_buffer, payload_buffer, bytes_to_copy, &bytes_read);
+        // flip 16 on big endian systems
+        // @note We don't use (uint16_t *) casts since all sample addresses are odd which causes crahses on some systems
+        if (btstack_is_big_endian()){
+            uint16_t i;
+            for (i=0;i<samples_to_copy/2;i+=2){
+                uint8_t tmp           = payload_buffer[i*2];
+                payload_buffer[i*2]   = payload_buffer[i*2+1];
+                payload_buffer[i*2+1] = tmp;
+            }
+        }
+        bytes_to_copy -= bytes_read;
+        pos           += bytes_read;
+    }
+
+    // fill with 0 if not enough
+    if (bytes_to_copy){
+        memset(payload_buffer + pos, 0, bytes_to_copy);
+        audio_input_paused = 1;
+    }
 }
 
 // mSBC - 16 kHz
