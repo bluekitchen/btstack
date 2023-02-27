@@ -365,18 +365,6 @@ void sco_demo_fill_payload_CVSD(uint8_t * payload_buffer, uint16_t sco_payload_l
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-static void sco_demo_msbc_fill_sine_audio_frame(void){
-    if (!hfp_msbc_can_encode_audio_frame_now()) return;
-    int num_samples = hfp_msbc_num_audio_samples_per_frame();
-    if (num_samples > MAX_NUM_MSBC_SAMPLES) return;
-    int16_t sample_buffer[MAX_NUM_MSBC_SAMPLES];
-    sco_demo_sine_wave_int16_at_16000_hz_host_endian(num_samples, sample_buffer);
-    hfp_msbc_encode_audio_frame(sample_buffer);
-    num_audio_frames++;
-}
-#endif
-
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
     UNUSED(context);
     UNUSED(sample_rate);
@@ -409,10 +397,6 @@ static void sco_demo_init_mSBC(void){
     wav_writer_open(SCO_WAV_FILENAME, 1, MSBC_SAMPLE_RATE);
 #endif
 
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-    sco_demo_msbc_fill_sine_audio_frame();
-#endif
-
     audio_initialize(MSBC_SAMPLE_RATE);
 }
 
@@ -423,37 +407,39 @@ static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
 void sco_demo_fill_payload_mSBC(uint8_t * payload_buffer, uint16_t sco_payload_length){
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-    if (hfp_msbc_num_bytes_in_stream() < sco_payload_length){
-        log_error("mSBC stream is empty.");
+#define REFILL_SAMPLES 16
+    // re-fill with sine
+    uint16_t samples_free = btstack_ring_buffer_bytes_free(&audio_input_ring_buffer) / 2;
+    while (samples_free > 0){
+        int16_t samples_buffer[REFILL_SAMPLES];
+        uint16_t samples_to_add = btstack_min(samples_free, REFILL_SAMPLES);
+        sco_demo_sine_wave_int16_at_16000_hz_host_endian(samples_to_add, samples_buffer);
+        btstack_ring_buffer_write(&audio_input_ring_buffer, (uint8_t *)samples_buffer, samples_to_add * 2);
+        samples_free -= samples_to_add;
     }
-    hfp_msbc_read_from_stream(payload_buffer, sco_payload_length);
-    sco_demo_msbc_fill_sine_audio_frame();
 #endif
 
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
-    if (btstack_audio_source_get_instance()){
-        // mSBC
-        if (audio_input_paused){
-            if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= MSBC_PA_PREBUFFER_BYTES){
-                // resume sending
-                audio_input_paused = 0;
-            }
-        }
-        if (!audio_input_paused){
-            int num_samples = hfp_msbc_num_audio_samples_per_frame();
-            if (num_samples > MAX_NUM_MSBC_SAMPLES) return; // assert
-            if (hfp_msbc_can_encode_audio_frame_now() && btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= (unsigned int)(num_samples * BYTES_PER_FRAME)){
-                int16_t sample_buffer[MAX_NUM_MSBC_SAMPLES];
-                uint32_t bytes_read;
-                btstack_ring_buffer_read(&audio_input_ring_buffer, (uint8_t*) sample_buffer, num_samples * BYTES_PER_FRAME, &bytes_read);
-                hfp_msbc_encode_audio_frame(sample_buffer);
-                num_audio_frames++;
-            }
-            if (hfp_msbc_num_bytes_in_stream() < sco_payload_length){
-                log_error("mSBC stream should not be empty.");
-            }
+    // resume if pre-buffer is filled
+    if (audio_input_paused){
+        if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= MSBC_PA_PREBUFFER_BYTES){
+            // resume sending
+            audio_input_paused = 0;
         }
     }
+    if (!audio_input_paused){
+        int num_samples = hfp_msbc_num_audio_samples_per_frame();
+        btstack_assert(num_samples <= MAX_NUM_MSBC_SAMPLES);
+        if (hfp_msbc_can_encode_audio_frame_now() && btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= (unsigned int)(num_samples * BYTES_PER_FRAME)){
+            int16_t sample_buffer[MAX_NUM_MSBC_SAMPLES];
+            uint32_t bytes_read;
+            btstack_ring_buffer_read(&audio_input_ring_buffer, (uint8_t*) sample_buffer, num_samples * BYTES_PER_FRAME, &bytes_read);
+            hfp_msbc_encode_audio_frame(sample_buffer);
+            num_audio_frames++;
+        }
+        btstack_assert(hfp_msbc_num_bytes_in_stream() >= sco_payload_length);
+    }
+
+    // get data from encoder, fill with 0 if not enough
     if (audio_input_paused || hfp_msbc_num_bytes_in_stream() < sco_payload_length){
         // just send '0's
         memset(payload_buffer, 0, sco_payload_length);
@@ -461,7 +447,6 @@ void sco_demo_fill_payload_mSBC(uint8_t * payload_buffer, uint16_t sco_payload_l
     } else {
         hfp_msbc_read_from_stream(payload_buffer, sco_payload_length);
     }
-#endif
 }
 
 #endif /* ENABLE_HFP_WIDE_BAND_SPEECH */
