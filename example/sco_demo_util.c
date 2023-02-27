@@ -79,23 +79,20 @@
 #define SCO_WAV_FILENAME            "sco_input.wav"
 #endif
 
-
-// pre-buffer for CVSD and mSBC - also defines latency
-#define SCO_CVSD_PA_PREBUFFER_MS    50
-#define SCO_MSBC_PA_PREBUFFER_MS    50
-
 // constants
 #define NUM_CHANNELS            1
-#define CVSD_SAMPLE_RATE        8000
-#define MSBC_SAMPLE_RATE        16000
+#define SAMPLE_RATE_8KHZ        8000
+#define SAMPLE_RATE_16KHZ       16000
 #define BYTES_PER_FRAME         2
 
-#define CVSD_PA_PREBUFFER_BYTES (SCO_CVSD_PA_PREBUFFER_MS * CVSD_SAMPLE_RATE/1000 * BYTES_PER_FRAME)
-#define MSBC_PA_PREBUFFER_BYTES (SCO_MSBC_PA_PREBUFFER_MS * MSBC_SAMPLE_RATE/1000 * BYTES_PER_FRAME)
+// pre-buffer for CVSD and mSBC - also defines latency
+#define SCO_PREBUFFER_MS      50
+#define PREBUFFER_BYTES_8KHZ  (SCO_PREBUFFER_MS *  SAMPLE_RATE_8KHZ/1000 * BYTES_PER_FRAME)
+#define PREBUFFER_BYTES_16KHZ (SCO_PREBUFFER_MS * SAMPLE_RATE_16KHZ/1000 * BYTES_PER_FRAME)
 
 // output
 static int                   audio_output_paused  = 0;
-static uint8_t               audio_output_ring_buffer_storage[2*MSBC_PA_PREBUFFER_BYTES];
+static uint8_t               audio_output_ring_buffer_storage[2 * PREBUFFER_BYTES_16KHZ];
 static btstack_ring_buffer_t audio_output_ring_buffer;
 
 // input
@@ -106,7 +103,8 @@ static btstack_ring_buffer_t audio_output_ring_buffer;
 static void (*sco_demo_audio_generator)(uint16_t num_samples, int16_t * data);
 #endif
 static int                   audio_input_paused  = 0;
-static uint8_t               audio_input_ring_buffer_storage[2*8000];  // full second input buffer
+static uint16_t              audio_input_prebuffer_bytes;
+static uint8_t               audio_input_ring_buffer_storage[2 * PREBUFFER_BYTES_16KHZ];
 static btstack_ring_buffer_t audio_input_ring_buffer;
 
 static int count_sent = 0;
@@ -173,11 +171,11 @@ static void audio_playback_callback(int16_t * buffer, uint16_t num_samples){
     uint32_t prebuffer_bytes;
     switch (negotiated_codec){
         case HFP_CODEC_MSBC:
-            prebuffer_bytes = MSBC_PA_PREBUFFER_BYTES;
+            prebuffer_bytes = PREBUFFER_BYTES_16KHZ;
             break;
         case HFP_CODEC_CVSD:
         default:
-            prebuffer_bytes = CVSD_PA_PREBUFFER_BYTES;
+            prebuffer_bytes = PREBUFFER_BYTES_8KHZ;
             break;
     }
 
@@ -268,12 +266,14 @@ static void sco_demo_init_CVSD(void){
 
     btstack_cvsd_plc_init(&cvsd_plc_state);
 
+    audio_input_prebuffer_bytes = PREBUFFER_BYTES_8KHZ;
+
 #ifdef SCO_WAV_FILENAME
-    num_samples_to_write = CVSD_SAMPLE_RATE * SCO_WAV_DURATION_IN_SECONDS;
-    wav_writer_open(SCO_WAV_FILENAME, 1, CVSD_SAMPLE_RATE);
+    num_samples_to_write = SAMPLE_RATE_8KHZ * SCO_WAV_DURATION_IN_SECONDS;
+    wav_writer_open(SCO_WAV_FILENAME, 1, SAMPLE_RATE_8KHZ);
 #endif
 
-    audio_initialize(CVSD_SAMPLE_RATE);
+    audio_initialize(SAMPLE_RATE_8KHZ);
 }
 
 static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
@@ -330,7 +330,7 @@ void sco_demo_fill_payload_CVSD(uint8_t * payload_buffer, uint16_t sco_payload_l
 
     // resume if pre-buffer is filled
     if (audio_input_paused){
-        if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= CVSD_PA_PREBUFFER_BYTES){
+        if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= audio_input_prebuffer_bytes){
             // resume sending
             audio_input_paused = 0;
         }
@@ -396,12 +396,14 @@ static void sco_demo_init_mSBC(void){
     btstack_sbc_decoder_init(&decoder_state, SBC_MODE_mSBC, &handle_pcm_data, NULL);
     hfp_msbc_init();
 
+    audio_input_prebuffer_bytes = PREBUFFER_BYTES_16KHZ;
+
 #ifdef SCO_WAV_FILENAME
-    num_samples_to_write = MSBC_SAMPLE_RATE * SCO_WAV_DURATION_IN_SECONDS;
-    wav_writer_open(SCO_WAV_FILENAME, 1, MSBC_SAMPLE_RATE);
+    num_samples_to_write = SAMPLE_RATE_16KHZ * SCO_WAV_DURATION_IN_SECONDS;
+    wav_writer_open(SCO_WAV_FILENAME, 1, SAMPLE_RATE_16KHZ);
 #endif
 
-    audio_initialize(MSBC_SAMPLE_RATE);
+    audio_initialize(SAMPLE_RATE_16KHZ);
 }
 
 static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
@@ -425,7 +427,7 @@ void sco_demo_fill_payload_mSBC(uint8_t * payload_buffer, uint16_t sco_payload_l
 
     // resume if pre-buffer is filled
     if (audio_input_paused){
-        if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= MSBC_PA_PREBUFFER_BYTES){
+        if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= audio_input_prebuffer_bytes){
             // resume sending
             audio_input_paused = 0;
         }
