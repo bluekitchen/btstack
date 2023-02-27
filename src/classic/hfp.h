@@ -163,8 +163,9 @@ extern "C" {
 #define HFP_RING "RING"
 
 // Codecs 
-#define HFP_CODEC_CVSD 0x01
-#define HFP_CODEC_MSBC 0x02
+#define HFP_CODEC_CVSD    0x01
+#define HFP_CODEC_MSBC    0x02
+#define HFP_CODEC_LC3_SWB 0x03
 
 typedef enum {
     HFP_ROLE_INVALID = 0,
