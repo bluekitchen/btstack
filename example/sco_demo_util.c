@@ -90,11 +90,17 @@
 #define PREBUFFER_BYTES_8KHZ  (SCO_PREBUFFER_MS *  SAMPLE_RATE_8KHZ/1000 * BYTES_PER_FRAME)
 #define PREBUFFER_BYTES_16KHZ (SCO_PREBUFFER_MS * SAMPLE_RATE_16KHZ/1000 * BYTES_PER_FRAME)
 
+#if defined(ENABLE_HFP_WIDE_BAND_SPEECH)
+#define PREBUFFER_BYTES_MAX PREBUFFER_BYTES_16KHZ
+#else
+#define PREBUFFER_BYTES_MAX PREBUFFER_BYTES_8KHZ
+#endif
+
 static uint16_t              audio_prebuffer_bytes;
 
 // output
 static int                   audio_output_paused  = 0;
-static uint8_t               audio_output_ring_buffer_storage[2 * PREBUFFER_BYTES_16KHZ];
+static uint8_t               audio_output_ring_buffer_storage[2 * PREBUFFER_BYTES_MAX];
 static btstack_ring_buffer_t audio_output_ring_buffer;
 
 // input
@@ -105,7 +111,7 @@ static btstack_ring_buffer_t audio_output_ring_buffer;
 static void (*sco_demo_audio_generator)(uint16_t num_samples, int16_t * data);
 #endif
 static int                   audio_input_paused  = 0;
-static uint8_t               audio_input_ring_buffer_storage[2 * PREBUFFER_BYTES_16KHZ];
+static uint8_t               audio_input_ring_buffer_storage[2 * PREBUFFER_BYTES_MAX];
 static btstack_ring_buffer_t audio_input_ring_buffer;
 
 static int count_sent = 0;
