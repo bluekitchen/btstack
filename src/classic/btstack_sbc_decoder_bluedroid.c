@@ -199,7 +199,7 @@ void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_m
     btstack_sbc_plc_init(&state->plc_state);
 }
 
-static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t * buffer, int size){
+static void append_received_sbc_data(bludroid_decoder_state_t * state, const uint8_t * buffer, int size){
     int numFreeBytes = sizeof(state->frame_buffer) - state->bytes_in_frame_buffer;
 
     if (size > numFreeBytes){
@@ -223,7 +223,7 @@ static void btstack_sbc_decoder_bluedroid_simulate_error(const OI_BYTE *frame_da
     }
 }
 
-static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * state, uint8_t * buffer, int size){
+static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * state, const uint8_t * buffer, int size){
     bludroid_decoder_state_t * decoder_state = (bludroid_decoder_state_t*)state->decoder_state;
     int input_bytes_to_process = size;
     int keep_decoding = 1;
@@ -373,7 +373,7 @@ static void btstack_sbc_decoder_drop_processed_bytes(bludroid_decoder_state_t * 
     decoder_state->bytes_in_frame_buffer -= bytes_processed;
 }
 
-static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, uint8_t * buffer, int size){
+static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, const uint8_t * buffer, int size){
     bludroid_decoder_state_t * decoder_state = (bludroid_decoder_state_t*)state->decoder_state;
     int input_bytes_to_process = size;
     const unsigned int MSBC_FRAME_SIZE = 60;
@@ -526,7 +526,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
     }
 }
 
-void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, uint8_t * buffer, int size){
+void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, const uint8_t * buffer, int size){
     if (state->mode == SBC_MODE_mSBC){
         btstack_sbc_decoder_process_msbc_data(state, packet_status_flag, buffer, size);
     } else {
