@@ -30,6 +30,7 @@ SRC_CLASSIC_FILES = \
     hfp_gsm_model.c \
     hfp_hf.c \
     hfp_msbc.c \
+    hfp_codec.c \
     hid_device.c \
     hsp_ag.c \
     hsp_hs.c \
