@@ -550,11 +550,22 @@ static int hfp_ag_send_enhanced_voice_recognition_msg_cmd(hfp_connection_t * hfp
 static uint8_t hfp_ag_suggest_codec(hfp_connection_t *hfp_connection){
     if (hfp_connection->sco_for_msbc_failed) return HFP_CODEC_CVSD;
 
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+    if (hfp_supports_codec(HFP_CODEC_LC3_SWB, hfp_ag_codecs_nr, hfp_ag_codecs)){
+        if (hfp_supports_codec(HFP_CODEC_LC3_SWB, hfp_connection->remote_codecs_nr, hfp_connection->remote_codecs)){
+            return HFP_CODEC_LC3_SWB;
+        }
+    }
+#endif
+
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
     if (hfp_supports_codec(HFP_CODEC_MSBC, hfp_ag_codecs_nr, hfp_ag_codecs)){
         if (hfp_supports_codec(HFP_CODEC_MSBC, hfp_connection->remote_codecs_nr, hfp_connection->remote_codecs)){
             return HFP_CODEC_MSBC;
         }
     }
+#endif
+
     return HFP_CODEC_CVSD;
 }
 
