@@ -118,12 +118,11 @@ static int count_sent = 0;
 static int count_received = 0;
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+#define MSBC_MAX_NUM_SAMPLES (16*8)
 static btstack_sbc_decoder_state_t decoder_state;
 #endif
 
 static btstack_cvsd_plc_state_t cvsd_plc_state;
-
-#define MAX_NUM_MSBC_SAMPLES (16*8)
 
 int num_samples_to_write;
 int num_audio_frames;
@@ -134,7 +133,11 @@ typedef struct {
     void(*receive)(const uint8_t * packet, uint16_t size);
     void (*fill_payload)(uint8_t * payload_buffer, uint16_t sco_payload_length);
     void (*close)(void);
+    //
+    uint16_t sample_rate;
 } codec_support_t;
+
+// current configuration
 static const codec_support_t * codec_current = NULL;
 
 // sine generator
@@ -359,7 +362,8 @@ static const codec_support_t codec_cvsd = {
         .init         = &sco_demo_cvsd_init,
         .receive      = &sco_demo_cvsd_receive,
         .fill_payload = &sco_demo_cvsd_fill_payload,
-        .close        = &sco_demo_cvsd_close
+        .close        = &sco_demo_cvsd_close,
+        .sample_rate = SAMPLE_RATE_8KHZ
 };
 
 // mSBC - 16 kHz
@@ -414,9 +418,9 @@ static void sco_demo_msbc_receive(const uint8_t * packet, uint16_t size){
 void sco_demo_msbc_fill_payload(uint8_t * payload_buffer, uint16_t sco_payload_length){
     if (!audio_input_paused){
         int num_samples = hfp_msbc_num_audio_samples_per_frame();
-        btstack_assert(num_samples <= MAX_NUM_MSBC_SAMPLES);
+        btstack_assert(num_samples <= MSBC_MAX_NUM_SAMPLES);
         if (hfp_msbc_can_encode_audio_frame_now() && btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= (unsigned int)(num_samples * BYTES_PER_FRAME)){
-            int16_t sample_buffer[MAX_NUM_MSBC_SAMPLES];
+            int16_t sample_buffer[MSBC_MAX_NUM_SAMPLES];
             uint32_t bytes_read;
             btstack_ring_buffer_read(&audio_input_ring_buffer, (uint8_t*) sample_buffer, num_samples * BYTES_PER_FRAME, &bytes_read);
             hfp_msbc_encode_audio_frame(sample_buffer);
@@ -443,7 +447,8 @@ static const codec_support_t codec_msbc = {
         .init         = &sco_demo_msbc_init,
         .receive      = &sco_demo_msbc_receive,
         .fill_payload = &sco_demo_msbc_fill_payload,
-        .close        = &sco_demo_msbc_close
+        .close        = &sco_demo_msbc_close,
+        .sample_rate = SAMPLE_RATE_16KHZ
 };
 
 #endif /* ENABLE_HFP_WIDE_BAND_SPEECH */
