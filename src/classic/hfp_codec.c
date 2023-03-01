@@ -114,8 +114,7 @@ void hfp_codec_encode_audio_frame(hfp_codec_t * hfp_codec, int16_t * pcm_samples
 uint16_t hfp_codec_num_bytes_available(const hfp_codec_t * hfp_codec){
     return hfp_codec->write_pos - hfp_codec->read_pos;
 }
-
-void hfp_codec_read_from_stream(hfp_codec_t * hfp_codec, uint8_t * buf, int size){
+void hfp_codec_read_from_stream(hfp_codec_t * hfp_codec, uint8_t * buf, uint16_t size){
     uint16_t num_bytes_available = hfp_codec_num_bytes_available(hfp_codec);
     btstack_assert(num_bytes_available >= size);
 
