@@ -1889,7 +1889,7 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     log_info("hfp_setup_synchronous_connection using setting nr %u", setting);
     hfp_sco_establishment_active = hfp_connection;
     uint16_t sco_voice_setting = hci_get_sco_voice_setting();
-    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+    if (hfp_connection->negotiated_codec != HFP_CODEC_CVSD){
 #ifdef ENABLE_BCM_PCM_WBS
         sco_voice_setting = 0x0063; // Transparent data, 16-bit for BCM controllers
 #else
@@ -1927,7 +1927,7 @@ void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool i
 
     // mSBC only allows for transparent data
     uint16_t sco_voice_setting = hci_get_sco_voice_setting();
-    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+    if (hfp_connection->negotiated_codec != HFP_CODEC_CVSD){
 #ifdef ENABLE_BCM_PCM_WBS
         sco_voice_setting = 0x0063; // Transparent data, 16-bit for BCM controllers
 #else
