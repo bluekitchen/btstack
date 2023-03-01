@@ -65,6 +65,7 @@
 // test modes
 #define SCO_DEMO_MODE_SINE		 0
 #define SCO_DEMO_MODE_MICROPHONE 1
+#define SCO_DEMO_MODE_MODPLAYER  2
 
 // SCO demo configuration
 #define SCO_DEMO_MODE               SCO_DEMO_MODE_MICROPHONE
@@ -113,6 +114,13 @@ static void (*sco_demo_audio_generator)(uint16_t num_samples, int16_t * data);
 static int                   audio_input_paused  = 0;
 static uint8_t               audio_input_ring_buffer_storage[2 * PREBUFFER_BYTES_MAX];
 static btstack_ring_buffer_t audio_input_ring_buffer;
+
+// mod player
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
+#include "hxcmod.h"
+#include "mods/mod.h"
+static modcontext mod_context;
+#endif
 
 static int count_sent = 0;
 static int count_received = 0;
@@ -165,6 +173,26 @@ static void sco_demo_sine_wave_host_endian(uint16_t num_samples, int16_t * data)
         sine_wave_phase += sine_wave_steps_per_sample;
         if (sine_wave_phase >= (sizeof(sine_int16_at_16000hz) / sizeof(int16_t))){
             sine_wave_phase = 0;
+        }
+    }
+}
+#endif
+
+// Mod Player
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
+#define NUM_SAMPLES_GENERATOR_BUFFER 30
+static void sco_demo_modplayer(uint16_t num_samples, int16_t * data){
+    // mix down stereo
+    signed short samples[NUM_SAMPLES_GENERATOR_BUFFER * 2];
+    while (num_samples > 0){
+        uint16_t next_samples = btstack_min(num_samples, NUM_SAMPLES_GENERATOR_BUFFER);
+    	hxcmod_fillbuffer(&mod_context, (unsigned short *) samples, next_samples, NULL);
+        num_samples -= next_samples;
+        uint16_t i;
+        for (i=0;i<next_samples;i++){
+            int32_t left  = samples[2*i + 0];
+            int32_t right = samples[2*i + 1];
+            data[i] = (int16_t)((left + right) / 2);
         }
     }
 }
@@ -434,6 +462,12 @@ void sco_demo_init(void){
 
     // Set SCO for CVSD (mSBC or other codecs automatically use 8-bit transparent mode)
     hci_set_sco_voice_setting(0x60);    // linear, unsigned, 16-bit, CVSD
+
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
+    // init mod
+    int hxcmod_initialized = hxcmod_init(&mod_context);
+    btstack_assert(hxcmod_initialized != 0);
+#endif
 }
 
 void sco_demo_set_codec(uint8_t negotiated_codec){
@@ -465,6 +499,13 @@ void sco_demo_set_codec(uint8_t negotiated_codec){
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
     sine_wave_steps_per_sample = SINE_WAVE_SAMPLE_RATE / codec_current->sample_rate;
     sco_demo_audio_generator = &sco_demo_sine_wave_host_endian;
+#endif
+
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
+    // load mod
+    hxcmod_setcfg(&mod_context, codec_current->sample_rate, 16, 1, 1, 1);
+    hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
+    sco_demo_audio_generator = &sco_demo_modplayer;
 #endif
 }
 
