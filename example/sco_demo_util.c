@@ -51,7 +51,7 @@
 #include "classic/btstack_cvsd_plc.h"
 #include "classic/btstack_sbc.h"
 #include "classic/hfp.h"
-#include "classic/hfp_msbc.h"
+#include "classic/hfp_codec.h"
 
 #ifdef _MSC_VER
 // ignore deprecated warning for fopen
@@ -93,8 +93,10 @@
 
 #if defined(ENABLE_HFP_WIDE_BAND_SPEECH)
 #define PREBUFFER_BYTES_MAX PREBUFFER_BYTES_16KHZ
+#define SAMPLES_PER_FRAME_MAX 120
 #else
 #define PREBUFFER_BYTES_MAX PREBUFFER_BYTES_8KHZ
+#define SAMPLES_PER_FRAME_MAX 60
 #endif
 
 static uint16_t              audio_prebuffer_bytes;
@@ -148,6 +150,8 @@ typedef struct {
 // current configuration
 static const codec_support_t * codec_current = NULL;
 
+// hfp_codec
+static hfp_codec_t hfp_codec;
 
 // Sine Wave
 
@@ -396,7 +400,7 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 static void sco_demo_msbc_init(void){
     printf("SCO Demo: Init mSBC\n");
     btstack_sbc_decoder_init(&decoder_state, SBC_MODE_mSBC, &handle_pcm_data, NULL);
-    hfp_msbc_init();
+    hfp_codec_init(&hfp_codec, HFP_CODEC_MSBC);
 }
 
 static void sco_demo_msbc_receive(const uint8_t * packet, uint16_t size){
@@ -405,25 +409,25 @@ static void sco_demo_msbc_receive(const uint8_t * packet, uint16_t size){
 
 void sco_demo_msbc_fill_payload(uint8_t * payload_buffer, uint16_t sco_payload_length){
     if (!audio_input_paused){
-        int num_samples = hfp_msbc_num_audio_samples_per_frame();
-        btstack_assert(num_samples <= MSBC_MAX_NUM_SAMPLES);
-        if (hfp_msbc_can_encode_audio_frame_now() && btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= (unsigned int)(num_samples * BYTES_PER_FRAME)){
-            int16_t sample_buffer[MSBC_MAX_NUM_SAMPLES];
+        int num_samples = hfp_codec_num_audio_samples_per_frame(&hfp_codec);
+        btstack_assert(num_samples <= SAMPLES_PER_FRAME_MAX);
+        uint16_t samples_available = btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) / BYTES_PER_FRAME;
+        if (hfp_codec_can_encode_audio_frame_now(&hfp_codec) && samples_available >= num_samples){
+            int16_t sample_buffer[SAMPLES_PER_FRAME_MAX];
             uint32_t bytes_read;
             btstack_ring_buffer_read(&audio_input_ring_buffer, (uint8_t*) sample_buffer, num_samples * BYTES_PER_FRAME, &bytes_read);
-            hfp_msbc_encode_audio_frame(sample_buffer);
+            hfp_codec_encode_audio_frame(&hfp_codec, sample_buffer);
             num_audio_frames++;
         }
-        btstack_assert(hfp_msbc_num_bytes_in_stream() >= sco_payload_length);
     }
 
     // get data from encoder, fill with 0 if not enough
-    if (audio_input_paused || hfp_msbc_num_bytes_in_stream() < sco_payload_length){
+    if (audio_input_paused || hfp_codec_num_bytes_available(&hfp_codec) < sco_payload_length){
         // just send '0's
         memset(payload_buffer, 0, sco_payload_length);
         audio_input_paused = 1;
     } else {
-        hfp_msbc_read_from_stream(payload_buffer, sco_payload_length);
+        hfp_codec_read_from_stream(&hfp_codec, payload_buffer, sco_payload_length);
     }
 }
 
