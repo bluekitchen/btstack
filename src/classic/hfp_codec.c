@@ -90,7 +90,7 @@ void hfp_codec_init(hfp_codec_t * hfp_codec, uint8_t codec_id){
 }
 
 bool hfp_codec_can_encode_audio_frame_now(const hfp_codec_t * hfp_codec){
-    return hfp_codec->read_pos == hfp_codec->write_pos;
+    return hfp_codec->write_pos <= SCO_FRAME_SIZE;
 }
 
 uint16_t hfp_codec_num_audio_samples_per_frame(const hfp_codec_t * hfp_codec){
@@ -99,27 +99,17 @@ uint16_t hfp_codec_num_audio_samples_per_frame(const hfp_codec_t * hfp_codec){
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 static void hfp_codec_encode_msbc(hfp_codec_t * hfp_codec, int16_t * pcm_samples){
-    // Synchronization Header H2
-    hfp_h2_framing_add_header(&hfp_codec->h2_framing, hfp_codec->sco_packet);
-    hfp_codec->write_pos += 2;
-
     // Encode SBC Frame
     btstack_sbc_encoder_process_data(pcm_samples);
-    (void)memcpy(&hfp_codec->sco_packet[hfp_codec->write_pos],
-                 btstack_sbc_encoder_sbc_buffer(), FRAME_SIZE_MSBC);
+    (void)memcpy(&hfp_codec->sco_packet[hfp_codec->write_pos], btstack_sbc_encoder_sbc_buffer(), FRAME_SIZE_MSBC);
     hfp_codec->write_pos += FRAME_SIZE_MSBC;
-
-    // Final padding to use 60 bytes
+    // Final padding to use SCO_FRAME_SIZE bytes
     hfp_codec->sco_packet[hfp_codec->write_pos++] = 0;
 }
 #endif
 
 #ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
-static void hfp_codec_encode_lc3swb(hfp_codec_t * hfp_codec, int16_t * pcm_samples) {
-    // Synchronization Header H2
-    hfp_h2_framing_add_header(&hfp_codec->h2_framing, hfp_codec->sco_packet);
-    hfp_codec->write_pos += 2;
-
+static void hfp_codec_encode_lc3swb(hfp_codec_t * hfp_codec, int16_t * pcm_samples){
     // Encode LC3 Frame
     hfp_codec->lc3_encoder->encode_signed_16(&hfp_codec->lc3_encoder_context, pcm_samples, 1, &hfp_codec->sco_packet[hfp_codec->write_pos]);
     hfp_codec->write_pos += LC3_SWB_OCTETS_PER_FRAME;
@@ -128,18 +118,19 @@ static void hfp_codec_encode_lc3swb(hfp_codec_t * hfp_codec, int16_t * pcm_sampl
 
 void hfp_codec_encode_audio_frame(hfp_codec_t * hfp_codec, int16_t * pcm_samples){
     btstack_assert(hfp_codec_can_encode_audio_frame_now(hfp_codec));
-
-    // reset packet buffer
-    hfp_codec->read_pos = 0;
-    hfp_codec->write_pos = 0;
-
+    uint16_t offset = hfp_codec->write_pos;
+    // Synchronization Header H2
+    hfp_h2_framing_add_header(&hfp_codec->h2_framing, &hfp_codec->sco_packet[hfp_codec->write_pos]);
+    hfp_codec->write_pos += 2;
     // encode
     hfp_codec->encode(hfp_codec, pcm_samples);
+    log_info("Encode frame, read %u, write %u", hfp_codec->read_pos, hfp_codec->write_pos);
 }
 
 uint16_t hfp_codec_num_bytes_available(const hfp_codec_t * hfp_codec){
     return hfp_codec->write_pos - hfp_codec->read_pos;
 }
+
 void hfp_codec_read_from_stream(hfp_codec_t * hfp_codec, uint8_t * buf, uint16_t size){
     uint16_t num_bytes_available = hfp_codec_num_bytes_available(hfp_codec);
     btstack_assert(num_bytes_available >= size);
@@ -148,6 +139,14 @@ void hfp_codec_read_from_stream(hfp_codec_t * hfp_codec, uint8_t * buf, uint16_t
 
     memcpy(buf, &hfp_codec->sco_packet[hfp_codec->read_pos], num_bytes_to_copy);
     hfp_codec->read_pos += num_bytes_to_copy;
+
+    // reset buffer
+    if (hfp_codec->read_pos == hfp_codec->write_pos){
+        hfp_codec->read_pos = 0;
+        hfp_codec->write_pos = 0;
+    }
+
+    log_info("Read %u from stream, read %u, write %u", size, hfp_codec->read_pos, hfp_codec->write_pos);
 }
 
 void hfp_codec_deinit(hfp_codec_t * hfp_codec){

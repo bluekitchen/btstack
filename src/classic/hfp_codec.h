@@ -60,8 +60,11 @@
 extern "C" {
 #endif
 
+#define SCO_FRAME_SIZE 60
+
 struct hfp_codec {
-    uint8_t sco_packet[60];
+    // to allow for 24 byte USB payloads, we encode up to two SCO packets
+    uint8_t sco_packet[2*SCO_FRAME_SIZE];
     uint16_t read_pos;
     uint16_t write_pos;
     uint16_t samples_per_frame;
