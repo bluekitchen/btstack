@@ -140,10 +140,13 @@ typedef struct {
 // current configuration
 static const codec_support_t * codec_current = NULL;
 
-// sine generator
 
-#ifdef USE_ADUIO_GENERATOR
-static unsigned int phase;
+// Sine Wave
+
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+static uint16_t sine_wave_phase;
+static uint16_t sine_wave_steps_per_sample;
+#define SINE_WAVE_SAMPLE_RATE SAMPLE_RATE_16KHZ
 
 // input signal: pre-computed sine wave, 266 Hz at 16000 kHz
 static const int16_t sine_int16_at_16000hz[] = {
@@ -155,31 +158,16 @@ static const int16_t sine_int16_at_16000hz[] = {
 -25980, -24270, -22294, -20073, -17633, -14999, -12202,  -9270,  -6237,  -3135,
 };
 
-// 8 kHz samples for CVSD/SCO packets in little endian
-static void sco_demo_sine_wave_int16_at_8000_hz_host_endian(uint16_t num_samples, int16_t * data){
+static void sco_demo_sine_wave_host_endian(uint16_t num_samples, int16_t * data){
     unsigned int i;
     for (i=0; i < num_samples; i++){
-        data[i] = sine_int16_at_16000hz[phase];
-        // ony use every second sample from 16khz table to get 8khz
-        phase += 2;
-        if (phase >= (sizeof(sine_int16_at_16000hz) / sizeof(int16_t))){
-            phase = 0;
+        data[i] = sine_int16_at_16000hz[sine_wave_phase];
+        sine_wave_phase += sine_wave_steps_per_sample;
+        if (sine_wave_phase >= (sizeof(sine_int16_at_16000hz) / sizeof(int16_t))){
+            sine_wave_phase = 0;
         }
     }
 }
-
-// 16 kHz samples for mSBC encoder in host endianess
-#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(uint16_t num_samples, int16_t * data){
-    unsigned int i;
-    for (i=0; i < num_samples; i++){
-        data[i] = sine_int16_at_16000hz[phase++];
-        if (phase >= (sizeof(sine_int16_at_16000hz) / sizeof(int16_t))){
-            phase = 0;
-        }
-    }
-}
-#endif
 #endif
 
 // Audio Playback / Recording
@@ -270,21 +258,7 @@ static void audio_terminate(void){
 
 static void sco_demo_cvsd_init(void){
     printf("SCO Demo: Init CVSD\n");
-
     btstack_cvsd_plc_init(&cvsd_plc_state);
-
-    audio_prebuffer_bytes = PREBUFFER_BYTES_8KHZ;
-
-#ifdef USE_ADUIO_GENERATOR
-    sco_demo_audio_generator = &sco_demo_sine_wave_int16_at_8000_hz_host_endian;
-#endif
-
-#ifdef SCO_WAV_FILENAME
-    num_samples_to_write = SAMPLE_RATE_8KHZ * SCO_WAV_DURATION_IN_SECONDS;
-    wav_writer_open(SCO_WAV_FILENAME, 1, SAMPLE_RATE_8KHZ);
-#endif
-
-    audio_initialize(SAMPLE_RATE_8KHZ);
 }
 
 static void sco_demo_cvsd_receive(const uint8_t * packet, uint16_t size){
@@ -393,22 +367,8 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 
 static void sco_demo_msbc_init(void){
     printf("SCO Demo: Init mSBC\n");
-
     btstack_sbc_decoder_init(&decoder_state, SBC_MODE_mSBC, &handle_pcm_data, NULL);
     hfp_msbc_init();
-
-    audio_prebuffer_bytes = PREBUFFER_BYTES_16KHZ;
-
-#ifdef USE_ADUIO_GENERATOR
-    sco_demo_audio_generator = &sco_demo_sine_wave_int16_at_16000_hz_host_endian;
-#endif
-
-#ifdef SCO_WAV_FILENAME
-    num_samples_to_write = SAMPLE_RATE_16KHZ * SCO_WAV_DURATION_IN_SECONDS;
-    wav_writer_open(SCO_WAV_FILENAME, 1, SAMPLE_RATE_16KHZ);
-#endif
-
-    audio_initialize(SAMPLE_RATE_16KHZ);
 }
 
 static void sco_demo_msbc_receive(const uint8_t * packet, uint16_t size){
@@ -492,6 +452,20 @@ void sco_demo_set_codec(uint8_t negotiated_codec){
     }
 
     codec_current->init();
+
+    audio_initialize(codec_current->sample_rate);
+
+    audio_prebuffer_bytes = SCO_PREBUFFER_MS * (codec_current->sample_rate/1000) * BYTES_PER_FRAME;
+
+#ifdef SCO_WAV_FILENAME
+    num_samples_to_write = codec_current->sample_rate * SCO_WAV_DURATION_IN_SECONDS;
+    wav_writer_open(SCO_WAV_FILENAME, 1, codec_current->sample_rate);
+#endif
+
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+    sine_wave_steps_per_sample = SINE_WAVE_SAMPLE_RATE / codec_current->sample_rate;
+    sco_demo_audio_generator = &sco_demo_sine_wave_host_endian;
+#endif
 }
 
 void sco_demo_receive(uint8_t * packet, uint16_t size){
