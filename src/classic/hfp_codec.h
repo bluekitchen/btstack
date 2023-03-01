@@ -52,6 +52,10 @@
 #include "btstack_sbc.h"
 #endif
 
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+#include "btstack_lc3_google.h"
+#endif
+
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -65,6 +69,10 @@ struct hfp_codec {
     void (*encode)(struct hfp_codec * hfp_codec, int16_t * pcm_samples);
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
     btstack_sbc_encoder_state_t msbc_state;
+#endif
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+    const btstack_lc3_encoder_t * lc3_encoder;
+    btstack_lc3_encoder_google_t lc3_encoder_context;
 #endif
 };
 

@@ -56,6 +56,11 @@
 static void hfp_codec_encode_msbc(hfp_codec_t * hfp_codec, int16_t * pcm_samples);
 #endif
 
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+#define LC3_SWB_OCTETS_PER_FRAME   58
+static void hfp_codec_encode_lc3swb(hfp_codec_t * hfp_codec, int16_t * pcm_samples);
+#endif
+
 #include "hfp_codec.h"
 
 void hfp_codec_init(hfp_codec_t * hfp_codec, uint8_t codec_id){
@@ -67,6 +72,15 @@ void hfp_codec_init(hfp_codec_t * hfp_codec, uint8_t codec_id){
             hfp_codec->samples_per_frame = 120;
             hfp_codec->encode = &hfp_codec_encode_msbc;
             btstack_sbc_encoder_init(&hfp_codec->msbc_state, SBC_MODE_mSBC, 16, 8, SBC_ALLOCATION_METHOD_LOUDNESS, 16000, 26, SBC_CHANNEL_MODE_MONO);
+            break;
+#endif
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+        case HFP_CODEC_LC3_SWB:
+            hfp_codec->samples_per_frame = 240;
+            hfp_codec->encode = &hfp_codec_encode_lc3swb;
+            // init lc3 encoder
+            hfp_codec->lc3_encoder = btstack_lc3_encoder_google_init_instance(&hfp_codec->lc3_encoder_context);
+            hfp_codec->lc3_encoder->configure(&hfp_codec->lc3_encoder_context, 32000, BTSTACK_LC3_FRAME_DURATION_7500US, LC3_SWB_OCTETS_PER_FRAME);
             break;
 #endif
         default:
@@ -97,6 +111,18 @@ static void hfp_codec_encode_msbc(hfp_codec_t * hfp_codec, int16_t * pcm_samples
 
     // Final padding to use 60 bytes
     hfp_codec->sco_packet[hfp_codec->write_pos++] = 0;
+}
+#endif
+
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+static void hfp_codec_encode_lc3swb(hfp_codec_t * hfp_codec, int16_t * pcm_samples) {
+    // Synchronization Header H2
+    hfp_h2_framing_add_header(&hfp_codec->h2_framing, hfp_codec->sco_packet);
+    hfp_codec->write_pos += 2;
+
+    // Encode LC3 Frame
+    hfp_codec->lc3_encoder->encode_signed_16(&hfp_codec->lc3_encoder_context, pcm_samples, 1, &hfp_codec->sco_packet[hfp_codec->write_pos]);
+    hfp_codec->write_pos += LC3_SWB_OCTETS_PER_FRAME;
 }
 #endif
 
