@@ -119,6 +119,7 @@ SBC_DECODER += \
 SBC_ENCODER += \
 	btstack_sbc_encoder_bluedroid.c \
 	hfp_msbc.c \
+	hfp_codec.c
 
 CVSD_PLC = \
 	btstack_cvsd_plc.c \
