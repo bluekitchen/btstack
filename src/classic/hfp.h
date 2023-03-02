@@ -760,29 +760,7 @@ int get_bit(uint16_t bitmap, int position);
 int store_bit(uint32_t bitmap, int position, uint8_t value);
 // UTILS_END
 
-// HFP H2
-
 #define HFP_H2_SYNC_FRAME_SIZE 60
-
-// HFP H2 Framing
-typedef struct {
-    uint8_t sequence_number;
-} hfp_h2_framing_t;
-
-/**
- * @brief Init HFP H2 Framing state
- * @param hfp_h2_framing
- */
-void hfp_h2_framing_init(hfp_h2_framing_t * hfp_h2_framing);
-
-/**
- * @brief Add next H2 Header
- * @param hfp_h2_framing
- * @param buffer [2]
- */
-void hfp_h2_framing_add_header(hfp_h2_framing_t * hfp_h2_framing, uint8_t * buffer);
-
-
 // HFP H2 Synchronization
 typedef struct {
     // callback returns true if data was valid

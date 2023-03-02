@@ -64,6 +64,28 @@ static void hfp_codec_encode_msbc(hfp_codec_t * hfp_codec, int16_t * pcm_samples
 static void hfp_codec_encode_lc3swb(hfp_codec_t * hfp_codec, int16_t * pcm_samples);
 #endif
 
+// HFP H2 Framing - might get moved into a hfp_h2.c
+
+// const
+static const uint8_t hfp_h2_header_h2_byte_0         = 1;
+static const uint8_t hfp_h2_header_h2_byte_1_table[] = {0x08, 0x38, 0xc8, 0xf8 };
+
+void hfp_h2_framing_init(hfp_h2_framing_t * hfp_h2_framing){
+    hfp_h2_framing->sequence_number = 0;
+}
+
+/**
+ * @brief Add next H2 Header
+ * @param hfp_h2_framing
+ * @param buffer [2]
+ */
+void hfp_h2_framing_add_header(hfp_h2_framing_t * hfp_h2_framing, uint8_t * buffer){
+    // Synchronization Header H2
+    buffer[0] = hfp_h2_header_h2_byte_0;
+    buffer[1] = hfp_h2_header_h2_byte_1_table[hfp_h2_framing->sequence_number];
+    hfp_h2_framing->sequence_number = (hfp_h2_framing->sequence_number + 1) & 3;
+}
+
 
 void hfp_codec_init(hfp_codec_t * hfp_codec, uint8_t codec_id){
     memset(hfp_codec, 0, sizeof(hfp_codec_t));

@@ -44,9 +44,8 @@
 #define HFP_CODEC_H
 
 #include "btstack_config.h"
-#include "hfp.h"    // hfp_h2_framing
 
-#include <stdint.h>
+#include "hfp.h"    // HFP_CODEC_xxx
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 #include "btstack_sbc.h"
@@ -56,11 +55,36 @@
 #include "btstack_lc3_google.h"
 #endif
 
+#include <stdint.h>
+
 #if defined __cplusplus
 extern "C" {
 #endif
 
 #define SCO_FRAME_SIZE 60
+
+// HFP H2
+
+#define HFP_H2_SYNC_FRAME_SIZE 60
+
+// HFP H2 Framing
+typedef struct {
+    uint8_t sequence_number;
+} hfp_h2_framing_t;
+
+/**
+ * @brief Init HFP H2 Framing state
+ * @param hfp_h2_framing
+ */
+void hfp_h2_framing_init(hfp_h2_framing_t * hfp_h2_framing);
+
+/**
+ * @brief Add next H2 Header
+ * @param hfp_h2_framing
+ * @param buffer [2]
+ */
+void hfp_h2_framing_add_header(hfp_h2_framing_t * hfp_h2_framing, uint8_t * buffer);
+
 
 struct hfp_codec {
     // to allow for 24 byte USB payloads, we encode up to two SCO packets

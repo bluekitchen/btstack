@@ -2105,29 +2105,6 @@ void hfp_register_custom_ag_command(hfp_custom_at_command_t * custom_at_command)
     btstack_linked_list_add(&hfp_custom_commands_ag, (btstack_linked_item_t *) custom_at_command);
 }
 
-// HFP H2 Framing - might get moved into a hfp_h2.c
-
-// const
-static const uint8_t hfp_h2_header_h2_byte_0         = 1;
-static const uint8_t hfp_h2_header_h2_byte_1_table[] = {0x08, 0x38, 0xc8, 0xf8 };
-
-void hfp_h2_framing_init(hfp_h2_framing_t * hfp_h2_framing){
-    hfp_h2_framing->sequence_number = 0;
-}
-
-/**
- * @brief Add next H2 Header
- * @param hfp_h2_framing
- * @param buffer [2]
- */
-void hfp_h2_framing_add_header(hfp_h2_framing_t * hfp_h2_framing, uint8_t * buffer){
-    // Synchronization Header H2
-    buffer[0] = hfp_h2_header_h2_byte_0;
-    buffer[1] = hfp_h2_header_h2_byte_1_table[hfp_h2_framing->sequence_number];
-    hfp_h2_framing->sequence_number = (hfp_h2_framing->sequence_number + 1) & 3;
-}
-
-
 // HFP H2 Synchronization - might get moved into a hfp_h2.c
 
 // find position of h2 sync header, returns -1 if not found, or h2 sync position
