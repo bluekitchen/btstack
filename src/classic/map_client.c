@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "map_client.c"
+#define BTSTACK_FILE__ "map_client.c"
 
 #include "btstack_config.h"
 
