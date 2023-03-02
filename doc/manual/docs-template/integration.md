@@ -20,7 +20,7 @@ In a single-threaded environment, all application components run on the
 same (single) thread and use direct function calls as shown in
 Figure {@fig:BTstackSingle}.
 
-![BTstack in single-threaded environment.](picts/singlethreading-btstack.png) {#fig:BTstackSingle}
+![BTstack in single-threaded environment.](/picts/singlethreading-btstack.png) {#fig:BTstackSingle}
 
 BTstack provides a basic run loop that supports the concept of data
 sources and timers, which can be registered centrally. This works well
@@ -67,7 +67,7 @@ common options:
     Communication (IPC) as depicted in Figure {@fig:MTMonolithic}. 
     This option results in less code and quick adaption.
 
-    ![BTstack in multi-threaded environment - monolithic solution.](picts/multithreading-monolithic.png) {#fig:MTMonolithic}
+    ![BTstack in multi-threaded environment - monolithic solution.](/picts/multithreading-monolithic.png) {#fig:MTMonolithic}
 
 -   BTstack must be extended to run standalone, i.e, as a Daemon, on a
     dedicated thread and the Main Application controls this daemon via
@@ -76,4 +76,4 @@ common options:
     in Figure {@fig:MTDaemon}. This option requires more code but provides 
     more flexibility.
 
-    ![BTstack in multi-threaded environment - solution with daemon.](picts/multithreading-btdaemon.png) {#fig:MTDaemon}
+    ![BTstack in multi-threaded environment - solution with daemon.](/picts/multithreading-btdaemon.png) {#fig:MTDaemon}

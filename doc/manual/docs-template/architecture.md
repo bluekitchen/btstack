@@ -27,7 +27,7 @@ events and data coming from either the Main Application or from BTstack
 via registered packet handlers (PH). BTstack’s Run Loop is responsible
 for providing timers and processing incoming data.
 
-![Architecture of a BTstack-based application.](picts/btstack-architecture.png) {#fig:BTstackArchitecture}
+![Architecture of a BTstack-based application.](/picts/btstack-architecture.png) {#fig:BTstackArchitecture}
 
 ## Single threaded design
 
@@ -41,7 +41,7 @@ events. During a run loop cycle, the callback functions of all
 registered data sources are called. Then, the callback functions of
 timers that are ready are executed.
 
-For adapting BTstack to multi-threaded environments check [here](integration/#sec:multithreadingIntegration).
+For adapting BTstack to multi-threaded environments check [here](/integration/#sec:multithreadingIntegration).
 
 ## No blocking anywhere
 
