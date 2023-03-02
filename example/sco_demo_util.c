@@ -397,7 +397,7 @@ static const codec_support_t codec_cvsd = {
 
 // encode using hfp_codec
 #if defined(ENABLE_HFP_WIDE_BAND_SPEECH) || defined(ENABLE_HFP_SUPER_WIDE_BAND_SPEECH)
-void sco_demo_codec_fill_payload(uint8_t * payload_buffer, uint16_t sco_payload_length){
+static void sco_demo_codec_fill_payload(uint8_t * payload_buffer, uint16_t sco_payload_length){
     if (!audio_input_paused){
         int num_samples = hfp_codec_num_audio_samples_per_frame(&hfp_codec);
         btstack_assert(num_samples <= SAMPLES_PER_FRAME_MAX);
