@@ -50,6 +50,9 @@
 #include "hfp_codec.h"
 #include "btstack_debug.h"
 
+// enable to send test data
+// #define HFP_CODEC_TEST
+
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 #include "btstack_sbc.h"
 #define FRAME_SIZE_MSBC 57
@@ -61,7 +64,6 @@ static void hfp_codec_encode_msbc(hfp_codec_t * hfp_codec, int16_t * pcm_samples
 static void hfp_codec_encode_lc3swb(hfp_codec_t * hfp_codec, int16_t * pcm_samples);
 #endif
 
-#include "hfp_codec.h"
 
 void hfp_codec_init(hfp_codec_t * hfp_codec, uint8_t codec_id){
     memset(hfp_codec, 0, sizeof(hfp_codec_t));
@@ -118,12 +120,22 @@ static void hfp_codec_encode_lc3swb(hfp_codec_t * hfp_codec, int16_t * pcm_sampl
 
 void hfp_codec_encode_audio_frame(hfp_codec_t * hfp_codec, int16_t * pcm_samples){
     btstack_assert(hfp_codec_can_encode_audio_frame_now(hfp_codec));
-    uint16_t offset = hfp_codec->write_pos;
     // Synchronization Header H2
     hfp_h2_framing_add_header(&hfp_codec->h2_framing, &hfp_codec->sco_packet[hfp_codec->write_pos]);
     hfp_codec->write_pos += 2;
     // encode
+#ifdef HFP_CODEC_TEST
+    // packet counter
+    static uint8_t counter = 0;
+    hfp_codec->sco_packet[hfp_codec->write_pos++] = counter++;
+    // test data
+    uint8_t i;
+    for (i=3;i<SCO_FRAME_SIZE;i++){
+        hfp_codec->sco_packet[hfp_codec->write_pos++] = i;
+    }
+#else
     hfp_codec->encode(hfp_codec, pcm_samples);
+#endif
     log_info("Encode frame, read %u, write %u", hfp_codec->read_pos, hfp_codec->write_pos);
 }
 
