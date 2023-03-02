@@ -121,7 +121,7 @@ device implements Bluetooth Specification 2.1 or higher, the
 *hci_write_inquiry_mode* command enables reporting of this advanced
 features (0 for standard results, 1 for RSSI, 2 for RSSI and EIR).
 
-A complete GAP inquiry example is provided [here](/examples/examples/#sec:gapinquiryExample).
+A complete GAP inquiry example is provided [here](examples/examples/#sec:gapinquiryExample).
 
 ### Pairing of Devices
 
@@ -168,7 +168,7 @@ user.
 Regardless of the authentication mechanism (PIN/SSP), on success, both
 devices will generate a link key. The link key can be stored either in
 the Bluetooth module itself or in a persistent storage, see
-[here](/porting/#sec:persistentStoragePorting). The next time the device connects and
+[here](porting/#sec:persistentStoragePorting). The next time the device connects and
 requests an authenticated connection, both devices can use the
 previously generated link key. Please note that the pairing must be
 repeated if the link key is lost by one device.
@@ -186,7 +186,7 @@ bonding via the *gap_dedicated_bonding* function.
 The SPP profile defines how to set up virtual serial ports and connect
 two Bluetooth enabled devices. Please keep in mind that a serial port does not 
 preserve packet boundaries if you try to send data as packets and read about
-[RFCOMM packet boundaries](/protocols/#sec:noRfcommPacketBoundaries).
+[RFCOMM packet boundaries]({protocols/#sec:noRfcommPacketBoundaries}).
 
 ### Accessing an SPP Server on a remote device
 
@@ -195,18 +195,18 @@ for its SPP services. Section [on querying remote SDP service](#sec:querySDPProt
 shows how to query for all RFCOMM channels. For SPP, you can do the same
 but use the SPP UUID 0x1101 for the query. After you have identified the
 correct RFCOMM channel, you can create an RFCOMM connection as shown
-[here](/protocols/#sec:rfcommClientProtocols).
+[here](protocols/#sec:rfcommClientProtocols).
 
 ### Providing an SPP Server
 
 To provide an SPP Server, you need to provide an RFCOMM service with a
 specific RFCOMM channel number as explained in section on
-[RFCOMM service](/protocols/#sec:rfcommServiceProtocols). Then, you need to create
+[RFCOMM service](protocols/#sec:rfcommServiceProtocols). Then, you need to create
 an SDP record for it and publish it with the SDP server by calling
 *sdp_register_service*. BTstack provides the
 *spp_create_sdp_record* function in that requires an empty buffer of
 approximately 200 bytes, the service channel number, and a service name.
-Have a look at the [SPP Counter example](/examples/examples/#sec:sppcounterExample).
+Have a look at the [SPP Counter example](examples/examples/#sec:sppcounterExample).
 
 
 ## PAN - Personal Area Networking Profile {#sec:panProfiles}
@@ -244,14 +244,14 @@ Currently, BTstack supports only PANU.
 To access a remote PANU service, you first need perform an SDP query to
 get the L2CAP PSM for the requested PANU UUID. With these two pieces of
 information, you can connect BNEP to the remote PANU service with the
-*bnep_connect* function. The Section on [PANU Demo example](/examples/examples/#sec:panudemoExample)
+*bnep_connect* function. The Section on [PANU Demo example](examples/examples/#sec:panudemoExample)
 shows how this is accomplished.
 
 ### Providing a PANU service
 
 To provide a PANU service, you need to provide a BNEP service with the
 service UUID, e.g. the PANU UUID, and a maximal ethernet frame size,
-as explained in Section [on BNEP service](/protocols/#sec:bnepServiceProtocols). Then, you need to
+as explained in Section [on BNEP service](protocols/#sec:bnepServiceProtocols). Then, you need to
 create an SDP record for it and publish it with the SDP server by
 calling *sdp_register_service*. BTstack provides the
 *pan_create_panu_sdp_record* function in *src/pan.c* that requires an
@@ -404,9 +404,9 @@ Typical HID hosts would be a personal computer, tablets, gaming console, industr
 
 Please refer to:
 
-- [HID Host API](/appendix/apis/#sec:hidHostAPIAppendix) and [hid_host_demo](/examples/examples/#sec:hidhostdemoExample) for the HID Host role
+- [HID Host API](appendix/apis/#sec:hidHostAPIAppendix) and [hid_host_demo](examples/examples/#sec:hidhostdemoExample) for the HID Host role
 
-- [HID Device API](/appendix/apis/#sec:hidDeviceAPIAppendix), [hid_keyboard_demo](/examples/examples/#sec:hidkeyboarddemoExample) and [hid_mouse_demo](/examples/examples/#sec:hidmousedemoExample)  for the HID Device role.
+- [HID Device API](appendix/apis/#sec:hidDeviceAPIAppendix), [hid_keyboard_demo](examples/examples/#sec:hidkeyboarddemoExample) and [hid_mouse_demo](examples/examples/#sec:hidmousedemoExample)  for the HID Device role.
 
 
 ## GAP LE - Generic Access Profile for Low Energy
@@ -435,7 +435,7 @@ with *gap_random_address_set_update_period*.
 
 After a connection is established, the Security Manager will try to
 resolve the peer Bluetooth address as explained in Section on
-[SMP](/protocols/#sec:smpProtocols).
+[SMP](protocols/#sec:smpProtocols).
 
 ### Advertising and Discovery
 
@@ -455,7 +455,7 @@ can also provide Scan Response data, which has to be explicitly queried
 by the central device. It can be set with *gap_scan_response_set_data*.
 
 Please have a look at the [SPP and LE
-Counter example](/examples/examples/#sec:sppandlecounterExample).
+Counter example](examples/examples/#sec:sppandlecounterExample).
 
 The scan parameters can be set with
 *gap_set_scan_parameters*. The scan can be started/stopped
@@ -532,12 +532,12 @@ If the device provides sufficient IO capabilities, a MITM attack can then be pre
 
 The following diagrams provide a detailed overview about the GATT Client security mechanisms in different configurations:
 
--  [Reactive Authentication as Central](/picts/gatt_client_security_reactive_authentication_central.svg)
--  [Reactive Authentication as Peripheral](/picts/gatt_client_security_reactive_authentication_peripheral.svg)
--  [Proactive Authentication as Central](/picts/gatt_client_security_proactive_authentication_central.svg)
--  [Proactive Authentication as Peripheral](/picts/gatt_client_security_proactive_authentication_peripheral.svg)
--  [Mandatory Authentication as Central](/picts/gatt_client_security_mandatory_authentication_central.svg)
--  [Mandatory Authentication as Peripheral](/picts/gatt_client_security_mandatory_authentication_peripheral.svg)
+-  [Reactive Authentication as Central](picts/gatt_client_security_reactive_authentication_central.svg)
+-  [Reactive Authentication as Peripheral](picts/gatt_client_security_reactive_authentication_peripheral.svg)
+-  [Proactive Authentication as Central](picts/gatt_client_security_proactive_authentication_central.svg)
+-  [Proactive Authentication as Peripheral](picts/gatt_client_security_proactive_authentication_peripheral.svg)
+-  [Mandatory Authentication as Central](picts/gatt_client_security_mandatory_authentication_central.svg)
+-  [Mandatory Authentication as Peripheral](picts/gatt_client_security_mandatory_authentication_peripheral.svg)
 
 ## GATT Server {#sec:GATTServerProfiles}
 

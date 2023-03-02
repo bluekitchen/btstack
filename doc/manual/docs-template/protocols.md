@@ -514,8 +514,8 @@ application such that it can manage its receive buffers explicitly, see
 Listing [below](#lst:explicitFlowControl).
 
 Manual credit management is recommended when received RFCOMM data cannot
-be processed immediately. In the [SPP flow control example](/examples/examples/#spp-server-rfcomm-flow-control
-delayed) processing of received data is
+be processed immediately. In the [SPP flow control example](examples/generated/#sec:sppflowcontrolExample), 
+delayed processing of received data is
 simulated with the help of a periodic timer. To provide new credits, you
 call the *rfcomm_grant_credits* function with the RFCOMM channel ID
 and the number of credits as shown in Listing [below](#lst:NewCredits). 
@@ -652,7 +652,7 @@ record.
 ### Query remote SDP service {#sec:querySDPProtocols}
 
 BTstack provides an SDP client to query SDP services of a remote device.
-The SDP Client API is shown in [here](/appendix/apis/#sec:sdpAPIAppendix). The
+The SDP Client API is shown in [here](appendix/apis/#sec:sdpAPIAppendix). The
 *sdp_client_query* function initiates an L2CAP connection to the
 remote SDP server. Upon connect, a *Service Search Attribute* request
 with a *Service Search Pattern* and a *Attribute ID List* is sent. The
@@ -744,7 +744,7 @@ To receive BNEP events, please register a packet handler with
 
 To connect to a remote BNEP service, you need to know its UUID. The set
 of available UUIDs can be queried by a SDP query for the PAN profile.
-Please see section on [PAN profile](/profiles/#sec:panProfiles) for details. 
+Please see section on [PAN profile](profiles/#sec:panProfiles) for details. 
 With the remote UUID, you can create a connection using the *bnep_connect* 
 function. You’ll receive a *BNEP_EVENT_CHANNEL_OPENED* on success or
 failure.
@@ -790,7 +790,7 @@ type, and a set of properties.
 The Generic Attribute (GATT) profile is built upon ATT and provides
 higher level organization of the ATT attributes into GATT Services and
 GATT Characteristics. In BTstack, the complete ATT client functionality
-is included within the GATT Client. See [GATT client](/profiles/#sec:GATTClientProfiles) for more.
+is included within the GATT Client. See [GATT client](profiles/#sec:GATTClientProfiles) for more.
 
 On the server side, one ore more GATT profiles are converted ahead of time 
 into the corresponding ATT attribute database and provided by the *att_server*
@@ -798,7 +798,7 @@ implementation. The constant data are automatically served by the ATT server upo
 request. To receive the dynamic data, such is characteristic value, the
 application needs to register read and/or write callback. In addition,
 notifications and indications can be sent. Please see Section on 
-[GATT server](/profiles/#sec:GATTServerProfile) for more.
+[GATT server](profiles/#sec:GATTServerProfile) for more.
 
 ## SMP - Security Manager Protocol {#sec:smpProtocols}
 

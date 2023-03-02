@@ -105,7 +105,7 @@ BTstack properties:
 | ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE      | Enable Enhanced credit-based flow-control mode for L2CAP Channels                                                          |
 | ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL                | Enable HCI Controller to Host Flow Control, see below                                                                      |
 | ENABLE_HCI_SERIALIZED_CONTROLLER_OPERATIONS               | Serialize Inquiry, Remote Name Request, and Create Connection operations                                                   |
-| ENABLE_ATT_DELAYED_RESPONSE                               | Enable support for delayed ATT operations, see [GATT Server](/profiles/#sec:GATTServerProfile)                              |
+| ENABLE_ATT_DELAYED_RESPONSE                               | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)                              |
 | ENABLE_BCM_PCM_WBS                                        | Enable support for Wide-Band Speech codec in BCM controller, requires ENABLE_SCO_OVER_PCM                                  |
 | ENABLE_CC256X_ASSISTED_HFP                                | Enable support for Assisted HFP mode in CC256x Controller, requires ENABLE_SCO_OVER_PCM                                    |
 | Enable_RTK_PCM_WBS                                        | Enable support for Wide-Band Speech codec in Realtek controller, requires ENABLE_SCO_OVER_PCM                              |
@@ -501,7 +501,7 @@ The arguments are:
     [platform/embedded/hci_transport_h4_embedded.c]()
     and then getting a pointer to HCI Transport implementation.
     For more information on adapting HCI Transport to different
-    environments, see [here](/porting/#sec:hciTransportPorting).
+    environments, see [here](porting/#sec:hciTransportPorting).
 
 <!-- -->
 
@@ -552,7 +552,7 @@ Finally, the HCI implementation requires some form of persistent storage for lin
 during either legacy pairing or the Secure Simple Pairing (SSP). This commonly requires platform
 specific code to access the MCU’s EEPROM of Flash storage. For the
 first steps, BTstack provides a (non) persistent store in memory.
-For more see [here](/porting/#sec:persistentStoragePorting).
+For more see [here](porting/#sec:persistentStoragePorting).
 
 <!-- -->
 
