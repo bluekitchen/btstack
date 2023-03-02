@@ -36,23 +36,126 @@
  */
 
 
-#define __BTSTACK_FILE__ "map_util.c"
+#define BTSTACK_FILE__ "map_util.c"
  
 #include "btstack_config.h"
+
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_defines.h"
+#include "btstack_event.h"
+#include "btstack_util.h"
+#include "classic/sdp_util.h"
+#include "map.h"
+#include "map_util.h"
+#include "yxml.h"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack_util.h"
-#include "map_util.h"
-#include "yxml.h"
-#include "map.h"
-#include "btstack_defines.h"
-#include "btstack_util.h"
-#include "btstack_debug.h"
-#include "btstack_event.h"
+static void map_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, uint8_t instance_id,
+                                  int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, uint32_t supported_features, const char * name){
+    UNUSED(goep_l2cap_psm);
+    uint8_t* attribute;
+    de_create_sequence(service);
+
+    // 0x0000 "Service Record Handle"
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
+    de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
+
+    // 0x0001 "Service Class ID List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
+    attribute = de_push_sequence(service);
+    {
+        //  "UUID for Service"
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, service_uuid);
+    }
+    de_pop_sequence(service, attribute);
+
+    // 0x0004 "Protocol Descriptor List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST);
+    attribute = de_push_sequence(service);
+    {
+        uint8_t* l2cpProtocol = de_push_sequence(attribute);
+        {
+            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
+        }
+        de_pop_sequence(attribute, l2cpProtocol);
+
+        uint8_t* rfcomm = de_push_sequence(attribute);
+        {
+            de_add_number(rfcomm,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_RFCOMM);  // rfcomm_service
+            de_add_number(rfcomm,  DE_UINT, DE_SIZE_8,  rfcomm_channel_nr);  // rfcomm channel
+        }
+        de_pop_sequence(attribute, rfcomm);
+
+        uint8_t* obexProtocol = de_push_sequence(attribute);
+        {
+            de_add_number(obexProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_OBEX);
+        }
+        de_pop_sequence(attribute, obexProtocol);
+
+    }
+    de_pop_sequence(service, attribute);
+
+
+    // 0x0005 "Public Browse Group"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BROWSE_GROUP_LIST); // public browse group
+    attribute = de_push_sequence(service);
+    {
+        de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
+    }
+    de_pop_sequence(service, attribute);
+
+    // 0x0009 "Bluetooth Profile Descriptor List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
+    attribute = de_push_sequence(service);
+    {
+        uint8_t *profile = de_push_sequence(attribute);
+        {
+            de_add_number(profile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_PROFILE);
+            de_add_number(profile,  DE_UINT, DE_SIZE_16, 0x0103); // Verision 1.7
+        }
+        de_pop_sequence(attribute, profile);
+    }
+    de_pop_sequence(service, attribute);
+
+    // "Service Name"
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0100);
+    de_add_data(service,   DE_STRING, strlen(name), (uint8_t *) name);
+
+#ifdef ENABLE_GOEP_L2CAP
+    // 0x0200 "GoepL2CapPsm"
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0200);
+    de_add_number(service, DE_UINT, DE_SIZE_16, goep_l2cap_psm);
+#endif
+
+    // 0x0315 "MASInstanceID"
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0315);
+    de_add_number(service, DE_UINT, DE_SIZE_8, instance_id);
+
+    // 0x0316 "SupportedMessageTypes"
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0316);
+    de_add_number(service, DE_UINT, DE_SIZE_8, supported_message_types);
+
+    // 0x0317 "MapSupportedFeatures"
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0317);
+    de_add_number(service, DE_UINT, DE_SIZE_32, supported_features);
+}
+
+void map_message_access_service_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t instance_id,
+                                                  int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, uint32_t supported_features, const char * name){
+    map_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER, instance_id, rfcomm_channel_nr,
+                          goep_l2cap_psm, supported_message_types, supported_features, name);
+}
+
+void map_message_notification_service_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t instance_id,
+                                                        int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, uint32_t supported_features, const char * name){
+    map_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_MESSAGE_NOTIFICATION_SERVER, instance_id, rfcomm_channel_nr,
+                          goep_l2cap_psm, supported_message_types, supported_features, name);
+}
 
 static yxml_t  xml_parser;
 static uint8_t xml_buffer[50];
