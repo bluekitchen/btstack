@@ -21,7 +21,7 @@ L2CAP_DATA_PACKET packet type. L2CAP provides the following events:
 
 -   L2CAP_EVENT_CAN_SEND_NOW - Indicates that an L2CAP data packet could
     be sent on the reported l2cap_cid. It is emitted after a call to
-    *l2cap_request_can_send_now*. See [Sending L2CAP Data](protocols/#sec:l2capSendProtocols)
+    *l2cap_request_can_send_now*. See [Sending L2CAP Data](../protocols/#sec:l2capSendProtocols)
     Please note that the guarantee that a packet can be sent is only valid when the event is received.
     After returning from the packet handler, BTstack might need to send itself.
 
@@ -66,7 +66,7 @@ by RFCOMM:
 
 -   RFCOMM_EVENT_CAN_SEND_NOW - Indicates that an RFCOMM data packet could
     be sent on the reported rfcomm_cid. It is emitted after a call to
-    *rfcomm_request_can_send_now*. See [Sending RFCOMM Data](protocols/#sec:rfcommSendProtocols)
+    *rfcomm_request_can_send_now*. See [Sending RFCOMM Data](../protocols/#sec:rfcommSendProtocols)
     Please note that the guarantee that a packet can be sent is only valid when the event is received.
     After returning from the packet handler, BTstack might need to send itself.
 
