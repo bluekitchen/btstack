@@ -54,6 +54,7 @@
 #include "btstack_event.h"
 #include "btstack_util.h"
 
+#include "le-audio/gatt-service/media_control_service_util.h"
 #include "le-audio/gatt-service/media_control_service_server.h"
 #include "le-audio/gatt-service/audio_input_control_service_server.h"
 
