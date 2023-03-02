@@ -47,6 +47,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "le-audio/gatt-service/media_control_service_util.h"
 #include "le-audio/gatt-service/media_control_service_client.h"
 
 #include "btstack_memory.h"
