@@ -1135,7 +1135,7 @@ static void stdin_process(char cmd){
        
         case 'M':
             printf("ASCS Client: Enable, ASE ID %d\n", ase_id);
-            status = audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_id);
+            status = audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_id, NULL);
             break;
         case 'n':
             printf("ASCS Client: Start Ready, ASE ID %d\n", ase_id);
