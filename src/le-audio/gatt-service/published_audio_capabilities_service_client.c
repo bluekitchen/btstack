@@ -60,7 +60,7 @@ static btstack_packet_callback_registration_t pacs_client_hci_event_callback_reg
 
 static void pacs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-// type(1) + field_lenght
+// type(1) + field_length
 static uint8_t le_audio_specific_codec_capability_type_payload_length[] = {
     0, // LE_AUDIO_CODEC_CAPABILITY_TYPE_UNDEFINED
     3, // LE_AUDIO_CODEC_CAPABILITY_TYPE_SAMPLING_FREQUENCY,
@@ -200,33 +200,45 @@ static void pacs_client_handle_audio_contexts(pacs_client_connection_t * connect
 }
 
 
-static uint16_t le_audio_codec_capabilities_parse_tlv(uint8_t * buffer, uint8_t buffer_size, pacs_codec_capability_t * codec_capability){
-    btstack_assert(buffer_size >= 1);
+static uint16_t le_audio_codec_capabilities_parse_tlv(const uint8_t * buffer, uint8_t buffer_size, pacs_codec_capability_t * codec_capability){
+
+    // reset capabilities
+    memset(codec_capability, 0, sizeof(pacs_codec_capability_t));
+
     // parse config to get sampling frequency and frame duration
     uint8_t pos = 0;
-    uint8_t codec_capability_length = buffer[pos++];
-    
-    if ( (codec_capability_length == 0) || (codec_capability_length > (buffer_size - pos)) ){
-        return pos;
-    }
 
-    uint16_t remaining_bytes = codec_capability_length;
+    uint16_t remaining_bytes = buffer_size;
     codec_capability->codec_capability_mask = 0;
     
     while (remaining_bytes > 1) {
-        uint8_t payload_length = buffer[pos++];
-        remaining_bytes -= 1;
 
-        if (payload_length > remaining_bytes){
+        // check invariant
+        btstack_assert(remaining_bytes == (buffer_size-pos));
+
+        uint8_t item_length = buffer[pos++];
+        remaining_bytes--;
+
+        if (item_length > remaining_bytes){
             return (pos - 1);
         }
+        uint8_t value_length = item_length - 1;
 
         le_audio_codec_capability_type_t codec_capability_type = (le_audio_codec_capability_type_t)buffer[pos++];
+        remaining_bytes--;
+
+        // skip over unknown types
         if ((codec_capability_type == LE_AUDIO_CODEC_CAPABILITY_TYPE_UNDEFINED) || (codec_capability_type >= LE_AUDIO_CODEC_CAPABILITY_TYPE_RFU)){
-            return (pos - 2);
+            pos += value_length;
+            remaining_bytes -= value_length;
+            continue;
         }
-        if (payload_length != le_audio_specific_codec_capability_type_payload_length[(uint8_t)codec_capability_type]){
-            return (pos - 2);
+
+        // skip types with invalid length
+        if (item_length != le_audio_specific_codec_capability_type_payload_length[(uint8_t)codec_capability_type]){
+            pos += value_length;
+            remaining_bytes -= value_length;
+            continue;
         }
 
         codec_capability->codec_capability_mask |= (1 << codec_capability_type);
@@ -241,18 +253,18 @@ static uint16_t le_audio_codec_capabilities_parse_tlv(uint8_t * buffer, uint8_t 
                 codec_capability->supported_audio_channel_counts_mask = buffer[pos];
                 break;
             case LE_AUDIO_CODEC_CAPABILITY_TYPE_OCTETS_PER_CODEC_FRAME:
-                codec_capability->octets_per_frame_min_num = little_endian_read_24(buffer, pos);
-                codec_capability->octets_per_frame_max_num = little_endian_read_24(buffer, pos + 3);
+                codec_capability->octets_per_frame_min_num = little_endian_read_16(buffer, pos);
+                codec_capability->octets_per_frame_max_num = little_endian_read_16(buffer, pos + 2);
                 break;
             case LE_AUDIO_CODEC_CAPABILITY_TYPE_CODEC_FRAME_BLOCKS_PER_SDU:
                 codec_capability->frame_blocks_per_sdu_max_num = buffer[pos];
                 break;
-            
             default:
+                btstack_assert(false);
                 break;
         }
-        pos += payload_length;
-        remaining_bytes -= payload_length;
+        pos             += value_length;
+        remaining_bytes -= value_length;
     }
     return pos;
 }
@@ -311,8 +323,7 @@ static void pacs_client_emit_pac(pacs_client_connection_t * connection, le_audio
     
     uint16_t event_pos;
     uint8_t  i;
-    uint16_t stored_bytes = 0;
-    
+
     for (i = 0; i < pac_records_num; i++){
         event_pos = 6;
         if ((value_len - value_pos) < 7){
@@ -324,7 +335,6 @@ static void pacs_client_emit_pac(pacs_client_connection_t * connection, le_audio
         memcpy(&event[event_pos], &value[value_pos], 5);
         event_pos += 5;
         value_pos += 5;
-        stored_bytes += 5;
 
         // capability length
         uint8_t capability_len = value[value_pos++];
@@ -333,10 +343,11 @@ static void pacs_client_emit_pac(pacs_client_connection_t * connection, le_audio
             if ((value_len - value_pos) >= capability_len){
                 // capability
                 pacs_codec_capability_t codec_capability;
-                le_audio_codec_capabilities_parse_tlv((uint8_t *)&value[value_pos], capability_len, &codec_capability);
-                stored_bytes += le_audio_codec_capabilities_copy_to_event_buffer(&codec_capability, &event[event_pos], event_size - event_pos);
+                uint16_t parsed_bytes = le_audio_codec_capabilities_parse_tlv((uint8_t *)&value[value_pos], capability_len, &codec_capability);
+                value_pos += parsed_bytes;
+
+                uint16_t stored_bytes = le_audio_codec_capabilities_copy_to_event_buffer(&codec_capability, &event[event_pos], event_size - event_pos);
                 event_pos += stored_bytes;
-                value_pos += stored_bytes;
             }
         }
         
@@ -345,20 +356,21 @@ static void pacs_client_emit_pac(pacs_client_connection_t * connection, le_audio
             return;
         }
 
-        // metadata lenght
-        uint8_t metadata_length = value[value_pos++];
+        // metadata length
+        uint8_t metadata_length = value[value_pos];
         if (metadata_length > 0){
             if ((value_len - value_pos) >= metadata_length){
                 // metadata
                 le_audio_metadata_t metadata;
-                le_audio_util_metadata_parse((uint8_t *) &value[value_pos], metadata_length, &metadata);
-                stored_bytes += le_audio_util_metadata_serialize(&metadata, &event[event_pos], event_size - event_pos);
+                uint16_t parsed_bytes = le_audio_util_metadata_parse((uint8_t *) &value[value_pos], (value_len - value_pos), &metadata);
+                value_pos += parsed_bytes;
+
+                uint16_t stored_bytes = le_audio_util_metadata_serialize(&metadata, &event[event_pos], event_size - event_pos);
                 event_pos += stored_bytes;
-                value_pos += stored_bytes;
             }
         }
         
-        event[1] = event_pos;
+        event[1] = event_pos - 2;
         (*pacs_client_event_callback)(HCI_EVENT_PACKET, 0, event, event_pos);
     }
 }
@@ -643,7 +655,7 @@ static void pacs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     gatt_client_characteristic_t characteristic;
     gatt_client_characteristic_descriptor_t characteristic_descriptor;
 
-    bool call_run = true;
+    bool query_done = true;
     uint8_t index;
 
     switch(hci_event_packet_get_type(packet)){
@@ -798,14 +810,15 @@ static void pacs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
         case GATT_EVENT_QUERY_COMPLETE:
             connection = pacs_client_get_connection_for_con_handle(gatt_event_query_complete_get_handle(packet));
             btstack_assert(connection != NULL);
-            call_run = pacs_client_handle_query_complete(connection, gatt_event_query_complete_get_att_status(packet));
+            query_done = pacs_client_handle_query_complete(connection, gatt_event_query_complete_get_att_status(packet));
             break;
 
         default:
+            btstack_assert(false);
             break;
     }
 
-    if (call_run && (connection != NULL)){
+    if (query_done){
         pacs_client_run_for_connection(connection);
     }
 }
