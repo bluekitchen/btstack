@@ -245,13 +245,14 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_
  * 
  * @param  ascs_cid
  * @param  ase_id
+ * @param metadata id not NULL, metadata will be updated, after streamendpoint has been enabled
  * @return status ERROR_CODE_SUCCESS if the request is successfully registered, otherwise:
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER  if no HCI connection with the given ascs_cid is found 
  *                - ERROR_CODE_COMMAND_DISALLOWED if the connection is in wrong state
  *                - ERROR_CODE_CONTROLLER_BUSY    if there is ongoing write or read
  *                - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if stream endpoint index excesses the number of stored elements
  */
-uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_cid, uint8_t ase_id);
+uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_cid, uint8_t ase_id, const le_audio_metadata_t *metadata);
 
 /**
  * @brief Inform the server acting as Audio Source that the client is ready to consume audio data transmitted by the server.
