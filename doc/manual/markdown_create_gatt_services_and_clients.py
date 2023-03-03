@@ -28,7 +28,7 @@ description_template = """
 
 description_api = """
 
-See [NAME API](appendix/apis/#REFERENCE).
+See [NAME API](../appendix/apis/#REFERENCE).
 
 """
 
