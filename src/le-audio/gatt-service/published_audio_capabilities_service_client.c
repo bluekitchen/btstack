@@ -419,42 +419,53 @@ static void pacs_client_handle_gatt_server_notification(uint8_t packet_type, uin
     }
 }
 
-static pacs_client_characteristic_t * pacs_client_get_query_characteristic(pacs_client_connection_t * connection){
-    pacs_client_characteristic_t * pacs_characteristic;
-    uint16_t uuid16;
+static bool pacs_client_lookup_next_pac_record_index(pacs_client_connection_t * connection, uint16_t uuid16){
+    // get next SINK or SOURCE characteristic
+    uint8_t i;
+    if (connection->pacs_characteristics_index < (connection->pacs_characteristics_num - 1)){
+        connection->pacs_characteristics_index++;
+    } else {
+        return false;
+    }
 
-    switch (connection->query_characteristic_index){
+    for (i = connection->pacs_characteristics_index; i < connection->pacs_characteristics_num; i++){
+        pacs_client_characteristic_t * pacs_characteristic = &connection->pacs_characteristics[i];
+
+        if ((pacs_characteristic->uuid16 == uuid16) && (pacs_characteristic->value_handle != 0)){
+            connection->pacs_characteristics_index = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool pacs_client_lookup_characteristic_with_index(pacs_client_connection_t * connection, pacs_client_characteristic_index_t index){
+    switch (index){
         case PACS_CLIENT_CHARACTERISTIC_INDEX_SINK_AUDIO_LOCATIONS:
         case PACS_CLIENT_CHARACTERISTIC_INDEX_SOURCE_AUDIO_LOCATIONS:
         case PACS_CLIENT_CHARACTERISTIC_INDEX_AVAILABLE_AUDIO_CONTEXTS:
         case PACS_CLIENT_CHARACTERISTIC_INDEX_SUPPORTED_AUDIO_CONTEXTS:
-            pacs_characteristic = &connection->pacs_characteristics[(uint8_t)connection->query_characteristic_index];
-            if (pacs_characteristic->value_handle == 0){
-                return NULL;
+            connection->pacs_characteristics_index = (uint8_t)index;
+            if (connection->pacs_characteristics[connection->pacs_characteristics_index].value_handle != 0){
+                return true;
             }
-            return pacs_characteristic;
+            break;
 
         case PACS_CLIENT_CHARACTERISTIC_INDEX_SINK_PACK:
-            uuid16 = ORG_BLUETOOTH_CHARACTERISTIC_SINK_PAC;
-            break;
         case PACS_CLIENT_CHARACTERISTIC_INDEX_SOURCE_PACK:
-            uuid16 = ORG_BLUETOOTH_CHARACTERISTIC_SOURCE_PAC;
-            break;
-        default:
-            return NULL;
-    }
+            // init search index
+            connection->pacs_characteristics_index = (uint8_t)PACS_CLIENT_CHARACTERISTIC_INDEX_SINK_PACK - 1;
+            return pacs_client_lookup_next_pac_record_index(connection, index);
 
-    uint8_t i;
-    for (i = (uint8_t)PACS_CLIENT_CHARACTERISTIC_INDEX_SINK_PACK; i < connection->pacs_characteristics_num; i++){
-        pacs_characteristic = &connection->pacs_characteristics[i];
-        if (pacs_characteristic->uuid16 == uuid16){
-            if (pacs_characteristic->value_handle == 0){
-                return NULL;
-            }
-            return pacs_characteristic;
-        }
+        default:
+            btstack_assert(false);
+            break;
     }
-    return NULL;
+    return false;
+}
+
+static pacs_client_characteristic_t * pacs_client_get_query_characteristic(pacs_client_connection_t * connection){
+    return &connection->pacs_characteristics[connection->pacs_characteristics_index];
 }
 
 static void pacs_client_handle_notification_registered(pacs_client_connection_t * connection){
@@ -578,8 +589,7 @@ static bool pacs_client_handle_query_complete(pacs_client_connection_t * connect
             switch (connection->query_characteristic_index){
                 case PACS_CLIENT_CHARACTERISTIC_INDEX_SINK_PACK:
                 case PACS_CLIENT_CHARACTERISTIC_INDEX_SOURCE_PACK:
-                    if (connection->pacs_characteristics_index < (connection->pacs_characteristics_num - 1)){
-                        connection->pacs_characteristics_index++;
+                    if (pacs_client_lookup_next_pac_record_index(connection, connection->query_characteristic_index)){
                         connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W2_READ_SERVER;
                         return true;
                     }    
@@ -722,7 +732,6 @@ static void pacs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
                 connection->pacs_characteristics[index].properties   = characteristic.properties;
                 connection->pacs_characteristics[index].uuid16       = characteristic.uuid16;
                 connection->pacs_characteristics[index].end_handle   = characteristic.end_handle;
-
             } else {
                 log_info("Found more PACS Endpoint chrs then it can be stored. ");
             }
@@ -920,13 +929,16 @@ static uint8_t pacs_client_get_operation(
         return GATT_CLIENT_IN_WRONG_STATE;
     }
 
-    pacs_client_characteristic_t * pacs_characteristic = pacs_client_get_query_characteristic(connection);
-    if (pacs_characteristic == NULL){
+    if (pacs_client_lookup_characteristic_with_index(connection, index) == false){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-
+    
     connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W2_READ_SERVER;
-    connection->query_characteristic_index = index;
+    
+    // set index to a first possible position where SINK or SOURCE PACK can be found
+    connection->query_characteristic_index = (uint8_t)PACS_CLIENT_CHARACTERISTIC_INDEX_SINK_PACK;
+    
+
     pacs_client_run_for_connection(connection);
     return ERROR_CODE_SUCCESS;
 }
