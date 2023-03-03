@@ -44,7 +44,7 @@ docs: docs-markdown
 	cp -r ${MARKDOWN_FOLDER} ${MKDOCS_FOLDER}
 
 	# docs-markdown -> docs
-	./markdown_update_references.py  -i ${MARKDOWN_FOLDER} -o ${MKDOCS_FOLDER} 
+	./markdown_update_references.py  -i ${MARKDOWN_FOLDER} -o ${MKDOCS_FOLDER} -g ${GITHUB_URL}
 	
 
 html: docs
