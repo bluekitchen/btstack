@@ -35,10 +35,10 @@
  *
  */
 
-#define __BTSTACK_FILE__ "map_client_test.c"
+#define BTSTACK_FILE__ "map_client_demo.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(pbap_client_demo): Connect to Phonebook Server and get contacts.
+/* EXAMPLE_START(map_client_demo): Connect to MAP Messaging Server Equipment (MSE)
  *
  * @text Note: The Bluetooth address of the remote Phonbook server is hardcoded. 
  * Change it before running example, then use the UI to connect to it, to set and 
@@ -66,11 +66,15 @@
 #include "classic/sdp_util.h"
 #include "l2cap.h"
 #include "classic/map_client.h"
-#include "classic/map_server.h"
+#include "classic/map_util.h"
 
 #ifdef HAVE_BTSTACK_STDIN
 #include "btstack_stdin.h"
+#include "classic/goep_server.h"
+
 #endif
+
+#define MNS_SERVER_RFCOMM_CHANNEL_NR 1
 
 static const uint8_t map_client_notification_service_uuid[] = {0xbb, 0x58, 0x2b, 0x41, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66};
 
@@ -308,27 +312,31 @@ int btstack_main(int argc, const char * argv[]){
     // init RFCOM
     rfcomm_init();
 
+    // init SDP Server
+    sdp_init();
+
     // init GOEP Client
     goep_client_init();
 
+    // init GOEP Server
+    goep_server_init();
+
     // init MAP Client
     map_client_init();
-    // init MAP Server
-    map_server_init();
 
-    sdp_init();
-    // setup AVDTP sink
+    // TODO: map client needs to setup GOEP Server similar to pbap_server_init for Message Notifcation Server - don't do it here
+    rfcomm_register_service(&packet_handler, MNS_SERVER_RFCOMM_CHANNEL_NR, 0xFFFF);
+
     map_message_type_t supported_message_types = MAP_MESSAGE_TYPE_SMS_GSM;
     uint32_t supported_features = 0x1F;
 
-    int rfcomm_channel_nr = 1;
-
+    // setup Message Notification Server
     memset(map_message_notification_service_buffer, 0, sizeof(map_message_notification_service_buffer));
-    map_message_notification_service_create_sdp_record(map_message_notification_service_buffer, 0x10001,
-            1, rfcomm_channel_nr, 1, supported_message_types, supported_features, name);
+    map_message_notification_service_create_sdp_record(map_message_notification_service_buffer,
+                                                       sdp_create_service_record_handle(),
+            1, MNS_SERVER_RFCOMM_CHANNEL_NR, 1, supported_message_types, supported_features, name);
     sdp_register_service(map_message_notification_service_buffer);
 
-    rfcomm_register_service(&packet_handler, rfcomm_channel_nr, 0xFFFF);
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
