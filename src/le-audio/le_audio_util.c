@@ -261,16 +261,20 @@ uint16_t le_audio_util_metadata_virtual_memcpy(const le_audio_metadata_t * metad
 
 
 uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size, le_audio_metadata_t * metadata){
+
+    // reset capabilities
+    memset(metadata, 0, sizeof(le_audio_metadata_t));
+
     // parse config to get sampling frequency and frame duration
     uint8_t offset = 0;
-    uint8_t metadata_config_lenght = buffer[offset++];
-    if (buffer_size < metadata_config_lenght){
+    uint8_t metadata_config_length = buffer[offset++];
+    if (buffer_size < metadata_config_length){
         return 0;
     }
 
     metadata->metadata_mask = 0;
 
-    while ((offset + 1) < metadata_config_lenght){
+    while ((offset + 1) < metadata_config_length){
         uint8_t ltv_len = buffer[offset++];
 
         le_audio_metadata_type_t ltv_type = (le_audio_metadata_type_t)buffer[offset];
