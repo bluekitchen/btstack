@@ -548,6 +548,7 @@ static void pacs_client_run_for_connection(pacs_client_connection_t * connection
     }
 }
 
+// returns TRUE if connection has been finalized
 static bool pacs_client_handle_query_complete(pacs_client_connection_t * connection, uint8_t status){
     switch (connection->state){
         case PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_SERVER_WRITE_RESPONSE:
@@ -568,7 +569,7 @@ static bool pacs_client_handle_query_complete(pacs_client_connection_t * connect
                     if (connection->pacs_characteristics_index < (connection->pacs_characteristics_num - 1)){
                         connection->pacs_characteristics_index++;
                         connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W2_READ_SERVER;
-                        return false;
+                        return true;
                     }    
                     break;
                 default:
