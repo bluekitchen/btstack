@@ -574,8 +574,8 @@ static bool pacs_client_handle_query_complete(pacs_client_connection_t * connect
                 default:
                     break;
             }
-            pacs_client_emit_operation_done(connection, status);
             connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_CONNECTED;
+            pacs_client_emit_operation_done(connection, status);
             break;
 
         case PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
@@ -742,8 +742,12 @@ static void pacs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
         
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             connection = pacs_client_get_connection_for_con_handle(gatt_event_characteristic_value_query_result_get_handle(packet));
-            btstack_assert(connection != NULL);                
-            connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_CONNECTED;
+            btstack_assert(connection != NULL);
+            btstack_assert(connection->state == PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_SERVER_READ_RESPONSE);
+
+            log_info("Index %u", connection->query_characteristic_index);
+            log_info_hexdump(gatt_event_characteristic_value_query_result_get_value(packet),
+                             gatt_event_characteristic_value_query_result_get_value_length(packet));
 
             switch (connection->query_characteristic_index){
                 case PACS_CLIENT_CHARACTERISTIC_INDEX_SINK_AUDIO_LOCATIONS:
