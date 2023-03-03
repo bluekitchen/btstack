@@ -662,7 +662,13 @@ static bool ascs_client_handle_query_complete(ascs_client_connection_t * connect
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_READ:
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN:
             ascs_client_value_buffer_used = false;
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
+
+            if ((connection->command_opcode == ASCS_OPCODE_ENABLE) && (connection->metadata != NULL)){
+                connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
+                connection->command_opcode = ASCS_OPCODE_UPDATE_METADATA;
+            } else {
+                connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
+            }
             break;
 
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED:
@@ -1030,7 +1036,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint1
  * @param con_handle
  * @param ase_id
  */
-uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_cid, uint8_t ase_id){
+uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_cid, uint8_t ase_id, const le_audio_metadata_t *metadata){
     ascs_client_connection_t * connection = NULL;
     uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
@@ -1046,6 +1052,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = ascs_client_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_ENABLE;
+    connection->metadata = metadata;
 
     ascs_client_run_for_connection(connection);
     return ERROR_CODE_SUCCESS;
