@@ -66,7 +66,7 @@ fields, called the OpCode Group Field (OGF) and OpCode Command Field
 (OCF), see [Bluetooth Specification](https://www.bluetooth.org/Technical/Specifications/adopted.htm) -
 Core Version 4.0, Volume 2, Part E, Chapter 5.4. 
 
-Listing [below](#lst:hciOGFs) shows the OGFs provided by BTstack in file [src/hci.h]():
+Listing [below](#lst:hciOGFs) shows the OGFs provided by BTstack in file [src/hci.h](GITHUB_URL/src/hci.h):
 
 ~~~~ {#lst:hciOGFs .c caption="{HCI OGFs provided by BTstack.}"}
 
@@ -87,7 +87,7 @@ In a HCI command packet, the OpCode is followed by parameter total
 length, and the actual parameters. The OpCode of a command can be
 calculated using the OPCODE macro. BTstack provides the *hci_cmd_t*
 struct as a compact format to define HCI command packets, see 
-Listing [below](#lst:HCIcmdTemplate), and [include/btstack/hci_cmd.h]()
+Listing [below](#lst:HCIcmdTemplate), and [src/hci_cmd.h](GITHUB_URL/src/hci_cmd.h)
 file in the source code. 
 
 ~~~~ {#lst:HCIcmdTemplate .c caption="{HCI command struct.}"}
@@ -514,7 +514,7 @@ application such that it can manage its receive buffers explicitly, see
 Listing [below](#lst:explicitFlowControl).
 
 Manual credit management is recommended when received RFCOMM data cannot
-be processed immediately. In the [SPP flow control example](../examples/generated/#sec:sppflowcontrolExample), 
+be processed immediately. In the [SPP flow control example](../examples/examples/#sec:sppflowcontrolExample), 
 delayed processing of received data is
 simulated with the help of a periodic timer. To provide new credits, you
 call the *rfcomm_grant_credits* function with the RFCOMM channel ID
