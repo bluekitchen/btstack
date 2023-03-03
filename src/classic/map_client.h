@@ -42,8 +42,11 @@
 extern "C" {
 #endif
  
+#include "bluetooth.h"
 #include "btstack_config.h"
+#include "btstack_defines.h"
 #include "map.h"
+
 #include <stdint.h>
 
 /* API_START */
