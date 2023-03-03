@@ -140,8 +140,7 @@ def main(argv):
         print('GIT branch name: failed to get, use default value \"%s\""  ', gitbranchname, exc.returncode, exc.output)
     else:
         print('GIT branch name:  %s' % gitbranchname)
-        print('GITHUB URL:       %s' % githuburl)
-
+        
     githuburl = githuburl + gitbranchname
     print('GITHUB URL:       %s\n' % githuburl)
 
