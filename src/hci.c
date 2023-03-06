@@ -5686,7 +5686,8 @@ static bool hci_run_general_gap_le(void){
 #endif
 
     // check if own address changes
-    bool random_address_change = (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_ADDRESS) != 0;
+    uint8_t address_change_mask = LE_ADVERTISEMENT_TASKS_SET_ADDRESS | LE_ADVERTISEMENT_TASKS_SET_ADDRESS_SET_0;
+    bool random_address_change = (hci_stack->le_advertisements_todo & address_change_mask) != 0;
 
     // check if whitelist needs modification
     bool whitelist_modification_pending = false;
@@ -5949,14 +5950,7 @@ static bool hci_run_general_gap_le(void){
 
     if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_ADDRESS){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
-#ifdef ENABLE_LE_EXTENDED_ADVERTISING
-        if (hci_extended_advertising_supported()) {
-            hci_send_cmd(&hci_le_set_advertising_set_random_address, 0, hci_stack->le_random_address);
-        } else
-#endif
-        {
-            hci_send_cmd(&hci_le_set_random_address, hci_stack->le_random_address);
-        }
+        hci_send_cmd(&hci_le_set_random_address, hci_stack->le_random_address);
 #ifdef ENABLE_LE_SET_ADV_PARAMS_ON_RANDOM_ADDRESS_CHANGE
         // workaround: on some Controllers, address in advertisements is updated only after next dv params set
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
@@ -6031,6 +6025,15 @@ static bool hci_run_general_gap_le(void){
         }
         return true;
     }
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    // assumption: only set if extended advertising is supported
+    if ((hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_ADDRESS_SET_0) != 0){
+        hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_ADDRESS_SET_0;
+        hci_send_cmd(&hci_le_set_advertising_set_random_address, 0, hci_stack->le_random_address);
+        return true;
+    }
+#endif
 
     if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_ADV_DATA){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
@@ -8358,6 +8361,15 @@ void hci_le_random_address_set(const bd_addr_t random_address){
     memcpy(hci_stack->le_random_address, random_address, 6);
     hci_stack->le_random_address_set = true;
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    if (hci_extended_advertising_supported()){
+        // force advertising set creation for LE Set Advertising Set Random Address
+        if ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_PARAMS_SET) == 0){
+            hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+        }
+        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADDRESS_SET_0;
+    }
+#endif
     hci_run();
 }
 
