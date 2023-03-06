@@ -695,20 +695,19 @@ static void ascs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     gatt_client_characteristic_t characteristic;
     gatt_client_characteristic_descriptor_t characteristic_descriptor;
     ascs_streamendpoint_t * streamendpoint;
+    uint8_t status;
 
     bool call_run = true;
     uint16_t bytes_read;
 
     switch(hci_event_packet_get_type(packet)){
-        case GATT_EVENT_MTU:
-            connection = ascs_client_get_connection_for_con_handle(gatt_event_mtu_get_handle(packet));
-            btstack_assert(connection != NULL);
-            connection->mtu = gatt_event_mtu_get_MTU(packet);
-            break;
-
         case GATT_EVENT_SERVICE_QUERY_RESULT:
             connection = ascs_client_get_connection_for_con_handle(gatt_event_service_query_result_get_handle(packet));
             btstack_assert(connection != NULL);
+
+            // update MTU - MTU is available after the first GATT query for a HCI connection
+            status = gatt_client_get_mtu(connection->con_handle, &connection->mtu);
+            btstack_assert(status == ERROR_CODE_SUCCESS);
 
             if (connection->service_instances_num < 1){
                 gatt_event_service_query_result_get_service(packet, &service);
