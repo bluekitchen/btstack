@@ -59,7 +59,7 @@ static btstack_packet_handler_t ascs_client_event_callback;
 static btstack_linked_list_t    ascs_client_connections;
 static uint16_t                 ascs_client_cid_counter = 0;
 
-static void acs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void ascs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static btstack_packet_callback_registration_t ascs_client_hci_event_callback_registration;
 
 static uint8_t  ascs_client_value_buffer[ASCS_CLIENT_MAX_VALUE_BUFFER_SIZE];
@@ -373,7 +373,7 @@ static bool ascs_client_register_notification(ascs_client_connection_t * connect
     characteristic.end_handle   = ase_characteristic->ase_characteristic_end_handle;
 
     uint8_t status = gatt_client_write_client_characteristic_configuration(
-                &acs_client_handle_gatt_client_event, 
+            &ascs_client_handle_gatt_client_event,
                 connection->con_handle, 
                 &characteristic, 
                 GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
@@ -441,7 +441,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
     switch (connection->state){
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE:
             connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
-            gatt_client_discover_primary_services_by_uuid16(&acs_client_handle_gatt_client_event, connection->con_handle, ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE);
+            gatt_client_discover_primary_services_by_uuid16(&ascs_client_handle_gatt_client_event, connection->con_handle, ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE);
             break;
 
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
@@ -452,7 +452,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             service.uuid16 = ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE;
 
             gatt_client_discover_characteristics_for_service(
-                &acs_client_handle_gatt_client_event, 
+                    &ascs_client_handle_gatt_client_event,
                 connection->con_handle, 
                 &service);
 
@@ -467,7 +467,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             characteristic.properties   = connection->control_point.properties;
             characteristic.end_handle   = connection->control_point.end_handle;
 
-            (void) gatt_client_discover_characteristic_descriptors(&acs_client_handle_gatt_client_event, connection->con_handle, &characteristic);
+            (void) gatt_client_discover_characteristic_descriptors(&ascs_client_handle_gatt_client_event, connection->con_handle, &characteristic);
             break;
 
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_CONTROL_POINT_REGISTER_NOTIFICATION:
@@ -478,7 +478,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             characteristic.end_handle   = connection->control_point.end_handle;
 
             uint8_t status = gatt_client_write_client_characteristic_configuration(
-                        &acs_client_handle_gatt_client_event, 
+                    &ascs_client_handle_gatt_client_event,
                         connection->con_handle, 
                         &characteristic, 
                         GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
@@ -508,7 +508,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             characteristic.properties   = connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_properties;
             characteristic.end_handle   = connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_end_handle;
 
-            (void) gatt_client_discover_characteristic_descriptors(&acs_client_handle_gatt_client_event, connection->con_handle, &characteristic);
+            (void) gatt_client_discover_characteristic_descriptors(&ascs_client_handle_gatt_client_event, connection->con_handle, &characteristic);
             break;
 
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_CONFIGURATION:
@@ -519,7 +519,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
 
             // result in GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
             (void) gatt_client_read_characteristic_descriptor_using_descriptor_handle(
-                &acs_client_handle_gatt_client_event,
+                    &ascs_client_handle_gatt_client_event,
                 connection->con_handle, 
                 connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_client_configuration_handle);
             break;
@@ -551,7 +551,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_ID_READ;
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
-                &acs_client_handle_gatt_client_event, 
+                    &ascs_client_handle_gatt_client_event,
                 connection->con_handle, 
                 connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_value_handle);
             break;
@@ -560,7 +560,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_READ;
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
-                &acs_client_handle_gatt_client_event, 
+                    &ascs_client_handle_gatt_client_event,
                 connection->con_handle, 
                 connection->streamendpoints[connection->streamendpoints_index].ase_characteristic->ase_characteristic_value_handle);
             break;
@@ -571,7 +571,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             uint16_t value_length = ascs_client_serialize_ase(connection, ascs_client_value_buffer, ascs_client_get_value_buffer_size(connection));
 
             (void)gatt_client_write_value_of_characteristic(
-                &acs_client_handle_gatt_client_event,
+                    &ascs_client_handle_gatt_client_event,
                 connection->con_handle, 
                 connection->control_point.value_handle,
                 value_length, 
@@ -685,7 +685,7 @@ static bool ascs_client_handle_query_complete(ascs_client_connection_t * connect
     return true;
 }
 
-static void acs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void ascs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
     UNUSED(channel);
     UNUSED(size);
