@@ -5947,7 +5947,7 @@ static bool hci_run_general_gap_le(void){
 
     // Phase 3: modify
 
-    if (random_address_change){
+    if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_ADDRESS){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
         if (hci_extended_advertising_supported()) {
