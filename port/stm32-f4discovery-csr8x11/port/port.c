@@ -31,7 +31,7 @@
 extern UART_HandleTypeDef huart2;//system log uart or hci log uart
 extern UART_HandleTypeDef huart3;//hci uart
 
-#define ENABLE_SYSTEM_LOG 1
+#define ENABLE_SYSTEM_LOG 0
 
 #if ENABLE_SYSTEM_LOG == 1
 #define SYSTEM_LOG_UART	  huart2

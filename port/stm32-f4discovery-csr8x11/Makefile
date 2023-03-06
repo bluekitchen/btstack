@@ -188,60 +188,15 @@ C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c
 endif
 
 ifeq (${BLE_ENABLE}, y)
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/port/nrf_dfu_ble.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/port/nrf_dfu_flash_port.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_transport.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_req_handler.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_settings.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_utils.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/dfu-cc.pb.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_flash.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_validation.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nrf_dfu_handling_error.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/crc32.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nano-pb/pb_common.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nano-pb/pb_decode.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nano-pb/pb_encode.c
+include ${BTSTACK_ROOT}/3rd-party/nordic-dfu/nordic-dfu.mk
+C_SOURCES += ${C_SOURCES_NORDIC_DFU}
+C_INCLUDES += ${C_INCLUDES_NORDIC_DFU}
 endif
 
-
 ifeq (${MCUBOOT_ENALBE}, y)
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/boot_record.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/bootutil_misc.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/bootutil_public.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/caps.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/encrypted.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/fault_injection_hardening.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/fault_injection_hardening_delay_rng_mbedtls.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/image_ec.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/image_ec256.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/image_ed25519.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/image_rsa.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/image_validate.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/loader.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/swap_misc.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/swap_move.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/swap_scratch.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src/tlv.c
-
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/mcuboot_main.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/boot_flash_port.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/base64_port.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_assert_port.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_heap_port.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_log_port.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_serial_port.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_startup_port.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_wdt_port.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/crc16_port.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/system_port.c
-#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/port/boot_shell.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/sha256.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/utils.c
-#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/ecc.c
-#C_SOURCES += ${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/source/ecc_dsa.c
-
+include ${BTSTACK_ROOT}/3rd-party/mcuboot/mcuboot.mk
+C_SOURCES += ${C_SOURCES_MCUBOOT}
+C_INCLUDES += ${C_INCLUDES_MCUBOOT}
 ifeq (${mcuboot}, boot)
 C_DEFS += -DMCUBOOT_IMG_BOOTLOADER
 endif
@@ -251,7 +206,6 @@ endif
 ifeq (${mcuboot}, app2)
 C_DEFS += -DMCUBOOT_IMG_APPLICATION2
 endif
-
 endif
 endif
 
@@ -372,7 +326,7 @@ C_DEFS +=  \
 AS_INCLUDES = 
 
 # C includes
-C_INCLUDES =  \
+C_INCLUDES +=  \
 -IInc \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
@@ -395,22 +349,6 @@ C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/md5
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/yxml
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
 
-ifeq (${MCUBOOT_ENALBE}, y)
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/include
-#C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/src
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/bootutil/include/bootutil/crypto
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/boot_serial/include/boot_serial
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include/mcuboot_config
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include/flash_map_backend
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include/sysflash
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include/os
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/boot/embedded/include/port
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/sim/mcuboot-sys/csupport
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/include
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mcuboot/ext/tinycrypt/lib/include/tinycrypt
-endif
-
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip/port
@@ -420,10 +358,6 @@ C_INCLUDES += -I bsp
 C_INCLUDES += -I pdm
 C_INCLUDES += -I port
 C_INCLUDES += -I src
-C_INCLUDES += -I${BTSTACK_ROOT}/tool
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/nordic-dfu/src
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/nordic-dfu/port
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/nordic-dfu/src/nano-pb
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
