@@ -4594,6 +4594,15 @@ void hci_init(const hci_transport_t *transport, const void *config){
 
 #ifdef ENABLE_LE_PERIPHERAL
     hci_stack->le_max_number_peripheral_connections = 1; // only single connection as peripheral
+
+    // default advertising parameters from Core v5.4 -- needed to use random address without prior adv setup
+    hci_stack->le_advertisements_interval_min =                         0x0800;
+    hci_stack->le_advertisements_interval_max =                         0x0800;
+    hci_stack->le_advertisements_type =                                      0;
+    hci_stack->le_own_addr_type =                       BD_ADDR_TYPE_LE_PUBLIC;
+    hci_stack->le_advertisements_direct_address_type =  BD_ADDR_TYPE_LE_PUBLIC;
+    hci_stack->le_advertisements_channel_map =                            0x07;
+    hci_stack->le_advertisements_filter_policy =                             0;
 #endif
 
     // connection parameter range used to answer connection parameter update requests in l2cap
