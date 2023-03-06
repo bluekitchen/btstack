@@ -5169,8 +5169,7 @@ static void hci_halting_run(void) {
                     hci_send_cmd(&hci_le_set_extended_advertising_enable, 0, 0, NULL, NULL, NULL);
                     return;
                 }
-            }
-            else
+            } else
 #else /* ENABLE_LE_PERIPHERAL */
             {
                 if (stop_advertismenets) {
@@ -5588,7 +5587,7 @@ static void hci_le_scan_stop(void){
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     if (hci_extended_advertising_supported()) {
             hci_send_cmd(&hci_le_set_extended_scan_enable, 0, 0, 0, 0);
-        } else
+    } else
 #endif
     {
         hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
@@ -5622,8 +5621,7 @@ hci_send_le_create_connection(uint8_t initiator_filter_policy, bd_addr_type_t ad
                      le_minimum_ce_length,          // min ce length
                      le_maximum_ce_length           // max ce length
         );
-    }
-    else
+    } else
 #endif
     {
         hci_send_cmd(&hci_le_create_connection,
@@ -5954,7 +5952,7 @@ static bool hci_run_general_gap_le(void){
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
         if (hci_extended_advertising_supported()) {
             hci_send_cmd(&hci_le_set_advertising_set_random_address, 0, hci_stack->le_random_address);
-        }
+        } else
 #endif
         {
             hci_send_cmd(&hci_le_set_random_address, hci_stack->le_random_address);
@@ -6018,7 +6016,7 @@ static bool hci_run_general_gap_le(void){
                          0,     // adv sid
                          0      // scan request notification
                          );
-        }
+        } else
 #endif
         {
             hci_send_cmd(&hci_le_set_advertising_parameters,
