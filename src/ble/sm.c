@@ -1025,10 +1025,10 @@ static void sm_trigger_user_response_basic(sm_connection_t * sm_conn, uint8_t ev
     sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void sm_trigger_user_response_passkey(sm_connection_t * sm_conn){
+static void sm_trigger_user_response_passkey(sm_connection_t * sm_conn, uint8_t event_type){
     uint8_t event[16];
     uint32_t passkey = big_endian_read_32(setup->sm_tk, 12);
-    sm_setup_event_base(event, sizeof(event), SM_EVENT_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle,
+    sm_setup_event_base(event, sizeof(event), event_type, sm_conn->sm_handle,
                         sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
     event[11] = setup->sm_use_secure_connections ? 1 : 0;
     little_endian_store_32(event, 12, passkey);
@@ -1044,12 +1044,12 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
             if (IS_RESPONDER(sm_conn->sm_role)){
                 sm_trigger_user_response_basic(sm_conn, SM_EVENT_PASSKEY_INPUT_NUMBER);
             } else {
-                sm_trigger_user_response_passkey(sm_conn);
+                sm_trigger_user_response_passkey(sm_conn, SM_EVENT_PASSKEY_DISPLAY_NUMBER);
             }
             break;
         case PK_INIT_INPUT:
             if (IS_RESPONDER(sm_conn->sm_role)){
-                sm_trigger_user_response_passkey(sm_conn);
+                sm_trigger_user_response_passkey(sm_conn, SM_EVENT_PASSKEY_DISPLAY_NUMBER);
             } else {
                 sm_trigger_user_response_basic(sm_conn, SM_EVENT_PASSKEY_INPUT_NUMBER);
             }
@@ -1058,7 +1058,7 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
             sm_trigger_user_response_basic(sm_conn, SM_EVENT_PASSKEY_INPUT_NUMBER);
             break;
         case NUMERIC_COMPARISON:
-            sm_trigger_user_response_basic(sm_conn, SM_EVENT_NUMERIC_COMPARISON_REQUEST);
+            sm_trigger_user_response_passkey(sm_conn, SM_EVENT_NUMERIC_COMPARISON_REQUEST);
             break;
         case JUST_WORKS:
             sm_trigger_user_response_basic(sm_conn, SM_EVENT_JUST_WORKS_REQUEST);
