@@ -44,6 +44,7 @@
 #include <string.h>
 #include "btstack.h"
 #include "hal_cpu.h"
+#include "sha256.h"
 
 #ifdef HAVE_BTSTACK_STDIN
 __attribute__((weak)) void hal_cpu_reset(void)
@@ -94,13 +95,37 @@ int btstack_main(int argc, const char * argv[]) {
     (void)argv;
 #if defined(MCUBOOT_IMG_BOOTLOADER)
     printf("I am mcuboot bootloader!\r\n");
-    main_boot();
+    //main_boot();
 #endif
 
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif
 
+#if 1
+    printf("mbedtls port on stm32f407-discovery\r\n");
+
+    /* sha256 test */
+    char *source_cxt = "ye.he@amlogic.com";
+    char encrypt_cxt[64] = {0};
+
+    printf("source context is:%s\r\n", source_cxt);
+
+    mbedtls_sha256_context sha256_ctx;
+    mbedtls_sha256_init(&sha256_ctx);
+    mbedtls_sha256_starts(&sha256_ctx, 0);
+    mbedtls_sha256_update(&sha256_ctx, (unsigned char *)source_cxt, strlen(source_cxt));
+    mbedtls_sha256_finish(&sha256_ctx, (unsigned char *)encrypt_cxt);
+    mbedtls_sha256_free(&sha256_ctx);
+
+    int i = 0;
+    printf("sha256 encrypt context is:[");
+    while (encrypt_cxt[i]) {
+        printf("%02x", encrypt_cxt[i]);
+        i++;
+    }
+    printf("]\r\n");
+#endif
     return 0;
 }
 

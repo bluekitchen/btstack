@@ -2,6 +2,8 @@
 MK_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURDIR := $(patsubst %/, %, $(dir $(MK_PATH)))
 
+mcuboot = none
+
 C_SOURCES_MCUBOOT := $(CURDIR)/boot/bootutil/src/boot_record.c
 C_SOURCES_MCUBOOT += $(CURDIR)/boot/bootutil/src/bootutil_misc.c
 C_SOURCES_MCUBOOT += $(CURDIR)/boot/bootutil/src/bootutil_public.c
@@ -21,6 +23,7 @@ C_SOURCES_MCUBOOT += $(CURDIR)/boot/bootutil/src/swap_scratch.c
 C_SOURCES_MCUBOOT += $(CURDIR)/boot/bootutil/src/tlv.c
 
 C_SOURCES_MCUBOOT += $(CURDIR)/boot/embedded/mcuboot_main.c
+C_SOURCES_MCUBOOT += $(CURDIR)/boot/embedded/keys.c
 C_SOURCES_MCUBOOT += $(CURDIR)/boot/embedded/boot_flash_port.c
 C_SOURCES_MCUBOOT += $(CURDIR)/boot/embedded/port/base64_port.c
 C_SOURCES_MCUBOOT += $(CURDIR)/boot/embedded/port/boot_assert_port.c
@@ -38,7 +41,7 @@ C_SOURCES_MCUBOOT += $(CURDIR)/ext/tinycrypt/lib/source/utils.c
 #C_SOURCES_MCUBOOT += $(CURDIR)/ext/tinycrypt/lib/source/ecc_dsa.c
 
 C_INCLUDES_MCUBOOT := -I$(CURDIR)/boot/bootutil/include
-#C_INCLUDES_MCUBOOT += -I$(CURDIR)/boot/bootutil/src
+C_INCLUDES_MCUBOOT += -I$(CURDIR)/boot/bootutil
 C_INCLUDES_MCUBOOT += -I$(CURDIR)/boot/bootutil/include/bootutil/crypto
 C_INCLUDES_MCUBOOT += -I$(CURDIR)/boot/boot_serial/include/boot_serial
 C_INCLUDES_MCUBOOT += -I$(CURDIR)/boot/embedded/include
@@ -51,4 +54,13 @@ C_INCLUDES_MCUBOOT += -I$(CURDIR)/sim/mcuboot-sys/csupport
 C_INCLUDES_MCUBOOT += -I$(CURDIR)/ext/tinycrypt/lib/include
 C_INCLUDES_MCUBOOT += -I$(CURDIR)/ext/tinycrypt/lib/include/tinycrypt
 
+ifeq (${mcuboot}, boot)
+C_DEFS_MCUBOOT += -DMCUBOOT_IMG_BOOTLOADER
+endif
+ifeq (${mcuboot}, app1)
+C_DEFS_MCUBOOT += -DMCUBOOT_IMG_APPLICATION1
+endif
+ifeq (${mcuboot}, app2)
+C_DEFS_MCUBOOT += -DMCUBOOT_IMG_APPLICATION2
+endif
 ################################################################################

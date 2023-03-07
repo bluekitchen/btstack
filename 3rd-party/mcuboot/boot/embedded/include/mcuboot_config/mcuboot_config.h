@@ -22,9 +22,9 @@
  */
 
 /* Uncomment for RSA signature support */
-//#define MCUBOOT_SIGN_RSA
+#define MCUBOOT_SIGN_RSA
 
-//#define MCUBOOT_SIGN_RSA_LEN 2048
+#define MCUBOOT_SIGN_RSA_LEN 2048
 
 /* Uncomment for ECDSA signatures using curve P-256. */
 //#define MCUBOOT_SIGN_EC256
@@ -68,9 +68,9 @@
  */
 
 /* Uncomment to use ARM's mbedTLS cryptographic primitives */
-//#define MCUBOOT_USE_MBED_TLS
+#define MCUBOOT_USE_MBED_TLS
 /* Uncomment to use Tinycrypt's. */
-#define MCUBOOT_USE_TINYCRYPT
+//#define MCUBOOT_USE_TINYCRYPT
 
 /*
  * Always check the signature of the image in the primary slot before booting,

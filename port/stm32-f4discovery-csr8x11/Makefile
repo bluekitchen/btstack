@@ -50,8 +50,6 @@ FREERTOS_ENABLE = n
 
 MCUBOOT_ENALBE = y
 
-mcuboot = none
-
 #######################################
 # paths
 #######################################
@@ -194,19 +192,17 @@ C_INCLUDES += ${C_INCLUDES_NORDIC_DFU}
 endif
 
 ifeq (${MCUBOOT_ENALBE}, y)
+include ${BTSTACK_ROOT}/3rd-party/mbedtls/mbedtls.mk
+C_SOURCES += ${C_SOURCES_MBEDTLS}
+C_INCLUDES += ${C_INCLUDES_MBEDTLS}
+
 include ${BTSTACK_ROOT}/3rd-party/mcuboot/mcuboot.mk
 C_SOURCES += ${C_SOURCES_MCUBOOT}
 C_INCLUDES += ${C_INCLUDES_MCUBOOT}
-ifeq (${mcuboot}, boot)
-C_DEFS += -DMCUBOOT_IMG_BOOTLOADER
+C_DEFS += ${C_DEFS_MCUBOOT}
+
 endif
-ifeq (${mcuboot}, app1)
-C_DEFS += -DMCUBOOT_IMG_APPLICATION1
-endif
-ifeq (${mcuboot}, app2)
-C_DEFS += -DMCUBOOT_IMG_APPLICATION2
-endif
-endif
+
 endif
 
 ifeq (${BR_EDR_ENABLE}, y)

@@ -33,9 +33,9 @@
 #include "bootutil/sign_key.h"
 #include "bootutil/crypto/sha256.h"
 
-#include "mbedtls/rsa.h"
-#include "mbedtls/asn1.h"
-#include "mbedtls/version.h"
+#include "rsa.h"
+#include "asn1.h"
+#include "version.h"
 
 #include "bootutil_priv.h"
 #include "bootutil/fault_injection_hardening.h"
@@ -296,7 +296,7 @@ bootutil_verify_sig(uint8_t *hash, uint32_t hlen, uint8_t *sig, size_t slen,
     uint8_t *cp;
     uint8_t *end;
 
-    mbedtls_rsa_init(&ctx, 0, 0);
+    mbedtls_rsa_init(&ctx);
 
     cp = (uint8_t *)bootutil_keys[key_id].key;
     end = cp + *bootutil_keys[key_id].len;

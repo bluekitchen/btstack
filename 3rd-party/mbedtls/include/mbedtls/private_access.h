@@ -23,6 +23,8 @@
 #ifndef MBEDTLS_PRIVATE_ACCESS_H
 #define MBEDTLS_PRIVATE_ACCESS_H
 
+#include "common.h"
+
 #ifndef MBEDTLS_ALLOW_PRIVATE_ACCESS
 #define MBEDTLS_PRIVATE(member) private_##member
 #else
