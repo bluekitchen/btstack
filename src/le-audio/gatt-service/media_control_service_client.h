@@ -106,13 +106,235 @@ uint8_t media_control_service_client_connect(
 
 /**
  * @brief Get the name of the media player application that is providing media tracks. 
- * The value is reported via the event.  
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME event.  
  * If the name size is greater than ATT_MTU-3, then the first ATT_MTU-3 octets shall be returned. 
  *
  * @param mcs_cid
- * @return status
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
  */
 uint8_t media_control_service_client_get_media_player_name(uint16_t mcs_cid);
+
+/**
+ * @brief Get the media player icon object id. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID event.  
+ * If the name size is greater than ATT_MTU-3, then the first ATT_MTU-3 octets shall be returned. 
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_media_player_icon_object_id(uint16_t mcs_cid);
+
+/**
+ * @brief Get the media player icon object url. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_URL event.  
+ * If the name size is greater than ATT_MTU-3, then the first ATT_MTU-3 octets shall be returned. 
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_media_player_icon_url(uint16_t mcs_cid);
+
+/**
+ * @brief Get the track title. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE event.  
+ * If the name size is greater than ATT_MTU-3, then the first ATT_MTU-3 octets shall be returned. 
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_track_title(uint16_t mcs_cid);
+
+/**
+ * @brief Get the track duration. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_DURATION event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_track_duration(uint16_t mcs_cid);
+
+/**
+ * @brief Get the track position. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_track_position(uint16_t mcs_cid);
+
+/**
+ * @brief Get the playback speed. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MSC_CLIENT_PLAYBACK_SPEED event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_playback_speed(uint16_t mcs_cid);
+
+/**
+ * @brief Get the seeking speed. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MSC_CLIENT_SEEKING_SPEED event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_seeking_speed(uint16_t mcs_cid);
+
+/**
+ * @brief Get current track segments object id. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_current_track_segments_object_id(uint16_t mcs_cid);
+
+/**
+ * @brief Get the current track object id.  
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_current_track_object_id(uint16_t mcs_cid);
+
+/**
+ * @brief Get the next track object id. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_next_track_object_id(uint16_t mcs_cid);
+
+/**
+ * @brief Get the parent group object id. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_parent_group_object_id(uint16_t mcs_cid);
+
+/**
+ * @brief Get the current group object id. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_GROUP_OBJECT_ID event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_current_group_object_id(uint16_t mcs_cid);
+
+/**
+ * @brief Get the playing order. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_playing_order(uint16_t mcs_cid);
+
+/**
+ * @brief Get the playing orders supported. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_playing_orders_supported(uint16_t mcs_cid);
+
+/**
+ * @brief Get the media state. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_STATE event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_media_state(uint16_t mcs_cid);
+
+/**
+ * @brief Get the supported media control point opcodes. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_media_control_point_opcodes_supported(uint16_t mcs_cid);
+
+/**
+ * @brief Get the name of the media player application that is providing media tracks. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_search_results_object_id(uint16_t mcs_cid);
+
+/**
+ * @brief Get the content control id. 
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID event.  
+ *
+ * @param mcs_cid
+ * @return status  ERROR_CODE_SUCCESS on success, otherwise:
+ *      - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if there is no client with mcs_cid,
+ *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
+ *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
+ */
+uint8_t media_control_service_client_get_content_control_id(uint16_t mcs_cid);
 
 /**
  * @brief Disconnect.
