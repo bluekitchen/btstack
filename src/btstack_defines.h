@@ -5219,7 +5219,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param speed
  */
-#define GATTSERVICE_SUBEVENT_MSC_CLIENT_TRACK_SPEED                                   0x86u
+#define GATTSERVICE_SUBEVENT_MSC_CLIENT_PLAYBACK_SPEED                                   0x86u
 
 /**
  * @format 121
@@ -5265,6 +5265,15 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATTSERVICE_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID                       0x8Bu
 
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param mcs_cid
+ * @param value_len             // If the media player has a parent group, the length of the characteristic is six octets, otherwise 0
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_GROUP_OBJECT_ID                      0x8Cu
+
 
 /**
  * @format 121
@@ -5272,7 +5281,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param order
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER                                 0x8Cu
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER                                 0x8Du
 
 /**
  * @format 122
@@ -5280,7 +5289,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param bitmap
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED                        0x8Du
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED                        0x8Eu
 
 /**
  * @format 121
@@ -5288,7 +5297,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param state
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_STATE                                    0x8Eu
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_STATE                                    0x8Fu
 
 /**
  * @format 124
@@ -5296,7 +5305,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param bitmap
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED                0x8Fu
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED                0x90u
 
 /**
  * @format 1211
@@ -5305,7 +5314,7 @@ typedef uint8_t sm_key_t[16];
  * @param requested_opcode
  * @param result_code
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_NOTIFICATION                     0x90u
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_NOTIFICATION                     0x91u
 
 /**
  * @format 121
@@ -5313,7 +5322,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param requested_opcode
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION               0x91u
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION               0x92u
 
 /**
  * @format 12JV
@@ -5322,7 +5331,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len             //  If there are search results, the length of the characteristic is six octets
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID                         0x92u
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID                         0x93u
 
 /**
  * @format 121
@@ -5330,7 +5339,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param ccid
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID                              0x93u
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID                              0x94u
 
 /**
  * @format 1H1
