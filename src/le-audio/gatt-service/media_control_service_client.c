@@ -284,6 +284,10 @@ static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uin
         case ORG_BLUETOOTH_CHARACTERISTIC_CONTENT_CONTROL_ID:
             mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID, data, data_size, 1);
             break;  
+        case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_CHANGED:
+            // only notify
+            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_CHANGED, data, data_size, 1);
+            break;
         default:
             break;
     }
@@ -339,7 +343,7 @@ uint8_t media_control_service_client_connect(hci_con_handle_t con_handle, mcs_cl
         characteristics, characteristics_num, packet_handler, mcs_cid);
 }
 
-uint8_t media_control_service_client_get_media_player_name(uint16_t mcs_cid){
+static uint8_t media_control_service_client_read_characteristic_value(uint16_t mcs_cid, mcs_client_characteristic_index_t characteristic_index){
     gatt_service_client_connection_helper_t * connection = gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -351,7 +355,7 @@ uint8_t media_control_service_client_get_media_player_name(uint16_t mcs_cid){
     mcs_client_handle_can_send_now.context = (void *)(uintptr_t)connection->con_handle;
     uint8_t status = gatt_client_request_to_send_gatt_query(&mcs_client_handle_can_send_now, connection->con_handle);
     
-    uint8_t index = (uint8_t)MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_NAME;
+    uint8_t index = (uint8_t)characteristic_index;
     
     if (status == ERROR_CODE_SUCCESS){
         if (connection->characteristics[index].value_handle == 0){
@@ -363,6 +367,83 @@ uint8_t media_control_service_client_get_media_player_name(uint16_t mcs_cid){
     }
     return status;
 }
+
+uint8_t media_control_service_client_get_media_player_name(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_NAME); 
+}
+
+uint8_t media_control_service_client_get_media_player_icon_object_id(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_ICON_OBJECT_ID); 
+}
+
+uint8_t media_control_service_client_get_media_player_icon_url(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_ICON_URL); 
+}
+
+uint8_t media_control_service_client_get_track_title(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_TRACK_TITLE); 
+}
+
+uint8_t media_control_service_client_get_track_duration(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_TRACK_DURATION); 
+}
+
+uint8_t media_control_service_client_get_track_position(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_TRACK_POSITION); 
+}
+
+uint8_t media_control_service_client_get_playback_speed(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_PLAYBACK_SPEED); 
+}
+
+uint8_t media_control_service_client_get_seeking_speed(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_SEEKING_SPEED); 
+}
+
+uint8_t media_control_service_client_get_current_track_segments_object_id(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_CURRENT_TRACK_SEGMENTS_OBJECT_ID); 
+}
+
+uint8_t media_control_service_client_get_current_track_object_id(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_CURRENT_TRACK_OBJECT_ID); 
+}
+
+uint8_t media_control_service_client_get_next_track_object_id(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_NEXT_TRACK_OBJECT_ID); 
+}
+
+uint8_t media_control_service_client_get_parent_group_object_id(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_PARENT_GROUP_OBJECT_ID); 
+}
+
+uint8_t media_control_service_client_get_current_group_object_id(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_CURRENT_GROUP_OBJECT_ID); 
+}
+
+uint8_t media_control_service_client_get_playing_order(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_PLAYING_ORDER); 
+}
+
+uint8_t media_control_service_client_get_playing_orders_supported(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_PLAYING_ORDERS_SUPPORTED); 
+}
+
+uint8_t media_control_service_client_get_media_state(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_STATE); 
+}
+
+uint8_t media_control_service_client_get_media_control_point_opcodes_supported(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_CONTROL_POINT_OPCODES_SUPPORTED); 
+}
+
+uint8_t media_control_service_client_get_search_results_object_id(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_SEARCH_RESULTS_OBJECT_ID); 
+}
+
+uint8_t media_control_service_client_get_content_control_id(uint16_t mcs_cid){
+    return media_control_service_client_read_characteristic_value(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_CONTENT_CONTROL_ID); 
+}
+
 
 uint8_t media_control_service_client_disconnect(uint16_t mcs_cid){
     return gatt_service_client_disconnect(&mcs_client, mcs_cid);
