@@ -495,7 +495,7 @@ static void got_base_and_big_info() {
         printf("BASS: add Broadcast Source\n");
         // add source
         uint8_t source_index = 0;
-        broadcast_audio_scan_service_server_add_source(bass_source_new, &source_index);
+        broadcast_audio_scan_service_server_add_source(&bass_source_new, &source_index);
         broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
     }
 
