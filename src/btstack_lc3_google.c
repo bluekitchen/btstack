@@ -69,6 +69,11 @@ static uint8_t lc3_decoder_google_configure(void * context, uint32_t sample_rate
     instance->frame_duration = frame_duration;
     instance->octets_per_frame = octets_per_frame;
 
+    // map 44.1 to 48
+    if (sample_rate == 44100){
+        sample_rate = 48000;
+    }
+
     // config decoder
     instance->decoder = lc3_setup_decoder(duration_us, sample_rate, 0, &instance->decoder_mem);
 
@@ -139,6 +144,11 @@ static uint8_t lc3_encoder_google_configure(void * context, uint32_t sample_rate
     instance->sample_rate = sample_rate;
     instance->frame_duration = frame_duration;
     instance->octets_per_frame = octets_per_frame;
+
+    // map 44.1 to 48
+    if (sample_rate == 44100){
+        sample_rate = 48000;
+    }
 
     // config encoder
     instance->encoder = lc3_setup_encoder(duration_us, sample_rate, 0, &instance->encoder_mem);
