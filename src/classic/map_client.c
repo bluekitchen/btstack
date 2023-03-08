@@ -412,7 +412,6 @@ static void map_handle_can_send_now(void){
 
             goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], pos);
             goep_client_body_add_static(map_client->goep_cid, (uint8_t *) "0", 1);
-#warning is MAP_W4_MESSAGE intentional? MAP_W4_SET_NOTIFICATION?
             map_client->state = MAP_W4_SET_NOTIFICATION;
             map_client_prepare_operation(map_client, OBEX_OPCODE_PUT);
             map_client->request_number++;
