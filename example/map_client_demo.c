@@ -51,24 +51,18 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "bluetooth_sdp.h"
 #include "btstack_event.h"
-#include "btstack_run_loop.h"
 #include "classic/goep_client.h"
 #include "classic/goep_server.h"
 #include "classic/map.h"
-#include "classic/map_client.h"
+#include "classic/map_access_client.h"
 #include "classic/map_notification_server.h"
 #include "classic/map_util.h"
 #include "classic/obex.h"
 #include "classic/rfcomm.h"
-#include "classic/sdp_client.h"
 #include "classic/sdp_server.h"
-#include "classic/sdp_util.h"
-#include "l2cap.h"
 
 #ifdef HAVE_BTSTACK_STDIN
 #include "btstack_stdin.h"
@@ -89,7 +83,7 @@ static uint16_t rfcomm_channel_id;
 // PTS "001BDC080AA5"
 // iPhone 5 static  char * remote_addr_string = "6C:72:E7:10:22:EE";
 // Android
-static const char * remote_addr_string = "a0:28:ed:04:33:b0";
+static const char * remote_addr_string = "008098090B32";
 static const char * folder_name = "inbox";
 static map_message_handle_t message_handle = {0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
 
@@ -122,36 +116,36 @@ static void stdin_process(char c){
     switch (c){
         case 'a':
             printf("[+] Connecting to %s...\n", bd_addr_to_str(remote_addr));
-            map_client_connect(&packet_handler, remote_addr, &map_cid);
+            map_access_client_connect(&packet_handler, remote_addr, &map_cid);
             break;
         case 'A':
             printf("[+] Disconnect from %s...\n", bd_addr_to_str(remote_addr));
-            map_client_disconnect(map_cid);
+            map_access_client_disconnect(map_cid);
             break;
 
         case 'p':
             printf("[+] Set path \'%s\'\n", path);
-            map_client_set_path(map_cid, path);
+            map_access_client_set_path(map_cid, path);
             break;
         case 'f':
             printf("[+] Get folder listing\n");
-            map_client_get_folder_listing(map_cid);
+            map_access_client_get_folder_listing(map_cid);
             break;
         case 'F':
             printf("[+] Get message listing for folder \'%s\'\n", folder_name);
-            map_client_get_message_listing_for_folder(map_cid, folder_name);
+            map_access_client_get_message_listing_for_folder(map_cid, folder_name);
             break;
         case 'l':
             printf("[+] Get message for hardcoded handle\n");
-            map_client_get_message_with_handle(map_cid, message_handle, 1);
+            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         case 'n':
             printf("[+] Enable notifications\n");
-            map_client_enable_notifications(map_cid);
+            map_access_client_enable_notifications(map_cid);
             break;
         case 'N':
             printf("[+] Disable notifications\n");
-            map_client_disable_notifications(map_cid);
+            map_access_client_disable_notifications(map_cid);
             break;
         default:
             show_usage();
@@ -300,11 +294,16 @@ int btstack_main(int argc, const char * argv[]){
     // init GOEP Server
     goep_server_init();
 
-    // init MAP Client
-    map_client_init();
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
+    sscanf_bd_addr(remote_addr_string, remote_addr);
 
-    // setup Message Notification Server
+    // init MAP Access Client
+    map_access_client_init();
+
+    // setup MAP Notification Server
     map_message_type_t supported_message_types = MAP_MESSAGE_TYPE_SMS_GSM;
     uint32_t supported_features = 0x1F;
     memset(map_message_notification_service_buffer, 0, sizeof(map_message_notification_service_buffer));
@@ -318,12 +317,6 @@ int btstack_main(int argc, const char * argv[]){
                                                     name);
     sdp_register_service(map_message_notification_service_buffer);
     map_notification_server_init(MNS_SERVER_RFCOMM_CHANNEL_NR,  MNS_SERVER_GOEP_PSM, 0xffff);
-
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
-    sscanf_bd_addr(remote_addr_string, remote_addr);
 
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
