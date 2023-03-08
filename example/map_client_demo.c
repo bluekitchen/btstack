@@ -113,7 +113,8 @@ static void show_usage(void){
     printf("F - get message listing for folder \'%s\'\n", folder_name);
     printf("l - get message for last found handle\n");
     printf("n - enable notifications\n");
-    
+    printf("N - disable notifications\n");
+
     printf("\n");
 }
 
@@ -147,6 +148,10 @@ static void stdin_process(char c){
         case 'n':
             printf("[+] Enable notifications\n");
             map_client_enable_notifications(map_cid);
+            break;
+        case 'N':
+            printf("[+] Disable notifications\n");
+            map_client_disable_notifications(map_cid);
             break;
         default:
             show_usage();
