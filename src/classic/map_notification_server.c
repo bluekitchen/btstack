@@ -58,7 +58,8 @@ static uint16_t maximum_obex_packet_length;
 typedef enum {
     MAP_INIT = 0,
     MAP_W2_SEND_CONNECT_RESPONSE,
-    MAP_CONNECTED
+    MAP_CONNECTED,
+    MAP_W2_SEND_DISCONNECT_RESPONSE,
 } map_notification_connection_state_t;
 
 
@@ -85,10 +86,15 @@ static map_notification_connection_t * map_notification_connection_for_goep_cid(
     return &map_notification_connection;
 }
 
-static void obex_server_success_response(uint16_t goep_cid){
+static void map_notification_send_connect_response(uint16_t goep_cid){
     goep_server_response_create_connect(goep_cid, OBEX_VERSION, 0, maximum_obex_packet_length);
     goep_server_header_add_who(goep_cid, map_client_notification_service_uuid);
     goep_server_execute(goep_cid, OBEX_RESP_SUCCESS);
+}
+
+static void map_notification_send_general_response(uint16_t goep_cid, uint8_t response_code){
+    goep_server_response_create_general(goep_cid);
+    goep_server_execute(goep_cid, response_code);
 }
 
 static uint8_t goep_data_packet_get_opcode(uint8_t *packet){
@@ -151,7 +157,12 @@ static void map_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             switch (notification_connection->state){
                                 case MAP_W2_SEND_CONNECT_RESPONSE:
                                     notification_connection->state = MAP_CONNECTED;
-                                    obex_server_success_response(goep_cid);
+                                    map_notification_send_connect_response(goep_cid);
+                                    break;
+                                case MAP_W2_SEND_DISCONNECT_RESPONSE:
+                                    // TODO: should we disconnect after sending the disconnect response?
+                                    notification_connection->state = MAP_CONNECTED;
+                                    map_notification_send_general_response(goep_cid, OBEX_RESP_SUCCESS);
                                     break;
                                 default:
                                     break;
@@ -176,8 +187,10 @@ static void map_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     notification_connection->flags = packet[2];
                     notification_connection->maximum_obex_packet_length = btstack_min(maximum_obex_packet_length, big_endian_read_16(packet, 3));
                     break;
+                 case OBEX_OPCODE_DISCONNECT:
+                     notification_connection->state = MAP_W2_SEND_DISCONNECT_RESPONSE;
+                     break;
                 // case OBEX_OPCODE_ABORT:
-                // case OBEX_OPCODE_DISCONNECT:
                 // case OBEX_OPCODE_PUT:
                 // case OBEX_OPCODE_GET:
                 // case OBEX_OPCODE_SETPATH:
