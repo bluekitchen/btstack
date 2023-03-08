@@ -198,8 +198,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     int i;
     uint8_t status;
-    uint16_t  mtu;
-    
+
     int value_len;
     char value[MAP_MAX_VALUE_LEN];
     memset(value, 0, MAP_MAX_VALUE_LEN);
@@ -222,23 +221,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     gap_pin_code_response(event_addr, "0000");
                     break;
 
-                 case RFCOMM_EVENT_INCOMING_CONNECTION:
-                    rfcomm_channel_id = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
-                    printf("RFCOMM connection opened\n");
-                    rfcomm_accept_connection(rfcomm_channel_id);
-                    break;
-
-                case RFCOMM_EVENT_CHANNEL_OPENED:
-                    // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
-                    if (rfcomm_event_channel_opened_get_status(packet)) {
-                        printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
-                    } else {
-                        rfcomm_channel_id = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
-                        mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
-                        printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
-                    }
-                    break;
-    
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
                     printf("RFCOMM channel closed\n");
                     rfcomm_channel_id = 0;
@@ -281,15 +263,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 default:
                     break;
             }
-            break;
-
-        case RFCOMM_DATA_PACKET:
-            printf("RFCOMM data packet: '");
-            for (i=0;i<size;i++){
-                printf("%02x ", packet[i]);
-            }
-            printf("'\n");
-            obex_server_success_response(rfcomm_channel_id);
             break;
 
         case MAP_DATA_PACKET:
