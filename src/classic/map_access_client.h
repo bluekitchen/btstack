@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef MAP_CLIENT_H
-#define MAP_CLIENT_H
+#ifndef MAP_ACCESS_CLIENT_H
+#define MAP_ACCESS_CLIENT_H
 
 #if defined __cplusplus
 extern "C" {
@@ -54,7 +54,7 @@ extern "C" {
 /**
  *
  */
-void map_client_init(void);
+void map_access_client_init(void);
 
 /**
  * @brief Create MAP Client connection.
@@ -63,28 +63,28 @@ void map_client_init(void);
  * @param out_cid to use for further commands
  * @result status
 */
-uint8_t map_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
+uint8_t map_access_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
 
 /** 
  * @brief Disconnects MAP connection with given identifier.
  * @param map_cid
  * @return status
  */
-uint8_t map_client_disconnect(uint16_t map_cid);
+uint8_t map_access_client_disconnect(uint16_t map_cid);
 
 /** 
  * @brief Get list of folders.
  * @param map_cid
  * @return status
  */
-uint8_t map_client_get_folder_listing(uint16_t map_cid);
+uint8_t map_access_client_get_folder_listing(uint16_t map_cid);
 
 /** 
  * @brief Set current folder
  * @param map_cid
  * @return status
  */
-uint8_t map_client_set_path(uint16_t map_cid, const char * path);
+uint8_t map_access_client_set_path(uint16_t map_cid, const char * path);
 
 /** 
  * @brief Get list of messages for particular folder.
@@ -92,7 +92,7 @@ uint8_t map_client_set_path(uint16_t map_cid, const char * path);
  * @param folder_name
  * @return status
  */
-uint8_t map_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name);
+uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name);
 
 /** 
  * @brief Get message with particular handle.
@@ -101,21 +101,21 @@ uint8_t map_client_get_message_listing_for_folder(uint16_t map_cid, const char *
  * @param with_attachment
  * @return status
  */
-uint8_t map_client_get_message_with_handle(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t with_attachment);
+uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t with_attachment);
 
 /** 
  * @brief Enable notifications.
  * @param map_cid
  * @return status
  */
-uint8_t map_client_enable_notifications(uint16_t map_cid);
+uint8_t map_access_client_enable_notifications(uint16_t map_cid);
 
 /** 
  * @brief Disable notifications.
  * @param map_cid
  * @return status
  */
-uint8_t map_client_disable_notifications(uint16_t map_cid);
+uint8_t map_access_client_disable_notifications(uint16_t map_cid);
 
 /* API_END */
 
