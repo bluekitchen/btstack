@@ -332,9 +332,10 @@ int btstack_main(int argc, const char * argv[]){
 
     // setup Message Notification Server
     memset(map_message_notification_service_buffer, 0, sizeof(map_message_notification_service_buffer));
-    map_message_notification_service_create_sdp_record(map_message_notification_service_buffer,
-                                                       sdp_create_service_record_handle(),
-            1, MNS_SERVER_RFCOMM_CHANNEL_NR, 1, supported_message_types, supported_features, name);
+    map_util_create_notification_service_sdp_record(map_message_notification_service_buffer,
+                                                    sdp_create_service_record_handle(),
+                                                    1, MNS_SERVER_RFCOMM_CHANNEL_NR, 1, supported_message_types,
+                                                    supported_features, name);
     sdp_register_service(map_message_notification_service_buffer);
 
     // register for HCI events

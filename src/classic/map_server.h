@@ -49,37 +49,6 @@ extern "C" {
 /* API_START */
 
 /**
- * @brief Create SDP record for Message Access Service
- * @param service
- * @param service_record_handle
- * @param instance_id
- * @param rfcomm_channel_nr
- * @param goep_l2cap_psm
- * @param supported_message_types
- * @param supported_features
- * @param name
- */
-
-void map_message_access_service_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t instance_id,
-    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, uint32_t supported_features, const char * name);
-
-
-/**
- * @brief Create SDP record for Message Notification Service
- * @param service
- * @param service_record_handle
- * @param instance_id
- * @param rfcomm_channel_nr
- * @param goep_l2cap_psm
- * @param supported_message_types
- * @param supported_features
- * @param name
- */
-
-void map_message_notification_service_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t instance_id,
-    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, uint32_t supported_features, const char * name);
-
-/**
  *
  */
 void map_server_init(void);
