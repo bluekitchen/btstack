@@ -60,7 +60,7 @@
 #include "classic/obex.h"
 #include "classic/obex_parser.h"
 #include "classic/goep_client.h"
-#include "map_client.h"
+#include "map_access_client.h"
 
 #define MAP_MAX_NUM_ENTRIES 1024
 
@@ -625,13 +625,13 @@ static void map_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     }
 }
 
-void map_client_init(void){
+void map_access_client_init(void){
     memset(map_client, 0, sizeof(map_client_t));
     map_client->state = MAP_INIT;
     map_client->map_cid = 1;
 }
 
-uint8_t map_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
+uint8_t map_access_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
     if (map_client->state != MAP_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     map_client->state = MAP_W4_GOEP_CONNECTION;
@@ -644,7 +644,7 @@ uint8_t map_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uin
     return 0;
 }
 
-uint8_t map_client_disconnect(uint16_t map_cid){
+uint8_t map_access_client_disconnect(uint16_t map_cid){
     UNUSED(map_cid);
     if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
     map_client->state = MAP_W2_SEND_DISCONNECT_REQUEST;
@@ -653,7 +653,7 @@ uint8_t map_client_disconnect(uint16_t map_cid){
     return 0;
 }
 
-uint8_t map_client_get_folder_listing(uint16_t map_cid){
+uint8_t map_access_client_get_folder_listing(uint16_t map_cid){
     UNUSED(map_cid);
     if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
     map_client->state = MAP_W2_SEND_GET_FOLDERS;
@@ -662,7 +662,7 @@ uint8_t map_client_get_folder_listing(uint16_t map_cid){
     return 0;
 }
 
-uint8_t map_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name){
+uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name){
     UNUSED(map_cid);
     if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
     map_client->state = MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER;
@@ -672,18 +672,18 @@ uint8_t map_client_get_message_listing_for_folder(uint16_t map_cid, const char *
     return 0;
 }
 
-uint8_t map_client_get_message_with_handle(uint16_t map_cid, const map_message_handle_t message_handle, uint8_t with_attachment){
+uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t with_attachment){
     UNUSED(map_cid);
     if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
     map_client->state = MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE;
     map_client->request_number = 0;
-    memcpy(map_client->message_handle, message_handle, MAP_MESSAGE_HANDLE_SIZE);
+    memcpy(map_client->message_handle, map_message_handle, MAP_MESSAGE_HANDLE_SIZE);
     map_client->get_message_attachment = with_attachment;
     goep_client_request_can_send_now(map_client->goep_cid);
     return 0;
 }
 
-uint8_t map_client_set_path(uint16_t map_cid, const char * path){
+uint8_t map_access_client_set_path(uint16_t map_cid, const char * path){
     UNUSED(map_cid);
     if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
     map_client->state = MAP_W2_SET_PATH_ROOT;
@@ -694,7 +694,7 @@ uint8_t map_client_set_path(uint16_t map_cid, const char * path){
     return 0;
 }
 
-uint8_t map_client_enable_notifications(uint16_t map_cid){
+uint8_t map_access_client_enable_notifications(uint16_t map_cid){
     UNUSED(map_cid);
     if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
     map_client->state = MAP_W2_SET_NOTIFICATION;
@@ -704,7 +704,7 @@ uint8_t map_client_enable_notifications(uint16_t map_cid){
     return 0;
 }
 
-uint8_t map_client_disable_notifications(uint16_t map_cid){
+uint8_t map_access_client_disable_notifications(uint16_t map_cid){
     UNUSED(map_cid);
     if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
     map_client->state = MAP_W2_SET_NOTIFICATION;
