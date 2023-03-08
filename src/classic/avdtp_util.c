@@ -375,7 +375,7 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
                 caps->media_codec.media_type = (avdtp_media_type_t)(data[pos++] >> 4);
                 caps->media_codec.media_codec_type = (avdtp_media_codec_type_t)(data[pos++]);
                 caps->media_codec.media_codec_information_len = cap_len - 2;
-                caps->media_codec.media_codec_information = &data[pos++];
+                caps->media_codec.media_codec_information = &data[pos];
                 break;
             case AVDTP_MEDIA_TRANSPORT:   
             case AVDTP_REPORTING:                
