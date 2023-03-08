@@ -62,6 +62,12 @@ typedef enum {
 } map_message_type_t;
 
 typedef enum {
+    MAP_MESSAGE_STATUS_UNREAD = 0,
+    MAP_MESSAGE_STATUS_READ,
+    MAP_MESSAGE_STATUS_UNKNOWN
+} map_message_status_t;
+
+typedef enum {
     MAP_RECEPTION_STATUS_COMPLETE,    // Complete message has been received by the MSE
     MAP_RECEPTION_STATUS_FRACTIONED,  // Only a part of the message has been received by the MSE (e.g., fractioned email of push-service)
     MAP_RECEPTION_STATUS_NOTIFICATION // Only a notification of the message has been received by the MSE
