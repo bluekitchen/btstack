@@ -92,6 +92,7 @@ static const char * path = "telecom/msg";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t map_cid;
+static uint8_t notification_filter = 0;
 
 #ifdef HAVE_BTSTACK_STDIN
 // Testig User Interface 
@@ -152,6 +153,11 @@ static void stdin_process(char c){
         case 'N':
             printf("[+] Disable notifications\n");
             map_access_client_disable_notifications(map_cid);
+            break;
+        case 'm':
+            notification_filter = !notification_filter;
+            printf("[+] Notification filter for new messages %s\n", notification_filter ? "enabled" : "disabled");
+            map_access_client_set_notification_filter(map_cid, notification_filter ? 0x01 : 0xffffffff);
             break;
         default:
             show_usage();
