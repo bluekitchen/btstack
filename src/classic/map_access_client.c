@@ -89,6 +89,8 @@ typedef enum {
     MAP_W4_MESSAGE,
     MAP_W2_SET_NOTIFICATION,
     MAP_W4_SET_NOTIFICATION,
+    MAP_W2_SET_NOTIFICATION_FILTER,
+    MAP_W4_SET_NOTIFICATION_FILTER,
 
     MAP_W2_SEND_GET_MAS_INSTANCE_INFO,
     MAP_W4_MAS_INSTANCE_INFO,
@@ -131,6 +133,7 @@ typedef struct map_client {
     const char * current_folder;
     uint16_t set_path_offset;
     uint8_t  notifications_enabled;
+    uint32_t notification_filter_mask;
     uint8_t  mas_instance_id;
 
     map_message_handle_t message_handle;
@@ -398,7 +401,7 @@ static void map_handle_can_send_now(void){
                 application_parameters[pos++] = 0x14; // Charset
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = 1;    // UTF-8
-                goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], 6);
+                goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], pos);
             }
 
             map_client->state = MAP_W4_MESSAGE;
@@ -423,6 +426,25 @@ static void map_handle_can_send_now(void){
             goep_client_execute(map_client->goep_cid);
             break;
 
+        case MAP_W2_SET_NOTIFICATION_FILTER:
+            goep_client_request_create_put(map_client->goep_cid);
+            goep_client_header_add_type(map_client->goep_cid, "x-bt/MAP-notification-filter");
+
+            application_parameters[pos++] = 0x25; // NotificationFilterMask
+            application_parameters[pos++] = 4;
+            application_parameters[pos++] = (map_client->notification_filter_mask >>  0) & 0xff;
+            application_parameters[pos++] = (map_client->notification_filter_mask >>  8) & 0xff;
+            application_parameters[pos++] = (map_client->notification_filter_mask >> 16) & 0xff;
+            application_parameters[pos++] = (map_client->notification_filter_mask >> 24) & 0xff;
+
+            goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], pos);
+            goep_client_body_add_static(map_client->goep_cid, (uint8_t *) "0", 1);
+            map_client->state = MAP_W4_SET_NOTIFICATION_FILTER;
+            map_client_prepare_operation(map_client, OBEX_OPCODE_PUT);
+            map_client->request_number++;
+            goep_client_execute(map_client->goep_cid);
+            break;
+
         case MAP_W2_SEND_GET_MAS_INSTANCE_INFO:
             goep_client_request_create_get(map_client->goep_cid);
 
@@ -435,7 +457,7 @@ static void map_handle_can_send_now(void){
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = map_client->mas_instance_id;
 
-                goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], 3);
+                goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], pos);
             }
 
             map_client->state = MAP_W4_MAS_INSTANCE_INFO;
@@ -588,6 +610,7 @@ map_client_packet_handler_goep (uint8_t *packet, uint16_t size){
         case MAP_W4_MESSAGES_IN_FOLDER:
         case MAP_W4_MESSAGE:
         case MAP_W4_SET_NOTIFICATION:
+        case MAP_W4_SET_NOTIFICATION_FILTER:
         case MAP_W4_MAS_INSTANCE_INFO:
             switch (op_info.response_code) {
                 case OBEX_RESP_CONTINUE:
@@ -738,6 +761,16 @@ uint8_t map_access_client_disable_notifications(uint16_t map_cid){
     map_client->state = MAP_W2_SET_NOTIFICATION;
     map_client->request_number = 0;
     map_client->notifications_enabled = 0;
+    goep_client_request_can_send_now(map_client->goep_cid);
+    return 0;
+}
+
+uint8_t map_access_client_set_notification_filter(uint16_t map_cid, uint32_t filter_mask){
+    UNUSED(map_cid);
+    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
+    map_client->state = MAP_W2_SET_NOTIFICATION_FILTER;
+    map_client->request_number = 0;
+    map_client->notification_filter_mask = filter_mask;
     goep_client_request_can_send_now(map_client->goep_cid);
     return 0;
 }
