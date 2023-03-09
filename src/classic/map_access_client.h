@@ -117,6 +117,14 @@ uint8_t map_access_client_enable_notifications(uint16_t map_cid);
  */
 uint8_t map_access_client_disable_notifications(uint16_t map_cid);
 
+/**
+ * @brief Request information about a specific MAS instance
+ * @param map_cid
+ * @param mas_instance_id
+ * @return status
+ */
+uint8_t map_access_client_get_mas_instance_info(uint16_t map_cid, uint8_t mas_instance_id);
+
 /* API_END */
 
 #if defined __cplusplus
