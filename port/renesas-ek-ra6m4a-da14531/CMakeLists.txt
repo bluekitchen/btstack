@@ -202,5 +202,7 @@ foreach(EXAMPLE ${EXAMPLES})
 	create_target(${EXAMPLE} ${SOURCES_EXAMPLE} "NONE")
 endforeach()
 
+# create gatt_rgb example
+create_target(gatt_rgb ${CMAKE_SOURCE_DIR}/example/gatt_rgb.c ${CMAKE_SOURCE_DIR}/example/gatt_rgb.gatt)
 
 
