@@ -141,38 +141,28 @@ set (SOURCES
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
-# get list of examples, skipping some
-include(${BTSTACK_ROOT}/example/CMakeLists.txt)
-set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_LE_ONLY})
-list(REMOVE_DUPLICATES EXAMPLES)
-list(REMOVE_ITEM EXAMPLES mesh_node_demo mod_player sinus_player audio_duplex)
-
-# create targets
-foreach(EXAMPLE ${EXAMPLES})
-	# get c file
-	set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
-
-	# add GATT DB creation
-	if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
+# create target with gatt file, use "NONE"
+function(create_target EXAMPLE EXAMPLE_PATH GATT_PATH)
+	if (${GATT_PATH} STREQUAL "NONE")
+		message("example ${EXAMPLE}")
+	else()
 		message("example ${EXAMPLE} -- with GATT DB")
 		add_custom_command(
 				OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-				DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
+				DEPENDS ${GATT_PATH}
 				COMMAND ${Python_EXECUTABLE}
-				ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+				ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${GATT_PATH} ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 		)
 		list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
-	else()
-		message("example ${EXAMPLE}")
 	endif()
 
-	# create ozone
+	# create ozone project
 	configure_file(ozone.jdebug.in ${EXAMPLE}.jdebug)
 
 	add_executable(${EXAMPLE}
-		${E2_SOURCES}
-		${SOURCES_EXAMPLE}
-	)
+			${E2_SOURCES}
+			${SOURCES_EXAMPLE}
+			)
 
 	target_link_libraries(${EXAMPLE}
 			${CPU_OPTIONS}
@@ -187,6 +177,29 @@ foreach(EXAMPLE ${EXAMPLES})
 
 	set_property(TARGET ${EXAMPLE} PROPERTY LINK_DEPENDS ${CMAKE_SOURCE_DIR}/memory_regions.ld)
 	set_property(TARGET ${EXAMPLE} PROPERTY LINK_DEPENDS ${CMAKE_SOURCE_DIR}/e2-project/script/${LINKER_SCRIPT})
+
+endfunction()
+
+# get list of examples, skipping some
+include(${BTSTACK_ROOT}/example/CMakeLists.txt)
+set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_LE_ONLY})
+list(REMOVE_DUPLICATES EXAMPLES)
+list(REMOVE_ITEM EXAMPLES mesh_node_demo mod_player sinus_player audio_duplex)
+
+# create examples
+foreach(EXAMPLE ${EXAMPLES})
+	# select c file
+	set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
+
+	# select GATT DB if it exists
+	if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
+		set(GATT_PATH ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt)
+	else()
+		set(GATT_PATH "NONE")
+	endif()
+
+	# create example
+	create_target(${EXAMPLE} ${SOURCES_EXAMPLE} "NONE")
 endforeach()
 
 
