@@ -84,6 +84,7 @@ static uint16_t rfcomm_channel_id;
 // iPhone 5 static  char * remote_addr_string = "6C:72:E7:10:22:EE";
 // Android
 static const char * remote_addr_string = "008098090B32";
+
 static const char * folder_name = "inbox";
 static map_message_handle_t message_handle = {0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
 
@@ -108,6 +109,7 @@ static void show_usage(void){
     printf("l - get message for last found handle\n");
     printf("n - enable notifications\n");
     printf("N - disable notifications\n");
+    printf("i - get MAS Instance Information\n");
 
     printf("\n");
 }
@@ -134,6 +136,10 @@ static void stdin_process(char c){
         case 'F':
             printf("[+] Get message listing for folder \'%s\'\n", folder_name);
             map_access_client_get_message_listing_for_folder(map_cid, folder_name);
+            break;
+        case 'i':
+            printf("[+] Get MAS instance info for default instance\n");
+            map_access_client_get_mas_instance_info(map_cid, 0);
             break;
         case 'l':
             printf("[+] Get message for hardcoded handle\n");
