@@ -90,6 +90,9 @@ typedef enum {
     MAP_W2_SET_NOTIFICATION,
     MAP_W4_SET_NOTIFICATION,
 
+    MAP_W2_SEND_GET_MAS_INSTANCE_INFO,
+    MAP_W4_MAS_INSTANCE_INFO,
+
     MAP_W2_SEND_DISCONNECT_REQUEST,
     MAP_W4_DISCONNECT_RESPONSE,
 } map_state_t;
@@ -128,6 +131,7 @@ typedef struct map_client {
     const char * current_folder;
     uint16_t set_path_offset;
     uint8_t  notifications_enabled;
+    uint8_t  mas_instance_id;
 
     map_message_handle_t message_handle;
     uint8_t get_message_attachment;
@@ -225,6 +229,7 @@ static void map_client_parser_callback_get_operation(void * user_data, uint8_t h
                 case MAP_W4_FOLDERS:
                 case MAP_W4_MESSAGES_IN_FOLDER:
                 case MAP_W4_MESSAGE:
+                case MAP_W4_MAS_INSTANCE_INFO:
                     client->client_handler(MAP_DATA_PACKET, client->map_cid, (uint8_t *) data_buffer, data_len);
                     break;
 
@@ -417,6 +422,28 @@ static void map_handle_can_send_now(void){
             map_client->request_number++;
             goep_client_execute(map_client->goep_cid);
             break;
+
+        case MAP_W2_SEND_GET_MAS_INSTANCE_INFO:
+            goep_client_request_create_get(map_client->goep_cid);
+
+            if (map_client->request_number == 0){
+                map_client_prepare_srm_header(map_client);
+
+                goep_client_header_add_type(map_client->goep_cid, "x-bt/MASInstanceInformation");
+
+                application_parameters[pos++] = 0x0F; // MASInstance
+                application_parameters[pos++] = 1;
+                application_parameters[pos++] = map_client->mas_instance_id;
+
+                goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], 3);
+            }
+
+            map_client->state = MAP_W4_MAS_INSTANCE_INFO;
+            map_client_prepare_operation(map_client, OBEX_OPCODE_GET);
+            map_client->request_number++;
+            goep_client_execute(map_client->goep_cid);
+            break;
+
         default:
             break;
     }
@@ -561,6 +588,7 @@ map_client_packet_handler_goep (uint8_t *packet, uint16_t size){
         case MAP_W4_MESSAGES_IN_FOLDER:
         case MAP_W4_MESSAGE:
         case MAP_W4_SET_NOTIFICATION:
+        case MAP_W4_MAS_INSTANCE_INFO:
             switch (op_info.response_code) {
                 case OBEX_RESP_CONTINUE:
                     map_client_handle_srm_headers(map_client);
@@ -710,6 +738,16 @@ uint8_t map_access_client_disable_notifications(uint16_t map_cid){
     map_client->state = MAP_W2_SET_NOTIFICATION;
     map_client->request_number = 0;
     map_client->notifications_enabled = 0;
+    goep_client_request_can_send_now(map_client->goep_cid);
+    return 0;
+}
+
+uint8_t map_access_client_get_mas_instance_info(uint16_t map_cid, uint8_t mas_instance_id){
+    UNUSED(map_cid);
+    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
+    map_client->state = MAP_W2_SEND_GET_MAS_INSTANCE_INFO;
+    map_client->request_number = 0;
+    map_client->mas_instance_id = mas_instance_id;
     goep_client_request_can_send_now(map_client->goep_cid);
     return 0;
 }
