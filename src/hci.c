@@ -1494,7 +1494,7 @@ void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t size) {
     for (i=0; (i<num_reports) && (offset < size);i++){
         // sanity checks on data_length:
         uint16_t data_length = packet[offset + 23];
-        if (data_length > LE_ADVERTISING_DATA_SIZE) return;
+        if (data_length > LE_EXTENDED_ADVERTISING_DATA_SIZE) return;
         if ((offset + 24u + data_length) > size)    return;
         uint16_t event_type = little_endian_read_16(packet, offset);
         offset += 2;
