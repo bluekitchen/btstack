@@ -118,6 +118,14 @@ uint8_t map_access_client_enable_notifications(uint16_t map_cid);
 uint8_t map_access_client_disable_notifications(uint16_t map_cid);
 
 /**
+ * @brief Configure Notification Filter
+ * @param map_cid
+ * @param filter_mask
+ * @return status
+ */
+uint8_t map_access_client_set_notification_filter(uint16_t map_cid, uint32_t filter_mask);
+
+/**
  * @brief Request information about a specific MAS instance
  * @param map_cid
  * @param mas_instance_id
