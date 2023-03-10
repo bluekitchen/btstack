@@ -5488,6 +5488,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define MAP_SUBEVENT_PARSING_DONE                                         0x06u
 
+/**
+ * @format 1214
+ * @param subevent_code
+ * @param map_cid
+ * @param mas_instance_id
+ * @param length
+ */
+#define MAP_SUBEVENT_NOTIFICATION_EVENT                                   0x07u
 
 // MESH Meta Event Group
 
