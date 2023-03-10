@@ -409,12 +409,11 @@ void goep_client_deinit(void){
 uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid){
     goep_client_t * context = goep_client;
     if (context->state != GOEP_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
+    memset(context, 0, sizeof(goep_client_t));
     context->client_handler = handler;
     context->state = GOEP_W4_SDP;
-    context->l2cap_psm   = 0;
-    context->rfcomm_port = 0;
-    context->profile_supported_features = PBAP_FEATURES_NOT_PRESENT;
     (void)memcpy(context->bd_addr, addr, 6);
+    context->profile_supported_features = PROFILE_FEATURES_NOT_PRESENT;
     sdp_client_query_uuid16(&goep_client_handle_sdp_query_event, context->bd_addr, uuid);
     *out_cid = context->cid;
     return ERROR_CODE_SUCCESS;
