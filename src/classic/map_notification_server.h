@@ -53,13 +53,7 @@ extern "C" {
  * @brief Init MAP Server
  * @param maximum_obex_packet_length
  */
-void map_notification_server_init(uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, uint16_t maximum_obex_packet_length);
-
-/**
- * @brief Register packet handler
- * @param packet_handler
- */
-void map_notification_server_register_packet_handler(btstack_packet_handler_t packet_handler);
+void map_notification_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, uint16_t maximum_obex_packet_length);
 
 /* API_END */
 

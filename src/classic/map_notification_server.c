@@ -282,7 +282,8 @@ static void map_notification_server_packet_handler_goep(map_notification_server_
         map_notification_server_reset_request (mns);
         mns->state == MAP_W4_REQUEST;
         if (packet[0] == OBEX_OPCODE_PUT) {
-        obex_parser_init_for_request(&mns->obex_parser, &map_notification_server_obex_parser_callback, (void*) mns);
+            obex_parser_init_for_request(&mns->obex_parser, &map_notification_server_obex_parser_callback, (void*) mns);
+            obex_srm_init(&mns->obex_srm);
         } else {
             obex_parser_init_for_request(&mns->obex_parser, NULL, NULL);
         }
@@ -299,7 +300,6 @@ static void map_notification_server_packet_handler_goep(map_notification_server_
              break;
          case OBEX_OPCODE_PUT:
          case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
-             obex_srm_init(&mns->obex_srm);
              parser_state = obex_parser_process_data(&mns->obex_parser, packet, size);
              if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
                  obex_parser_operation_info_t op_info;
@@ -341,12 +341,10 @@ static void map_notification_server_packet_handler(uint8_t packet_type, uint16_t
     }
 }
 
-void map_notification_server_init(uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, uint16_t mtu){
+void map_notification_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, uint16_t mtu){
     maximum_obex_packet_length = mtu;
     goep_server_register_service(&map_notification_server_packet_handler, rfcomm_channel_nr, 0xFFFF, l2cap_psm, 0xFFFF, LEVEL_0);
+
+    map_notification_server_user_packet_handler = packet_handler;
 }
 
-void map_notification_server_register_packet_handler(btstack_packet_handler_t callback){
-    btstack_assert(callback != NULL);
-    map_notification_server_user_packet_handler = callback;
-}
