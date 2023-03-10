@@ -42,6 +42,8 @@
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "classic/obex.h"
+#include "classic/obex_srm.h"
+#include "classic/obex_parser.h"
 #include "classic/goep_server.h"
 
 #include <stdint.h>
@@ -60,30 +62,43 @@ typedef enum {
     MAP_W2_SEND_CONNECT_RESPONSE,
     MAP_CONNECTED,
     MAP_W2_SEND_DISCONNECT_RESPONSE,
-} map_notification_connection_state_t;
+    MAP_W4_REQUEST,
+    MAP_SEND_REQUEST_RESPONSE,
+} map_notification_server_state_t;
 
 
 typedef struct {
+    uint16_t  mns_cid;
     uint16_t  goep_cid;
     bd_addr_t bd_addr;
     hci_con_handle_t con_handle;
-    map_notification_connection_state_t state;
-    uint16_t  cid;
+    map_notification_server_state_t state;
+    obex_parser_t obex_parser;
+    obex_srm_t obex_srm;
+    // request
+    struct {
+        bool is_event_report;
+        uint32_t length;
+        uint8_t *payload_data;
+        uint32_t payload_len;
+        uint32_t payload_position;
+        uint8_t  abort_response;
+    } request;
+    uint8_t response_code;
     uint16_t maximum_obex_packet_length;
     uint8_t  flags;
-} map_notification_connection_t;
-
-typedef struct {
-    btstack_packet_handler_t callback;
-//    map_connection_t connection;
+    // operation status
+    bool    operation_complete_send;
+    uint8_t operation_complete_status;
 } map_notification_server_t;
 
-static map_notification_connection_t  map_notification_connection;
-static map_notification_server_t      map_notification_server;
+static btstack_packet_handler_t map_notification_server_user_packet_handler;
+
+static map_notification_server_t  map_notification_server_singleton;
 
 // dummy lookup
-static map_notification_connection_t * map_notification_connection_for_goep_cid(uint16_t goep_cid){
-    return &map_notification_connection;
+static map_notification_server_t * map_notification_server_for_goep_cid(uint16_t goep_cid){
+    return &map_notification_server_singleton;
 }
 
 static void map_notification_send_connect_response(uint16_t goep_cid){
@@ -101,110 +116,226 @@ static uint8_t goep_data_packet_get_opcode(uint8_t *packet){
     return packet[0];
 }
 
-static void map_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel); 
-    UNUSED(size);    
-    int i;
+static void map_notification_server_reset_request (map_notification_server_t *mns){
+    (void) memset(&mns->request, 0, sizeof(mns->request));
+}
+
+/* OBEX related functions */
+
+static void map_notification_server_obex_parser_callback (void *user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t *data_buffer, uint16_t data_len){
+    map_notification_server_t *mns = (map_notification_server_t *) user_data;
+
+    switch (header_id) {
+        case OBEX_HEADER_SINGLE_RESPONSE_MODE:
+        case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
+            obex_srm_header_store (&mns->obex_srm, header_id,
+                                   total_len, data_offset, data_buffer, data_len);
+            break;
+        case OBEX_HEADER_CONNECTION_ID:
+            // TODO: verify connection id
+            break;
+        case OBEX_HEADER_TYPE:
+            /* we only deal with <x-bt/MAP-event-report> */
+            if (data_len == strlen ("x-bt/MAP-event-report") &&
+                strncmp ("x-bt/MAP-event-report", data_buffer, data_len) == 0){
+                mns->request.is_event_report = 1;
+            }
+            break;
+        case OBEX_HEADER_BODY:
+        case OBEX_HEADER_END_OF_BODY:
+            log_info ("received (END_OF_)BODY data: %d bytes\n", data_len);
+            mns->request.payload_data = (uint8_t *) data_buffer;
+            mns->request.payload_len  = data_len;
+            break;
+        case OBEX_HEADER_LENGTH:
+            mns->request.length = big_endian_read_32 (data_buffer, 0);
+            log_info ("length of data: %d\n", mns->request.length);
+            break;
+        default:
+            log_info ("received unhandled MNS header type %d\n", header_id);
+            break;
+    }
+}
+
+static void map_notification_server_handle_put_request (map_notification_server_t *mns, uint8_t opcode, bool do_push_event){
+    if (opcode & OBEX_OPCODE_FINAL_BIT_MASK ||
+        !obex_srm_is_enabled (&mns->obex_srm)) {
+        mns->state = MAP_SEND_REQUEST_RESPONSE;
+    } else {
+        mns->state = MAP_W4_REQUEST;
+    }
+
+    if (do_push_event) {
+        mns->operation_complete_send = true;
+
+        uint8_t event[3+2+1+4];
+        uint16_t pos = 0;
+
+        event[pos++] = HCI_EVENT_MAP_META;
+        event[pos++] = 0;
+        event[pos++] = MAP_SUBEVENT_NOTIFICATION_EVENT;
+        little_endian_store_16 (event, pos, mns->mns_cid);
+        pos += 2;
+        event[pos++] = 0;  /* MASInstanceID */
+        little_endian_store_32 (event, pos, mns->request.length);
+        pos += 4;
+        event[1] = pos - 2;
+
+        (*map_notification_server_user_packet_handler) (HCI_EVENT_PACKET, 0, event, pos);
+    }
+
+    if (mns->request.abort_response == 0) {
+        mns->response_code = opcode & OBEX_OPCODE_FINAL_BIT_MASK ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE;
+    } else {
+        mns->response_code = mns->request.abort_response;
+    }
+
+    goep_server_request_can_send_now(mns->goep_cid);
+}
+
+/* btstack packet handlers */
+
+static void map_notification_server_handle_can_send_now (map_notification_server_t *mns){
+    switch (mns->state){
+        case MAP_W2_SEND_CONNECT_RESPONSE:
+            mns->state = MAP_CONNECTED;
+            map_notification_send_connect_response(mns->goep_cid);
+            break;
+        case MAP_W2_SEND_DISCONNECT_RESPONSE:
+            // TODO: should we disconnect after sending the disconnect response?
+            mns->state = MAP_INIT;
+            map_notification_send_general_response(mns->goep_cid, OBEX_RESP_SUCCESS);
+            break;
+        default:
+            break;
+    }
+}
+
+static void map_notification_server_packet_handler_hci(uint8_t *packet, uint16_t size){
+    UNUSED(size);
     uint8_t status;
-    map_notification_connection_t * notification_connection;
+    map_notification_server_t * mns;
     uint16_t goep_cid;
 
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_GOEP_META:
+            goep_cid = goep_subevent_incoming_connection_get_goep_cid(packet);
+            switch (hci_event_goep_meta_get_subevent_code(packet)){
+                case GOEP_SUBEVENT_INCOMING_CONNECTION:
+                    status = goep_server_accept_connection(goep_cid);
+                    btstack_assert(status == ERROR_CODE_SUCCESS);
+                    break;
+                case GOEP_SUBEVENT_CONNECTION_OPENED:
+                    mns = map_notification_server_for_goep_cid(goep_cid);
+                    btstack_assert(mns != NULL);
+                    status = goep_subevent_connection_opened_get_status(packet);
+                    log_info("MNS GOEP Connection opened 0x%02x\n", status);
+                    if (status == ERROR_CODE_SUCCESS){
+                        log_info("mns: connection established");
+                        mns->goep_cid = goep_cid;
+                        goep_subevent_connection_opened_get_bd_addr(packet, mns->bd_addr);
+                        mns->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
+                        mns->state = MAP_CONNECTED;
+                        // TODO: emit connection success event
+                        // map_emit_connected_event(mns, status);
+                    } else {
+                        log_info("MAP notification server: connection failed %u", status);
+                        // TODO: emit connection failed event
+                        // map_emit_connected_event(&map_server.connection, status);
+                    }
+                    break;
+                case GOEP_SUBEVENT_CONNECTION_CLOSED:
+                    goep_cid = goep_subevent_connection_opened_get_goep_cid(packet);
+                    mns = map_notification_server_for_goep_cid(goep_cid);
+                    btstack_assert(mns != NULL);
+                    log_info("MNS: connection closed");
+                    mns->state = MAP_INIT;
+                    // TODO: emit connection closed event
+                    // map_emit_connection_closed_event(&map_server.connection);
+                    break;
+                case GOEP_SUBEVENT_CAN_SEND_NOW:
+                    goep_cid = goep_subevent_can_send_now_get_goep_cid(packet);
+                    mns = map_notification_server_for_goep_cid(goep_cid);
+                    btstack_assert(mns != NULL);
+                    map_notification_server_handle_can_send_now(mns);
+                    break;
+                default:
+                    break;
+            }
+        default:
+            break;
+    }
+}
+
+static void map_notification_server_packet_handler_goep(map_notification_server_t *mns, uint8_t *packet, uint16_t size){
+    obex_parser_object_state_t parser_state;
+    int i;
+
+    if (mns->state != MAP_CONNECTED &&
+        mns->state != MAP_W4_REQUEST)
+        return;
+
+    if (size < 3)
+        return;
+
+    if (mns->state == MAP_CONNECTED){
+        map_notification_server_reset_request (mns);
+        mns->state == MAP_W4_REQUEST;
+        if (packet[0] == OBEX_OPCODE_PUT) {
+        obex_parser_init_for_request(&mns->obex_parser, &map_notification_server_obex_parser_callback, (void*) mns);
+        } else {
+            obex_parser_init_for_request(&mns->obex_parser, NULL, NULL);
+        }
+    }
+
+    switch (goep_data_packet_get_opcode(packet)){
+        case OBEX_OPCODE_CONNECT:
+            mns->state = MAP_W2_SEND_CONNECT_RESPONSE;
+            mns->flags = packet[2];
+            mns->maximum_obex_packet_length = btstack_min(maximum_obex_packet_length, big_endian_read_16(packet, 3));
+            break;
+         case OBEX_OPCODE_DISCONNECT:
+             mns->state = MAP_W2_SEND_DISCONNECT_RESPONSE;
+             break;
+         case OBEX_OPCODE_PUT:
+         case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
+             obex_srm_init(&mns->obex_srm);
+             parser_state = obex_parser_process_data(&mns->obex_parser, packet, size);
+             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
+                 obex_parser_operation_info_t op_info;
+                 obex_parser_get_operation_info(&mns->obex_parser, &op_info);
+
+                 map_notification_server_handle_put_request(mns, op_info.opcode, false);
+                 if (mns->request.abort_response == 0) {
+                     (*map_notification_server_user_packet_handler)(MAP_DATA_PACKET, mns->mns_cid, (uint8_t *) mns->request.payload_data, mns->request.payload_len);
+                 }
+             }
+             break;
+        // case OBEX_OPCODE_ABORT:
+        // case OBEX_OPCODE_GET:
+        // case OBEX_OPCODE_SETPATH:
+        default:
+            printf("MAP server: GOEP data packet'");
+            for (i=0;i<size;i++){
+                printf("%02x ", packet[i]);
+            }
+            printf("'\n");
+            return;
+    }
+    goep_server_request_can_send_now(mns->goep_cid);
+}
+
+static void map_notification_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
+    map_notification_server_t *mns;
     switch (packet_type){
         case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_GOEP_META:
-                    switch (hci_event_goep_meta_get_subevent_code(packet)){
-                        case GOEP_SUBEVENT_INCOMING_CONNECTION:
-                            goep_cid = goep_subevent_incoming_connection_get_goep_cid(packet);
-                            // TODO: setup connection struct from pool, replace dummy code
-                            notification_connection = &map_notification_connection;
-                            notification_connection->goep_cid = goep_subevent_incoming_connection_get_goep_cid(packet);
-                            status = goep_server_accept_connection(goep_cid);
-                            btstack_assert(status == ERROR_CODE_SUCCESS);
-                            break;
-                        case GOEP_SUBEVENT_CONNECTION_OPENED:
-                            goep_cid = goep_subevent_connection_opened_get_goep_cid(packet);
-                            notification_connection = map_notification_connection_for_goep_cid(goep_cid);
-                            btstack_assert(notification_connection != NULL);
-                            status = goep_subevent_connection_opened_get_status(packet);
-                            printf("MNS GOEP Connection opened 0x%02x\n", status);
-                            if (status == ERROR_CODE_SUCCESS){
-                                notification_connection->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
-                                goep_subevent_connection_opened_get_bd_addr(packet, notification_connection->bd_addr);
-                                notification_connection->state = MAP_CONNECTED;
-                                // TODO: emit connection success event
-                                // map_emit_connected_event(&notification_connection, status);
-                            } else {
-                                log_info("MAP notification server: connection failed %u", status);
-                                // TODO: emit connection failed event
-                                // map_emit_connected_event(&map_server.connection, status);
-                            }
-                            break;
-                        case GOEP_SUBEVENT_CONNECTION_CLOSED:
-                            goep_cid = goep_subevent_connection_opened_get_goep_cid(packet);
-                            notification_connection = map_notification_connection_for_goep_cid(goep_cid);
-                            btstack_assert(notification_connection != NULL);
-                            log_info("MAP notification server: connection closed");
-                            printf("MNS GOEP Connection closed\n");
-                            notification_connection->state = MAP_INIT;
-                            // TODO: emit connection closed event
-                            // map_emit_connection_closed_event(&map_server.connection);
-                            break;
-                        case GOEP_SUBEVENT_CAN_SEND_NOW:
-                            goep_cid = goep_subevent_incoming_connection_get_goep_cid(packet);
-                            notification_connection = map_notification_connection_for_goep_cid(goep_cid);
-                            btstack_assert(notification_connection != NULL);
-                            switch (notification_connection->state){
-                                case MAP_W2_SEND_CONNECT_RESPONSE:
-                                    notification_connection->state = MAP_CONNECTED;
-                                    map_notification_send_connect_response(goep_cid);
-                                    break;
-                                case MAP_W2_SEND_DISCONNECT_RESPONSE:
-                                    // TODO: should we disconnect after sending the disconnect response?
-                                    notification_connection->state = MAP_CONNECTED;
-                                    map_notification_send_general_response(goep_cid, OBEX_RESP_SUCCESS);
-                                    break;
-                                default:
-                                    break;
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                default:
-                    break;
-            }
+            map_notification_server_packet_handler_hci(packet, size);
             break;
         case GOEP_DATA_PACKET:
-            notification_connection = map_notification_connection_for_goep_cid(channel);
-            btstack_assert(notification_connection != NULL);
-            if (notification_connection->state != MAP_CONNECTED) return;
-            
-            if (size < 3) break;
-            switch (goep_data_packet_get_opcode(packet)){
-                case OBEX_OPCODE_CONNECT:
-                    notification_connection->state = MAP_W2_SEND_CONNECT_RESPONSE;
-                    notification_connection->flags = packet[2];
-                    notification_connection->maximum_obex_packet_length = btstack_min(maximum_obex_packet_length, big_endian_read_16(packet, 3));
-                    break;
-                 case OBEX_OPCODE_DISCONNECT:
-                     notification_connection->state = MAP_W2_SEND_DISCONNECT_RESPONSE;
-                     break;
-                // case OBEX_OPCODE_ABORT:
-                // case OBEX_OPCODE_PUT:
-                // case OBEX_OPCODE_GET:
-                // case OBEX_OPCODE_SETPATH:
-                default:
-                    printf("MAP server: GOEP data packet'");
-                    for (i=0;i<size;i++){
-                        printf("%02x ", packet[i]);
-                    }
-                    printf("'\n"); 
-                    return;
-            }
-            goep_server_request_can_send_now(channel);
+            mns = map_notification_server_for_goep_cid(channel);
+            btstack_assert (mns != NULL);
+            map_notification_server_packet_handler_goep(mns, packet, size);
             break;
-        
         default:
             break;
     }
@@ -212,10 +343,10 @@ static void map_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
 void map_notification_server_init(uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, uint16_t mtu){
     maximum_obex_packet_length = mtu;
-    goep_server_register_service(&map_packet_handler, rfcomm_channel_nr, 0xFFFF, l2cap_psm, 0xFFFF, LEVEL_0);
+    goep_server_register_service(&map_notification_server_packet_handler, rfcomm_channel_nr, 0xFFFF, l2cap_psm, 0xFFFF, LEVEL_0);
 }
 
 void map_notification_server_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
-    map_notification_server.callback = callback;
+    map_notification_server_user_packet_handler = callback;
 }
