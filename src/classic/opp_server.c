@@ -582,10 +582,9 @@ static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opc
     }
 
     if (do_push_event) {
-
         opp_server->operation_complete_send = true;
 
-        uint8_t event[2+3+OPP_SERVER_MAX_NAME_LEN+OPP_SERVER_MAX_TYPE_LEN];
+        uint8_t event[3+2+4+1+OPP_SERVER_MAX_NAME_LEN+1+OPP_SERVER_MAX_TYPE_LEN];
         uint16_t pos = 0;
         event[pos++] = HCI_EVENT_OPP_META;
         event[pos++] = 0;
@@ -797,8 +796,6 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
 }
 
 static void opp_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
-    UNUSED(channel); // ok: there is no channel
-    UNUSED(size);    // ok: handling own geop events
     opp_server_t * opp_server;
 
     switch (packet_type){
