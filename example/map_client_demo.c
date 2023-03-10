@@ -247,6 +247,42 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 #endif
 
+static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    int i;
+
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case HCI_EVENT_MAP_META:
+                    switch (hci_event_map_meta_get_subevent_code(packet)){
+                        case MAP_SUBEVENT_NOTIFICATION_EVENT:
+                            printf("Notification!\n");
+                            break;
+                        default:
+                            printf ("unknown map meta event %d\n",
+                                    hci_event_map_meta_get_subevent_code(packet));
+                            break;
+                    }
+                    break;
+                default:
+                    printf ("unknown HCI event %d\n",
+                            hci_event_packet_get_type(packet));
+                    break;
+            }
+            break;
+
+        case MAP_DATA_PACKET:
+            for (i=0;i<size;i++){
+                printf("%c", packet[i]);
+            }
+            printf ("\n");
+            break;
+        default:
+            printf ("unknown event of type %d\n", packet_type);
+            break;
+    }
+}
+
 static uint8_t  map_message_notification_service_buffer[150];
 const char * name = "MAP Service";
 
@@ -293,7 +329,7 @@ int btstack_main(int argc, const char * argv[]){
                                                     supported_features,
                                                     name);
     sdp_register_service(map_message_notification_service_buffer);
-    map_notification_server_init(MNS_SERVER_RFCOMM_CHANNEL_NR,  MNS_SERVER_GOEP_PSM, 0xffff);
+    map_notification_server_init(mns_packet_handler, MNS_SERVER_RFCOMM_CHANNEL_NR,  MNS_SERVER_GOEP_PSM, 0xffff);
 
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
