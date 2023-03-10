@@ -71,8 +71,6 @@
 #define MNS_SERVER_RFCOMM_CHANNEL_NR 1
 #define MNS_SERVER_GOEP_PSM 0x1001
 
-static const uint8_t map_client_notification_service_uuid[] = {0xbb, 0x58, 0x2b, 0x41, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66};
-
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static bd_addr_t    remote_addr;
@@ -163,39 +161,6 @@ static void stdin_process(char c){
             show_usage();
             break;
     }
-}
-
-static void obex_server_success_response(uint16_t rfcomm_cid){
-    uint8_t event[30];
-    int pos = 0;
-    event[pos++] = OBEX_RESP_SUCCESS;
-    // store len
-    pos += 2;
-    // obex version num
-    event[pos++] = OBEX_VERSION;
-    // flags
-    // Bit 0 should be used by the receiving client to decide how to multiplex operations 
-    // to the server (should it desire to do so). If the bit is 0 the client should serialize 
-    // the operations over a single TTP connection. If the bit is set the client is free to 
-    // establish multiple TTP connections to the server and concurrently exchange its objects.
-    event[pos++] = 0;
-    
-    // Maximum OBEX packet length
-    big_endian_store_16(event, pos, 0x0400);
-    pos += 2;
-    
-    event[pos++] = OBEX_HEADER_CONNECTION_ID;
-    big_endian_store_32(event, pos, 0x1234); 
-    pos += 4;
-
-    event[pos++] = OBEX_HEADER_WHO;
-    big_endian_store_16(event, pos, 16 + 3);
-    pos += 2;
-    memcpy(event+pos, map_client_notification_service_uuid, 16);
-    pos += 16;
-
-    big_endian_store_16(event, 1, pos);
-    rfcomm_send(rfcomm_cid, event, pos);
 }
 
 // packet handler for interactive console
@@ -290,7 +255,7 @@ int btstack_main(int argc, const char * argv[]){
 
     (void)argc;
     (void)argv;
-        
+
     // init L2CAP
     l2cap_init();
 
