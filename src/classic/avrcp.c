@@ -151,8 +151,10 @@ static const char * avrcp_play_status_name[] = {
     "ERROR" // 0xFF
 };
 const char * avrcp_play_status2str(uint8_t index){
-    if ((index >= 0) && (index <= 4)) return avrcp_play_status_name[index];
-    return avrcp_play_status_name[5];
+    if (index > 4) {
+        return avrcp_play_status_name[5];
+    }
+    return avrcp_play_status_name[index];
 }
 
 static const char * avrcp_ctype_name[] = {
