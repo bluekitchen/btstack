@@ -84,7 +84,11 @@ typedef struct {
     uint16_t         l2cap_psm;
     uint16_t         bearer_cid;
     uint16_t         bearer_mtu;
-    uint32_t         pbap_supported_features;
+
+    // cached higher layer information PBAP + MAP
+    uint32_t         profile_supported_features;
+    uint8_t          map_mas_instance_id;
+    uint8_t          map_supported_message_types;
 
     uint8_t          obex_opcode;
     uint32_t         obex_connection_id;
@@ -304,12 +308,28 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                     de_element_get_uint16(goep_client_sdp_query_attribute_value, &context->l2cap_psm);
                     break;
 #endif
+                // BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES == BLUETOOTH_ATTRIBUTE_MAP_SUPPORTED_FEATURES == 0x0317
                 case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
                     if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
                     if (de_get_size_type(goep_client_sdp_query_attribute_value) != DE_SIZE_32) break;
-                    context->pbap_supported_features  = big_endian_read_32(goep_client_sdp_query_attribute_value, de_get_header_size(goep_client_sdp_query_attribute_value));
-                    log_info("pbap_supported_features 0x%x", (unsigned int) context->pbap_supported_features);
+                    context->profile_supported_features  = big_endian_read_32(goep_client_sdp_query_attribute_value, de_get_header_size(goep_client_sdp_query_attribute_value));
+                    log_info("PBAP/MAP supported_features 0x%x", (unsigned int) context->profile_supported_features);
                     break;
+
+                case BLUETOOTH_ATTRIBUTE_MAS_INSTANCE_ID:
+                    if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
+                    if (de_get_size_type(goep_client_sdp_query_attribute_value) != DE_SIZE_8) break;
+                    context->map_mas_instance_id = goep_client_sdp_query_attribute_value[de_get_header_size(goep_client_sdp_query_attribute_value)];
+                    log_info("MAS Instance ID 0x%x", context->map_mas_instance_id);
+                    break;
+
+                case BLUETOOTH_ATTRIBUTE_SUPPORTED_MESSAGE_TYPES:
+                    if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
+                    if (de_get_size_type(goep_client_sdp_query_attribute_value) != DE_SIZE_8) break;
+                    context->map_supported_message_types = goep_client_sdp_query_attribute_value[de_get_header_size(goep_client_sdp_query_attribute_value)];
+                    log_info("Supported Message Types 0x%x", context->map_mas_instance_id);
+                    break;
+
                 default:
                     break;
             }
@@ -393,7 +413,7 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
     context->state = GOEP_W4_SDP;
     context->l2cap_psm   = 0;
     context->rfcomm_port = 0;
-    context->pbap_supported_features = PBAP_FEATURES_NOT_PRESENT;
+    context->profile_supported_features = PBAP_FEATURES_NOT_PRESENT;
     (void)memcpy(context->bd_addr, addr, 6);
     sdp_client_query_uuid16(&goep_client_handle_sdp_query_event, context->bd_addr, uuid);
     *out_cid = context->cid;
@@ -403,8 +423,27 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
 uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    return context->pbap_supported_features;
+    return context->profile_supported_features;
 }
+
+uint32_t goep_client_get_map_supported_features(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    return context->profile_supported_features;
+}
+
+uint8_t goep_client_get_map_mas_instance_id(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    return context->map_mas_instance_id;
+}
+
+uint8_t goep_client_get_map_suported_message_types(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    return context->map_supported_message_types;
+}
+
 
 bool goep_client_version_20_or_higher(uint16_t goep_cid){
     UNUSED(goep_cid);
