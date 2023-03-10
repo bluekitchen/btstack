@@ -78,6 +78,7 @@ typedef struct {
     uint16_t         cid;
     goep_state_t     state;
     bd_addr_t        bd_addr;
+    uint16_t         uuid;
     hci_con_handle_t con_handle;
     uint8_t          incoming;
     uint8_t          rfcomm_port;
@@ -412,6 +413,7 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
     memset(context, 0, sizeof(goep_client_t));
     context->client_handler = handler;
     context->state = GOEP_W4_SDP;
+    context->uuid = uuid;
     (void)memcpy(context->bd_addr, addr, 6);
     context->profile_supported_features = PROFILE_FEATURES_NOT_PRESENT;
     sdp_client_query_uuid16(&goep_client_handle_sdp_query_event, context->bd_addr, uuid);
