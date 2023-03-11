@@ -86,10 +86,21 @@ typedef struct {
     uint16_t         bearer_cid;
     uint16_t         bearer_mtu;
 
+    uint16_t         record_index;
+
     // cached higher layer information PBAP + MAP
     uint32_t         profile_supported_features;
     uint8_t          map_mas_instance_id;
     uint8_t          map_supported_message_types;
+
+    // needed to select one of multiple MAS Instances
+    struct {
+        uint32_t supported_features;
+        uint16_t l2cap_psm;
+        uint8_t  instance_id;
+        uint8_t  supported_message_types;
+        uint8_t  rfcomm_port;
+    } mas_info;
 
     uint8_t          obex_opcode;
     uint32_t         obex_connection_id;
@@ -223,6 +234,21 @@ static void goep_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
     }
 }
 
+static void goep_client_handle_sdp_query_end_of_record(goep_client_t * context){
+    if (context->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER){
+        if (context->mas_info.instance_id == context->map_mas_instance_id){
+            // Requested MAS Instance found, accept info
+            log_info("MAS Instance #%u found", context->map_mas_instance_id);
+            context->rfcomm_port = context->mas_info.rfcomm_port;
+            context->profile_supported_features = context->mas_info.supported_features;
+            context->map_supported_message_types = context->mas_info.supported_message_types;
+#ifdef ENABLE_GOEP_L2CAP
+            context->l2cap_psm = context->mas_info.l2cap_psm;
+#endif
+        }
+    }
+}
+
 static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     goep_client_t * context = goep_client;
 
@@ -233,15 +259,25 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
     uint8_t status;
-
+    uint16_t record_index;
 
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
+
+            // detect new record
+            record_index = sdp_event_query_attribute_byte_get_record_id(packet);
+            if (record_index != context->record_index){
+                context->record_index = record_index;
+                goep_client_handle_sdp_query_end_of_record(context);
+                memset(&context->mas_info, 0, sizeof(context->mas_info));
+            }
 
             // check if relevant attribute
             switch(sdp_event_query_attribute_byte_get_attribute_id(packet)){
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
                 case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
+                case BLUETOOTH_ATTRIBUTE_MAS_INSTANCE_ID:
+                case BLUETOOTH_ATTRIBUTE_SUPPORTED_MESSAGE_TYPES:
 #ifdef ENABLE_GOEP_L2CAP
                 case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
 #endif
@@ -297,7 +333,11 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                                 break;
 #endif
                             case BLUETOOTH_PROTOCOL_RFCOMM:
-                                context->rfcomm_port = element[de_get_header_size(element)];
+                                if (context->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER) {
+                                    context->mas_info.rfcomm_port = element[de_get_header_size(element)];
+                                } else {
+                                    context->rfcomm_port = element[de_get_header_size(element)];
+                                }
                                 break;
                             default:
                                 break;
@@ -306,29 +346,34 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                     break;
 #ifdef ENABLE_GOEP_L2CAP
                 case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
-                    de_element_get_uint16(goep_client_sdp_query_attribute_value, &context->l2cap_psm);
+                    if (context->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER){
+                        de_element_get_uint16(goep_client_sdp_query_attribute_value, &context->mas_info.l2cap_psm);
+                    } else {
+                        de_element_get_uint16(goep_client_sdp_query_attribute_value, &context->l2cap_psm);
+                    }
                     break;
 #endif
                 // BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES == BLUETOOTH_ATTRIBUTE_MAP_SUPPORTED_FEATURES == 0x0317
                 case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
                     if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
                     if (de_get_size_type(goep_client_sdp_query_attribute_value) != DE_SIZE_32) break;
-                    context->profile_supported_features  = big_endian_read_32(goep_client_sdp_query_attribute_value, de_get_header_size(goep_client_sdp_query_attribute_value));
-                    log_info("PBAP/MAP supported_features 0x%x", (unsigned int) context->profile_supported_features);
+                    if (context->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER) {
+                        context->mas_info.supported_features  = big_endian_read_32(goep_client_sdp_query_attribute_value, de_get_header_size(goep_client_sdp_query_attribute_value));
+                    } else {
+                        context->profile_supported_features  = big_endian_read_32(goep_client_sdp_query_attribute_value, de_get_header_size(goep_client_sdp_query_attribute_value));
+                    }
                     break;
 
                 case BLUETOOTH_ATTRIBUTE_MAS_INSTANCE_ID:
                     if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
                     if (de_get_size_type(goep_client_sdp_query_attribute_value) != DE_SIZE_8) break;
-                    context->map_mas_instance_id = goep_client_sdp_query_attribute_value[de_get_header_size(goep_client_sdp_query_attribute_value)];
-                    log_info("MAS Instance ID 0x%x", context->map_mas_instance_id);
+                    context->mas_info.instance_id = goep_client_sdp_query_attribute_value[de_get_header_size(goep_client_sdp_query_attribute_value)];
                     break;
 
                 case BLUETOOTH_ATTRIBUTE_SUPPORTED_MESSAGE_TYPES:
                     if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
                     if (de_get_size_type(goep_client_sdp_query_attribute_value) != DE_SIZE_8) break;
-                    context->map_supported_message_types = goep_client_sdp_query_attribute_value[de_get_header_size(goep_client_sdp_query_attribute_value)];
-                    log_info("Supported Message Types 0x%x", context->map_mas_instance_id);
+                    context->mas_info.supported_message_types = goep_client_sdp_query_attribute_value[de_get_header_size(goep_client_sdp_query_attribute_value)];
                     break;
 
                 default:
@@ -337,6 +382,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             break;
 
         case SDP_EVENT_QUERY_COMPLETE:
+            goep_client_handle_sdp_query_end_of_record(context);
             status = sdp_event_query_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 log_info("GOEP client, SDP query failed 0x%02x", status);
