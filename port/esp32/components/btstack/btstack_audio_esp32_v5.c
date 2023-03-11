@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 BlueKitchen GmbH
+ * Copyright (C) 2023 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,13 +53,21 @@
 #include "freertos/queue.h"
 
 #include "driver/gpio.h"
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
 #include "esp_log.h"
 
 #include <inttypes.h>
+#include <stdatomic.h>
 #include <string.h>
 
 #define LOG_TAG "AUDIO"
+
+#ifdef CONFIG_I2S_ISR_IRAM_SAFE
+#error CONFIG_I2S_ISR_IRAM_SAFE not supported
+#endif
+
+i2s_chan_handle_t tx_handle = NULL;
+i2s_chan_handle_t rx_handle = NULL;
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
 #include "driver/i2c.h"
@@ -82,24 +90,27 @@
 #define BTSTACK_AUDIO_I2S_IN  GPIO_NUM_10
 #else
 // ESP32-LyraT V4
-#define BTSTACK_AUDIO_I2S_BCK GPIO_NUM_5
-#define BTSTACK_AUDIO_I2S_WS  GPIO_NUM_25
-#define BTSTACK_AUDIO_I2S_OUT GPIO_NUM_26
-#define BTSTACK_AUDIO_I2S_IN  GPIO_NUM_35
+#define BTSTACK_AUDIO_I2S_MCLK GPIO_NUM_0
+#define BTSTACK_AUDIO_I2S_BCK  GPIO_NUM_5
+#define BTSTACK_AUDIO_I2S_WS   GPIO_NUM_25
+#define BTSTACK_AUDIO_I2S_OUT  GPIO_NUM_26
+#define BTSTACK_AUDIO_I2S_IN   GPIO_NUM_35
 #endif
 
 // prototypes
+#if 0
 static void btstack_audio_esp32_sink_fill_buffer(void);
 static void btstack_audio_esp32_source_process_buffer(void);
+#endif
 
 #define BTSTACK_AUDIO_I2S_NUM  (I2S_NUM_0)
 
-#define DRIVER_POLL_INTERVAL_MS          5
+#define DRIVER_ISR_INTERVAL_MS          10 // dma interrupt cycle time in ms
 #define DMA_BUFFER_COUNT                 2
 #define BYTES_PER_SAMPLE_STEREO          4
 
 // one DMA buffer for max sample rate
-#define MAX_DMA_BUFFER_SAMPLES (48000 * 2 * DRIVER_POLL_INTERVAL_MS/ 1000)
+#define MAX_DMA_BUFFER_SAMPLES (48000 * 2 * DRIVER_ISR_INTERVAL_MS/ 1000)
 
 typedef enum {
     BTSTACK_AUDIO_ESP32_OFF = 0,
@@ -110,10 +121,6 @@ typedef enum {
 static bool btstack_audio_esp32_i2s_installed;
 static bool btstack_audio_esp32_i2s_streaming;
 static uint32_t btstack_audio_esp32_i2s_samplerate;
-static uint16_t btstack_audio_esp32_samples_per_dma_buffer;
-
-// timer to fill output ring buffer
-static btstack_timer_source_t  btstack_audio_esp32_driver_timer;
 
 static uint8_t  btstack_audio_esp32_sink_num_channels;
 static uint32_t btstack_audio_esp32_sink_samplerate;
@@ -123,13 +130,9 @@ static uint32_t btstack_audio_esp32_source_samplerate;
 
 static btstack_audio_esp32_state_t btstack_audio_esp32_sink_state;
 static btstack_audio_esp32_state_t btstack_audio_esp32_source_state;
-
 // client
 static void (*btstack_audio_esp32_sink_playback_callback)(int16_t * buffer, uint16_t num_samples);
 static void (*btstack_audio_esp32_source_recording_callback)(const int16_t * buffer, uint16_t num_samples);
-
-// queue for RX/TX done events
-static QueueHandle_t btstack_audio_esp32_i2s_event_queue;
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
 
@@ -137,61 +140,40 @@ static bool btstack_audio_esp32_es8388_initialized;
 
 static es8388_config_t es8388_i2c_cfg = AUDIO_CODEC_ES8388_DEFAULT();
 
-static void btstack_audio_esp32_set_i2s0_mclk(void)
-{
-    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
-    WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
-}
-
 void btstack_audio_esp32_es8388_init(void){
     if (btstack_audio_esp32_es8388_initialized) return;
+
     btstack_audio_esp32_es8388_initialized = true;
 
-    es8388_init(&es8388_i2c_cfg);
-    es8388_config_fmt(ES_MODULE_ADC_DAC, ES_I2S_NORMAL);
-    es8388_set_bits_per_sample(ES_MODULE_ADC_DAC, BIT_LENGTH_16BITS);
-    es8388_start(ES_MODULE_ADC_DAC);
-    es8388_set_volume(70);
-    es8388_set_mute(false);
+    ESP_ERROR_CHECK(es8388_init(&es8388_i2c_cfg));
+    ESP_ERROR_CHECK(es8388_config_fmt(ES_MODULE_ADC_DAC, ES_I2S_NORMAL));
+    ESP_ERROR_CHECK(es8388_set_bits_per_sample(ES_MODULE_ADC_DAC, BIT_LENGTH_16BITS));
+    ESP_ERROR_CHECK(es8388_start(ES_MODULE_ADC_DAC));
+    ESP_ERROR_CHECK(es8388_set_volume(70));
+    ESP_ERROR_CHECK(es8388_set_mute(false));
 }
 #endif
 
-static void btstack_audio_esp32_driver_timer_handler(btstack_timer_source_t * ts){
-    // read max 2 events from i2s event queue
-    i2s_event_t i2s_event;
-    int i;
-    for (i=0;i<2;i++){
-        if( xQueueReceive( btstack_audio_esp32_i2s_event_queue, &i2s_event, 0) == false) break;
-        switch (i2s_event.type){
-            case I2S_EVENT_TX_DONE:
-                log_debug("I2S_EVENT_TX_DONE");
-                btstack_audio_esp32_sink_fill_buffer();
-                break;
-            case I2S_EVENT_RX_DONE:
-                log_debug("I2S_EVENT_RX_DONE");
-                btstack_audio_esp32_source_process_buffer();
-                break;
-            default:
-                break;
-        }
-    }
-
-    // re-set timer
-    btstack_run_loop_set_timer(ts, DRIVER_POLL_INTERVAL_MS);
-    btstack_run_loop_add_timer(ts);
-}
+// data source for integration with btstack run-loop
+static btstack_data_source_t transport_data_source;
+static volatile _Atomic uint32_t isr_bytes_read = 0;
+static volatile _Atomic uint32_t isr_bytes_written = 0;
 
 static void btstack_audio_esp32_stream_start(void){
     if (btstack_audio_esp32_i2s_streaming) return;
 
-    // start i2s
-    log_info("i2s stream start");
-    i2s_start(BTSTACK_AUDIO_I2S_NUM);
+    // check if needed
+    bool needed = (btstack_audio_esp32_sink_state   == BTSTACK_AUDIO_ESP32_STREAMING)
+               || (btstack_audio_esp32_source_state == BTSTACK_AUDIO_ESP32_STREAMING);
+    if (!needed) return;
 
-    // start timer
-    btstack_run_loop_set_timer_handler(&btstack_audio_esp32_driver_timer, &btstack_audio_esp32_driver_timer_handler);
-    btstack_run_loop_set_timer(&btstack_audio_esp32_driver_timer, DRIVER_POLL_INTERVAL_MS);
-    btstack_run_loop_add_timer(&btstack_audio_esp32_driver_timer);
+    // clear isr exchange variables to avoid data source activation
+    atomic_store_explicit(&isr_bytes_written, 0, memory_order_relaxed);
+    atomic_store_explicit(&isr_bytes_read, 0, memory_order_relaxed);
+
+    // start data source
+    btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(&transport_data_source);
 
     btstack_audio_esp32_i2s_streaming = true;
 }
@@ -204,87 +186,185 @@ static void btstack_audio_esp32_stream_stop(void){
                      || (btstack_audio_esp32_source_state == BTSTACK_AUDIO_ESP32_STREAMING);
     if (still_needed) return;
 
-    // stop timer
-    btstack_run_loop_remove_timer(&btstack_audio_esp32_driver_timer);
+    // stop data source
+    btstack_run_loop_disable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_remove_data_source(&transport_data_source);
 
-    // stop i2s
-    log_info("i2s stream stop");
-    i2s_stop(BTSTACK_AUDIO_I2S_NUM);
+    atomic_store_explicit(&isr_bytes_written, 0, memory_order_relaxed);
+    atomic_store_explicit(&isr_bytes_read, 0, memory_order_relaxed);
 
     btstack_audio_esp32_i2s_streaming = false;
 }
 
+static IRAM_ATTR bool i2s_rx_callback(i2s_chan_handle_t handle, i2s_event_data_t *event, void *user_ctx)
+{
+    atomic_store_explicit(&isr_bytes_read, event->size, memory_order_relaxed);
+    if( isr_bytes_read > 0 ) {
+        btstack_run_loop_poll_data_sources_from_irq();
+        return true;
+    }
+    return false;
+}
+
+volatile int32_t delta;
+volatile uint32_t count = 0;
+static IRAM_ATTR bool i2s_tx_callback(i2s_chan_handle_t handle, i2s_event_data_t *event, void *user_ctx)
+{
+//    isr_bytes_written = event->size;
+    static uint32_t last = 0;
+//    static uint32_t count = 0;
+    uint32_t current = btstack_run_loop_get_time_ms();
+    if( last == 0 ) {
+        last = current;
+    }
+    count += event->size/BYTES_PER_SAMPLE_STEREO;
+    delta = current-last;
+    if( delta >= 1000 ) {
+        last = current;
+        count = 0;
+    }
+
+    atomic_store_explicit(&isr_bytes_written, event->size, memory_order_relaxed);
+    if( isr_bytes_written > 0 ) {
+        btstack_run_loop_poll_data_sources_from_irq();
+        return true;
+    }
+    return false;
+}
+
+static uint8_t btstack_audio_esp32_buffer[MAX_DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
+static void i2s_data_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+
+    size_t bytes_written = 0;
+    size_t bytes_read = 0;
+    uint32_t write_block_size = atomic_load_explicit(&isr_bytes_written, memory_order_relaxed);
+    uint32_t read_block_size = atomic_load_explicit(&isr_bytes_read, memory_order_relaxed);
+//    ESP_LOGW(LOG_TAG, "d:%5"PRIu32" c:%5"PRIu32"", delta, count );
+    switch (callback_type){
+        case DATA_SOURCE_CALLBACK_POLL: {
+//            ESP_LOGW(LOG_TAG, "%s: w:%5"PRIu32" r:%5"PRIu32"", __FUNCTION__, write_block_size, read_block_size );
+            uint16_t num_samples = write_block_size/BYTES_PER_SAMPLE_STEREO;
+            if( num_samples > 0 ) {
+                (*btstack_audio_esp32_sink_playback_callback)((int16_t *) btstack_audio_esp32_buffer, num_samples);
+                // duplicate samples for mono
+                if (btstack_audio_esp32_sink_num_channels == 1){
+                    int16_t *buffer16 = (int16_t *) btstack_audio_esp32_buffer;
+                    for (int16_t i=num_samples-1;i >= 0; i--){
+                        buffer16[2*i  ] = buffer16[i];
+                        buffer16[2*i+1] = buffer16[i];
+                    }
+                }
+                ESP_ERROR_CHECK(i2s_channel_write(tx_handle, btstack_audio_esp32_buffer, write_block_size, &bytes_written, 0 ));
+                btstack_assert( bytes_written == write_block_size );
+                atomic_store_explicit(&isr_bytes_written, 0, memory_order_relaxed);
+            }
+
+            num_samples = read_block_size/BYTES_PER_SAMPLE_STEREO;
+            if( num_samples > 0 ) {
+                ESP_ERROR_CHECK(i2s_channel_read(rx_handle, btstack_audio_esp32_buffer, read_block_size, &bytes_read, 0 ));
+                btstack_assert( bytes_read == read_block_size );
+                // drop second channel if configured for mono
+                int16_t * buffer16 = (int16_t *)btstack_audio_esp32_buffer;
+                if (btstack_audio_esp32_source_num_channels == 1){
+                    for (uint16_t i=0;i<num_samples;i++){
+                        buffer16[i] = buffer16[2*i];
+                    }
+                }
+                (*btstack_audio_esp32_source_recording_callback)((int16_t *) btstack_audio_esp32_buffer, num_samples);
+                atomic_store_explicit(&isr_bytes_read, 0, memory_order_relaxed);
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+/**
+ * dma_frame_num * slot_num * data_bit_width / 8 = dma_buffer_size <= 4092
+ * dma_frame_num <= 511
+ * interrupt_interval = dma_frame_num / sample_rate = 511 / 144000 = 0.003549 s = 3.549 ms
+ * dma_desc_num > polling_cycle / interrupt_interval = cell(10 / 3.549) = cell(2.818) = 3
+ * recv_buffer_size > dma_desc_num * dma_buffer_size = 3 * 4092 = 12276 bytes
+ *
+ */
 static void btstack_audio_esp32_init(void){
+
+    ESP_LOGW(LOG_TAG, "audio init");
 
     // de-register driver if already installed
     if (btstack_audio_esp32_i2s_installed){
-        i2s_driver_uninstall(BTSTACK_AUDIO_I2S_NUM);
+        ESP_LOGW(LOG_TAG, "allready initialized, skipping init!\n");
+        return;
     }
 
     // set i2s mode, sample rate and pins based on sink / source config
-    i2s_mode_t i2s_mode  = I2S_MODE_MASTER;
-    int i2s_data_out_pin = I2S_PIN_NO_CHANGE;
-    int i2s_data_in_pin  = I2S_PIN_NO_CHANGE;
     btstack_audio_esp32_i2s_samplerate = 0;
 
     if (btstack_audio_esp32_sink_state != BTSTACK_AUDIO_ESP32_OFF){
-        i2s_mode |= I2S_MODE_TX; // playback
-        i2s_data_out_pin = BTSTACK_AUDIO_I2S_OUT;
         if (btstack_audio_esp32_i2s_samplerate != 0){
             btstack_assert(btstack_audio_esp32_i2s_samplerate == btstack_audio_esp32_sink_samplerate);
         }
         btstack_audio_esp32_i2s_samplerate = btstack_audio_esp32_sink_samplerate;
-        btstack_audio_esp32_samples_per_dma_buffer = btstack_audio_esp32_i2s_samplerate * 2 * DRIVER_POLL_INTERVAL_MS / 1000;
     }
 
     if (btstack_audio_esp32_source_state != BTSTACK_AUDIO_ESP32_OFF){
-        i2s_mode |= I2S_MODE_RX; // recording
-        i2s_data_in_pin = BTSTACK_AUDIO_I2S_IN;
         if (btstack_audio_esp32_i2s_samplerate != 0){
             btstack_assert(btstack_audio_esp32_i2s_samplerate == btstack_audio_esp32_source_samplerate);
         }
         btstack_audio_esp32_i2s_samplerate = btstack_audio_esp32_source_samplerate;
-        btstack_audio_esp32_samples_per_dma_buffer = btstack_audio_esp32_i2s_samplerate * 2 * DRIVER_POLL_INTERVAL_MS / 1000;
     }
 
-    btstack_assert(btstack_audio_esp32_samples_per_dma_buffer <= MAX_DMA_BUFFER_SAMPLES);
-
-    i2s_config_t config =
-    {
-        .mode                 = i2s_mode,
-        .sample_rate          = btstack_audio_esp32_i2s_samplerate,
-        .bits_per_sample      = I2S_BITS_PER_SAMPLE_16BIT,
-        .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT,
-        .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-        .dma_buf_count        = DMA_BUFFER_COUNT,                           // Number of DMA buffers. Max 128.
-        .dma_buf_len          = btstack_audio_esp32_samples_per_dma_buffer, // Size of each DMA buffer in samples. Max 1024.
-        .use_apll             = true,
-        .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
+    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(BTSTACK_AUDIO_I2S_NUM, I2S_ROLE_MASTER);
+    chan_cfg.dma_frame_num = DRIVER_ISR_INTERVAL_MS * btstack_audio_esp32_i2s_samplerate / 1000;
+    chan_cfg.dma_desc_num = DMA_BUFFER_COUNT;
+    btstack_assert( chan_cfg.dma_frame_num <= 4092 ); // as of https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/i2s.html
+    chan_cfg.auto_clear = true; // Auto clear the legacy data in the DMA buffer
+    ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, &tx_handle, &rx_handle));
+    i2s_std_config_t std_cfg = {
+        .clk_cfg = {
+            .sample_rate_hz = btstack_audio_esp32_i2s_samplerate,
+            .clk_src = I2S_CLK_SRC_APLL,
+            .mclk_multiple = I2S_MCLK_MULTIPLE_256, // for 16bit data
+        },
+        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
+        .gpio_cfg = {
+            .mclk = BTSTACK_AUDIO_I2S_MCLK,
+            .bclk = BTSTACK_AUDIO_I2S_BCK,
+            .ws = BTSTACK_AUDIO_I2S_WS,
+            .dout = BTSTACK_AUDIO_I2S_OUT,
+            .din = BTSTACK_AUDIO_I2S_IN,
+            .invert_flags = {
+                .mclk_inv = false,
+                .bclk_inv = false,
+                .ws_inv = false,
+            },
+        },
     };
 
-    i2s_pin_config_t pins =
-    {
-        .bck_io_num           = BTSTACK_AUDIO_I2S_BCK,
-        .ws_io_num            = BTSTACK_AUDIO_I2S_WS,
-        .data_out_num         = i2s_data_out_pin,
-        .data_in_num          = i2s_data_in_pin
+    ESP_ERROR_CHECK(i2s_channel_init_std_mode(tx_handle, &std_cfg));
+    ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_handle, &std_cfg));
+
+    i2s_event_callbacks_t cbs = {
+        .on_recv = i2s_rx_callback,
+        .on_recv_q_ovf = NULL,
+        .on_sent = i2s_tx_callback,
+        .on_send_q_ovf = NULL,
     };
+    ESP_ERROR_CHECK(i2s_channel_register_event_callback(rx_handle, &cbs, NULL));
+    ESP_ERROR_CHECK(i2s_channel_register_event_callback(tx_handle, &cbs, NULL));
 
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-    btstack_audio_esp32_set_i2s0_mclk();
-#endif
-
-    log_info("i2s init mode 0x%02x, samplerate %" PRIu32 ", samples per DMA buffer: %u", 
-        i2s_mode, btstack_audio_esp32_sink_samplerate, btstack_audio_esp32_samples_per_dma_buffer);
-
-    i2s_driver_install(BTSTACK_AUDIO_I2S_NUM, &config, DMA_BUFFER_COUNT, &btstack_audio_esp32_i2s_event_queue);
-    i2s_set_pin(BTSTACK_AUDIO_I2S_NUM, &pins);
+//    log_info("i2s init samplerate %" PRIu32 ", samples per DMA buffer: %u",
+//        btstack_audio_esp32_sink_samplerate, btstack_audio_esp32_samples_per_dma_buffer);
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     btstack_audio_esp32_es8388_init();
 #endif
 
     btstack_audio_esp32_i2s_installed = true;
+
+    btstack_run_loop_set_data_source_handler(&transport_data_source, i2s_data_process);
+    ESP_LOGW(LOG_TAG, "audio init done.");
 }
 
 static void btstack_audio_esp32_deinit(void){
@@ -297,58 +377,19 @@ static void btstack_audio_esp32_deinit(void){
 
     // uninstall driver
     log_info("i2s close");
-    i2s_driver_uninstall(BTSTACK_AUDIO_I2S_NUM);
+
+    ESP_ERROR_CHECK(i2s_del_channel(rx_handle));
+    ESP_ERROR_CHECK(i2s_del_channel(tx_handle));
+
+    btstack_run_loop_disable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_remove_data_source(&transport_data_source);
 
     btstack_audio_esp32_i2s_installed = false;
 }
 
-// SINK Implementation
-// - with esp-idf v4.4.3, we occasionally get a TX_DONE but fail to write data without waiting for free buffers
-//   it's unclera why this happens. this code assumes that the TX_DONE event has been received prematurely and
-//   just retries the i2s_write the next time without blocking
-static uint8_t btstack_audio_esp32_sink_buffer[MAX_DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
-static bool btstack_audio_esp32_sink_buffer_ready;
-static void btstack_audio_esp32_sink_fill_buffer(void){
-
-    btstack_assert(btstack_audio_esp32_samples_per_dma_buffer <= MAX_DMA_BUFFER_SAMPLES);
-
-    // fetch new data
-    size_t bytes_written;
-    uint16_t data_len = btstack_audio_esp32_samples_per_dma_buffer * BYTES_PER_SAMPLE_STEREO;
-    if (btstack_audio_esp32_sink_buffer_ready == false){
-        if (btstack_audio_esp32_sink_state == BTSTACK_AUDIO_ESP32_STREAMING){
-            (*btstack_audio_esp32_sink_playback_callback)((int16_t *) btstack_audio_esp32_sink_buffer, btstack_audio_esp32_samples_per_dma_buffer);
-            // duplicate samples for mono
-            if (btstack_audio_esp32_sink_num_channels == 1){
-                int16_t i;
-                int16_t * buffer16 = (int16_t *) btstack_audio_esp32_sink_buffer;
-                for (i=btstack_audio_esp32_samples_per_dma_buffer-1;i >= 0; i--){
-                    buffer16[2*i  ] = buffer16[i];
-                    buffer16[2*i+1] = buffer16[i];
-                }
-            }
-            btstack_audio_esp32_sink_buffer_ready = true;
-        } else {
-            memset(btstack_audio_esp32_sink_buffer, 0, data_len);
-        }
-    }
-
-    i2s_write(BTSTACK_AUDIO_I2S_NUM, btstack_audio_esp32_sink_buffer, data_len, &bytes_written, 0);
-
-    // check if all data has been written. tolerate writing zero bytes (->retry), but assert on partial write
-    if (bytes_written == data_len){
-        btstack_audio_esp32_sink_buffer_ready = false;
-    } else if (bytes_written == 0){
-        ESP_LOGW(LOG_TAG, "i2s_write: couldn't write after I2S_EVENT_TX_DONE\n");
-    } else {
-        ESP_LOGE(LOG_TAG, "i2s_write: only %u of %u!!!\n", (int) bytes_written, data_len);
-        btstack_assert(false);
-    }
-}
-
 static int btstack_audio_esp32_sink_init(
     uint8_t channels,
-    uint32_t samplerate, 
+    uint32_t samplerate,
     void (*playback)(int16_t * buffer, uint16_t num_samples)){
 
     btstack_assert(playback != NULL);
@@ -360,10 +401,15 @@ static int btstack_audio_esp32_sink_init(
     btstack_audio_esp32_sink_samplerate         = samplerate;
 
     btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_INITIALIZED;
-    
+
     // init i2s and codec
     btstack_audio_esp32_init();
+
     return 0;
+}
+
+static uint32_t btstack_audio_esp32_sink_get_samplerate(void) {
+    return btstack_audio_esp32_sink_samplerate;
 }
 
 static void btstack_audio_esp32_sink_set_volume(uint8_t gain) {
@@ -385,13 +431,13 @@ static void btstack_audio_esp32_sink_start_stream(void){
 
     // state
     btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_STREAMING;
-    btstack_audio_esp32_sink_buffer_ready = false;
-    
+
     // note: conceptually, it would make sense to pre-fill all I2S buffers and then feed new ones when they are
-    // marked as complete. However, it looks like we get additoinal events and then assert below, 
-    // so we just don't pre-fill them here
+    // marked as complete. But the corresponding function i2s_channel_preload_data is not in the v5.0.1 release
+    // version
 
     btstack_audio_esp32_stream_start();
+    ESP_ERROR_CHECK(i2s_channel_enable(tx_handle));
 }
 
 static void btstack_audio_esp32_sink_stop_stream(void){
@@ -401,6 +447,7 @@ static void btstack_audio_esp32_sink_stop_stream(void){
     // state
     btstack_audio_esp32_sink_state = BTSTACK_AUDIO_ESP32_INITIALIZED;
 
+    ESP_ERROR_CHECK(i2s_channel_disable(tx_handle));
     btstack_audio_esp32_stream_stop();
 }
 
@@ -418,6 +465,7 @@ static void btstack_audio_esp32_sink_close(void){
 
 static const btstack_audio_sink_t btstack_audio_esp32_sink = {
     .init           = &btstack_audio_esp32_sink_init,
+    .get_samplerate = &btstack_audio_esp32_sink_get_samplerate,
     .set_volume     = &btstack_audio_esp32_sink_set_volume,
     .start_stream   = &btstack_audio_esp32_sink_start_stream,
     .stop_stream    = &btstack_audio_esp32_sink_stop_stream,
@@ -426,31 +474,6 @@ static const btstack_audio_sink_t btstack_audio_esp32_sink = {
 
 const btstack_audio_sink_t * btstack_audio_esp32_sink_get_instance(void){
     return &btstack_audio_esp32_sink;
-}
-
-// SOURCE Implementation
-
-static void btstack_audio_esp32_source_process_buffer(void){
-    size_t bytes_read;
-    uint8_t buffer[MAX_DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
-
-    btstack_assert(btstack_audio_esp32_samples_per_dma_buffer <= MAX_DMA_BUFFER_SAMPLES);
-
-    uint16_t data_len = btstack_audio_esp32_samples_per_dma_buffer * BYTES_PER_SAMPLE_STEREO;
-    i2s_read(BTSTACK_AUDIO_I2S_NUM, buffer, data_len, &bytes_read, 0);
-    btstack_assert(bytes_read == data_len);
-
-    int16_t * buffer16 = (int16_t *) buffer;
-    if (btstack_audio_esp32_source_state == BTSTACK_AUDIO_ESP32_STREAMING) {
-        // drop second channel if configured for mono
-        if (btstack_audio_esp32_source_num_channels == 1){
-            uint16_t i;
-            for (i=0;i<btstack_audio_esp32_samples_per_dma_buffer;i++){
-                buffer16[i] = buffer16[2*i];
-            }
-        }
-        (*btstack_audio_esp32_source_recording_callback)(buffer16, btstack_audio_esp32_samples_per_dma_buffer);
-    }
 }
 
 static int btstack_audio_esp32_source_init(
@@ -470,6 +493,10 @@ static int btstack_audio_esp32_source_init(
     // init i2s and codec
     btstack_audio_esp32_init();
     return 0;
+}
+
+static uint32_t btstack_audio_esp32_source_get_samplerate(void) {
+    return btstack_audio_esp32_source_samplerate;
 }
 
 static void btstack_audio_esp32_source_set_gain(uint8_t gain) {
@@ -494,6 +521,7 @@ static void btstack_audio_esp32_source_start_stream(void){
     btstack_audio_esp32_source_state = BTSTACK_AUDIO_ESP32_STREAMING;
 
     btstack_audio_esp32_stream_start();
+    ESP_ERROR_CHECK(i2s_channel_enable(rx_handle));
 }
 
 static void btstack_audio_esp32_source_stop_stream(void){
@@ -503,6 +531,7 @@ static void btstack_audio_esp32_source_stop_stream(void){
     // state
     btstack_audio_esp32_source_state = BTSTACK_AUDIO_ESP32_INITIALIZED;
 
+    ESP_ERROR_CHECK(i2s_channel_disable(rx_handle));
     btstack_audio_esp32_stream_stop();
 }
 
@@ -520,6 +549,7 @@ static void btstack_audio_esp32_source_close(void){
 
 static const btstack_audio_source_t btstack_audio_esp32_source = {
     .init           = &btstack_audio_esp32_source_init,
+    .get_samplerate = &btstack_audio_esp32_source_get_samplerate,
     .set_gain       = &btstack_audio_esp32_source_set_gain,
     .start_stream   = &btstack_audio_esp32_source_start_stream,
     .stop_stream    = &btstack_audio_esp32_source_stop_stream,
