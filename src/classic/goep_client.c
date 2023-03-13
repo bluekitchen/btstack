@@ -81,6 +81,9 @@ typedef struct {
     uint16_t         uuid;
     hci_con_handle_t con_handle;
     uint8_t          incoming;
+
+    btstack_context_callback_registration_t sdp_query_request;
+
     uint8_t          rfcomm_port;
     uint16_t         l2cap_psm;
     uint16_t         bearer_cid;
@@ -438,6 +441,11 @@ void goep_client_deinit(void){
     memset(goep_client_sdp_query_attribute_value, 0, sizeof(goep_client_sdp_query_attribute_value));
     memset(goep_packet_buffer, 0, sizeof(goep_packet_buffer));
 }
+static void geop_client_sdp_query_start(void * context){
+    UNUSED(context);
+    goep_client_t * goep_client2 = goep_client;
+    sdp_client_query_uuid16(&goep_client_handle_sdp_query_event, goep_client2->bd_addr, goep_client2->uuid);
+}
 
 uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid){
     goep_client_t * context = goep_client;
@@ -448,8 +456,10 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
     context->uuid = uuid;
     (void)memcpy(context->bd_addr, addr, 6);
     context->profile_supported_features = PROFILE_FEATURES_NOT_PRESENT;
-    sdp_client_query_uuid16(&goep_client_handle_sdp_query_event, context->bd_addr, uuid);
     *out_cid = context->cid;
+    context->sdp_query_request.callback = geop_client_sdp_query_start;
+    context->sdp_query_request.context = (void *)(uintptr_t) context->cid;
+    sdp_client_register_query_callback(&context->sdp_query_request);
     return ERROR_CODE_SUCCESS;
 }
 
