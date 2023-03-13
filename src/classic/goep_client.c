@@ -66,8 +66,8 @@
 #endif
 
 static goep_client_t   goep_client_singleton;
-static goep_client_t * goep_client = &goep_client_singleton;
 
+static goep_client_t *    goep_client_sdp_active;
 static uint8_t            goep_client_sdp_query_attribute_value[30];
 static const unsigned int goep_client_sdp_query_attribute_value_buffer_size = sizeof(goep_client_sdp_query_attribute_value);
 
@@ -87,95 +87,123 @@ static l2cap_ertm_config_t ertm_config = {
 };
 #endif
 
-static inline void goep_client_emit_connected_event(goep_client_t * context, uint8_t status){
+static inline void goep_client_emit_connected_event(goep_client_t * goep_client, uint8_t status){
     uint8_t event[15];
     int pos = 0;
     event[pos++] = HCI_EVENT_GOEP_META;
     pos++;  // skip len
     event[pos++] = GOEP_SUBEVENT_CONNECTION_OPENED;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event, pos, goep_client->cid);
     pos+=2;
     event[pos++] = status;
-    (void)memcpy(&event[pos], context->bd_addr, 6);
+    (void)memcpy(&event[pos], goep_client->bd_addr, 6);
     pos += 6;
-    little_endian_store_16(event,pos,context->con_handle);
+    little_endian_store_16(event, pos, goep_client->con_handle);
     pos += 2;
-    event[pos++] = context->incoming;
+    event[pos++] = goep_client->incoming;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("goep_client_emit_connected_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    goep_client->client_handler(HCI_EVENT_PACKET, goep_client->cid, &event[0], pos);
 }   
 
-static inline void goep_client_emit_connection_closed_event(goep_client_t * context){
+static inline void goep_client_emit_connection_closed_event(goep_client_t * goep_client){
     uint8_t event[5];
     int pos = 0;
     event[pos++] = HCI_EVENT_GOEP_META;
     pos++;  // skip len
     event[pos++] = GOEP_SUBEVENT_CONNECTION_CLOSED;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event, pos, goep_client->cid);
     pos+=2;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("goep_client_emit_connection_closed_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    goep_client->client_handler(HCI_EVENT_PACKET, goep_client->cid, &event[0], pos);
 }   
 
-static inline void goep_client_emit_can_send_now_event(goep_client_t * context){
+static inline void goep_client_emit_can_send_now_event(goep_client_t * goep_client){
     uint8_t event[5];
     int pos = 0;
     event[pos++] = HCI_EVENT_GOEP_META;
     pos++;  // skip len
     event[pos++] = GOEP_SUBEVENT_CAN_SEND_NOW;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event, pos, goep_client->cid);
     pos+=2;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("goep_client_emit_can_send_now_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    goep_client->client_handler(HCI_EVENT_PACKET, goep_client->cid, &event[0], pos);
 }   
 
-static void goep_client_handle_connection_opened(goep_client_t * context, uint8_t status, uint16_t mtu){
+static void goep_client_handle_connection_opened(goep_client_t * goep_client, uint8_t status, uint16_t mtu){
     if (status) {
-        context->state = GOEP_CLIENT_INIT;
+        goep_client->state = GOEP_CLIENT_INIT;
         log_info("goep_client: open failed, status %u", status);
     } else {
-        context->bearer_mtu = mtu;
-        context->state = GOEP_CLIENT_CONNECTED;
-        log_info("goep_client: connection opened. cid %u, max frame size %u", context->bearer_cid, context->bearer_mtu);
+        goep_client->bearer_mtu = mtu;
+        goep_client->state = GOEP_CLIENT_CONNECTED;
+        log_info("goep_client: connection opened. cid %u, max frame size %u", goep_client->bearer_cid, goep_client->bearer_mtu);
     }
-    goep_client_emit_connected_event(context, status);
+    goep_client_emit_connected_event(goep_client, status);
 }
 
-static void goep_client_handle_connection_close(goep_client_t * context){
-    context->state = GOEP_CLIENT_INIT;
-    goep_client_emit_connection_closed_event(context);
+static void goep_client_handle_connection_close(goep_client_t * goep_client){
+    goep_client->state = GOEP_CLIENT_INIT;
+    goep_client_emit_connection_closed_event(goep_client);
+}
+
+static goep_client_t * goep_client_for_cid(uint16_t cid){
+    if (cid == goep_client_singleton.cid){
+        return &goep_client_singleton;
+    } else {
+        return NULL;
+    }
+}
+
+static goep_client_t * goep_client_for_bearer_cid(uint16_t bearer_cid){
+    if (bearer_cid == goep_client_singleton.bearer_cid){
+        return &goep_client_singleton;
+    } else {
+        return NULL;
+    }
 }
 
 static void goep_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    goep_client_t * context = goep_client;
+    goep_client_t * goep_client;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
 #ifdef ENABLE_GOEP_L2CAP
                 case L2CAP_EVENT_CHANNEL_OPENED:
-                    goep_client_handle_connection_opened(context, l2cap_event_channel_opened_get_status(packet),
-                        btstack_min(l2cap_event_channel_opened_get_remote_mtu(packet), l2cap_event_channel_opened_get_local_mtu(packet)));
-                    return;
+                    goep_client = goep_client_for_bearer_cid(l2cap_event_channel_closed_get_local_cid(packet));
+                    btstack_assert(goep_client != NULL);
+                    goep_client_handle_connection_opened(goep_client, l2cap_event_channel_opened_get_status(packet),
+                                                         btstack_min(l2cap_event_channel_opened_get_remote_mtu(packet), l2cap_event_channel_opened_get_local_mtu(packet)));
+                    break;
                 case L2CAP_EVENT_CAN_SEND_NOW:
-                    goep_client_emit_can_send_now_event(context);
+                    goep_client = goep_client_for_bearer_cid(l2cap_event_can_send_now_get_local_cid(packet));
+                    btstack_assert(goep_client != NULL);
+                    goep_client_emit_can_send_now_event(goep_client);
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
-                    goep_client_handle_connection_close(context);
+                    goep_client = goep_client_for_bearer_cid(l2cap_event_channel_closed_get_local_cid(packet));
+                    btstack_assert(goep_client != NULL);
+                    goep_client_handle_connection_close(goep_client);
                     break;
 #endif
                 case RFCOMM_EVENT_CHANNEL_OPENED:
-                    goep_client_handle_connection_opened(context, rfcomm_event_channel_opened_get_status(packet), rfcomm_event_channel_opened_get_max_frame_size(packet));
+                    goep_client = goep_client_for_bearer_cid(rfcomm_event_channel_opened_get_rfcomm_cid(packet));
+                    btstack_assert(goep_client != NULL);
+                    goep_client_handle_connection_opened(goep_client, rfcomm_event_channel_opened_get_status(packet), rfcomm_event_channel_opened_get_max_frame_size(packet));
                     return;
                 case RFCOMM_EVENT_CAN_SEND_NOW:
-                    goep_client_emit_can_send_now_event(context);
+                    goep_client = goep_client_for_bearer_cid(rfcomm_event_can_send_now_get_rfcomm_cid(packet));
+                    btstack_assert(goep_client != NULL);
+                    goep_client_emit_can_send_now_event(goep_client);
                     break;
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
-                    goep_client_handle_connection_close(context);
+                    goep_client = goep_client_for_bearer_cid(rfcomm_event_channel_closed_get_rfcomm_cid(packet));
+                    btstack_assert(goep_client != NULL);
+                    goep_client_handle_connection_close(goep_client);
                     break;
                 default:
                     break;
@@ -183,30 +211,33 @@ static void goep_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
         case L2CAP_DATA_PACKET:
         case RFCOMM_DATA_PACKET:
-            context->client_handler(GOEP_DATA_PACKET, context->cid, packet, size);
+            goep_client = goep_client_for_bearer_cid(channel);
+            btstack_assert(goep_client != NULL);
+            goep_client->client_handler(GOEP_DATA_PACKET, goep_client->cid, packet, size);
             break;
         default:
             break;
     }
 }
 
-static void goep_client_handle_sdp_query_end_of_record(goep_client_t * context){
-    if (context->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER){
-        if (context->mas_info.instance_id == context->map_mas_instance_id){
+static void goep_client_handle_sdp_query_end_of_record(goep_client_t * goep_client){
+    if (goep_client->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER){
+        if (goep_client->mas_info.instance_id == goep_client->map_mas_instance_id){
             // Requested MAS Instance found, accept info
-            log_info("MAS Instance #%u found", context->map_mas_instance_id);
-            context->rfcomm_port = context->mas_info.rfcomm_port;
-            context->profile_supported_features = context->mas_info.supported_features;
-            context->map_supported_message_types = context->mas_info.supported_message_types;
+            log_info("MAS Instance #%u found", goep_client->map_mas_instance_id);
+            goep_client->rfcomm_port = goep_client->mas_info.rfcomm_port;
+            goep_client->profile_supported_features = goep_client->mas_info.supported_features;
+            goep_client->map_supported_message_types = goep_client->mas_info.supported_message_types;
 #ifdef ENABLE_GOEP_L2CAP
-            context->l2cap_psm = context->mas_info.l2cap_psm;
+            goep_client->l2cap_psm = goep_client->mas_info.l2cap_psm;
 #endif
         }
     }
 }
 
 static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    goep_client_t * context = goep_client;
+    goep_client_t * goep_client = goep_client_sdp_active;
+    btstack_assert(goep_client != NULL);
 
     UNUSED(packet_type);
     UNUSED(channel);
@@ -222,10 +253,10 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
 
             // detect new record
             record_index = sdp_event_query_attribute_byte_get_record_id(packet);
-            if (record_index != context->record_index){
-                context->record_index = record_index;
-                goep_client_handle_sdp_query_end_of_record(context);
-                memset(&context->mas_info, 0, sizeof(context->mas_info));
+            if (record_index != goep_client->record_index){
+                goep_client->record_index = record_index;
+                goep_client_handle_sdp_query_end_of_record(goep_client);
+                memset(&goep_client->mas_info, 0, sizeof(goep_client->mas_info));
             }
 
             // check if relevant attribute
@@ -278,20 +309,20 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                         // second element is RFCOMM server channel or L2CAP PSM
                         element = des_iterator_get_element(&prot_it);
                         if (uuid == BLUETOOTH_PROTOCOL_RFCOMM){
-                            if (context->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER) {
-                                context->mas_info.rfcomm_port = element[de_get_header_size(element)];
+                            if (goep_client->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER) {
+                                goep_client->mas_info.rfcomm_port = element[de_get_header_size(element)];
                             } else {
-                                context->rfcomm_port = element[de_get_header_size(element)];
+                                goep_client->rfcomm_port = element[de_get_header_size(element)];
                             }
                         }
                     }
                     break;
 #ifdef ENABLE_GOEP_L2CAP
                 case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
-                    if (context->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER){
-                        de_element_get_uint16(goep_client_sdp_query_attribute_value, &context->mas_info.l2cap_psm);
+                    if (goep_client->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER){
+                        de_element_get_uint16(goep_client_sdp_query_attribute_value, &goep_client->mas_info.l2cap_psm);
                     } else {
-                        de_element_get_uint16(goep_client_sdp_query_attribute_value, &context->l2cap_psm);
+                        de_element_get_uint16(goep_client_sdp_query_attribute_value, &goep_client->l2cap_psm);
                     }
                     break;
 #endif
@@ -299,23 +330,23 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                 case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
                     if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
                     if (de_get_size_type(goep_client_sdp_query_attribute_value) != DE_SIZE_32) break;
-                    if (context->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER) {
-                        context->mas_info.supported_features  = big_endian_read_32(goep_client_sdp_query_attribute_value, de_get_header_size(goep_client_sdp_query_attribute_value));
+                    if (goep_client->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER) {
+                        goep_client->mas_info.supported_features  = big_endian_read_32(goep_client_sdp_query_attribute_value, de_get_header_size(goep_client_sdp_query_attribute_value));
                     } else {
-                        context->profile_supported_features  = big_endian_read_32(goep_client_sdp_query_attribute_value, de_get_header_size(goep_client_sdp_query_attribute_value));
+                        goep_client->profile_supported_features  = big_endian_read_32(goep_client_sdp_query_attribute_value, de_get_header_size(goep_client_sdp_query_attribute_value));
                     }
                     break;
 
                 case BLUETOOTH_ATTRIBUTE_MAS_INSTANCE_ID:
                     if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
                     if (de_get_size_type(goep_client_sdp_query_attribute_value) != DE_SIZE_8) break;
-                    context->mas_info.instance_id = goep_client_sdp_query_attribute_value[de_get_header_size(goep_client_sdp_query_attribute_value)];
+                    goep_client->mas_info.instance_id = goep_client_sdp_query_attribute_value[de_get_header_size(goep_client_sdp_query_attribute_value)];
                     break;
 
                 case BLUETOOTH_ATTRIBUTE_SUPPORTED_MESSAGE_TYPES:
                     if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
                     if (de_get_size_type(goep_client_sdp_query_attribute_value) != DE_SIZE_8) break;
-                    context->mas_info.supported_message_types = goep_client_sdp_query_attribute_value[de_get_header_size(goep_client_sdp_query_attribute_value)];
+                    goep_client->mas_info.supported_message_types = goep_client_sdp_query_attribute_value[de_get_header_size(goep_client_sdp_query_attribute_value)];
                     break;
 
                 default:
@@ -324,30 +355,31 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             break;
 
         case SDP_EVENT_QUERY_COMPLETE:
-            goep_client_handle_sdp_query_end_of_record(context);
+            goep_client_sdp_active = NULL;
+            goep_client_handle_sdp_query_end_of_record(goep_client);
             status = sdp_event_query_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 log_info("GOEP client, SDP query failed 0x%02x", status);
-                context->state = GOEP_CLIENT_INIT;
+                goep_client->state = GOEP_CLIENT_INIT;
                 goep_client_emit_connected_event(goep_client, status);
                 break;
             }
-            if ((context->rfcomm_port == 0) && (context->l2cap_psm == 0)){
+            if ((goep_client->rfcomm_port == 0) && (goep_client->l2cap_psm == 0)){
                 log_info("No GOEP RFCOMM or L2CAP server found");
-                context->state = GOEP_CLIENT_INIT;
+                goep_client->state = GOEP_CLIENT_INIT;
                 goep_client_emit_connected_event(goep_client, SDP_SERVICE_NOT_FOUND);
                 break;
             }
 #ifdef ENABLE_GOEP_L2CAP
-            if (context->l2cap_psm){
-                log_info("Remote GOEP L2CAP PSM: %u", context->l2cap_psm);
-                l2cap_ertm_create_channel(&goep_client_packet_handler, context->bd_addr, context->l2cap_psm,
-                                          &ertm_config, ertm_buffer, sizeof(ertm_buffer), &context->bearer_cid);
+            if (goep_client->l2cap_psm){
+                log_info("Remote GOEP L2CAP PSM: %u", goep_client->l2cap_psm);
+                l2cap_ertm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->l2cap_psm,
+                                          &ertm_config, ertm_buffer, sizeof(ertm_buffer), &goep_client->bearer_cid);
                 return;
             }
 #endif
-            log_info("Remote GOEP RFCOMM Server Channel: %u", context->rfcomm_port);
-            rfcomm_create_channel(&goep_client_packet_handler, context->bd_addr, context->rfcomm_port, &context->bearer_cid);
+            log_info("Remote GOEP RFCOMM Server Channel: %u", goep_client->rfcomm_port);
+            rfcomm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->rfcomm_port, &goep_client->bearer_cid);
             break;
 
         default:
@@ -355,34 +387,33 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
     }
 }
 
-static uint8_t * goep_client_get_outgoing_buffer(goep_client_t * context){
-    if (context->l2cap_psm){
+static uint8_t * goep_client_get_outgoing_buffer(goep_client_t * goep_client){
+    if (goep_client->l2cap_psm){
         return goep_packet_buffer;
     } else {
         return rfcomm_get_outgoing_buffer();
     }
 }
 
-static uint16_t goep_client_get_outgoing_buffer_len(goep_client_t * context){
-    if (context->l2cap_psm){
+static uint16_t goep_client_get_outgoing_buffer_len(goep_client_t * goep_client){
+    if (goep_client->l2cap_psm){
         return sizeof(goep_packet_buffer);
     } else {
-        return rfcomm_get_max_frame_size(context->bearer_cid);
+        return rfcomm_get_max_frame_size(goep_client->bearer_cid);
     }
 }
 
-static void goep_client_packet_init(uint16_t goep_cid, uint8_t opcode){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    if (context->l2cap_psm){
+static void goep_client_packet_init(goep_client_t *goep_client, uint8_t opcode) {
+    if (goep_client->l2cap_psm != 0){
     } else {
         rfcomm_reserve_packet_buffer();
     }
     // store opcode for parsing of response
-    context->obex_opcode = opcode;
+    goep_client->obex_opcode = opcode;
 }
 
 void goep_client_init(void){
+    goep_client_t * goep_client = &goep_client_singleton;
     memset(goep_client, 0, sizeof(goep_client_t));
     goep_client->state = GOEP_CLIENT_INIT;
     goep_client->cid = 1;
@@ -390,310 +421,361 @@ void goep_client_init(void){
 }
 
 void goep_client_deinit(void){
-    memset(goep_client, 0, sizeof(goep_client_t));
+    memset(&goep_client_singleton, 0, sizeof(goep_client_t));
     memset(goep_client_sdp_query_attribute_value, 0, sizeof(goep_client_sdp_query_attribute_value));
     memset(goep_packet_buffer, 0, sizeof(goep_packet_buffer));
 }
+
 static void geop_client_sdp_query_start(void * context){
-    UNUSED(context);
-    goep_client_t * goep_client2 = goep_client;
-    sdp_client_query_uuid16(&goep_client_handle_sdp_query_event, goep_client2->bd_addr, goep_client2->uuid);
+    uint16_t goep_cid = (uint16_t)(uintptr_t) context;
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (context != NULL){
+        goep_client_sdp_active = goep_client;
+        sdp_client_query_uuid16(&goep_client_handle_sdp_query_event, goep_client->bd_addr,
+                                goep_client->uuid);
+    }
 }
 
 uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid){
-    goep_client_t * context = goep_client;
-    if (context->state != GOEP_CLIENT_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
-    memset(context, 0, sizeof(goep_client_t));
-    context->client_handler = handler;
-    context->state = GOEP_CLIENT_W4_SDP;
-    context->uuid = uuid;
-    (void)memcpy(context->bd_addr, addr, 6);
-    context->profile_supported_features = PROFILE_FEATURES_NOT_PRESENT;
-    *out_cid = context->cid;
-    context->sdp_query_request.callback = geop_client_sdp_query_start;
-    context->sdp_query_request.context = (void *)(uintptr_t) context->cid;
-    sdp_client_register_query_callback(&context->sdp_query_request);
+    goep_client_t * goep_client = &goep_client_singleton;
+    if (goep_client->state != GOEP_CLIENT_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
+    memset(goep_client, 0, sizeof(goep_client_t));
+    goep_client->client_handler = handler;
+    goep_client->state = GOEP_CLIENT_W4_SDP;
+    goep_client->uuid = uuid;
+    (void)memcpy(goep_client->bd_addr, addr, 6);
+    goep_client->profile_supported_features = PROFILE_FEATURES_NOT_PRESENT;
+    *out_cid = goep_client->cid;
+    goep_client->sdp_query_request.callback = geop_client_sdp_query_start;
+    goep_client->sdp_query_request.context = (void *)(uintptr_t) goep_client->cid;
+    sdp_client_register_query_callback(&goep_client->sdp_query_request);
     return ERROR_CODE_SUCCESS;
 }
 
 uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    return context->profile_supported_features;
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return PBAP_FEATURES_NOT_PRESENT;
+    }
+    return goep_client->profile_supported_features;
 }
 
 uint32_t goep_client_get_map_supported_features(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    return context->profile_supported_features;
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return PROFILE_FEATURES_NOT_PRESENT;
+    }
+    return goep_client->profile_supported_features;
 }
 
 uint8_t goep_client_get_map_mas_instance_id(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    return context->map_mas_instance_id;
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return 0;
+    }
+    return goep_client->map_mas_instance_id;
 }
 
 uint8_t goep_client_get_map_suported_message_types(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    return context->map_supported_message_types;
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return 0;
+    }
+    return goep_client->map_supported_message_types;
 }
 
 
 bool goep_client_version_20_or_higher(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    return context->l2cap_psm != 0;
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return false;
+    }
+    return goep_client->l2cap_psm != 0;
 }
 
 void goep_client_request_can_send_now(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    if (context->l2cap_psm){
-        l2cap_request_can_send_now_event(context->bearer_cid);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    if (goep_client->l2cap_psm){
+        l2cap_request_can_send_now_event(goep_client->bearer_cid);
     } else {
-        rfcomm_request_can_send_now_event(context->bearer_cid);
+        rfcomm_request_can_send_now_event(goep_client->bearer_cid);
     }
 }
 
 uint8_t goep_client_disconnect(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    if (context->l2cap_psm){
-        l2cap_disconnect(context->bearer_cid);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (goep_client->l2cap_psm){
+        l2cap_disconnect(goep_client->bearer_cid);
     } else {
-        rfcomm_disconnect(context->bearer_cid);
+        rfcomm_disconnect(goep_client->bearer_cid);
     }
     return ERROR_CODE_SUCCESS;
 }
 
 void goep_client_set_connection_id(uint16_t goep_cid, uint32_t connection_id){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    context->obex_connection_id = connection_id;
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    goep_client->obex_connection_id = connection_id;
 }
 
 uint8_t goep_client_get_request_opcode(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    return context->obex_opcode;
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return 0;
+    }
+    return goep_client->obex_opcode;
 }
 
 void goep_client_request_create_connect(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    goep_client_packet_init(goep_cid, OBEX_OPCODE_CONNECT);
-
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    goep_client_packet_init(goep_client, OBEX_OPCODE_CONNECT);
     // workaround: limit OBEX packet len to L2CAP/RFCOMM MTU to avoid handling of fragemented packets
-    maximum_obex_packet_length = btstack_min(maximum_obex_packet_length, context->bearer_mtu);
+    maximum_obex_packet_length = btstack_min(maximum_obex_packet_length, goep_client->bearer_mtu);
     
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_request_create_connect(buffer, buffer_len, obex_version_number, flags, maximum_obex_packet_length);
 }
 
 void goep_client_request_create_get(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    goep_client_packet_init(goep_cid, OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK);
-
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
-    obex_message_builder_request_create_get(buffer, buffer_len, context->obex_connection_id);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    goep_client_packet_init(goep_client, OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK);
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
+    obex_message_builder_request_create_get(buffer, buffer_len, goep_client->obex_connection_id);
 }
 
 void goep_client_request_create_put(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    goep_client_packet_init(goep_cid, OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK);
-
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
-    obex_message_builder_request_create_put(buffer, buffer_len, context->obex_connection_id);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    goep_client_packet_init(goep_client, OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK);
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
+    obex_message_builder_request_create_put(buffer, buffer_len, goep_client->obex_connection_id);
 }
 
 void goep_client_request_create_set_path(uint16_t goep_cid, uint8_t flags){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    goep_client_packet_init(goep_cid, OBEX_OPCODE_SETPATH);
-
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
-    obex_message_builder_request_create_set_path(buffer, buffer_len, flags, context->obex_connection_id);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    goep_client_packet_init(goep_client, OBEX_OPCODE_SETPATH);
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
+    obex_message_builder_request_create_set_path(buffer, buffer_len, flags, goep_client->obex_connection_id);
 }
 
 void goep_client_request_create_abort(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    goep_client_packet_init(goep_cid, OBEX_OPCODE_ABORT);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    goep_client_packet_init(goep_client, OBEX_OPCODE_ABORT);
 
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
-    obex_message_builder_request_create_abort(buffer, buffer_len, context->obex_connection_id);
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
+    obex_message_builder_request_create_abort(buffer, buffer_len, goep_client->obex_connection_id);
 }
 
 void goep_client_request_create_disconnect(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    goep_client_packet_init(goep_cid, OBEX_OPCODE_DISCONNECT);
-
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
-    obex_message_builder_request_create_disconnect(buffer, buffer_len, context->obex_connection_id);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    goep_client_packet_init(goep_client, OBEX_OPCODE_DISCONNECT);
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
+    obex_message_builder_request_create_disconnect(buffer, buffer_len, goep_client->obex_connection_id);
 }
 
 void goep_client_header_add_byte(uint16_t goep_cid, uint8_t header_type, uint8_t value){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_header_add_byte(buffer, buffer_len, header_type, value);
 }
 
 void goep_client_header_add_word(uint16_t goep_cid, uint8_t header_type, uint32_t value){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_header_add_word(buffer, buffer_len, header_type, value);
 }
 
 void goep_client_header_add_variable(uint16_t goep_cid, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_header_add_variable(buffer, buffer_len, header_type, header_data, header_data_length);
 }
 
 void goep_client_header_add_srm_enable(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_header_add_srm_enable(buffer, buffer_len);
 }
 
 void goep_client_header_add_target(uint16_t goep_cid, const uint8_t * target, uint16_t length){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_header_add_target(buffer, buffer_len, target, length);
 }
 
 void goep_client_header_add_application_parameters(uint16_t goep_cid, const uint8_t * data, uint16_t length){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_header_add_application_parameters(buffer, buffer_len, data, length);
 }
 
 void goep_client_header_add_challenge_response(uint16_t goep_cid, const uint8_t * data, uint16_t length){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_header_add_challenge_response(buffer, buffer_len, data, length);
 }
 
 void goep_client_body_add_static(uint16_t goep_cid, const uint8_t * data, uint32_t length){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_body_add_static(buffer, buffer_len, data, length);
 }
 
 uint16_t goep_client_body_get_outgoing_buffer_len(uint16_t goep_cid) {
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-
-    return goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return 0;
+    }
+    return goep_client_get_outgoing_buffer_len(goep_client);
 };
 
 void goep_client_body_fillup_static(uint16_t goep_cid, const uint8_t * data, uint32_t length, uint32_t * ret_length){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_body_fillup_static(buffer, buffer_len, data, length, ret_length);
 }
 
 void goep_client_header_add_name(uint16_t goep_cid, const char * name){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_header_add_name(buffer, buffer_len, name);
 }
 
 void goep_client_header_add_name_prefix(uint16_t goep_cid, const char * name, uint16_t name_len){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_header_add_name_prefix(buffer, buffer_len, name, name_len);
 }
 
 void goep_client_header_add_type(uint16_t goep_cid, const char * type){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_header_add_type(buffer, buffer_len, type);
 }
 
 void goep_client_header_add_length(uint16_t goep_cid, uint32_t length){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     obex_message_builder_header_add_length(buffer, buffer_len, length);
 }
 
 uint16_t goep_client_request_get_max_body_size(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return 0;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
     uint16_t pos = big_endian_read_16(buffer, 1);
     return buffer_len - pos;
 }
 
 int goep_client_execute(uint16_t goep_cid){
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     return goep_client_execute_with_final_bit (goep_cid, true);
 }
 
 int goep_client_execute_with_final_bit(uint16_t goep_cid, bool final){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
 
     obex_message_builder_set_final_bit (buffer, buffer_len, final);
 
     uint16_t pos = big_endian_read_16(buffer, 1);
-    if (context->l2cap_psm){
-        return l2cap_send(context->bearer_cid, buffer, pos);
+    if (goep_client->l2cap_psm){
+        return l2cap_send(goep_client->bearer_cid, buffer, pos);
     } else {
-        return rfcomm_send_prepared(context->bearer_cid, pos);
+        return rfcomm_send_prepared(goep_client->bearer_cid, pos);
     }
 }
 
