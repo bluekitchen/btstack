@@ -305,9 +305,6 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                         uint8_t       *des_element;
                         uint8_t       *element;
                         uint32_t       uuid;
-#ifdef ENABLE_GOEP_L2CAP
-                        uint16_t       l2cap_psm;
-#endif
 
                         if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
 
@@ -324,23 +321,12 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
 
                         // second element is RFCOMM server channel or L2CAP PSM
                         element = des_iterator_get_element(&prot_it);
-                        switch (uuid){
-#ifdef ENABLE_GOEP_L2CAP
-                            case BLUETOOTH_PROTOCOL_L2CAP:
-                                if (de_element_get_uint16(element, &l2cap_psm)){
-                                    context->l2cap_psm = l2cap_psm;
-                                }
-                                break;
-#endif
-                            case BLUETOOTH_PROTOCOL_RFCOMM:
-                                if (context->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER) {
-                                    context->mas_info.rfcomm_port = element[de_get_header_size(element)];
-                                } else {
-                                    context->rfcomm_port = element[de_get_header_size(element)];
-                                }
-                                break;
-                            default:
-                                break;
+                        if (uuid == BLUETOOTH_PROTOCOL_RFCOMM){
+                            if (context->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER) {
+                                context->mas_info.rfcomm_port = element[de_get_header_size(element)];
+                            } else {
+                                context->rfcomm_port = element[de_get_header_size(element)];
+                            }
                         }
                     }
                     break;
