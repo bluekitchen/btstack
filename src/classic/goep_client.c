@@ -65,53 +65,6 @@
 #endif
 #endif
 
-typedef enum {
-    GOEP_CLIENT_INIT,
-    GOEP_CLIENT_W4_SDP,
-    GOEP_CLIENT_CONNECTED,
-} goep_client_state_t;
-
-typedef struct {
-    btstack_linked_item_t item;
-
-    uint16_t         cid;
-
-    goep_client_state_t     state;
-    bd_addr_t        bd_addr;
-    uint16_t         uuid;
-    hci_con_handle_t con_handle;
-    uint8_t          incoming;
-
-    btstack_packet_handler_t client_handler;
-    btstack_context_callback_registration_t sdp_query_request;
-
-    uint8_t          rfcomm_port;
-    uint16_t         l2cap_psm;
-    uint16_t         bearer_cid;
-    uint16_t         bearer_mtu;
-
-    uint16_t         record_index;
-
-    // cached higher layer information PBAP + MAP
-    uint32_t         profile_supported_features;
-    uint8_t          map_mas_instance_id;
-    uint8_t          map_supported_message_types;
-
-    // needed to select one of multiple MAS Instances
-    struct {
-        uint32_t supported_features;
-        uint16_t l2cap_psm;
-        uint8_t  instance_id;
-        uint8_t  supported_message_types;
-        uint8_t  rfcomm_port;
-    } mas_info;
-
-    uint8_t          obex_opcode;
-    uint32_t         obex_connection_id;
-    int              obex_connection_id_set;
-
-} goep_client_t;
-
 static goep_client_t   goep_client_singleton;
 static goep_client_t * goep_client = &goep_client_singleton;
 
