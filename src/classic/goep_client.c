@@ -59,8 +59,6 @@
 // goep_client.c
 //
 
-// #define ENABLE_GOEP_L2CAP
-
 #ifdef ENABLE_GOEP_L2CAP
 #ifndef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 #error "ENABLE_GOEP_L2CAP requires ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE. Please enable ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE or disable ENABLE_GOEP_L2CAP"
@@ -68,23 +66,23 @@
 #endif
 
 typedef enum {
-    GOEP_INIT,
-    GOEP_W4_SDP,
-    GOEP_W4_CONNECTION,
-    GOEP_CONNECTED,
-} goep_state_t;
+    GOEP_CLIENT_INIT,
+    GOEP_CLIENT_W4_SDP,
+    GOEP_CLIENT_CONNECTED,
+} goep_client_state_t;
 
 typedef struct {
     btstack_linked_item_t item;
 
     uint16_t         cid;
 
-    goep_state_t     state;
+    goep_client_state_t     state;
     bd_addr_t        bd_addr;
     uint16_t         uuid;
     hci_con_handle_t con_handle;
     uint8_t          incoming;
 
+    btstack_packet_handler_t client_handler;
     btstack_context_callback_registration_t sdp_query_request;
 
     uint8_t          rfcomm_port;
@@ -112,7 +110,6 @@ typedef struct {
     uint32_t         obex_connection_id;
     int              obex_connection_id_set;
 
-    btstack_packet_handler_t client_handler;
 } goep_client_t;
 
 static goep_client_t   goep_client_singleton;
@@ -184,18 +181,18 @@ static inline void goep_client_emit_can_send_now_event(goep_client_t * context){
 
 static void goep_client_handle_connection_opened(goep_client_t * context, uint8_t status, uint16_t mtu){
     if (status) {
-        context->state = GOEP_INIT;
+        context->state = GOEP_CLIENT_INIT;
         log_info("goep_client: open failed, status %u", status);
     } else {
         context->bearer_mtu = mtu;
-        context->state = GOEP_CONNECTED;
+        context->state = GOEP_CLIENT_CONNECTED;
         log_info("goep_client: connection opened. cid %u, max frame size %u", context->bearer_cid, context->bearer_mtu);
     }
     goep_client_emit_connected_event(context, status);
 }
 
 static void goep_client_handle_connection_close(goep_client_t * context){
-    context->state = GOEP_INIT;
+    context->state = GOEP_CLIENT_INIT;
     goep_client_emit_connection_closed_event(context);
 }
 
@@ -378,13 +375,13 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             status = sdp_event_query_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 log_info("GOEP client, SDP query failed 0x%02x", status);
-                context->state = GOEP_INIT;
+                context->state = GOEP_CLIENT_INIT;
                 goep_client_emit_connected_event(goep_client, status);
                 break;
             }
             if ((context->rfcomm_port == 0) && (context->l2cap_psm == 0)){
                 log_info("No GOEP RFCOMM or L2CAP server found");
-                context->state = GOEP_INIT;
+                context->state = GOEP_CLIENT_INIT;
                 goep_client_emit_connected_event(goep_client, SDP_SERVICE_NOT_FOUND);
                 break;
             }
@@ -434,7 +431,7 @@ static void goep_client_packet_init(uint16_t goep_cid, uint8_t opcode){
 
 void goep_client_init(void){
     memset(goep_client, 0, sizeof(goep_client_t));
-    goep_client->state = GOEP_INIT;
+    goep_client->state = GOEP_CLIENT_INIT;
     goep_client->cid = 1;
     goep_client->obex_connection_id = OBEX_CONNECTION_ID_INVALID;
 }
@@ -452,10 +449,10 @@ static void geop_client_sdp_query_start(void * context){
 
 uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid){
     goep_client_t * context = goep_client;
-    if (context->state != GOEP_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
+    if (context->state != GOEP_CLIENT_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
     memset(context, 0, sizeof(goep_client_t));
     context->client_handler = handler;
-    context->state = GOEP_W4_SDP;
+    context->state = GOEP_CLIENT_W4_SDP;
     context->uuid = uuid;
     (void)memcpy(context->bd_addr, addr, 6);
     context->profile_supported_features = PROFILE_FEATURES_NOT_PRESENT;
