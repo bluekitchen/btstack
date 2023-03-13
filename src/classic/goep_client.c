@@ -75,7 +75,10 @@ typedef enum {
 } goep_state_t;
 
 typedef struct {
+    btstack_linked_item_t item;
+
     uint16_t         cid;
+
     goep_state_t     state;
     bd_addr_t        bd_addr;
     uint16_t         uuid;
