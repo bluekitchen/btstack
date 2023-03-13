@@ -137,7 +137,7 @@ static void map_notification_server_obex_parser_callback (void *user_data, uint8
         case OBEX_HEADER_TYPE:
             /* we only deal with <x-bt/MAP-event-report> */
             if (data_len == strlen ("x-bt/MAP-event-report") &&
-                strncmp ("x-bt/MAP-event-report", data_buffer, data_len) == 0){
+                strncmp ("x-bt/MAP-event-report", (const char *) data_buffer, data_len) == 0){
                 mns->request.is_event_report = 1;
             }
             break;
@@ -280,7 +280,7 @@ static void map_notification_server_packet_handler_goep(map_notification_server_
 
     if (mns->state == MAP_CONNECTED){
         map_notification_server_reset_request (mns);
-        mns->state == MAP_W4_REQUEST;
+        mns->state = MAP_W4_REQUEST;
         if (packet[0] == OBEX_OPCODE_PUT) {
             obex_parser_init_for_request(&mns->obex_parser, &map_notification_server_obex_parser_callback, (void*) mns);
             obex_srm_init(&mns->obex_srm);
