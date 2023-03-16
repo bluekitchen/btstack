@@ -43,6 +43,19 @@ extern int printf( const char *pcFormat, ...);
 #define MCUBOOT_LOG_DBG(_fmt, ...)
 #endif
 
+#if MCUBOOT_LOG_LEVEL >= MCUBOOT_LOG_LEVEL_DEBUG
+#define MCUBOOT_LOG_BUF(name, buf, len)                                                 \
+    do {                                                                                \
+        printf("[DBG] [%s] line:%d, %s[", __func__, __LINE__, (name));                  \
+        for (uint32_t i = 0;i < (len);i++) {                                            \
+            printf("%02X ", (buf)[i]);                                                  \
+        }                                                                               \
+        printf("]\n");                                                                  \
+    } while(0)
+#else
+#define MCUBOOT_LOG_BUF(name, buf, len)
+#endif
+
 #define MCUBOOT_LOG_MODULE_DECLARE(...)
 #define MCUBOOT_LOG_MODULE_REGISTER(...)
 

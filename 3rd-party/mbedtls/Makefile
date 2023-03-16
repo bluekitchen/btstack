@@ -1,4 +1,4 @@
-DESTDIR=/usr/local
+DESTDIR=.build_output
 PREFIX=mbedtls_
 PERL ?= perl
 

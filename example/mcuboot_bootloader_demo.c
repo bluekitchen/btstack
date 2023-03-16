@@ -93,10 +93,6 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]) {
     (void)argc;
     (void)argv;
-#if defined(MCUBOOT_IMG_BOOTLOADER)
-    printf("I am mcuboot bootloader!\r\n");
-    //main_boot();
-#endif
 
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
@@ -107,7 +103,7 @@ int btstack_main(int argc, const char * argv[]) {
 
     /* sha256 test */
     char *source_cxt = "ye.he@amlogic.com";
-    char encrypt_cxt[64] = {0};
+    char digest_cxt[64] = {0};
 
     printf("source context is:%s\r\n", source_cxt);
 
@@ -115,17 +111,23 @@ int btstack_main(int argc, const char * argv[]) {
     mbedtls_sha256_init(&sha256_ctx);
     mbedtls_sha256_starts(&sha256_ctx, 0);
     mbedtls_sha256_update(&sha256_ctx, (unsigned char *)source_cxt, strlen(source_cxt));
-    mbedtls_sha256_finish(&sha256_ctx, (unsigned char *)encrypt_cxt);
+    mbedtls_sha256_finish(&sha256_ctx, (unsigned char *)digest_cxt);
     mbedtls_sha256_free(&sha256_ctx);
 
     int i = 0;
-    printf("sha256 encrypt context is:[");
-    while (encrypt_cxt[i]) {
-        printf("%02x", encrypt_cxt[i]);
+    printf("sha256 digest context is:[");
+    while (digest_cxt[i]) {
+        printf("%02x", digest_cxt[i]);
         i++;
     }
     printf("]\r\n");
 #endif
+
+#if defined(MCUBOOT_IMG_BOOTLOADER)
+    printf("I am mcuboot bootloader!\r\n");
+    main_boot();
+#endif
+
     return 0;
 }
 

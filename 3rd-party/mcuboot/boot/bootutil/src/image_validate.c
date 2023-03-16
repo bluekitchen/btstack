@@ -37,6 +37,7 @@
 #include "bootutil/sign_key.h"
 #include "bootutil/security_cnt.h"
 #include "bootutil/fault_injection_hardening.h"
+#include "bootutil/bootutil_log.h"
 
 #include "mcuboot_config/mcuboot_config.h"
 
@@ -367,7 +368,7 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
     if (out_hash) {
         memcpy(out_hash, hash, 32);
     }
-
+    BOOT_LOG_BUF("IMG_DIGEST_HASH", hash, sizeof(hash));
     rc = bootutil_tlv_iter_begin(&it, hdr, fap, IMAGE_TLV_ANY, false);
     if (rc) {
         goto out;
@@ -420,6 +421,8 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
                 goto out;
             }
             key_id = bootutil_find_key(buf, len);
+            BOOT_LOG_BUF("IMAGE_TLV_KEYHASH", buf, len);
+            BOOT_LOG_DBG("key_id:%d", key_id);
             /*
              * The key may not be found, which is acceptable.  There
              * can be multiple signatures, each preceded by a key.
@@ -457,6 +460,7 @@ bootutil_img_validate(struct enc_key_data *enc_state, int image_index,
             if (rc) {
                 goto out;
             }
+            BOOT_LOG_BUF("EXPECTED_SIG_TLV", buf, len);
             FIH_CALL(bootutil_verify_sig, valid_signature, hash, sizeof(hash),
                                                            buf, len, key_id);
             key_id = -1;

@@ -531,10 +531,29 @@ $(BUILD_DIR)/%.jdebug: ozone.jdebug | $(BUILD_DIR)
 	sed -e "s|EXAMPLE|$(basename $(notdir $@))|" $<  > $@
 
 ifeq (${mcuboot}, app1)
-	python3 ${BTSTACK_ROOT}/3rd-party/mcuboot/scripts/imgtool.py sign --header-size 0x200 --align 4 --slot-size 0x20000 --version 1.0.0 --pad-header $(BUILD_DIR)/${EXAMPLES}.bin $(BUILD_DIR)/mcuboot_primary_slot.bin
+	python3 ${MCUBOOT_IMG_TOOL} sign --key ${MCUBOOT_SIGNING_KEY} \
+								--header-size 0x200 \
+								--align 4 \
+								--slot-size 0x20000 \
+								--version 1.0.0 \
+								--pad-header \
+								$(BUILD_DIR)/${EXAMPLES}.bin \
+								$(BUILD_DIR)/mcuboot_primary_slot.bin
 else ifeq (${mcuboot}, app2)
-	python3 ${BTSTACK_ROOT}/3rd-party/mcuboot/scripts/imgtool.py sign --header-size 0x200 --align 4 --slot-size 0x20000 --version 1.0.0 --pad-header $(BUILD_DIR)/${EXAMPLES}.bin $(BUILD_DIR)/mcuboot_secondary_slot.bin
-	./${BTSTACK_ROOT}/3rd-party/nordic-dfu/tools/nrfutil-linux pkg generate --hw-version 52 --sd-req 0x0103 --application $(BUILD_DIR)/mcuboot_secondary_slot.bin --application-version 1 $(BUILD_DIR)/nrf_dfu_mcuboot.zip
+	python3 ${MCUBOOT_IMG_TOOL} sign --key ${MCUBOOT_SIGNING_KEY} \
+								--header-size 0x200 \
+								--align 4 \
+								--slot-size 0x20000 \
+								--version 1.0.0 \
+								--pad-header \
+								$(BUILD_DIR)/${EXAMPLES}.bin \
+								$(BUILD_DIR)/mcuboot_secondary_slot.bin
+	${NORDIC_DFU_IMG_TOOL}  pkg generate --hw-version 52 \
+							--sd-req 0x0103 \
+							--application \
+							$(BUILD_DIR)/mcuboot_secondary_slot.bin \
+							--application-version 1 \
+							$(BUILD_DIR)/nrf_dfu_mcuboot.zip
 endif
 
 $(BUILD_DIR):

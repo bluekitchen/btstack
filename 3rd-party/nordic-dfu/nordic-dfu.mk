@@ -2,6 +2,8 @@
 MK_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURDIR := $(patsubst %/, %, $(dir $(MK_PATH)))
 
+NORDIC_DFU_IMG_TOOL := $(CURDIR)/tools/nrfutil-linux
+
 C_SOURCES_NORDIC_DFU := $(CURDIR)/port/nrf_dfu_ble.c
 C_SOURCES_NORDIC_DFU += $(CURDIR)/port/nrf_dfu_flash_port.c
 C_SOURCES_NORDIC_DFU += $(CURDIR)/src/nrf_dfu.c

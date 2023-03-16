@@ -6,7 +6,7 @@
 //#include <mbedtls/memory_buffer_alloc.h>
 
 #ifdef MCUBOOT_USE_MBED_TLS
-    #define CRYPTO_HEAP_SIZE 0x1000
+    #define CRYPTO_HEAP_SIZE (1024 * 16)
     static unsigned char crypto_heap[CRYPTO_HEAP_SIZE];
 #endif
 

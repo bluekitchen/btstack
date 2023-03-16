@@ -4,6 +4,9 @@ CURDIR := $(patsubst %/, %, $(dir $(MK_PATH)))
 
 mcuboot = none
 
+MCUBOOT_IMG_TOOL := $(CURDIR)/scripts/imgtool.py
+MCUBOOT_SIGNING_KEY :=  $(CURDIR)/root-rsa-2048.pem
+
 C_SOURCES_MCUBOOT := $(CURDIR)/boot/bootutil/src/boot_record.c
 C_SOURCES_MCUBOOT += $(CURDIR)/boot/bootutil/src/bootutil_misc.c
 C_SOURCES_MCUBOOT += $(CURDIR)/boot/bootutil/src/bootutil_public.c
