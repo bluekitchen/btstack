@@ -216,6 +216,8 @@ EXAMPLES_CLASSIC_ONLY =     \
 	spp_streamer            \
 	spp_streamer_client     \
 	ublox_spp_le_counter    \
+	classic_paring_central    \
+	classic_paring_peripheral \
 
 # List of Examples that only use Bluetooth LE
 
@@ -300,6 +302,12 @@ default_target: all
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 # examples
+
+classic_paring_central: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} classic_paring_central.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+classic_paring_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} classic_paring_peripheral.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 ant_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ant_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
