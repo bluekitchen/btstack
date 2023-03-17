@@ -609,7 +609,7 @@ int btstack_main(int argc, const char * argv[]) {
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);
-	    
+
     return 0;
 }
 /* LISTING_END */
