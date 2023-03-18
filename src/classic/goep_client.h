@@ -53,6 +53,7 @@ extern "C" {
 #include <string.h>
 
 #include "btstack_defines.h"
+#include "l2cap.h"
 
 typedef enum {
     GOEP_CLIENT_INIT,
@@ -77,7 +78,6 @@ typedef struct {
     btstack_context_callback_registration_t sdp_query_request;
 
     uint8_t          rfcomm_port;
-    uint16_t         l2cap_psm;
     uint16_t         bearer_cid;
     uint16_t         bearer_mtu;
 
@@ -91,16 +91,24 @@ typedef struct {
     // needed to select one of multiple MAS Instances
     struct {
         uint32_t supported_features;
-        uint16_t l2cap_psm;
         uint8_t  instance_id;
         uint8_t  supported_message_types;
         uint8_t  rfcomm_port;
+#ifdef ENABLE_GOEP_L2CAP
+        uint16_t l2cap_psm;
+#endif
     } mas_info;
 
     uint8_t          obex_opcode;
     uint32_t         obex_connection_id;
     int              obex_connection_id_set;
 
+#ifdef ENABLE_GOEP_L2CAP
+    uint16_t            l2cap_psm;
+    l2cap_ertm_config_t ertm_config;
+    uint16_t            ertm_buffer_size;
+    uint8_t           * ertm_buffer;
+#endif
 } goep_client_t;
 
 
@@ -114,8 +122,26 @@ typedef struct {
  */
 void goep_client_init(void);
 
+/**
+ * @brief Connect to a GEOP server with specified UUID on a remote device.
+ * @param goep_client
+ * @param handler
+ * @param addr
+ * @param uuid
+ * @param l2cap_ertm_config
+ * @param l2cap_ertm_buffer_size
+ * @param l2cap_ertm_buffer
+ * @param out_cid
+ * @return
+ */
+uint8_t goep_client_connect(goep_client_t *goep_client, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid,
+                            l2cap_ertm_config_t * l2cap_ertm_config, uint16_t l2cap_ertm_buffer_size,
+                            uint8_t *l2cap_ertm_buffer, uint16_t *out_cid);
+
 /*
- * @brief Create GOEP connection to a GEOP server with specified UUID on a remote deivce.
+ * @brief Connect to a GEOP server with specified UUID on a remote device.
+ * @note This functions uses a single goep_client_t instance and only allows for a single goep connection
+ *       Please use goep_client_connect instead
  * @param handler 
  * @param addr
  * @param uuid

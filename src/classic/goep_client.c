@@ -65,17 +65,21 @@
 #endif
 #endif
 
-static goep_client_t   goep_client_singleton;
+static uint16_t goep_client_cid;
+static btstack_linked_list_t goep_clients;
 
 static goep_client_t *    goep_client_sdp_active;
 static uint8_t            goep_client_sdp_query_attribute_value[30];
 static const unsigned int goep_client_sdp_query_attribute_value_buffer_size = sizeof(goep_client_sdp_query_attribute_value);
-
 static uint8_t goep_packet_buffer[150];
 
+// singleton instance
+static goep_client_t   goep_client_singleton;
+
 #ifdef ENABLE_GOEP_L2CAP
-static uint8_t ertm_buffer[1000];
-static l2cap_ertm_config_t ertm_config = {
+// singleton instance
+static uint8_t goep_client_singleton_ertm_buffer[1000];
+static l2cap_ertm_config_t goep_client_singleton_ertm_config = {
     1,  // ertm mandatory
     2,  // max transmit, some tests require > 1
     2000,
@@ -146,15 +150,20 @@ static void goep_client_handle_connection_opened(goep_client_t * goep_client, ui
 
 static void goep_client_handle_connection_close(goep_client_t * goep_client){
     goep_client->state = GOEP_CLIENT_INIT;
+    btstack_linked_list_remove(&goep_clients, (btstack_linked_item_t *) goep_client);
     goep_client_emit_connection_closed_event(goep_client);
 }
 
 static goep_client_t * goep_client_for_cid(uint16_t cid){
-    if (cid == goep_client_singleton.cid){
-        return &goep_client_singleton;
-    } else {
-        return NULL;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &goep_clients);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        goep_client_t * goep_client = (goep_client_t *) btstack_linked_list_iterator_next(&it);
+        if (goep_client->cid == cid){
+            return goep_client;
+        }
     }
+    return NULL;
 }
 
 static goep_client_t * goep_client_for_bearer_cid(uint16_t bearer_cid){
@@ -174,7 +183,7 @@ static void goep_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
             switch (hci_event_packet_get_type(packet)) {
 #ifdef ENABLE_GOEP_L2CAP
                 case L2CAP_EVENT_CHANNEL_OPENED:
-                    goep_client = goep_client_for_bearer_cid(l2cap_event_channel_closed_get_local_cid(packet));
+                    goep_client = goep_client_for_bearer_cid(l2cap_event_channel_opened_get_local_cid(packet));
                     btstack_assert(goep_client != NULL);
                     goep_client_handle_connection_opened(goep_client, l2cap_event_channel_opened_get_status(packet),
                                                          btstack_min(l2cap_event_channel_opened_get_remote_mtu(packet), l2cap_event_channel_opened_get_local_mtu(packet)));
@@ -247,6 +256,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
     des_iterator_t prot_it;
     uint8_t status;
     uint16_t record_index;
+    bool goep_server_found;
 
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
@@ -364,7 +374,16 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                 goep_client_emit_connected_event(goep_client, status);
                 break;
             }
-            if ((goep_client->rfcomm_port == 0) && (goep_client->l2cap_psm == 0)){
+            goep_server_found = false;
+            if (goep_client->rfcomm_port != 0){
+                goep_server_found = true;
+            }
+#ifdef ENABLE_GOEP_L2CAP
+            if (goep_client->l2cap_psm != 0){
+                goep_server_found = true;
+            }
+#endif
+            if (goep_server_found == false){
                 log_info("No GOEP RFCOMM or L2CAP server found");
                 goep_client->state = GOEP_CLIENT_INIT;
                 goep_client_emit_connected_event(goep_client, SDP_SERVICE_NOT_FOUND);
@@ -374,7 +393,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             if (goep_client->l2cap_psm){
                 log_info("Remote GOEP L2CAP PSM: %u", goep_client->l2cap_psm);
                 l2cap_ertm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->l2cap_psm,
-                                          &ertm_config, ertm_buffer, sizeof(ertm_buffer), &goep_client->bearer_cid);
+                                          &goep_client->ertm_config, goep_client->ertm_buffer,
+                                          goep_client->ertm_buffer_size, &goep_client->bearer_cid);
                 return;
             }
 #endif
@@ -416,11 +436,11 @@ void goep_client_init(void){
     goep_client_t * goep_client = &goep_client_singleton;
     memset(goep_client, 0, sizeof(goep_client_t));
     goep_client->state = GOEP_CLIENT_INIT;
-    goep_client->cid = 1;
-    goep_client->obex_connection_id = OBEX_CONNECTION_ID_INVALID;
 }
 
 void goep_client_deinit(void){
+    goep_clients = NULL;
+    goep_client_cid = 0;
     memset(&goep_client_singleton, 0, sizeof(goep_client_t));
     memset(goep_client_sdp_query_attribute_value, 0, sizeof(goep_client_sdp_query_attribute_value));
     memset(goep_packet_buffer, 0, sizeof(goep_packet_buffer));
@@ -436,20 +456,47 @@ static void geop_client_sdp_query_start(void * context){
     }
 }
 
-uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid){
-    goep_client_t * goep_client = &goep_client_singleton;
-    if (goep_client->state != GOEP_CLIENT_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
+uint8_t goep_client_connect(goep_client_t *goep_client, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid,
+                            l2cap_ertm_config_t * l2cap_ertm_config, uint16_t l2cap_ertm_buffer_size,
+                            uint8_t *l2cap_ertm_buffer, uint16_t *out_cid) {
+    // get new goep cid, skip 0x0000
+    goep_client_cid++;
+    if (goep_client_cid == 0) {
+        goep_client_cid = 1;
+    }
+
+    // add to list
     memset(goep_client, 0, sizeof(goep_client_t));
-    goep_client->client_handler = handler;
     goep_client->state = GOEP_CLIENT_W4_SDP;
+    goep_client->cid = goep_client_cid;
+    goep_client->client_handler = handler;
     goep_client->uuid = uuid;
-    (void)memcpy(goep_client->bd_addr, addr, 6);
     goep_client->profile_supported_features = PROFILE_FEATURES_NOT_PRESENT;
-    *out_cid = goep_client->cid;
+    (void)memcpy(goep_client->bd_addr, addr, 6);
     goep_client->sdp_query_request.callback = geop_client_sdp_query_start;
     goep_client->sdp_query_request.context = (void *)(uintptr_t) goep_client->cid;
+    goep_client->obex_connection_id = OBEX_CONNECTION_ID_INVALID;
+#ifdef ENABLE_GOEP_L2CAP
+    memcpy(&goep_client->ertm_config, l2cap_ertm_config, sizeof(l2cap_ertm_config_t));
+    goep_client->ertm_buffer_size = l2cap_ertm_buffer_size;
+    goep_client->ertm_buffer = l2cap_ertm_buffer;
+#endif
+    btstack_linked_list_add(&goep_clients, (btstack_linked_item_t *) goep_client);
+
+    // request sdp query
     sdp_client_register_query_callback(&goep_client->sdp_query_request);
+
+    *out_cid = goep_client->cid;
     return ERROR_CODE_SUCCESS;
+}
+
+uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid){
+    goep_client_t * goep_client = &goep_client_singleton;
+    if (goep_client->state != GOEP_CLIENT_INIT) {
+        return BTSTACK_MEMORY_ALLOC_FAILED;
+    }
+    return goep_client_connect(goep_client, handler, addr, uuid, &goep_client_singleton_ertm_config,
+                               sizeof(goep_client_singleton_ertm_buffer), goep_client_singleton_ertm_buffer, out_cid);
 }
 
 uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid){
