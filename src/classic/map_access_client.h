@@ -45,11 +45,84 @@ extern "C" {
 #include "bluetooth.h"
 #include "btstack_config.h"
 #include "btstack_defines.h"
-#include "map.h"
-
+#include "classic/map.h"
+#include "classic/obex_parser.h"
 #include <stdint.h>
 
 /* API_START */
+
+
+typedef enum {
+    MAP_INIT = 0,
+    MAP_W4_GOEP_CONNECTION,
+    MAP_W2_SEND_CONNECT_REQUEST,
+    MAP_W4_CONNECT_RESPONSE,
+    MAP_CONNECT_RESPONSE_RECEIVED,
+    MAP_CONNECTED,
+
+    MAP_W2_SET_PATH_ROOT,
+    MAP_W4_SET_PATH_ROOT_COMPLETE,
+    MAP_W2_SET_PATH_ELEMENT,
+    MAP_W4_SET_PATH_ELEMENT_COMPLETE,
+
+    MAP_W2_SEND_GET_FOLDERS,
+    MAP_W4_FOLDERS,
+    MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER,
+    MAP_W4_MESSAGES_IN_FOLDER,
+    MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE,
+    MAP_W4_MESSAGE,
+    MAP_W2_SET_NOTIFICATION,
+    MAP_W4_SET_NOTIFICATION,
+    MAP_W2_SET_NOTIFICATION_FILTER,
+    MAP_W4_SET_NOTIFICATION_FILTER,
+
+    MAP_W2_SEND_GET_MAS_INSTANCE_INFO,
+    MAP_W4_MAS_INSTANCE_INFO,
+
+    MAP_W2_SEND_DISCONNECT_REQUEST,
+    MAP_W4_DISCONNECT_RESPONSE,
+} map_access_client_state_t;
+
+typedef enum {
+    SRM_DISABLED,
+    SRM_W4_CONFIRM,
+    SRM_ENABLED_BUT_WAITING,
+    SRM_ENABLED
+} map_acces_client_srm_state_t;
+
+typedef struct {
+    uint8_t srm_value;
+    uint8_t srmp_value;
+} map_access_client_obex_srm_t;
+
+typedef struct {
+    map_access_client_state_t state;
+    uint16_t  map_cid;
+    bd_addr_t bd_addr;
+    hci_con_handle_t con_handle;
+    uint8_t   incoming;
+    uint16_t  goep_cid;
+    btstack_packet_handler_t client_handler;
+
+    int request_number;
+    /* obex parser */
+    bool obex_parser_waiting_for_response;
+    obex_parser_t obex_parser;
+    uint8_t obex_header_buffer[4];
+    /* srm */
+    map_access_client_obex_srm_t obex_srm;
+    map_acces_client_srm_state_t srm_state;
+
+    const char * folder_name;
+    const char * current_folder;
+    uint16_t set_path_offset;
+    uint8_t  notifications_enabled;
+    uint32_t notification_filter_mask;
+    uint8_t  mas_instance_id;
+
+    map_message_handle_t message_handle;
+    uint8_t get_message_attachment;
+} map_access_client_t;
 
 /**
  *
