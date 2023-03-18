@@ -68,78 +68,6 @@
 static const uint8_t map_access_client_service_uuid[] = {0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66};
 static uint32_t map_access_client_supported_features = 0x1F;
 
-typedef enum {
-    MAP_INIT = 0,
-    MAP_W4_GOEP_CONNECTION,
-    MAP_W2_SEND_CONNECT_REQUEST,
-    MAP_W4_CONNECT_RESPONSE,
-    MAP_CONNECT_RESPONSE_RECEIVED,
-    MAP_CONNECTED,
-
-    MAP_W2_SET_PATH_ROOT,
-    MAP_W4_SET_PATH_ROOT_COMPLETE,
-    MAP_W2_SET_PATH_ELEMENT,
-    MAP_W4_SET_PATH_ELEMENT_COMPLETE,
-
-    MAP_W2_SEND_GET_FOLDERS,
-    MAP_W4_FOLDERS,
-    MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER,
-    MAP_W4_MESSAGES_IN_FOLDER,
-    MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE,
-    MAP_W4_MESSAGE,
-    MAP_W2_SET_NOTIFICATION,
-    MAP_W4_SET_NOTIFICATION,
-    MAP_W2_SET_NOTIFICATION_FILTER,
-    MAP_W4_SET_NOTIFICATION_FILTER,
-
-    MAP_W2_SEND_GET_MAS_INSTANCE_INFO,
-    MAP_W4_MAS_INSTANCE_INFO,
-
-    MAP_W2_SEND_DISCONNECT_REQUEST,
-    MAP_W4_DISCONNECT_RESPONSE,
-} map_access_client_state_t;
-
-typedef enum {
-    SRM_DISABLED,
-    SRM_W4_CONFIRM,
-    SRM_ENABLED_BUT_WAITING,
-    SRM_ENABLED
-} srm_state_t;
-
-typedef struct {
-    uint8_t srm_value;
-    uint8_t srmp_value;
-} obex_srm_t;
-
-typedef struct {
-    map_access_client_state_t state;
-    uint16_t  map_cid;
-    bd_addr_t bd_addr;
-    hci_con_handle_t con_handle;
-    uint8_t   incoming;
-    uint16_t  goep_cid;
-    btstack_packet_handler_t client_handler;
-
-    int request_number;
-    /* obex parser */
-    bool obex_parser_waiting_for_response;
-    obex_parser_t obex_parser;
-    uint8_t obex_header_buffer[4];
-    /* srm */
-    obex_srm_t obex_srm;
-    srm_state_t srm_state;
-
-    const char * folder_name;
-    const char * current_folder;
-    uint16_t set_path_offset;
-    uint8_t  notifications_enabled;
-    uint32_t notification_filter_mask;
-    uint8_t  mas_instance_id;
-
-    map_message_handle_t message_handle;
-    uint8_t get_message_attachment;
-} map_access_client_t;
-
 static map_access_client_t _map_client;
 static map_access_client_t * map_client = &_map_client;
 
@@ -199,7 +127,7 @@ static void map_access_client_message_handle_to_str(char * p, const map_message_
     *p = 0;
 }
 
-static void map_access_client_obex_srm_init(obex_srm_t * obex_srm){
+static void map_access_client_obex_srm_init(map_access_client_obex_srm_t * obex_srm){
     obex_srm->srm_value = OBEX_SRM_DISABLE;
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
 }
@@ -473,7 +401,7 @@ static void map_access_client_handle_can_send_now(void){
 
 
 static void map_access_client_handle_srm_headers(map_access_client_t *context) {
-    const obex_srm_t * obex_srm = &map_client->obex_srm;
+    const map_access_client_obex_srm_t * obex_srm = &map_client->obex_srm;
     // Update SRM state based on SRM headers
     switch (context->srm_state){
         case SRM_W4_CONFIRM:
