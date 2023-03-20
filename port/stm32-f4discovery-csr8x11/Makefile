@@ -532,19 +532,19 @@ $(BUILD_DIR)/%.jdebug: ozone.jdebug | $(BUILD_DIR)
 
 ifeq (${mcuboot}, app1)
 	python3 ${MCUBOOT_IMG_TOOL} sign --key ${MCUBOOT_SIGNING_KEY} \
-								--header-size 0x200 \
-								--align 4 \
-								--slot-size 0x20000 \
-								--version 1.0.0 \
+								--header-size ${MCUBOOT_IMG_HEADER_SIZE} \
+								--align ${MCUBOOT_IMG_ALIGN} \
+								--slot-size ${MCUBOOT_IMG_SLOT_SIZE} \
+								--version ${MCUBOOT_IMG_VERSION} \
 								--pad-header \
 								$(BUILD_DIR)/${EXAMPLES}.bin \
 								$(BUILD_DIR)/mcuboot_primary_slot.bin
 else ifeq (${mcuboot}, app2)
 	python3 ${MCUBOOT_IMG_TOOL} sign --key ${MCUBOOT_SIGNING_KEY} \
-								--header-size 0x200 \
-								--align 4 \
-								--slot-size 0x20000 \
-								--version 1.0.0 \
+								--header-size ${MCUBOOT_IMG_HEADER_SIZE} \
+								--align ${MCUBOOT_IMG_ALIGN} \
+								--slot-size ${MCUBOOT_IMG_SLOT_SIZE} \
+								--version ${MCUBOOT_IMG_VERSION} \
 								--pad-header \
 								$(BUILD_DIR)/${EXAMPLES}.bin \
 								$(BUILD_DIR)/mcuboot_secondary_slot.bin

@@ -251,7 +251,9 @@ static void nordic_dfu_evt_observer(nrf_dfu_evt_type_t evt, uint8_t *packet, uin
             att_server_init(bootloader_profile_data, NULL, NULL);
             break;
         case NRF_DFU_EVT_DFU_COMPLETED:
+#if defined(MCUBOOT_IMG_APPLICATION1) ||defined(MCUBOOT_IMG_APPLICATION2)
             boot_set_pending(1);
+#endif
             hal_cpu_reset();
             break;
         default:

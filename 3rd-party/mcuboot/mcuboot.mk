@@ -7,6 +7,12 @@ mcuboot = none
 MCUBOOT_IMG_TOOL := $(CURDIR)/scripts/imgtool.py
 MCUBOOT_SIGNING_KEY :=  $(CURDIR)/root-rsa-2048.pem
 
+MCUBOOT_IMG_HEADER_SIZE := 0x200
+MCUBOOT_IMG_SLOT_SIZE	:= 0x20000
+MCUBOOT_IMG_ALIGN		:= 4
+MCUBOOT_IMG_VERSION		:= 1.0.0
+C_DEFS_MCUBOOT += -DMCUBOOT_IMG_PAYLOAD_OFFSET=${MCUBOOT_IMG_HEADER_SIZE}+${MCUBOOT_IMG_SLOT_SIZE}
+
 C_SOURCES_MCUBOOT := $(CURDIR)/boot/bootutil/src/boot_record.c
 C_SOURCES_MCUBOOT += $(CURDIR)/boot/bootutil/src/bootutil_misc.c
 C_SOURCES_MCUBOOT += $(CURDIR)/boot/bootutil/src/bootutil_public.c
