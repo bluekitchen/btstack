@@ -324,8 +324,9 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_server_codec_configuration_get_octets_per_frame(packet);
             codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_server_codec_configuration_get_frame_blocks_per_sdu(packet);
 
-            MESSAGE("ASCS: CODEC_CONFIGURATION_RECEIVED ase_id %d, con_handle 0x%02x", ascs_server_current_ase_id, con_handle);
-            audio_stream_control_service_server_streamendpoint_configure_codec(con_handle, ascs_server_current_ase_id, codec_configuration);
+            MESSAGE("ASCS: CODEC_CONFIGURATION_RECEIVED ase_id %d, codec_configuration_mask %02x, con_handle 0x%02x", ascs_server_current_ase_id,
+                    codec_configuration.specific_codec_configuration.codec_configuration_mask, con_handle);
+            audio_stream_control_service_server_streamendpoint_configure_codec(con_handle, ascs_server_current_ase_id, &codec_configuration);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_QOS_CONFIGURATION:
             ascs_server_current_ase_id = gattservice_subevent_ascs_server_qos_configuration_get_ase_id(packet);
@@ -342,7 +343,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             qos_configuration.presentation_delay_us = gattservice_subevent_ascs_server_qos_configuration_get_presentation_delay_us(packet);
 
             MESSAGE("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d", ascs_server_current_ase_id);
-            audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ascs_server_current_ase_id, qos_configuration);
+            audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ascs_server_current_ase_id, &qos_configuration);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE:
             ascs_server_current_ase_id = gattservice_subevent_ascs_server_disable_get_ase_id(packet);
@@ -354,7 +355,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             con_handle = gattservice_subevent_ascs_server_metadata_get_con_handle(packet);
             ascs_server_current_ase_id = gattservice_subevent_ascs_server_metadata_get_ase_id(packet);
             MESSAGE("ASCS: METADATA_RECEIVED ase_id %d", ascs_server_current_ase_id);
-            audio_stream_control_service_server_streamendpoint_metadata_update(con_handle, ascs_server_current_ase_id, ascs_server_audio_metadata);
+            audio_stream_control_service_server_streamendpoint_metadata_update(con_handle, ascs_server_current_ase_id, &ascs_server_audio_metadata);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_START_READY:
             ascs_server_current_ase_id = gattservice_subevent_ascs_server_start_ready_get_ase_id(packet);
@@ -897,7 +898,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
 
                     ascs_server_codec_configuration.framing = frequency_index == LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ ? 1 : 0;
                     audio_stream_control_service_server_streamendpoint_configure_codec(ascs_server_current_client_con_handle,
-                                                                                       ase_id_used_by_configure_codec, ascs_server_codec_configuration);
+                                                                                       ase_id_used_by_configure_codec, &ascs_server_codec_configuration);
 
                     response_len = 0;
                     btp_append_uint24(0);
@@ -941,7 +942,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 uint16_t ascs_cid = data[0];
                 ase_id = data[1];
                 MESSAGE("BTP_LE_AUDIO_OP_ASCS_ENABLE ase_id %u", ase_id);
-                uint8_t status = audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_id);
+                uint8_t status = audio_stream_control_service_client_streamendpoint_enable(ascs_cid, ase_id, &ascs_metadata);
                 expect_status_no_error(status);
             }
             break;
@@ -1013,7 +1014,7 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                                                                                                         &ascs_metadata);
                     expect_status_no_error(status);
                 } else {
-                    audio_stream_control_service_server_streamendpoint_metadata_update(ascs_server_current_client_con_handle, ase_id, ascs_metadata);
+                    audio_stream_control_service_server_streamendpoint_metadata_update(ascs_server_current_client_con_handle, ase_id, &ascs_metadata);
                     response_len = 0;
                     btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_UPDATE_METADATA, 0, response_len, response_buffer);
                 }
