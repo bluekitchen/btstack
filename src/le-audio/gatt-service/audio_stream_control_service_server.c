@@ -649,6 +649,9 @@ static void ascs_server_control_point_operation_prepare_response_for_codec_confi
                 return;
             }
             break;
+        case HCI_AUDIO_CODING_FORMAT_VENDOR_SPECIFIC:
+            // accept any vendor-specific codec
+            break;
         default:
             ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_REJECTED_CONFIGURATION_PARAMETER_VALUE, ASCS_REJECT_REASON_CODEC_SPECIFIC_CONFIGURATION);
             break;
