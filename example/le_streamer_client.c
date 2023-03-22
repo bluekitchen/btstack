@@ -515,7 +515,7 @@ int btstack_main(int argc, const char * argv[]){
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     // scan on Coded and 1M PHYs
-    gap_set_scan_phys(6);
+    gap_set_scan_phys(5);
 #endif
 
     // turn on!
