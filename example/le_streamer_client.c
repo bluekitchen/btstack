@@ -80,6 +80,7 @@ typedef enum {
     TC_W4_TEST_DATA
 } gc_state_t;
 
+static char *const le_streamer_server_name = "LE Streamer";
 static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
@@ -181,10 +182,8 @@ static void le_streamer_client_request_to_send(le_streamer_connection_t * connec
 }
 
 // returns 1 if name is found in advertisement
-static int advertisement_report_contains_name(const char * name, uint8_t * advertisement_report){
+static int advertisement_contains_name(const char * name, uint8_t adv_len, const uint8_t * adv_data){
     // get advertisement from report event
-    const uint8_t * adv_data = gap_event_advertising_report_get_data(advertisement_report);
-    uint8_t         adv_len  = gap_event_advertising_report_get_data_length(advertisement_report);
     uint16_t        name_len = (uint8_t) strlen(name);
 
     // iterate over advertisement data
@@ -354,6 +353,14 @@ static void le_streamer_client_start(void){
     }
 }
 
+static void le_stream_server_found(void) {
+    // stop scanning, and connect to the device
+    state = TC_W4_CONNECT;
+    gap_stop_scan();
+    printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(le_streamer_addr));
+    gap_connect(le_streamer_addr,le_streamer_addr_type);
+}
+
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -366,6 +373,8 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
     uint16_t conn_interval;
     hci_con_handle_t con_handle;
+    const uint8_t * adv_data;
+    uint8_t         adv_len;
 
     switch (hci_event_packet_get_type(packet)) {
         case BTSTACK_EVENT_STATE:
@@ -379,16 +388,37 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         case GAP_EVENT_ADVERTISING_REPORT:
             if (state != TC_W4_SCAN_RESULT) return;
             // check name in advertisement
-            if (!advertisement_report_contains_name("LE Streamer", packet)) return;
+            adv_data = gap_event_advertising_report_get_data(packet);
+            adv_len  = gap_event_advertising_report_get_data_length(packet);
+            if (!advertisement_contains_name(le_streamer_server_name, adv_len, adv_data)) return;
+            // match connecting phy
+            gap_set_connection_phys(1);
             // store address and type
             gap_event_advertising_report_get_address(packet, le_streamer_addr);
             le_streamer_addr_type = gap_event_advertising_report_get_address_type(packet);
-            // stop scanning, and connect to the device
-            state = TC_W4_CONNECT;
-            gap_stop_scan();
-            printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(le_streamer_addr));
-            gap_connect(le_streamer_addr,le_streamer_addr_type);
+            le_stream_server_found();
             break;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
+            if (state != TC_W4_SCAN_RESULT) return;
+            // check name in advertisement
+            adv_data = gap_event_extended_advertising_report_get_data(packet);
+            adv_len  = gap_event_extended_advertising_report_get_data_length(packet);
+            if (!advertisement_contains_name(le_streamer_server_name, adv_len, adv_data)) return;
+            // match connecting phy
+            if (gap_event_extended_advertising_report_get_primary_phy(packet) == 1){
+                // LE 1M PHY => use 1M or 2M PHY
+                gap_set_connection_phys(3);
+            } else {
+                // Coded PHY => use Coded PHY
+                gap_set_connection_phys(4);
+            }
+            // store address and type
+            gap_event_extended_advertising_report_get_address(packet, le_streamer_addr);
+            le_streamer_addr_type = gap_event_extended_advertising_report_get_address_type(packet);
+            le_stream_server_found();
+            break;
+#endif
         case HCI_EVENT_LE_META:
             // wait for connection complete
             switch (hci_event_le_meta_get_subevent_code(packet)){
@@ -482,6 +512,11 @@ int btstack_main(int argc, const char * argv[]){
 
     // use different connection parameters: conn interval min/max (* 1.25 ms), slave latency, supervision timeout, CE len min/max (* 0.6125 ms) 
     // gap_set_connection_parameters(0x06, 0x06, 4, 1000, 0x01, 0x06 * 2);
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    // scan on Coded and 1M PHYs
+    gap_set_scan_phys(6);
+#endif
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
