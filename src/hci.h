@@ -703,17 +703,23 @@ typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
 
-    // iso type: bis or cis
-    hci_iso_type_t iso_type;
-
-    // group_id: big_handle or cis_id
-    uint8_t group_id;
-
     // state
     hci_iso_stream_state_t state;
 
-    // peer info
+    // iso type: bis or cis
+    hci_iso_type_t iso_type;
+
+    // group_id: big_handle or cig_id
+    uint8_t group_id;
+
+    // stream_id: bis_index or cis_id
+    uint8_t stream_id;
+
+    // con handle: HCI_CON_HANDLE_INVALID or cis_con_handle
     hci_con_handle_t con_handle;
+
+    // acl handle: only valid for CIS
+    hci_con_handle_t acl_handle;
 
     // connection info
     uint16_t max_sdu_c_to_p;
