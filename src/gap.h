@@ -590,6 +590,12 @@ void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t
 void gap_set_scan_duplicate_filter(bool enabled);
 
 /**
+ * @brief Set PHYs for LE Scan
+ * @param phy bitmask: 1 = LE 1M PHY, 4 = LE Coded PHY
+ */
+void gap_set_scan_phys(uint8_t phys);
+
+/**
  * @brief Start LE Scan 
  */
 void gap_start_scan(void);
@@ -899,6 +905,12 @@ uint8_t gap_cis_reject(hci_con_handle_t cis_con_handle);
 void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_scan_window, 
     uint16_t conn_interval_min, uint16_t conn_interval_max, uint16_t conn_latency,
     uint16_t supervision_timeout, uint16_t min_ce_length, uint16_t max_ce_length);
+
+/**
+ * @brief Set initiating PHYs for outgoing connections
+ * @param phy bitmask: 1 = LE 1M PHY, 2 = LE 2M PHY, 4 = LE Coded PHY
+ */
+void gap_set_connection_phys(uint8_t phys);
 
 /**
  * @brief Request an update of the connection parameter for a given LE connection

@@ -4600,19 +4600,21 @@ void hci_init(const hci_transport_t *transport, const void *config){
 
 #ifdef ENABLE_LE_CENTRAL
     // connection parameter to use for outgoing connections
-    hci_stack->le_connection_scan_interval = 0x0060;   // 60ms
-    hci_stack->le_connection_scan_window  = 0x0030;    // 30ms
-    hci_stack->le_connection_interval_min = 0x0008;    // 10 ms
-    hci_stack->le_connection_interval_max = 0x0018;    // 30 ms
-    hci_stack->le_connection_latency      = 4;         // 4
-    hci_stack->le_supervision_timeout     = 0x0048;    // 720 ms
-    hci_stack->le_minimum_ce_length       = 2;         // 1.25 ms
-    hci_stack->le_maximum_ce_length       = 0x0030;    // 30 ms
+    hci_stack->le_connection_scan_interval = 0x0060;   //    60 ms
+    hci_stack->le_connection_scan_window   = 0x0030;    //   30 ms
+    hci_stack->le_connection_interval_min  = 0x0008;    //   10 ms
+    hci_stack->le_connection_interval_max  = 0x0018;    //   30 ms
+    hci_stack->le_connection_latency       =      4;    //    4
+    hci_stack->le_supervision_timeout      = 0x0048;    //  720 ms
+    hci_stack->le_minimum_ce_length        =      2;    // 1.25 ms
+    hci_stack->le_maximum_ce_length        = 0x0030;    //   30 ms
+    hci_stack->le_connection_phys          =   0x01;    // LE 1M PHY
 
     // default LE Scanning
-    hci_stack->le_scan_type     =   0x1; // active
+    hci_stack->le_scan_type     =  0x01; // active
     hci_stack->le_scan_interval = 0x1e0; // 300 ms
     hci_stack->le_scan_window   =  0x30; //  30 ms
+    hci_stack->le_scan_phys     =  0x01; // LE 1M PHY
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
@@ -5614,6 +5616,14 @@ static bool hci_run_general_gap_classic(void){
 
 #ifdef ENABLE_BLE
 
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+static uint8_t hci_le_num_phys(uint8_t phys){
+    const uint8_t num_bits_set[] = { 0, 1, 1, 2, 1, 2, 2, 3 };
+    btstack_assert(phys);
+    return num_bits_set[phys];
+}
+#endif
+
 #ifdef ENABLE_LE_CENTRAL
 static void hci_le_scan_stop(void){
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
@@ -5630,20 +5640,34 @@ static void
 hci_send_le_create_connection(uint8_t initiator_filter_policy, bd_addr_type_t address_type, uint8_t *address) {
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     if (hci_extended_advertising_supported()) {
-        uint16_t le_connection_scan_interval[1] = { hci_stack->le_connection_scan_interval };
-        uint16_t le_connection_scan_window[1]   = { hci_stack->le_connection_scan_window };
-        uint16_t le_connection_interval_min[1]  = { hci_stack->le_connection_interval_min };
-        uint16_t le_connection_interval_max[1]  = { hci_stack->le_connection_interval_max };
-        uint16_t le_connection_latency[1]       = { hci_stack->le_connection_latency };
-        uint16_t le_supervision_timeout[1]      = { hci_stack->le_supervision_timeout };
-        uint16_t le_minimum_ce_length[1]        = { hci_stack->le_minimum_ce_length };
-        uint16_t le_maximum_ce_length[1]        = { hci_stack->le_maximum_ce_length };
+        // prepare arrays for all phys (LE Coded, LE 1M, LE 2M PHY)
+        uint16_t le_connection_scan_interval[3];
+        uint16_t le_connection_scan_window[3];
+        uint16_t le_connection_interval_min[3];
+        uint16_t le_connection_interval_max[3];
+        uint16_t le_connection_latency[3];
+        uint16_t le_supervision_timeout[3];
+        uint16_t le_minimum_ce_length[3];
+        uint16_t le_maximum_ce_length[3];
+
+        uint8_t i;
+        uint8_t num_phys = hci_le_num_phys(hci_stack->le_connection_phys);
+        for (i=0;i<num_phys;i++){
+            le_connection_scan_interval[i] = hci_stack->le_connection_scan_interval;
+            le_connection_scan_window[i]   = hci_stack->le_connection_scan_window;
+            le_connection_interval_min[i]  = hci_stack->le_connection_interval_min;
+            le_connection_interval_max[i]  = hci_stack->le_connection_interval_max;
+            le_connection_latency[i]       = hci_stack->le_connection_latency;
+            le_supervision_timeout[i]      = hci_stack->le_supervision_timeout;
+            le_minimum_ce_length[i]        = hci_stack->le_minimum_ce_length;
+            le_maximum_ce_length[i]        = hci_stack->le_maximum_ce_length;
+        }
         hci_send_cmd(&hci_le_extended_create_connection,
                      initiator_filter_policy,
                      hci_stack->le_connection_own_addr_type,   // our addr type:
                      address_type,                  // peer address type
                      address,                       // peer bd addr
-                     1,                             // initiating PHY - 1M
+                     hci_stack->le_connection_phys, // initiating PHY
                      le_connection_scan_interval,   // conn scan interval
                      le_connection_scan_window,     // conn scan windows
                      le_connection_interval_min,    // conn interval min
@@ -5995,13 +6019,20 @@ static bool hci_run_general_gap_le(void){
         hci_stack->le_scanning_param_update = false;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
         if (hci_extended_advertising_supported()){
-            // prepare arrays for all PHYs
-            uint8_t  scan_types[1]     = { hci_stack->le_scan_type     };
-            uint16_t scan_intervals[1] = { hci_stack->le_scan_interval };
-            uint16_t scan_windows[1]   =    { hci_stack->le_scan_window   };
-            uint8_t  scanning_phys     = 1;  // LE 1M PHY
+            // prepare arrays for all phys (LE Coded and LE 1M PHY)
+            uint8_t  scan_types[2];
+            uint16_t scan_intervals[2];
+            uint16_t scan_windows[2];
+
+            uint8_t i;
+            uint8_t num_phys = hci_le_num_phys(hci_stack->le_scan_phys);
+            for (i=0;i<num_phys;i++){
+                scan_types[i]     = hci_stack->le_scan_type;
+                scan_intervals[i] = hci_stack->le_scan_interval;
+                scan_windows[i]   = hci_stack->le_scan_window;
+            }
             hci_send_cmd(&hci_le_set_extended_scan_parameters, hci_stack->le_own_addr_type,
-                         hci_stack->le_scan_filter_policy, scanning_phys, scan_types, scan_intervals, scan_windows);
+                         hci_stack->le_scan_filter_policy, hci_stack->le_scan_phys, scan_types, scan_intervals, scan_windows);
         } else
 #endif
         {
@@ -7935,6 +7966,11 @@ void gap_set_scan_duplicate_filter(bool enabled){
     hci_stack->le_scan_filter_duplicates = enabled ? 1 : 0;
 }
 
+void gap_set_scan_phys(uint8_t phys){
+    // LE Coded and LE 1M PHY
+    hci_stack->le_scan_phys = phys & 0x05;
+}
+
 uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
     if (!conn){
@@ -8065,6 +8101,12 @@ void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_sc
     hci_stack->le_minimum_ce_length = min_ce_length;
     hci_stack->le_maximum_ce_length = max_ce_length;
 }
+
+void gap_set_connection_phys(uint8_t phys){
+    // LE Coded, LE 1M, LE 2M PHY
+    hci_stack->le_connection_phys = phys & 7;
+}
+
 #endif
 
 /**

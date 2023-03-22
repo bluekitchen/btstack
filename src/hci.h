@@ -1164,6 +1164,7 @@ typedef struct {
     uint8_t  le_scan_filter_duplicates;
     uint8_t  le_scan_type;
     uint8_t  le_scan_filter_policy;
+    uint8_t  le_scan_phys;
     uint16_t le_scan_interval;
     uint16_t le_scan_window;
 
@@ -1177,6 +1178,7 @@ typedef struct {
     uint16_t le_connection_scan_interval;
     uint16_t le_connection_scan_window;
     uint8_t  le_connection_own_addr_type;
+    uint8_t  le_connection_phys;
     bd_addr_t le_connection_own_address;
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
