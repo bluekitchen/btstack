@@ -237,8 +237,7 @@ static le_advertising_set_t * hci_advertising_set_for_handle(uint8_t advertising
 #endif /* ENABLE_LE_EXTENDED_ADVERTISING */
 #endif /* ENABLE_LE_PERIPHERAL */
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-static uint8_t hci_iso_stream_create(hci_iso_type_t iso_type, hci_con_handle_t con_handle, uint8_t group_id,
-                                     hci_iso_stream_state_t state);
+static hci_iso_stream_t * hci_iso_stream_create(hci_iso_type_t iso_type, hci_iso_stream_state_t state, uint8_t group_id, uint8_t stream_id);
 static void hci_iso_stream_finalize(hci_iso_stream_t * iso_stream);
 static void hci_iso_stream_finalize_by_type_and_group_id(hci_iso_type_t iso_type, uint8_t group_id);
 static hci_iso_stream_t * hci_iso_stream_for_con_handle(hci_con_handle_t con_handle);
@@ -2884,7 +2883,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                         if ((iso_stream->group_id == hci_stack->iso_active_operation_group_id) &&
                             (iso_stream->iso_type == HCI_ISO_TYPE_CIS)){
                             hci_con_handle_t cis_handle = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3+(2*i));
-                            iso_stream->con_handle  = cis_handle;
+                            iso_stream->cis_handle  = cis_handle;
                             cig->cis_con_handles[i] = cis_handle;
                             i++;
                         }
@@ -2964,7 +2963,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                     status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
                     while (btstack_linked_list_iterator_has_next(&it)){
                         hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
-                        handle = iso_stream->con_handle;
+                        handle = iso_stream->cis_handle;
                         switch (iso_stream->state){
                             case HCI_ISO_STREAM_STATE_W4_ISO_SETUP_INPUT:
                                 if (status != ERROR_CODE_SUCCESS){
@@ -4150,7 +4149,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                                     hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
                                     if ((iso_stream->state == HCI_ISO_STREAM_STATE_REQUESTED ) &&
                                         (iso_stream->group_id == big->big_handle)){
-                                        iso_stream->con_handle = bis_handle;
+                                        iso_stream->cis_handle = bis_handle;
                                         iso_stream->state = HCI_ISO_STREAM_STATE_ESTABLISHED;
                                         break;
                                     }
@@ -4182,7 +4181,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         while (btstack_linked_list_iterator_has_next(&it)){
                             hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
                             if (iso_stream->group_id == big->big_handle){
-                                log_info("BIG Terminated, big_handle 0x%02x, con handle 0x%04x", iso_stream->group_id, iso_stream->con_handle);
+                                log_info("BIG Terminated, big_handle 0x%02x, con handle 0x%04x", iso_stream->group_id, iso_stream->cis_handle);
                                 btstack_linked_list_iterator_remove(&it);
                                 btstack_memory_hci_iso_stream_free(iso_stream);
                             }
@@ -6719,10 +6718,10 @@ static bool hci_run_iso_tasks(void){
                 iso_stream->state = HCI_ISO_STREAM_STATE_W4_ESTABLISHED;
                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                 hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_SINGLE_CIS;
-                hci_send_cmd(&hci_le_accept_cis_request, iso_stream->con_handle);
+                hci_send_cmd(&hci_le_accept_cis_request, iso_stream->cis_handle);
                 return true;
             case HCI_ISO_STREAM_W2_REJECT:
-                con_handle = iso_stream->con_handle;
+                con_handle = iso_stream->cis_handle;
                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                 hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_SINGLE_CIS;
                 hci_iso_stream_finalize(iso_stream);
@@ -6732,13 +6731,13 @@ static bool hci_run_iso_tasks(void){
                 hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_SINGLE_CIS;
                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                 iso_stream->state = HCI_ISO_STREAM_STATE_W4_ISO_SETUP_INPUT;
-                hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->con_handle, 0, 0, 0, 0, 0, 0, 0, NULL);
+                hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->cis_handle, 0, 0, 0, 0, 0, 0, 0, NULL);
                 break;
             case HCI_ISO_STREAM_STATE_W2_SETUP_ISO_OUTPUT:
                 hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_SINGLE_CIS;
                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                 iso_stream->state = HCI_ISO_STREAM_STATE_W4_ISO_SETUP_OUTPUT;
-                hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->con_handle, 1, 0, 0, 0, 0, 0, 0, NULL);
+                hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->cis_handle, 1, 0, 0, 0, 0, 0, 0, NULL);
                 break;
             default:
                 break;
@@ -9440,19 +9439,20 @@ uint8_t gap_periodic_advertising_terminate_sync(uint16_t sync_handle){
 #endif
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-static uint8_t hci_iso_stream_create(hci_iso_type_t iso_type, hci_con_handle_t con_handle, uint8_t group_id,
-                                     hci_iso_stream_state_t state) {
+static hci_iso_stream_t *
+hci_iso_stream_create(hci_iso_type_t iso_type, hci_iso_stream_state_t state, uint8_t group_id, uint8_t stream_id) {
     hci_iso_stream_t * iso_stream = btstack_memory_hci_iso_stream_get();
-    if (iso_stream == NULL){
-        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    if (iso_stream != NULL){
     } else {
         iso_stream->iso_type = iso_type;
         iso_stream->state = state;
-        iso_stream->con_handle = con_handle;
         iso_stream->group_id = group_id;
+        iso_stream->stream_id = stream_id;
+        iso_stream->cis_handle = HCI_CON_HANDLE_INVALID;
+        iso_stream->acl_handle = HCI_CON_HANDLE_INVALID;
         btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t*) iso_stream);
-        return ERROR_CODE_SUCCESS;
     }
+    return iso_stream;
 }
 
 static hci_iso_stream_t * hci_iso_stream_for_con_handle(hci_con_handle_t con_handle){
@@ -9460,7 +9460,7 @@ static hci_iso_stream_t * hci_iso_stream_for_con_handle(hci_con_handle_t con_han
     btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
     while (btstack_linked_list_iterator_has_next(&it)){
         hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
-        if (iso_stream->con_handle == con_handle ) {
+        if (iso_stream->cis_handle == con_handle ) {
             return iso_stream;
         }
     }
@@ -9468,7 +9468,7 @@ static hci_iso_stream_t * hci_iso_stream_for_con_handle(hci_con_handle_t con_han
 }
 
 static void hci_iso_stream_finalize(hci_iso_stream_t * iso_stream){
-    log_info("hci_iso_stream_finalize con_handle 0x%04x, group_id 0x%02x", iso_stream->con_handle, iso_stream->group_id);
+    log_info("hci_iso_stream_finalize con_handle 0x%04x, group_id 0x%02x", iso_stream->cis_handle, iso_stream->group_id);
     btstack_linked_list_remove(&hci_stack->iso_streams, (btstack_linked_item_t*) iso_stream);
     btstack_memory_hci_iso_stream_free(iso_stream);
 }
@@ -9820,7 +9820,7 @@ static void hci_iso_notify_can_send_now(void){
         if ((iso_stream->can_send_now_requested) &&
             (iso_stream->num_packets_sent < hci_stack->iso_packets_to_queue)){
             iso_stream->can_send_now_requested = false;
-            hci_emit_cis_can_send_now(iso_stream->con_handle);
+            hci_emit_cis_can_send_now(iso_stream->cis_handle);
         }
     }
 }
@@ -9840,9 +9840,9 @@ uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_par
     uint8_t i;
     uint8_t status = ERROR_CODE_SUCCESS;
     for (i=0;i<big_params->num_bis;i++){
-        status = hci_iso_stream_create(HCI_ISO_TYPE_BIS, HCI_CON_HANDLE_INVALID, big_params->big_handle,
-                                       HCI_ISO_STREAM_STATE_REQUESTED);
-        if (status != ERROR_CODE_SUCCESS) {
+        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_BIS, HCI_ISO_STREAM_STATE_REQUESTED, big_params->big_handle, i);
+        if (iso_stream == NULL) {
+            status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
             break;
         }
     }
@@ -9979,9 +9979,9 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
     uint8_t i;
     uint8_t status = ERROR_CODE_SUCCESS;
     for (i=0;i<cig_params->num_cis;i++){
-        status = hci_iso_stream_create(HCI_ISO_TYPE_CIS, HCI_CON_HANDLE_INVALID, cig_params->cig_id,
-                                       HCI_ISO_STREAM_STATE_REQUESTED);
-        if (status != ERROR_CODE_SUCCESS) {
+        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS,HCI_ISO_STREAM_STATE_REQUESTED, cig_params->cig_id, i);
+        if (iso_stream != NULL) {
+            status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
             break;
         }
     }
@@ -10045,17 +10045,18 @@ uint8_t gap_cis_create(uint8_t cig_handle, hci_con_handle_t cis_con_handles [], 
     return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t hci_cis_accept_or_reject(hci_con_handle_t cis_con_handle, hci_iso_stream_state_t state){
-    hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(cis_con_handle);
+static uint8_t hci_cis_accept_or_reject(hci_con_handle_t cis_handle, hci_iso_stream_state_t state){
+    hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(cis_handle);
     if (iso_stream != NULL){
         return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
     }
 
-    uint8_t status = hci_iso_stream_create(HCI_ISO_TYPE_CIS, cis_con_handle,
-                                           HCI_ISO_GROUP_ID_INVALID, state);
-    if (status == ERROR_CODE_SUCCESS){
-        return status;
+    iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS, state,HCI_ISO_GROUP_ID_INVALID, 0);
+    if (iso_stream != NULL){
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
+
+    iso_stream->cis_handle = cis_handle;
 
     hci_run();
     return ERROR_CODE_SUCCESS;

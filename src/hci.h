@@ -715,10 +715,8 @@ typedef struct {
     // stream_id: bis_index or cis_id
     uint8_t stream_id;
 
-    // con handle: HCI_CON_HANDLE_INVALID or cis_con_handle
-    hci_con_handle_t con_handle;
-
-    // acl handle: only valid for CIS
+    // only valid for HCI_ISO_TYPE_CIS
+    hci_con_handle_t cis_handle;
     hci_con_handle_t acl_handle;
 
     // connection info
