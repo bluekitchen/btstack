@@ -10044,7 +10044,7 @@ uint8_t gap_cis_create(uint8_t cig_handle, hci_con_handle_t cis_con_handles [], 
     // store ACL Connection Handles
     uint8_t i;
     for (i=0;i<cig->num_cis;i++){
-        // check that all con handles exit
+        // check that all con handles exist and store
         hci_con_handle_t cis_handle = cis_con_handles[i];
         uint8_t j;
         bool found = false;
@@ -10052,6 +10052,9 @@ uint8_t gap_cis_create(uint8_t cig_handle, hci_con_handle_t cis_con_handles [], 
             if (cig->cis_con_handles[j] == cis_handle){
                 cig->acl_con_handles[j] = acl_con_handles[j];
                 found = true;
+                hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(cis_handle);
+                btstack_assert(iso_stream != NULL);
+                iso_stream->acl_handle = acl_con_handles[j];
                 break;
             }
         }
