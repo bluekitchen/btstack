@@ -9646,14 +9646,17 @@ static void hci_emit_cig_created(const le_audio_cig_t * cig, uint8_t status){
 
 static void hci_emit_cis_created(uint8_t status, uint8_t cig_id, uint8_t cis_id, hci_con_handle_t cis_con_handle,
                      hci_con_handle_t acl_con_handle) {
-    uint8_t event [7];
+    uint8_t event [10];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_META_GAP;
-    event[pos++] = 5;
+    event[pos++] = 8;
     event[pos++] = GAP_SUBEVENT_CIS_CREATED;
     event[pos++] = status;
     event[pos++] = cig_id;
+    event[pos++] = cis_id;
     little_endian_store_16(event, pos, cis_con_handle);
+    pos += 2;
+    little_endian_store_16(event, pos, acl_con_handle);
     pos += 2;
     hci_emit_event(event, pos, 0);
 }
