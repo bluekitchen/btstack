@@ -1933,11 +1933,13 @@ typedef uint8_t sm_key_t[16];
 #define GAP_SUBEVENT_CIG_CREATED                                 0x06u
 
 /**
- * @format 111H
+ * @format 1111HH
  * @param subevent_code
  * @param status
  * @param cig_id
+ * @param cis_id
  * @param cis_con_handle
+ * @param acl_con_handle
  */
 #define GAP_SUBEVENT_CIS_CREATED                                 0x07u
 
