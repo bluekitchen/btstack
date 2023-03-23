@@ -95,6 +95,7 @@ i2s_chan_handle_t rx_handle = NULL;
 #define BTSTACK_AUDIO_I2S_WS   GPIO_NUM_25
 #define BTSTACK_AUDIO_I2S_OUT  GPIO_NUM_26
 #define BTSTACK_AUDIO_I2S_IN   GPIO_NUM_35
+#define HEADPHONE_DETECT       GPIO_NUM_19
 #endif
 
 // prototypes
@@ -106,7 +107,7 @@ static void btstack_audio_esp32_source_process_buffer(void);
 #define BTSTACK_AUDIO_I2S_NUM  (I2S_NUM_0)
 
 #define DRIVER_ISR_INTERVAL_MS          10 // dma interrupt cycle time in ms
-#define DMA_BUFFER_COUNT                 2
+#define DMA_BUFFER_COUNT                 6
 #define BYTES_PER_SAMPLE_STEREO          4
 
 // one DMA buffer for max sample rate
@@ -198,51 +199,35 @@ static void btstack_audio_esp32_stream_stop(void){
 
 static IRAM_ATTR bool i2s_rx_callback(i2s_chan_handle_t handle, i2s_event_data_t *event, void *user_ctx)
 {
-    atomic_store_explicit(&isr_bytes_read, event->size, memory_order_relaxed);
-    if( isr_bytes_read > 0 ) {
+    size_t block_size = event->size;
+    atomic_fetch_add_explicit(&isr_bytes_read, block_size, memory_order_relaxed);
+    if( block_size > 0 ) {
         btstack_run_loop_poll_data_sources_from_irq();
         return true;
     }
     return false;
 }
 
-volatile int32_t delta;
-volatile uint32_t count = 0;
 static IRAM_ATTR bool i2s_tx_callback(i2s_chan_handle_t handle, i2s_event_data_t *event, void *user_ctx)
 {
-//    isr_bytes_written = event->size;
-    static uint32_t last = 0;
-//    static uint32_t count = 0;
-    uint32_t current = btstack_run_loop_get_time_ms();
-    if( last == 0 ) {
-        last = current;
-    }
-    count += event->size/BYTES_PER_SAMPLE_STEREO;
-    delta = current-last;
-    if( delta >= 1000 ) {
-        last = current;
-        count = 0;
-    }
-
-    atomic_store_explicit(&isr_bytes_written, event->size, memory_order_relaxed);
-    if( isr_bytes_written > 0 ) {
+    size_t block_size = event->size;
+    atomic_fetch_add_explicit(&isr_bytes_written, block_size, memory_order_relaxed);
+    if( block_size > 0 ) {
         btstack_run_loop_poll_data_sources_from_irq();
         return true;
     }
     return false;
 }
 
-static uint8_t btstack_audio_esp32_buffer[MAX_DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO];
+static uint8_t btstack_audio_esp32_buffer[MAX_DMA_BUFFER_SAMPLES * BYTES_PER_SAMPLE_STEREO * DMA_BUFFER_COUNT];
 static void i2s_data_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
 
     size_t bytes_written = 0;
     size_t bytes_read = 0;
     uint32_t write_block_size = atomic_load_explicit(&isr_bytes_written, memory_order_relaxed);
     uint32_t read_block_size = atomic_load_explicit(&isr_bytes_read, memory_order_relaxed);
-//    ESP_LOGW(LOG_TAG, "d:%5"PRIu32" c:%5"PRIu32"", delta, count );
     switch (callback_type){
         case DATA_SOURCE_CALLBACK_POLL: {
-//            ESP_LOGW(LOG_TAG, "%s: w:%5"PRIu32" r:%5"PRIu32"", __FUNCTION__, write_block_size, read_block_size );
             uint16_t num_samples = write_block_size/BYTES_PER_SAMPLE_STEREO;
             if( num_samples > 0 ) {
                 (*btstack_audio_esp32_sink_playback_callback)((int16_t *) btstack_audio_esp32_buffer, num_samples);
@@ -254,15 +239,23 @@ static void i2s_data_process(btstack_data_source_t *ds, btstack_data_source_call
                         buffer16[2*i+1] = buffer16[i];
                     }
                 }
-                ESP_ERROR_CHECK(i2s_channel_write(tx_handle, btstack_audio_esp32_buffer, write_block_size, &bytes_written, 0 ));
-                btstack_assert( bytes_written == write_block_size );
-                atomic_store_explicit(&isr_bytes_written, 0, memory_order_relaxed);
+                esp_err_t ret = i2s_channel_write(tx_handle, btstack_audio_esp32_buffer, write_block_size, &bytes_written, 0 );
+                if( ret == ESP_OK ) {
+                    btstack_assert( bytes_written == write_block_size );
+                } else if( ret == ESP_ERR_TIMEOUT ) {
+                    ESP_LOGW(LOG_TAG, "audio output buffer underrun");
+                }
+                atomic_fetch_sub_explicit( &isr_bytes_written, write_block_size, memory_order_relaxed );
             }
 
             num_samples = read_block_size/BYTES_PER_SAMPLE_STEREO;
             if( num_samples > 0 ) {
-                ESP_ERROR_CHECK(i2s_channel_read(rx_handle, btstack_audio_esp32_buffer, read_block_size, &bytes_read, 0 ));
-                btstack_assert( bytes_read == read_block_size );
+                esp_err_t ret = i2s_channel_read(rx_handle, btstack_audio_esp32_buffer, read_block_size, &bytes_read, 0 );
+                if( ret == ESP_OK ) {
+                    btstack_assert( bytes_read == read_block_size );
+                } else if( ret == ESP_ERR_TIMEOUT ) {
+                    ESP_LOGW(LOG_TAG, "audio input buffer overrun");
+                }
                 // drop second channel if configured for mono
                 int16_t * buffer16 = (int16_t *)btstack_audio_esp32_buffer;
                 if (btstack_audio_esp32_source_num_channels == 1){
@@ -271,7 +264,7 @@ static void i2s_data_process(btstack_data_source_t *ds, btstack_data_source_call
                     }
                 }
                 (*btstack_audio_esp32_source_recording_callback)((int16_t *) btstack_audio_esp32_buffer, num_samples);
-                atomic_store_explicit(&isr_bytes_read, 0, memory_order_relaxed);
+                atomic_fetch_sub_explicit(&isr_bytes_read, read_block_size, memory_order_relaxed);
             }
             break;
         }
@@ -288,13 +281,8 @@ static void i2s_data_process(btstack_data_source_t *ds, btstack_data_source_call
  * recv_buffer_size > dma_desc_num * dma_buffer_size = 3 * 4092 = 12276 bytes
  *
  */
-static void btstack_audio_esp32_init(void){
-
-    ESP_LOGW(LOG_TAG, "audio init");
-
-    // de-register driver if already installed
-    if (btstack_audio_esp32_i2s_installed){
-        ESP_LOGW(LOG_TAG, "allready initialized, skipping init!\n");
+static void btstack_audio_esp32_init(void) {
+    if (btstack_audio_esp32_i2s_installed) {
         return;
     }
 
@@ -354,8 +342,8 @@ static void btstack_audio_esp32_init(void){
     ESP_ERROR_CHECK(i2s_channel_register_event_callback(rx_handle, &cbs, NULL));
     ESP_ERROR_CHECK(i2s_channel_register_event_callback(tx_handle, &cbs, NULL));
 
-//    log_info("i2s init samplerate %" PRIu32 ", samples per DMA buffer: %u",
-//        btstack_audio_esp32_sink_samplerate, btstack_audio_esp32_samples_per_dma_buffer);
+    log_info("i2s init samplerate %" PRIu32 ", samples per DMA buffer: %" PRIu32,
+        btstack_audio_esp32_sink_samplerate, chan_cfg.dma_frame_num);
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     btstack_audio_esp32_es8388_init();
@@ -364,7 +352,6 @@ static void btstack_audio_esp32_init(void){
     btstack_audio_esp32_i2s_installed = true;
 
     btstack_run_loop_set_data_source_handler(&transport_data_source, i2s_data_process);
-    ESP_LOGW(LOG_TAG, "audio init done.");
 }
 
 static void btstack_audio_esp32_deinit(void){
@@ -375,7 +362,6 @@ static void btstack_audio_esp32_deinit(void){
                     ||  (btstack_audio_esp32_source_state != BTSTACK_AUDIO_ESP32_OFF);
     if (still_needed) return;
 
-    // uninstall driver
     log_info("i2s close");
 
     ESP_ERROR_CHECK(i2s_del_channel(rx_handle));
@@ -394,6 +380,7 @@ static int btstack_audio_esp32_sink_init(
 
     btstack_assert(playback != NULL);
     btstack_assert((1 <= channels) && (channels <= 2));
+    btstack_assert( samplerate <= 48000 );
 
     // store config
     btstack_audio_esp32_sink_playback_callback  = playback;
