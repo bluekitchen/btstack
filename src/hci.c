@@ -3906,11 +3906,21 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 }
             }
 
-            // finalize iso stream if handle matches
+            // finalize iso stream for CIS handle
             iso_stream = hci_iso_stream_for_con_handle(handle);
             if (iso_stream != NULL){
                 hci_iso_stream_finalize(iso_stream);
                 break;
+            }
+
+            // finalize iso stream(s) for ACL handle
+            btstack_linked_list_iterator_t it;
+            btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
+            while (btstack_linked_list_iterator_has_next(&it)){
+                hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+                if (iso_stream->acl_handle == handle ) {
+                    hci_iso_stream_finalize(iso_stream);
+                }
             }
 #endif
 
@@ -4070,6 +4080,17 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     break;
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+                case HCI_SUBEVENT_LE_CIS_REQUEST:
+                    // incoming CIS request, allocate iso stream object and cache metadata
+                    iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS, HCI_ISO_STREAM_W4_USER,
+                                                       hci_subevent_le_cis_request_get_cig_id(packet),
+                                                       hci_subevent_le_cis_request_get_cis_id(packet));
+                    // if there's no memory, gap_cis_accept/gap_cis_reject will fail
+                    if (iso_stream != NULL){
+                        iso_stream->cis_handle = hci_subevent_le_cis_request_get_cis_connection_handle(packet);
+                        iso_stream->acl_handle = hci_subevent_le_cis_request_get_acl_connection_handle(packet);
+                    }
+                    break;
                 case HCI_SUBEVENT_LE_CIS_ESTABLISHED:
                     if (hci_stack->iso_active_operation_type == HCI_ISO_TYPE_CIS){
                         handle = hci_subevent_le_cis_established_get_connection_handle(packet);
@@ -10047,17 +10068,13 @@ uint8_t gap_cis_create(uint8_t cig_handle, hci_con_handle_t cis_con_handles [], 
 
 static uint8_t hci_cis_accept_or_reject(hci_con_handle_t cis_handle, hci_iso_stream_state_t state){
     hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(cis_handle);
-    if (iso_stream != NULL){
-        return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
-    }
-
-    iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS, state,HCI_ISO_GROUP_ID_INVALID, 0);
-    if (iso_stream != NULL){
+    if (iso_stream == NULL){
+        // if we got a CIS Request but fail to allocate a hci_iso_stream_t object, we won't find it here
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
 
-    iso_stream->cis_handle = cis_handle;
-
+    // set next state and continue
+    iso_stream->state = state;
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
