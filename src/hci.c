@@ -252,10 +252,9 @@ static void hci_emit_big_terminated(const le_audio_big_t * big);
 static void hci_emit_big_sync_created(const le_audio_big_sync_t * big_sync, uint8_t status);
 static void hci_emit_big_sync_stopped(uint8_t big_handle);
 static void hci_emit_cig_created(const le_audio_cig_t * cig, uint8_t status);
-static void
-hci_emit_cis_created(uint8_t status, uint8_t cig_id, uint8_t cis_id, hci_con_handle_t cis_con_handle,
-                     hci_con_handle_t acl_con_handle);
+static void hci_cis_handle_created(hci_iso_stream_t * iso_stream, uint8_t status);
 static le_audio_big_sync_t * hci_big_sync_for_handle(uint8_t big_handle);
+
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
 #endif /* ENABLE_BLE */
 
@@ -2985,15 +2984,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                                 break;
                         }
                         if (emit_cis_created){
-                            // cache data before finalizing struct
-                            uint8_t cig_id              = iso_stream->group_id;
-                            uint8_t cis_id              = iso_stream->stream_id;
-                            hci_con_handle_t cis_handle = iso_stream->cis_handle;
-                            hci_con_handle_t acl_handle = iso_stream->acl_handle;
-                            if (status != ERROR_CODE_SUCCESS){
-                                hci_iso_stream_finalize(iso_stream);
-                            }
-                            hci_emit_cis_created(status, cig_id, cis_id, cis_handle, acl_handle);
+                            hci_cis_handle_created(iso_stream, status);
                         }
                     }
                 } else {
@@ -3011,7 +3002,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                             while (btstack_linked_list_iterator_has_next(&it)) {
                                 hci_iso_stream_t *iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
                                 if ((iso_stream->group_id == cig->cig_id) && (iso_stream->stream_id == cis_index)){
-                                    hci_emit_cis_created(status, iso_stream->group_id, iso_stream->stream_id, iso_stream->cis_handle, iso_stream->acl_handle);
+                                    hci_cis_handle_created(iso_stream, status);
                                 }
                             }
                         }
@@ -4124,12 +4115,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                                     iso_stream->state = HCI_ISO_STREAM_STATE_W2_SETUP_ISO_OUTPUT;
                                 }
                             } else {
-                                uint8_t cig_id = iso_stream->group_id;
-                                uint8_t cis_id = iso_stream->stream_id;
-                                uint8_t cis_handle = iso_stream->cis_handle;
-                                hci_con_handle_t acl_handle = iso_stream->acl_handle;
-                                hci_iso_stream_finalize(iso_stream);
-                                hci_emit_cis_created(status, cig_id, cis_id, cis_handle, acl_handle);
+                                hci_cis_handle_created(iso_stream, status);
                             }
                             hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
                         } else {
@@ -4150,7 +4136,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                                     if (status == ERROR_CODE_SUCCESS){
                                         cig->cis_established[i] = true;
                                     } else {
-                                        hci_emit_cis_created(status, iso_stream->group_id, iso_stream->stream_id, iso_stream->cis_handle, iso_stream->acl_handle);
+                                        hci_cis_handle_created(iso_stream, status);
                                     }
                                 }
                             }
@@ -9658,8 +9644,7 @@ static void hci_emit_cig_created(const le_audio_cig_t * cig, uint8_t status){
     hci_emit_event(event, pos, 0);
 }
 
-static void
-hci_emit_cis_created(uint8_t status, uint8_t cig_id, uint8_t cis_id, hci_con_handle_t cis_con_handle,
+static void hci_emit_cis_created(uint8_t status, uint8_t cig_id, uint8_t cis_id, hci_con_handle_t cis_con_handle,
                      hci_con_handle_t acl_con_handle) {
     uint8_t event [7];
     uint16_t pos = 0;
@@ -9671,6 +9656,19 @@ hci_emit_cis_created(uint8_t status, uint8_t cig_id, uint8_t cis_id, hci_con_han
     little_endian_store_16(event, pos, cis_con_handle);
     pos += 2;
     hci_emit_event(event, pos, 0);
+}
+
+// emits GAP_SUBEVENT_CIS_CREATED after calling hci_iso_finalize
+static void hci_cis_handle_created(hci_iso_stream_t * iso_stream, uint8_t status){
+    // cache data before finalizing struct
+    uint8_t cig_id              = iso_stream->group_id;
+    uint8_t cis_id              = iso_stream->stream_id;
+    hci_con_handle_t cis_handle = iso_stream->cis_handle;
+    hci_con_handle_t acl_handle = iso_stream->acl_handle;
+    if (status != ERROR_CODE_SUCCESS){
+        hci_iso_stream_finalize(iso_stream);
+    }
+    hci_emit_cis_created(status, cig_id, cis_id, cis_handle, acl_handle);
 }
 
 static void hci_emit_big_terminated(const le_audio_big_t * big){
