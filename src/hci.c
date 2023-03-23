@@ -9467,7 +9467,6 @@ static hci_iso_stream_t *
 hci_iso_stream_create(hci_iso_type_t iso_type, hci_iso_stream_state_t state, uint8_t group_id, uint8_t stream_id) {
     hci_iso_stream_t * iso_stream = btstack_memory_hci_iso_stream_get();
     if (iso_stream != NULL){
-    } else {
         iso_stream->iso_type = iso_type;
         iso_stream->state = state;
         iso_stream->group_id = group_id;
@@ -10020,7 +10019,7 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
     uint8_t status = ERROR_CODE_SUCCESS;
     for (i=0;i<cig_params->num_cis;i++){
         hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS,HCI_ISO_STREAM_STATE_REQUESTED, cig_params->cig_id, i);
-        if (iso_stream != NULL) {
+        if (iso_stream == NULL) {
             status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
             break;
         }
@@ -10065,15 +10064,18 @@ uint8_t gap_cis_create(uint8_t cig_handle, hci_con_handle_t cis_con_handles [], 
     for (i=0;i<cig->num_cis;i++){
         // check that all con handles exist and store
         hci_con_handle_t cis_handle = cis_con_handles[i];
+        if (cis_handle == HCI_CON_HANDLE_INVALID){
+            return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        }
         uint8_t j;
         bool found = false;
         for (j=0;j<cig->num_cis;j++){
             if (cig->cis_con_handles[j] == cis_handle){
                 cig->acl_con_handles[j] = acl_con_handles[j];
-                found = true;
                 hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(cis_handle);
                 btstack_assert(iso_stream != NULL);
                 iso_stream->acl_handle = acl_con_handles[j];
+                found = true;
                 break;
             }
         }
