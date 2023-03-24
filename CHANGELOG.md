@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - esp32: warn about unsuitable sdkconfig
 - esp32: add BTstack component config options via menuconfig
 - esp32: allow to disable default audio i2s driver via component config
-- 
+- esp32: support esp-idf v5.x audio driver
+ 
 ## Fixed
 - HCI: fix set extended scan response
 - HCI: fix report of extended advertisements with data len > 31 
@@ -27,7 +28,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - gatt_client: return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER for invalid connection handle
 - A2DP: emit A2DP_SUBEVENT_STREAM_ESTABLISHED with if connection fails, e.g. because of Page Timeout
 - PBAP Client: make pbap_set_property_selector work for Pull Phonebook
- 
+- esp32: fix power amplifier control on Lyra T v4.3
+
 ## Changed
 - GAP: add gap_set_peer_privacy_mode with default LE_PRIVACY_MODE_DEVICE
 - bluetooth: indicated identity address in resolved address type names
