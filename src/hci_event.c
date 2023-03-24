@@ -50,6 +50,15 @@
 
 #include <string.h>
 
+static inline bool hci_event_can_store(uint16_t pos, uint16_t size, uint16_t to_store, bool *overrun) {
+    if ((pos + to_store) > size) {
+        *overrun = true;
+        return false;
+    } else {
+        return true;
+    }
+}
+
 /**
  * construct HCI Event based on template
  *
@@ -66,9 +75,9 @@
  */
 uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_event_buffer, uint16_t buffer_size, const hci_event_t *event, va_list argptr){
 
-    UNUSED(buffer_size);
-
     hci_event_buffer[0] = event->event_code;
+    hci_event_buffer[1] = 0;
+
     uint16_t pos = 2;
 
     // store subevent code if set
@@ -81,63 +90,57 @@ uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_event_buffer, u
     uint32_t longword;
     uint8_t * ptr;
     uint16_t length_j = 0xffff;
-    while (*format) {
+    bool overrun = false;
+    while (*format != 0) {
         switch(*format) {
             case '1': //  8 bit value
-            case '2': // 16 bit value
-            case 'H': // hci_handle
+                if (!hci_event_can_store(pos, buffer_size, 1, &overrun)) break;
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
                 hci_event_buffer[pos++] = word & 0xff;
-                if (*format != '1') {
-                    hci_event_buffer[pos++] = word >> 8;
-                }
+                break;
+            case '2': // 16 bit value
+            case 'H': // hci_handle
+                if (!hci_event_can_store(pos, buffer_size, 2, &overrun)) break;
+                word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
+                little_endian_store_16(hci_event_buffer, pos, word);
+                pos += 2;
                 break;
             case '3':
-            case '4':
+                if (!hci_event_can_store(pos, buffer_size, 3, &overrun)) break;
                 longword = va_arg(argptr, uint32_t);
-                // longword = va_arg(argptr, int);
-                hci_event_buffer[pos++] = longword;
-                hci_event_buffer[pos++] = longword >> 8;
-                hci_event_buffer[pos++] = longword >> 16;
-                if (*format == '4'){
-                    hci_event_buffer[pos++] = longword >> 24;
-                }
+                little_endian_store_24(hci_event_buffer, pos, longword);
+                pos += 3;
+                break;
+            case '4':
+                if (!hci_event_can_store(pos, buffer_size, 4, &overrun)) break;
+                longword = va_arg(argptr, uint32_t);
+                little_endian_store_32(hci_event_buffer, pos, longword);
+                pos += 4;
                 break;
             case 'B': // bt-addr
+                if (!hci_event_can_store(pos, buffer_size, 6, &overrun)) break;
                 ptr = va_arg(argptr, uint8_t *);
-                hci_event_buffer[pos++] = ptr[5];
-                hci_event_buffer[pos++] = ptr[4];
-                hci_event_buffer[pos++] = ptr[3];
-                hci_event_buffer[pos++] = ptr[2];
-                hci_event_buffer[pos++] = ptr[1];
-                hci_event_buffer[pos++] = ptr[0];
-                break;
-            case 'D': // 8 byte data block
-                ptr = va_arg(argptr, uint8_t *);
-                (void)memcpy(&hci_event_buffer[pos], ptr, 8);
-                pos += 8;
-                break;
-            case 'P': // 16 byte block
-                ptr = va_arg(argptr, uint8_t *);
-                (void)memcpy(&hci_event_buffer[pos], ptr, 16);
-                pos += 16;
+                reverse_bytes(ptr, &hci_event_buffer[pos], 6);
                 break;
             case 'Q':
+                if (!hci_event_can_store(pos, buffer_size, 32, &overrun)) break;
                 ptr = va_arg(argptr, uint8_t *);
                 reverse_bytes(ptr, &hci_event_buffer[pos], 32);
                 pos += 32;
                 break;
             case 'J':
+                if (!hci_event_can_store(pos, buffer_size, 1, &overrun)) break;
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                length_j = word &  0xff;
+                length_j = word & 0xff;
                 hci_event_buffer[pos++] = length_j;
                 break;
             case 'K':
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                length_j = word &  0xff;
+                length_j = word & 0xff;
                 break;
             case 'V':
                 btstack_assert(length_j < 0x100);
+                if (!hci_event_can_store(pos, buffer_size, length_j, &overrun)) break;
                 ptr = va_arg(argptr, uint8_t *);
                 (void)memcpy(&hci_event_buffer[pos], ptr, length_j);
                 pos += length_j;
@@ -146,8 +149,13 @@ uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_event_buffer, u
                 btstack_assert(false);
                 break;
         }
+        if (overrun){
+            return 0;
+        }
         format++;
     };
+
+    // store final event len
     hci_event_buffer[1] = pos - 2;
     return pos;
 }
