@@ -142,7 +142,9 @@ static const char * avrcp_media_attribute_id_name[] = {
     "NONE", "TITLE", "ARTIST", "ALBUM", "TRACK", "TOTAL TRACKS", "GENRE", "SONG LENGTH"
 };
 const char * avrcp_attribute2str(uint8_t index){
-    if ((index >= 1) && (index <= 7)) return avrcp_media_attribute_id_name[index];
+    if (index > 7){
+        index = 0;
+    }
     return avrcp_media_attribute_id_name[0];
 }
 
@@ -151,8 +153,8 @@ static const char * avrcp_play_status_name[] = {
     "ERROR" // 0xFF
 };
 const char * avrcp_play_status2str(uint8_t index){
-    if (index > 4) {
-        return avrcp_play_status_name[5];
+    if (index > 4){
+        index = 5;
     }
     return avrcp_play_status_name[index];
 }
