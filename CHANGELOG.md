@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - esp32: add BTstack component config options via menuconfig
 - esp32: allow to disable default audio i2s driver via component config
 - esp32: support esp-idf v5.x audio driver
+
+## Removed
+- AVDTP Source: avdtp_source_stream_send_media_payload, use avdtp_source_stream_send_media_payload_rtp instead
  
 ## Fixed
 - HCI: fix set extended scan response
