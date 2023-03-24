@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 BlueKitchen GmbH
+ * Copyright (C) 2023 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -139,6 +139,9 @@ static btstack_ring_buffer_t decoded_audio_ring_buffer;
 
 static int media_initialized = 0;
 static int audio_stream_started;
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+static int l2cap_stream_started;
+#endif
 static btstack_resample_t resample_instance;
 
 // temp storage of lower-layer request for audio samples
@@ -405,9 +408,6 @@ static void handle_pcm_data(int16_t * data, int num_audio_frames, int num_channe
 
 static int media_processing_init(media_codec_configuration_sbc_t * configuration){
     if (media_initialized) return 0;
-#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
-    btstack_sample_rate_compensation_init( &sample_rate_compensation, btstack_run_loop_get_time_ms(), configuration->sampling_frequency, FLOAT_TO_Q15(1.f) );
-#endif
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
 
 #ifdef STORE_TO_WAV_FILE
@@ -431,6 +431,7 @@ static int media_processing_init(media_codec_configuration_sbc_t * configuration
 
 static void media_processing_start(void){
     if (!media_initialized) return;
+
 #ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
     btstack_sample_rate_compensation_reset( &sample_rate_compensation, btstack_run_loop_get_time_ms() );
 #endif
@@ -444,8 +445,13 @@ static void media_processing_start(void){
 
 static void media_processing_pause(void){
     if (!media_initialized) return;
+
     // stop audio playback
     audio_stream_started = 0;
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+    l2cap_stream_started = 0;
+#endif
+
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (audio){
         audio->stop_stream();
@@ -457,9 +463,13 @@ static void media_processing_pause(void){
 
 static void media_processing_close(void){
     if (!media_initialized) return;
+
     media_initialized = 0;
     audio_stream_started = 0;
     sbc_frame_size = 0;
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+    l2cap_stream_started = 0;
+#endif
 
 #ifdef STORE_TO_WAV_FILE                 
     wav_writer_close();
@@ -498,18 +508,20 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     avdtp_sbc_codec_header_t sbc_header;
     if (!read_sbc_header(packet, size, &pos, &sbc_header)) return;
 
+    int packet_length = size-pos;
+    uint8_t *packet_begin = packet+pos;
+
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     // process data right away if there's no audio implementation active, e.g. on posix systems to store as .wav
     if (!audio){
-        btstack_sbc_decoder_process_data(&state, 0, packet+pos, size-pos);
+        btstack_sbc_decoder_process_data(&state, 0, packet_begin, packet_length);
         return;
     }
 
 
     // store sbc frame size for buffer management
-    sbc_frame_size = (size-pos)/ sbc_header.num_frames;
-        
-    int status = btstack_ring_buffer_write(&sbc_frame_ring_buffer, packet+pos, size-pos);
+    sbc_frame_size = packet_length / sbc_header.num_frames;
+    int status = btstack_ring_buffer_write(&sbc_frame_ring_buffer, packet_begin, packet_length);
     if (status != ERROR_CODE_SUCCESS){
         printf("Error storing samples in SBC ring buffer!!!\n");
     }
@@ -517,11 +529,15 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     // decide on audio sync drift based on number of sbc frames in queue
     int sbc_frames_in_buffer = btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer) / sbc_frame_size;
 #ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+    if( !l2cap_stream_started && audio_stream_started ) {
+        l2cap_stream_started = 1;
+        btstack_sample_rate_compensation_init( &sample_rate_compensation, btstack_run_loop_get_time_ms(), a2dp_sink_demo_a2dp_connection.sbc_configuration.sampling_frequency, FLOAT_TO_Q15(1.f) );
+    }
     // update sample rate compensation
     if( audio_stream_started && (audio != NULL)) {
         uint32_t resampling_factor = btstack_sample_rate_compensation_update( &sample_rate_compensation, btstack_run_loop_get_time_ms(), sbc_header.num_frames*128, audio->get_samplerate() );
         btstack_resample_set_factor(&resample_instance, resampling_factor);
-//        printf("sbc buffer level :            %d\n", btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer));
+//        printf("sbc buffer level :            %"PRIu32"\n", btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer));
     }
 #else
     uint32_t resampling_factor;
