@@ -251,11 +251,14 @@ uint8_t avdtp_source_stream_send_media_packet(uint16_t avdtp_cid, uint8_t local_
  * @param avdtp_cid         AVDTP channel identifier.
  * @param local_seid        ID of a local stream endpoint.
  * @param marker
+ * @param timestamp         in sample rate units
  * @param payload
  * @param size
  * @return status
  */
-uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, const uint8_t * payload, uint16_t size);
+uint8_t
+avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, uint32_t timestamp,
+                                           const uint8_t *payload, uint16_t size);
 
 /**
  * @brief Request to send a media packet. Packet can be then sent on reception of AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW event.

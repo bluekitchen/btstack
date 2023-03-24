@@ -188,7 +188,9 @@ avdtp_source_setup_media_header(uint8_t *media_packet, uint8_t marker, uint16_t 
     big_endian_store_32(media_packet, pos, ssrc); // only used for multicast
 }
 
-uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, const uint8_t * payload, uint16_t payload_size){
+uint8_t
+avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, uint32_t timestamp,
+                                           const uint8_t *payload, uint16_t payload_size) {
     UNUSED(avdtp_cid);
 
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
@@ -207,7 +209,6 @@ uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t l
     if (packet_size > buffer_size) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     l2cap_reserve_packet_buffer();
     uint8_t * media_packet = l2cap_get_outgoing_buffer();
-    uint32_t timestamp = btstack_run_loop_get_time_ms();
     avdtp_source_setup_media_header(media_packet, marker, stream_endpoint->sequence_number, timestamp);
     (void)memcpy(&media_packet[AVDTP_MEDIA_PAYLOAD_HEADER_SIZE], payload, payload_size);
     stream_endpoint->sequence_number++;

@@ -101,7 +101,8 @@ typedef struct {
     btstack_timer_source_t audio_timer;
     uint8_t  streaming;
     int      max_media_payload_size;
-    
+    uint32_t rtp_timestamp;
+
     uint8_t  sbc_storage[SBC_STORAGE_SIZE];
     uint16_t sbc_storage_count;
     uint8_t  sbc_ready_to_send;
@@ -351,10 +352,16 @@ static void a2dp_demo_hexcmod_configure_sample_rate(int sample_rate){
 static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
     int bytes_in_storage = media_tracker.sbc_storage_count;
-    uint8_t num_frames = bytes_in_storage / num_bytes_in_frame;
+    uint8_t num_sbc_frames = bytes_in_storage / num_bytes_in_frame;
     // Prepend SBC Header
-    media_tracker.sbc_storage[0] = num_frames;  // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
-    avdtp_source_stream_send_media_payload_rtp(media_tracker.a2dp_cid, media_tracker.local_seid, 0, media_tracker.sbc_storage, bytes_in_storage + 1);
+    media_tracker.sbc_storage[0] = num_sbc_frames;  // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
+    a2dp_source_stream_send_media_payload_rtp(media_tracker.a2dp_cid, media_tracker.local_seid, 0,
+                                               media_tracker.rtp_timestamp,
+                                               media_tracker.sbc_storage, bytes_in_storage + 1);
+
+    // update rtp_timestamp
+    unsigned int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
+    media_tracker.rtp_timestamp += num_sbc_frames * num_audio_samples_per_sbc_buffer;
 
     media_tracker.sbc_storage_count = 0;
     media_tracker.sbc_ready_to_send = 0;
