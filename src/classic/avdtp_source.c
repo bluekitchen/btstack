@@ -168,14 +168,13 @@ void avdtp_source_deinit(void){
     avdtp_deinit();
 }
 
-static void avdtp_source_setup_media_header(uint8_t * media_packet, uint8_t marker, uint16_t sequence_number){
+static void
+avdtp_source_setup_media_header(uint8_t *media_packet, uint8_t marker, uint16_t sequence_number, uint32_t timestamp) {
     uint8_t  rtp_version = 2;
     uint8_t  padding = 0;
     uint8_t  extension = 0;
     uint8_t  csrc_count = 0;
     uint8_t  payload_type = 0x60;
-    // uint16_t sequence_number = stream_endpoint->sequence_number;
-    uint32_t timestamp = btstack_run_loop_get_time_ms();
     uint32_t ssrc = 0x11223344;
 
     // rtp header (min size 12B)
@@ -210,7 +209,8 @@ int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_sei
 
     l2cap_reserve_packet_buffer();
     uint8_t * media_packet = l2cap_get_outgoing_buffer();
-    avdtp_source_setup_media_header(media_packet, marker, stream_endpoint->sequence_number);
+    uint32_t timestamp = btstack_run_loop_get_time_ms();
+    avdtp_source_setup_media_header(media_packet, marker, stream_endpoint->sequence_number, timestamp);
     media_packet[AVDTP_MEDIA_PAYLOAD_HEADER_SIZE] = num_frames; // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
     (void)memcpy(&media_packet[AVDTP_MEDIA_PAYLOAD_HEADER_SIZE +1], payload, payload_size);
     stream_endpoint->sequence_number++;
@@ -237,7 +237,8 @@ uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t l
     if (packet_size > buffer_size) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     l2cap_reserve_packet_buffer();
     uint8_t * media_packet = l2cap_get_outgoing_buffer();
-    avdtp_source_setup_media_header(media_packet, marker, stream_endpoint->sequence_number);
+    uint32_t timestamp = btstack_run_loop_get_time_ms();
+    avdtp_source_setup_media_header(media_packet, marker, stream_endpoint->sequence_number, timestamp);
     (void)memcpy(&media_packet[AVDTP_MEDIA_PAYLOAD_HEADER_SIZE], payload, payload_size);
     stream_endpoint->sequence_number++;
     return l2cap_send_prepared(stream_endpoint->l2cap_media_cid, (uint16_t) packet_size);
