@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Removed
 - AVDTP Source: avdtp_source_stream_send_media_payload, use avdtp_source_stream_send_media_payload_rtp instead
+- A2DP Source: a2dp_source_stream_send_media_payload, use a2dp_source_stream_send_media_payload_rtp instead
  
 ## Fixed
 - HCI: fix set extended scan response
