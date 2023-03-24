@@ -381,7 +381,7 @@ static uint32_t ll_start_ticks_for_end_time_and_len(uint32_t packet_end_ticks, u
 static void ll_emit_hci_event(const hci_event_t * event, ...){
     va_list argptr;
     va_start(argptr, event);
-    uint16_t length = hci_event_create_from_template_and_arglist(ll_outgoing_hci_event, event, argptr);
+    uint16_t length = hci_event_create_from_template_and_arglist(ll_outgoing_hci_event, sizeof(ll_outgoing_hci_event), event, argptr);
     va_end(argptr);
     controller_packet_handler(HCI_EVENT_PACKET, ll_outgoing_hci_event, length);
 }

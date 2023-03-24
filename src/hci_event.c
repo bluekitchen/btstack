@@ -64,8 +64,10 @@
  *   K: 1-byte length of following variable-length data blob 'V', length is not included in packet
  *   V: variable-length data blob of len provided in 'J' field
  */
-uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_event_buffer, const hci_event_t *event, va_list argptr){
-    
+uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_event_buffer, uint16_t buffer_size, const hci_event_t *event, va_list argptr){
+
+    UNUSED(buffer_size);
+
     hci_event_buffer[0] = event->event_code;
     uint16_t pos = 2;
 
@@ -150,10 +152,10 @@ uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_event_buffer, c
     return pos;
 }
 
-uint16_t hci_event_create_from_template_and_arguments(uint8_t *hci_buffer, const hci_event_t *event, ...){
+uint16_t hci_event_create_from_template_and_arguments(uint8_t *hci_buffer, uint16_t buffer_size, const hci_event_t *event, ...){
     va_list argptr;
     va_start(argptr, event);
-    uint16_t length = hci_event_create_from_template_and_arglist(hci_buffer, event, argptr);
+    uint16_t length = hci_event_create_from_template_and_arglist(hci_buffer, buffer_size, event, argptr);
     va_end(argptr);
     return length;
 }
