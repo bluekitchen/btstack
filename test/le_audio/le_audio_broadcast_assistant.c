@@ -120,6 +120,9 @@ static bass_source_data_t bass_source_data;
 static uint16_t bass_cid;
 static uint8_t  bass_source_id;
 
+// test device name
+static const char test_device_name[] = "OnePlus Buds Pro 2";
+
 static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size){
 
     // periodic advertisement contains the BASE
@@ -370,7 +373,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             bool found_scan_delegator = false;
             bool found_broadcast_source = false;
             bool found_name = false;
-            uint8_t adv_name[31];
+            char adv_name[31];
 
             uint16_t uuid;
             for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
@@ -398,6 +401,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         memcpy(adv_name, data, size);
                         adv_name[size] = 0;
                         found_name = true;
+                        // detect scan delegator by name
+                        if (strncmp(adv_name, test_device_name, sizeof(test_device_name)) == 0){
+                            found_scan_delegator = true;
+                        }
                         break;
                     default:
                         break;
