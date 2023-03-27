@@ -96,6 +96,9 @@ typedef struct {
 } map_access_client_obex_srm_t;
 
 typedef struct {
+    // extending goep_client_t
+    goep_client_t goep_client;
+
     map_access_client_state_t state;
     uint16_t  map_cid;
     bd_addr_t bd_addr;
