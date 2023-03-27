@@ -73,6 +73,25 @@
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+// singleton instance
+static map_access_client_t map_access_client;
+
+#ifdef ENABLE_GOEP_L2CAP
+// singleton instance
+static uint8_t map_access_client_ertm_buffer[1000];
+static l2cap_ertm_config_t map_access_client_ertm_config = {
+        1,  // ertm mandatory
+        2,  // max transmit, some tests require > 1
+        2000,
+        12000,
+        512,    // l2cap ertm mtu
+        2,
+        2,
+        1,      // 16-bit FCS
+};
+#endif
+
+
 static bd_addr_t    remote_addr;
 static uint16_t rfcomm_channel_id;
 // MBP2016 "F4-0F-24-3B-1B-E1"
@@ -117,7 +136,12 @@ static void stdin_process(char c){
     switch (c){
         case 'a':
             printf("[+] Connecting to %s...\n", bd_addr_to_str(remote_addr));
-            map_access_client_connect(&packet_handler, remote_addr, &map_cid);
+#ifdef ENABLE_GOEP_L2CAP
+            map_access_client_connect(&map_access_client, &map_access_client_ertm_config, sizeof(map_access_client_ertm_buffer),
+                                      map_access_client_ertm_buffer, &packet_handler, remote_addr, &map_cid);
+#else
+            map_access_client_connect(&map_access_client, NULL, 0, NULL, &packet_handler, remote_addr, &map_cid);
+#endif
             break;
         case 'A':
             printf("[+] Disconnect from %s...\n", bd_addr_to_str(remote_addr));
