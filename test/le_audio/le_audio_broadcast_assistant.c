@@ -340,6 +340,28 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     }
 }
 
+static void le_audio_broadcast_assistant_start_periodic_sync() {
+    printf("Start Periodic Advertising Sync\n");
+
+    // ignore other advertisements
+    gap_set_scan_params(1, 0x30, 0x30, 1);
+    // sync to PA
+    gap_periodic_advertiser_list_clear();
+    gap_periodic_advertiser_list_add(broadcast_source_type, broadcast_source, broadcast_source_sid);
+    app_state = APP_W4_PA_AND_BIG_INFO;
+    gap_periodic_advertising_create_sync(0x01, broadcast_source_sid, broadcast_source_type, broadcast_source, 0, 1000, 0);
+}
+
+static void
+le_audio_broadcast_assistant_found_scan_delegator(bd_addr_type_t *addr_type, const uint8_t *addr,
+                                                  const char *adv_name) {
+    memcpy(scan_delegator, addr, 6);
+    scan_delegator_type = (*addr_type);
+    btstack_strcpy(scan_delegator_name,  sizeof(scan_delegator_name), (const char *) adv_name);
+    printf("Broadcast sink found, addr %s, name: '%s'\n", bd_addr_to_str(scan_delegator), scan_delegator_name);
+    gap_whitelist_add(scan_delegator_type, scan_delegator);
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -362,6 +384,51 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             }
             break;
+        case GAP_EVENT_ADVERTISING_REPORT:{
+            if (app_state != APP_W4_BROADCAST_SINK_AND_SCAN_DELEGATOR_ADV) break;
+
+            uint8_t adv_size = gap_event_advertising_report_get_data_length(packet);
+            const uint8_t * adv_data = gap_event_advertising_report_get_data(packet);
+
+            ad_context_t context;
+            bool found_scan_delegator = false;
+            char adv_name[31];
+            adv_name[0] = 0;
+            for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
+                uint8_t data_type = ad_iterator_get_data_type(&context);
+                uint8_t size = ad_iterator_get_data_len(&context);
+                const uint8_t *data = ad_iterator_get_data(&context);
+                switch (data_type){
+                    case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
+                    case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
+                        size = btstack_min(sizeof(adv_name) - 1, size);
+                        memcpy(adv_name, data, size);
+                        adv_name[size] = 0;
+                        // detect scan delegator by name
+                        if (strncmp(adv_name, test_device_name, sizeof(test_device_name)) == 0){
+                            found_scan_delegator = true;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (found_scan_delegator == false) break;
+
+            if ((have_scan_delegator == false) && found_scan_delegator){
+                have_scan_delegator = true;
+                bd_addr_t addr;
+                gap_event_advertising_report_get_address(packet, addr);
+                bd_addr_type_t addr_type = (bd_addr_type_t) gap_event_advertising_report_get_address_type(packet);
+                le_audio_broadcast_assistant_found_scan_delegator(&addr_type, addr, adv_name);
+            }
+
+            if ((have_broadcast_source && have_scan_delegator) == false) break;
+
+            le_audio_broadcast_assistant_start_periodic_sync();
+            break;
+        }
         case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
         {
             if (app_state != APP_W4_BROADCAST_SINK_AND_SCAN_DELEGATOR_ADV) break;
@@ -372,8 +439,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             ad_context_t context;
             bool found_scan_delegator = false;
             bool found_broadcast_source = false;
-            bool found_name = false;
             char adv_name[31];
+            adv_name[0] = 0;
 
             uint16_t uuid;
             for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
@@ -400,11 +467,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         size = btstack_min(sizeof(adv_name) - 1, size);
                         memcpy(adv_name, data, size);
                         adv_name[size] = 0;
-                        found_name = true;
-                        // detect scan delegator by name
-                        if (strncmp(adv_name, test_device_name, sizeof(test_device_name)) == 0){
-                            found_scan_delegator = true;
-                        }
                         break;
                     default:
                         break;
@@ -415,15 +477,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
             if ((have_scan_delegator == false) && found_scan_delegator){
                 have_scan_delegator = true;
-                gap_event_extended_advertising_report_get_address(packet, scan_delegator);
-                scan_delegator_type = gap_event_extended_advertising_report_get_address_type(packet);
-                if (found_name){
-                    btstack_strcpy(scan_delegator_name,  sizeof(scan_delegator_name), (const char *) adv_name);
-                } else {
-                    scan_delegator_name[0] = 0;
-                }
-                printf("Broadcast sink found, addr %s, name: '%s'\n", bd_addr_to_str(scan_delegator), scan_delegator_name);
-                gap_whitelist_add(scan_delegator_type, scan_delegator);
+                bd_addr_t addr;
+                gap_event_extended_advertising_report_get_address(packet, addr);
+                bd_addr_type_t addr_type = (bd_addr_type_t) gap_event_extended_advertising_report_get_address_type(packet);
+                le_audio_broadcast_assistant_found_scan_delegator(&addr_type, addr, adv_name);
             }
 
             if ((have_broadcast_source == false) && found_broadcast_source){
@@ -431,26 +488,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 gap_event_extended_advertising_report_get_address(packet, broadcast_source);
                 broadcast_source_type = gap_event_extended_advertising_report_get_address_type(packet);
                 broadcast_source_sid = gap_event_extended_advertising_report_get_advertising_sid(packet);
-                if (found_name){
-                    btstack_strcpy(broadcast_source_name,  sizeof(broadcast_source_name), (const char *) adv_name);
-                } else {
-                    broadcast_source_name[0] = 0;
-                }
+                btstack_strcpy(broadcast_source_name,  sizeof(broadcast_source_name), (const char *) adv_name);
                 printf("Broadcast source found, addr %s, name: '%s'\n", bd_addr_to_str(broadcast_source), broadcast_source_name);
                 gap_whitelist_add(broadcast_source_type, broadcast_source);
             }
 
-             if ((have_broadcast_source && have_scan_delegator) == false) break;
+            if ((have_broadcast_source && have_scan_delegator) == false) break;
 
-            printf("Start Periodic Advertising Sync\n");
-
-            // ignore other advertisements
-            gap_set_scan_params(1, 0x30, 0x30, 1);
-            // sync to PA
-            gap_periodic_advertiser_list_clear();
-            gap_periodic_advertiser_list_add(broadcast_source_type, broadcast_source, broadcast_source_sid);
-            app_state = APP_W4_PA_AND_BIG_INFO;
-            gap_periodic_advertising_create_sync(0x01, broadcast_source_sid, broadcast_source_type, broadcast_source, 0, 1000, 0);
+            le_audio_broadcast_assistant_start_periodic_sync();
             break;
         }
 
