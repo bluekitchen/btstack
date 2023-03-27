@@ -100,11 +100,9 @@ typedef struct {
     goep_client_t goep_client;
 
     map_access_client_state_t state;
-    uint16_t  map_cid;
     bd_addr_t bd_addr;
     hci_con_handle_t con_handle;
     uint8_t   incoming;
-    uint16_t  goep_cid;
     btstack_packet_handler_t client_handler;
 
     int request_number;
@@ -134,14 +132,19 @@ void map_access_client_init(void);
 
 /**
  * @brief Create MAP Client connection.
- * @param handler 
+ * @param map_access_client to store state
+ * @param l2cap_ertm_config
+ * @param l2cap_ertm_buffer_size
+ * @param l2cap_ertm_buffer
+ * @param handler
  * @param addr
  * @param out_cid to use for further commands
  * @result status
 */
-uint8_t map_access_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
+uint8_t map_access_client_connect(map_access_client_t * map_access_client, l2cap_ertm_config_t * l2cap_ertm_config, uint16_t l2cap_ertm_buffer_size,
+                                  uint8_t *l2cap_ertm_buffer, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
 
-/** 
+/**
  * @brief Disconnects MAP connection with given identifier.
  * @param map_cid
  * @return status
