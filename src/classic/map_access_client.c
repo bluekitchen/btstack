@@ -68,8 +68,7 @@
 static const uint8_t map_access_client_service_uuid[] = {0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66};
 static uint32_t map_access_client_supported_features = 0x1F;
 
-static map_access_client_t _map_client;
-static map_access_client_t * map_client = &_map_client;
+static map_access_client_t map_access_client_singleton;
 
 static void map_access_client_emit_connected_event(map_access_client_t * context, uint8_t status){
     uint8_t event[15];
@@ -117,6 +116,22 @@ static void map_access_client_emit_operation_complete_event(map_access_client_t 
     context->client_handler(HCI_EVENT_PACKET, context->map_cid, &event[0], pos);
 }
 
+map_access_client_t * map_access_client_for_map_cid(uint16_t map_cid){
+    if (map_cid == map_access_client_singleton.map_cid){
+        return &map_access_client_singleton;
+    } else {
+        return NULL;
+    }
+}
+
+map_access_client_t * map_access_client_for_goep_cid(uint16_t goep_cid){
+    if (goep_cid == map_access_client_singleton.goep_cid){
+        return &map_access_client_singleton;
+    } else {
+        return NULL;
+    }
+}
+
 static void map_access_client_message_handle_to_str(char * p, const map_message_handle_t msg_handle){
     int i;
     for (i = 0; i < MAP_MESSAGE_HANDLE_SIZE ; i++) {
@@ -146,26 +161,26 @@ static void map_access_client_parser_callback_connect(void * user_data, uint8_t 
 }
 
 static void map_access_client_parser_callback_get_operation(void * user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t * data_buffer, uint16_t data_len){
-    map_access_client_t *client = (map_access_client_t *) user_data;
+    map_access_client_t *map_access_client = (map_access_client_t *) user_data;
     switch (header_id) {
         case OBEX_HEADER_SINGLE_RESPONSE_MODE:
-            obex_parser_header_store(&client->obex_srm.srm_value, 1, total_len, data_offset, data_buffer, data_len);
+            obex_parser_header_store(&map_access_client->obex_srm.srm_value, 1, total_len, data_offset, data_buffer, data_len);
             break;
         case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
-            obex_parser_header_store(&client->obex_srm.srmp_value, 1, total_len, data_offset, data_buffer, data_len);
+            obex_parser_header_store(&map_access_client->obex_srm.srmp_value, 1, total_len, data_offset, data_buffer, data_len);
             break;
         case OBEX_HEADER_BODY:
         case OBEX_HEADER_END_OF_BODY:
-            switch(map_client->state){
+            switch(map_access_client->state){
                 case MAP_W4_FOLDERS:
                 case MAP_W4_MESSAGES_IN_FOLDER:
                 case MAP_W4_MESSAGE:
                 case MAP_W4_MAS_INSTANCE_INFO:
-                    client->client_handler(MAP_DATA_PACKET, client->map_cid, (uint8_t *) data_buffer, data_len);
+                    map_access_client->client_handler(MAP_DATA_PACKET, map_access_client->map_cid, (uint8_t *) data_buffer, data_len);
                     break;
 
                 default:
-                    printf ("unexpected state: %d\n", map_client->state);
+                    printf ("unexpected state: %d\n", map_access_client->state);
                     btstack_unreachable();
                     break;
             }
@@ -176,10 +191,10 @@ static void map_access_client_parser_callback_get_operation(void * user_data, ui
     }
 }
 
-static void map_access_client_prepare_srm_header(const map_access_client_t * client){
-    if (goep_client_version_20_or_higher(client->goep_cid)){
-        goep_client_header_add_srm_enable(client->goep_cid);
-        map_client->srm_state = SRM_W4_CONFIRM;
+static void map_access_client_prepare_srm_header(map_access_client_t * map_access_client){
+    if (goep_client_version_20_or_higher(map_access_client->goep_cid)){
+        goep_client_header_add_srm_enable(map_access_client->goep_cid);
+        map_access_client->srm_state = SRM_W4_CONFIRM;
     }
 }
 
@@ -205,7 +220,7 @@ static void map_access_client_prepare_operation(map_access_client_t * client, ui
     client->obex_parser_waiting_for_response = true;
 }
 
-static void map_access_client_handle_can_send_now(void){
+static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
     uint8_t application_parameters[6];
     int pos = 0;
     char map_message_handle_to_str_buffer[MAP_MESSAGE_HANDLE_SIZE * 2 + 1];
@@ -214,184 +229,187 @@ static void map_access_client_handle_can_send_now(void){
     uint16_t path_element_len;
     int done;
 
-    switch (map_client->state){
+    map_access_client_t * map_access_client = map_access_client_for_goep_cid(goep_cid);
+    btstack_assert (map_access_client != NULL);
+
+    switch (map_access_client->state){
         case MAP_W2_SEND_CONNECT_REQUEST:
-            goep_client_request_create_connect(map_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
-            goep_client_header_add_target(map_client->goep_cid, map_access_client_service_uuid, 16);
+            goep_client_request_create_connect(map_access_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
+            goep_client_header_add_target(map_access_client->goep_cid, map_access_client_service_uuid, 16);
             // Mandatory if the PSE advertises a PbapSupportedFeatures attribute in its SDP record, else excluded.
             // if (goep_client_get_map_supported_features(map_client->goep_cid) != MAP_FEATURES_NOT_PRESENT){
                 application_parameters[0] = 0x29; // MAP_APPLICATION_PARAMETER_MAP_SUPPORTED_FEATURES;
                 application_parameters[1] = 4;
                 big_endian_store_32(application_parameters, 2, map_access_client_supported_features);
-                goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], 6);
+                goep_client_header_add_application_parameters(map_access_client->goep_cid, &application_parameters[0], 6);
 
             // }
-            map_client->state = MAP_W4_CONNECT_RESPONSE;
+            map_access_client->state = MAP_W4_CONNECT_RESPONSE;
             // prepare response
-            map_access_client_prepare_operation(map_client, OBEX_OPCODE_CONNECT);
-            map_access_client_obex_srm_init(&map_client->obex_srm);
-            map_client->obex_parser_waiting_for_response = true;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_CONNECT);
+            map_access_client_obex_srm_init(&map_access_client->obex_srm);
+            map_access_client->obex_parser_waiting_for_response = true;
             // send packet
-            goep_client_execute(map_client->goep_cid);
+            goep_client_execute(map_access_client->goep_cid);
             break;
 
         case MAP_W2_SEND_DISCONNECT_REQUEST:
-            goep_client_request_create_disconnect(map_client->goep_cid);
-            map_client->state = MAP_W4_DISCONNECT_RESPONSE;
+            goep_client_request_create_disconnect(map_access_client->goep_cid);
+            map_access_client->state = MAP_W4_DISCONNECT_RESPONSE;
             // prepare response
-            map_access_client_prepare_operation(map_client, OBEX_OPCODE_DISCONNECT);
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_DISCONNECT);
             // send packet
-            goep_client_execute(map_client->goep_cid);
+            goep_client_execute(map_access_client->goep_cid);
             break;
 
         case MAP_W2_SET_PATH_ROOT:
-            goep_client_request_create_set_path(map_client->goep_cid, 1 << 1); // Don’t create directory
-            goep_client_header_add_name(map_client->goep_cid, "");
+            goep_client_request_create_set_path(map_access_client->goep_cid, 1 << 1); // Don’t create directory
+            goep_client_header_add_name(map_access_client->goep_cid, "");
             // state
-            map_client->state = MAP_W4_SET_PATH_ROOT_COMPLETE;
-            map_access_client_prepare_operation(map_client, OBEX_OPCODE_SETPATH);
+            map_access_client->state = MAP_W4_SET_PATH_ROOT_COMPLETE;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_SETPATH);
             // send packet
-            map_client->request_number++;
-            goep_client_execute(map_client->goep_cid);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_cid);
             break;
         case MAP_W2_SET_PATH_ELEMENT:
             // find '/' or '\0'
-            path_element_start = map_client->set_path_offset;
-            while (map_client->current_folder[map_client->set_path_offset] != '\0' &&
-                map_client->current_folder[map_client->set_path_offset] != '/'){
-                map_client->set_path_offset++;
+            path_element_start = map_access_client->set_path_offset;
+            while (map_access_client->current_folder[map_access_client->set_path_offset] != '\0' &&
+                   map_access_client->current_folder[map_access_client->set_path_offset] != '/'){
+                map_access_client->set_path_offset++;
             }
-            path_element_len = map_client->set_path_offset-path_element_start;
-            memcpy(path_element, &map_client->current_folder[path_element_start], path_element_len);
+            path_element_len = map_access_client->set_path_offset - path_element_start;
+            memcpy(path_element, &map_access_client->current_folder[path_element_start], path_element_len);
             path_element[path_element_len] = 0;
 
             // skip /
-            if (map_client->current_folder[map_client->set_path_offset] == '/'){
-                map_client->set_path_offset++;
+            if (map_access_client->current_folder[map_access_client->set_path_offset] == '/'){
+                map_access_client->set_path_offset++;
             }
 
             // done?
-            done = map_client->current_folder[map_client->set_path_offset] == '\0';
+            done = map_access_client->current_folder[map_access_client->set_path_offset] == '\0';
 
             // status
             log_info("Path element '%s', done %u", path_element, done);
 
-            goep_client_request_create_set_path(map_client->goep_cid, 1 << 1); // Don’t create directory
-            goep_client_header_add_name(map_client->goep_cid, (const char *) path_element); // next element
+            goep_client_request_create_set_path(map_access_client->goep_cid, 1 << 1); // Don’t create directory
+            goep_client_header_add_name(map_access_client->goep_cid, (const char *) path_element); // next element
             // state
-            map_client->state = MAP_W4_SET_PATH_ELEMENT_COMPLETE;
-            map_access_client_prepare_operation(map_client, OBEX_OPCODE_SETPATH);
+            map_access_client->state = MAP_W4_SET_PATH_ELEMENT_COMPLETE;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_SETPATH);
             // send packet
-            map_client->request_number++;
-            goep_client_execute(map_client->goep_cid);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_cid);
             break;
 
         case MAP_W2_SEND_GET_FOLDERS:
-            goep_client_request_create_get(map_client->goep_cid);
-            if (map_client->request_number == 0){
-                map_access_client_prepare_srm_header(map_client);
-                goep_client_header_add_type(map_client->goep_cid, "x-obex/folder-listing");
+            goep_client_request_create_get(map_access_client->goep_cid);
+            if (map_access_client->request_number == 0){
+                map_access_client_prepare_srm_header(map_access_client);
+                goep_client_header_add_type(map_access_client->goep_cid, "x-obex/folder-listing");
             }
-            map_client->state = MAP_W4_FOLDERS;
-            map_access_client_prepare_operation(map_client, OBEX_OPCODE_GET);
-            map_client->request_number++;
-            goep_client_execute(map_client->goep_cid);
+            map_access_client->state = MAP_W4_FOLDERS;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_cid);
             break;
 
         case MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER:
-            goep_client_request_create_get(map_client->goep_cid);
-            if (map_client->request_number == 0){
-                map_access_client_prepare_srm_header(map_client);
-                goep_client_header_add_type(map_client->goep_cid, "x-bt/MAP-msg-listing");
-                goep_client_header_add_name(map_client->goep_cid, map_client->folder_name);
+            goep_client_request_create_get(map_access_client->goep_cid);
+            if (map_access_client->request_number == 0){
+                map_access_client_prepare_srm_header(map_access_client);
+                goep_client_header_add_type(map_access_client->goep_cid, "x-bt/MAP-msg-listing");
+                goep_client_header_add_name(map_access_client->goep_cid, map_access_client->folder_name);
             }
-            map_client->state = MAP_W4_MESSAGES_IN_FOLDER;
-            map_access_client_prepare_operation(map_client, OBEX_OPCODE_GET);
-            map_client->request_number++;
-            goep_client_execute(map_client->goep_cid);
+            map_access_client->state = MAP_W4_MESSAGES_IN_FOLDER;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_cid);
             break;
 
         case MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE:
-            goep_client_request_create_get(map_client->goep_cid);
+            goep_client_request_create_get(map_access_client->goep_cid);
 
-            if (map_client->request_number == 0){
-                map_access_client_prepare_srm_header(map_client);
+            if (map_access_client->request_number == 0){
+                map_access_client_prepare_srm_header(map_access_client);
 
-                map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_client->message_handle);
-                goep_client_header_add_name(map_client->goep_cid, map_message_handle_to_str_buffer);
+                map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
+                goep_client_header_add_name(map_access_client->goep_cid, map_message_handle_to_str_buffer);
 
-                goep_client_header_add_type(map_client->goep_cid, "x-bt/message");
+                goep_client_header_add_type(map_access_client->goep_cid, "x-bt/message");
 
                 application_parameters[pos++] = 0x0A; // attachment
                 application_parameters[pos++] = 1;
-                application_parameters[pos++] = map_client->get_message_attachment;
+                application_parameters[pos++] = map_access_client->get_message_attachment;
 
                 application_parameters[pos++] = 0x14; // Charset
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = 1;    // UTF-8
-                goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], pos);
+                goep_client_header_add_application_parameters(map_access_client->goep_cid, &application_parameters[0], pos);
             }
 
-            map_client->state = MAP_W4_MESSAGE;
-            map_access_client_prepare_operation(map_client, OBEX_OPCODE_GET);
-            map_client->request_number++;
-            goep_client_execute(map_client->goep_cid);
+            map_access_client->state = MAP_W4_MESSAGE;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_cid);
             break;
 
         case MAP_W2_SET_NOTIFICATION:
-            goep_client_request_create_put(map_client->goep_cid);
-            goep_client_header_add_type(map_client->goep_cid, "x-bt/MAP-NotificationRegistration");
+            goep_client_request_create_put(map_access_client->goep_cid);
+            goep_client_header_add_type(map_access_client->goep_cid, "x-bt/MAP-NotificationRegistration");
 
             application_parameters[pos++] = 0x0E; // NotificationStatus
             application_parameters[pos++] = 1;
-            application_parameters[pos++] = map_client->notifications_enabled;
+            application_parameters[pos++] = map_access_client->notifications_enabled;
 
-            goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], pos);
-            goep_client_body_add_static(map_client->goep_cid, (uint8_t *) "0", 1);
-            map_client->state = MAP_W4_SET_NOTIFICATION;
-            map_access_client_prepare_operation(map_client, OBEX_OPCODE_PUT);
-            map_client->request_number++;
-            goep_client_execute(map_client->goep_cid);
+            goep_client_header_add_application_parameters(map_access_client->goep_cid, &application_parameters[0], pos);
+            goep_client_body_add_static(map_access_client->goep_cid, (uint8_t *) "0", 1);
+            map_access_client->state = MAP_W4_SET_NOTIFICATION;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_PUT);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_cid);
             break;
 
         case MAP_W2_SET_NOTIFICATION_FILTER:
-            goep_client_request_create_put(map_client->goep_cid);
-            goep_client_header_add_type(map_client->goep_cid, "x-bt/MAP-notification-filter");
+            goep_client_request_create_put(map_access_client->goep_cid);
+            goep_client_header_add_type(map_access_client->goep_cid, "x-bt/MAP-notification-filter");
 
             application_parameters[pos++] = 0x25; // NotificationFilterMask
             application_parameters[pos++] = 4;
-            application_parameters[pos++] = (map_client->notification_filter_mask >>  0) & 0xff;
-            application_parameters[pos++] = (map_client->notification_filter_mask >>  8) & 0xff;
-            application_parameters[pos++] = (map_client->notification_filter_mask >> 16) & 0xff;
-            application_parameters[pos++] = (map_client->notification_filter_mask >> 24) & 0xff;
+            application_parameters[pos++] = (map_access_client->notification_filter_mask >> 0) & 0xff;
+            application_parameters[pos++] = (map_access_client->notification_filter_mask >> 8) & 0xff;
+            application_parameters[pos++] = (map_access_client->notification_filter_mask >> 16) & 0xff;
+            application_parameters[pos++] = (map_access_client->notification_filter_mask >> 24) & 0xff;
 
-            goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], pos);
-            goep_client_body_add_static(map_client->goep_cid, (uint8_t *) "0", 1);
-            map_client->state = MAP_W4_SET_NOTIFICATION_FILTER;
-            map_access_client_prepare_operation(map_client, OBEX_OPCODE_PUT);
-            map_client->request_number++;
-            goep_client_execute(map_client->goep_cid);
+            goep_client_header_add_application_parameters(map_access_client->goep_cid, &application_parameters[0], pos);
+            goep_client_body_add_static(map_access_client->goep_cid, (uint8_t *) "0", 1);
+            map_access_client->state = MAP_W4_SET_NOTIFICATION_FILTER;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_PUT);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_cid);
             break;
 
         case MAP_W2_SEND_GET_MAS_INSTANCE_INFO:
-            goep_client_request_create_get(map_client->goep_cid);
+            goep_client_request_create_get(map_access_client->goep_cid);
 
-            if (map_client->request_number == 0){
-                map_access_client_prepare_srm_header(map_client);
+            if (map_access_client->request_number == 0){
+                map_access_client_prepare_srm_header(map_access_client);
 
-                goep_client_header_add_type(map_client->goep_cid, "x-bt/MASInstanceInformation");
+                goep_client_header_add_type(map_access_client->goep_cid, "x-bt/MASInstanceInformation");
 
                 application_parameters[pos++] = 0x0F; // MASInstance
                 application_parameters[pos++] = 1;
-                application_parameters[pos++] = map_client->mas_instance_id;
+                application_parameters[pos++] = map_access_client->mas_instance_id;
 
-                goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], pos);
+                goep_client_header_add_application_parameters(map_access_client->goep_cid, &application_parameters[0], pos);
             }
 
-            map_client->state = MAP_W4_MAS_INSTANCE_INFO;
-            map_access_client_prepare_operation(map_client, OBEX_OPCODE_GET);
-            map_client->request_number++;
-            goep_client_execute(map_client->goep_cid);
+            map_access_client->state = MAP_W4_MAS_INSTANCE_INFO;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_cid);
             break;
 
         default:
@@ -401,7 +419,7 @@ static void map_access_client_handle_can_send_now(void){
 
 
 static void map_access_client_handle_srm_headers(map_access_client_t *context) {
-    const map_access_client_obex_srm_t * obex_srm = &map_client->obex_srm;
+    const map_access_client_obex_srm_t * obex_srm = &context->obex_srm;
     // Update SRM state based on SRM headers
     switch (context->srm_state){
         case SRM_W4_CONFIRM:
@@ -441,35 +459,41 @@ static void map_access_client_handle_srm_headers(map_access_client_t *context) {
 static void map_access_client_packet_handler_hci(uint8_t *packet, uint16_t size){
     UNUSED(size);
     uint8_t status;
+    map_access_client_t * map_access_client;
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_GOEP_META:
             switch (hci_event_goep_meta_get_subevent_code(packet)){
                 case GOEP_SUBEVENT_CONNECTION_OPENED:
+                    map_access_client = map_access_client_for_goep_cid(goep_subevent_connection_opened_get_goep_cid(packet));
+                    btstack_assert(map_access_client != NULL);
                     status = goep_subevent_connection_opened_get_status(packet);
-                    map_client->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
-                    map_client->incoming = goep_subevent_connection_opened_get_incoming(packet);
-                    goep_subevent_connection_opened_get_bd_addr(packet, map_client->bd_addr);
+                    map_access_client->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
+                    map_access_client->incoming = goep_subevent_connection_opened_get_incoming(packet);
+                    goep_subevent_connection_opened_get_bd_addr(packet, map_access_client->bd_addr);
                     if (status){
                         log_info("map: connection failed %u", status);
-                        map_client->state = MAP_INIT;
-                        map_access_client_emit_connected_event(map_client, status);
+                        map_access_client->state = MAP_INIT;
+                        map_access_client_emit_connected_event(map_access_client, status);
                     } else {
                         log_info("map: connection established");
-                        map_client->goep_cid = goep_subevent_connection_opened_get_goep_cid(packet);
-                        map_client->state = MAP_W2_SEND_CONNECT_REQUEST;
-                        goep_client_request_can_send_now(map_client->goep_cid);
+                        map_access_client->goep_cid = goep_subevent_connection_opened_get_goep_cid(packet);
+                        map_access_client->state = MAP_W2_SEND_CONNECT_REQUEST;
+                        goep_client_request_can_send_now(map_access_client->goep_cid);
                     }
                     break;
                 case GOEP_SUBEVENT_CONNECTION_CLOSED:
-                    if (map_client->state != MAP_CONNECTED){
-                        map_access_client_emit_operation_complete_event(map_client, OBEX_DISCONNECTED);
+                    map_access_client = map_access_client_for_goep_cid(goep_subevent_connection_closed_get_goep_cid(packet));
+                    btstack_assert(map_access_client != NULL);
+
+                    if (map_access_client->state != MAP_CONNECTED){
+                        map_access_client_emit_operation_complete_event(map_access_client, OBEX_DISCONNECTED);
                     }
-                    map_client->state = MAP_INIT;
-                    map_access_client_emit_connection_closed_event(map_client);
+                    map_access_client->state = MAP_INIT;
+                    map_access_client_emit_connection_closed_event(map_access_client);
                     break;
                 case GOEP_SUBEVENT_CAN_SEND_NOW:
-                    map_access_client_handle_can_send_now();
+                    map_access_client_handle_can_send_now(goep_subevent_can_send_now_get_goep_cid(packet));
                     break;
                 default:
                     break;
@@ -481,56 +505,59 @@ static void map_access_client_packet_handler_hci(uint8_t *packet, uint16_t size)
 }
 
 static void
-map_access_client_packet_handler_goep (uint8_t *packet, uint16_t size){
-    if (map_client->obex_parser_waiting_for_response == false) return;
+map_access_client_packet_handler_goep(uint16_t goep_cid, uint8_t *packet, uint16_t size) {
+    map_access_client_t * map_access_client = map_access_client_for_goep_cid(goep_cid);
+    btstack_assert(map_access_client != NULL);
+
+    if (map_access_client->obex_parser_waiting_for_response == false) return;
 
     obex_parser_object_state_t parser_state;
-    parser_state = obex_parser_process_data(&map_client->obex_parser, packet, size);
+    parser_state = obex_parser_process_data(&map_access_client->obex_parser, packet, size);
     if (parser_state != OBEX_PARSER_OBJECT_STATE_COMPLETE){
         return;
     }
 
-    map_client->obex_parser_waiting_for_response = false;
+    map_access_client->obex_parser_waiting_for_response = false;
     obex_parser_operation_info_t op_info;
-    obex_parser_get_operation_info(&map_client->obex_parser, &op_info);
+    obex_parser_get_operation_info(&map_access_client->obex_parser, &op_info);
 
-    switch (map_client->state){
+    switch (map_access_client->state){
         case MAP_W4_CONNECT_RESPONSE:
             switch (op_info.response_code){
                 case OBEX_RESP_SUCCESS:
-                    map_client->state = MAP_CONNECTED;
-                    map_access_client_emit_connected_event(map_client, ERROR_CODE_SUCCESS);
+                    map_access_client->state = MAP_CONNECTED;
+                    map_access_client_emit_connected_event(map_access_client, ERROR_CODE_SUCCESS);
                     break;
                 default:
                     log_info("map: obex connect failed, result 0x%02x", packet[0]);
-                    map_client->state = MAP_INIT;
-                    map_access_client_emit_connected_event(map_client, OBEX_CONNECT_FAILED);
+                    map_access_client->state = MAP_INIT;
+                    map_access_client_emit_connected_event(map_access_client, OBEX_CONNECT_FAILED);
                     break;
             }
             break;
         case MAP_W4_DISCONNECT_RESPONSE:
-            map_client->state = MAP_INIT;
-            goep_client_disconnect(map_client->goep_cid);
+            map_access_client->state = MAP_INIT;
+            goep_client_disconnect(map_access_client->goep_cid);
             break;
 
         case MAP_W4_SET_PATH_ROOT_COMPLETE:
         case MAP_W4_SET_PATH_ELEMENT_COMPLETE:
             if (op_info.response_code == OBEX_RESP_SUCCESS){
                 // more path?
-                if (map_client->current_folder[map_client->set_path_offset]){
-                    map_client->state = MAP_W2_SET_PATH_ELEMENT;
-                    goep_client_request_can_send_now(map_client->goep_cid);
+                if (map_access_client->current_folder[map_access_client->set_path_offset]){
+                    map_access_client->state = MAP_W2_SET_PATH_ELEMENT;
+                    goep_client_request_can_send_now(map_access_client->goep_cid);
                 } else {
-                    map_client->current_folder = NULL;
-                    map_client->state = MAP_CONNECTED;
-                    map_access_client_emit_operation_complete_event(map_client, ERROR_CODE_SUCCESS);
+                    map_access_client->current_folder = NULL;
+                    map_access_client->state = MAP_CONNECTED;
+                    map_access_client_emit_operation_complete_event(map_access_client, ERROR_CODE_SUCCESS);
                 }
             } else if (packet[0] == OBEX_RESP_NOT_FOUND){
-                map_client->state = MAP_CONNECTED;
-                map_access_client_emit_operation_complete_event(map_client, OBEX_NOT_FOUND);
+                map_access_client->state = MAP_CONNECTED;
+                map_access_client_emit_operation_complete_event(map_access_client, OBEX_NOT_FOUND);
             } else {
-                map_client->state = MAP_CONNECTED;
-                map_access_client_emit_operation_complete_event(map_client, OBEX_UNKNOWN_ERROR);
+                map_access_client->state = MAP_CONNECTED;
+                map_access_client_emit_operation_complete_event(map_access_client, OBEX_UNKNOWN_ERROR);
             }
             break;
 
@@ -542,43 +569,43 @@ map_access_client_packet_handler_goep (uint8_t *packet, uint16_t size){
         case MAP_W4_MAS_INSTANCE_INFO:
             switch (op_info.response_code) {
                 case OBEX_RESP_CONTINUE:
-                    map_access_client_handle_srm_headers(map_client);
-                    if (map_client->srm_state == SRM_ENABLED) {
-                        map_access_client_prepare_operation(map_client, OBEX_OPCODE_GET);
+                    map_access_client_handle_srm_headers(map_access_client);
+                    if (map_access_client->srm_state == SRM_ENABLED) {
+                        map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
                         break;
                     }
-                    map_client->state =
-                       (map_client->state == MAP_W4_FOLDERS            ? MAP_W2_SEND_GET_FOLDERS :
-                        map_client->state == MAP_W4_MESSAGES_IN_FOLDER ? MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER :
-                        map_client->state == MAP_W4_MESSAGE            ? MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE :
+                    map_access_client->state =
+                       (map_access_client->state == MAP_W4_FOLDERS ? MAP_W2_SEND_GET_FOLDERS :
+                        map_access_client->state == MAP_W4_MESSAGES_IN_FOLDER ? MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER :
+                        map_access_client->state == MAP_W4_MESSAGE ? MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE :
                         MAP_CONNECTED);
 
-                    goep_client_request_can_send_now(map_client->goep_cid);
+                    goep_client_request_can_send_now(map_access_client->goep_cid);
                     break;
                 case OBEX_RESP_SUCCESS:
-                    map_client->state = MAP_CONNECTED;
-                    map_access_client_emit_operation_complete_event(map_client, ERROR_CODE_SUCCESS);
+                    map_access_client->state = MAP_CONNECTED;
+                    map_access_client_emit_operation_complete_event(map_access_client, ERROR_CODE_SUCCESS);
                     break;
                 case OBEX_RESP_NOT_IMPLEMENTED:
-                    map_client->state = MAP_CONNECTED;
-                    map_access_client_emit_operation_complete_event(map_client, OBEX_UNKNOWN_ERROR);
+                    map_access_client->state = MAP_CONNECTED;
+                    map_access_client_emit_operation_complete_event(map_access_client, OBEX_UNKNOWN_ERROR);
                     break;
                 case OBEX_RESP_NOT_FOUND:
-                    map_client->state = MAP_CONNECTED;
-                    map_access_client_emit_operation_complete_event(map_client, OBEX_NOT_FOUND);
+                    map_access_client->state = MAP_CONNECTED;
+                    map_access_client_emit_operation_complete_event(map_access_client, OBEX_NOT_FOUND);
                     break;
                 case OBEX_RESP_UNAUTHORIZED:
                 case OBEX_RESP_FORBIDDEN:
                 case OBEX_RESP_NOT_ACCEPTABLE:
                 case OBEX_RESP_UNSUPPORTED_MEDIA_TYPE:
                 case OBEX_RESP_ENTITY_TOO_LARGE:
-                    map_client->state = MAP_CONNECTED;
-                    map_access_client_emit_operation_complete_event(map_client, OBEX_NOT_ACCEPTABLE);
+                    map_access_client->state = MAP_CONNECTED;
+                    map_access_client_emit_operation_complete_event(map_access_client, OBEX_NOT_ACCEPTABLE);
                     break;
                 default:
                     log_info("unexpected obex response 0x%02x", op_info.response_code);
-                    map_client->state = MAP_CONNECTED;
-                    map_access_client_emit_operation_complete_event(map_client, OBEX_UNKNOWN_ERROR);
+                    map_access_client->state = MAP_CONNECTED;
+                    map_access_client_emit_operation_complete_event(map_access_client, OBEX_UNKNOWN_ERROR);
                     break;
             }
             break;
@@ -597,7 +624,7 @@ static void map_access_client_packet_handler(uint8_t packet_type, uint16_t chann
             map_access_client_packet_handler_hci(packet, size);
             break;
         case GOEP_DATA_PACKET:
-            map_access_client_packet_handler_goep(packet, size);
+            map_access_client_packet_handler_goep(channel, packet, size);
             break;
         default:
             break;
@@ -605,110 +632,166 @@ static void map_access_client_packet_handler(uint8_t packet_type, uint16_t chann
 }
 
 void map_access_client_init(void){
-    memset(map_client, 0, sizeof(map_access_client_t));
-    map_client->state = MAP_INIT;
-    map_client->map_cid = 1;
+    memset(&map_access_client_singleton, 0, sizeof(map_access_client_t));
+    map_access_client_singleton.state = MAP_INIT;
+    map_access_client_singleton.map_cid = 1;
 }
 
 uint8_t map_access_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
-    if (map_client->state != MAP_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
+    if (map_access_client_singleton.state != MAP_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
 
-    map_client->state = MAP_W4_GOEP_CONNECTION;
-    map_client->request_number = 0;
-    map_client->client_handler = handler;
+    map_access_client_t * map_access_client = &map_access_client_singleton;
 
-    uint8_t err = goep_client_create_connection(&map_access_client_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER, &map_client->goep_cid);
-    *out_cid = map_client->map_cid;
+    map_access_client->state = MAP_W4_GOEP_CONNECTION;
+    map_access_client->request_number = 0;
+    map_access_client->client_handler = handler;
+
+    uint8_t err = goep_client_create_connection(&map_access_client_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER, &map_access_client->goep_cid);
+    *out_cid = map_access_client->map_cid;
     if (err) return err;
     return 0;
 }
 
 uint8_t map_access_client_disconnect(uint16_t map_cid){
-    UNUSED(map_cid);
-    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
-    map_client->state = MAP_W2_SEND_DISCONNECT_REQUEST;
-    map_client->request_number = 0;
-    goep_client_request_can_send_now(map_client->goep_cid);
+    map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+
+    map_access_client->state = MAP_W2_SEND_DISCONNECT_REQUEST;
+    map_access_client->request_number = 0;
+    goep_client_request_can_send_now(map_access_client->goep_cid);
     return 0;
 }
 
 uint8_t map_access_client_get_folder_listing(uint16_t map_cid){
-    UNUSED(map_cid);
-    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
-    map_client->state = MAP_W2_SEND_GET_FOLDERS;
-    map_client->request_number = 0;
-    goep_client_request_can_send_now(map_client->goep_cid);
+    map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+
+    map_access_client->state = MAP_W2_SEND_GET_FOLDERS;
+    map_access_client->request_number = 0;
+    goep_client_request_can_send_now(map_access_client->goep_cid);
     return 0;
 }
 
 uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name){
-    UNUSED(map_cid);
-    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
-    map_client->state = MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER;
-    map_client->request_number = 0;
-    map_client->folder_name = folder_name;
-    goep_client_request_can_send_now(map_client->goep_cid);
+    map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+
+    map_access_client->state = MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER;
+    map_access_client->request_number = 0;
+    map_access_client->folder_name = folder_name;
+    goep_client_request_can_send_now(map_access_client->goep_cid);
     return 0;
 }
 
 uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t with_attachment){
-    UNUSED(map_cid);
-    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
-    map_client->state = MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE;
-    map_client->request_number = 0;
-    memcpy(map_client->message_handle, map_message_handle, MAP_MESSAGE_HANDLE_SIZE);
-    map_client->get_message_attachment = with_attachment;
-    goep_client_request_can_send_now(map_client->goep_cid);
+    map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+
+    map_access_client->state = MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE;
+    map_access_client->request_number = 0;
+    memcpy(map_access_client->message_handle, map_message_handle, MAP_MESSAGE_HANDLE_SIZE);
+    map_access_client->get_message_attachment = with_attachment;
+    goep_client_request_can_send_now(map_access_client->goep_cid);
     return 0;
 }
 
 uint8_t map_access_client_set_path(uint16_t map_cid, const char * path){
-    UNUSED(map_cid);
-    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
-    map_client->state = MAP_W2_SET_PATH_ROOT;
-    map_client->request_number = 0;
-    map_client->current_folder = path;
-    map_client->set_path_offset = 0;
-    goep_client_request_can_send_now(map_client->goep_cid);
+    map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+
+    map_access_client->state = MAP_W2_SET_PATH_ROOT;
+    map_access_client->request_number = 0;
+    map_access_client->current_folder = path;
+    map_access_client->set_path_offset = 0;
+    goep_client_request_can_send_now(map_access_client->goep_cid);
     return 0;
 }
 
 uint8_t map_access_client_enable_notifications(uint16_t map_cid){
-    UNUSED(map_cid);
-    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
-    map_client->state = MAP_W2_SET_NOTIFICATION;
-    map_client->request_number = 0;
-    map_client->notifications_enabled = 1;
-    goep_client_request_can_send_now(map_client->goep_cid);
+    map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+
+    map_access_client->state = MAP_W2_SET_NOTIFICATION;
+    map_access_client->request_number = 0;
+    map_access_client->notifications_enabled = 1;
+    goep_client_request_can_send_now(map_access_client->goep_cid);
     return 0;
 }
 
 uint8_t map_access_client_disable_notifications(uint16_t map_cid){
-    UNUSED(map_cid);
-    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
-    map_client->state = MAP_W2_SET_NOTIFICATION;
-    map_client->request_number = 0;
-    map_client->notifications_enabled = 0;
-    goep_client_request_can_send_now(map_client->goep_cid);
+    map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+
+    map_access_client->state = MAP_W2_SET_NOTIFICATION;
+    map_access_client->request_number = 0;
+    map_access_client->notifications_enabled = 0;
+    goep_client_request_can_send_now(map_access_client->goep_cid);
     return 0;
 }
 
 uint8_t map_access_client_set_notification_filter(uint16_t map_cid, uint32_t filter_mask){
-    UNUSED(map_cid);
-    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
-    map_client->state = MAP_W2_SET_NOTIFICATION_FILTER;
-    map_client->request_number = 0;
-    map_client->notification_filter_mask = filter_mask;
-    goep_client_request_can_send_now(map_client->goep_cid);
+    map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+
+    map_access_client->state = MAP_W2_SET_NOTIFICATION_FILTER;
+    map_access_client->request_number = 0;
+    map_access_client->notification_filter_mask = filter_mask;
+    goep_client_request_can_send_now(map_access_client->goep_cid);
     return 0;
 }
 
 uint8_t map_access_client_get_mas_instance_info(uint16_t map_cid, uint8_t mas_instance_id){
-    UNUSED(map_cid);
-    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
-    map_client->state = MAP_W2_SEND_GET_MAS_INSTANCE_INFO;
-    map_client->request_number = 0;
-    map_client->mas_instance_id = mas_instance_id;
-    goep_client_request_can_send_now(map_client->goep_cid);
+    map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+
+    map_access_client->state = MAP_W2_SEND_GET_MAS_INSTANCE_INFO;
+    map_access_client->request_number = 0;
+    map_access_client->mas_instance_id = mas_instance_id;
+    goep_client_request_can_send_now(map_access_client->goep_cid);
     return 0;
 }
