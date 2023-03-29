@@ -339,30 +339,12 @@ static void csis_client_handle_value_query_result(csis_client_connection_t * con
     connection->read_value_data = 0;
     switch (index){
         case CSIS_CHARACTERISTIC_INDEX_SIRK:
-            if (status != ERROR_CODE_SUCCESS){
-                csis_client_emit_read_remote_sirk(connection, status, CSIS_SIRK_TYPE_PROHIBITED, NULL);
-                break;
-            }
-            if (data_size != 17){
-                csis_client_emit_read_remote_sirk(connection, ATT_ERROR_VALUE_NOT_ALLOWED, CSIS_SIRK_TYPE_PROHIBITED, NULL);
-                break;
-            }
-
-            switch ((csis_sirk_type_t)data[0]){
-                case CSIS_SIRK_TYPE_ENCRYPTED:
+            if (status == ATT_ERROR_SUCCESS){
+                if (data_size == 17){
                     reverse_128((uint8_t *)&data[1], remote_sirk);
-                    connection->remote_sirk_state = CSIS_SIRK_CALCULATION_W2_START;
-                    csis_client_trigger_next_sirk_calculation();
-                    break;
-                
-                case CSIS_SIRK_TYPE_PUBLIC:
-                    reverse_128((uint8_t *)&data[1], remote_sirk);
-                    connection->remote_sirk_state = CSIS_SIRK_CALCULATION_STATE_READY;
-                    csis_client_emit_read_remote_sirk(connection, ATT_ERROR_SUCCESS, CSIS_SIRK_TYPE_PUBLIC, (const uint8_t *) remote_sirk);
-                    break;
-                default:
-                    csis_client_emit_read_remote_sirk(connection, ATT_ERROR_VALUE_NOT_ALLOWED, CSIS_SIRK_TYPE_PROHIBITED, (const uint8_t *) remote_sirk);
-                    break;
+                } else {
+                    connection->read_value_status = ATT_ERROR_VALUE_NOT_ALLOWED;
+                }
             }
             break;
         case CSIS_CHARACTERISTIC_INDEX_SIZE:
@@ -391,6 +373,22 @@ static void csis_client_report_value_query_result(csis_client_connection_t *conn
             break;
         case CSIS_CHARACTERISTIC_INDEX_RANK:
             csis_client_emit_read_remote_rank(connection, connection->read_value_status,  connection->read_value_data);
+            break;
+        case CSIS_CHARACTERISTIC_INDEX_SIRK:
+            switch ((csis_sirk_type_t)connection->read_value_data){
+                case CSIS_SIRK_TYPE_ENCRYPTED:
+                    connection->remote_sirk_state = CSIS_SIRK_CALCULATION_W2_START;
+                    csis_client_trigger_next_sirk_calculation();
+                    break;
+                case CSIS_SIRK_TYPE_PUBLIC:
+                    csis_client_emit_read_remote_sirk(connection, ATT_ERROR_SUCCESS, connection->read_value_data, remote_sirk);
+                    break;
+                default:
+                    connection->read_value_data = CSIS_SIRK_TYPE_PROHIBITED;
+                    connection->read_value_status = ATT_ERROR_VALUE_NOT_ALLOWED;
+                    csis_client_emit_read_remote_sirk(connection, ATT_ERROR_SUCCESS, connection->read_value_data, remote_sirk);
+                    break;
+            }
             break;
         default:
             break;
