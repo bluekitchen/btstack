@@ -335,6 +335,7 @@ static void csis_client_trigger_next_sirk_calculation(void){
 }
 
 static void csis_client_handle_value_query_result(csis_client_connection_t * connection, csis_characteristic_index_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
+    connection->read_value_status = status;
     switch (index){
         case CSIS_CHARACTERISTIC_INDEX_SIRK:
             if (status != ERROR_CODE_SUCCESS){
