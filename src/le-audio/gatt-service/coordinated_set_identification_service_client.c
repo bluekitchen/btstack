@@ -334,7 +334,7 @@ static void csis_client_trigger_next_sirk_calculation(void){
     btstack_crypto_aes128_cmac_zero(&aes128_cmac_request, sizeof(s1_string), s1_string, s1, &csis_client_handle_s1, NULL);
 }
 
-static void csis_client_emit_read_event(csis_client_connection_t * connection, csis_characteristic_index_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
+static void csis_client_handle_value_query_result(csis_client_connection_t * connection, csis_characteristic_index_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
     switch (index){
         case CSIS_CHARACTERISTIC_INDEX_SIRK:
             if (status != ERROR_CODE_SUCCESS){
@@ -401,6 +401,9 @@ static void csis_client_emit_read_event(csis_client_connection_t * connection, c
     }
 }
 
+static void csis_client_report_value_query_result(csis_client_connection_t * connection){
+}
+
 static void csis_client_handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
     UNUSED(channel);
@@ -421,7 +424,8 @@ static void csis_client_handle_gatt_server_notification(uint8_t packet_type, uin
 
     // get index for value_handle
     csis_characteristic_index_t index = csis_client_get_characteristic_index_for_value_handle(connection, value_handle);
-    csis_client_emit_read_event(connection, index, ATT_ERROR_SUCCESS, value, value_length);
+    csis_client_handle_value_query_result(connection, index, ATT_ERROR_SUCCESS, value, value_length);
+    csis_client_report_value_query_result(connection);
 }
 
 static uint8_t csis_client_register_notification(csis_client_connection_t * connection){
@@ -641,7 +645,8 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
 
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE_READ:
             if (status != ERROR_CODE_SUCCESS){
-                csis_client_emit_read_event(connection, connection->characteristic_index, status, NULL, 0);
+                csis_client_handle_value_query_result(connection, connection->characteristic_index, status, NULL, 0);
+                csis_client_report_value_query_result(connection);
             }
             connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
             break;
@@ -763,9 +768,10 @@ static void csis_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
                 break;
             }
 
-            csis_client_emit_read_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS, 
-                gatt_event_characteristic_value_query_result_get_value(packet), 
-                gatt_event_characteristic_value_query_result_get_value_length(packet));
+            csis_client_handle_value_query_result(connection, connection->characteristic_index, ATT_ERROR_SUCCESS,
+                                                  gatt_event_characteristic_value_query_result_get_value(packet),
+                                                  gatt_event_characteristic_value_query_result_get_value_length(packet));
+            csis_client_report_value_query_result(connection);
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
