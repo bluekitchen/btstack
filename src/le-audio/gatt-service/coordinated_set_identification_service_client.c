@@ -635,11 +635,12 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
             break;
 
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE_READ:
-            if (status != ERROR_CODE_SUCCESS){
-                csis_client_handle_value_query_result(connection, connection->characteristic_index, status, NULL, 0);
-                csis_client_report_value_query_result(connection, connection->characteristic_index);
-            }
             connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
+            if (status != ERROR_CODE_SUCCESS){
+                // simulate failed query result
+                csis_client_handle_value_query_result(connection, connection->characteristic_index, status, NULL, 0);
+            }
+            csis_client_report_value_query_result(connection, connection->characteristic_index);
             break;
 
         default:    
@@ -762,7 +763,6 @@ static void csis_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             csis_client_handle_value_query_result(connection, connection->characteristic_index, ATT_ERROR_SUCCESS,
                                                   gatt_event_characteristic_value_query_result_get_value(packet),
                                                   gatt_event_characteristic_value_query_result_get_value_length(packet));
-            csis_client_report_value_query_result(connection, connection->characteristic_index);
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
