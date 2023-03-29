@@ -105,7 +105,11 @@ typedef struct {
     uint8_t  characteristic_index;
 
     csis_sirk_calculation_state_t  remote_sirk_state;
-    
+
+    // cache remote values
+    uint8_t read_value_status;
+    uint8_t read_value_data;
+
     csis_member_lock_t coordinator_lock;
 } csis_client_connection_t;
 
