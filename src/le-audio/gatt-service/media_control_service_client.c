@@ -381,6 +381,10 @@ static uint8_t mcs_client_request_read_characteristic(uint16_t mcs_cid, mcs_clie
     return mcs_client_request_send_gatt_query(connection, characteristic_index);
 }
 
+static uint8_t mcs_client_request_write_characteristic(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){
+    connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE;
+    return mcs_client_request_send_gatt_query(connection, characteristic_index);
+}
 
 uint8_t media_control_service_client_get_media_player_name(uint16_t mcs_cid){
     return mcs_client_request_read_characteristic(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_NAME); 
@@ -457,8 +461,127 @@ uint8_t media_control_service_client_get_search_results_object_id(uint16_t mcs_c
 uint8_t media_control_service_client_get_content_control_id(uint16_t mcs_cid){
     return mcs_client_request_read_characteristic(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_CONTENT_CONTROL_ID); 
 }
+
+uint8_t media_control_service_client_set_track_position(uint16_t mcs_cid, uint32_t position_10ms){
+    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    mcs_client_characteristic_index_t index = MCS_CLIENT_CHARACTERISTIC_INDEX_TRACK_POSITION;
+    
+    uint8_t status = mcs_client_can_query_characteristic(connection, index);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    connection->data.data_32 = position_10ms;
+    return mcs_client_request_write_characteristic(connection, index);
 }
 
+uint8_t media_control_service_client_set_playback_speed(uint16_t mcs_cid, uint16_t playback_speed){
+    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    mcs_client_characteristic_index_t index = MCS_CLIENT_CHARACTERISTIC_INDEX_PLAYBACK_SPEED;
+    
+    uint8_t status = mcs_client_can_query_characteristic(connection, index);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    connection->data.data_16 = playback_speed;
+    return mcs_client_request_write_characteristic(connection, index);
+}
+
+uint8_t media_control_service_client_set_current_track_object_id(uint16_t mcs_cid, const char * object_id){
+    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    mcs_client_characteristic_index_t index = MCS_CLIENT_CHARACTERISTIC_INDEX_CURRENT_TRACK_OBJECT_ID;
+    
+    uint8_t status = mcs_client_can_query_characteristic(connection, index);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    connection->data.data_string = object_id;
+    return mcs_client_request_write_characteristic(connection, index);
+}
+
+uint8_t media_control_service_client_set_next_track_object_id(uint16_t mcs_cid, const char * object_id){
+    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    mcs_client_characteristic_index_t index = MCS_CLIENT_CHARACTERISTIC_INDEX_NEXT_TRACK_OBJECT_ID;
+    
+    uint8_t status = mcs_client_can_query_characteristic(connection, index);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    connection->data.data_string = object_id;
+    return mcs_client_request_write_characteristic(connection, index);
+}
+
+uint8_t media_control_service_client_set_current_group_object_id(uint16_t mcs_cid, const char * object_id){
+    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    mcs_client_characteristic_index_t index = MCS_CLIENT_CHARACTERISTIC_INDEX_CURRENT_GROUP_OBJECT_ID;
+    
+    uint8_t status = mcs_client_can_query_characteristic(connection, index);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    connection->data.data_string = object_id;
+    return mcs_client_request_write_characteristic(connection, index);
+}
+
+uint8_t media_control_service_client_set_playing_order(uint16_t mcs_cid, uint8_t playing_order){
+    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    mcs_client_characteristic_index_t index = MCS_CLIENT_CHARACTERISTIC_INDEX_PLAYING_ORDER;
+    
+    uint8_t status = mcs_client_can_query_characteristic(connection, index);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    connection->data.data_8 = playing_order;
+    return mcs_client_request_write_characteristic(connection, index);
+
+}
+
+uint8_t media_control_service_client_media_control_command(uint16_t mcs_cid, uint8_t media_control_opcode){
+    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    mcs_client_characteristic_index_t index = MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_CONTROL_POINT;
+    
+    uint8_t status = mcs_client_can_query_characteristic(connection, index);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    connection->data.data_8 = media_control_opcode;
+    return mcs_client_request_write_characteristic(connection, index);
+}
+
+uint8_t media_control_service_client_search_control_command(uint16_t mcs_cid, uint8_t search_control_opcode){
+    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    mcs_client_characteristic_index_t index = MCS_CLIENT_CHARACTERISTIC_INDEX_SEARCH_CONTROL_POINT;
+    
+    uint8_t status = mcs_client_can_query_characteristic(connection, index);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    connection->data.data_8 = search_control_opcode;
+    return mcs_client_request_write_characteristic(connection, index);
+}
 
 uint8_t media_control_service_client_disconnect(uint16_t mcs_cid){
     return gatt_service_client_disconnect(&mcs_client, mcs_cid);
