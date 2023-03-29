@@ -207,7 +207,7 @@ static void csis_client_emit_write_lock_complete(csis_client_connection_t * conn
     (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void csis_client_emit_read_remote_lock(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
+static void csis_client_emit_read_remote_lock(csis_client_connection_t * connection, uint8_t status, uint8_t data){
     btstack_assert(csis_client_event_callback != NULL);
 
     uint8_t event[7];
@@ -218,11 +218,11 @@ static void csis_client_emit_read_remote_lock(csis_client_connection_t * connect
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
-    event[pos++] = (data == NULL) ? 0 : data[0];
+    event[pos++] = data;
     (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void csis_client_emit_read_remote_coordinated_set_size(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
+static void csis_client_emit_read_remote_coordinated_set_size(csis_client_connection_t * connection, uint8_t status, uint8_t data){
     btstack_assert(csis_client_event_callback != NULL);
 
     uint8_t event[7];
@@ -233,11 +233,11 @@ static void csis_client_emit_read_remote_coordinated_set_size(csis_client_connec
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
-    event[pos++] = (data == NULL) ? 0 : data[0];
+    event[pos++] = data;
     (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void csis_client_emit_read_remote_rank(csis_client_connection_t * connection, uint8_t status, const uint8_t * data){
+static void csis_client_emit_read_remote_rank(csis_client_connection_t * connection, uint8_t status, uint8_t data){
     btstack_assert(csis_client_event_callback != NULL);
 
     uint8_t event[7];
@@ -248,7 +248,7 @@ static void csis_client_emit_read_remote_rank(csis_client_connection_t * connect
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
-    event[pos++] = (data == NULL) ? 0 : data[0];
+    event[pos++] = data;
     (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -384,13 +384,13 @@ static void csis_client_handle_value_query_result(csis_client_connection_t * con
 static void csis_client_report_value_query_result(csis_client_connection_t *connection, uint8_t index) {
     switch (index){
         case CSIS_CHARACTERISTIC_INDEX_SIZE:
-            csis_client_emit_read_remote_coordinated_set_size(connection, connection->read_value_status,  &connection->read_value_data);
+            csis_client_emit_read_remote_coordinated_set_size(connection, connection->read_value_status,  connection->read_value_data);
             break;
         case CSIS_CHARACTERISTIC_INDEX_LOCK:
-            csis_client_emit_read_remote_lock(connection, connection->read_value_status,  &connection->read_value_data);
+            csis_client_emit_read_remote_lock(connection, connection->read_value_status,  connection->read_value_data);
             break;
         case CSIS_CHARACTERISTIC_INDEX_RANK:
-            csis_client_emit_read_remote_rank(connection, connection->read_value_status,  &connection->read_value_data);
+            csis_client_emit_read_remote_rank(connection, connection->read_value_status,  connection->read_value_data);
             break;
         default:
             break;
