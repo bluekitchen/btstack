@@ -336,6 +336,7 @@ static void csis_client_trigger_next_sirk_calculation(void){
 
 static void csis_client_handle_value_query_result(csis_client_connection_t * connection, csis_characteristic_index_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
     connection->read_value_status = status;
+    connection->read_value_data = 0;
     switch (index){
         case CSIS_CHARACTERISTIC_INDEX_SIRK:
             if (status != ERROR_CODE_SUCCESS){
@@ -365,37 +366,15 @@ static void csis_client_handle_value_query_result(csis_client_connection_t * con
             }
             break;
         case CSIS_CHARACTERISTIC_INDEX_SIZE:
-            if (status != ERROR_CODE_SUCCESS){
-                csis_client_emit_read_remote_coordinated_set_size(connection, status, NULL);
-                break;
-            }
-            if (data_size != 1){
-                csis_client_emit_read_remote_coordinated_set_size(connection, ATT_ERROR_VALUE_NOT_ALLOWED, NULL);
-                break;
-            }
-            csis_client_emit_read_remote_coordinated_set_size(connection, ATT_ERROR_SUCCESS, data);
-            break;
         case CSIS_CHARACTERISTIC_INDEX_LOCK:
-            if (status != ERROR_CODE_SUCCESS){
-                csis_client_emit_read_remote_lock(connection, status, NULL);
-                break;
-            }
-            if (data_size != 1){
-                csis_client_emit_read_remote_lock(connection, ATT_ERROR_VALUE_NOT_ALLOWED, NULL);
-                break;
-            }
-            csis_client_emit_read_remote_lock(connection, ATT_ERROR_SUCCESS, data);
-            break;
         case CSIS_CHARACTERISTIC_INDEX_RANK:
-            if (status != ERROR_CODE_SUCCESS){
-                csis_client_emit_read_remote_rank(connection, status, NULL);
-                break;
+            if (status == ERROR_CODE_SUCCESS){
+                if (data_size == 1) {
+                    connection->read_value_data = data[0];
+                } else {
+                    connection->read_value_status = ATT_ERROR_VALUE_NOT_ALLOWED;
+                }
             }
-            if (data_size != 1){
-                csis_client_emit_read_remote_rank(connection, ATT_ERROR_VALUE_NOT_ALLOWED, NULL);
-                break;
-            }
-            csis_client_emit_read_remote_rank(connection, ATT_ERROR_SUCCESS, data);
             break;
         default:
             break;
@@ -403,6 +382,19 @@ static void csis_client_handle_value_query_result(csis_client_connection_t * con
 }
 
 static void csis_client_report_value_query_result(csis_client_connection_t *connection, uint8_t index) {
+    switch (index){
+        case CSIS_CHARACTERISTIC_INDEX_SIZE:
+            csis_client_emit_read_remote_coordinated_set_size(connection, connection->read_value_status,  &connection->read_value_data);
+            break;
+        case CSIS_CHARACTERISTIC_INDEX_LOCK:
+            csis_client_emit_read_remote_lock(connection, connection->read_value_status,  &connection->read_value_data);
+            break;
+        case CSIS_CHARACTERISTIC_INDEX_RANK:
+            csis_client_emit_read_remote_rank(connection, connection->read_value_status,  &connection->read_value_data);
+            break;
+        default:
+            break;
+    }
 }
 
 static void csis_client_handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
