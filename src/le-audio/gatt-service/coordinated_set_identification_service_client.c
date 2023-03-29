@@ -402,7 +402,7 @@ static void csis_client_handle_value_query_result(csis_client_connection_t * con
     }
 }
 
-static void csis_client_report_value_query_result(csis_client_connection_t * connection){
+static void csis_client_report_value_query_result(csis_client_connection_t *connection, uint8_t index) {
 }
 
 static void csis_client_handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -426,7 +426,7 @@ static void csis_client_handle_gatt_server_notification(uint8_t packet_type, uin
     // get index for value_handle
     csis_characteristic_index_t index = csis_client_get_characteristic_index_for_value_handle(connection, value_handle);
     csis_client_handle_value_query_result(connection, index, ATT_ERROR_SUCCESS, value, value_length);
-    csis_client_report_value_query_result(connection);
+    csis_client_report_value_query_result(connection, index);
 }
 
 static uint8_t csis_client_register_notification(csis_client_connection_t * connection){
@@ -647,7 +647,7 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE_READ:
             if (status != ERROR_CODE_SUCCESS){
                 csis_client_handle_value_query_result(connection, connection->characteristic_index, status, NULL, 0);
-                csis_client_report_value_query_result(connection);
+                csis_client_report_value_query_result(connection, connection->characteristic_index);
             }
             connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
             break;
@@ -772,7 +772,7 @@ static void csis_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             csis_client_handle_value_query_result(connection, connection->characteristic_index, ATT_ERROR_SUCCESS,
                                                   gatt_event_characteristic_value_query_result_get_value(packet),
                                                   gatt_event_characteristic_value_query_result_get_value_length(packet));
-            csis_client_report_value_query_result(connection);
+            csis_client_report_value_query_result(connection, connection->characteristic_index);
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
