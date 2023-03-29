@@ -60,6 +60,10 @@ extern "C" {
 typedef enum {
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT,
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE,
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT,
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_MEDIA_CONTROL_POINT,
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_SEARCH_CONTROL_POINT,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY
 } media_service_client_state_t;
 
@@ -72,7 +76,13 @@ typedef struct {
 
     // Used for read characteristic queries
     uint8_t characteristic_index;
-
+    // Used to store parameters for write characteristic
+    union {
+        uint8_t  data_8;
+        uint16_t data_16;
+        uint32_t data_32;
+        const char * data_string;
+    } data;
 } mcs_client_connection_t;
 
 /* API_START */
@@ -336,6 +346,18 @@ uint8_t media_control_service_client_get_search_results_object_id(uint16_t mcs_c
  *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
  */
 uint8_t media_control_service_client_get_content_control_id(uint16_t mcs_cid);
+
+uint8_t media_control_service_client_set_track_position(uint16_t mcs_cid, uint32_t position_10ms);
+uint8_t media_control_service_client_set_playback_speed(uint16_t mcs_cid, uint16_t playback_speed);
+
+uint8_t media_control_service_client_set_current_track_object_id(uint16_t mcs_cid, const char * object_id);
+uint8_t media_control_service_client_set_next_track_object_id(uint16_t mcs_cid, const char * object_id);
+uint8_t media_control_service_client_set_current_group_object_id(uint16_t mcs_cid, const char * object_id);
+
+uint8_t media_control_service_client_set_playing_order(uint16_t mcs_cid, uint8_t playing_order);
+uint8_t media_control_service_client_media_control_command(uint16_t mcs_cid, uint8_t media_control_opcode);
+uint8_t media_control_service_client_search_control_command(uint16_t mcs_cid, uint8_t search_control_opcode);
+
 
 /**
  * @brief Disconnect.
