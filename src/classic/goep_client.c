@@ -456,9 +456,10 @@ static void geop_client_sdp_query_start(void * context){
     }
 }
 
-uint8_t goep_client_connect(goep_client_t *goep_client, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid,
-                            l2cap_ertm_config_t * l2cap_ertm_config, uint16_t l2cap_ertm_buffer_size,
-                            uint8_t *l2cap_ertm_buffer, uint16_t *out_cid) {
+uint8_t
+goep_client_connect(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_config, uint8_t *l2cap_ertm_buffer,
+                    uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid,
+                    uint8_t instance_id, uint16_t *out_cid) {
     // get new goep cid, skip 0x0000
     goep_client_cid++;
     if (goep_client_cid == 0) {
@@ -471,6 +472,7 @@ uint8_t goep_client_connect(goep_client_t *goep_client, btstack_packet_handler_t
     goep_client->cid = goep_client_cid;
     goep_client->client_handler = handler;
     goep_client->uuid = uuid;
+    goep_client->map_mas_instance_id = instance_id;
     goep_client->profile_supported_features = PROFILE_FEATURES_NOT_PRESENT;
     (void)memcpy(goep_client->bd_addr, addr, 6);
     goep_client->sdp_query_request.callback = geop_client_sdp_query_start;
@@ -495,8 +497,8 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
     if (goep_client->state != GOEP_CLIENT_INIT) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
-    return goep_client_connect(goep_client, handler, addr, uuid, &goep_client_singleton_ertm_config,
-                               sizeof(goep_client_singleton_ertm_buffer), goep_client_singleton_ertm_buffer, out_cid);
+    return goep_client_connect(goep_client, &goep_client_singleton_ertm_config, goep_client_singleton_ertm_buffer,
+                               sizeof(goep_client_singleton_ertm_buffer), handler, addr, uuid, 0, out_cid);
 }
 
 uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid){

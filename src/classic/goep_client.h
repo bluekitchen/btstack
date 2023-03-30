@@ -125,18 +125,20 @@ void goep_client_init(void);
 /**
  * @brief Connect to a GEOP server with specified UUID on a remote device.
  * @param goep_client
- * @param handler
- * @param addr
- * @param uuid
  * @param l2cap_ertm_config
  * @param l2cap_ertm_buffer_size
  * @param l2cap_ertm_buffer
+ * @param handler
+ * @param addr
+ * @param uuid
+ * @param instance_id e.g. used to connect to different MAP Access Servers, default: 0
  * @param out_cid
  * @return
  */
-uint8_t goep_client_connect(goep_client_t *goep_client, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid,
-                            l2cap_ertm_config_t * l2cap_ertm_config, uint16_t l2cap_ertm_buffer_size,
-                            uint8_t *l2cap_ertm_buffer, uint16_t *out_cid);
+uint8_t
+goep_client_connect(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_config, uint8_t *l2cap_ertm_buffer,
+                    uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid,
+                    uint8_t instance_id, uint16_t *out_cid);
 
 /*
  * @brief Connect to a GEOP server with specified UUID on a remote device.
