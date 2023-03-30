@@ -5342,12 +5342,20 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID                              0x94u
 
 /**
+ * @format 1221
+ * @param subevent_code
+ * @param mcs_cid
+ * @param characteristic_uuid
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_WRITE_DONE                                      0x95u
+/**
  * @format 1H1
  * @param subevent_code
  * @param con_handle
  * @param ase_id
 */
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE                             0x7Fu
+#define GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE                             0x96u
 
 /**
  * @format 1H1
@@ -5355,7 +5363,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param ase_id
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_ENABLE                             0x80u
+#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_ENABLE                             0x97u
 
 // MAP Meta Event Group
 
