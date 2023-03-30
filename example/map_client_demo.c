@@ -137,8 +137,9 @@ static void stdin_process(char c){
         case 'a':
             printf("[+] Connecting to %s...\n", bd_addr_to_str(remote_addr));
 #ifdef ENABLE_GOEP_L2CAP
-            map_access_client_connect(&map_access_client, &map_access_client_ertm_config, sizeof(map_access_client_ertm_buffer),
-                                      map_access_client_ertm_buffer, &packet_handler, remote_addr, &map_cid);
+            map_access_client_connect(&map_access_client, &map_access_client_ertm_config,
+                                      sizeof(map_access_client_ertm_buffer),
+                                      map_access_client_ertm_buffer, &packet_handler, remote_addr, 0, &map_cid);
 #else
             map_access_client_connect(&map_access_client, NULL, 0, NULL, &packet_handler, remote_addr, &map_cid);
 #endif
