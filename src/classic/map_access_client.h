@@ -142,11 +142,14 @@ void map_access_client_init(void);
  * @param l2cap_ertm_buffer
  * @param handler
  * @param addr
+ * @param instance_id of MAP Access Server, use 0 for default instance
  * @param out_cid to use for further commands
  * @result status
 */
-uint8_t map_access_client_connect(map_access_client_t * map_access_client, l2cap_ertm_config_t * l2cap_ertm_config, uint16_t l2cap_ertm_buffer_size,
-                                  uint8_t *l2cap_ertm_buffer, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
+uint8_t map_access_client_connect(map_access_client_t *map_access_client, l2cap_ertm_config_t *l2cap_ertm_config,
+                                  uint16_t l2cap_ertm_buffer_size, uint8_t *l2cap_ertm_buffer,
+                                  btstack_packet_handler_t handler, bd_addr_t addr, uint8_t instance_id,
+                                  uint16_t *out_cid);
 
 /**
  * @brief Disconnects MAP connection with given identifier.
