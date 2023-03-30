@@ -17511,6 +17511,34 @@ static inline uint8_t gattservice_subevent_mcs_client_content_control_id_get_cci
 }
 
 /**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_write_done_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field characteristic_uuid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return characteristic_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_write_done_get_characteristic_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_MCS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_client_write_done_get_att_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE
  * @param event packet
  * @return con_handle
