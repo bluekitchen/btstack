@@ -83,6 +83,8 @@ typedef struct {
         uint32_t data_32;
         const char * data_string;
     } data;
+
+    uint8_t write_buffer[4];
 } mcs_client_connection_t;
 
 /* API_START */

@@ -156,11 +156,50 @@ static uint16_t mcs_client_value_handle_for_index(mcs_client_connection_t * conn
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
 
+static uint16_t mcs_client_serialize_characteristic_value_for_write(mcs_client_connection_t * connection, uint8_t * out_value){
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&mcs_client, connection->characteristic_index);
+    out_value = NULL;
+    
+    switch (characteristic_uuid16){
+        case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_OBJECT_ID:
+        case ORG_BLUETOOTH_CHARACTERISTIC_NEXT_TRACK_OBJECT_ID:
+        case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_GROUP_OBJECT_ID:
+            out_value = (uint8_t *) connection->data.data_string;
+            return strlen(connection->data.data_string);
+        
+        case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_POSITION:
+            little_endian_store_32(connection->write_buffer, 0, connection->data.data_32);
+            out_value = connection->write_buffer;
+            return 4;
+
+        case ORG_BLUETOOTH_CHARACTERISTIC_PLAYBACK_SPEED:
+            little_endian_store_16(connection->write_buffer, 0, connection->data.data_16);
+            out_value = connection->write_buffer;
+            return 2;
+        
+        case ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDER:
+            connection->write_buffer[0] = connection->data.data_8;
+            out_value = connection->write_buffer;
+            return 1;
+
+        case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT:
+        case ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_CONTROL_POINT:
+            break;
+
+        default:
+            btstack_assert(false);
+            break;
+    }
+    return 0;
+}
+
 static void mcs_client_run_for_connection(void * context){
     hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t)context;
     mcs_client_connection_t * connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mcs_client, con_handle);
 
     btstack_assert(connection != NULL);
+    uint16_t value_length;
+    uint8_t * value;
 
     switch (connection->state){
         case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE:
@@ -170,6 +209,18 @@ static void mcs_client_run_for_connection(void * context){
                 &mcs_client_handle_gatt_client_event, con_handle, 
                 mcs_client_value_handle_for_index(connection));
             break;
+
+        case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_MEDIA_CONTROL_POINT:
+            connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_SEARCH_CONTROL_POINT;
+
+            value_length = mcs_client_serialize_characteristic_value_for_write(connection, value);
+            (void) gatt_client_write_value_of_characteristic(
+                &mcs_client_handle_gatt_client_event, con_handle, 
+                mcs_client_value_handle_for_index(connection),
+                value_length, value);
+            
+            break;
+
         default:
             break;
     }
@@ -216,6 +267,26 @@ static void mcs_client_emit_number(uint16_t cid, btstack_packet_handler_t event_
     (*event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
+static void mcs_client_emit_done_event(mcs_client_connection_t * connection, uint8_t index, uint8_t status){
+    btstack_packet_handler_t event_callback = gatt_service_client_get_event_callback_for_connection(&connection->basic_connection);
+    btstack_assert(event_callback != NULL);
+
+    uint16_t cid = gatt_service_client_get_cid_for_connection(&connection->basic_connection);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&mcs_client, index);
+
+    uint8_t event[8];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_MCS_CLIENT_WRITE_DONE;
+
+    little_endian_store_16(event, pos, cid);
+    pos+= 2;
+    little_endian_store_16(event, pos, characteristic_uuid16);
+    pos+= 2;
+    event[pos++] = status;
+    (*event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
 
 static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uint8_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
     if ((data_size > 0) && (data == NULL)){
@@ -223,9 +294,11 @@ static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uin
     }
 
     btstack_packet_handler_t event_callback = gatt_service_client_get_event_callback_for_connection(&connection->basic_connection);
-    uint16_t cid = gatt_service_client_get_cid_for_connection(&connection->basic_connection);
+    btstack_assert(event_callback != NULL);
 
+    uint16_t cid = gatt_service_client_get_cid_for_connection(&connection->basic_connection);
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&mcs_client, index);
+
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME:
             mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME, data, data_size);
@@ -310,6 +383,17 @@ static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             mcs_client_emit_read_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS, 
                 gatt_event_characteristic_value_query_result_get_value(packet), 
                 gatt_event_characteristic_value_query_result_get_value_length(packet));
+            
+            connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY;
+            break;
+
+        case GATT_EVENT_QUERY_COMPLETE:
+            con_handle = (hci_con_handle_t)gatt_event_query_complete_get_handle(packet);
+            connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mcs_client, con_handle);
+            btstack_assert(connection != NULL);
+            
+            mcs_client_emit_done_event(connection, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
+            connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY;
             break;
 
         default:
