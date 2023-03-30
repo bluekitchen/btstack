@@ -68,6 +68,8 @@
 static const uint8_t map_access_client_service_uuid[] = {0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66};
 static uint32_t map_access_client_supported_features = 0x1F;
 
+static btstack_linked_list_t map_access_clients;
+
 static void map_access_client_emit_connected_event(map_access_client_t * context, uint8_t status){
     uint8_t event[15];
     int pos = 0;
@@ -114,12 +116,25 @@ static void map_access_client_emit_operation_complete_event(map_access_client_t 
     context->client_handler(HCI_EVENT_PACKET, context->goep_client.cid, &event[0], pos);
 }
 
+// we re-use the goep cid as map cid, so both refer to the same object
+static map_access_client_t * map_access_client_for_cid(uint16_t cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &map_access_clients);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        map_access_client_t * map_access_client = (map_access_client_t *) btstack_linked_list_iterator_next(&it);
+        if (map_access_client->cid == cid){
+            return map_access_client;
+        }
+    }
+    return NULL;
+}
+
 static map_access_client_t * map_access_client_for_map_cid(uint16_t map_cid){
-    return (map_access_client_t *) goep_client_for_cid(map_cid);
+    return map_access_client_for_cid(map_cid);
 }
 
 static map_access_client_t * map_access_client_for_goep_cid(uint16_t goep_cid){
-    return (map_access_client_t *) goep_client_for_cid(goep_cid);
+    return map_access_client_for_cid(goep_cid);
 }
 
 static void map_access_client_message_handle_to_str(char * p, const map_message_handle_t msg_handle){
@@ -480,6 +495,7 @@ static void map_access_client_packet_handler_hci(uint8_t *packet, uint16_t size)
                         map_access_client_emit_operation_complete_event(map_access_client, OBEX_DISCONNECTED);
                     }
                     map_access_client->state = MAP_INIT;
+                    btstack_linked_list_remove(&map_access_clients, (btstack_linked_item_t *) map_access_client);
                     map_access_client_emit_connection_closed_event(map_access_client);
                     break;
                 case GOEP_SUBEVENT_CAN_SEND_NOW:
@@ -622,6 +638,7 @@ static void map_access_client_packet_handler(uint8_t packet_type, uint16_t chann
 }
 
 void map_access_client_init(void){
+    map_access_clients = NULL;
 }
 
 uint8_t map_access_client_connect(map_access_client_t * map_access_client, l2cap_ertm_config_t * l2cap_ertm_config, uint16_t l2cap_ertm_buffer_size,
@@ -633,8 +650,10 @@ uint8_t map_access_client_connect(map_access_client_t * map_access_client, l2cap
     map_access_client->client_handler = handler;
     uint8_t status = goep_client_connect((goep_client_t*)map_access_client, &map_access_client_packet_handler,
                                       addr, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER,  l2cap_ertm_config, l2cap_ertm_buffer_size,
-                                      l2cap_ertm_buffer, &map_access_client->goep_client.cid);
-    *out_cid = map_access_client->goep_client.cid;
+                                      l2cap_ertm_buffer, &map_access_client->cid);
+    btstack_assert(status == ERROR_CODE_SUCCESS);
+    btstack_linked_list_add(&map_access_clients, (btstack_linked_item_t *) map_access_client);
+    *out_cid = map_access_client->cid;
     return status;
 }
 

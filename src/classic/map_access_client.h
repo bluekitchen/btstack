@@ -96,8 +96,12 @@ typedef struct {
 } map_access_client_obex_srm_t;
 
 typedef struct {
-    // extending goep_client_t
+    // opaque storage for goep_client
     goep_client_t goep_client;
+
+    // lookup via linked list and cid
+    btstack_linked_item_t item;
+    uint16_t cid;
 
     map_access_client_state_t state;
     bd_addr_t bd_addr;
