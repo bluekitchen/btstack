@@ -641,8 +641,10 @@ void map_access_client_init(void){
     map_access_clients = NULL;
 }
 
-uint8_t map_access_client_connect(map_access_client_t * map_access_client, l2cap_ertm_config_t * l2cap_ertm_config, uint16_t l2cap_ertm_buffer_size,
-                                  uint8_t *l2cap_ertm_buffer, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
+uint8_t map_access_client_connect(map_access_client_t *map_access_client, l2cap_ertm_config_t *l2cap_ertm_config,
+                                  uint16_t l2cap_ertm_buffer_size, uint8_t *l2cap_ertm_buffer,
+                                  btstack_packet_handler_t handler, bd_addr_t addr, uint8_t instance_id,
+                                  uint16_t *out_cid) {
 
     memset(map_access_client, 0, sizeof(map_access_client_t));
     map_access_client->state = MAP_W4_GOEP_CONNECTION;
