@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - btstack_flash_bank: write empty tag instead of overwriting existing tag with ENABLE_TLV_FLASH_WRITE_ONCE
 - esp32: drop support for Makefile projects from esp-idf 3.x
 - sco_demo_util: replace hfp_msbc by hfp_codec
+- chipset/bcm: look for PatchRAM file DEVICE_NAME...hcd
 
 
 ## Release v1.5.5
