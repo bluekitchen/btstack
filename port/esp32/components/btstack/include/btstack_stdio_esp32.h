@@ -35,20 +35,15 @@
  *
  */
 
-#ifndef BTSTACK_STDIN_H
-#define BTSTACK_STDIN_H
-
-#include "btstack_run_loop.h"
+#ifndef BTSTACK_STDIO_H
+#define BTSTACK_STDIO_H
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-// setup handler for command line interface
-void btstack_stdin_setup(void (*stdin_handler)(char c));
-
-// gets called by main.c
-void btstack_stdin_reset(void);
+// setup stdio interface
+void btstack_stdio_init(void);
 
 #if defined __cplusplus
 }

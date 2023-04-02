@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 BlueKitchen GmbH
+ * Copyright (C) 2023 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,10 +35,10 @@
  *
  */
 
-#define BTSTACK_FILE__ "btstack_stdin_esp32.c"
+#define BTSTACK_FILE__ "btstack_stdio_esp32.c"
 
 /*
- *  btstack_stdin_esp32.c
+ *  btstack_stdio_esp32.c
  *
  *  Uses blocking thread to wait for console input
  *  Busy waits until character has been processed
@@ -46,7 +46,6 @@
 
 #include "btstack_stdin.h"
 #include "btstack_run_loop.h"
-#include "btstack_run_loop_freertos.h"
 #include "btstack_defines.h"
 #include "btstack_debug.h"
 
@@ -63,19 +62,14 @@
 #include "esp_vfs_dev.h"
 #include "esp_log.h"
 
-static const char *TAG = "btstack_uart_console";
+static const char *TAG = "btstack_stdio";
 
 // handle esp-idf change from CONFIG_CONSOLE_UART_NUM to CONFIG_ESP_CONSOLE_UART_NUM
 #ifndef CONFIG_ESP_CONSOLE_UART_NUM
 #define CONFIG_ESP_CONSOLE_UART_NUM CONFIG_CONSOLE_UART_NUM
 #endif
 
-#define BUF_SIZE (UART_FIFO_LEN)
-
-volatile int stdin_character_received;
-volatile char stdin_character;
 static void (*stdin_handler)(char c);
-static btstack_data_source_t stdin_data_source;
 
 // after the capacity of the TX buffer is exceeded the output will block, so
 // in order to prevent that the TX buffer needs to be big enough or
@@ -85,14 +79,22 @@ static btstack_data_source_t stdin_data_source;
 #define TX_BUF_SIZE (4096)
 static QueueHandle_t uart_queue = NULL;
 
-static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type){
+static void btstack_stdio_process(void *context);
+
+static btstack_context_callback_registration_t stdio_callback_context = {
+        .callback = btstack_stdio_process,
+        .context = NULL,
+};
+
+static void btstack_stdio_process(void *context){
+    UNUSED(context);
     uart_event_t event;
-    if( xQueueReceive(uart_queue, (void*)&event, 0)) {
+    while( xQueueReceive(uart_queue, (void*)&event, 0) ) {
         switch( event.type ) {
         case UART_DATA: {
             uint8_t stdin_character;
             if(!stdin_handler) {
-                uart_flush_input(CONFIG_ESP_CONSOLE_UART_NUM);
+                ESP_ERROR_CHECK(uart_flush_input(CONFIG_ESP_CONSOLE_UART_NUM));
                 break;
             }
 
@@ -106,12 +108,12 @@ static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_s
         }
         case UART_FIFO_OVF:
             ESP_LOGI(TAG, "hw fifo overflow");
-            uart_flush_input(CONFIG_ESP_CONSOLE_UART_NUM);
+            ESP_ERROR_CHECK(uart_flush_input(CONFIG_ESP_CONSOLE_UART_NUM));
             xQueueReset(uart_queue);
             break;
         case UART_BUFFER_FULL:
             ESP_LOGI(TAG, "ring buffer full");
-            uart_flush_input(CONFIG_ESP_CONSOLE_UART_NUM);
+            ESP_ERROR_CHECK(uart_flush_input(CONFIG_ESP_CONSOLE_UART_NUM));
             xQueueReset(uart_queue);
             break;
         default:
@@ -120,7 +122,25 @@ static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_s
     }
 }
 
-static void btstack_esp32_uart_init() {
+static void btstack_stdio_task(void *arg){
+    UNUSED(arg);
+
+    uart_event_t event;
+    do {
+        if(xQueuePeek(uart_queue, (void*)&event, portMAX_DELAY) ) {
+            // request poll
+            btstack_run_loop_execute_on_main_thread(&stdio_callback_context);
+            vTaskDelay(10 / portTICK_PERIOD_MS);
+        }
+    } while(1);
+}
+
+// UART_SCLK_DEFAULT is not available on esp-idf version lower than v5
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
+#define UART_SCLK_DEFAULT UART_SCLK_APB
+#endif
+
+void btstack_stdio_init() {
     /* Drain stdout before reconfiguring it */
     fflush(stdout);
     fsync(fileno(stdout));
@@ -159,37 +179,21 @@ static void btstack_esp32_uart_init() {
 #endif
     // Setup UART buffered IO with event queue
     // Install UART driver using an event queue here
-    ESP_ERROR_CHECK(uart_driver_install(CONFIG_ESP_CONSOLE_UART_NUM, RX_BUF_SIZE,
-            TX_BUF_SIZE, 10, &uart_queue, 0));
+    ESP_ERROR_CHECK(uart_driver_install(
+            CONFIG_ESP_CONSOLE_UART_NUM,
+            RX_BUF_SIZE,
+            TX_BUF_SIZE,
+            10, &uart_queue,
+            0));
 
     /* Tell VFS to use UART driver */
     esp_vfs_dev_uart_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
-}
 
-static void btstack_stdin_task(void *arg){
-    UNUSED(arg);
-
-    uart_event_t event;
-    do {
-        if(xQueuePeek(uart_queue, (void*)&event, portMAX_DELAY) ) {
-            // request poll
-            btstack_run_loop_freertos_trigger();
-            vTaskDelay(10 / portTICK_PERIOD_MS);
-        }
-    } while(1);
+    //Create a task to block on UART RX
+    xTaskCreate(btstack_stdio_task, "btstack_stdio", 2048, NULL, 12, NULL);
 }
 
 void btstack_stdin_setup(void (*handler)(char c)){
     // set handler
     stdin_handler = handler;
-
-    btstack_esp32_uart_init();
-
-    // set up polling data_source
-    btstack_run_loop_set_data_source_handler(&stdin_data_source, &btstack_stdin_process);
-    btstack_run_loop_enable_data_source_callbacks(&stdin_data_source, DATA_SOURCE_CALLBACK_POLL);
-    btstack_run_loop_add_data_source(&stdin_data_source);
-
-    //Create a task to block on UART RX
-    xTaskCreate(btstack_stdin_task, "btstack_stdin", 2048, NULL, 12, NULL);
 }
