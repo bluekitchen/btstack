@@ -135,7 +135,7 @@ static void btstack_esp32_uart_init() {
         clk_source = UART_SCLK_DEFAULT;
 #else
         // backport defines from esp-idf v5 for ESP32, ESP32-C3, ESP32-S3
-        clk_source = SOC_MOD_CLK_APB;
+        clk_source = UART_SCLK_APB;
 #endif
         ESP_LOGW(TAG, "light sleep UART wakeup might not work at the configured baud rate");
     }
