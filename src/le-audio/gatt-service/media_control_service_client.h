@@ -49,11 +49,13 @@
 #include "btstack_linked_list.h"
 #include "ble/gatt_client.h"
 #include "le-audio/gatt-service/gatt_service_client_helper.h"
+#include "le-audio/gatt-service/media_control_service_util.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
+#define MCS_SEARCH_CONTROL_POINT_COMMAND_MAX_LENGTH  64   
 /** 
  * @text The Media Control Service Client 
  */
@@ -85,7 +87,8 @@ typedef struct {
     // Used to store param of media control point command
     int32_t  media_control_command_param;
 
-    uint8_t write_buffer[5];
+    uint8_t   write_buffer[MCS_SEARCH_CONTROL_POINT_COMMAND_MAX_LENGTH];
+    uint8_t  write_buffer_length;
 } mcs_client_connection_t;
 
 /* API_START */
@@ -358,9 +361,6 @@ uint8_t media_control_service_client_set_next_track_object_id(uint16_t mcs_cid, 
 uint8_t media_control_service_client_set_current_group_object_id(uint16_t mcs_cid, const char * object_id);
 uint8_t media_control_service_client_set_playing_order(uint16_t mcs_cid, uint8_t playing_order);
 
-uint8_t media_control_service_client_search_control_command(uint16_t mcs_cid, uint8_t search_control_opcode);
-
-// uint8_t media_control_service_client_media_control_command(uint16_t mcs_cid, uint8_t media_control_opcode);
 uint8_t media_control_service_client_command_play(uint16_t mcs_cid);
 uint8_t media_control_service_client_command_pause(uint16_t mcs_cid);
 uint8_t media_control_service_client_command_fast_rewind(uint16_t mcs_cid);
@@ -382,6 +382,11 @@ uint8_t media_control_service_client_command_next_group(uint16_t mcs_cid);
 uint8_t media_control_service_client_command_first_group(uint16_t mcs_cid);
 uint8_t media_control_service_client_command_last_group(uint16_t mcs_cid);
 uint8_t media_control_service_client_command_goto_group(uint16_t mcs_cid, int32_t group_nr);
+
+
+uint8_t media_control_service_client_search_control_command_init(uint16_t mcs_cid);
+uint8_t media_control_service_client_search_control_command_add(uint16_t mcs_cid, search_control_point_opcode_t opcode, const char * data);
+uint8_t media_control_service_client_search_control_command_execute(uint16_t mcs_cid);
 
 /**
  * @brief Disconnect.

@@ -198,7 +198,7 @@ static uint16_t mcs_client_serialize_characteristic_value_for_write(mcs_client_c
             break;
 
         case ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_CONTROL_POINT:
-            break;
+            return connection->write_buffer_length;
 
         default:
             btstack_assert(false);
@@ -760,21 +760,6 @@ uint8_t media_control_service_client_set_playing_order(uint16_t mcs_cid, uint8_t
 
 }
 
-uint8_t media_control_service_client_search_control_command(uint16_t mcs_cid, uint8_t search_control_opcode){
-    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    mcs_client_characteristic_index_t index = MCS_CLIENT_CHARACTERISTIC_INDEX_SEARCH_CONTROL_POINT;
-    
-    uint8_t status = mcs_client_can_query_characteristic(connection, index);
-    if (status != ERROR_CODE_SUCCESS){
-        return status;
-    }
-    connection->data.data_8 = search_control_opcode;
-    return mcs_client_request_write_characteristic(connection, index);
-}
-
 static uint8_t media_control_service_client_media_control_command(uint16_t mcs_cid, uint8_t media_control_opcode, int32_t media_control_command_param){
     mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
     if (connection == NULL){
@@ -873,6 +858,56 @@ uint8_t media_control_service_client_command_last_group(uint16_t mcs_cid){
 
 uint8_t media_control_service_client_command_goto_group(uint16_t mcs_cid, int32_t group_nr){
     return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP, group_nr);
+}
+
+uint8_t media_control_service_client_search_control_command_init(uint16_t mcs_cid){
+    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    memset(connection->write_buffer, 0, sizeof(connection->write_buffer));
+    connection->write_buffer_length = 0;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t media_control_service_client_search_control_command_add(uint16_t mcs_cid, search_control_point_opcode_t opcode, const char * data){
+    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    uint8_t remaining_bytes = MCS_SEARCH_CONTROL_POINT_COMMAND_MAX_LENGTH  - connection->write_buffer_length;
+    if (remaining_bytes < 2){
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+
+
+    if (data == NULL){
+        connection->write_buffer[connection->write_buffer_length++] = 1;
+        connection->write_buffer[connection->write_buffer_length++] = (uint8_t) opcode;
+    } else {
+        if ((remaining_bytes - 2) < strlen(data)){
+            return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+        } else {
+            connection->write_buffer[connection->write_buffer_length++] = 1 + strlen(data);
+            connection->write_buffer[connection->write_buffer_length++] = (uint8_t) opcode;
+        }
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t media_control_service_client_search_control_command_execute(uint16_t mcs_cid){
+    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    mcs_client_characteristic_index_t index = MCS_CLIENT_CHARACTERISTIC_INDEX_SEARCH_CONTROL_POINT;
+    uint8_t status = mcs_client_can_query_characteristic(connection, index);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    return mcs_client_request_write_characteristic(connection, index);
 }
 
 
