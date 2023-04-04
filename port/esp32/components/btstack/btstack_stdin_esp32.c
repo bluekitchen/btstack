@@ -130,13 +130,7 @@ static void btstack_esp32_uart_init() {
     uart_sclk_t clk_source = UART_SCLK_REF_TICK;
     // REF_TICK clock can't provide a high baudrate
     if (baud_rate > 1 * 1000 * 1000) {
-#ifdef UART_SCLK_DEFAULT
-        // defined in esp-idf v5
         clk_source = UART_SCLK_DEFAULT;
-#else
-        // backport defines from esp-idf v5 for ESP32, ESP32-C3, ESP32-S3
-        clk_source = UART_SCLK_APB;
-#endif
         ESP_LOGW(TAG, "light sleep UART wakeup might not work at the configured baud rate");
     }
 #elif SOC_UART_SUPPORT_XTAL_CLK
