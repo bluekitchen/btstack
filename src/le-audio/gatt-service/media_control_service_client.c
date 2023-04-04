@@ -183,6 +183,20 @@ static uint16_t mcs_client_serialize_characteristic_value_for_write(mcs_client_c
             return 1;
 
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT:
+            connection->write_buffer[0] = connection->data.data_8;
+
+            switch ((media_control_point_opcode_t)connection->data.data_8){
+                case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
+                case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
+                case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
+                case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
+                    little_endian_store_16(connection->write_buffer, 1, connection->media_control_command_param);
+                    return 5;
+                default:
+                    return 1;
+            }
+            break;
+
         case ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_CONTROL_POINT:
             break;
 
@@ -210,8 +224,8 @@ static void mcs_client_run_for_connection(void * context){
                 mcs_client_value_handle_for_index(connection));
             break;
 
-        case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_MEDIA_CONTROL_POINT:
-            connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_SEARCH_CONTROL_POINT;
+        case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE:
+            connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
 
             value_length = mcs_client_serialize_characteristic_value_for_write(connection, value);
             (void) gatt_client_write_value_of_characteristic(
@@ -495,8 +509,8 @@ static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mcs_client, con_handle);
             btstack_assert(connection != NULL);
             
-            mcs_client_emit_done_event(connection, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
             connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY;
+            mcs_client_emit_done_event(connection, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
             break;
 
         case GATT_EVENT_NOTIFICATION:
@@ -542,7 +556,11 @@ uint8_t media_control_service_client_connect(hci_con_handle_t con_handle, mcs_cl
 }
 
 static bool mcs_client_can_query_characteristic(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){
-    return gatt_service_client_can_query_characteristic(&connection->basic_connection, (uint8_t) characteristic_index);
+    uint8_t status = gatt_service_client_can_query_characteristic(&connection->basic_connection, (uint8_t) characteristic_index);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    return connection->state == MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY ? ERROR_CODE_SUCCESS : ERROR_CODE_CONTROLLER_BUSY;
 }
 
 static uint8_t mcs_client_request_send_gatt_query(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){
@@ -742,21 +760,6 @@ uint8_t media_control_service_client_set_playing_order(uint16_t mcs_cid, uint8_t
 
 }
 
-uint8_t media_control_service_client_media_control_command(uint16_t mcs_cid, uint8_t media_control_opcode){
-    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    mcs_client_characteristic_index_t index = MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_CONTROL_POINT;
-    
-    uint8_t status = mcs_client_can_query_characteristic(connection, index);
-    if (status != ERROR_CODE_SUCCESS){
-        return status;
-    }
-    connection->data.data_8 = media_control_opcode;
-    return mcs_client_request_write_characteristic(connection, index);
-}
-
 uint8_t media_control_service_client_search_control_command(uint16_t mcs_cid, uint8_t search_control_opcode){
     mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
     if (connection == NULL){
@@ -771,6 +774,107 @@ uint8_t media_control_service_client_search_control_command(uint16_t mcs_cid, ui
     connection->data.data_8 = search_control_opcode;
     return mcs_client_request_write_characteristic(connection, index);
 }
+
+static uint8_t media_control_service_client_media_control_command(uint16_t mcs_cid, uint8_t media_control_opcode, int32_t media_control_command_param){
+    mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    mcs_client_characteristic_index_t index = MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_CONTROL_POINT;
+    
+    uint8_t status = mcs_client_can_query_characteristic(connection, index);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    connection->data.data_8 = media_control_opcode;
+    connection->media_control_command_param = media_control_command_param;
+    return mcs_client_request_write_characteristic(connection, index);
+}
+
+uint8_t media_control_service_client_command_play(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_PLAY, 0);
+}
+
+uint8_t media_control_service_client_command_pause(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_PAUSE, 0);
+}
+
+uint8_t media_control_service_client_command_fast_rewind(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND, 0);
+}
+
+uint8_t media_control_service_client_command_fast_forward(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD, 0);
+}
+
+uint8_t media_control_service_client_command_stop(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_STOP, 0);
+}
+
+uint8_t media_control_service_client_command_move_relative(uint16_t mcs_cid, int32_t track_position_offset_10ms){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE, track_position_offset_10ms);
+}
+
+uint8_t media_control_service_client_command_previous_segment(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_SEGMENT, 0);
+}
+
+uint8_t media_control_service_client_command_next_segment(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_NEXT_SEGMENT, 0);
+}
+
+uint8_t media_control_service_client_command_first_segment(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_FIRST_SEGMENT, 0);
+}
+
+uint8_t media_control_service_client_command_last_segment(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT, 0);
+}
+
+uint8_t media_control_service_client_command_goto_segment(uint16_t mcs_cid, int32_t segment_nr){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT, segment_nr);
+}
+
+uint8_t media_control_service_client_command_previous_track(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_TRACK, 0);
+}
+
+uint8_t media_control_service_client_command_next_track(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_NEXT_TRACK, 0);
+}
+
+uint8_t media_control_service_client_command_first_track(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK, 0);
+}
+
+uint8_t media_control_service_client_command_last_track(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_LAST_TRACK, 0);
+}
+
+uint8_t media_control_service_client_command_goto_track(uint16_t mcs_cid, int32_t track_nr){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK, track_nr);
+}
+
+uint8_t media_control_service_client_command_previous_group(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP, 0);
+}
+
+uint8_t media_control_service_client_command_next_group(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP, 0);
+}
+
+uint8_t media_control_service_client_command_first_group(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP, 0);
+}
+
+uint8_t media_control_service_client_command_last_group(uint16_t mcs_cid){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP, 0);
+}
+
+uint8_t media_control_service_client_command_goto_group(uint16_t mcs_cid, int32_t group_nr){
+    return media_control_service_client_media_control_command(mcs_cid, MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP, group_nr);
+}
+
 
 uint8_t media_control_service_client_disconnect(uint16_t mcs_cid){
     return gatt_service_client_disconnect(&mcs_client, mcs_cid);
