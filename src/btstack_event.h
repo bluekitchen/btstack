@@ -17577,6 +17577,53 @@ static inline uint8_t gattservice_subevent_ascs_client_enable_get_ase_id(const u
 }
 
 /**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_CONTROL_POINT_NOTIFICATION_RESULT
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_media_control_point_notification_result_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field opcode from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_CONTROL_POINT_NOTIFICATION_RESULT
+ * @param event packet
+ * @return opcode
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_client_media_control_point_notification_result_get_opcode(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field result_code from event GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_CONTROL_POINT_NOTIFICATION_RESULT
+ * @param event packet
+ * @return result_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_client_media_control_point_notification_result_get_result_code(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field mcs_cid from event GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION_RESULT
+ * @param event packet
+ * @return mcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_client_search_control_point_notification_result_get_mcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field result_code from event GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION_RESULT
+ * @param event packet
+ * @return result_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_client_search_control_point_notification_result_get_result_code(const uint8_t * event){
+    return event[5];
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid
