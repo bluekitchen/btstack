@@ -79,6 +79,8 @@ static void (*stdin_handler)(char c);
 #define TX_BUF_SIZE (4096)
 static QueueHandle_t uart_queue = NULL;
 
+static bool btstack_stdio_initialized;
+
 static void btstack_stdio_process(void *context);
 
 static btstack_context_callback_registration_t stdio_callback_context = {
@@ -191,6 +193,8 @@ void btstack_stdio_init() {
 
     //Create a task to block on UART RX
     xTaskCreate(btstack_stdio_task, "btstack_stdio", 2048, NULL, 12, NULL);
+
+    btstack_stdio_initialized = true;
 }
 
 void btstack_stdin_setup(void (*handler)(char c)){
