@@ -58,13 +58,11 @@ extern "C" {
  * @text The Media Control Service Client 
  */
 typedef enum {
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE,
-    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT,
-    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_MEDIA_CONTROL_POINT,
-    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_SEARCH_CONTROL_POINT,
-    MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT,    
 } media_service_client_state_t;
 
 typedef struct {
@@ -84,7 +82,10 @@ typedef struct {
         const char * data_string;
     } data;
 
-    uint8_t write_buffer[4];
+    // Used to store param of media control point command
+    int32_t  media_control_command_param;
+
+    uint8_t write_buffer[5];
 } mcs_client_connection_t;
 
 /* API_START */
@@ -349,17 +350,38 @@ uint8_t media_control_service_client_get_search_results_object_id(uint16_t mcs_c
  */
 uint8_t media_control_service_client_get_content_control_id(uint16_t mcs_cid);
 
+
 uint8_t media_control_service_client_set_track_position(uint16_t mcs_cid, uint32_t position_10ms);
 uint8_t media_control_service_client_set_playback_speed(uint16_t mcs_cid, uint16_t playback_speed);
-
 uint8_t media_control_service_client_set_current_track_object_id(uint16_t mcs_cid, const char * object_id);
 uint8_t media_control_service_client_set_next_track_object_id(uint16_t mcs_cid, const char * object_id);
 uint8_t media_control_service_client_set_current_group_object_id(uint16_t mcs_cid, const char * object_id);
-
 uint8_t media_control_service_client_set_playing_order(uint16_t mcs_cid, uint8_t playing_order);
-uint8_t media_control_service_client_media_control_command(uint16_t mcs_cid, uint8_t media_control_opcode);
+
 uint8_t media_control_service_client_search_control_command(uint16_t mcs_cid, uint8_t search_control_opcode);
 
+// uint8_t media_control_service_client_media_control_command(uint16_t mcs_cid, uint8_t media_control_opcode);
+uint8_t media_control_service_client_command_play(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_pause(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_fast_rewind(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_fast_forward(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_stop(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_move_relative(uint16_t mcs_cid, int32_t track_position_offset_10ms);
+uint8_t media_control_service_client_command_previous_segment(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_next_segment(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_first_segment(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_last_segment(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_goto_segment(uint16_t mcs_cid, int32_t segment_nr);
+uint8_t media_control_service_client_command_previous_track(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_next_track(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_first_track(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_last_track(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_goto_track(uint16_t mcs_cid, int32_t track_nr);
+uint8_t media_control_service_client_command_previous_group(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_next_group(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_first_group(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_last_group(uint16_t mcs_cid);
+uint8_t media_control_service_client_command_goto_group(uint16_t mcs_cid, int32_t group_nr);
 
 /**
  * @brief Disconnect.
