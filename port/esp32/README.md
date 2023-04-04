@@ -5,8 +5,7 @@ Status: Basic port incl. all examples. BTstack runs on dedicated FreeRTOS thread
 ## Setup
 
 - Follow [Espressif IoT Development Framework (ESP-IDF) setup](https://github.com/espressif/esp-idf) to install XTensa toolchain and the ESP-IDF. 
-- Make sure your checkout is newer than 4654278b1bd6b7f7f55013f7edad76109f7ee944 from Aug 25th, 2017
-- In port/esp32/template, configure the serial port for firmware upload as described in the ESP-IDF setup guides.
+- Currently used for testing: ESP-IDF v4.4 or v5.0
 
 ## Usage
 
@@ -16,7 +15,8 @@ In port/esp32, run
 
 The script will copy parts of the BTstack tree into the ESP-IDF as $IDF_PATH/components/btstack and then create project folders for all examples.
 
-Each example project folder, e.g. port/esp32/examples/spp_and_le_counter, contains a Makefile. Please run the command again after updating the BTstack tree (e.g. by git pull) to also update the copy in the ESP-IDF.
+Each example project folder, e.g. port/esp32/examples/spp_and_le_counter, contains a CMake project file. Please run the `integrate_btstack.py` 
+command again after updating the BTstack tree (e.g. by git pull) to also update the copy in the ESP-IDF.
 
 The examples are configure for the original ESP32. IF you want to use the newer ESP32-C3 or ESP32-S3 - both only support Bluetooth LE - you need to:
 1. set target:
@@ -64,7 +64,8 @@ There are different issues in the Bluetooth Controller of the ESP32 that is prov
 
 ### Audio playback
 
-Audio playback is implemented by `btstack_audio_esp32.c` and supports generic I2S codecs as well as the ES8388 on the [ESP32 LyraT v4.3](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/board-esp32-lyrat-v4.3.html) devkit.
+Audio playback is implemented by `btstack_audio_esp32.c` and supports generic I2S codecs as well as the ES8388 on the 
+[ESP32 LyraT v4.3](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/board-esp32-lyrat-v4.3.html) devkit.
 
 It uses the first I2S interface with the following pin out:
 
@@ -76,23 +77,22 @@ GPIO25    | LRCK
 GPIO26    | DOUT
 GPIO35    | DIN
 
-If support for the LyraT v4.3 is enabled, e.g. via menuconfig - Example Board Configuration --> ESP32 board --> ESP32-LyraT V4.3, CONFIG_ESP_LYRAT_V4_3_BOARD gets defined and the ES8388 will be configured as well.
+If support for the LyraT v4.3 is enabled via menuconfig - Example Board Configuration --> ESP32 board --> ESP32-LyraT V4.3, CONFIG_ESP_LYRAT_V4_3_BOARD gets defined and the ES8388 will be configured as well.
 
-We've also used the MAX98357A on the [Adafruit breakout board](https://www.adafruit.com/product/3006). The simplest example is the mod_player, which plays back an 8 kB sound file and the a2dp_sink_demo that implements a basic Bluetooth loudspeaker.
+We've also used the MAX98357A on the [Adafruit breakout board](https://www.adafruit.com/product/3006). 
+The simplest audio example is the mod_player, which plays back an 8 kB sound file and the a2dp_sink_demo that implements a basic Bluetooth loudspeaker.
 
+## ESP32 printf/log
+
+The BTstack port setups a buffered output for printf/ESP log macros. However, if that gets full, the main thread will get blocked. If you're playing audio, e.g. a2dp_sink_demo, and a lot of text
+is sent over the UART, this will cause audio glitches as the I2S DMA driver isn't re-filled on time. If this happens, you can increase the UART baudrate, reduce the debug output or increase the output
+buffer size - or any combination of these. :)
 
 ### Multi-Threading
 
 BTstack is not thread-safe, but you're using a multi-threading OS. Any function that is called from BTstack, e.g. packet handlers, can directly call into BTstack without issues. For other situations, you need to provide some general 'do BTstack tasks' function and trigger BTstack to execute it on its own thread.
-To call a function from the BTstack thread, there are currently two options:
-
-- *btstack_run_loop_freertos_execute_code_on_main_thread* allows to directly schedule a function callback, i.e. 'do BTstack tasks' function, from the BTstack thread.
-- Setup a BTstack Data Source (btstack_data_source_t):
- Set 'do BTstack tasks' function as its process function and enable its polling callback (DATA_SOURCE_CALLBACK_POLL). The process function will be called in every iteration of the BTstack Run Loop. To trigger a run loop iteration, you can call *btstack_run_loop_freertos_trigger*.
-
-With both options, the called function should check if there are any pending BTstack tasks and execute them.
-
-The 'run on main thread' method is only provided by a few ports and requires a queue to store the calls. This should be used with care, since calling it multiple times could cause the queue to overflow.
+To call a function from the BTstack thread, you can use *btstack_run_loop_execute_on_main_thread* allows to directly schedule a function callback, 
+i.e. 'do BTstack tasks' function, from the BTstack thread. The called function should check if there are any pending BTstack tasks and execute them.
 
 We're considering different options to make BTstack thread-safe, but for now, please use one of the suggested options.
 
