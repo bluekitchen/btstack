@@ -40,6 +40,7 @@
 
 #include "btstack_port_esp32.h"
 #include "btstack_run_loop.h"
+#include "btstack_stdio_esp32.h"
 #include "hci_dump.h"
 #include "hci_dump_embedded_stdout.h"
 
@@ -65,6 +66,9 @@ int app_main(void){
 
     // optional: enable packet logger
     // hci_dump_init(hci_dump_embedded_stdout_get_instance());
+
+    // Enable buffered stdout
+    btstack_stdio_init();
 
     // Configure BTstack for ESP32 VHCI Controller
     btstack_init();
