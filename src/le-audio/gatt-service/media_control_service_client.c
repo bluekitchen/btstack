@@ -288,6 +288,45 @@ static void mcs_client_emit_done_event(mcs_client_connection_t * connection, uin
     (*event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
+static void mcs_client_emit_media_control_point_notification_result_event(uint16_t cid, btstack_packet_handler_t event_callback, const uint8_t * data, uint8_t data_size){
+    btstack_assert(event_callback != NULL);
+
+    if (data_size != 2){
+        return;
+    }
+    
+    uint8_t event[7];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_CONTROL_POINT_NOTIFICATION_RESULT;
+
+    little_endian_store_16(event, pos, cid);
+    pos+= 2;
+    event[pos++] = data[0]; // opcode
+    event[pos++] = data[1]; // result code
+    (*event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static void mcs_client_emit_search_control_point_notification_result_event(uint16_t cid, btstack_packet_handler_t event_callback, const uint8_t * data, uint8_t data_size){
+    btstack_assert(event_callback != NULL);
+
+    if (data_size != 1){
+        return;
+    }
+    
+    uint8_t event[6];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION_RESULT;
+
+    little_endian_store_16(event, pos, cid);
+    pos+= 2;
+    event[pos++] = data[0]; // result code
+    (*event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
 static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uint8_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
     if ((data_size > 0) && (data == NULL)){
         return;
@@ -357,14 +396,78 @@ static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uin
         case ORG_BLUETOOTH_CHARACTERISTIC_CONTENT_CONTROL_ID:
             mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID, data, data_size, 1);
             break;  
+         default:
+            break;
+    }
+}
+
+static void mcs_client_emit_notify_event(mcs_client_connection_t * connection, uint8_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
+    if ((data_size > 0) && (data == NULL)){
+        return;
+    }
+
+    btstack_packet_handler_t event_callback = gatt_service_client_get_event_callback_for_connection(&connection->basic_connection);
+    btstack_assert(event_callback != NULL);
+
+    uint16_t cid = gatt_service_client_get_cid_for_connection(&connection->basic_connection);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&mcs_client, index);
+
+    switch (characteristic_uuid16){
+
+        case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_TITLE:
+            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE, data, data_size);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_DURATION:
+            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_DURATION, data, data_size, 4);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_POSITION:
+            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION, data, data_size, 4);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_PLAYBACK_SPEED:
+            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MSC_CLIENT_PLAYBACK_SPEED, data, data_size, 2);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_SEEKING_SPEED:
+            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MSC_CLIENT_SEEKING_SPEED, data, data_size, 1);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_OBJECT_ID:
+            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID, data, data_size);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_NEXT_TRACK_OBJECT_ID:
+            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID, data, data_size);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_PARENT_GROUP_OBJECT_ID:
+            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID, data, data_size);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_GROUP_OBJECT_ID:
+            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_GROUP_OBJECT_ID, data, data_size);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDER:
+            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER, data, data_size, 1);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_STATE:
+            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_STATE, data, data_size, 1);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT_OPCODES_SUPPORTED:
+            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED, data, data_size, 4);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_RESULTS_OBJECT_ID:
+            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID, data, data_size);
+            break;
         case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_CHANGED:
-            // only notify
             mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_CHANGED, data, data_size, 1);
             break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT:
+            mcs_client_emit_media_control_point_notification_result_event(cid, event_callback, data, data_size);
+            break;
+        case ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_CONTROL_POINT:
+            mcs_client_emit_search_control_point_notification_result_event(cid, event_callback, data, data_size);
+            break;
+
         default:
             break;
     }
 }
+
 
 static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
@@ -394,6 +497,17 @@ static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             
             mcs_client_emit_done_event(connection, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
             connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY;
+            break;
+
+        case GATT_EVENT_NOTIFICATION:
+            con_handle = (hci_con_handle_t)gatt_event_notification_get_handle(packet);
+            connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mcs_client, con_handle);
+           
+            btstack_assert(connection != NULL);
+
+            mcs_client_emit_notify_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS, 
+                gatt_event_notification_get_value(packet), 
+                gatt_event_notification_get_value_length(packet));
             break;
 
         default:
@@ -428,16 +542,7 @@ uint8_t media_control_service_client_connect(hci_con_handle_t con_handle, mcs_cl
 }
 
 static bool mcs_client_can_query_characteristic(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){
-    if (connection->basic_connection.state != GATT_SERVICE_CLIENT_STATE_CONNECTED){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    if (connection->state != MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    if (connection->basic_connection.characteristics[(uint8_t)characteristic_index].value_handle == 0){
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-    }
-    return ERROR_CODE_SUCCESS;
+    return gatt_service_client_can_query_characteristic(&connection->basic_connection, (uint8_t) characteristic_index);
 }
 
 static uint8_t mcs_client_request_send_gatt_query(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){
