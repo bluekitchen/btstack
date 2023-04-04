@@ -194,6 +194,9 @@ void btstack_stdio_init() {
 }
 
 void btstack_stdin_setup(void (*handler)(char c)){
+    if (btstack_stdio_initialized == false){
+        ESP_LOGE(TAG, "to enable support for console input, call btstack_stdio_init first");
+    }
     // set handler
     stdin_handler = handler;
 }
