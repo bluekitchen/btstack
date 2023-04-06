@@ -270,12 +270,12 @@ static int audio_initialize(int sample_rate){
 
     // config and setup audio playback
     const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
-    if (!audio_sink) return 0;
+    if (audio_sink != NULL){
+        audio_sink->init(1, sample_rate, &audio_playback_callback);
+        audio_sink->start_stream();
 
-    audio_sink->init(1, sample_rate, &audio_playback_callback);
-    audio_sink->start_stream();
-
-    audio_output_paused  = 1;
+        audio_output_paused  = 1;
+    }
 
     // -- input -- //
 
@@ -287,10 +287,10 @@ static int audio_initialize(int sample_rate){
 #ifdef USE_AUDIO_INPUT
     // config and setup audio recording
     const btstack_audio_source_t * audio_source = btstack_audio_source_get_instance();
-    if (!audio_source) return 0;
-
-    audio_source->init(1, sample_rate, &audio_recording_callback);
-    audio_source->start_stream();
+    if (audio_source != NULL){
+        audio_source->init(1, sample_rate, &audio_recording_callback);
+        audio_source->start_stream();
+    }
 #endif
 
     return 1;
