@@ -65,6 +65,11 @@
 #define NXP_CHIP_ID_IW416		0x7201
 #define NXP_CHIP_ID_IW612		0x7601
 
+// firmwares
+#define NXP_FIRMWARE_W9098	"uartuart9098_bt_v1.bin"
+#define NXP_FIRMWARE_IW416	"uartiw416_bt_v0.bin"
+#define NXP_FIRMWARE_IW612	"uartspi_n61x_v1.bin.se"
+
 #define NXP_MAX_RESEND_COUNT 5
 
 // prototypes
@@ -80,6 +85,8 @@ static const btstack_uart_t * nxp_uart_driver;
 static btstack_timer_source_t nxp_timer;
 static bool                   nxp_have_firmware;
 
+static uint16_t nxp_chip_id;
+
 static const uint8_t * nxp_fw_data;
 static uint32_t        nxp_fw_size;
 static uint32_t        nxp_fw_offset;
@@ -94,6 +101,22 @@ static uint8_t       nxp_output_buffer[2048 + 1];
 #ifdef HAVE_POSIX_FILE_IO
 static char   nxp_firmware_path[1000];
 static FILE * nxp_firmware_file;
+
+static char *nxp_fw_name_from_chipid(uint16_t chip_id)
+{
+    switch (chip_id) {
+        case NXP_CHIP_ID_W9098:
+            return NXP_FIRMWARE_W9098;
+            break;
+        case NXP_CHIP_ID_IW416:
+            return NXP_FIRMWARE_IW416;
+        case NXP_CHIP_ID_IW612:
+            return NXP_FIRMWARE_IW612;
+        default:
+            log_error("Unknown chip id 0x%04x", chip_id);
+            return NULL;
+    }
+}
 
 static void nxp_load_firmware(void) {
     if (nxp_firmware_file == NULL){
@@ -209,7 +232,9 @@ static void nxp_w4_fw_req(void){
                 nxp_send_ack_v1(nxp_dummy);
                 break;
             case NXP_V3_CHIP_VER_PKT:
-                printf("RECV: NXP_V3_CHIP_VER_PKT , id = 0x%04x, loader 0x%02x\n", little_endian_read_16(nxp_response_buffer, 1), nxp_response_buffer[3]);
+                nxp_chip_id = little_endian_read_16(nxp_response_buffer, 1);
+                btstack_strcpy(nxp_firmware_path, sizeof(nxp_firmware_path), nxp_fw_name_from_chipid(nxp_chip_id));
+                printf("RECV: NXP_V3_CHIP_VER_PKT, id = 0x%04x, loader 0x%02x -> firmware '%s'\n", nxp_chip_id, nxp_response_buffer[3], nxp_firmware_path);
                 nxp_send_ack_v3(nxp_dummy);
                 break;
             default:
