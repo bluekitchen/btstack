@@ -41,7 +41,9 @@
 // requires hci_dump
 // supports higher baudrate for patch upload
 
-#include <string.h> 
+#include <string.h>
+#include <printf.h>
+#include <unistd.h>
 
 #include "hci_dump.h"
 #include "btstack_chipset_bcm.h"
@@ -76,12 +78,9 @@ static void bcm_send_prepared_command(void){
 }
 
 static void bcm_send_hci_reset(void){
-    if (baudrate == 0 || baudrate == 115200){
-        uart_driver->set_block_received(&bcm_w4_command_complete);
-    } else {
-        uart_driver->set_block_received(&bcm_send_hci_baudrate);
-    }
     log_info("bcm: send HCI Reset");
+    bool send_baudrate = (baudrate != 0) && (baudrate != 115200);
+    uart_driver->set_block_received(send_baudrate ? &bcm_send_hci_baudrate : &bcm_w4_command_complete);
     uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
     memcpy(&command_buffer[1], hci_reset_cmd, sizeof(hci_reset_cmd));
     bcm_send_prepared_command();
@@ -92,7 +91,7 @@ static void bcm_send_hci_baudrate(void){
     chipset->set_baudrate_command(baudrate, &command_buffer[1]);
     uart_driver->set_block_received(&bcm_set_local_baudrate);
     uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
-    log_info("bcm: send baud rate command");
+    log_info("bcm: send baud rate command - %u", baudrate);
     bcm_send_prepared_command();
 }
 
@@ -118,7 +117,7 @@ static void bcm_send_next_init_script_command(void){
             log_info("bcm: init script done");
             // disable init script for main startup
             btstack_chipset_bcm_enable_init_script(0);
-            // reset baudreate to default
+            // reset baudrate to default
             uart_driver->set_baudrate(115200);
             // notify main
             download_complete(0);
@@ -149,8 +148,18 @@ void btstack_chipset_bcm_download_firmware_with_uart(const btstack_uart_t * the_
         return;
     }
 
+    // Reset with CTS asserted (low)
+    printf("Please reset Bluetooth Controller, e.g. via RESET button. Firmware download starts in:\n");
+    uint8_t i;
+    for (i = 3; i > 0; i--){
+        printf("%u\n", i);
+        sleep(1);
+    }
+    printf("Firmware download started\n");
+
     bcm_send_hci_reset();
 }
+
 void btstack_chipset_bcm_download_firmware(const btstack_uart_block_t * the_uart_driver, int baudrate_upload, void (*done)(int result)) {
     btstack_chipset_bcm_download_firmware_with_uart((const btstack_uart_t *) the_uart_driver, baudrate_upload, done);
 }
