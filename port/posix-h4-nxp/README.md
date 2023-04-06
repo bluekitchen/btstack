@@ -24,8 +24,10 @@ Please reset the Controller first. On start, BTstack prints the path to the pack
 	BTstack counter 0001
 	BTstack up and running on 00:1A:7D:DA:71:13.
 
+## Issues
+- NXP 88W8997 does not support SCO Flow Control which causes glitches when sending audio
+
 ## ToDo
 - increase baud rate for firmware upload
 - skip firmware upload if firmware already present
 - increase baud rate for application
-- send SCO audio
