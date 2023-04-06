@@ -91,7 +91,7 @@ static hci_transport_config_uart_t transport_config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
     0,  // main baudrate
-    0,  // flow control
+    1,  // flow control
     NULL,
 };
 
@@ -156,6 +156,8 @@ static void nxp_phase2(uint8_t status){
 
     printf("Phase 2: Main app\n");
 
+    uart_driver->set_flowcontrol(transport_config.flowcontrol);
+
     // init HCI
     const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
     hci_init(transport, (void*) &transport_config);
@@ -200,7 +202,7 @@ int main(int argc, const char * argv[]){
 
     // extract UART config from transport config
     uart_config.baudrate    = transport_config.baudrate_init;
-    uart_config.flowcontrol = transport_config.flowcontrol;
+    uart_config.flowcontrol = 0;
     uart_config.device_name = transport_config.device_name;
     uart_driver->init(&uart_config);
 
@@ -208,7 +210,7 @@ int main(int argc, const char * argv[]){
     main_argv = argv;
 
     const char * firmware_v1 = "uartuart8997_bt_v4.bin";
-    printf("Phase 1: Download firmware '%s'\n", firmware_v1);
+    printf("Phase 1: Download firmware'\n");
     btstack_chipset_nxp_set_v1_firmware_path(firmware_v1);
     btstack_chipset_nxp_download_firmware_with_uart(uart_driver, &nxp_phase2);
 

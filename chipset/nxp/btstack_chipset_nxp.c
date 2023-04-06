@@ -49,10 +49,10 @@
 #endif
 
 // Firmware download protocol constants
-#define NXP_V1_FW_REQ_PKT	0xa5
-#define NXP_V1_CHIP_VER_PKT	0xaa
-#define NXP_V3_FW_REQ_PKT	0xa7
-#define NXP_V3_CHIP_VER_PKT	0xab
+#define NXP_V1_FIRMWARE_REQUEST_PACKET	0xa5
+#define NXP_V1_CHIP_VERION_PACKET	0xaa
+#define NXP_V3_FIRMWARE_REQUEST_PACKET	0xa7
+#define NXP_V3_CHIP_VERSION_PACKET	0xab
 
 #define NXP_ACK_V1		0x5a
 #define NXP_NAK_V1		0xbf
@@ -73,16 +73,15 @@
 #define NXP_MAX_RESEND_COUNT 5
 
 // prototypes
-static void nxp_w4_fw_req(void);
-static void nxp_done(void);
-static void nxp_prepare_chunk(void);
-static void nxp_send_chunk(btstack_timer_source_t * ts);
+static void nxp_send_chunk_v1(void);
 static void nxp_done_with_status(uint8_t status);
+static void nxp_send_chunk_v3(void);
+static void nxp_read_uart_handler(void);
+static void nxp_start(void);
 
 // globals
 static void (*nxp_download_complete)(uint8_t status);
 static const btstack_uart_t * nxp_uart_driver;
-static btstack_timer_source_t nxp_timer;
 static bool                   nxp_have_firmware;
 
 static uint16_t nxp_chip_id;
@@ -91,12 +90,23 @@ static const uint8_t * nxp_fw_data;
 static uint32_t        nxp_fw_size;
 static uint32_t        nxp_fw_offset;
 
-static uint8_t       nxp_response_buffer[5];
+static uint8_t       nxp_input_buffer[10];
+static uint16_t      nxp_input_pos;
+static uint16_t      nxp_input_bytes_requested;
+
+static uint8_t       nxp_output_buffer[2048 + 1];
+
 static const uint8_t nxp_ack_buffer_v1[] = {NXP_ACK_V1 };
 static const uint8_t nxp_ack_buffer_v3[] = {NXP_ACK_V3, 0x92 };
+
 static uint16_t      nxp_fw_request_len;
 static uint8_t       nxp_fw_resend_count;
-static uint8_t       nxp_output_buffer[2048 + 1];
+
+static enum {
+    NXP_TX_IDLE,
+    NXP_TX_SEND_CHUNK_V1,
+    NXP_TX_SEND_CHUNK_V3,
+} nxp_tx_state;
 
 #ifdef HAVE_POSIX_FILE_IO
 static char   nxp_firmware_path[1000];
@@ -107,7 +117,6 @@ static char *nxp_fw_name_from_chipid(uint16_t chip_id)
     switch (chip_id) {
         case NXP_CHIP_ID_W9098:
             return NXP_FIRMWARE_W9098;
-            break;
         case NXP_CHIP_ID_IW416:
             return NXP_FIRMWARE_IW416;
         case NXP_CHIP_ID_IW612:
@@ -157,99 +166,65 @@ static void nxp_unload_firmware(void) {
 }
 #endif
 
-// first two uint16_t should xor to 0xffff
+static void nxp_dummy(void){
+}
+
+static void nxp_send_ack_v1() {
+    printf("SEND: ack v1\n");
+    nxp_uart_driver->send_block(nxp_ack_buffer_v1, sizeof(nxp_ack_buffer_v1));
+}
+
+static void nxp_send_ack_v3() {
+    printf("SEND: ack v3\n");
+    nxp_uart_driver->send_block(nxp_ack_buffer_v3, sizeof(nxp_ack_buffer_v3));
+}
+
 static bool nxp_valid_packet(void){
-    switch (nxp_response_buffer[0]){
-        case NXP_V1_FW_REQ_PKT:
-        case NXP_V1_CHIP_VER_PKT:
-            return ((nxp_response_buffer[1] ^ nxp_response_buffer[3]) == 0xff) && ((nxp_response_buffer[2] ^ nxp_response_buffer [4]) == 0xff);
-        case NXP_V3_FW_REQ_PKT:
-        case NXP_V3_CHIP_VER_PKT:
-            // TODO: check crc-7
+    switch (nxp_input_buffer[0]){
+        case NXP_V1_FIRMWARE_REQUEST_PACKET:
+        case NXP_V1_CHIP_VERION_PACKET:
+            // first two uint16_t should xor to 0xffff
+            return ((nxp_input_buffer[1] ^ nxp_input_buffer[3]) == 0xff) && ((nxp_input_buffer[2] ^ nxp_input_buffer [4]) == 0xff);
+        case NXP_V3_CHIP_VERSION_PACKET:
+        case NXP_V3_FIRMWARE_REQUEST_PACKET:
+            // TODO: check crc-8
             return true;
         default:
             return false;
     }
 }
 
-static void nxp_start(){
-    // start to read
-    nxp_fw_resend_count = 0;
-    nxp_fw_offset = 0;
-    nxp_have_firmware = false;
-    nxp_uart_driver->set_block_received(&nxp_w4_fw_req);
-    nxp_uart_driver->receive_block(nxp_response_buffer, 5);
-    log_info("nxp_start: wait for 0x%02x", NXP_V1_FW_REQ_PKT);
+static void nxp_handle_chip_version_v1(void){
+    printf("RECV: NXP_V1_CHIP_VER_PKT, id = 0x%x02, revision = 0x%02x\n", nxp_input_buffer[0], nxp_input_buffer[1]);
+    nxp_tx_state = NXP_TX_IDLE;
+    nxp_send_ack_v1();
 }
 
-static void nxp_send_ack_v1(void (*done_handler)(void)){
-    nxp_uart_driver->set_block_sent(done_handler);
-    nxp_uart_driver->send_block(nxp_ack_buffer_v1, sizeof(nxp_ack_buffer_v1));
+static void nxp_handle_chip_version_v3(void){
+    nxp_chip_id = little_endian_read_16(nxp_input_buffer, 1);
+    btstack_strcpy(nxp_firmware_path, sizeof(nxp_firmware_path), nxp_fw_name_from_chipid(nxp_chip_id));
+    printf("RECV: NXP_V3_CHIP_VER_PKT, id = 0x%04x, loader 0x%02x -> firmware '%s'\n", nxp_chip_id, nxp_input_buffer[3], nxp_firmware_path);
+    nxp_tx_state = NXP_TX_IDLE;
+    nxp_send_ack_v3();
 }
 
-static void nxp_send_ack_v3(void (*done_handler)(void)){
-    nxp_uart_driver->set_block_sent(done_handler);
-    nxp_uart_driver->send_block(nxp_ack_buffer_v3, sizeof(nxp_ack_buffer_v3));
-}
-
-static void nxp_prepare_chunk(void){
-    // delay chunk send by 5 ms
-    btstack_run_loop_set_timer_handler(&nxp_timer, nxp_send_chunk);
-    btstack_run_loop_set_timer(&nxp_timer, 5);
-    btstack_run_loop_add_timer(&nxp_timer);
-}
-
-static void nxp_dummy(void){
-}
-
-static void nxp_w4_fw_req(void){
-    // validate checksum
-    if (nxp_valid_packet()){
-        printf("RECV: ");
-        printf_hexdump(nxp_response_buffer, sizeof(nxp_response_buffer));
-        switch (nxp_response_buffer[0]){
-            case NXP_V1_FW_REQ_PKT:
-                // get firmware
-                if (nxp_have_firmware == false){
-                    nxp_load_firmware();
-                }
-                if (nxp_have_firmware == false){
-                    printf("No firmware found, abort\n");
-                    break;
-                }
-                nxp_fw_request_len = little_endian_read_16(nxp_response_buffer, 1);
-                printf("RECV: NXP_V1_FW_REQ_PKT, len %u\n", nxp_fw_request_len);
-                if (nxp_fw_request_len == 0){
-                    printf("last chunk sent!\n");
-                    nxp_unload_firmware();
-                    nxp_send_ack_v1(nxp_done);
-                } else {
-                    nxp_send_ack_v1(nxp_prepare_chunk);
-                }
-                return;
-            case NXP_V1_CHIP_VER_PKT:
-                printf("RECV: NXP_V1_CHIP_VER_PKT, id = 0x%x02, revision = 0x%02x\n", nxp_response_buffer[0], nxp_response_buffer[1]);
-                nxp_send_ack_v1(nxp_dummy);
-                break;
-            case NXP_V3_CHIP_VER_PKT:
-                nxp_chip_id = little_endian_read_16(nxp_response_buffer, 1);
-                btstack_strcpy(nxp_firmware_path, sizeof(nxp_firmware_path), nxp_fw_name_from_chipid(nxp_chip_id));
-                printf("RECV: NXP_V3_CHIP_VER_PKT, id = 0x%04x, loader 0x%02x -> firmware '%s'\n", nxp_chip_id, nxp_response_buffer[3], nxp_firmware_path);
-                nxp_send_ack_v3(nxp_dummy);
-                break;
-            default:
-                printf("RECV: unknown packet type 0x%02x\n", nxp_response_buffer[0]);
-                break;
-        }
-        nxp_start();
+static void nxp_prepare_firmware(void){
+    // get firmware
+    if (nxp_have_firmware == false){
+        nxp_load_firmware();
     }
-    // drop byte and read another byte
-    memmove(&nxp_response_buffer[0], &nxp_response_buffer[1], 4);
-    nxp_uart_driver->receive_block(&nxp_response_buffer[4], 1);
+    if (nxp_have_firmware == false){
+        printf("No firmware found, abort\n");
+    }
 }
 
-static void nxp_send_chunk(btstack_timer_source_t * ts){
-    if ((nxp_fw_request_len & 1) == 0){
+static void nxp_send_chunk_v1(void){
+    if (nxp_fw_request_len == 0){
+        printf("last chunk sent!\n");
+        nxp_unload_firmware();
+        nxp_done_with_status(ERROR_CODE_SUCCESS);
+        return;
+    } else if ((nxp_fw_request_len & 1) == 0){
         // update sttate
         nxp_fw_offset += nxp_fw_request_len;
         nxp_fw_resend_count = 0;
@@ -269,12 +244,132 @@ static void nxp_send_chunk(btstack_timer_source_t * ts){
         }
         nxp_fw_resend_count++;
     }
-
     printf("SEND: firmware %08x - %u bytes (%u. try)\n", nxp_fw_offset, nxp_fw_request_len, nxp_fw_resend_count + 1);
-    nxp_uart_driver->set_block_received(&nxp_w4_fw_req);
-    nxp_uart_driver->receive_block(nxp_response_buffer, 5);
-    nxp_uart_driver->set_block_sent(nxp_dummy);
+    nxp_tx_state = NXP_TX_IDLE;
     nxp_uart_driver->send_block(nxp_output_buffer, nxp_fw_request_len);
+}
+
+static void nxp_send_chunk_v3(void){
+    // update state
+    nxp_fw_offset += nxp_fw_request_len;
+    nxp_fw_resend_count = 0;
+    if (nxp_fw_request_len == 0){
+        printf("last chunk sent!\n");
+        nxp_unload_firmware();
+        nxp_done_with_status(ERROR_CODE_SUCCESS);
+        return;
+    }
+    // read next firmware chunk
+    uint16_t bytes_read = nxp_read_firmware(nxp_fw_request_len, nxp_output_buffer);
+    if (bytes_read < nxp_fw_request_len){
+        printf("only %u of %u bytes available, abort.\n", bytes_read, nxp_fw_request_len);
+        nxp_done_with_status(ERROR_CODE_HARDWARE_FAILURE);
+        return;
+    }
+    printf("SEND: firmware %08x - %u bytes (%u. try)\n", nxp_fw_offset, nxp_fw_request_len, nxp_fw_resend_count + 1);
+    nxp_tx_state = NXP_TX_IDLE;
+    nxp_uart_driver->send_block(nxp_output_buffer, nxp_fw_request_len);
+}
+
+static void nxp_handle_firmware_request_v1(void){
+    nxp_fw_request_len = little_endian_read_16(nxp_input_buffer, 1);
+    printf("RECV: NXP_V1_FW_REQ_PKT, len %u\n", nxp_fw_request_len);
+
+    nxp_prepare_firmware();
+    if (nxp_have_firmware == false){
+        return;
+    }
+    nxp_tx_state = NXP_TX_SEND_CHUNK_V1;
+    nxp_send_ack_v1();
+}
+
+static void nxp_handle_firmware_request_v3(void){
+    nxp_fw_request_len = little_endian_read_16(nxp_input_buffer, 1);
+    printf("RECV: NXP_V3_FW_REQ_PKT, len %u\n", nxp_fw_request_len);
+
+    nxp_prepare_firmware();
+    if (nxp_have_firmware == false){
+        return;
+    }
+    nxp_tx_state = NXP_TX_SEND_CHUNK_V3;
+    nxp_send_ack_v3();
+}
+
+static void nxp_start_read(uint16_t bytes_to_read){
+    nxp_input_bytes_requested = bytes_to_read;
+    nxp_uart_driver->receive_block(&nxp_input_buffer[nxp_input_pos], bytes_to_read);
+}
+
+static void nxp_read_uart_handler(void){
+    uint16_t bytes_to_read;
+    if (nxp_input_pos == 0){
+        switch (nxp_input_buffer[0]){
+            case NXP_V1_CHIP_VERION_PACKET:
+            case NXP_V3_CHIP_VERSION_PACKET:
+            case NXP_V1_FIRMWARE_REQUEST_PACKET:
+                nxp_input_pos++;
+                bytes_to_read = 4;
+                break;
+            case NXP_V3_FIRMWARE_REQUEST_PACKET:
+                nxp_input_pos++;
+                bytes_to_read = 9;
+                break;
+            default:
+                // invalid packet type, skip and get next byte
+                bytes_to_read = 1;
+                break;
+        }
+        nxp_start_read(bytes_to_read);
+    } else {
+        nxp_input_pos += nxp_input_bytes_requested;
+        printf("RECV: ");
+        printf_hexdump(nxp_input_buffer, nxp_input_pos);
+        switch (nxp_input_buffer[0]){
+            case NXP_V1_CHIP_VERION_PACKET:
+                nxp_handle_chip_version_v1();
+                break;
+            case NXP_V3_CHIP_VERSION_PACKET:
+                nxp_handle_chip_version_v3();
+                break;
+            case NXP_V1_FIRMWARE_REQUEST_PACKET:
+                nxp_handle_firmware_request_v1();
+                break;
+            case NXP_V3_FIRMWARE_REQUEST_PACKET:
+                nxp_handle_firmware_request_v3();
+                break;
+            default:
+                btstack_assert(false);
+                break;
+        }
+        nxp_input_pos = 0;
+        bytes_to_read = 1;
+    }
+    nxp_start_read(bytes_to_read);
+}
+
+static void nxp_write_uart_handler(void){
+    switch (nxp_tx_state){
+        case NXP_TX_IDLE:
+            break;
+        case NXP_TX_SEND_CHUNK_V1:
+            nxp_send_chunk_v1();
+            break;
+        case NXP_TX_SEND_CHUNK_V3:
+            nxp_send_chunk_v3();
+            break;
+        default:
+            break;
+    }
+}
+
+static void nxp_start(void){
+    nxp_tx_state = NXP_TX_IDLE;
+    nxp_fw_resend_count = 0;
+    nxp_fw_offset = 0;
+    nxp_have_firmware = false;
+    nxp_uart_driver->set_block_received(&nxp_read_uart_handler);
+    nxp_uart_driver->set_block_sent(&nxp_write_uart_handler);
+    nxp_uart_driver->receive_block(nxp_input_buffer, 1);
 }
 
 static void nxp_done_with_status(uint8_t status){
