@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - nxp: support for bootloader version v1, e.g. NXP 88W8997
 - Port for Renesas RA6M4 with DA14531
 - Port for NXP Controller on POSIX (posix-h4-nxp)
+- Port for newer Infineon Controller on POSIX (posix-h4-bcm) that requires autobaud-mode
 
 ## Removed
 - AVDTP Source: avdtp_source_stream_send_media_payload, use avdtp_source_stream_send_media_payload_rtp instead
