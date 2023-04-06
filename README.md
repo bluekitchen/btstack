@@ -93,6 +93,7 @@ For information on Apple's MFi/iAP2 and Find My profiles, please <a href="mailto
 | Infineon CYW207xx                    | Dual mode        | H4, H5, USB    | Probably         | bcm            |                                                |
 | Infineon CYW20819                    | Dual mode        | H4, H5, USB    | Probably         | bcm            | Keep CTS high during power cycle               |
 | Infineon CYW43xxx                    | Dual mode + Wifi | H4, H5         | Don't know       | bcm            | Bluetooth + Wifi Combo Controller              |
+| Infineon CYW5557x                    | Dual mode + Wifi | H4             | Yes              | bcm            | autobaud-mode needed, see posix-h4-bcm         |
 | Infineon PSoC 4                      | LE               | H4             | n.a.             |                | HCI Firmware part of PSoC Creator kit examples |
 | Dialog Semiconductor DA145xx         | LE               | H4, SPI        | n.a.             | da14581        | Official HCI firmware used                     |
 | Dialog Semiconductor DA1469x         | LE               | H4, SPI        | n.a              |                | HCI Firmware part of DA1469x SDK               |

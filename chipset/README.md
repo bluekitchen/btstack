@@ -68,6 +68,7 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 | Infineon CYW207xx                    | Dual mode        | H4, H5, USB    | Don't know   | Partially (2)    | Yes        | Yes                   | Yes               | Yes                | bcm            |                                                  |
 | Infineon CYW208xx                    | Dual mode        | H4, H5, USB    | Don't know   | Partially (2)    | Yes        | Yes                   | Yes               | Don't know         | bcm            | Keep CTS high during power cycle                 |
 | Infineon CYW43xxx                    | Dual mode + Wifi | H4, H5         | Don't know   | Partially (2)    | Don't know | On newer versions     | On wewer versions | On newer versions  | bcm            | Bluetooth + Wifi Combo Controller                |
+| Infineon CYW5557x                    | Dual mode + Wifi | H4, H5         | No           | Yes              | Yes        | Yes                   | Yes               | Yes                | bcm            | Bautobaud-mode needed, see posix-h4-bcm          |
 | Cypress PSoC 4                       | LE               | H4             | Don't know   | n.a.             | Yes        | Don't know            | n.a.              | Don't know         |                | HCI Firmware part of PSoC Creator kits examples  |
 | Dialog DA14531                       | LE               | H4             | No           | n.a.             | Yes        | Yes                   | n.a.              | Don't know         | da145xx        | Official HCI firmware included in BTstack        |
 | Dialog DA14581                       | LE               | H4, SPI        | No           | n.a.             | No         | No                    | n.a.              | Don't know         | da145xx        | Official HCI firmware included in BTstack        |
@@ -126,6 +127,9 @@ The CYW20819 can be used as a SoC with Cypress' Bluetooth stack. To use it as a 
 
 The CYW43xxx series contains a Wifi and Bluetooth Controller. The Bluetooth Controller can be used independent from the Wifi part.
 
+Newer Controller likes the CYW5557x series requires to enter a so-called autobaud mode by asserting CTS (low) during reset/power-up. In this mode, only a subset of 
+HCI commands are available. Please see posix-h4-bcm port to get started.
+
 **Init scripts**: For UART connected chipsets, an init script has to be uploaded after power on. For Bluetooth chipsets that are used in Broadcom Wifi+Bluetooth combos, this file often can be found as a binary file in Linux distributions with the ending *'.hcd'* or as part of the WICED SDK as C source file that contains the init script as a data array for use without a file system.
 
 To find the correct file, Broadcom chipsets return their model number when asked for their local name.
@@ -140,8 +144,8 @@ BTstack supports uploading of the init script in two variants: using .hcd files 
 
 **BTstack integration**: The common code for all Broadcom chipsets is provided by *btstack_chipset_bcm.c*. During the setup, *btstack_chipset_bcm_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function.
 
-SCO Data can be routed over HCI for both USB dongles and UART connections, however BTstack does not support flow control for UART connections. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins. Newer Controllers provide an
-mSBC codec that allows to use HSP/HFP incl. WBS over PCM/I2S with ENABLE_BCM_PCM_WBS.
+SCO Data can be routed over HCI for both USB dongles and UART connections, however BTstack only can send audio correctly over UART with newer Controllers that support SCO Flow Control. 
+HSP and HFP Narrow Band Speech is supported via I2C/PCM pins. Newer Controllers provide an mSBC codec that allows to use HSP/HFP incl. WBS over PCM/I2S with ENABLE_BCM_PCM_WBS.
 
 
 ## CSR / Qualcomm Incorporated
