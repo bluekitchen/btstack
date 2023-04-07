@@ -161,6 +161,7 @@ static void nxp_phase2(uint8_t status){
     // init HCI
     const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
     hci_init(transport, (void*) &transport_config);
+    hci_set_chipset(btstack_chipset_nxp_instance());
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
