@@ -1492,6 +1492,20 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE                    0xACu
 
+/**
+ * @format 1BH
+ * @param status
+ * @param address
+ * @param handle
+ */
+#define GATT_EVENT_CONNECTED                                     0xADu
+
+/**
+ * @format H
+ * @param handle
+ */
+#define GATT_EVENT_DISCONNECTED                                  0xAEu
+
 
 /** 
  * @format 1BH

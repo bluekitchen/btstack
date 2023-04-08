@@ -2897,6 +2897,48 @@ static inline hci_con_handle_t gatt_event_can_write_without_response_get_handle(
 }
 #endif
 
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field status from event GATT_EVENT_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gatt_event_connected_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field address from event GATT_EVENT_CONNECTED
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void gatt_event_connected_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bytes(&event[3], address, 6);
+}
+/**
+ * @brief Get field handle from event GATT_EVENT_CONNECTED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_connected_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 9);
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event GATT_EVENT_DISCONNECTED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_disconnected_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+#endif
+
 /**
  * @brief Get field address_type from event ATT_EVENT_CONNECTED
  * @param event packet
