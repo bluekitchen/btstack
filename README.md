@@ -102,7 +102,7 @@ For information on Apple's MFi/iAP2 and Find My profiles, please <a href="mailto
 | EM 9301, 9304, 9305                  | LE               | SPI            | n.a.             | em9301         | Custom HCI SPI implementation                  |
 | Intel Dual Wireless 3165, 8260, 8265 | Dual mode        | USB            | Probably         | intel          | Firmware size: 400 kB                          |
 | Nordic nRF                           | LE               | H4             | n.a.             |                | Requires custom HCI firmware                   |
-| NXP 88W88997                         | Dual mode + Wifi | H4             | Yes              | nxp            | Requires initial firmware                      |
+| NXP 88W88997, IW416                  | Dual mode + Wifi | H4             | Yes              | nxp            | Requires initial firmware                      |
 | Realtek RTL8822CS                    | Dual mode + Wifi | H5             | Yes              |                | Requires initial firmware and config           |
 | Realtek USB Dongles                  | Dual mode + Wifi | USB            | Yes              | realtek        | Requires initial firmware and config           |
 | Renesas RX23W                        | LE               | H4             | n.a.             |                | HCI Firmware part of BTTS                      |
