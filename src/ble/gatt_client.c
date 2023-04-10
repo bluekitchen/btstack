@@ -56,6 +56,10 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include "classic/sdp_client.h"
+#include "bluetooth_gatt.h"
+#include "bluetooth_sdp.h"
+#include "classic/sdp_util.h"
 
 static btstack_linked_list_t gatt_client_connections;
 static btstack_linked_list_t gatt_client_value_listeners;
@@ -1235,6 +1239,11 @@ static void gatt_client_run(void){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) gatt_client_connections; it != NULL; it = it->next){
         gatt_client_t * gatt_client = (gatt_client_t *) it;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+        if (gatt_client->con_handle == HCI_CON_HANDLE_INVALID) {
+            continue;
+        }
+#endif
         if (!att_dispatch_client_can_send_now(gatt_client->con_handle)) {
             att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
             return;
@@ -2601,6 +2610,209 @@ uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_hand
     att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
     return ERROR_CODE_SUCCESS;
 }
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+
+#include "hci_event.h"
+
+// single active SDP query
+static gatt_client_t * gatt_client_classic_active_sdp_query;
+
+// macos protocol descriptor list requires 16 bytes
+static uint8_t gatt_client_classic_sdp_buffer[32];
+
+static const hci_event_t gatt_client_connected = {
+        GATT_EVENT_CONNECTED, 0, "1BH"
+};
+
+static gatt_client_t * gatt_client_get_context_for_classic_addr(bd_addr_t addr){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) gatt_client_connections; it != NULL; it = it->next){
+        gatt_client_t * gatt_client = (gatt_client_t *) it;
+        if (memcmp(gatt_client->addr, addr, 6) == 0){
+            return gatt_client;
+        }
+    }
+    return NULL;
+}
+
+static gatt_client_t * gatt_client_get_context_for_l2cap_cid(uint16_t l2cap_cid){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) gatt_client_connections; it != NULL; it = it->next){
+        gatt_client_t * gatt_client = (gatt_client_t *) it;
+        if (gatt_client->l2cap_cid == l2cap_cid){
+            return gatt_client;
+        }
+    }
+    return NULL;
+}
+
+static void gatt_client_classic_handle_connected(gatt_client_t * gatt_client, uint8_t status){
+    bd_addr_t addr;
+    memcpy(addr, gatt_client->addr, 6);
+    hci_con_handle_t con_handle = gatt_client->con_handle;
+    btstack_packet_handler_t callback = gatt_client->callback;
+    if (status != ERROR_CODE_SUCCESS){
+        btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
+        btstack_memory_gatt_client_free(gatt_client);
+    }
+    uint8_t buffer[20];
+    uint16_t len = hci_event_create_from_template_and_arguments(buffer, sizeof(buffer), &gatt_client_connected, status, addr,
+                                                                con_handle);
+    (*callback)(HCI_EVENT_PACKET, 0, buffer, len);
+}
+
+static void gatt_client_l2cap_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    gatt_client_t * gatt_client = NULL;
+    uint8_t status;
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    status = l2cap_event_channel_opened_get_status(packet);
+                    gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_opened_get_local_cid(packet));
+                    btstack_assert(gatt_client != NULL);
+                    gatt_client->con_handle = l2cap_event_channel_opened_get_handle(packet);
+                    gatt_client_classic_handle_connected(gatt_client, status);
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    // TODO:
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case L2CAP_DATA_PACKET:
+            gatt_client = gatt_client_get_context_for_l2cap_cid(channel);
+            gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_opened_get_local_cid(packet));
+            btstack_assert(gatt_client != NULL);
+            log_info("l2cap data received");
+            break;
+    }
+}
+
+static void gatt_client_handle_sdp_client_query_attribute_value(gatt_client_t * connection, uint8_t *packet){
+    des_iterator_t des_list_it;
+    des_iterator_t prot_it;
+
+    if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= sizeof(gatt_client_classic_sdp_buffer)) {
+        gatt_client_classic_sdp_buffer[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+        if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
+            switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
+                case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
+                    for (des_iterator_init(&des_list_it, gatt_client_classic_sdp_buffer); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                        uint8_t       *des_element;
+                        uint8_t       *element;
+                        uint32_t       uuid;
+
+                        if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
+
+                        des_element = des_iterator_get_element(&des_list_it);
+                        des_iterator_init(&prot_it, des_element);
+                        element = des_iterator_get_element(&prot_it);
+
+                        if (de_get_element_type(element) != DE_UUID) continue;
+
+                        uuid = de_get_uuid32(element);
+                        des_iterator_next(&prot_it);
+                        // we assume that the even if there are both roles supported, remote device uses the same psm and avdtp version for both
+                        switch (uuid){
+                            case BLUETOOTH_PROTOCOL_L2CAP:
+                                if (!des_iterator_has_more(&prot_it)) continue;
+                                de_element_get_uint16(des_iterator_get_element(&prot_it), &connection->l2cap_psm);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+static void gatt_client_classic_sdp_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
+    gatt_client_t * gatt_client = gatt_client_classic_active_sdp_query;
+    btstack_assert(gatt_client != NULL);
+    uint8_t status;
+
+    // TODO: handle sdp events, get l2cap psm
+    switch (hci_event_packet_get_type(packet)){
+        case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
+            gatt_client_handle_sdp_client_query_attribute_value(gatt_client, packet);
+            // TODO:
+            return;
+        case SDP_EVENT_QUERY_COMPLETE:
+            status = sdp_event_query_complete_get_status(packet);
+            gatt_client_classic_active_sdp_query = NULL;
+            log_info("l2cap psm: %0x, status %02x", gatt_client->l2cap_psm, status);
+            if (status != ERROR_CODE_SUCCESS) break;
+            if (gatt_client->l2cap_psm == 0) {
+                status = SDP_SERVICE_NOT_FOUND;
+                break;
+            }
+            break;
+        default:
+            btstack_assert(false);
+            return;
+    }
+
+    // done
+    if (status == ERROR_CODE_SUCCESS){
+        gatt_client->gatt_client_state = P_W4_L2CAP_CONNECTION;
+        status = l2cap_create_channel(gatt_client_l2cap_handler, gatt_client->addr, gatt_client->l2cap_psm, 0xffff,
+                             &gatt_client->l2cap_cid);
+    }
+    if (status != ERROR_CODE_SUCCESS) {
+        gatt_client_classic_handle_connected(gatt_client, status);
+    }
+}
+
+static void gatt_client_classic_sdp_start(void * context){
+    gatt_client_classic_active_sdp_query = (gatt_client_t *) context;
+    gatt_client_classic_active_sdp_query->gatt_client_state = P_W4_SDP_QUERY;
+    sdp_client_query_uuid16(gatt_client_classic_sdp_handler, gatt_client_classic_active_sdp_query->addr, ORG_BLUETOOTH_SERVICE_GENERIC_ATTRIBUTE);
+}
+
+uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t addr){
+    gatt_client_t * gatt_client = gatt_client_get_context_for_classic_addr(addr);
+    if (gatt_client != NULL){
+        return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
+    }
+    gatt_client = btstack_memory_gatt_client_get();
+    if (gatt_client == NULL){
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+    // init state
+    gatt_client->con_handle = HCI_CON_HANDLE_INVALID;
+    memcpy(gatt_client->addr, addr, 6);
+    gatt_client->mtu = ATT_DEFAULT_MTU;
+    gatt_client->security_level = LEVEL_0;
+    if (gatt_client_mtu_exchange_enabled){
+        gatt_client->mtu_state = SEND_MTU_EXCHANGE;
+    } else {
+        gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
+    }
+    gatt_client->gatt_client_state = P_W2_SDP_QUERY;
+    gatt_client->sdp_query_request.callback = &gatt_client_classic_sdp_start;
+    gatt_client->sdp_query_request.context = gatt_client;
+    gatt_client->callback = callback;
+    btstack_linked_list_add(&gatt_client_connections, (btstack_linked_item_t*)gatt_client);
+    sdp_client_register_query_callback(&gatt_client->sdp_query_request);
+    return ERROR_CODE_COMMAND_DISALLOWED;
+}
+
+uint8_t gatt_client_classic_disconnect(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
+    gatt_client_t * gatt_client = gatt_client_get_context_for_handle(con_handle);
+    if (gatt_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    gatt_client->callback = callback;
+    return l2cap_disconnect(gatt_client->l2cap_cid);
+}
+#endif
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 void gatt_client_att_packet_handler_fuzz(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){

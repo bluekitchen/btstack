@@ -130,6 +130,10 @@ typedef enum {
     P_W4_CMAC_RESULT,
     P_W2_SEND_SIGNED_WRITE,
     P_W4_SEND_SINGED_WRITE_DONE,
+
+    P_W2_SDP_QUERY,
+    P_W4_SDP_QUERY,
+    P_W4_L2CAP_CONNECTION,
 } gatt_client_state_t;
     
     
@@ -158,6 +162,13 @@ typedef struct gatt_client{
     btstack_linked_list_t query_requests;
 
     hci_con_handle_t con_handle;
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    bd_addr_t addr;
+    uint16_t  l2cap_psm;
+    uint16_t  l2cap_cid;
+    btstack_context_callback_registration_t sdp_query_request;
+#endif
 
     uint16_t          mtu;
     gatt_client_mtu_t mtu_state;
@@ -255,7 +266,23 @@ void gatt_client_init(void);
  */
 void gatt_client_set_required_security_level(gap_security_level_t level);
 
-/** 
+/**
+ * @brief Connect to remote GATT Server over Classic (BR/EDR) Connection
+ * @note requires ENABLE_GATT_OVER_CLASSIC
+ * @param addr
+ * @return status
+ */
+uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t addr);
+
+/**
+ * @brief Disconnect o Classic (BR/EDR) connection to a remote GATT Server
+ * @note requires ENABLE_GATT_OVER_CLASSIC
+ * @param addr
+ * @return status
+ */
+uint8_t gatt_client_classic_disconnect(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
+
+/**
  * @brief MTU is available after the first query has completed. If status is equal to ERROR_CODE_SUCCESS, it returns the real value, 
  * otherwise the default value ATT_DEFAULT_MTU (see bluetooth.h). 
  * @param  con_handle   
