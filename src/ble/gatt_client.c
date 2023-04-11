@@ -990,7 +990,13 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     bool client_request_pending = gatt_client->gatt_client_state != P_READY;
 
     // verify security level for Mandatory Authentication over LE
-    if (client_request_pending && (gatt_client_required_security_level > gatt_client->security_level) && (gatt_client->l2cap_psm == 0)){
+    bool check_security = true;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    if (gatt_client->l2cap_psm != 0){
+        check_security = false;
+    }
+#endif
+    if (client_request_pending && (gatt_client_required_security_level > gatt_client->security_level) && check_security){
         log_info("Trigger pairing, current security level %u, required %u\n", gatt_client->security_level, gatt_client_required_security_level);
         gatt_client->wait_for_authentication_complete = 1;
         // set att error code for pairing failure based on required level
