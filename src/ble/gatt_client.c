@@ -2706,9 +2706,12 @@ static void gatt_client_l2cap_handler(uint8_t packet_type, uint16_t channel, uin
                     status = l2cap_event_channel_opened_get_status(packet);
                     gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_opened_get_local_cid(packet));
                     btstack_assert(gatt_client != NULL);
+                    // if status != 0, gatt_client will be discarded
+                    gatt_client->gatt_client_state = P_READY;
                     gatt_client->con_handle = l2cap_event_channel_opened_get_handle(packet);
                     gatt_client->mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
                     gatt_client_classic_handle_connected(gatt_client, status);
+                    break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     // TODO:
                     break;
@@ -2719,7 +2722,8 @@ static void gatt_client_l2cap_handler(uint8_t packet_type, uint16_t channel, uin
         case L2CAP_DATA_PACKET:
             gatt_client = gatt_client_get_context_for_l2cap_cid(channel);
             btstack_assert(gatt_client != NULL);
-            log_info("l2cap data received");
+            gatt_client_handle_att_response(gatt_client, packet, size);
+            gatt_client_run();
             break;
     }
 }
