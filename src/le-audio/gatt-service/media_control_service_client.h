@@ -87,8 +87,8 @@ typedef struct {
     // Used to store param of media control point command
     int32_t  media_control_command_param;
 
-    uint8_t   write_buffer[MCS_SEARCH_CONTROL_POINT_COMMAND_MAX_LENGTH];
-    uint8_t  write_buffer_length;
+    uint8_t write_buffer[MCS_SEARCH_CONTROL_POINT_COMMAND_MAX_LENGTH];
+    uint8_t write_buffer_length;
 } mcs_client_connection_t;
 
 /* API_START */
