@@ -1380,47 +1380,10 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
     gatt_client_run();
 }
 
-static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-    gatt_client_t * gatt_client;
-    if (size < 1u) return;
-
-    if (packet_type == HCI_EVENT_PACKET) {
-        switch (packet[0]){
-            case L2CAP_EVENT_CAN_SEND_NOW:
-                gatt_client_run();
-                break;
-            // att_server has negotiated the mtu for this connection, cache if context exists
-            case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
-                if (size < 6u) break;
-                gatt_client = gatt_client_get_context_for_handle(handle);
-                if (gatt_client == NULL) break;
-                gatt_client->mtu = little_endian_read_16(packet, 4);
-                break;
-            default:
-                break;
-        }
-        return;
-    }
-
-    if (packet_type != ATT_DATA_PACKET) return;
-
-    // special cases: notifications & indications motivate creating context
-    switch (packet[0]){
-        case ATT_HANDLE_VALUE_NOTIFICATION:
-        case ATT_HANDLE_VALUE_INDICATION:
-            gatt_client_provide_context_for_handle(handle, &gatt_client);
-            break;
-        default:
-            gatt_client = gatt_client_get_context_for_handle(handle);
-            break;
-    }
-
-    if (gatt_client == NULL) return;
-
+static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size) {
     uint8_t error_code;
-    switch (packet[0]){
-        case ATT_EXCHANGE_MTU_RESPONSE:
-        {
+    switch (packet[0]) {
+        case ATT_EXCHANGE_MTU_RESPONSE: {
             if (size < 3u) break;
             uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
             uint16_t local_rx_mtu = l2cap_max_le_mtu();
@@ -1430,8 +1393,8 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             gatt_client->mtu = mtu;
             gatt_client->mtu_state = MTU_EXCHANGED;
 
-            // set per connection mtu state
-            hci_connection_t * hci_connection = hci_connection_for_handle(handle);
+            // set per connection mtu state - for fixed channel
+            hci_connection_t *hci_connection = hci_connection_for_handle(gatt_client->con_handle);
             hci_connection->att_connection.mtu = gatt_client->mtu;
             hci_connection->att_connection.mtu_exchanged = true;
 
@@ -1439,7 +1402,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             break;
         }
         case ATT_READ_BY_GROUP_TYPE_RESPONSE:
-            switch(gatt_client->gatt_client_state){
+            switch (gatt_client->gatt_client_state) {
                 case P_W4_SERVICE_QUERY_RESULT:
                     report_gatt_services(gatt_client, packet, size);
                     trigger_next_service_query(gatt_client, get_last_result_handle_from_service_list(packet, size));
@@ -1458,26 +1421,27 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             report_gatt_indication(gatt_client, little_endian_read_16(packet, 1u), &packet[3], size - 3u);
             gatt_client->send_confirmation = 1;
             break;
-            
+
         case ATT_READ_BY_TYPE_RESPONSE:
-            switch (gatt_client->gatt_client_state){
+            switch (gatt_client->gatt_client_state) {
                 case P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT:
                     report_gatt_characteristics(gatt_client, packet, size);
-                    trigger_next_characteristic_query(gatt_client, get_last_result_handle_from_characteristics_list(packet, size));
+                    trigger_next_characteristic_query(gatt_client,
+                                                      get_last_result_handle_from_characteristics_list(packet, size));
                     // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done, or by ATT_ERROR
                     break;
                 case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
                     report_gatt_characteristics(gatt_client, packet, size);
-                    trigger_next_characteristic_query(gatt_client, get_last_result_handle_from_characteristics_list(packet, size));
+                    trigger_next_characteristic_query(gatt_client,
+                                                      get_last_result_handle_from_characteristics_list(packet, size));
                     // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done, or by ATT_ERROR
                     break;
-                case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
-                {
+                case P_W4_INCLUDED_SERVICE_QUERY_RESULT: {
                     if (size < 2u) break;
                     uint16_t uuid16 = 0;
                     uint16_t pair_size = packet[1];
-                    
-                    if (pair_size == 6u){
+
+                    if (pair_size == 6u) {
                         if (size < 8u) break;
                         // UUIDs not available, query first included service
                         gatt_client->start_group_handle = little_endian_read_16(packet, 2); // ready for next query
@@ -1491,15 +1455,17 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
 
                     // UUIDs included, report all of them
                     uint16_t offset;
-                    for (offset = 2u; (offset + 8u) <= size; offset += pair_size){
+                    for (offset = 2u; (offset + 8u) <= size; offset += pair_size) {
                         uint16_t include_handle = little_endian_read_16(packet, offset);
                         gatt_client->query_start_handle = little_endian_read_16(packet, offset + 2u);
                         gatt_client->query_end_handle = little_endian_read_16(packet, offset + 4u);
-                        uuid16 = little_endian_read_16(packet, offset+6u);
+                        uuid16 = little_endian_read_16(packet, offset + 6u);
                         report_gatt_included_service_uuid16(gatt_client, include_handle, uuid16);
                     }
 
-                    trigger_next_included_service_query(gatt_client, get_last_result_handle_from_included_services_list(packet, size));
+                    trigger_next_included_service_query(gatt_client,
+                                                        get_last_result_handle_from_included_services_list(packet,
+                                                                                                           size));
                     // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 }
@@ -1513,11 +1479,12 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     uint16_t pair_size = packet[1];
                     // set last result handle to last valid handle, only used if pair_size invalid
                     uint16_t last_result_handle = 0xffff;
-                    if (pair_size > 2){
+                    if (pair_size > 2) {
                         uint16_t offset;
-                        for (offset = 2; offset < size ; offset += pair_size){
+                        for (offset = 2; offset < size; offset += pair_size) {
                             uint16_t value_handle = little_endian_read_16(packet, offset);
-                            report_gatt_characteristic_value(gatt_client, value_handle, &packet[offset + 2u], pair_size - 2u);
+                            report_gatt_characteristic_value(gatt_client, value_handle, &packet[offset + 2u],
+                                                             pair_size - 2u);
                             last_result_handle = value_handle;
                         }
                     }
@@ -1529,9 +1496,9 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             }
             break;
         case ATT_READ_RESPONSE:
-            switch (gatt_client->gatt_client_state){
+            switch (gatt_client->gatt_client_state) {
                 case P_W4_INCLUDED_SERVICE_UUID_WITH_QUERY_RESULT:
-                    if (size >= 17){
+                    if (size >= 17) {
                         uint8_t uuid128[16];
                         reverse_128(&packet[1], uuid128);
                         report_gatt_included_service_uuid128(gatt_client, gatt_client->start_group_handle, uuid128);
@@ -1548,21 +1515,25 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
 
                 case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:
                     gatt_client_handle_transaction_complete(gatt_client);
-                    report_gatt_characteristic_descriptor(gatt_client, gatt_client->attribute_handle, &packet[1], size - 1u, 0u);
+                    report_gatt_characteristic_descriptor(gatt_client, gatt_client->attribute_handle, &packet[1],
+                                                          size - 1u, 0u);
                     emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
                     break;
 
-                // Use ATT_READ_REQUEST for first blob of Read Long Characteristic
+                    // Use ATT_READ_REQUEST for first blob of Read Long Characteristic
                 case P_W4_READ_BLOB_RESULT:
-                    report_gatt_long_characteristic_value_blob(gatt_client, gatt_client->attribute_handle, &packet[1], size - 1u, gatt_client->attribute_offset);
+                    report_gatt_long_characteristic_value_blob(gatt_client, gatt_client->attribute_handle, &packet[1],
+                                                               size - 1u, gatt_client->attribute_offset);
                     trigger_next_blob_query(gatt_client, P_W2_SEND_READ_BLOB_QUERY, size - 1u);
                     // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
 
-                // Use ATT_READ_REQUEST for first blob of Read Long Characteristic Descriptor
+                    // Use ATT_READ_REQUEST for first blob of Read Long Characteristic Descriptor
                 case P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT:
-                    report_gatt_long_characteristic_descriptor(gatt_client, gatt_client->attribute_handle, &packet[1], size-1u, gatt_client->attribute_offset);
-                    trigger_next_blob_query(gatt_client, P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY, size-1u);
+                    report_gatt_long_characteristic_descriptor(gatt_client, gatt_client->attribute_handle, &packet[1],
+                                                               size - 1u, gatt_client->attribute_offset);
+                    trigger_next_blob_query(gatt_client, P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY,
+                                            size - 1u);
                     // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
 
@@ -1570,28 +1541,27 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     break;
             }
             break;
-            
-        case ATT_FIND_BY_TYPE_VALUE_RESPONSE:
-        {
+
+        case ATT_FIND_BY_TYPE_VALUE_RESPONSE: {
             uint8_t pair_size = 4;
             int i;
             uint16_t start_group_handle;
-            uint16_t   end_group_handle= 0xffff; // asserts GATT_EVENT_QUERY_COMPLETE is emitted if no results 
-            for (i = 1u; (i + pair_size) <= size; i += pair_size){
-                start_group_handle = little_endian_read_16(packet,i);
-                end_group_handle = little_endian_read_16(packet,i+2);
-                emit_gatt_service_query_result_event(gatt_client, start_group_handle, end_group_handle, gatt_client->uuid128);
+            uint16_t end_group_handle = 0xffff; // asserts GATT_EVENT_QUERY_COMPLETE is emitted if no results
+            for (i = 1u; (i + pair_size) <= size; i += pair_size) {
+                start_group_handle = little_endian_read_16(packet, i);
+                end_group_handle = little_endian_read_16(packet, i + 2);
+                emit_gatt_service_query_result_event(gatt_client, start_group_handle, end_group_handle,
+                                                     gatt_client->uuid128);
             }
             trigger_next_service_by_uuid_query(gatt_client, end_group_handle);
             // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
             break;
         }
-        case ATT_FIND_INFORMATION_REPLY:
-        {
+        case ATT_FIND_INFORMATION_REPLY: {
             if (size < 2u) break;
 
             uint8_t pair_size = 4;
-            if (packet[1u] == 2u){
+            if (packet[1u] == 2u) {
                 pair_size = 18;
             }
             uint16_t offset = 2;
@@ -1632,7 +1602,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
         }
 
         case ATT_WRITE_RESPONSE:
-            switch (gatt_client->gatt_client_state){
+            switch (gatt_client->gatt_client_state) {
                 case P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
                     gatt_client_handle_transaction_complete(gatt_client);
                     emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
@@ -1649,12 +1619,13 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     break;
             }
             break;
-            
-        case ATT_READ_BLOB_RESPONSE:{
-            uint16_t received_blob_length = size-1u;
-            switch(gatt_client->gatt_client_state){
+
+        case ATT_READ_BLOB_RESPONSE: {
+            uint16_t received_blob_length = size - 1u;
+            switch (gatt_client->gatt_client_state) {
                 case P_W4_READ_BLOB_RESULT:
-                    report_gatt_long_characteristic_value_blob(gatt_client, gatt_client->attribute_handle, &packet[1], received_blob_length, gatt_client->attribute_offset);
+                    report_gatt_long_characteristic_value_blob(gatt_client, gatt_client->attribute_handle, &packet[1],
+                                                               received_blob_length, gatt_client->attribute_offset);
                     trigger_next_blob_query(gatt_client, P_W2_SEND_READ_BLOB_QUERY, received_blob_length);
                     // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
@@ -1662,7 +1633,8 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     report_gatt_long_characteristic_descriptor(gatt_client, gatt_client->attribute_handle,
                                                                &packet[1], received_blob_length,
                                                                gatt_client->attribute_offset);
-                    trigger_next_blob_query(gatt_client, P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY, received_blob_length);
+                    trigger_next_blob_query(gatt_client, P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY,
+                                            received_blob_length);
                     // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 default:
@@ -1671,32 +1643,34 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             break;
         }
         case ATT_PREPARE_WRITE_RESPONSE:
-            switch (gatt_client->gatt_client_state){
+            switch (gatt_client->gatt_client_state) {
                 case P_W4_PREPARE_WRITE_SINGLE_RESULT:
                     gatt_client_handle_transaction_complete(gatt_client);
-                    if (is_value_valid(gatt_client, packet, size)){
+                    if (is_value_valid(gatt_client, packet, size)) {
                         emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
                     } else {
                         emit_gatt_complete_event(gatt_client, ATT_ERROR_DATA_MISMATCH);
                     }
                     break;
 
-                case P_W4_PREPARE_WRITE_RESULT:{
+                case P_W4_PREPARE_WRITE_RESULT: {
                     gatt_client->attribute_offset = little_endian_read_16(packet, 3);
                     trigger_next_prepare_write_query(gatt_client, P_W2_PREPARE_WRITE, P_W2_EXECUTE_PREPARED_WRITE);
                     // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 }
-                case P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:{
+                case P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT: {
                     gatt_client->attribute_offset = little_endian_read_16(packet, 3);
-                    trigger_next_prepare_write_query(gatt_client, P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR, P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR);
+                    trigger_next_prepare_write_query(gatt_client, P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR,
+                                                     P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR);
                     // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 }
-                case P_W4_PREPARE_RELIABLE_WRITE_RESULT:{
-                    if (is_value_valid(gatt_client, packet, size)){
+                case P_W4_PREPARE_RELIABLE_WRITE_RESULT: {
+                    if (is_value_valid(gatt_client, packet, size)) {
                         gatt_client->attribute_offset = little_endian_read_16(packet, 3);
-                        trigger_next_prepare_write_query(gatt_client, P_W2_PREPARE_RELIABLE_WRITE, P_W2_EXECUTE_PREPARED_WRITE);
+                        trigger_next_prepare_write_query(gatt_client, P_W2_PREPARE_RELIABLE_WRITE,
+                                                         P_W2_EXECUTE_PREPARED_WRITE);
                         // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                         break;
                     }
@@ -1707,9 +1681,9 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     break;
             }
             break;
-            
+
         case ATT_EXECUTE_WRITE_RESPONSE:
-            switch (gatt_client->gatt_client_state){
+            switch (gatt_client->gatt_client_state) {
                 case P_W4_EXECUTE_PREPARED_WRITE_RESULT:
                     gatt_client_handle_transaction_complete(gatt_client);
                     emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
@@ -1728,12 +1702,12 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     break;
                 default:
                     break;
-                    
+
             }
             break;
 
         case ATT_READ_MULTIPLE_RESPONSE:
-            switch(gatt_client->gatt_client_state){
+            switch (gatt_client->gatt_client_state) {
                 case P_W4_READ_MULTIPLE_RESPONSE:
                     report_gatt_characteristic_value(gatt_client, 0u, &packet[1], size - 1u);
                     gatt_client_handle_transaction_complete(gatt_client);
@@ -1747,9 +1721,9 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
         case ATT_ERROR_RESPONSE:
             if (size < 5u) return;
             error_code = packet[4];
-            switch (error_code){
+            switch (error_code) {
                 case ATT_ERROR_ATTRIBUTE_NOT_FOUND: {
-                    switch(gatt_client->gatt_client_state){
+                    switch (gatt_client->gatt_client_state) {
                         case P_W4_SERVICE_QUERY_RESULT:
                         case P_W4_SERVICE_WITH_UUID_RESULT:
                         case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
@@ -1765,7 +1739,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                             break;
                         case P_W4_READ_BY_TYPE_RESPONSE:
                             gatt_client_handle_transaction_complete(gatt_client);
-                            if (gatt_client->start_group_handle == gatt_client->query_start_handle){
+                            if (gatt_client->start_group_handle == gatt_client->query_start_handle) {
                                 emit_gatt_complete_event(gatt_client, ATT_ERROR_ATTRIBUTE_NOT_FOUND);
                             } else {
                                 emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
@@ -1780,111 +1754,151 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
 
 #ifdef ENABLE_GATT_CLIENT_PAIRING
 
-                case ATT_ERROR_INSUFFICIENT_AUTHENTICATION:
-                case ATT_ERROR_INSUFFICIENT_ENCRYPTION_KEY_SIZE:
-                case ATT_ERROR_INSUFFICIENT_ENCRYPTION: {
+                    case ATT_ERROR_INSUFFICIENT_AUTHENTICATION:
+                    case ATT_ERROR_INSUFFICIENT_ENCRYPTION_KEY_SIZE:
+                    case ATT_ERROR_INSUFFICIENT_ENCRYPTION: {
 
-                    // security too low
-                    if (gatt_client->security_counter > 0) {
-                        gatt_client_report_error_if_pending(gatt_client, error_code);
-                        break;
-                    }
-                    // start security
-                    gatt_client->security_counter++;
+                        // security too low
+                        if (gatt_client->security_counter > 0) {
+                            gatt_client_report_error_if_pending(gatt_client, error_code);
+                            break;
+                        }
+                        // start security
+                        gatt_client->security_counter++;
 
-                    // setup action
-                    int retry = 1;
-                    switch (gatt_client->gatt_client_state){
-                        case P_W4_READ_CHARACTERISTIC_VALUE_RESULT:
-                            gatt_client->gatt_client_state = P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY ;
-                            break;
-                        case P_W4_READ_BLOB_RESULT:
-                            gatt_client->gatt_client_state = P_W2_SEND_READ_BLOB_QUERY;
-                            break;
-                        case P_W4_READ_BY_TYPE_RESPONSE:
-                            gatt_client->gatt_client_state = P_W2_SEND_READ_BY_TYPE_REQUEST;
-                            break;
-                        case P_W4_READ_MULTIPLE_RESPONSE:
-                            gatt_client->gatt_client_state = P_W2_SEND_READ_MULTIPLE_REQUEST;
-                            break;
-                        case P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
-                            gatt_client->gatt_client_state = P_W2_SEND_WRITE_CHARACTERISTIC_VALUE;
-                            break;
-                        case P_W4_PREPARE_WRITE_RESULT:
-                            gatt_client->gatt_client_state = P_W2_PREPARE_WRITE;
-                            break;
-                        case P_W4_PREPARE_WRITE_SINGLE_RESULT:
-                            gatt_client->gatt_client_state = P_W2_PREPARE_WRITE_SINGLE;
-                            break;
-                        case P_W4_PREPARE_RELIABLE_WRITE_RESULT:
-                            gatt_client->gatt_client_state = P_W2_PREPARE_RELIABLE_WRITE;
-                            break;
-                        case P_W4_EXECUTE_PREPARED_WRITE_RESULT:
-                            gatt_client->gatt_client_state = P_W2_EXECUTE_PREPARED_WRITE;
-                            break;
-                        case P_W4_CANCEL_PREPARED_WRITE_RESULT:
-                            gatt_client->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE;
-                            break;
-                        case P_W4_CANCEL_PREPARED_WRITE_DATA_MISMATCH_RESULT:
-                            gatt_client->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE_DATA_MISMATCH;
-                            break;
-                        case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:
-                            gatt_client->gatt_client_state = P_W2_SEND_READ_CHARACTERISTIC_DESCRIPTOR_QUERY;
-                            break;
-                        case P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT:
-                            gatt_client->gatt_client_state = P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY;
-                            break;
-                        case P_W4_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
-                            gatt_client->gatt_client_state = P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR;
-                            break;
-                        case P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT:
-                            gatt_client->gatt_client_state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
-                            break;
-                        case P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
-                            gatt_client->gatt_client_state = P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR;
-                            break;
-                        case P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
-                            gatt_client->gatt_client_state = P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR;
-                            break;
+                        // setup action
+                        int retry = 1;
+                        switch (gatt_client->gatt_client_state){
+                            case P_W4_READ_CHARACTERISTIC_VALUE_RESULT:
+                                gatt_client->gatt_client_state = P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY ;
+                                break;
+                            case P_W4_READ_BLOB_RESULT:
+                                gatt_client->gatt_client_state = P_W2_SEND_READ_BLOB_QUERY;
+                                break;
+                            case P_W4_READ_BY_TYPE_RESPONSE:
+                                gatt_client->gatt_client_state = P_W2_SEND_READ_BY_TYPE_REQUEST;
+                                break;
+                            case P_W4_READ_MULTIPLE_RESPONSE:
+                                gatt_client->gatt_client_state = P_W2_SEND_READ_MULTIPLE_REQUEST;
+                                break;
+                            case P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
+                                gatt_client->gatt_client_state = P_W2_SEND_WRITE_CHARACTERISTIC_VALUE;
+                                break;
+                            case P_W4_PREPARE_WRITE_RESULT:
+                                gatt_client->gatt_client_state = P_W2_PREPARE_WRITE;
+                                break;
+                            case P_W4_PREPARE_WRITE_SINGLE_RESULT:
+                                gatt_client->gatt_client_state = P_W2_PREPARE_WRITE_SINGLE;
+                                break;
+                            case P_W4_PREPARE_RELIABLE_WRITE_RESULT:
+                                gatt_client->gatt_client_state = P_W2_PREPARE_RELIABLE_WRITE;
+                                break;
+                            case P_W4_EXECUTE_PREPARED_WRITE_RESULT:
+                                gatt_client->gatt_client_state = P_W2_EXECUTE_PREPARED_WRITE;
+                                break;
+                            case P_W4_CANCEL_PREPARED_WRITE_RESULT:
+                                gatt_client->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE;
+                                break;
+                            case P_W4_CANCEL_PREPARED_WRITE_DATA_MISMATCH_RESULT:
+                                gatt_client->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE_DATA_MISMATCH;
+                                break;
+                            case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                                gatt_client->gatt_client_state = P_W2_SEND_READ_CHARACTERISTIC_DESCRIPTOR_QUERY;
+                                break;
+                            case P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                                gatt_client->gatt_client_state = P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY;
+                                break;
+                            case P_W4_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                                gatt_client->gatt_client_state = P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR;
+                                break;
+                            case P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT:
+                                gatt_client->gatt_client_state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+                                break;
+                            case P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                                gatt_client->gatt_client_state = P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR;
+                                break;
+                            case P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                                gatt_client->gatt_client_state = P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR;
+                                break;
 #ifdef ENABLE_LE_SIGNED_WRITE
-                        case P_W4_SEND_SINGED_WRITE_DONE:
-                            gatt_client->gatt_client_state = P_W2_SEND_SIGNED_WRITE;
-                            break;
+                            case P_W4_SEND_SINGED_WRITE_DONE:
+                                gatt_client->gatt_client_state = P_W2_SEND_SIGNED_WRITE;
+                                break;
 #endif
-                        default:
-                            log_info("retry not supported for state %x", gatt_client->gatt_client_state);
-                            retry = 0;
-                            break;
-                    }
+                            default:
+                                log_info("retry not supported for state %x", gatt_client->gatt_client_state);
+                                retry = 0;
+                                break;
+                        }
 
-                    if (!retry) {
-                        gatt_client_report_error_if_pending(gatt_client, error_code);
+                        if (!retry) {
+                            gatt_client_report_error_if_pending(gatt_client, error_code);
+                            break;
+                        }
+
+                        log_info("security error, start pairing");
+
+                        // start pairing for higher security level
+                        gatt_client->wait_for_authentication_complete = 1;
+                        gatt_client->pending_error_code = error_code;
+                        sm_request_pairing(gatt_client->con_handle);
                         break;
                     }
-
-                    log_info("security error, start pairing");
-
-                    // start pairing for higher security level
-                    gatt_client->wait_for_authentication_complete = 1;
-                    gatt_client->pending_error_code = error_code;
-                    sm_request_pairing(gatt_client->con_handle);
-                    break;
-                }
 #endif
 
-                // nothing we can do about that
+                    // nothing we can do about that
                 case ATT_ERROR_INSUFFICIENT_AUTHORIZATION:
                 default:
                     gatt_client_report_error_if_pending(gatt_client, error_code);
                     break;
             }
             break;
-            
+
         default:
             log_info("ATT Handler, unhandled response type 0x%02x", packet[0]);
             break;
     }
-    gatt_client_run();
+}
+
+static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size) {
+    gatt_client_t *gatt_client;
+    if (size < 1u) return;
+
+    if (packet_type == HCI_EVENT_PACKET) {
+        switch (packet[0]) {
+            case L2CAP_EVENT_CAN_SEND_NOW:
+                gatt_client_run();
+                break;
+                // att_server has negotiated the mtu for this connection, cache if context exists
+            case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
+                if (size < 6u) break;
+                gatt_client = gatt_client_get_context_for_handle(handle);
+                if (gatt_client == NULL) break;
+                gatt_client->mtu = little_endian_read_16(packet, 4);
+                break;
+            default:
+                break;
+        }
+        return;
+    }
+
+    if (packet_type != ATT_DATA_PACKET) return;
+
+    // special cases: notifications & indications motivate creating context
+    switch (packet[0]) {
+        case ATT_HANDLE_VALUE_NOTIFICATION:
+        case ATT_HANDLE_VALUE_INDICATION:
+            gatt_client_provide_context_for_handle(handle, &gatt_client);
+            break;
+        default:
+            gatt_client = gatt_client_get_context_for_handle(handle);
+            break;
+    }
+
+    if (gatt_client != NULL) {
+        gatt_client_handle_att_response(gatt_client, packet, size);
+        gatt_client_run();
+    }
 }
 
 #ifdef ENABLE_LE_SIGNED_WRITE
