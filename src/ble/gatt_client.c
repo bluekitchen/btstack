@@ -242,6 +242,11 @@ uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu){
 
 // precondition: can_send_packet_now == TRUE
 static uint8_t gatt_client_send(gatt_client_t * gatt_client, uint16_t len){
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    if (gatt_client->l2cap_psm){
+        return l2cap_send_prepared(gatt_client->l2cap_cid, len);
+    }
+#endif
     return l2cap_send_prepared_connectionless(gatt_client->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, len);
 }
 
@@ -984,8 +989,8 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
 
     bool client_request_pending = gatt_client->gatt_client_state != P_READY;
 
-    // verify security level for Mandatory Authentication
-    if (client_request_pending && (gatt_client_required_security_level > gatt_client->security_level)){
+    // verify security level for Mandatory Authentication over LE
+    if (client_request_pending && (gatt_client_required_security_level > gatt_client->security_level) && (gatt_client->l2cap_psm == 0)){
         log_info("Trigger pairing, current security level %u, required %u\n", gatt_client->security_level, gatt_client_required_security_level);
         gatt_client->wait_for_authentication_complete = 1;
         // set att error code for pairing failure based on required level
@@ -1243,7 +1248,27 @@ static void gatt_client_run(void){
         if (gatt_client->con_handle == HCI_CON_HANDLE_INVALID) {
             continue;
         }
+
+        // handle GATT over BR/EDR
+        if (gatt_client->l2cap_psm != 0){
+            if (l2cap_can_send_packet_now(gatt_client->l2cap_cid) == false){
+                l2cap_request_can_send_now_event(gatt_client->l2cap_cid);
+                return;
+            }
+            bool packet_sent = gatt_client_run_for_gatt_client(gatt_client);
+            if (packet_sent){
+                // request new permission
+                att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
+                // requeue client for fairness and exit
+                // note: iterator has become invalid
+                btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
+                btstack_linked_list_add_tail(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
+                return;
+            }
+        }
+        continue;
 #endif
+        // handle GATT over LE
         if (!att_dispatch_client_can_send_now(gatt_client->con_handle)) {
             att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
             return;
