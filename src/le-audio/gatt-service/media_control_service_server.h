@@ -45,12 +45,11 @@
 
 #include <stdint.h>
 #include "le-audio/le_audio.h"
+#include "le-audio/gatt-service/media_control_service_util.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
-
-#define ATT_ERROR_RESPONSE_MEDIA_CONTROL_VALUE_CHANGED_DURING_READ_LONG    0x80
 
 /**
  * @text The Media Control Service  provides the client with the ability to control and interact with media players.
@@ -140,7 +139,8 @@ typedef struct {
     uint32_t                    scheduled_tasks;
     btstack_context_callback_registration_t scheduled_tasks_callback; 
 
-    mcs_media_player_data_t data;
+    btstack_packet_handler_t event_callback;
+    mcs_media_player_data_t  data;
 } media_control_service_server_t;
 
 /**
@@ -148,9 +148,7 @@ typedef struct {
  */
 void media_control_service_server_init(void);
 
-void media_control_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
-
-uint8_t media_control_service_server_register_media_player(media_control_service_server_t * media_player, uint16_t * media_player_id);
+uint8_t media_control_service_server_register_media_player(media_control_service_server_t * media_player, btstack_packet_handler_t packet_handler, uint32_t media_control_point_opcodes_supported, uint16_t * media_player_id);
 
 uint8_t media_control_service_server_set_media_player_name(uint16_t media_player_id, char * name);
 
