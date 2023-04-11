@@ -238,27 +238,37 @@ uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu){
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_confirmation(uint16_t con_handle){
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
-    request[0] = ATT_HANDLE_VALUE_CONFIRMATION;
-    
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 1);
+static uint8_t gatt_client_send(gatt_client_t * gatt_client, uint16_t len){
+    return l2cap_send_prepared_connectionless(gatt_client->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, len);
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_find_information_request(uint8_t request_type, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle){
+static uint8_t att_confirmation(gatt_client_t * gatt_client) {
+    l2cap_reserve_packet_buffer();
+
+    uint8_t * request = l2cap_get_outgoing_buffer();
+    request[0] = ATT_HANDLE_VALUE_CONFIRMATION;
+
+    return gatt_client_send(gatt_client, 1);
+}
+
+// precondition: can_send_packet_now == TRUE
+static uint8_t att_find_information_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t start_handle,
+                                            uint16_t end_handle) {
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
+
     request[0] = request_type;
     little_endian_store_16(request, 1, start_handle);
     little_endian_store_16(request, 3, end_handle);
-    
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5);
+
+    return gatt_client_send(gatt_client, 5);
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_find_by_type_value_request(uint8_t request_type, uint16_t attribute_group_type, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * value, uint16_t value_size){
+static uint8_t
+att_find_by_type_value_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t attribute_group_type,
+                               uint16_t start_handle, uint16_t end_handle, uint8_t *value, uint16_t value_size) {
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     
@@ -268,55 +278,64 @@ static uint8_t att_find_by_type_value_request(uint8_t request_type, uint16_t att
     little_endian_store_16(request, 5, attribute_group_type);
     (void)memcpy(&request[7], value, value_size);
     
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 7u + value_size);
+    return gatt_client_send(gatt_client, 7u + value_size);
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_read_by_type_or_group_request_for_uuid16(uint8_t request_type, uint16_t uuid16, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle){
+static uint8_t
+att_read_by_type_or_group_request_for_uuid16(gatt_client_t *gatt_client, uint8_t request_type, uint16_t uuid16,
+                                             uint16_t start_handle, uint16_t end_handle) {
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
+
     request[0] = request_type;
     little_endian_store_16(request, 1, start_handle);
     little_endian_store_16(request, 3, end_handle);
     little_endian_store_16(request, 5, uuid16);
     
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 7);
+    return gatt_client_send(gatt_client, 7);
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_read_by_type_or_group_request_for_uuid128(uint8_t request_type, const uint8_t * uuid128, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle){
+static uint8_t
+att_read_by_type_or_group_request_for_uuid128(gatt_client_t *gatt_client, uint8_t request_type, const uint8_t *uuid128,
+                                              uint16_t start_handle, uint16_t end_handle) {
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
+
     request[0] = request_type;
     little_endian_store_16(request, 1, start_handle);
     little_endian_store_16(request, 3, end_handle);
     reverse_128(uuid128, &request[5]);
     
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 21);
+    return gatt_client_send(gatt_client, 21);
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_read_request(uint8_t request_type, uint16_t con_handle, uint16_t attribute_handle){
+static uint8_t att_read_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t attribute_handle) {
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
+
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
     
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3);
+    return gatt_client_send(gatt_client, 3);
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_read_blob_request(uint8_t request_type, uint16_t con_handle, uint16_t attribute_handle, uint16_t value_offset){
+static uint8_t att_read_blob_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t attribute_handle,
+                                     uint16_t value_offset) {
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
     little_endian_store_16(request, 3, value_offset);
     
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5);
+    return gatt_client_send(gatt_client, 5);
 }
 
-static uint8_t att_read_multiple_request(uint16_t con_handle, uint16_t num_value_handles, uint16_t * value_handles){
+static uint8_t
+att_read_multiple_request(gatt_client_t *gatt_client, uint16_t num_value_handles, uint16_t *value_handles) {
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = ATT_READ_MULTIPLE_REQUEST;
@@ -327,12 +346,13 @@ static uint8_t att_read_multiple_request(uint16_t con_handle, uint16_t num_value
         offset += 2;
     }
 
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, offset);
+    return gatt_client_send(gatt_client, offset);
 }
 
 #ifdef ENABLE_LE_SIGNED_WRITE
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_signed_write_request(uint16_t request_type, uint16_t con_handle, uint16_t attribute_handle, uint16_t value_length, uint8_t * value, uint32_t sign_counter, uint8_t sgn[8]){
+static uint8_t att_signed_write_request(gatt_client_t *gatt_client, uint16_t request_type, uint16_t attribute_handle,
+                                        uint16_t value_length, uint8_t *value, uint32_t sign_counter, uint8_t sgn[8]) {
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
@@ -341,33 +361,36 @@ static uint8_t att_signed_write_request(uint16_t request_type, uint16_t con_hand
     little_endian_store_32(request, 3 + value_length, sign_counter);
     reverse_64(sgn, &request[3 + value_length + 4]);
     
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length + 12);
+    return gatt_client_send(gatt_client, 3 + value_length + 12);
 }
 #endif
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_write_request(uint8_t request_type, uint16_t con_handle, uint16_t attribute_handle, uint16_t value_length, uint8_t * value){
+static uint8_t
+att_write_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t attribute_handle, uint16_t value_length,
+                  uint8_t *value) {
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
     (void)memcpy(&request[3], value, value_length);
     
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3u + value_length);
+    return gatt_client_send(gatt_client, 3u + value_length);
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_execute_write_request(uint8_t request_type, uint16_t con_handle, uint8_t execute_write){
+static uint8_t att_execute_write_request(gatt_client_t *gatt_client, uint8_t request_type, uint8_t execute_write) {
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     request[1] = execute_write;
     
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 2);
+    return gatt_client_send(gatt_client, 2);
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_prepare_write_request(uint8_t request_type, uint16_t con_handle, uint16_t attribute_handle, uint16_t value_offset, uint16_t blob_length, uint8_t * value){
+static uint8_t att_prepare_write_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t attribute_handle,
+                                         uint16_t value_offset, uint16_t blob_length, uint8_t *value) {
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
@@ -375,17 +398,17 @@ static uint8_t att_prepare_write_request(uint8_t request_type, uint16_t con_hand
     little_endian_store_16(request, 3, value_offset);
     (void)memcpy(&request[5], &value[value_offset], blob_length);
     
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5u + blob_length);
+    return gatt_client_send(gatt_client,  5u + blob_length);
 }
 
-static uint8_t att_exchange_mtu_request(uint16_t con_handle){
+static uint8_t att_exchange_mtu_request(gatt_client_t *gatt_client) {
     uint16_t mtu = l2cap_max_le_mtu();
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = ATT_EXCHANGE_MTU_REQUEST;
     little_endian_store_16(request, 1, mtu);
     
-    return l2cap_send_prepared_connectionless(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3);
+    return gatt_client_send(gatt_client, 3);
 }
 
 static uint16_t write_blob_length(gatt_client_t * gatt_client){
@@ -401,19 +424,23 @@ static uint16_t write_blob_length(gatt_client_t * gatt_client){
 }
 
 static void send_gatt_services_request(gatt_client_t *gatt_client){
-    att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_GROUP_TYPE_REQUEST, gatt_client->uuid16, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle);
+    att_read_by_type_or_group_request_for_uuid16(gatt_client, ATT_READ_BY_GROUP_TYPE_REQUEST,
+                                                 gatt_client->uuid16, gatt_client->start_group_handle,
+                                                 gatt_client->end_group_handle);
 }
 
 static void send_gatt_by_uuid_request(gatt_client_t *gatt_client, uint16_t attribute_group_type){
     if (gatt_client->uuid16){
         uint8_t uuid16[2];
         little_endian_store_16(uuid16, 0, gatt_client->uuid16);
-        att_find_by_type_value_request(ATT_FIND_BY_TYPE_VALUE_REQUEST, attribute_group_type, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle, uuid16, 2);
+        att_find_by_type_value_request(gatt_client, ATT_FIND_BY_TYPE_VALUE_REQUEST, attribute_group_type,
+                                       gatt_client->start_group_handle, gatt_client->end_group_handle, uuid16, 2);
         return;
     }
     uint8_t uuid128[16];
     reverse_128(gatt_client->uuid128, uuid128);
-    att_find_by_type_value_request(ATT_FIND_BY_TYPE_VALUE_REQUEST, attribute_group_type, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle, uuid128, 16);
+    att_find_by_type_value_request(gatt_client, ATT_FIND_BY_TYPE_VALUE_REQUEST, attribute_group_type,
+                                   gatt_client->start_group_handle, gatt_client->end_group_handle, uuid128, 16);
 }
 
 static void send_gatt_services_by_uuid_request(gatt_client_t *gatt_client){
@@ -421,78 +448,96 @@ static void send_gatt_services_by_uuid_request(gatt_client_t *gatt_client){
 }
 
 static void send_gatt_included_service_uuid_request(gatt_client_t *gatt_client){
-    att_read_request(ATT_READ_REQUEST, gatt_client->con_handle, gatt_client->query_start_handle);
+    att_read_request(gatt_client, ATT_READ_REQUEST, gatt_client->query_start_handle);
 }
 
 static void send_gatt_included_service_request(gatt_client_t *gatt_client){
-    att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_TYPE_REQUEST, GATT_INCLUDE_SERVICE_UUID, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle);
+    att_read_by_type_or_group_request_for_uuid16(gatt_client, ATT_READ_BY_TYPE_REQUEST,
+                                                 GATT_INCLUDE_SERVICE_UUID, gatt_client->start_group_handle,
+                                                 gatt_client->end_group_handle);
 }
 
 static void send_gatt_characteristic_request(gatt_client_t *gatt_client){
-    att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_TYPE_REQUEST, GATT_CHARACTERISTICS_UUID, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle);
+    att_read_by_type_or_group_request_for_uuid16(gatt_client, ATT_READ_BY_TYPE_REQUEST,
+                                                 GATT_CHARACTERISTICS_UUID, gatt_client->start_group_handle,
+                                                 gatt_client->end_group_handle);
 }
 
 static void send_gatt_characteristic_descriptor_request(gatt_client_t *gatt_client){
-    att_find_information_request(ATT_FIND_INFORMATION_REQUEST, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle);
+    att_find_information_request(gatt_client, ATT_FIND_INFORMATION_REQUEST, gatt_client->start_group_handle,
+                                 gatt_client->end_group_handle);
 }
 
 static void send_gatt_read_characteristic_value_request(gatt_client_t *gatt_client){
-    att_read_request(ATT_READ_REQUEST, gatt_client->con_handle, gatt_client->attribute_handle);
+    att_read_request(gatt_client, ATT_READ_REQUEST, gatt_client->attribute_handle);
 }
 
 static void send_gatt_read_by_type_request(gatt_client_t * gatt_client){
     if (gatt_client->uuid16){
-        att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_TYPE_REQUEST, gatt_client->uuid16, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle);
+        att_read_by_type_or_group_request_for_uuid16(gatt_client, ATT_READ_BY_TYPE_REQUEST,
+                                                     gatt_client->uuid16, gatt_client->start_group_handle,
+                                                     gatt_client->end_group_handle);
     } else {
-        att_read_by_type_or_group_request_for_uuid128(ATT_READ_BY_TYPE_REQUEST, gatt_client->uuid128, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle);
+        att_read_by_type_or_group_request_for_uuid128(gatt_client, ATT_READ_BY_TYPE_REQUEST,
+                                                      gatt_client->uuid128, gatt_client->start_group_handle,
+                                                      gatt_client->end_group_handle);
     }
 }
 
 static void send_gatt_read_blob_request(gatt_client_t *gatt_client){
     if (gatt_client->attribute_offset == 0){
-        att_read_request(ATT_READ_REQUEST, gatt_client->con_handle, gatt_client->attribute_handle);
+        att_read_request(gatt_client, ATT_READ_REQUEST, gatt_client->attribute_handle);
     } else {
-        att_read_blob_request(ATT_READ_BLOB_REQUEST, gatt_client->con_handle, gatt_client->attribute_handle, gatt_client->attribute_offset);
+        att_read_blob_request(gatt_client, ATT_READ_BLOB_REQUEST, gatt_client->attribute_handle,
+                              gatt_client->attribute_offset);
     }
 }
 
 static void send_gatt_read_multiple_request(gatt_client_t * gatt_client){
-    att_read_multiple_request(gatt_client->con_handle, gatt_client->read_multiple_handle_count, gatt_client->read_multiple_handles);
+    att_read_multiple_request(gatt_client, gatt_client->read_multiple_handle_count, gatt_client->read_multiple_handles);
 }
 
 static void send_gatt_write_attribute_value_request(gatt_client_t * gatt_client){
-    att_write_request(ATT_WRITE_REQUEST, gatt_client->con_handle, gatt_client->attribute_handle, gatt_client->attribute_length, gatt_client->attribute_value);
+    att_write_request(gatt_client, ATT_WRITE_REQUEST, gatt_client->attribute_handle, gatt_client->attribute_length,
+                      gatt_client->attribute_value);
 }
 
 static void send_gatt_write_client_characteristic_configuration_request(gatt_client_t * gatt_client){
-    att_write_request(ATT_WRITE_REQUEST, gatt_client->con_handle, gatt_client->client_characteristic_configuration_handle, 2, gatt_client->client_characteristic_configuration_value);
+    att_write_request(gatt_client, ATT_WRITE_REQUEST, gatt_client->client_characteristic_configuration_handle, 2,
+                      gatt_client->client_characteristic_configuration_value);
 }
 
 static void send_gatt_prepare_write_request(gatt_client_t * gatt_client){
-    att_prepare_write_request(ATT_PREPARE_WRITE_REQUEST, gatt_client->con_handle, gatt_client->attribute_handle, gatt_client->attribute_offset, write_blob_length(gatt_client), gatt_client->attribute_value);
+    att_prepare_write_request(gatt_client, ATT_PREPARE_WRITE_REQUEST, gatt_client->attribute_handle,
+                              gatt_client->attribute_offset, write_blob_length(gatt_client),
+                              gatt_client->attribute_value);
 }
 
 static void send_gatt_execute_write_request(gatt_client_t * gatt_client){
-    att_execute_write_request(ATT_EXECUTE_WRITE_REQUEST, gatt_client->con_handle, 1);
+    att_execute_write_request(gatt_client, ATT_EXECUTE_WRITE_REQUEST, 1);
 }
 
 static void send_gatt_cancel_prepared_write_request(gatt_client_t * gatt_client){
-    att_execute_write_request(ATT_EXECUTE_WRITE_REQUEST, gatt_client->con_handle, 0);
+    att_execute_write_request(gatt_client, ATT_EXECUTE_WRITE_REQUEST, 0);
 }
 
 #ifndef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
 static void send_gatt_read_client_characteristic_configuration_request(gatt_client_t * gatt_client){
-    att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_TYPE_REQUEST, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, gatt_client->con_handle, gatt_client->start_group_handle, gatt_client->end_group_handle);
+    att_read_by_type_or_group_request_for_uuid16(gatt_client, ATT_READ_BY_TYPE_REQUEST,
+                                                 GATT_CLIENT_CHARACTERISTICS_CONFIGURATION,
+                                                 gatt_client->start_group_handle, gatt_client->end_group_handle);
 }
 #endif
 
 static void send_gatt_read_characteristic_descriptor_request(gatt_client_t * gatt_client){
-    att_read_request(ATT_READ_REQUEST, gatt_client->con_handle, gatt_client->attribute_handle);
+    att_read_request(gatt_client, ATT_READ_REQUEST, gatt_client->attribute_handle);
 }
 
 #ifdef ENABLE_LE_SIGNED_WRITE
 static void send_gatt_signed_write_request(gatt_client_t * gatt_client, uint32_t sign_counter){
-    att_signed_write_request(ATT_SIGNED_WRITE_COMMAND, gatt_client->con_handle, gatt_client->attribute_handle, gatt_client->attribute_length, gatt_client->attribute_value, sign_counter, gatt_client->cmac);
+    att_signed_write_request(gatt_client, ATT_SIGNED_WRITE_COMMAND, gatt_client->attribute_handle,
+                             gatt_client->attribute_length, gatt_client->attribute_value, sign_counter,
+                             gatt_client->cmac);
 }
 #endif
 
@@ -958,7 +1003,7 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     switch (gatt_client->mtu_state) {
         case SEND_MTU_EXCHANGE:
             gatt_client->mtu_state = SENT_MTU_EXCHANGE;
-            att_exchange_mtu_request(gatt_client->con_handle);
+            att_exchange_mtu_request(gatt_client);
             return true;
         case SENT_MTU_EXCHANGE:
             return false;
@@ -968,7 +1013,7 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
 
     if (gatt_client->send_confirmation){
         gatt_client->send_confirmation = 0;
-        att_confirmation(gatt_client->con_handle);
+        att_confirmation(gatt_client);
         return true;
     }
 
@@ -2191,7 +2236,7 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
     if (value_length > (gatt_client->mtu - 3u)) return GATT_CLIENT_VALUE_TOO_LONG;
     if (!att_dispatch_client_can_send_now(gatt_client->con_handle)) return GATT_CLIENT_BUSY;
 
-    return att_write_request(ATT_WRITE_COMMAND, gatt_client->con_handle, value_handle, value_length, value);
+    return att_write_request(gatt_client, ATT_WRITE_COMMAND, value_handle, value_length, value);
 }
 
 uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
