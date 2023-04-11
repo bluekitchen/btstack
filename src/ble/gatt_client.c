@@ -2659,6 +2659,10 @@ static const hci_event_t gatt_client_connected = {
         GATT_EVENT_CONNECTED, 0, "1BH"
 };
 
+static const hci_event_t gatt_client_disconnected = {
+        GATT_EVENT_DISCONNECTED, 0, "H"
+};
+
 static gatt_client_t * gatt_client_get_context_for_classic_addr(bd_addr_t addr){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) gatt_client_connections; it != NULL; it = it->next){
@@ -2696,6 +2700,21 @@ static void gatt_client_classic_handle_connected(gatt_client_t * gatt_client, ui
     (*callback)(HCI_EVENT_PACKET, 0, buffer, len);
 }
 
+static void gatt_client_classic_handle_disconnected(gatt_client_t * gatt_client){
+
+    gatt_client_report_error_if_pending(gatt_client, ATT_ERROR_HCI_DISCONNECT_RECEIVED);
+    gatt_client_timeout_stop(gatt_client);
+
+    hci_con_handle_t con_handle = gatt_client->con_handle;
+    btstack_packet_handler_t callback = gatt_client->callback;
+    btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
+    btstack_memory_gatt_client_free(gatt_client);
+
+    uint8_t buffer[20];
+    uint16_t len = hci_event_create_from_template_and_arguments(buffer, sizeof(buffer), &gatt_client_disconnected, con_handle);
+    (*callback)(HCI_EVENT_PACKET, 0, buffer, len);
+}
+
 static void gatt_client_l2cap_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     gatt_client_t * gatt_client = NULL;
     uint8_t status;
@@ -2713,7 +2732,8 @@ static void gatt_client_l2cap_handler(uint8_t packet_type, uint16_t channel, uin
                     gatt_client_classic_handle_connected(gatt_client, status);
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
-                    // TODO:
+                    gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_closed_get_local_cid(packet));
+                    gatt_client_classic_handle_disconnected(gatt_client);
                     break;
                 default:
                     break;
