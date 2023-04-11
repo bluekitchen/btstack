@@ -121,6 +121,7 @@ uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_event_buffer, u
                 if (!hci_event_can_store(pos, buffer_size, 6, &overrun)) break;
                 ptr = va_arg(argptr, uint8_t *);
                 reverse_bytes(ptr, &hci_event_buffer[pos], 6);
+                pos += 6;
                 break;
             case 'Q':
                 if (!hci_event_can_store(pos, buffer_size, 32, &overrun)) break;
