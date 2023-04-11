@@ -64,20 +64,24 @@ typedef enum {
 } handle_type_t;
 
 static btstack_linked_list_t    mcs_media_players;
-static btstack_packet_handler_t mcs_server_callback;
 static uint16_t mcs_media_player_counter = 0;
+static uint16_t mcs_services_start_handle = 0;
 
 static uint16_t msc_server_get_next_media_player_id(void){
 	mcs_media_player_counter = btstack_next_cid_ignoring_zero(mcs_media_player_counter);
 	return mcs_media_player_counter;
 }
 
-static media_control_service_server_t * msc_server_media_player_registered(uint16_t start_handle){
-	if (start_handle == 0xffff) {
-		return NULL;
-	}
 
-    btstack_linked_list_iterator_t it;    
+static void mcs_server_reset_media_player(media_control_service_server_t * media_player){
+    media_player->con_handle = HCI_CON_HANDLE_INVALID;
+    
+    memset(&media_player->data, 0, sizeof(mcs_media_player_data_t));
+    media_player->data.track_duration_10ms = 0xFFFFFFFF;
+}
+
+static media_control_service_server_t * msc_server_media_player_registered(uint16_t start_handle){
+	btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &mcs_media_players);
     while (btstack_linked_list_iterator_has_next(&it)){
         media_control_service_server_t * media_player = (media_control_service_server_t *)btstack_linked_list_iterator_next(&it);
@@ -172,7 +176,7 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
             media_player = msc_server_find_media_player_for_con_handle(con_handle);
-            mcs_server_reset_values(media_player);
+            mcs_server_reset_media_player(media_player);
             break;
         default:
             break;
@@ -181,7 +185,7 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 
 static uint16_t mcs_server_max_att_value_len(hci_con_handle_t con_handle){
 	uint16_t att_mtu = att_server_get_mtu(con_handle);
-    return (att_mtu >= 3) ? att_mtu - 3 : 0;
+    return (att_mtu >= 3) ? (att_mtu - 3) : 0;
 }
 
 static uint16_t mcs_server_max_value_len(hci_con_handle_t con_handle, uint16_t value_len){
@@ -361,26 +365,16 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 }
 
 void media_control_service_server_init(void){
-	mcs_media_player_counter = 0;
+    mcs_services_start_handle = 0;
+    mcs_media_player_counter = 0;
 	// get service handle range
 	mcs_media_players = NULL;
 }
 
-void media_control_service_server_register_packet_handler(btstack_packet_handler_t packet_handler){
-    btstack_assert(packet_handler != NULL);
-    mcs_server_callback = packet_handler;
-}
-
-static void mcs_server_reset_media_player(media_control_service_server_t * media_player){
-	media_player->con_handle = HCI_CON_HANDLE_INVALID;
-	
-	memset(&media_player->data, 0, sizeof(mcs_media_player_data_t));
-	media_player->data.track_duration_10ms = 0xFFFFFFFF;
-}
-
-uint8_t media_control_service_server_register_media_player(media_control_service_server_t * media_player, uint16_t * media_player_id){
+uint8_t media_control_service_server_register_media_player(media_control_service_server_t * media_player, btstack_packet_handler_t packet_handler, uint32_t media_control_point_opcodes_supported, uint16_t * media_player_id){
 	// search service with global start handle
 	btstack_assert(media_player != NULL);
+    btstack_assert(packet_handler != NULL);
 	
 
 	const uint16_t msc_characteristic_uuids[] = {
@@ -434,70 +428,74 @@ uint8_t media_control_service_server_register_media_player(media_control_service
 		"content_control_id                   "
 	};
 #endif
-
-	uint16_t start_handle = 0;
-	uint16_t end_handle   = 0xffff;
-
-	while (start_handle < 0xffff) {
-        int service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE, &start_handle, &end_handle);
-		
-        if (!service_found){
-            return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
-        }
-
-        media_control_service_server_t * media_player_registered = msc_server_media_player_registered(start_handle);
-        if (media_player_registered == NULL){
-			log_info("Found MCS service 0x%02x-0x%02x", start_handle, end_handle);
-
-#ifdef ENABLE_TESTING_SUPPORT
-        	printf("Found MCS service 0x%02x-0x%02x\n", start_handle, end_handle);
-#endif
-      		mcs_server_reset_media_player(media_player);
-			
-        	media_player->service.start_handle   = start_handle;
-			media_player->service.end_handle     = end_handle;
-        	
-        	// get characteristic value handles
-			uint16_t i;
-			for (i = 0; i < NUM_MCS_CHARACTERISTICS; i++){
-				media_player->characteristics[i].value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, msc_characteristic_uuids[i]);
-				media_player->characteristics[i].client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, msc_characteristic_uuids[i]);
-
-				if (media_player->characteristics[i].client_configuration_handle != 0){
-					start_handle = media_player->characteristics[i].client_configuration_handle + 1;
-				} else {
-					start_handle = media_player->characteristics[i].value_handle + 1;
-				}
-
-#ifdef ENABLE_TESTING_SUPPORT
-				printf("    %s      0x%02x\n", msc_characteristic_uuid_names[i], media_player->characteristics[i].value_handle);
-				if (media_player->characteristics[i].client_configuration_handle != 0){
-					printf("    %s CCC  0x%02x\n", msc_characteristic_uuid_names[i], media_player->characteristics[i].client_configuration_handle);
-				}
-#endif
-			}
-			
-			uint16_t player_id = msc_server_get_next_media_player_id();
-		    if (media_player_id != NULL) {
-		        *media_player_id = player_id;
-		    }
-
-			// register service with ATT Server
-			media_player->player_id = player_id;
-			media_player->service.read_callback  = &mcs_server_read_callback;
-			media_player->service.write_callback = &mcs_server_write_callback;
-			media_player->service.packet_handler = mcs_server_packet_handler;
-			att_server_register_service_handler(&media_player->service);
-			// add to media player list
-            start_handle = media_player->service.end_handle;
-			return btstack_linked_list_add(&mcs_media_players, (btstack_linked_item_t *)media_player);
-        }
-
-        // prepare for next service
-        start_handle = end_handle;
-        end_handle = 0xffff;
+    
+    if (mcs_services_start_handle == 0xffff) {
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
-	return ERROR_CODE_SUCCESS;
+	
+    uint16_t mcs_services_end_handle   = 0xffff;
+    bool     service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE, &mcs_services_start_handle, &mcs_services_end_handle);
+	
+    if (!service_found){
+        mcs_services_start_handle = 0xffff;
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+
+    media_control_service_server_t * media_player_registered = msc_server_media_player_registered(mcs_services_start_handle);
+    if (media_player_registered != NULL){
+        return ERROR_CODE_REPEATED_ATTEMPTS;
+    }
+
+	log_info("Found MCS service 0x%02x-0x%02x", mcs_services_start_handle, mcs_services_end_handle);
+
+#ifdef ENABLE_TESTING_SUPPORT
+	printf("Found MCS service 0x%02x-0x%02x\n", mcs_services_start_handle, mcs_services_end_handle);
+#endif
+	mcs_server_reset_media_player(media_player);
+	
+	media_player->service.start_handle   = mcs_services_start_handle;
+	media_player->service.end_handle     = mcs_services_end_handle;
+	media_player->data.media_control_point_opcodes_supported = media_control_point_opcodes_supported;
+	// get characteristic value handles
+	uint16_t i;
+	for (i = 0; i < NUM_MCS_CHARACTERISTICS; i++){
+		media_player->characteristics[i].value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(mcs_services_start_handle, mcs_services_end_handle, msc_characteristic_uuids[i]);
+		media_player->characteristics[i].client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(mcs_services_start_handle, mcs_services_end_handle, msc_characteristic_uuids[i]);
+
+		if (media_player->characteristics[i].client_configuration_handle != 0){
+            mcs_services_start_handle = media_player->characteristics[i].client_configuration_handle + 1;
+		} else {
+            mcs_services_start_handle = media_player->characteristics[i].value_handle + 1;
+		}
+
+#ifdef ENABLE_TESTING_SUPPORT
+		printf("    %s      0x%02x\n", msc_characteristic_uuid_names[i], media_player->characteristics[i].value_handle);
+		if (media_player->characteristics[i].client_configuration_handle != 0){
+			printf("    %s CCC  0x%02x\n", msc_characteristic_uuid_names[i], media_player->characteristics[i].client_configuration_handle);
+		}
+#endif
+	}
+	
+	uint16_t player_id = msc_server_get_next_media_player_id();
+    if (media_player_id != NULL) {
+        *media_player_id = player_id;
+    }
+
+    media_player->event_callback = packet_handler;
+
+	// register service with ATT Server
+	media_player->player_id = player_id;
+	media_player->service.read_callback  = &mcs_server_read_callback;
+	media_player->service.write_callback = &mcs_server_write_callback;
+	media_player->service.packet_handler = mcs_server_packet_handler;
+	att_server_register_service_handler(&media_player->service);
+	
+    // add to media player list
+    btstack_linked_list_add(&mcs_media_players, (btstack_linked_item_t *)media_player);
+
+    // prepare for the next service
+    mcs_services_start_handle = media_player->service.end_handle;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t media_control_service_server_set_media_player_name(uint16_t media_player_id, char * name){
