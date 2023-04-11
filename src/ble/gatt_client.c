@@ -1419,19 +1419,28 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
     switch (packet[0]) {
         case ATT_EXCHANGE_MTU_RESPONSE: {
             if (size < 3u) break;
+            bool update_att_mtu = true;
             uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
             uint16_t local_rx_mtu = l2cap_max_le_mtu();
+#ifdef ENABLE_GATT_OVER_CLASSIC
+            if (gatt_client->l2cap_psm != 0){
+                local_rx_mtu = gatt_client->mtu;
+            } else {
+                update_att_mtu = false;
+            }
+#endif
             uint16_t mtu = (remote_rx_mtu < local_rx_mtu) ? remote_rx_mtu : local_rx_mtu;
 
             // set gatt client mtu
             gatt_client->mtu = mtu;
             gatt_client->mtu_state = MTU_EXCHANGED;
 
-            // set per connection mtu state - for fixed channel
-            hci_connection_t *hci_connection = hci_connection_for_handle(gatt_client->con_handle);
-            hci_connection->att_connection.mtu = gatt_client->mtu;
-            hci_connection->att_connection.mtu_exchanged = true;
-
+            if (update_att_mtu){
+                // set per connection mtu state - for fixed channel
+                hci_connection_t *hci_connection = hci_connection_for_handle(gatt_client->con_handle);
+                hci_connection->att_connection.mtu = gatt_client->mtu;
+                hci_connection->att_connection.mtu_exchanged = true;
+            }
             emit_gatt_mtu_exchanged_result_event(gatt_client, gatt_client->mtu);
             break;
         }
@@ -2698,6 +2707,7 @@ static void gatt_client_l2cap_handler(uint8_t packet_type, uint16_t channel, uin
                     gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_opened_get_local_cid(packet));
                     btstack_assert(gatt_client != NULL);
                     gatt_client->con_handle = l2cap_event_channel_opened_get_handle(packet);
+                    gatt_client->mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
                     gatt_client_classic_handle_connected(gatt_client, status);
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     // TODO:
@@ -2708,7 +2718,6 @@ static void gatt_client_l2cap_handler(uint8_t packet_type, uint16_t channel, uin
             break;
         case L2CAP_DATA_PACKET:
             gatt_client = gatt_client_get_context_for_l2cap_cid(channel);
-            gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_opened_get_local_cid(packet));
             btstack_assert(gatt_client != NULL);
             log_info("l2cap data received");
             break;
@@ -2815,11 +2824,7 @@ uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t
     memcpy(gatt_client->addr, addr, 6);
     gatt_client->mtu = ATT_DEFAULT_MTU;
     gatt_client->security_level = LEVEL_0;
-    if (gatt_client_mtu_exchange_enabled){
-        gatt_client->mtu_state = SEND_MTU_EXCHANGE;
-    } else {
-        gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
-    }
+    gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
     gatt_client->gatt_client_state = P_W2_SDP_QUERY;
     gatt_client->sdp_query_request.callback = &gatt_client_classic_sdp_start;
     gatt_client->sdp_query_request.context = gatt_client;
