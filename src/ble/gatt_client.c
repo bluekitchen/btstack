@@ -44,7 +44,6 @@
 #include "btstack_config.h"
 
 #include "ble/att_dispatch.h"
-#include "ad_parser.h"
 #include "ble/att_db.h"
 #include "ble/gatt_client.h"
 #include "ble/le_device_db.h"
@@ -820,32 +819,32 @@ static uint8_t * setup_long_characteristic_value_packet(uint8_t type, hci_con_ha
 }
 
 // test if notification/indication should be delivered to application (BLESA)
-static bool gatt_client_accept_server_message(hci_con_handle_t con_handle){
+static bool gatt_client_accept_server_message(gatt_client_t *gatt_client) {
 #ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
 	// ignore messages until re-encryption is complete
-    if (gap_reconnect_security_setup_active(con_handle)) return false;
+    if (gap_reconnect_security_setup_active(gatt_client->con_handle)) return false;
 
 	// after that ignore if bonded but not encrypted
-	return !gap_bonded(con_handle) || (gap_encryption_key_size(con_handle) > 0);
+	return !gap_bonded(gatt_client->con_handle) || (gap_encryption_key_size(gatt_client->con_handle) > 0);
 #else
-    UNUSED(con_handle);
+    UNUSED(gatt_client);
 	return true;
 #endif
 }
 
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
-static void report_gatt_notification(hci_con_handle_t con_handle, uint16_t value_handle, uint8_t * value, int length){
-	if (!gatt_client_accept_server_message(con_handle)) return;
-    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_NOTIFICATION, con_handle, value_handle, value, length);
-    emit_event_to_registered_listeners(con_handle, value_handle, packet, characteristic_value_event_header_size + length);
+static void report_gatt_notification(gatt_client_t *gatt_client, uint16_t value_handle, uint8_t *value, int length) {
+	if (!gatt_client_accept_server_message(gatt_client)) return;
+    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_NOTIFICATION, gatt_client->con_handle, value_handle, value, length);
+    emit_event_to_registered_listeners(gatt_client->con_handle, value_handle, packet, characteristic_value_event_header_size + length);
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
-static void report_gatt_indication(hci_con_handle_t con_handle, uint16_t value_handle, uint8_t * value, int length){
-	if (!gatt_client_accept_server_message(con_handle)) return;
-    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_INDICATION, con_handle, value_handle, value, length);
-    emit_event_to_registered_listeners(con_handle, value_handle, packet, characteristic_value_event_header_size + length);
+static void report_gatt_indication(gatt_client_t *gatt_client, uint16_t value_handle, uint8_t *value, int length) {
+	if (!gatt_client_accept_server_message(gatt_client)) return;
+    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_INDICATION, gatt_client->con_handle, value_handle, value, length);
+    emit_event_to_registered_listeners(gatt_client->con_handle, value_handle, packet, characteristic_value_event_header_size + length);
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
@@ -1405,12 +1404,9 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
 
     if (packet_type != ATT_DATA_PACKET) return;
 
-    // special cases: notifications don't need a context while indications motivate creating one
+    // special cases: notifications & indications motivate creating context
     switch (packet[0]){
         case ATT_HANDLE_VALUE_NOTIFICATION:
-            if (size < 3u) return;
-            report_gatt_notification(handle, little_endian_read_16(packet,1u), &packet[3], size-3u);
-            return;                
         case ATT_HANDLE_VALUE_INDICATION:
             gatt_client_provide_context_for_handle(handle, &gatt_client);
             break;
@@ -1453,9 +1449,13 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     break;
             }
             break;
+        case ATT_HANDLE_VALUE_NOTIFICATION:
+            if (size < 3u) return;
+            report_gatt_notification(gatt_client, little_endian_read_16(packet, 1u), &packet[3], size - 3u);
+            return;
         case ATT_HANDLE_VALUE_INDICATION:
             if (size < 3u) break;
-            report_gatt_indication(handle, little_endian_read_16(packet,1u), &packet[3], size-3u);
+            report_gatt_indication(gatt_client, little_endian_read_16(packet, 1u), &packet[3], size - 3u);
             gatt_client->send_confirmation = 1;
             break;
             
