@@ -123,6 +123,10 @@ typedef struct {
     int8_t playback_speed;
     int8_t seeking_speed;
 
+    uint32_t media_control_point_opcodes_supported;
+    media_control_point_opcode_t      media_control_point_requested_opcode;
+    media_control_point_error_code_t  media_control_point_result_code;
+
     mcs_media_state_t media_state;
 } mcs_media_player_data_t;
 

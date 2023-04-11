@@ -222,6 +222,15 @@ static void mcs_server_can_send_now(void * context){
     	uint16_t value_len = mcs_server_max_value_len(media_player->con_handle, strlen(media_player->data.track_title));
         att_server_notify(media_player->con_handle, value_handle, (uint8_t *)media_player->data.track_title, value_len);
     
+    } else if ((media_player->scheduled_tasks & MEDIA_CONTROL_POINT) != 0){
+        media_player->scheduled_tasks &= ~MEDIA_CONTROL_POINT;
+        value_handle = media_player->characteristics[MEDIA_CONTROL_POINT].value_handle;
+       
+        uint8_t value[2];
+        value[0] = media_player->data.media_control_point_requested_opcode;
+        value[1] = media_player->data.media_control_point_result_code;
+        
+        att_server_notify(media_player->con_handle, value_handle, (uint8_t *)value, sizeof(value));
     }
 
     if (media_player->scheduled_tasks != 0){
@@ -264,6 +273,13 @@ static bool mcs_server_can_schedule_task(media_control_service_server_t * media_
 				media_player->scheduled_tasks |= TRACK_DURATION;
 			}
 			break;
+
+        case MEDIA_CONTROL_POINT:
+            break;
+
+        case SEARCH_CONTROL_POINT:
+            break;
+
 		default:
 			break;
     }
@@ -341,6 +357,8 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 	
 	handle_type_t type;
 	msc_characteristic_id_t characteristic_id = msc_server_find_index_for_attribute_handle(media_player, attribute_handle, &type);
+    media_control_point_opcode_t  media_control_point_opcode;
+    search_control_point_opcode_t search_control_point_opcode;
 
 	switch (type){
 		case HANDLE_TYPE_CHARACTERISTIC_CCD:
@@ -358,6 +376,116 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 				mcs_server_schedule_task(media_player, characteristic_id);
 			}
 			break;
+        case SEARCH_CONTROL_POINT:
+            if (buffer_size == 0){
+                return 0;
+            }
+            search_control_point_opcode = buffer[0];
+
+            switch (search_control_point_opcode){  
+                case SEARCH_CONTROL_POINT_OPCODE_TRACK_NAME:
+                    break;
+                case SEARCH_CONTROL_POINT_OPCODE_ARTIST_NAME:
+                    break;
+                case SEARCH_CONTROL_POINT_OPCODE_ALBUM_NAME:
+                    break;
+                case SEARCH_CONTROL_POINT_OPCODE_GROUP_NAME:
+                    break;
+                case SEARCH_CONTROL_POINT_OPCODE_EARLIEST_YEAR:
+                    break;
+                case SEARCH_CONTROL_POINT_OPCODE_LATEST_YEAR:
+                    break;
+                case SEARCH_CONTROL_POINT_OPCODE_GENRE:
+                    break;
+                case SEARCH_CONTROL_POINT_OPCODE_ONLY_TRACKS:
+                    break;
+                case SEARCH_CONTROL_POINT_OPCODE_ONLY_GROUPS:
+                    break;
+                default:
+                    break;
+            }
+            break;
+        
+        case MEDIA_CONTROL_POINT:
+            if (buffer_size == 0){
+                return 0;
+            }
+            media_player->data.media_control_point_requested_opcode = (media_control_point_opcode_t) buffer[0];
+            media_player->data.media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS;
+
+            if ( (media_control_point_opcode < MEDIA_CONTROL_POINT_OPCODE_PLAY) || 
+                (media_control_point_opcode >= MEDIA_CONTROL_POINT_OPCODE_RFU)  ||
+                ((media_player->data.media_control_point_opcodes_supported & (1 << media_control_point_opcode)) != 0)){
+
+                media_player->data.media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_OPCODE_NOT_SUPPORTED;
+                if (mcs_server_can_schedule_task(media_player, characteristic_id)){
+                    mcs_server_schedule_task(media_player, characteristic_id);
+                }
+                break;
+            } 
+
+            if (media_player->data.media_state >= MCS_MEDIA_STATE_RFU){
+                media_player->data.media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_COMMAND_CANNOT_BE_COMPLETED;
+                if (mcs_server_can_schedule_task(media_player, characteristic_id)){
+                    mcs_server_schedule_task(media_player, characteristic_id);
+                }
+                break;
+            }
+            
+            // TODO event to with with inactive state
+            if (media_player->data.media_state == MCS_MEDIA_STATE_INACTIVE){
+                break;
+            }
+
+            
+            switch (media_player->data.media_control_point_requested_opcode){
+                case MEDIA_CONTROL_POINT_OPCODE_PLAY:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_PAUSE:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_STOP:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_SEGMENT:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_NEXT_SEGMENT:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_FIRST_SEGMENT:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_TRACK:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_NEXT_TRACK:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_LAST_TRACK:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
+                    break;
+                case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
+                    break;
+                default:
+                    break;
+            }
+            
+            break;
 		default:
 			break;
 	}
