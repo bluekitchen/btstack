@@ -352,6 +352,51 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 			value_size = strlen(media_player->data.icon_url);
 			return att_read_callback_handle_blob((const uint8_t *)media_player->data.icon_url, value_size, offset, buffer, buffer_size);
 
+        case TRACK_DURATION:
+            return att_read_callback_handle_little_endian_32(media_player->data.track_duration_10ms, offset, buffer, buffer_size);
+    
+        case TRACK_POSITION:
+            return att_read_callback_handle_little_endian_32(media_player->data.track_position_10ms, offset, buffer, buffer_size);
+
+        case PLAYBACK_SPEED:
+            return att_read_callback_handle_byte(media_player->data.playback_speed, offset, buffer, buffer_size);
+
+        case SEEKING_SPEED:
+            return att_read_callback_handle_byte(media_player->data.seeking_speed, offset, buffer, buffer_size);
+
+        case CURRENT_TRACK_SEGMENTS_OBJECT_ID:
+            return att_read_callback_handle_blob((const uint8_t *)media_player->data.current_track_segments_object_id, 6, offset, buffer, buffer_size);
+
+        case CURRENT_TRACK_OBJECT_ID:
+            return att_read_callback_handle_blob((const uint8_t *)media_player->data.current_track_object_id, 6, offset, buffer, buffer_size);
+
+        case NEXT_TRACK_OBJECT_ID:
+            return att_read_callback_handle_blob((const uint8_t *)media_player->data.next_track_object_id, 6, offset, buffer, buffer_size);
+
+        case PARENT_GROUP_OBJECT_ID:
+            return att_read_callback_handle_blob((const uint8_t *)media_player->data.parent_group_object_id, 6, offset, buffer, buffer_size);
+
+        case CURRENT_GROUP_OBJECT_ID:
+            return att_read_callback_handle_blob((const uint8_t *)media_player->data.current_group_object_id, 6, offset, buffer, buffer_size);
+
+        case PLAYING_ORDER:
+            return att_read_callback_handle_byte(media_player->data.playing_order, offset, buffer, buffer_size);
+
+        case PLAYING_ORDERS_SUPPORTED:
+            return att_read_callback_handle_little_endian_16(media_player->data.playing_orders_supported, offset, buffer, buffer_size);
+
+        case MEDIA_STATE:
+            return att_read_callback_handle_byte((uint8_t)media_player->data.media_state, offset, buffer, buffer_size);
+
+        case MEDIA_CONTROL_POINT_OPCODES_SUPPORTED:
+            return att_read_callback_handle_little_endian_32(media_player->data.media_control_point_opcodes_supported, offset, buffer, buffer_size);
+
+        case SEARCH_RESULTS_OBJECT_ID:
+            return att_read_callback_handle_blob((const uint8_t *)media_player->data.search_results_object_id, 6, offset, buffer, buffer_size);
+
+        case CONTENT_CONTROL_ID:
+            return att_read_callback_handle_byte(media_player->data.content_control_id, offset, buffer, buffer_size);
+
         default:
 			break;
 	}
@@ -724,6 +769,60 @@ uint8_t media_control_service_server_set_seeking_speed(uint16_t media_player_id,
 		mcs_server_schedule_task(media_player, SEEKING_SPEED);
 	}
 	return ERROR_CODE_SUCCESS;
+}
+
+uint8_t media_control_service_server_set_playing_orders_supported(uint16_t media_player_id, uint16_t playing_orders_supported){
+    media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if ((playing_orders_supported & 0xFC00) > 0){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+
+    media_player->data.playing_orders_supported = playing_orders_supported;
+    if (mcs_server_can_schedule_task(media_player, PLAYING_ORDERS_SUPPORTED)){
+        mcs_server_schedule_task(media_player, PLAYING_ORDERS_SUPPORTED);
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t media_control_service_server_support_playing_order(uint16_t media_player_id, playing_order_t playing_order){
+    media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if ((playing_order == PLAYING_ORDER_START_GROUP) || (playing_order >= PLAYING_ORDER_RFU)){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+
+    media_player->data.playing_orders_supported |= 1 << ((uint8_t)playing_order - 1);
+
+    if (mcs_server_can_schedule_task(media_player, PLAYING_ORDERS_SUPPORTED)){
+        mcs_server_schedule_task(media_player, PLAYING_ORDERS_SUPPORTED);
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t media_control_service_server_set_playing_order(uint16_t media_player_id, playing_order_t playing_order){
+    media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if ((playing_order == PLAYING_ORDER_START_GROUP) || (playing_order >= PLAYING_ORDER_RFU)){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+
+    if ((media_player->data.playing_orders_supported & (1 << ((uint8_t)playing_order - 1))) == 0){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+
+    media_player->data.playing_order = playing_order;
+
+    if (mcs_server_can_schedule_task(media_player, PLAYING_ORDERS_SUPPORTED)){
+        mcs_server_schedule_task(media_player, PLAYING_ORDERS_SUPPORTED);
+    }
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t media_control_service_server_set_media_state(uint16_t media_player_id, mcs_media_state_t media_state){
