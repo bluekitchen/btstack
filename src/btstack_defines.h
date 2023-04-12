@@ -5382,6 +5382,16 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION_RESULT         0x97u
 
+/**
+ * @format 1H14
+ * @param subevent_code
+ * @param con_handle
+ * @param opcode
+ * @param data
+ */
+#define GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK           0x98u
+
+
 // MAP Meta Event Group
 
 /**
