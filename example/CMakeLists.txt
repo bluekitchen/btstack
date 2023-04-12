@@ -54,6 +54,7 @@ set(EXAMPLES_LE_ONLY
 	hog_keyboard_demo      
 	hog_mouse_demo
 	le_audio_unicast_gateway
+	le_audio_unicast_headset
 	le_credit_based_flow_control_mode_client 
 	le_credit_based_flow_control_mode_server 
 	le_mitm
@@ -89,6 +90,7 @@ set(EXAMPLES_GATT_FILES
 	hog_keyboard_demo.gatt     
 	hog_mouse_demo.gatt
 	le_audio_unicast_gateway.gatt
+	le_audio_unicast_headset.gatt
 	le_credit_based_flow_control_mode_server.gatt
 	nordic_spp_le_counter.gatt 
 	nordic_spp_le_streamer.gatt
