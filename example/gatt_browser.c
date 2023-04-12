@@ -79,7 +79,7 @@ typedef struct advertising_report {
 static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
-static hci_con_handle_t connection_handler;
+static hci_con_handle_t connection_handle;
 static gatt_client_service_t services[40];
 static int service_count = 0;
 static int service_index = 0;
@@ -203,9 +203,10 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
         case HCI_EVENT_LE_META:
             // wait for connection complete
             if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-            connection_handler = hci_subevent_le_connection_complete_get_connection_handle(packet);
+            printf("\nGATT browser - CONNECTED\n");
+            connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
             // query primary services
-            gatt_client_discover_primary_services(handle_gatt_client_event, connection_handler);
+            gatt_client_discover_primary_services(handle_gatt_client_event, connection_handle);
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             printf("\nGATT browser - DISCONNECTED\n");
@@ -252,7 +253,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 service = services[service_index++];
                 printf("\nGATT browser - CHARACTERISTIC for SERVICE %s, [0x%04x-0x%04x]\n",
                     uuid128_to_str(service.uuid128), service.start_group_handle, service.end_group_handle);
-                gatt_client_discover_characteristics_for_service(handle_gatt_client_event, connection_handler, &service);
+                gatt_client_discover_characteristics_for_service(handle_gatt_client_event, connection_handle, &service);
                 break;
             }
             service_index = 0;
@@ -263,17 +264,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 }
 /* LISTING_END */
 
-#ifdef HAVE_BTSTACK_STDIN
-static void usage(const char *name){
-	fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
-	fprintf(stderr, "If no argument is provided, GATT browser will start scanning and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
-}
-#endif
-
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
 #ifdef HAVE_BTSTACK_STDIN
+    // process command line arguments when running in a shell
     int arg = 1;
     cmdline_addr_found = 0;
     
@@ -284,7 +279,8 @@ int btstack_main(int argc, const char * argv[]){
             arg++;
             continue;
         }
-        usage(argv[0]);
+        fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", argv[0]);
+        fprintf(stderr, "If no argument is provided, GATT browser will start scanning and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
         return 0;
 	}
 #else
