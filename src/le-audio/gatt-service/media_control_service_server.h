@@ -123,6 +123,17 @@ typedef struct {
     int8_t playback_speed;
     int8_t seeking_speed;
 
+    uint8_t current_track_segments_object_id[6];
+    uint8_t current_track_object_id[6];
+    uint8_t next_track_object_id[6];
+    uint8_t parent_group_object_id[6];
+    uint8_t current_group_object_id[6];
+    uint8_t search_results_object_id[6];
+    uint8_t content_control_id;
+
+    playing_order_t playing_order;
+    uint16_t playing_orders_supported;
+
     uint32_t media_control_point_opcodes_supported;
     media_control_point_opcode_t      media_control_point_requested_opcode;
     media_control_point_error_code_t  media_control_point_result_code;
