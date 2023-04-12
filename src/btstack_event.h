@@ -17624,6 +17624,34 @@ static inline uint8_t gattservice_subevent_mcs_client_search_control_point_notif
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_mcs_server_media_control_point_notification_task_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field opcode from event GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK
+ * @param event packet
+ * @return opcode
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_server_media_control_point_notification_task_get_opcode(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field data from event GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK
+ * @param event packet
+ * @return data
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid
