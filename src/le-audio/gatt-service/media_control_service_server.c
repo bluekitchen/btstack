@@ -77,7 +77,9 @@ static void mcs_server_reset_media_player(media_control_service_server_t * media
     media_player->con_handle = HCI_CON_HANDLE_INVALID;
     
     memset(&media_player->data, 0, sizeof(mcs_media_player_data_t));
-    media_player->data.track_duration_10ms = 0xFFFFFFFF;
+    media_player->data.track_duration_10ms = 0xFFFFFFFF;    
+    media_player->data.track_position_10ms = 0xFFFFFFFF;       
+    media_player->data.track_position_offset_10ms = 0xFFFFFFFF;
 }
 
 static media_control_service_server_t * msc_server_media_player_registered(uint16_t start_handle){
@@ -142,23 +144,30 @@ static msc_characteristic_id_t msc_server_find_index_for_attribute_handle(media_
 	btstack_assert(false);
 }
 
+static void mcs_server_emit_notification_task(media_control_service_server_t * media_player, media_control_point_opcode_t opcode, uint8_t * buffer, uint16_t buffer_size){
+    btstack_assert(media_player->event_callback != NULL);
+    
+    uint8_t event[10];
+    memset(event, 0, sizeof(event));
 
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK;
+    little_endian_store_16(event, pos, media_player->con_handle);
+    pos += 2;
+    event[pos++] = (uint8_t)opcode;
+
+    if (buffer_size == 4){
+        reverse_bytes(buffer, &event[pos], 4);
+    }
+
+    (*media_player->event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
 
 static void mcs_server_set_con_handle(media_control_service_server_t * media_player, uint16_t characteristic_index, hci_con_handle_t con_handle, uint16_t configuration){
     media_player->characteristics[characteristic_index].client_configuration = configuration;
     media_player->con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
-}
-
-static void mcs_server_reset_values(media_control_service_server_t * media_player){
-	if (media_player == NULL){
-		return;
-	}
-    media_player->con_handle = HCI_CON_HANDLE_INVALID;
-    
-    uint8_t i;
-	for (i = 0; i < NUM_MCS_CHARACTERISTICS; i++){
-		media_player->characteristics[i].client_configuration = 0;
-	}
 }
 
 static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -176,7 +185,9 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
             media_player = msc_server_find_media_player_for_con_handle(con_handle);
-            mcs_server_reset_media_player(media_player);
+            if (media_player != NULL){
+                mcs_server_reset_media_player(media_player);
+            }
             break;
         default:
             break;
@@ -327,6 +338,8 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 	}
 
 	uint16_t value_size = 0;
+    
+
 	switch (characteristic_id){
 		case MEDIA_PLAYER_NAME: 
 			value_size = btstack_min(strlen(media_player->data.name), mcs_server_max_att_value_len(con_handle));
@@ -357,7 +370,9 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 	
 	handle_type_t type;
 	msc_characteristic_id_t characteristic_id = msc_server_find_index_for_attribute_handle(media_player, attribute_handle, &type);
-    media_control_point_opcode_t  media_control_point_opcode;
+    media_control_point_opcode_t      media_control_point_opcode;
+    media_control_point_error_code_t  media_control_point_result_code;
+
     search_control_point_opcode_t search_control_point_opcode;
 
 	switch (type){
@@ -410,81 +425,46 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             if (buffer_size == 0){
                 return 0;
             }
-            media_player->data.media_control_point_requested_opcode = (media_control_point_opcode_t) buffer[0];
-            media_player->data.media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS;
+            media_control_point_opcode      = (media_control_point_opcode_t) buffer[0];
+            media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS;
 
             if ( (media_control_point_opcode < MEDIA_CONTROL_POINT_OPCODE_PLAY) || 
                 (media_control_point_opcode >= MEDIA_CONTROL_POINT_OPCODE_RFU)  ||
                 ((media_player->data.media_control_point_opcodes_supported & (1 << media_control_point_opcode)) != 0)){
 
-                media_player->data.media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_OPCODE_NOT_SUPPORTED;
+                media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_OPCODE_NOT_SUPPORTED;
+                
+            } else if (media_player->data.media_state >= MCS_MEDIA_STATE_RFU){
+                media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_COMMAND_CANNOT_BE_COMPLETED;
+            } else {
+                switch (media_player->data.media_control_point_requested_opcode){
+                    case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
+                    case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
+                    case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
+                    case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
+                        if ((buffer == NULL) || (buffer_size != 5)){
+                            media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_COMMAND_CANNOT_BE_COMPLETED;
+                        }
+                        break;
+                    default:
+                        if (buffer_size != 1){
+                            media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_COMMAND_CANNOT_BE_COMPLETED;
+                        }
+                        break;
+                }
+            }
+
+            if (media_control_point_result_code != MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS){
+                media_player->data.media_control_point_requested_opcode = media_control_point_opcode;
+                media_player->data.media_control_point_result_code      = media_control_point_result_code;
+
                 if (mcs_server_can_schedule_task(media_player, characteristic_id)){
                     mcs_server_schedule_task(media_player, characteristic_id);
                 }
-                break;
-            } 
 
-            if (media_player->data.media_state >= MCS_MEDIA_STATE_RFU){
-                media_player->data.media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_COMMAND_CANNOT_BE_COMPLETED;
-                if (mcs_server_can_schedule_task(media_player, characteristic_id)){
-                    mcs_server_schedule_task(media_player, characteristic_id);
-                }
-                break;
+            } else {
+                mcs_server_emit_notification_task(media_player, media_control_point_opcode, &buffer[1], buffer_size - 1);
             }
-            
-            // TODO event to with with inactive state
-            if (media_player->data.media_state == MCS_MEDIA_STATE_INACTIVE){
-                break;
-            }
-
-            
-            switch (media_player->data.media_control_point_requested_opcode){
-                case MEDIA_CONTROL_POINT_OPCODE_PLAY:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_PAUSE:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_STOP:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_SEGMENT:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_NEXT_SEGMENT:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_FIRST_SEGMENT:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_TRACK:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_NEXT_TRACK:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_LAST_TRACK:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
-                    break;
-                case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
-                    break;
-                default:
-                    break;
-            }
-            
             break;
 		default:
 			break;

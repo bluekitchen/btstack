@@ -152,7 +152,11 @@ typedef struct {
  */
 void media_control_service_server_init(void);
 
-uint8_t media_control_service_server_register_media_player(media_control_service_server_t * media_player, btstack_packet_handler_t packet_handler, uint32_t media_control_point_opcodes_supported, uint16_t * media_player_id);
+uint8_t media_control_service_server_register_media_player(
+    media_control_service_server_t * media_player, 
+    btstack_packet_handler_t packet_handler, 
+    uint32_t media_control_point_opcodes_supported, 
+    uint16_t * media_player_id);
 
 uint8_t media_control_service_server_set_media_player_name(uint16_t media_player_id, char * name);
 
@@ -168,6 +172,11 @@ uint8_t media_control_service_server_set_track_duration(uint16_t media_player_id
 uint8_t media_control_service_server_set_track_position_offset(uint16_t media_player_id, int32_t track_position_offset_10ms);
 uint8_t media_control_service_server_set_playback_speed(uint16_t media_player_id, int8_t playback_speed);
 uint8_t media_control_service_server_set_seeking_speed( uint16_t media_player_id, int8_t seeking_speed);
+
+uint8_t media_control_service_server_set_playing_orders_supported(uint16_t media_player_id, uint16_t playing_orders_supported);
+uint8_t media_control_service_server_support_playing_order(uint16_t media_player_id, playing_order_t playing_order);
+uint8_t media_control_service_server_set_playing_order(uint16_t media_player_id, playing_order_t playing_order);
+
 
 uint8_t media_control_service_server_set_media_state(uint16_t media_player_id, mcs_media_state_t media_state);
 

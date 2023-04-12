@@ -901,22 +901,28 @@ int btstack_main(void)
 
     // setup MCS
     media_control_service_server_init();
-    audio_stream_control_service_server_register_packet_handler(&mcs_server_packet_handler);
 
     uint8_t icon_object_id[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
     char * icon_url = "https://www.bluetooth.com/";
 
-    media_control_service_server_register_media_player(&media_player1, &media_player_id1);
+    media_control_service_server_register_media_player(&media_player1, 
+        &mcs_server_packet_handler, 0xFFFF, 
+        &media_player_id1);
     media_control_service_server_set_media_player_name(media_player_id1, "BK Player1");
     media_control_service_server_set_icon_object_id(media_player_id1, icon_object_id, sizeof(icon_object_id));
     media_control_service_server_set_icon_url(media_player_id1, icon_url);
     media_control_service_server_set_track_title(media_player_id1, "Track Title 1");
+    media_control_service_server_set_playing_orders_supported(media_player_id1, 0x3FF);
+    media_control_service_server_set_playing_order(media_player_id1, PLAYING_ORDER_IN_ORDER_ONCE);
 
-    media_control_service_server_register_media_player(&media_player2, &media_player_id2);
+    media_control_service_server_register_media_player(&media_player2, 
+        &mcs_server_packet_handler, 0xFFFF, &media_player_id2);
     media_control_service_server_set_media_player_name(media_player_id2, "BK Player2");
     media_control_service_server_set_icon_object_id(media_player_id2, icon_object_id, sizeof(icon_object_id));
     media_control_service_server_set_icon_url(media_player_id2, icon_url);
     media_control_service_server_set_track_title(media_player_id2, "");
+    media_control_service_server_set_playing_orders_supported(media_player_id2, 0x3FF);
+    media_control_service_server_set_playing_order(media_player_id2, PLAYING_ORDER_IN_ORDER_ONCE);
 
     coordinated_set_identification_service_server_init(CSIS_COORDINATORS_MAX_NUM, &csis_coordiantors[0], CSIS_COORDINATORS_MAX_NUM, 1);
     coordinated_set_identification_service_server_register_packet_handler(&csis_server_packet_handler);
