@@ -1,0 +1,19 @@
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "LE Audio Unicast Sink"
+
+// Published Audio Capabilities Service
+#import <published_audio_capabilities_service.gatt>
+
+// Volume Control Service
+#import <volume_control_service.gatt>
+
+// Coordinated Set Identification Service
+#import <coordinated_set_identification_service.gatt>
+
+// Audio Stream Control Service 0x184E
+PRIMARY_SERVICE, ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE
+CHARACTERISTIC,  ORG_BLUETOOTH_CHARACTERISTIC_SINK_ASE           , DYNAMIC | READ  | NOTIFY  |      ENCRYPTION_KEY_SIZE_16,
+CHARACTERISTIC,  ORG_BLUETOOTH_CHARACTERISTIC_ASE_CONTROL_POINT  , DYNAMIC | WRITE | WRITE_WITHOUT_RESPONSE | NOTIFY  |  ENCRYPTION_KEY_SIZE_16,
+
+// Media Control Service
+#import <media_control_service.gatt>
