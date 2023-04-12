@@ -21,7 +21,7 @@ endif()
 find_package(PkgConfig QUIET)
 
 # portaudio
-if (PgConfig_FOUND)
+if (PkgConfig_FOUND)
 	pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 	if(PORTAUDIO_FOUND)
 		message("HAVE_PORTAUDIO")
