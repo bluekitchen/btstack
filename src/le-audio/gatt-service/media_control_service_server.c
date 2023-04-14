@@ -168,6 +168,23 @@ static msc_characteristic_id_t msc_server_find_index_for_attribute_handle(media_
 	btstack_assert(false);
 }
 
+static void mcs_server_emit_media_value_changed(media_control_service_server_t * media_player, msc_characteristic_id_t characteristic_id){
+    btstack_assert(media_player->event_callback != NULL);
+    
+    uint8_t event[6];
+    memset(event, 0, sizeof(event));
+
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED;
+    little_endian_store_16(event, pos, media_player->con_handle);
+    pos += 2;
+    event[pos++] = characteristic_id;
+
+    (*media_player->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
 static void mcs_server_emit_notification_task(media_control_service_server_t * media_player, media_control_point_opcode_t opcode, uint8_t * buffer, uint16_t buffer_size){
     btstack_assert(media_player->event_callback != NULL);
     
@@ -314,7 +331,7 @@ static void mcs_server_can_send_now(void * context){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_NEXT_TRACK_OBJECT_ID;
         
         att_server_notify(media_player->con_handle, 
-            media_player->characteristics[next_track_object_id].value_handle, 
+            media_player->characteristics[NEXT_TRACK_OBJECT_ID].value_handle, 
             media_player->data.next_track_object_id, 
             sizeof(media_player->data.next_track_object_id));
     
@@ -568,15 +585,70 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 			break;
 	}
 
+    playing_order_t playing_order;
+
     switch (characteristic_id){
 		case MEDIA_PLAYER_NAME: 
 			btstack_strcpy(media_player->data.name, sizeof(media_player->data.name), (const char *)buffer);
-			mcs_server_schedule_task(media_player, characteristic_id);
-			
+			mcs_server_emit_media_value_changed(media_player, characteristic_id);
 			break;
+
+        case TRACK_POSITION:
+            if (buffer_size != 4){
+                break;
+            }
+            media_player->data.track_position_10ms = (int32_t) little_endian_read_32(buffer, 0);
+            mcs_server_emit_media_value_changed(media_player, characteristic_id);
+            break;
+        
+        case PLAYBACK_SPEED:
+            if (buffer_size != 1){
+                break;
+            }
+            media_player->data.playback_speed = (int8_t)buffer[0]; 
+            mcs_server_emit_media_value_changed(media_player, characteristic_id);
+            break;
+
+        case CURRENT_TRACK_OBJECT_ID:
+            if (buffer_size != 6){
+                break;
+            }
+            reverse_64(buffer, media_player->data.current_track_object_id);
+            mcs_server_emit_media_value_changed(media_player, characteristic_id);
+            break;
+        
+        case NEXT_TRACK_OBJECT_ID:
+            if (buffer_size != 6){
+                break;
+            }
+            reverse_64(buffer, media_player->data.next_track_object_id);
+            mcs_server_emit_media_value_changed(media_player, characteristic_id);
+            break;
+
+        case CURRENT_GROUP_OBJECT_ID:
+            if (buffer_size != 6){
+                break;
+            }
+            reverse_64(buffer, media_player->data.current_group_object_id);
+            mcs_server_emit_media_value_changed(media_player, characteristic_id);
+            break;
+
+        case PLAYING_ORDER:
+            if (buffer_size != 1){
+                break;
+            }
+            playing_order = (playing_order_t)buffer[0]; 
+
+            if (playing_order == PLAYING_ORDER_START_GROUP || playing_order >= PLAYING_ORDER_RFU){
+                break;
+            }
+            media_player->data.playing_order = playing_order;
+            mcs_server_emit_media_value_changed(media_player, characteristic_id);
+            break;
+
         case SEARCH_CONTROL_POINT:
             if (buffer_size == 0){
-                return 0;
+                break;
             }
             search_control_point_opcode = buffer[0];
 
