@@ -17652,6 +17652,25 @@ static inline uint32_t gattservice_subevent_mcs_server_media_control_point_notif
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_mcs_server_value_changed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field characteristic_id from event GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED
+ * @param event packet
+ * @return characteristic_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_server_value_changed_get_characteristic_id(const uint8_t * event){
+    return event[5];
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid
