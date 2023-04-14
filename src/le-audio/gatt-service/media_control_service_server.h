@@ -57,9 +57,9 @@ extern "C" {
  * To use with your application, add `#import <media_control_service.gatt>` to your .gatt file. 
  */
 
-#define MEDIA_CONTROL_SERVICE_MEDIA_PLAYER_NAME_MAX_LENGTH          20
-#define MEDIA_CONTROL_SERVICE_ICON_URL_MAX_LENGTH                   30
-#define MEDIA_CONTROL_SERVICE_TRACK_TITLE_MAX_LENGTH                30
+#define MEDIA_CONTROL_SERVICE_MEDIA_PLAYER_NAME_MAX_LENGTH          50
+#define MEDIA_CONTROL_SERVICE_ICON_URL_MAX_LENGTH                   50
+#define MEDIA_CONTROL_SERVICE_TRACK_TITLE_MAX_LENGTH                50
 
 typedef enum {
     MEDIA_PLAYER_NAME = 0,                    
@@ -115,9 +115,9 @@ typedef struct {
     char icon_url[MEDIA_CONTROL_SERVICE_ICON_URL_MAX_LENGTH];
     char track_title[MEDIA_CONTROL_SERVICE_TRACK_TITLE_MAX_LENGTH];
 
-    uint32_t track_duration_10ms;        // 0xFFFFFFFF unknown, or not set
+    uint32_t track_duration_10ms;               // 0xFFFFFFFF unknown, or not set
     
-    uint32_t track_position_10ms;        // 0xFFFFFFFF unknown, or not set
+    uint32_t track_position_10ms;               // 0xFFFFFFFF unknown, or not set
     uint32_t track_position_offset_10ms;        // 0xFFFFFFFF unknown, or not set
 
     int8_t playback_speed;
