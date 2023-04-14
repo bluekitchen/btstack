@@ -108,13 +108,16 @@ typedef struct {
 /* API_START */
 typedef struct {
     char name[MEDIA_CONTROL_SERVICE_MEDIA_PLAYER_NAME_MAX_LENGTH];
+    bool name_value_changed;
+    
+    char track_title[MEDIA_CONTROL_SERVICE_TRACK_TITLE_MAX_LENGTH];
+    bool track_title_value_changed;
 
     uint8_t icon_object_id_len;
     uint8_t icon_object_id[6];
 
     char icon_url[MEDIA_CONTROL_SERVICE_ICON_URL_MAX_LENGTH];
-    char track_title[MEDIA_CONTROL_SERVICE_TRACK_TITLE_MAX_LENGTH];
-
+    
     uint32_t track_duration_10ms;               // 0xFFFFFFFF unknown, or not set
     
     uint32_t track_position_10ms;               // 0xFFFFFFFF unknown, or not set
