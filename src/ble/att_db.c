@@ -203,11 +203,11 @@ uint16_t att_uuid_for_handle(uint16_t attribute_handle){
 }
 // end of client API
 
-static void att_update_value_len(att_iterator_t *it, hci_con_handle_t con_handle){
+static void att_update_value_len(att_iterator_t *it, uint16_t offset, hci_con_handle_t con_handle) {
     if ((it->flags & (uint16_t)ATT_PROPERTY_DYNAMIC) == 0u){
         return;
     }
-    it->value_len = (*att_read_callback)(con_handle, it->handle, 0, NULL, 0);
+    it->value_len = (*att_read_callback)(con_handle, it->handle, offset, NULL, 0);
     return;
 }
 
@@ -641,7 +641,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
             break;
         }
 
-        att_update_value_len(&it, att_connection->con_handle);
+        att_update_value_len(&it, 0, att_connection->con_handle);
         
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
         if (it.value_len == (uint16_t)ATT_READ_RESPONSE_PENDING){
@@ -749,7 +749,7 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
         return setup_error(response_buffer, request_type, handle, error_code);
     }
 
-    att_update_value_len(&it, att_connection->con_handle);
+    att_update_value_len(&it, 0, att_connection->con_handle);
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
     if (it.value_len == (uint16_t)ATT_READ_RESPONSE_PENDING){
@@ -807,7 +807,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
         return setup_error(response_buffer, request_type, handle, error_code);
     }
 
-    att_update_value_len(&it, att_connection->con_handle);
+    att_update_value_len(&it, value_offset, att_connection->con_handle);
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
     if (it.value_len == (uint16_t)ATT_READ_RESPONSE_PENDING){
@@ -892,7 +892,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
             break;
         }
 
-        att_update_value_len(&it, att_connection->con_handle);
+        att_update_value_len(&it, 0, att_connection->con_handle);
         
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
         if (it.value_len == (uint16_t)ATT_READ_RESPONSE_PENDING) {
