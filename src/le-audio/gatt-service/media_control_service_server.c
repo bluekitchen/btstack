@@ -434,7 +434,6 @@ static void mcs_server_schedule_task(media_control_service_server_t * media_play
                 default:
                     break;
             }
-            
             break;
         
         case MCS_NOTIFICATION_TASK_PLAYBACK_SPEED:
@@ -454,8 +453,6 @@ static void mcs_server_schedule_task(media_control_service_server_t * media_play
 
     uint16_t scheduled_tasks = media_player->scheduled_tasks;
     media_player->scheduled_tasks |= (uint32_t)task_id;
-
-    printf("wait can send now %d, old bitmap 0X%04x, new bitmap 0X%04x\n", task_id, scheduled_tasks, media_player->scheduled_tasks);
         
     if (scheduled_tasks == 0){
         media_player->scheduled_tasks_callback.callback = &mcs_server_can_send_now;
@@ -481,8 +478,6 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 		default:
 			break;
 	}
-
-    printf("read request characteristic_id %d, attribute handle 0x%04x, offset %d\n", characteristic_id, attribute_handle, offset);
 
 	switch (characteristic_id){
 		case MEDIA_PLAYER_NAME: 
@@ -797,9 +792,7 @@ uint8_t media_control_service_server_set_media_player_name(uint16_t media_player
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
 	btstack_strcpy(media_player->data.name, sizeof(media_player->data.name), name);
-	
-    printf("schedule notification MEDIA_PLAYER_NAME\n");
-	mcs_server_schedule_task(media_player, MEDIA_PLAYER_NAME);
+		mcs_server_schedule_task(media_player, MEDIA_PLAYER_NAME);
 	return ERROR_CODE_SUCCESS;
 }
 
