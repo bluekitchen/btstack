@@ -104,6 +104,9 @@ static void mcs_server_reset_media_player(media_control_service_server_t * media
     media_player->data.track_duration_10ms = 0xFFFFFFFF;    
     media_player->data.track_position_10ms = 0xFFFFFFFF;       
     media_player->data.track_position_offset_10ms = 0xFFFFFFFF;
+    
+    media_player->data.name_value_changed = false;
+    media_player->data.track_title_value_changed = false;
 }
 
 static media_control_service_server_t * msc_server_media_player_registered(uint16_t start_handle){
@@ -517,17 +520,39 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 	}
 
 	switch (characteristic_id){
-		case MEDIA_PLAYER_NAME: 
-			return att_read_callback_handle_blob((const uint8_t *)media_player->data.name, strlen(media_player->data.name), offset, buffer, buffer_size);
+		case MEDIA_PLAYER_NAME:
+            if (buffer == NULL){
+                // get len and check if we have up to date value
+                if ((offset != 0) && media_player->data.name_value_changed){
+                    return (uint16_t)ATT_READ_ERROR_CODE_OFFSET + (uint16_t)MCS_SEARCH_CONTROL_POINT_ATT_ERROR_RESPONSE_VALUE_CHANGED_DURING_READ_LONG;
+                }
+            } else {
+                // actual readl (after everything was validated)
+                if (offset == 0){
+                    media_player->data.name_value_changed = false;
+                }
+            }
+            return att_read_callback_handle_blob((const uint8_t *)media_player->data.name, strlen(media_player->data.name), offset, buffer, buffer_size);
 		
+        case TRACK_TITLE:
+             if (buffer == NULL){
+                // get len and check if we have up to date value
+                if ((offset != 0) && media_player->data.track_title_value_changed){
+                    return (uint16_t)ATT_READ_ERROR_CODE_OFFSET + (uint16_t)MCS_SEARCH_CONTROL_POINT_ATT_ERROR_RESPONSE_VALUE_CHANGED_DURING_READ_LONG;
+                }
+            } else {
+                // actual readl (after everything was validated)
+                if (offset == 0){
+                    media_player->data.track_title_value_changed = false;
+                }
+            }
+            return att_read_callback_handle_blob((const uint8_t *)media_player->data.track_title, strlen(media_player->data.track_title), offset, buffer, buffer_size);
+        
         case MEDIA_PLAYER_ICON_OBJECT_ID:
-            return att_read_callback_handle_blob(media_player->data.icon_object_id, 6, offset, buffer, buffer_size);
+            return att_read_callback_handle_blob(media_player->data.icon_object_id, media_player->data.icon_object_id_len, offset, buffer, buffer_size);
 
 		case MEDIA_PLAYER_ICON_URL:
 			return att_read_callback_handle_blob((const uint8_t *)media_player->data.icon_url, strlen(media_player->data.icon_url), offset, buffer, buffer_size);
-
-        case TRACK_TITLE:
-            return att_read_callback_handle_blob((const uint8_t *)media_player->data.track_title, strlen(media_player->data.icon_url), offset, buffer, buffer_size);
 
         case TRACK_DURATION:
             return att_read_callback_handle_little_endian_32(media_player->data.track_duration_10ms, offset, buffer, buffer_size);
@@ -863,6 +888,8 @@ uint8_t media_control_service_server_set_media_player_name(uint16_t media_player
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
+
+    media_player->data.name_value_changed = true;
 	btstack_strcpy(media_player->data.name, sizeof(media_player->data.name), name);
 		mcs_server_schedule_task(media_player, MEDIA_PLAYER_NAME);
 	return ERROR_CODE_SUCCESS;
@@ -908,6 +935,8 @@ uint8_t media_control_service_server_set_track_title(uint16_t media_player_id, c
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
+
+    media_player->data.track_title_value_changed = true;
 	btstack_strcpy(media_player->data.track_title, sizeof(media_player->data.track_title), track_title);
 	
 	mcs_server_schedule_task(media_player, TRACK_TITLE);
