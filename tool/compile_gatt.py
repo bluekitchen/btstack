@@ -714,7 +714,7 @@ def parseGenericDynamicReadOnlyDescriptor(fout, parts, uuid, name):
     write_16(fout, size)
     write_16(fout, flags)
     write_16(fout, handle)
-    write_16(fout, 0x2903)
+    write_16(fout, uuid)
     fout.write("\n")
 
     database_hash_append_uint16(handle)
