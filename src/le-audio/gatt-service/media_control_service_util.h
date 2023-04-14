@@ -1,0 +1,132 @@
+/*
+ * Copyright (C) 2023 BlueKitchen GmbH
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ * 4. Any redistribution, use, or modification is done solely for
+ *    personal benefit and not for any commercial purpose or for
+ *    monetary gain.
+ *
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
+ *
+ */
+
+/**
+ * @title Microphone Control Service Client
+ * 
+ */
+
+#ifndef MICROPHONE_CONTROL_SERVICE_UTIL_H
+#define MICROPHONE_CONTROL_SERVICE_UTIL_H
+
+#include <stdint.h>
+#include "btstack_defines.h"
+#include "bluetooth.h"
+#include "btstack_linked_list.h"
+#include "ble/gatt_client.h"
+
+#if defined __cplusplus
+extern "C" {
+#endif
+
+#define MCS_SEARCH_CONTROL_POINT_COMMAND_MAX_LENGTH  64   
+
+typedef enum {
+    MEDIA_CONTROL_POINT_OPCODE_PLAY = 0x01,
+    MEDIA_CONTROL_POINT_OPCODE_PAUSE,
+    MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND,
+    MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD,
+    MEDIA_CONTROL_POINT_OPCODE_STOP,
+    MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE = 0x10,
+    MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_SEGMENT = 0x20,
+    MEDIA_CONTROL_POINT_OPCODE_NEXT_SEGMENT,
+    MEDIA_CONTROL_POINT_OPCODE_FIRST_SEGMENT,
+    MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT,
+    MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT,
+    MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_TRACK = 0x30,
+    MEDIA_CONTROL_POINT_OPCODE_NEXT_TRACK,
+    MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK,
+    MEDIA_CONTROL_POINT_OPCODE_LAST_TRACK,
+    MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK,
+    MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP = 0x40,
+    MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP,
+    MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP,
+    MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP,
+    MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP,
+    MEDIA_CONTROL_POINT_OPCODE_RFU
+} media_control_point_opcode_t;
+
+// Notification result code
+typedef enum {
+    MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS = 0x01,
+    MEDIA_CONTROL_POINT_ERROR_CODE_OPCODE_NOT_SUPPORTED,
+    MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE,
+    MEDIA_CONTROL_POINT_ERROR_CODE_COMMAND_CANNOT_BE_COMPLETED,
+    MEDIA_CONTROL_POINT_ERROR_CODE_RFU
+} media_control_point_error_code_t;
+
+typedef enum {
+    SEARCH_CONTROL_POINT_OPCODE_TRACK_NAME = 0X01,
+    SEARCH_CONTROL_POINT_OPCODE_ARTIST_NAME,
+    SEARCH_CONTROL_POINT_OPCODE_ALBUM_NAME,
+    SEARCH_CONTROL_POINT_OPCODE_GROUP_NAME,
+    SEARCH_CONTROL_POINT_OPCODE_EARLIEST_YEAR,
+    SEARCH_CONTROL_POINT_OPCODE_LATEST_YEAR,
+    SEARCH_CONTROL_POINT_OPCODE_GENRE,
+    SEARCH_CONTROL_POINT_OPCODE_ONLY_TRACKS,
+    SEARCH_CONTROL_POINT_OPCODE_ONLY_GROUPS,
+    SEARCH_CONTROL_POINT_OPCODE_RFU
+} search_control_point_opcode_t;
+
+// Notification result code
+typedef enum {
+    SEARCH_CONTROL_POINT_ERROR_CODE_SUCCESS = 0x01,
+    SEARCH_CONTROL_POINT_ERROR_CODE_FAILURE,
+    SEARCH_CONTROL_POINT_ERROR_CODE_COMMAND_CANNOT_BE_COMPLETED,
+    SEARCH_CONTROL_POINT_ERROR_CODE_RFU
+} search_control_point_error_code_t;
+
+typedef enum {
+    PLAYING_ORDER_START_GROUP = 0x00,
+    PLAYING_ORDER_SINGLE_ONCE = 0x01,
+    PLAYING_ORDER_SINGLE_REPEAT,
+    PLAYING_ORDER_IN_ORDER_ONCE,
+    PLAYING_ORDER_IN_ORDER_REPEAT,
+    PLAYING_ORDER_OLDEST_ONCE,
+    PLAYING_ORDER_OLDEST_REPEAT,
+    PLAYING_ORDER_NEWEST_ONCE,
+    PLAYING_ORDER_NEWEST_REPEAT,
+    PLAYING_ORDER_SHUFFLE_ONCE,
+    PLAYING_ORDER_SHUFFLE_REPEAT,
+    PLAYING_ORDER_RFU
+} playing_order_t;
+
+#if defined __cplusplus
+}
+#endif
+
+#endif

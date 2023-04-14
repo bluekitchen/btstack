@@ -55,7 +55,6 @@
 extern "C" {
 #endif
 
-#define MCS_SEARCH_CONTROL_POINT_COMMAND_MAX_LENGTH  64   
 /** 
  * @text The Media Control Service Client 
  */
