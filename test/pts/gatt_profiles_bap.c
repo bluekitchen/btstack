@@ -65,6 +65,10 @@ static bap_app_server_state_t  bap_app_server_state      = BAP_APP_SERVER_STATE_
 static hci_con_handle_t        bap_app_server_con_handle = HCI_CON_HANDLE_INVALID;
 static bd_addr_t               bap_app_client_addr;
 
+// MCS
+static char * long_string1 = "abcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijk";
+static char * long_string2 = "ghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefgfgfgf";
+
 #define APP_AD_FLAGS 0x06
 
 static uint8_t adv_data[] = {
@@ -677,15 +681,19 @@ static void show_usage(void){
     printf("G - set Encrypted Sirk\n");
     printf("h - Simulate server locked by another remote coordinator\n");
     printf("H - Simulate server unlock by another remote coordinator\n");
-    printf("i - Get RIS\n");
+    printf("i - generate RIS\n");
+    printf("I - set SIRK\n");
+
+    printf("\n## MCS\n");
+    printf("j - set long media player name\n");
 
 }
 
-static void stdin_process(char c){
-    printf("%c\n", c);
-    uint8_t status;
+static void stdin_process(char cmd){
+    printf("%c\n", cmd);
+    uint8_t status = ERROR_CODE_SUCCESS;
 
-    switch (c){
+    switch (cmd){
         case 'a':
             printf("Trigger Sink PAC record notification\n");
             sink_pac_records[0].codec_capability.sampling_frequency_mask |= LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_48000_HZ;
@@ -850,12 +858,30 @@ static void stdin_process(char c){
             // coordinated_set_identification_service_server_calculate_encrypted_sirk();
             break;
         }
+
+        case 'j':
+            status = media_control_service_server_set_media_player_name(media_player_id1, long_string1);
+            break;
+        case 'J':
+            status = media_control_service_server_set_media_player_name(media_player_id1, long_string2);
+            break;
+        case 'k':
+            status = media_control_service_server_set_track_title(media_player_id1, long_string1);
+            break;
+        case 'K':
+            status = media_control_service_server_set_track_title(media_player_id1, long_string2);
+            break;
+
         case '\n':
         case '\r':
             break;
         default:
             show_usage();
             break;
+    }
+
+    if (status != ERROR_CODE_SUCCESS){
+        printf("Command '%c' could not be performed, status 0x%02x\n", cmd, status);
     }
 }
 
@@ -915,14 +941,14 @@ int btstack_main(void)
     media_control_service_server_set_playing_orders_supported(media_player_id1, 0x3FF);
     media_control_service_server_set_playing_order(media_player_id1, PLAYING_ORDER_IN_ORDER_ONCE);
 
-    media_control_service_server_register_media_player(&media_player2, 
-        &mcs_server_packet_handler, 0xFFFF, &media_player_id2);
-    media_control_service_server_set_media_player_name(media_player_id2, "BK Player2");
-    media_control_service_server_set_icon_object_id(media_player_id2, icon_object_id, sizeof(icon_object_id));
-    media_control_service_server_set_icon_url(media_player_id2, icon_url);
-    media_control_service_server_set_track_title(media_player_id2, "");
-    media_control_service_server_set_playing_orders_supported(media_player_id2, 0x3FF);
-    media_control_service_server_set_playing_order(media_player_id2, PLAYING_ORDER_IN_ORDER_ONCE);
+    // media_control_service_server_register_media_player(&media_player2, 
+    //     &mcs_server_packet_handler, 0xFFFF, &media_player_id2);
+    // media_control_service_server_set_media_player_name(media_player_id2, "BK Player2");
+    // media_control_service_server_set_icon_object_id(media_player_id2, icon_object_id, sizeof(icon_object_id));
+    // media_control_service_server_set_icon_url(media_player_id2, icon_url);
+    // media_control_service_server_set_track_title(media_player_id2, "");
+    // media_control_service_server_set_playing_orders_supported(media_player_id2, 0x3FF);
+    // media_control_service_server_set_playing_order(media_player_id2, PLAYING_ORDER_IN_ORDER_ONCE);
 
     coordinated_set_identification_service_server_init(CSIS_COORDINATORS_MAX_NUM, &csis_coordiantors[0], CSIS_COORDINATORS_MAX_NUM, 1);
     coordinated_set_identification_service_server_register_packet_handler(&csis_server_packet_handler);
