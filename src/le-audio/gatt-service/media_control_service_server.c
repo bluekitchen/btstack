@@ -185,7 +185,7 @@ static void mcs_server_emit_media_value_changed(media_control_service_server_t *
     (*media_player->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void mcs_server_emit_notification_task(media_control_service_server_t * media_player, media_control_point_opcode_t opcode, uint8_t * buffer, uint16_t buffer_size){
+static void mcs_server_emit_media_control_notification_task(media_control_service_server_t * media_player, media_control_point_opcode_t opcode, uint8_t * buffer, uint16_t buffer_size){
     btstack_assert(media_player->event_callback != NULL);
     
     uint8_t event[10];
@@ -204,6 +204,26 @@ static void mcs_server_emit_notification_task(media_control_service_server_t * m
     }
 
     (*media_player->event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void mcs_server_emit_search_control_notification_task(media_control_service_server_t * media_player, uint8_t * buffer, uint16_t buffer_size){
+    btstack_assert(media_player->event_callback != NULL);
+    
+    uint8_t event[6 + MCS_SEARCH_CONTROL_POINT_COMMAND_MAX_LENGTH];
+    memset(event, 0, sizeof(event));
+
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK;
+    little_endian_store_16(event, pos, media_player->con_handle);
+    pos += 2;
+
+    event[pos++] = buffer_size;
+    memcpy(&event[pos], buffer, buffer_size);
+    pos += buffer_size;
+
+    (*media_player->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void mcs_server_set_con_handle(media_control_service_server_t * media_player, uint16_t characteristic_index, hci_con_handle_t con_handle, uint16_t configuration){
@@ -575,7 +595,10 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     media_control_point_opcode_t      media_control_point_opcode;
     media_control_point_error_code_t  media_control_point_result_code;
 
-    search_control_point_opcode_t search_control_point_opcode;
+    search_control_point_opcode_t search_control_point_field_opcode;
+    uint8_t search_control_point_field_length;
+    uint8_t * search_control_point_field_data;
+    uint16_t i;
 
 	switch (type){
 		case HANDLE_TYPE_CHARACTERISTIC_CCD:
@@ -647,33 +670,10 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             break;
 
         case SEARCH_CONTROL_POINT:
-            if (buffer_size == 0){
+            if (buffer_size > MCS_SEARCH_CONTROL_POINT_COMMAND_MAX_LENGTH){
                 break;
             }
-            search_control_point_opcode = buffer[0];
-
-            switch (search_control_point_opcode){  
-                case SEARCH_CONTROL_POINT_OPCODE_TRACK_NAME:
-                    break;
-                case SEARCH_CONTROL_POINT_OPCODE_ARTIST_NAME:
-                    break;
-                case SEARCH_CONTROL_POINT_OPCODE_ALBUM_NAME:
-                    break;
-                case SEARCH_CONTROL_POINT_OPCODE_GROUP_NAME:
-                    break;
-                case SEARCH_CONTROL_POINT_OPCODE_EARLIEST_YEAR:
-                    break;
-                case SEARCH_CONTROL_POINT_OPCODE_LATEST_YEAR:
-                    break;
-                case SEARCH_CONTROL_POINT_OPCODE_GENRE:
-                    break;
-                case SEARCH_CONTROL_POINT_OPCODE_ONLY_TRACKS:
-                    break;
-                case SEARCH_CONTROL_POINT_OPCODE_ONLY_GROUPS:
-                    break;
-                default:
-                    break;
-            }
+            mcs_server_emit_search_control_notification_task(media_player, buffer, buffer_size);
             break;
         
         case MEDIA_CONTROL_POINT:
@@ -715,7 +715,7 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 mcs_server_schedule_task(media_player, characteristic_id);
 
             } else {
-                mcs_server_emit_notification_task(media_player, media_control_point_opcode, &buffer[1], buffer_size - 1);
+                mcs_server_emit_media_control_notification_task(media_player, media_control_point_opcode, &buffer[1], buffer_size - 1);
             }
             break;
 		default:
