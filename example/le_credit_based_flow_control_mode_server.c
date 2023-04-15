@@ -198,7 +198,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             printf("%c: Connection Latency: %u\n", le_cbm_connection.name, hci_subevent_le_connection_complete_get_conn_latency(packet));
 
                             // min con interval 15 ms - supported from iOS 11 
-                            gap_request_connection_parameter_update(le_cbm_connection.connection_handle, 12, 12, 0, 0x0048);
+                            gap_request_connection_parameter_update(le_cbm_connection.connection_handle, 12, 12, 4, 0x0048);
                             printf("Connected, requesting conn param update for handle 0x%04x\n", le_cbm_connection.connection_handle);
                             // 
                             test_reset(&le_cbm_connection);
