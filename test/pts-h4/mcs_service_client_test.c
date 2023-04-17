@@ -254,8 +254,8 @@ static void mcs_client_event_handler(uint8_t packet_type, uint16_t channel, uint
             break;
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION:
             break;
-        case GATTSERVICE_SUBEVENT_MSC_CLIENT_TRACK_SPEED:
-            break;
+        // case GATTSERVICE_SUBEVENT_MSC_CLIENT_TRACK_SPEED:
+            // break;
         case GATTSERVICE_SUBEVENT_MSC_CLIENT_SEEKING_SPEED:
             break;
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID:
