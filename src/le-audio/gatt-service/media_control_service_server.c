@@ -620,11 +620,6 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     media_control_point_opcode_t      media_control_point_opcode;
     media_control_point_error_code_t  media_control_point_result_code;
 
-    search_control_point_opcode_t search_control_point_field_opcode;
-    uint8_t search_control_point_field_length;
-    uint8_t * search_control_point_field_data;
-    uint16_t i;
-
 	switch (type){
 		case HANDLE_TYPE_CHARACTERISTIC_CCD:
 			mcs_server_set_con_handle(media_player, (uint16_t)characteristic_id, con_handle, little_endian_read_16(buffer, 0));
