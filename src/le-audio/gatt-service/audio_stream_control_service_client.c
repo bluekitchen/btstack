@@ -569,6 +569,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN;
 
             uint16_t value_length = ascs_client_serialize_ase(connection, ascs_client_value_buffer, ascs_client_get_value_buffer_size(connection));
+            ascs_client_value_buffer_used = true;
 
             (void)gatt_client_write_value_of_characteristic(
                     &ascs_client_handle_gatt_client_event,
@@ -918,9 +919,6 @@ static uint8_t ascs_client_connection_for_parameters_ready(uint16_t ascs_cid, bo
     if (connection->state != AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    if (write_requested && ascs_client_value_buffer_used){
-        return ERROR_CODE_CONTROLLER_BUSY;
-    } 
 
     return ERROR_CODE_SUCCESS;
 }
@@ -958,7 +956,6 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_codec(uint1
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
-    ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = ascs_client_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_CONFIG_CODEC;
@@ -989,7 +986,6 @@ uint8_t audio_stream_control_service_client_streamendpoint_configure_qos(uint16_
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
-    ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = ascs_client_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_CONFIG_QOS;
@@ -1020,7 +1016,6 @@ uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint1
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
-    ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = ascs_client_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_UPDATE_METADATA;
@@ -1046,8 +1041,6 @@ uint8_t audio_stream_control_service_client_streamendpoint_enable(uint16_t ascs_
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     
-   
-    ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = ascs_client_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_ENABLE;
@@ -1073,8 +1066,6 @@ uint8_t audio_stream_control_service_client_streamendpoint_receiver_start_ready(
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     
-
-    ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = ascs_client_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_RECEIVER_START_READY;
@@ -1099,8 +1090,6 @@ uint8_t audio_stream_control_service_client_streamendpoint_receiver_stop_ready(u
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     
-    
-    ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = ascs_client_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_RECEIVER_STOP_READY;
@@ -1126,8 +1115,6 @@ uint8_t audio_stream_control_service_client_streamendpoint_release(uint16_t ascs
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     
-    
-    ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = ascs_client_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_RELEASE;
@@ -1152,8 +1139,6 @@ uint8_t audio_stream_control_service_client_streamendpoint_disable(uint16_t ascs
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     
-    
-    ascs_client_value_buffer_used = true;
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
     connection->streamendpoints_index = ascs_client_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_DISABLE;
@@ -1178,9 +1163,7 @@ uint8_t audio_stream_control_service_client_streamendpoint_released(uint16_t asc
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     
-
     connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
-    ascs_client_value_buffer_used = true;
     connection->streamendpoints_index = ascs_client_get_streamendpoint_index_for_ase_id(connection, ase_id);
     connection->command_opcode = ASCS_OPCODE_RELEASED;
 
