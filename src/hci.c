@@ -3042,7 +3042,6 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                     hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
 
                     // lookup CIS by state
-                    btstack_linked_list_iterator_t it;
                     btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
                     while (btstack_linked_list_iterator_has_next(&it)){
                         hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
@@ -3082,6 +3081,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                         // if outgoing has been setup, or incoming was setup but outgoing not required
                         if ((cis_direction == 1) || (outgoing_needed == false)){
                             // lookup iso stream by cig/cis
+                            btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
                             while (btstack_linked_list_iterator_has_next(&it)) {
                                 hci_iso_stream_t *iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
                                 if ((iso_stream->group_id == cig->cig_id) && (iso_stream->stream_id == cis_index)){
