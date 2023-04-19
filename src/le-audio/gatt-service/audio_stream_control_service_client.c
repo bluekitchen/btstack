@@ -566,8 +566,12 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
             break;
 
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE:{
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN;
+            if (ascs_client_value_buffer_used){
+                // defer
+                return;
+            }
 
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN;
             uint16_t value_length = ascs_client_serialize_ase(connection, ascs_client_value_buffer, ascs_client_get_value_buffer_size(connection));
             ascs_client_value_buffer_used = true;
 
@@ -699,7 +703,8 @@ static void ascs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     ascs_streamendpoint_t * streamendpoint;
     uint8_t status;
 
-    bool call_run = true;
+    bool call_run_connection = true;
+    bool ascs_client_value_buffer_used_before = ascs_client_value_buffer_used;
     uint16_t bytes_read;
 
     switch(hci_event_packet_get_type(packet)){
@@ -849,15 +854,25 @@ static void ascs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
         case GATT_EVENT_QUERY_COMPLETE:
             connection = ascs_client_get_connection_for_con_handle(gatt_event_query_complete_get_handle(packet));
             btstack_assert(connection != NULL);
-            call_run = ascs_client_handle_query_complete(connection, gatt_event_query_complete_get_att_status(packet));
+            call_run_connection = ascs_client_handle_query_complete(connection, gatt_event_query_complete_get_att_status(packet));
             break;
 
         default:
             break;
     }
 
-    if (call_run && (connection != NULL)){
+    if (call_run_connection && (connection != NULL)){
         ascs_client_run_for_connection(connection);
+    }
+
+    // poll connections if value buffer became available
+    if (ascs_client_value_buffer_used_before && (ascs_client_value_buffer_used == false)){
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &ascs_client_connections);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            ascs_client_connection_t * connection = (ascs_client_connection_t *)btstack_linked_list_iterator_next(&it);
+            ascs_client_run_for_connection(connection);
+        }
     }
 }
 
