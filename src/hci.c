@@ -3122,21 +3122,44 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 	bd_addr_type_t addr_type;
 	hci_connection_t * conn;
 
+    // read fields
+    uint8_t status = packet[3];
+    uint8_t role   = packet[6];
+    uint16_t conn_interval;
+
+    // support different connection complete events
+    switch (packet[2]){
+        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+            break;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
+            conn_interval = hci_subevent_le_enhanced_connection_complete_v1_get_conn_interval(packet);
+            break;
+        case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
+            conn_interval = hci_subevent_le_enhanced_connection_complete_v2_get_conn_interval(packet);
+            break;
+#endif
+        default:
+            btstack_unreachable();
+            return;
+    }
+
 	// Connection management
 	reverse_bd_addr(&packet[8], addr);
 	addr_type = (bd_addr_type_t)packet[7];
-	log_info("LE Connection_complete (status=%u) type %u, %s", packet[3], addr_type, bd_addr_to_str(addr));
+    log_info("LE Connection_complete (status=%u) type %u, %s", status, addr_type, bd_addr_to_str(addr));
 	conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
 
 #ifdef ENABLE_LE_CENTRAL
 	// handle error: error is reported only to the initiator -> outgoing connection
-	if (packet[3]){
+	if (status){
 
 		// handle cancelled outgoing connection
 		// "If the cancellation was successful then, after the Command Complete event for the LE_Create_Connection_Cancel command,
 		//  either an LE Connection Complete or an LE Enhanced Connection Complete event shall be generated.
 		//  In either case, the event shall be sent with the error code Unknown Connection Identifier (0x02)."
-		if (packet[3] == ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER){
+		if (status == ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER){
 		    // reset state
             hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
             hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
@@ -3155,7 +3178,7 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 #endif
 
 	// on success, both hosts receive connection complete event
-	if (packet[6] == HCI_ROLE_MASTER){
+    if (role == HCI_ROLE_MASTER){
 #ifdef ENABLE_LE_CENTRAL
 		// if we're master on an le connection, it was an outgoing connection and we're done with it
 		// note: no hci_connection_t object exists yet for connect with whitelist
@@ -3182,15 +3205,15 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 	}
 
 	conn->state = OPEN;
-	conn->role  = packet[6];
+	conn->role  = role;
 	conn->con_handle             = hci_subevent_le_connection_complete_get_connection_handle(packet);
-	conn->le_connection_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+    conn->le_connection_interval = conn_interval;
 
     // workaround: PAST doesn't work without LE Read Remote Features on PacketCraft Controller with LMP 568B
     conn->gap_connection_tasks = GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
 
 #ifdef ENABLE_LE_PERIPHERAL
-	if (packet[6] == HCI_ROLE_SLAVE){
+	if (role == HCI_ROLE_SLAVE){
 		hci_update_advertisements_enabled_for_current_roles();
 	}
 #endif
@@ -4037,6 +4060,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
 #endif
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
+                case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
 					event_handle_le_connection_complete(packet);
                     break;
 
