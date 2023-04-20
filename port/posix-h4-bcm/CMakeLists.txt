@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.18)
 
-project(BTstack-posix-nxp)
+project(BTstack-posix-bcm)
 
 SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
