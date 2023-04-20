@@ -57,6 +57,7 @@ file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_POSIX     "${BTSTACK_ROOT}/platform/posix/*.c")
 file(GLOB SOURCES_BCM       "${BTSTACK_ROOT}/chipset/bcm/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
+file(GLOB SOURCES_LE_AUDIO  "${BTSTACK_ROOT}/src/le-audio/*.c" "${BTSTACK_ROOT}/src/le-audio/gatt-service/*.c")
 file(GLOB SOURCES_PORT      "*.c")
 
 set(LWIP_CORE_SRC
@@ -112,7 +113,8 @@ set(SOURCES
 		${SOURCES_CLASSIC}
 		${SOURCES_GATT}
 		${SOURCES_HXCMOD}
-		${SOURCES_LIBUSB}
+		${SOURCES_LC3_GOOGLE}
+		${SOURCES_LE_AUDIO}
 		${SOURCES_MD5}
 		${SOURCES_MESH}
 		${SOURCES_BCM}
