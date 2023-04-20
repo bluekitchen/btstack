@@ -79,6 +79,8 @@ static char tlv_db_path[100];
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 
+static const uint32_t baudrate_firmware_download = 921600;
+
 static hci_transport_config_uart_t transport_config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
@@ -177,7 +179,7 @@ int main(int argc, const char * argv[]){
     const btstack_uart_t * uart_driver = (const btstack_uart_t *) btstack_uart_posix_instance();
 
     // extract UART config from transport config
-    uart_config.baudrate    = transport_config.baudrate_init;
+    uart_config.baudrate    = baudrate_firmware_download;
     uart_config.flowcontrol = transport_config.flowcontrol;
     uart_config.device_name = transport_config.device_name;
     uart_driver->init(&uart_config);

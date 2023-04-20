@@ -3,7 +3,7 @@
 ## Configuration
 Newer Infineon Airoc (tm) Controllers like the CYW5557x series accept PatchRAM upload only in a so-called
 'auto-baud mode' which is entered by asserting CTS (low) and starting/resetting the controller via BT_REG_EN.
-This port currently only supports the CYW5557x Controllers and slowly uploads the firmware at 115200.
+This port currently only supports the CYW5557x Controllers.
 
 ## Compilation
 
@@ -27,10 +27,15 @@ On start, BTstack opens the serial port, which asserts CTS, and requests you to 
     2
     1
     Firmware download started
+    Local version information:
+    - HCI Version    0x000a
+    - HCI Revision   0x0b73
+    - LMP Version    0x000a
+    - LMP Subversion 0x2257
+    - Manufacturer 0x0009
     Phase 2: Main app
-    ...
     BTstack up and running at 55:56:0A:0A:76:93
+    ...
 
 ## ToDo
-- increase baud rate for firmware upload
-- query controller to select correct PatchRAM file
+- select PatchRAM file based on HCI Read Local Version Information
