@@ -10913,6 +10913,43 @@ static inline const uint8_t * avrcp_subevent_now_playing_genre_info_get_value(co
 }
 
 /**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_COVER_ART_INFO
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_now_playing_cover_art_info_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOW_PLAYING_COVER_ART_INFO
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_now_playing_cover_art_info_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value_len from event AVRCP_SUBEVENT_NOW_PLAYING_COVER_ART_INFO
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t avrcp_subevent_now_playing_cover_art_info_get_value_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field value from event AVRCP_SUBEVENT_NOW_PLAYING_COVER_ART_INFO
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_now_playing_cover_art_info_get_value(const uint8_t * event){
+    return &event[7];
+}
+
+/**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE
  * @param event packet
  * @return avrcp_cid
@@ -11302,6 +11339,72 @@ static inline uint16_t avrcp_subevent_browsing_set_browsed_player_get_browsing_c
  */
 static inline uint16_t avrcp_subevent_browsing_set_browsed_player_get_player_id(const uint8_t * event){
     return little_endian_read_16(event, 5);
+}
+
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_COVER_ART_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_cover_art_connection_established_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field bd_addr from event AVRCP_SUBEVENT_COVER_ART_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void avrcp_subevent_cover_art_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bytes(&event[4], bd_addr, 6);
+}
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_COVER_ART_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_cover_art_connection_established_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 10);
+}
+/**
+ * @brief Get field cover_art_cid from event AVRCP_SUBEVENT_COVER_ART_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return cover_art_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_cover_art_connection_established_get_cover_art_cid(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+
+/**
+ * @brief Get field cover_art_cid from event AVRCP_SUBEVENT_COVER_ART_OPERATION_COMPLETE
+ * @param event packet
+ * @return cover_art_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_cover_art_operation_complete_get_cover_art_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_COVER_ART_OPERATION_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_cover_art_operation_complete_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field cover_art_cid from event AVRCP_SUBEVENT_COVER_ART_CONNECTION_RELEASED
+ * @param event packet
+ * @return cover_art_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_cover_art_connection_released_get_cover_art_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 
 /**

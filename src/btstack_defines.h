@@ -117,17 +117,20 @@ typedef uint8_t sm_key_t[16];
 // MAP data
 #define MAP_DATA_PACKET        0x10u
 
+// BIP data
+#define BIP_DATA_PACKET         0x11
+
 // Mesh Provisioning PDU
-#define PROVISIONING_DATA_PACKET 0x11u
+#define PROVISIONING_DATA_PACKET 0x12u
 
 // Mesh Proxy PDU
-#define MESH_PROXY_DATA_PACKET   0x11u
+#define MESH_PROXY_DATA_PACKET   0x12u
 
 // Mesh Network PDU
-#define MESH_NETWORK_PACKET      0x12u
+#define MESH_NETWORK_PACKET      0x13u
 
 // Mesh Network PDU
-#define MESH_BEACON_PACKET       0x13u
+#define MESH_BEACON_PACKET       0x14u
 
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfcu
@@ -3389,13 +3392,23 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO                                 0x21u
 
 /*
+* @format 121JV
+* @param subevent_code
+* @param avrcp_cid
+* @param command_type
+* @param value_len
+* @param value
+*/
+#define AVRCP_SUBEVENT_NOW_PLAYING_COVER_ART_INFO                             0x22u
+
+/*
  * @format 1211
  * @param subevent_code
  * @param avrcp_cid
  * @param command_type
  * @param status
  */
-#define AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE                                  0x22u
+#define AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE                                  0x23u
 
 /**
  * @format 1214
@@ -3404,7 +3417,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param playback_position_ms
  */
-#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED                      0x23u
+#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED                      0x24u
 
 /*
  * @format 12111
@@ -3414,7 +3427,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param event_id
  */
-#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID                                0x24u
+#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID                                0x25u
 /*
  * @format 1211
  * @param subevent_code
@@ -3422,7 +3435,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param status
  */
-#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE                           0x25u
+#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE                           0x26u
 
 /*
  * @format 12113
@@ -3432,7 +3445,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param company_id
  */
-#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID                              0x26u
+#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID                              0x27u
 /*
  * @format 1211
  * @param subevent_code
@@ -3440,7 +3453,7 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  * @param status
  */
-#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE                         0x27u
+#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE                         0x28u
 
 /**
  * @format 1211LV
@@ -3451,7 +3464,7 @@ typedef uint8_t sm_key_t[16];
  * @param params_len
  * @param params
 */
-#define AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE                               0x28u
+#define AVRCP_SUBEVENT_CUSTOM_COMMAND_RESPONSE                               0x29u
 
 
 /**
@@ -3513,6 +3526,30 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVRCP_SUBEVENT_BROWSING_SET_BROWSED_PLAYER                            0x36u
 
+/**
+ * @format 11B22
+ * @param subevent_code
+ * @param status 0 == OK
+ * @param bd_addr
+ * @param avrcp_cid
+ * @param cover_art_cid
+ */
+#define AVRCP_SUBEVENT_COVER_ART_CONNECTION_ESTABLISHED                       0x37u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param cover_art_cid
+ * @param status
+ */
+#define AVRCP_SUBEVENT_COVER_ART_OPERATION_COMPLETE                           0x38u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param cover_art_cid
+ */
+#define AVRCP_SUBEVENT_COVER_ART_CONNECTION_RELEASED                          0x39u
 
 /**
  * @format 12BH
