@@ -4636,102 +4636,102 @@ static inline void hci_subevent_le_generate_dhkey_complete_get_dhkey(const uint8
 }
 
 /**
- * @brief Get field status from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
+ * @brief Get field status from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t hci_subevent_le_enhanced_connection_complete_get_status(const uint8_t * event){
+static inline uint8_t hci_subevent_le_enhanced_connection_complete_v1_get_status(const uint8_t * event){
     return event[3];
 }
 /**
- * @brief Get field connection_handle from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1
  * @param event packet
  * @return connection_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hci_subevent_le_enhanced_connection_complete_get_connection_handle(const uint8_t * event){
+static inline hci_con_handle_t hci_subevent_le_enhanced_connection_complete_v1_get_connection_handle(const uint8_t * event){
     return little_endian_read_16(event, 4);
 }
 /**
- * @brief Get field role from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
+ * @brief Get field role from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1
  * @param event packet
  * @return role
  * @note: btstack_type 1
  */
-static inline uint8_t hci_subevent_le_enhanced_connection_complete_get_role(const uint8_t * event){
+static inline uint8_t hci_subevent_le_enhanced_connection_complete_v1_get_role(const uint8_t * event){
     return event[6];
 }
 /**
- * @brief Get field peer_address_type from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
+ * @brief Get field peer_address_type from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1
  * @param event packet
  * @return peer_address_type
  * @note: btstack_type 1
  */
-static inline uint8_t hci_subevent_le_enhanced_connection_complete_get_peer_address_type(const uint8_t * event){
+static inline uint8_t hci_subevent_le_enhanced_connection_complete_v1_get_peer_address_type(const uint8_t * event){
     return event[7];
 }
 /**
- * @brief Get field peer_addresss from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
+ * @brief Get field peer_addresss from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1
  * @param event packet
  * @param Pointer to storage for peer_addresss
  * @note: btstack_type B
  */
-static inline void hci_subevent_le_enhanced_connection_complete_get_peer_addresss(const uint8_t * event, bd_addr_t peer_addresss){
+static inline void hci_subevent_le_enhanced_connection_complete_v1_get_peer_addresss(const uint8_t * event, bd_addr_t peer_addresss){
     reverse_bytes(&event[8], peer_addresss, 6);
 }
 /**
- * @brief Get field local_resolvable_private_addres from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
+ * @brief Get field local_resolvable_private_address from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1
  * @param event packet
- * @param Pointer to storage for local_resolvable_private_addres
+ * @param Pointer to storage for local_resolvable_private_address
  * @note: btstack_type B
  */
-static inline void hci_subevent_le_enhanced_connection_complete_get_local_resolvable_private_addres(const uint8_t * event, bd_addr_t local_resolvable_private_addres){
-    reverse_bytes(&event[14], local_resolvable_private_addres, 6);
+static inline void hci_subevent_le_enhanced_connection_complete_v1_get_local_resolvable_private_address(const uint8_t * event, bd_addr_t local_resolvable_private_address){
+    reverse_bytes(&event[14], local_resolvable_private_address, 6);
 }
 /**
- * @brief Get field peer_resolvable_private_addres from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
+ * @brief Get field peer_resolvable_private_address from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1
  * @param event packet
- * @param Pointer to storage for peer_resolvable_private_addres
+ * @param Pointer to storage for peer_resolvable_private_address
  * @note: btstack_type B
  */
-static inline void hci_subevent_le_enhanced_connection_complete_get_peer_resolvable_private_addres(const uint8_t * event, bd_addr_t peer_resolvable_private_addres){
-    reverse_bytes(&event[20], peer_resolvable_private_addres, 6);
+static inline void hci_subevent_le_enhanced_connection_complete_v1_get_peer_resolvable_private_address(const uint8_t * event, bd_addr_t peer_resolvable_private_address){
+    reverse_bytes(&event[20], peer_resolvable_private_address, 6);
 }
 /**
- * @brief Get field conn_interval from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
+ * @brief Get field conn_interval from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1
  * @param event packet
  * @return conn_interval
  * @note: btstack_type 2
  */
-static inline uint16_t hci_subevent_le_enhanced_connection_complete_get_conn_interval(const uint8_t * event){
+static inline uint16_t hci_subevent_le_enhanced_connection_complete_v1_get_conn_interval(const uint8_t * event){
     return little_endian_read_16(event, 26);
 }
 /**
- * @brief Get field conn_latency from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
+ * @brief Get field conn_latency from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1
  * @param event packet
  * @return conn_latency
  * @note: btstack_type 2
  */
-static inline uint16_t hci_subevent_le_enhanced_connection_complete_get_conn_latency(const uint8_t * event){
+static inline uint16_t hci_subevent_le_enhanced_connection_complete_v1_get_conn_latency(const uint8_t * event){
     return little_endian_read_16(event, 28);
 }
 /**
- * @brief Get field supervision_timeout from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
+ * @brief Get field supervision_timeout from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1
  * @param event packet
  * @return supervision_timeout
  * @note: btstack_type 2
  */
-static inline uint16_t hci_subevent_le_enhanced_connection_complete_get_supervision_timeout(const uint8_t * event){
+static inline uint16_t hci_subevent_le_enhanced_connection_complete_v1_get_supervision_timeout(const uint8_t * event){
     return little_endian_read_16(event, 30);
 }
 /**
- * @brief Get field master_clock_accuracy from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
+ * @brief Get field master_clock_accuracy from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1
  * @param event packet
  * @return master_clock_accuracy
  * @note: btstack_type 1
  */
-static inline uint8_t hci_subevent_le_enhanced_connection_complete_get_master_clock_accuracy(const uint8_t * event){
+static inline uint8_t hci_subevent_le_enhanced_connection_complete_v1_get_master_clock_accuracy(const uint8_t * event){
     return event[32];
 }
 
@@ -5588,6 +5588,152 @@ static inline uint16_t hci_subevent_le_subrate_change_get_continuation_number(co
  */
 static inline uint16_t hci_subevent_le_subrate_change_get_supervision_timeout(const uint8_t * event){
     return little_endian_read_16(event, 12);
+}
+
+/**
+ * @brief Get field advertising_handle from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_DATA_REQUEST
+ * @param event packet
+ * @return advertising_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_data_request_get_advertising_handle(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field subevent_start from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_DATA_REQUEST
+ * @param event packet
+ * @return subevent_start
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_data_request_get_subevent_start(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field subevent_data_count from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_DATA_REQUEST
+ * @param event packet
+ * @return subevent_data_count
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_data_request_get_subevent_data_count(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_enhanced_connection_complete_v2_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_enhanced_connection_complete_v2_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field role from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @return role
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_enhanced_connection_complete_v2_get_role(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field peer_address_type from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @return peer_address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_enhanced_connection_complete_v2_get_peer_address_type(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field peer_addresss from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @param Pointer to storage for peer_addresss
+ * @note: btstack_type B
+ */
+static inline void hci_subevent_le_enhanced_connection_complete_v2_get_peer_addresss(const uint8_t * event, bd_addr_t peer_addresss){
+    reverse_bytes(&event[8], peer_addresss, 6);
+}
+/**
+ * @brief Get field local_resolvable_private_address from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @param Pointer to storage for local_resolvable_private_address
+ * @note: btstack_type B
+ */
+static inline void hci_subevent_le_enhanced_connection_complete_v2_get_local_resolvable_private_address(const uint8_t * event, bd_addr_t local_resolvable_private_address){
+    reverse_bytes(&event[14], local_resolvable_private_address, 6);
+}
+/**
+ * @brief Get field peer_resolvable_private_address from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @param Pointer to storage for peer_resolvable_private_address
+ * @note: btstack_type B
+ */
+static inline void hci_subevent_le_enhanced_connection_complete_v2_get_peer_resolvable_private_address(const uint8_t * event, bd_addr_t peer_resolvable_private_address){
+    reverse_bytes(&event[20], peer_resolvable_private_address, 6);
+}
+/**
+ * @brief Get field conn_interval from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @return conn_interval
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_enhanced_connection_complete_v2_get_conn_interval(const uint8_t * event){
+    return little_endian_read_16(event, 26);
+}
+/**
+ * @brief Get field conn_latency from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @return conn_latency
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_enhanced_connection_complete_v2_get_conn_latency(const uint8_t * event){
+    return little_endian_read_16(event, 28);
+}
+/**
+ * @brief Get field supervision_timeout from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @return supervision_timeout
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_enhanced_connection_complete_v2_get_supervision_timeout(const uint8_t * event){
+    return little_endian_read_16(event, 30);
+}
+/**
+ * @brief Get field master_clock_accuracy from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @return master_clock_accuracy
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_enhanced_connection_complete_v2_get_master_clock_accuracy(const uint8_t * event){
+    return event[32];
+}
+/**
+ * @brief Get field advertising_handle from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @return advertising_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_enhanced_connection_complete_v2_get_advertising_handle(const uint8_t * event){
+    return event[33];
+}
+/**
+ * @brief Get field sync_handle from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @param event packet
+ * @return sync_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_enhanced_connection_complete_v2_get_sync_handle(const uint8_t * event){
+    return little_endian_read_16(event, 34);
 }
 
 /**

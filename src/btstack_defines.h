@@ -756,14 +756,14 @@ typedef uint8_t sm_key_t[16];
  * @param role
  * @param peer_address_type
  * @param peer_addresss
- * @param local_resolvable_private_addres
- * @param peer_resolvable_private_addres
+ * @param local_resolvable_private_address
+ * @param peer_resolvable_private_address
  * @param conn_interval
  * @param conn_latency
  * @param supervision_timeout
  * @param master_clock_accuracy
  */
-#define HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE       0x0Au
+#define HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1       0x0Au
 
 // array of advertisements, not handled by event accessor generator
 #define HCI_SUBEVENT_LE_DIRECT_ADVERTISING_REPORT          0x0Bu
@@ -983,6 +983,34 @@ typedef uint8_t sm_key_t[16];
  * @param supervision_timeout
  */
 #define HCI_SUBEVENT_LE_SUBRATE_CHANGE                            0x23u
+
+/**
+ * @format 1111
+ * @param subevent_code
+ * @param advertising_handle
+ * @param subevent_start
+ * @param subevent_data_count
+ */
+#define HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_DATA_REQUEST         0x27u
+
+/**
+ * @format 11H11BBB22211H
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param role
+ * @param peer_address_type
+ * @param peer_addresss
+ * @param local_resolvable_private_address
+ * @param peer_resolvable_private_address
+ * @param conn_interval
+ * @param conn_latency
+ * @param supervision_timeout
+ * @param master_clock_accuracy
+ * @param advertising_handle
+ * @param sync_handle
+ */
+#define HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2           0x29u
 
 /**
  * @format 1
