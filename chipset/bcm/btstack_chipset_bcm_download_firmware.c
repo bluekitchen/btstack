@@ -61,29 +61,52 @@ static const btstack_uart_block_t * uart_driver;
 static const btstack_chipset_t * chipset;
 
 static uint8_t response_buffer[260];
+static uint16_t response_buffer_len;
 static uint8_t command_buffer[260];
 
 static const int hci_command_complete_len = 7;
 static const uint8_t hci_reset_cmd[] = { 0x03, 0x0c, 0x00 };
-// static const uint8_t hci_update_baud_rate[] = { 0x01, 0x18, 0xfc, 0x06, 0x00, 0x00,0x00, 0x00, 0x00, 0x00 };
+static const uint8_t hci_command_complete_reset[] = { 0x04, 0x0e, 0x04, 0x01, 0x03, 0x0c, 0x00};
+
 static void (*download_complete)(int result);
-static int baudrate;
+static uint32_t baudrate;
 
 static void bcm_send_prepared_command(void){
-    uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
     int size = 1 + 3 + command_buffer[3];
     command_buffer[0] = 1;
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, &command_buffer[1], size-1);
+    uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
     uart_driver->send_block(command_buffer, size);
+}
+
+// Although the Controller just has been reset by the user, there might still be HCI data in the UART driver
+// which we'll ignore in the receive function
+
+static void bcm_receive_command_complete_reset(void){
+    response_buffer_len++;
+    if (response_buffer_len == hci_command_complete_len){
+        // try to match command complete for HCI Reset
+        if (memcmp(response_buffer, hci_command_complete_reset, hci_command_complete_len) == 0){
+            bcm_w4_command_complete();
+            return;
+        }
+        memmove(&response_buffer[0], &response_buffer[1], response_buffer_len - 1);
+        response_buffer_len--;
+    }
+    uart_driver->receive_block(&response_buffer[response_buffer_len], 1);
 }
 
 static void bcm_send_hci_reset(void){
     log_info("bcm: send HCI Reset");
-    bool send_baudrate = (baudrate != 0) && (baudrate != 115200);
-    uart_driver->set_block_received(send_baudrate ? &bcm_send_hci_baudrate : &bcm_w4_command_complete);
-    uart_driver->receive_block(&response_buffer[0], hci_command_complete_len);
+    response_buffer_len = 0;
+    uart_driver->set_block_received(&bcm_receive_command_complete_reset);
+    uart_driver->receive_block(&response_buffer[response_buffer_len], 1);
+
+    command_buffer[0] = 1;
     memcpy(&command_buffer[1], hci_reset_cmd, sizeof(hci_reset_cmd));
-    bcm_send_prepared_command();
+    uint16_t size = sizeof(hci_reset_cmd);
+    hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, &command_buffer[1], size);
+    uart_driver->send_block(command_buffer, size + 1);
 }
 
 static void bcm_send_hci_baudrate(void){
@@ -104,6 +127,7 @@ static void bcm_set_local_baudrate(void){
 
 static void bcm_w4_command_complete(void){
     hci_dump_packet(HCI_EVENT_PACKET, 0, &response_buffer[1], hci_command_complete_len-1);
+    uart_driver->set_block_received(&bcm_w4_command_complete);
     bcm_send_next_init_script_command();
 }
 
