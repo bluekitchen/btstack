@@ -61,6 +61,7 @@ typedef struct {
 
     uint16_t browsing_l2cap_psm;
     uint16_t browsing_version;
+    uint16_t cover_art_l2cap_psm;
 } avrcp_sdp_query_context_t; 
 
 static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -630,7 +631,11 @@ uint16_t avrcp_sdp_query_browsing_l2cap_psm(void){
 
 void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
     des_iterator_t des_list_it;
-    des_iterator_t prot_it;
+
+    des_iterator_t additional_protocol_descriptor_list_it;
+    des_iterator_t protocol_descriptor_list_it;
+    des_iterator_t protocol_it;
+    uint8_t protocol_descriptor_id;
 
     // Handle new SDP record
     if (sdp_event_query_attribute_byte_get_record_id(packet) != avrcp_sdp_query_context.record_id) {
@@ -662,80 +667,92 @@ void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
                     }
                     break;
 
-                case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: {
+                case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
                     if (!avrcp_sdp_query_context.parse_sdp_record) break;
-                    // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
-                    for (des_iterator_init(&des_list_it, avrcp_sdp_query_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
-                        uint8_t       *des_element;
-                        uint8_t       *element;
-                        uint32_t       uuid;
 
-                        if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
+                    for (des_iterator_init(&protocol_descriptor_list_it, avrcp_sdp_query_attribute_value); des_iterator_has_more(&protocol_descriptor_list_it); des_iterator_next(&protocol_descriptor_list_it)) {
 
-                        des_element = des_iterator_get_element(&des_list_it);
-                        des_iterator_init(&prot_it, des_element);
-                        element = des_iterator_get_element(&prot_it);
+                        if (des_iterator_get_type(&protocol_descriptor_list_it) != DE_DES) continue;
+                        uint8_t * protocol_descriptor_list_element = des_iterator_get_element(&protocol_descriptor_list_it);
 
-                        if (de_get_element_type(element) != DE_UUID) continue;
+                        des_iterator_init(&protocol_it, protocol_descriptor_list_element);
+                        uint8_t * protocol_element = des_iterator_get_element(&protocol_it);
 
-                        uuid = de_get_uuid32(element);
-                        des_iterator_next(&prot_it);
+                        if (de_get_element_type(protocol_element) != DE_UUID) continue;
+
+                        uint32_t uuid = de_get_uuid32(protocol_element);
+                        des_iterator_next(&protocol_it);
                         switch (uuid){
                             case BLUETOOTH_PROTOCOL_L2CAP:
-                                if (!des_iterator_has_more(&prot_it)) continue;
-                                de_element_get_uint16(des_iterator_get_element(&prot_it), &avrcp_sdp_query_context.avrcp_l2cap_psm);
+                                if (!des_iterator_has_more(&protocol_it)) continue;
+                                de_element_get_uint16(des_iterator_get_element(&protocol_it), &avrcp_sdp_query_context.avrcp_l2cap_psm);
                                 break;
                             case BLUETOOTH_PROTOCOL_AVCTP:
-                                if (!des_iterator_has_more(&prot_it)) continue;
-                                de_element_get_uint16(des_iterator_get_element(&prot_it), &avrcp_sdp_query_context.avrcp_version);
+                                if (!des_iterator_has_more(&protocol_it)) continue;
+                                de_element_get_uint16(des_iterator_get_element(&protocol_it), &avrcp_sdp_query_context.avrcp_version);
                                 break;
                             default:
                                 break;
                         }
                     }
-                }
                     break;
-                case BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS: {
-                    // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
+
+                case BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS:
                     if (!avrcp_sdp_query_context.parse_sdp_record) break;
-                    if (de_get_element_type(avrcp_sdp_query_attribute_value) != DE_DES) break;
 
-                    des_iterator_t des_list_0_it;
-                    uint8_t       *element_0;
+                    protocol_descriptor_id = 0;
 
-                    des_iterator_init(&des_list_0_it, avrcp_sdp_query_attribute_value);
-                    element_0 = des_iterator_get_element(&des_list_0_it);
+                    for ( des_iterator_init(&additional_protocol_descriptor_list_it, avrcp_sdp_query_attribute_value);
+                          des_iterator_has_more(&additional_protocol_descriptor_list_it);
+                          des_iterator_next(&additional_protocol_descriptor_list_it)) {
 
-                    for (des_iterator_init(&des_list_it, element_0); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
-                        uint8_t       *des_element;
-                        uint8_t       *element;
-                        uint32_t       uuid;
+                        if (des_iterator_get_type(&additional_protocol_descriptor_list_it) != DE_DES) continue;
+                        uint8_t *additional_protocol_descriptor_element = des_iterator_get_element(&additional_protocol_descriptor_list_it);
 
-                        if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
+                        for ( des_iterator_init(&protocol_descriptor_list_it,additional_protocol_descriptor_element);
+                              des_iterator_has_more(&protocol_descriptor_list_it);
+                              des_iterator_next(&protocol_descriptor_list_it)) {
 
-                        des_element = des_iterator_get_element(&des_list_it);
-                        des_iterator_init(&prot_it, des_element);
-                        element = des_iterator_get_element(&prot_it);
+                            if (des_iterator_get_type(&protocol_descriptor_list_it) != DE_DES) continue;
 
-                        if (de_get_element_type(element) != DE_UUID) continue;
+                            uint8_t * protocol_descriptor_list_element = des_iterator_get_element(&protocol_descriptor_list_it);
 
-                        uuid = de_get_uuid32(element);
-                        des_iterator_next(&prot_it);
-                        switch (uuid){
-                            case BLUETOOTH_PROTOCOL_L2CAP:
-                                if (!des_iterator_has_more(&prot_it)) continue;
-                                de_element_get_uint16(des_iterator_get_element(&prot_it), &avrcp_sdp_query_context.browsing_l2cap_psm);
-                                break;
-                            case BLUETOOTH_PROTOCOL_AVCTP:
-                                if (!des_iterator_has_more(&prot_it)) continue;
-                                de_element_get_uint16(des_iterator_get_element(&prot_it), &avrcp_sdp_query_context.browsing_version);
-                                break;
-                            default:
-                                break;
+                            des_iterator_init(&protocol_it, protocol_descriptor_list_element);
+                            uint8_t * protocol_element = des_iterator_get_element(&protocol_it);
+
+                            if (de_get_element_type(protocol_element) != DE_UUID) continue;
+
+                            uint32_t uuid = de_get_uuid32(protocol_element);
+                            des_iterator_next(&protocol_it);
+                            switch (uuid) {
+                                case BLUETOOTH_PROTOCOL_L2CAP:
+                                    if (!des_iterator_has_more(&protocol_it)) continue;
+                                    switch (protocol_descriptor_id) {
+                                        case 0:
+                                            de_element_get_uint16(des_iterator_get_element(&protocol_it),
+                                                                  &avrcp_sdp_query_context.browsing_l2cap_psm);
+                                            break;
+                                        case 1:
+                                            de_element_get_uint16(des_iterator_get_element(&protocol_it),
+                                                                  &avrcp_sdp_query_context.cover_art_l2cap_psm);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                case BLUETOOTH_PROTOCOL_AVCTP:
+                                    if (!des_iterator_has_more(&protocol_it)) continue;
+                                    de_element_get_uint16(des_iterator_get_element(&protocol_it),
+                                                          &avrcp_sdp_query_context.browsing_version);
+                                    break;
+                                default:
+                                    break;
+                            }
                         }
+                        protocol_descriptor_id++;
                     }
-                }
                     break;
+
                 default:
                     break;
             }
