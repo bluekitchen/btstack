@@ -64,6 +64,7 @@ typedef struct {
 } avrcp_sdp_query_context_t; 
 
 static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void avrcp_start_next_sdp_query(void);
 
 static const char * avrcp_default_controller_service_name = "BTstack AVRCP Controller Service";
 static const char * avrcp_default_controller_service_provider_name = "BTstack AVRCP Controller Service Provider";
@@ -782,7 +783,7 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
     if (!state_ok){
         // something wrong, nevertheless, start next sdp query if this one is complete
         if (hci_event_packet_get_type(packet) == SDP_EVENT_QUERY_COMPLETE){
-            (void) sdp_client_register_query_callback(&avrcp_sdp_query_registration);
+            avrcp_start_next_sdp_query();
         }
         return;
     }
@@ -819,7 +820,61 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             return;
     }
 
-    // register the SDP Query request to check if there is another connection waiting for the query
+    avrcp_start_next_sdp_query();
+}
+
+uint8_t avrcp_disconnect(uint16_t avrcp_cid){
+    avrcp_connection_t * connection_controller = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection_controller){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    avrcp_connection_t * connection_target = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    if (!connection_target){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection_controller->browsing_connection){
+        l2cap_disconnect(connection_controller->browsing_connection->l2cap_browsing_cid);
+    }
+    l2cap_disconnect(connection_controller->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+static void avrcp_handle_start_sdp_client_query(void * context){
+    UNUSED(context);
+
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &avrcp_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
+
+        if (connection->state != AVCTP_CONNECTION_W2_SEND_SDP_QUERY) continue;
+        connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+
+        // prevent triggering SDP query twice (for each role once)
+        avrcp_connection_t * connection_with_opposite_role;
+        switch (connection->role){
+            case AVRCP_CONTROLLER:
+                connection_with_opposite_role = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, connection->avrcp_cid);
+                break;
+            case AVRCP_TARGET:
+                connection_with_opposite_role = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, connection->avrcp_cid);
+                break;
+            default:
+                btstack_assert(false);
+                return;
+        }
+        connection_with_opposite_role->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+
+        avrcp_sdp_query_context.avrcp_l2cap_psm = 0;
+        avrcp_sdp_query_context.avrcp_version  = 0;
+        avrcp_sdp_query_context.avrcp_cid = connection->avrcp_cid;
+        sdp_client_query_uuid16(&avrcp_handle_sdp_client_query_result, (uint8_t *) connection->remote_addr, BLUETOOTH_PROTOCOL_AVCTP);
+        return;
+    }
+}
+
+static void avrcp_start_next_sdp_query(void) {
+    avrcp_sdp_query_registration.callback = &avrcp_handle_start_sdp_client_query;
     // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
     (void) sdp_client_register_query_callback(&avrcp_sdp_query_registration);
 }
@@ -1056,56 +1111,6 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     }
 }
 
-uint8_t avrcp_disconnect(uint16_t avrcp_cid){
-    avrcp_connection_t * connection_controller = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
-    if (!connection_controller){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    avrcp_connection_t * connection_target = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
-    if (!connection_target){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (connection_controller->browsing_connection){
-        l2cap_disconnect(connection_controller->browsing_connection->l2cap_browsing_cid);
-    }
-    l2cap_disconnect(connection_controller->l2cap_signaling_cid);
-    return ERROR_CODE_SUCCESS;
-}
-
-static void avrcp_handle_start_sdp_client_query(void * context){
-    UNUSED(context);
-
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &avrcp_connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
-        
-        if (connection->state != AVCTP_CONNECTION_W2_SEND_SDP_QUERY) continue;
-        connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
-        
-        // prevent triggering SDP query twice (for each role once)
-        avrcp_connection_t * connection_with_opposite_role;       
-        switch (connection->role){
-            case AVRCP_CONTROLLER:
-                connection_with_opposite_role = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, connection->avrcp_cid);
-                break;
-            case AVRCP_TARGET:
-                connection_with_opposite_role = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, connection->avrcp_cid);
-                break;
-            default:    
-                btstack_assert(false);
-                return;
-        }
-        connection_with_opposite_role->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
-
-        avrcp_sdp_query_context.avrcp_l2cap_psm = 0;
-        avrcp_sdp_query_context.avrcp_version  = 0;
-        avrcp_sdp_query_context.avrcp_cid = connection->avrcp_cid;
-        sdp_client_query_uuid16(&avrcp_handle_sdp_client_query_result, (uint8_t *) connection->remote_addr, BLUETOOTH_PROTOCOL_AVCTP);
-        return;
-    }
-}
-
 uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     btstack_assert(avrcp_controller_packet_handler != NULL);
     btstack_assert(avrcp_target_packet_handler != NULL);
@@ -1140,9 +1145,7 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     connection_target->state     = AVCTP_CONNECTION_W2_SEND_SDP_QUERY;
     connection_target->avrcp_cid = cid;
 
-    avrcp_sdp_query_registration.callback = &avrcp_handle_start_sdp_client_query;
-    // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
-    (void) sdp_client_register_query_callback(&avrcp_sdp_query_registration);
+    avrcp_start_next_sdp_query();
     return ERROR_CODE_SUCCESS;
 }
 
