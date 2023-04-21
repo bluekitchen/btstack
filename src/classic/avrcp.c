@@ -847,8 +847,7 @@ static void avrcp_handle_start_sdp_client_query(void * context){
     while (btstack_linked_list_iterator_has_next(&it)){
         avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
 
-        if (connection->state != AVCTP_CONNECTION_W2_SEND_SDP_QUERY) continue;
-        connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+        if (connection->trigger_sdp_query == false) continue;
 
         // prevent triggering SDP query twice (for each role once)
         avrcp_connection_t * connection_with_opposite_role;
@@ -863,7 +862,9 @@ static void avrcp_handle_start_sdp_client_query(void * context){
                 btstack_assert(false);
                 return;
         }
-        connection_with_opposite_role->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+
+        connection->trigger_sdp_query = false;
+        connection_with_opposite_role->trigger_sdp_query = false;
 
         avrcp_sdp_query_context.avrcp_l2cap_psm = 0;
         avrcp_sdp_query_context.avrcp_version  = 0;
@@ -1139,11 +1140,14 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
         *avrcp_cid = cid;
     }
 
-    connection_controller->state = AVCTP_CONNECTION_W2_SEND_SDP_QUERY;
     connection_controller->avrcp_cid = cid;
+    connection_target->avrcp_cid     = cid;
 
-    connection_target->state     = AVCTP_CONNECTION_W2_SEND_SDP_QUERY;
-    connection_target->avrcp_cid = cid;
+    connection_controller->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+    connection_target->state     = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+
+    connection_controller->trigger_sdp_query = true;
+    connection_target->trigger_sdp_query     = true;
 
     avrcp_start_next_sdp_query();
     return ERROR_CODE_SUCCESS;

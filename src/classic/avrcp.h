@@ -518,6 +518,7 @@ typedef struct {
     
     bool incoming_declined;
 
+    bool    trigger_sdp_query;
     uint16_t avrcp_browsing_cid;
     uint16_t browsing_l2cap_psm;
     uint16_t browsing_version;
