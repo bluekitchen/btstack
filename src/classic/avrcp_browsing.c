@@ -49,12 +49,6 @@
 #include "classic/sdp_util.h"
 #include "classic/avrcp_browsing.h"
 
-typedef struct {
-    uint16_t browsing_cid;
-    uint16_t browsing_l2cap_psm;
-    uint16_t browsing_version;
-} avrcp_browsing_sdp_query_context_t; 
-
 static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // higher layer callbacks
@@ -65,7 +59,6 @@ static btstack_packet_handler_t avrcp_browsing_target_packet_handler;
 // sdp query
 static bd_addr_t avrcp_browsing_sdp_addr;
 static btstack_context_callback_registration_t avrcp_browsing_handle_sdp_client_query_request;
-static avrcp_browsing_sdp_query_context_t avrcp_browsing_sdp_query_context;
 
 static bool avrcp_browsing_l2cap_service_registered;
 
@@ -452,7 +445,6 @@ void avrcp_browsing_deinit(void){
 
     (void) memset(avrcp_browsing_sdp_addr, 0, 6);
     (void) memset(&avrcp_browsing_handle_sdp_client_query_request, 0, sizeof(avrcp_browsing_handle_sdp_client_query_request));
-    (void) memset(&avrcp_browsing_sdp_query_context, 0, sizeof(avrcp_browsing_sdp_query_context_t));
 
     avrcp_browsing_l2cap_service_registered = false;
 }
