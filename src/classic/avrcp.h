@@ -676,6 +676,8 @@ uint16_t avrcp_get_num_bytes_for_header(avrcp_command_opcode_t command_opcode, a
 void avrcp_register_controller_packet_handler(btstack_packet_handler_t avrcp_controller_packet_handler);
 void avrcp_register_target_packet_handler(btstack_packet_handler_t avrcp_target_packet_handler);
 
+void avrcp_register_browsing_sdp_query_complete_handler(void (*callback)(avrcp_connection_t * connection, uint8_t status));
+
 uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size);
 
 avrcp_connection_t * avrcp_get_connection_for_l2cap_signaling_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);

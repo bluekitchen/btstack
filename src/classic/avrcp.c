@@ -98,6 +98,8 @@ static avrcp_sdp_query_context_t               avrcp_sdp_query_context;
 static uint8_t                                 avrcp_sdp_query_attribute_value[45];
 static const unsigned int                      avrcp_sdp_query_attribute_value_buffer_size = sizeof(avrcp_sdp_query_attribute_value);
 
+static void (*avrcp_browsing_sdp_query_complete_handler)(avrcp_connection_t * connection, uint8_t status);
+
 
 const char * avrcp_subunit2str(uint16_t index){
     if (index <= 11) return avrcp_subunit_type_name[index];
@@ -742,8 +744,7 @@ void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
     }
 }
 
-static void avrcp_handle_sdp_query_completed(avrcp_connection_t * connection, uint8_t status){
-    btstack_assert(connection != NULL);
+static void avrcp_signaling_handle_sdp_query_complete(avrcp_connection_t * connection, uint8_t status){
     if (status == ERROR_CODE_SUCCESS){
         connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
         connection->avrcp_l2cap_psm = avrcp_sdp_query_context.avrcp_l2cap_psm;
@@ -756,20 +757,28 @@ static void avrcp_handle_sdp_query_completed(avrcp_connection_t * connection, ui
     }
 }
 
+static void avrcp_handle_sdp_query_completed(avrcp_connection_t * connection, uint8_t status){
+    btstack_assert(connection != NULL);
+    // SDP Signaling Query?
+    if (connection->state == AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE){
+        avrcp_signaling_handle_sdp_query_complete(connection, status);
+        return;
+    }
+    // Browsing SDP <- Browsing Connection <- Existing SDP Connection => it wasn't an SDP query for signaling
+    if (avrcp_browsing_sdp_query_complete_handler != NULL){
+        (*avrcp_browsing_sdp_query_complete_handler)(connection, status);
+    }
+}
+
 static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
 
-    bool state_ok = true;
-    avrcp_connection_t * avrcp_target_connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_sdp_query_context.avrcp_cid);
-    if (!avrcp_target_connection || avrcp_target_connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) {
-        state_ok = false;
-    }
+    avrcp_connection_t * avrcp_target_connection     = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET,     avrcp_sdp_query_context.avrcp_cid);
     avrcp_connection_t * avrcp_controller_connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_sdp_query_context.avrcp_cid);
-    if (!avrcp_controller_connection || avrcp_controller_connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) {
-        state_ok = false;
-    }
+    bool state_ok = (avrcp_target_connection != NULL) && (avrcp_controller_connection != NULL);
+
     if (!state_ok){
         // something wrong, nevertheless, start next sdp query if this one is complete
         if (hci_event_packet_get_type(packet) == SDP_EVENT_QUERY_COMPLETE){
@@ -814,7 +823,6 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
     // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
     (void) sdp_client_register_query_callback(&avrcp_sdp_query_registration);
 }
-
 
 static avrcp_connection_t * avrcp_handle_incoming_connection_for_role(avrcp_role_t role, avrcp_connection_t * connection, bd_addr_t event_addr, hci_con_handle_t con_handle, uint16_t local_cid, uint16_t avrcp_cid){
     if (connection == NULL){
@@ -1173,6 +1181,11 @@ void avrcp_register_target_packet_handler(btstack_packet_handler_t callback){
 void avrcp_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
     avrcp_callback = callback;
+}
+
+void avrcp_register_browsing_sdp_query_complete_handler(void (*callback)(avrcp_connection_t * connection, uint8_t status)){
+    btstack_assert(callback != NULL);
+    avrcp_browsing_sdp_query_complete_handler = callback;
 }
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
