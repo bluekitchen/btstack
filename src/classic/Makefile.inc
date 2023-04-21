@@ -13,6 +13,7 @@ SRC_CLASSIC_FILES = \
     avrcp_browsing_controller.c \
     avrcp_browsing_target.c \
     avrcp_controller.c \
+    avrcp_cover_art_client.c \
     avrcp_media_item_iterator.c \
     avrcp_target.c \
     bnep.c \

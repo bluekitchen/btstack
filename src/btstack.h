@@ -115,6 +115,7 @@
 #include "classic/avrcp_browsing_controller.h"
 #include "classic/avrcp_browsing_target.h"
 #include "classic/avrcp_controller.h"
+#include "classic/avrcp_cover_art_client.h"
 #include "classic/avrcp_media_item_iterator.h"
 #include "classic/avrcp_target.h"
 #include "classic/bnep.h"
