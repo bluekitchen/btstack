@@ -646,6 +646,10 @@ typedef struct {
     uint8_t  avctp_reassembly_buffer[200];
 #endif
 
+#ifdef ENABLE_AVRCP_COVER_ART
+    uint16_t cover_art_psm;
+#endif
+
 } avrcp_connection_t;
 
 typedef struct {
