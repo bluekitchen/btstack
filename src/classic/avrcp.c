@@ -808,6 +808,9 @@ static void avrcp_handle_sdp_query_completed(avrcp_connection_t * connection, ui
         connection->avrcp_l2cap_psm = avrcp_sdp_query_context.avrcp_l2cap_psm;
         connection->browsing_version = avrcp_sdp_query_context.browsing_version;
         connection->browsing_l2cap_psm = avrcp_sdp_query_context.browsing_l2cap_psm;
+#ifdef ENABLE_AVRCP_COVER_ART
+        connection->cover_art_psm = avrcp_sdp_query_context.cover_art_l2cap_psm;
+#endif
     }
 
     // SDP Signaling Query?
