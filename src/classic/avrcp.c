@@ -755,11 +755,6 @@ static void avrcp_signaling_handle_sdp_query_complete(avrcp_connection_t * conne
     }
 
     if (status == ERROR_CODE_SUCCESS){
-        // cache SDP result
-        connection->avrcp_l2cap_psm = avrcp_sdp_query_context.avrcp_l2cap_psm;
-        connection->browsing_version = avrcp_sdp_query_context.browsing_version;
-        connection->browsing_l2cap_psm = avrcp_sdp_query_context.browsing_l2cap_psm;
-
         // ready to connect
         connection->state = AVCTP_CONNECTION_W2_L2CAP_CONNECT;
 
@@ -790,6 +785,14 @@ static void avrcp_signaling_handle_sdp_query_complete(avrcp_connection_t * conne
 
 static void avrcp_handle_sdp_query_completed(avrcp_connection_t * connection, uint8_t status){
     btstack_assert(connection != NULL);
+
+    // cache SDP result on success
+    if (status == ERROR_CODE_SUCCESS){
+        connection->avrcp_l2cap_psm = avrcp_sdp_query_context.avrcp_l2cap_psm;
+        connection->browsing_version = avrcp_sdp_query_context.browsing_version;
+        connection->browsing_l2cap_psm = avrcp_sdp_query_context.browsing_l2cap_psm;
+    }
+
     // SDP Signaling Query?
     if (connection->state == AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE){
         avrcp_signaling_handle_sdp_query_complete(connection, status);
