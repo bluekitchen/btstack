@@ -1145,6 +1145,13 @@ void avrcp_register_browsing_sdp_query_complete_handler(void (*callback)(avrcp_c
 }
 
 
+void avrcp_trigger_sdp_query(avrcp_connection_t *connection_controller, avrcp_connection_t *connection_target) {
+    connection_controller->trigger_sdp_query = true;
+    connection_target->trigger_sdp_query     = true;
+
+    avrcp_start_next_sdp_query();
+}
+
 uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     btstack_assert(avrcp_controller_packet_handler != NULL);
     btstack_assert(avrcp_target_packet_handler != NULL);
@@ -1179,10 +1186,8 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     connection_controller->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
     connection_target->state     = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
 
-    connection_controller->trigger_sdp_query = true;
-    connection_target->trigger_sdp_query     = true;
+    avrcp_trigger_sdp_query(connection_controller, connection_target);
 
-    avrcp_start_next_sdp_query();
     return ERROR_CODE_SUCCESS;
 }
 
