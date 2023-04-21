@@ -742,19 +742,18 @@ void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
     }
 }
 
-static void avrcp_handle_sdp_query_failed(avrcp_connection_t * connection, uint8_t status){
-    if (connection == NULL) return;
-    log_info("AVRCP: SDP query failed with status 0x%02x.", status);
-    avrcp_emit_connection_established(connection->avrcp_cid, connection->remote_addr, connection->con_handle, status);
-    avrcp_finalize_connection(connection);
-}
-
-static void avrcp_handle_sdp_query_succeeded(avrcp_connection_t * connection){
-    if (connection == NULL) return;
-    connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-    connection->avrcp_l2cap_psm = avrcp_sdp_query_context.avrcp_l2cap_psm;
-    connection->browsing_version = avrcp_sdp_query_context.browsing_version;
-    connection->browsing_l2cap_psm = avrcp_sdp_query_context.browsing_l2cap_psm;
+static void avrcp_handle_sdp_query_completed(avrcp_connection_t * connection, uint8_t status){
+    btstack_assert(connection != NULL);
+    if (status == ERROR_CODE_SUCCESS){
+        connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+        connection->avrcp_l2cap_psm = avrcp_sdp_query_context.avrcp_l2cap_psm;
+        connection->browsing_version = avrcp_sdp_query_context.browsing_version;
+        connection->browsing_l2cap_psm = avrcp_sdp_query_context.browsing_l2cap_psm;
+    } else {
+        log_info("AVRCP: SDP query failed with status 0x%02x.", status);
+        avrcp_emit_connection_established(connection->avrcp_cid, connection->remote_addr, connection->con_handle, status);
+        avrcp_finalize_connection(connection);
+    }
 }
 
 static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -790,19 +789,19 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             status = sdp_event_query_complete_get_status(packet);
     
             if (status != ERROR_CODE_SUCCESS){
-                avrcp_handle_sdp_query_failed(avrcp_controller_connection, status);
-                avrcp_handle_sdp_query_failed(avrcp_target_connection, status);
+                avrcp_handle_sdp_query_completed(avrcp_controller_connection, status);
+                avrcp_handle_sdp_query_completed(avrcp_target_connection, status);
                 break;
             }
 
             if (!avrcp_sdp_query_context.avrcp_l2cap_psm){
-                avrcp_handle_sdp_query_failed(avrcp_controller_connection, SDP_SERVICE_NOT_FOUND);
-                avrcp_handle_sdp_query_failed(avrcp_target_connection, SDP_SERVICE_NOT_FOUND);
+                avrcp_handle_sdp_query_completed(avrcp_controller_connection, SDP_SERVICE_NOT_FOUND);
+                avrcp_handle_sdp_query_completed(avrcp_target_connection, SDP_SERVICE_NOT_FOUND);
                 break;                
-            } 
-            
-            avrcp_handle_sdp_query_succeeded(avrcp_controller_connection);
-            avrcp_handle_sdp_query_succeeded(avrcp_target_connection);
+            }
+
+            avrcp_handle_sdp_query_completed(avrcp_controller_connection, ERROR_CODE_SUCCESS);
+            avrcp_handle_sdp_query_completed(avrcp_target_connection, ERROR_CODE_SUCCESS);
 
             l2cap_create_channel(&avrcp_packet_handler, avrcp_target_connection->remote_addr, avrcp_sdp_query_context.avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
             break;
