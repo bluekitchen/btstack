@@ -843,22 +843,6 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
 
 }
 
-uint8_t avrcp_disconnect(uint16_t avrcp_cid){
-    avrcp_connection_t * connection_controller = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
-    if (!connection_controller){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    avrcp_connection_t * connection_target = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
-    if (!connection_target){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (connection_controller->browsing_connection){
-        l2cap_disconnect(connection_controller->browsing_connection->l2cap_browsing_cid);
-    }
-    l2cap_disconnect(connection_controller->l2cap_signaling_cid);
-    return ERROR_CODE_SUCCESS;
-}
-
 static void avrcp_handle_start_sdp_client_query(void * context){
     UNUSED(context);
 
@@ -1131,6 +1115,36 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     }
 }
 
+void avrcp_init(void){
+    avrcp_connections = NULL;
+    if (avrcp_l2cap_service_registered) return;
+
+    int status = l2cap_register_service(&avrcp_packet_handler, BLUETOOTH_PSM_AVCTP, 0xffff, gap_get_security_level());
+    if (status != ERROR_CODE_SUCCESS) return;
+    avrcp_l2cap_service_registered = true;
+}
+
+void avrcp_register_controller_packet_handler(btstack_packet_handler_t callback){
+    // note: called by avrcp_controller_init
+    avrcp_controller_packet_handler = callback;
+}
+
+void avrcp_register_target_packet_handler(btstack_packet_handler_t callback){
+    // note: called by avrcp_target_init
+    avrcp_target_packet_handler = callback;
+}
+
+void avrcp_register_packet_handler(btstack_packet_handler_t callback){
+    btstack_assert(callback != NULL);
+    avrcp_callback = callback;
+}
+
+void avrcp_register_browsing_sdp_query_complete_handler(void (*callback)(avrcp_connection_t * connection, uint8_t status)){
+    btstack_assert(callback != NULL);
+    avrcp_browsing_sdp_query_complete_handler = callback;
+}
+
+
 uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     btstack_assert(avrcp_controller_packet_handler != NULL);
     btstack_assert(avrcp_target_packet_handler != NULL);
@@ -1145,15 +1159,15 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     }
 
     uint16_t cid = avrcp_get_next_cid(AVRCP_CONTROLLER);
-    
+
     connection_controller = avrcp_create_connection(AVRCP_CONTROLLER, remote_addr);
     if (!connection_controller) return BTSTACK_MEMORY_ALLOC_FAILED;
-    
+
     connection_target = avrcp_create_connection(AVRCP_TARGET, remote_addr);
     if (!connection_target){
         avrcp_finalize_connection(connection_controller);
         return BTSTACK_MEMORY_ALLOC_FAILED;
-    } 
+    }
 
     if (avrcp_cid != NULL){
         *avrcp_cid = cid;
@@ -1172,13 +1186,20 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-void avrcp_init(void){
-    avrcp_connections = NULL;
-    if (avrcp_l2cap_service_registered) return;
-
-    int status = l2cap_register_service(&avrcp_packet_handler, BLUETOOTH_PSM_AVCTP, 0xffff, gap_get_security_level());
-    if (status != ERROR_CODE_SUCCESS) return;
-    avrcp_l2cap_service_registered = true;
+uint8_t avrcp_disconnect(uint16_t avrcp_cid){
+    avrcp_connection_t * connection_controller = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection_controller){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    avrcp_connection_t * connection_target = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    if (!connection_target){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection_controller->browsing_connection){
+        l2cap_disconnect(connection_controller->browsing_connection->l2cap_browsing_cid);
+    }
+    l2cap_disconnect(connection_controller->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 void avrcp_deinit(void){
@@ -1195,25 +1216,6 @@ void avrcp_deinit(void){
     (void) memset(&avrcp_sdp_query_context, 0, sizeof(avrcp_sdp_query_context_t));
     (void) memset(avrcp_sdp_query_attribute_value, 0, sizeof(avrcp_sdp_query_attribute_value));
 }
-
-void avrcp_register_controller_packet_handler(btstack_packet_handler_t callback){
-    avrcp_controller_packet_handler = callback;
-}
-
-void avrcp_register_target_packet_handler(btstack_packet_handler_t callback){
-    avrcp_target_packet_handler = callback;
-}
-
-void avrcp_register_packet_handler(btstack_packet_handler_t callback){
-    btstack_assert(callback != NULL);
-    avrcp_callback = callback;
-}
-
-void avrcp_register_browsing_sdp_query_complete_handler(void (*callback)(avrcp_connection_t * connection, uint8_t status)){
-    btstack_assert(callback != NULL);
-    avrcp_browsing_sdp_query_complete_handler = callback;
-}
-
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 #define FUZZ_CID 0x44
 #define FUZZ_CON_HANDLE 0x0001
