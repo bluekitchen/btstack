@@ -412,7 +412,7 @@ static void avrcp_browsing_handle_sdp_query_complete(avrcp_connection_t * connec
                 btstack_assert(false);
                 return;
         }
-        if (connection_with_opposite_role->browsing_connection->state == AVCTP_CONNECTION_W4_L2CAP_CONNECTED) {
+        if (connection_with_opposite_role->browsing_connection->state == AVCTP_CONNECTION_W2_L2CAP_CONNECT) {
 
             connection->browsing_connection->state                    = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
             connection_with_opposite_role->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
