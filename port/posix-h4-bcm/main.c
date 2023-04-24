@@ -172,9 +172,6 @@ int main(int argc, const char * argv[]){
     const btstack_chipset_t * chipset = btstack_chipset_bcm_instance();
     chipset->init(&transport_config);
 
-    // set chipset name
-    btstack_chipset_bcm_set_device_name("CYW55560A1");
-
     // setup UART driver
     const btstack_uart_t * uart_driver = (const btstack_uart_t *) btstack_uart_posix_instance();
 

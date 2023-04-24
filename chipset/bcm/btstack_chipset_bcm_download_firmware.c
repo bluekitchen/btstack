@@ -49,6 +49,7 @@
 #include "btstack_chipset_bcm.h"
 #include "btstack_chipset_bcm_download_firmware.h"
 #include "bluetooth.h"
+#include "bluetooth_company_id.h"
 #include "btstack_debug.h"
 #include "btstack_chipset.h"
 
@@ -71,6 +72,7 @@ static const uint8_t hci_reset_cmd[] =              { 0x03, 0x0c, 0x00 };
 static const uint8_t hci_command_complete_reset[] = { 0x04, 0x0e, 0x04, 0x01, 0x03, 0x0c, 0x00};
 
 static void (*download_complete)(int result);
+
 static uint32_t baudrate;
 
 static inline void bcm_hci_dump_event(void){
@@ -85,12 +87,36 @@ static void bcm_send_prepared_command(void){
     uart_driver->send_block(command_buffer, command_len + 1);
 }
 
+// select controller based on { manufacturer / lmp_subversion }
+static void bcm_detect_controller(uint16_t manufacturer,
+                                  uint16_t lmp_subversion) {
+    const char * device_name = NULL;
+    switch (manufacturer){
+        case BLUETOOTH_COMPANY_ID_INFINEON_TECHNOLOGIES_AG:
+            switch (lmp_subversion){
+                case 0x2257:
+                    // CYW5557x
+                    device_name = "CYW55560A1";
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    if (device_name == NULL){
+        printf("Unknown device, please update bcm_detect_controller()\n");
+        printf("in btstack/chipset/bcm/btstack_chipset_bcm_download_firmware.c\n");
+    } else {
+        printf("Controller: %s\n", device_name);
+        btstack_chipset_bcm_set_device_name(device_name);
+    }
+}
+
 // Send / Receive HCI Read Local Version Information
 
 static void bcm_receive_command_command_complete_read_local_version(void){
-
-    // TODO: check version / detect controller
-
     const uint8_t * packet = &response_buffer[1];
     printf("ROM version information:\n");
     uint16_t hci_version    = packet[6];
@@ -103,6 +129,9 @@ static void bcm_receive_command_command_complete_read_local_version(void){
     printf("- LMP Version    0x%04x\n", lmp_version);
     printf("- LMP Subversion 0x%04x\n", lmp_subversion);
     printf("- Manufacturer 0x%04x\n", manufacturer);
+
+    bcm_detect_controller(manufacturer, lmp_subversion);
+
     bcm_w4_command_complete();
 }
 
