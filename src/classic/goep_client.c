@@ -170,6 +170,14 @@ static goep_client_t * goep_client_for_bearer_cid(uint16_t bearer_cid){
     if (bearer_cid == goep_client_singleton.bearer_cid){
         return &goep_client_singleton;
     } else {
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &goep_clients);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            goep_client_t * goep_client = (goep_client_t *) btstack_linked_list_iterator_next(&it);
+            if (goep_client->bearer_cid == bearer_cid){
+                return goep_client;
+            }
+        }
         return NULL;
     }
 }
@@ -246,11 +254,11 @@ static void goep_client_handle_sdp_query_end_of_record(goep_client_t * goep_clie
 static uint8_t goep_client_start_connect(goep_client_t * goep_client){
 #ifdef ENABLE_GOEP_L2CAP
     if (goep_client->l2cap_psm){
-    log_info("Remote GOEP L2CAP PSM: %u", goep_client->l2cap_psm);
-    return l2cap_ertm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->l2cap_psm,
-    &goep_client->ertm_config, goep_client->ertm_buffer,
-    goep_client->ertm_buffer_size, &goep_client->bearer_cid);
-}
+        log_info("Remote GOEP L2CAP PSM: %u", goep_client->l2cap_psm);
+        return l2cap_ertm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->l2cap_psm,
+        &goep_client->ertm_config, goep_client->ertm_buffer,
+        goep_client->ertm_buffer_size, &goep_client->bearer_cid);
+    }
 #endif
     log_info("Remote GOEP RFCOMM Server Channel: %u", goep_client->rfcomm_port);
     return rfcomm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->rfcomm_port, &goep_client->bearer_cid);
@@ -511,8 +519,6 @@ uint8_t goep_client_connect_l2cap(goep_client_t *goep_client, l2cap_ertm_config_
     goep_client->client_handler = handler;
     goep_client->profile_supported_features = PROFILE_FEATURES_NOT_PRESENT;
     (void)memcpy(goep_client->bd_addr, addr, 6);
-    goep_client->sdp_query_request.callback = geop_client_sdp_query_start;
-    goep_client->sdp_query_request.context = (void *)(uintptr_t) goep_client->cid;
     goep_client->obex_connection_id = OBEX_CONNECTION_ID_INVALID;
     memcpy(&goep_client->ertm_config, l2cap_ertm_config, sizeof(l2cap_ertm_config_t));
     goep_client->ertm_buffer_size = l2cap_ertm_buffer_size;
