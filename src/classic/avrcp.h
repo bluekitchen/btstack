@@ -356,7 +356,6 @@ typedef enum {
 
 typedef enum {
     AVCTP_CONNECTION_IDLE,
-    AVCTP_CONNECTION_W2_SEND_SDP_QUERY,
     AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE,
     AVCTP_CONNECTION_W4_ERTM_CONFIGURATION,
     AVCTP_CONNECTION_W2_L2CAP_CONNECT,
@@ -511,18 +510,24 @@ typedef struct {
     
     avrcp_role_t role;
     bd_addr_t remote_addr;
-    uint16_t avrcp_l2cap_psm;
+    hci_con_handle_t con_handle;
+
     uint16_t l2cap_signaling_cid;
     uint16_t l2cap_mtu;
     uint16_t avrcp_cid;
-    hci_con_handle_t con_handle;
-    
+    uint16_t avrcp_browsing_cid;
+
     bool incoming_declined;
 
     bool    trigger_sdp_query;
-    uint16_t avrcp_browsing_cid;
+
+    // SDP results
+    uint16_t avrcp_l2cap_psm;
     uint16_t browsing_l2cap_psm;
     uint16_t browsing_version;
+#ifdef ENABLE_AVRCP_COVER_ART
+    uint16_t cover_art_psm;
+#endif
 
     avrcp_browsing_connection_t * browsing_connection;
 
@@ -640,14 +645,9 @@ typedef struct {
     uint32_t target_total_tracks;
     uint32_t target_track_nr;
 
-
 #ifdef ENABLE_AVCTP_FRAGMENTATION
     uint16_t avctp_reassembly_size;
     uint8_t  avctp_reassembly_buffer[200];
-#endif
-
-#ifdef ENABLE_AVRCP_COVER_ART
-    uint16_t cover_art_psm;
 #endif
 
 } avrcp_connection_t;
