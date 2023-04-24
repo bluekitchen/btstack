@@ -78,6 +78,7 @@ typedef struct {
     btstack_context_callback_registration_t sdp_query_request;
 
     uint8_t          rfcomm_port;
+    uint16_t         l2cap_psm;
     uint16_t         bearer_cid;
     uint16_t         bearer_mtu;
 
@@ -104,7 +105,6 @@ typedef struct {
     int              obex_connection_id_set;
 
 #ifdef ENABLE_GOEP_L2CAP
-    uint16_t            l2cap_psm;
     l2cap_ertm_config_t ertm_config;
     uint16_t            ertm_buffer_size;
     uint8_t           * ertm_buffer;

@@ -538,8 +538,14 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
     if (goep_client->state != GOEP_CLIENT_INIT) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
+#ifdef ENABLE_GOEP_L2CAP
     return goep_client_connect(goep_client, &goep_client_singleton_ertm_config, goep_client_singleton_ertm_buffer,
                                sizeof(goep_client_singleton_ertm_buffer), handler, addr, uuid, 0, out_cid);
+#else
+    return goep_client_connect(goep_client, NULL, NULL,
+                               0, handler, addr, uuid, 0, out_cid);
+#endif
+
 }
 
 uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid){
