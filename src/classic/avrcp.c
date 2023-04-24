@@ -101,7 +101,9 @@ static uint8_t                                 avrcp_sdp_query_attribute_value[4
 static const unsigned int                      avrcp_sdp_query_attribute_value_buffer_size = sizeof(avrcp_sdp_query_attribute_value);
 
 static void (*avrcp_browsing_sdp_query_complete_handler)(avrcp_connection_t * connection, uint8_t status);
-
+#ifdef ENABLE_AVRCP_COVER_ART
+static void (*avrcp_cover_art_sdp_query_complete_handler)(avrcp_connection_t * connection, uint8_t status);
+#endif
 
 const char * avrcp_subunit2str(uint16_t index){
     if (index <= 11) return avrcp_subunit_type_name[index];
@@ -818,10 +820,16 @@ static void avrcp_handle_sdp_query_completed(avrcp_connection_t * connection, ui
         avrcp_signaling_handle_sdp_query_complete(connection, status);
         return;
     }
-    // Browsing SDP <- Browsing Connection <- Existing SDP Connection => it wasn't an SDP query for signaling
+    // Browsing SDP <- Browsing Connection <- Existing AVRCP Connection => it wasn't an SDP query for signaling
     if (avrcp_browsing_sdp_query_complete_handler != NULL){
         (*avrcp_browsing_sdp_query_complete_handler)(connection, status);
     }
+#ifdef ENABLE_AVRCP_COVER_ART
+    // Cover Art SDP <- Cover Art Connection <- Existing AVRCP Connection => it wasn't an SDP query for signaling
+    if (avrcp_cover_art_sdp_query_complete_handler != NULL){
+        (*avrcp_cover_art_sdp_query_complete_handler)(connection, status);
+    }
+#endif
 }
 
 static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1167,6 +1175,12 @@ void avrcp_register_browsing_sdp_query_complete_handler(void (*callback)(avrcp_c
     avrcp_browsing_sdp_query_complete_handler = callback;
 }
 
+#ifdef ENABLE_AVRCP_COVER_ART
+void avrcp_register_cover_art_sdp_query_complete_handler(void (*callback)(avrcp_connection_t * connection, uint8_t status)){
+    btstack_assert(callback != NULL);
+    avrcp_cover_art_sdp_query_complete_handler = callback;
+}
+#endif
 
 void avrcp_trigger_sdp_query(avrcp_connection_t *connection_controller, avrcp_connection_t *connection_target) {
     connection_controller->trigger_sdp_query = true;
