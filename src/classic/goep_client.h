@@ -140,6 +140,25 @@ goep_client_connect(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_
                     uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid,
                     uint8_t instance_id, uint16_t *out_cid);
 
+/**
+ * @brief Connect to a GEOP server over L2CAP with specified PSM on a remote device.
+ * @note In contrast to goep_client_connect which searches for a OBEX service with a given UUID, this
+ *       function only supports GOEP v2.0 (L2CAP) to a specified L2CAP PSM
+ * @param goep_client
+ * @param l2cap_ertm_config
+ * @param l2cap_ertm_buffer_size
+ * @param l2cap_ertm_buffer
+ * @param handler
+ * @param addr
+ * @param l2cap_psm
+ * @param out_cid
+ * @return
+ */
+uint8_t
+goep_client_connect_l2cap(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_config, uint8_t *l2cap_ertm_buffer,
+                    uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t l2cap_psm,
+                    uint16_t *out_cid);
+
 /*
  * @brief Connect to a GEOP server with specified UUID on a remote device.
  * @note This functions uses a single goep_client_t instance and only allows for a single goep connection
