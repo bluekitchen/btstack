@@ -418,6 +418,14 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
 			event[pos++] = (uint8_t) value_len;
             (void)memcpy(event + pos, value, value_len);
             break;
+#ifdef ENABLE_AVRCP_COVER_ART
+        case AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART:
+            event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_COVER_ART_INFO;
+            btstack_assert(value_len <= 255);
+            event[pos++] = (uint8_t) value_len;
+            (void)memcpy(event + pos, value, value_len);
+            break;
+#endif
         case AVRCP_MEDIA_ATTR_SONG_LENGTH_MS:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO;
             if (value){
