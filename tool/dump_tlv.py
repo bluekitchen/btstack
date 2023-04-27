@@ -21,6 +21,8 @@ def read_net_32(f):
         return -1
     return ord(a) << 24 | ord(b) << 16 | ord(c) << 8 | ord(d)
 
+def format_tag(tag):
+    return ''.join([ '%c' % i if (i > 0x20 and i < 128) else '.'  for i in tag])
 
 def as_hex(data):
     str_list = []
@@ -51,13 +53,13 @@ with open(infile, 'rb') as fin:
     pos += 8
     print("Valid .tlv file")
     while True:
-        tag = read_net_32(fin)
-        if tag < 0:
+        tag = fin.read(4)
+        if not tag:
             break
         pos += 4
         len = read_net_32(fin)
         pos += 4
         packet = fin.read(len)
         pos += len
-        print('%04x: ' % tag + as_hex(packet))
+        print("'%s' (%s): %s" % (format_tag(tag), as_hex(tag)[0:11], as_hex(packet)))
     print("Done")
