@@ -1252,12 +1252,12 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
         case AVCTP_W2_SEND_PRESS_COMMAND:
             avrcp_send_cmd_with_avctp_fragmentation(connection);
             connection->state = AVCTP_W2_RECEIVE_PRESS_RESPONSE;
-            break;
+            return;
 
         case AVCTP_W2_SEND_RELEASE_COMMAND:
             avrcp_send_cmd_with_avctp_fragmentation(connection);
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-            break;
+            return;
 
         case AVCTP_W2_SEND_COMMAND:
             avrcp_send_cmd_with_avctp_fragmentation(connection);
@@ -1272,7 +1272,8 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
             break;
     }
     
-    // send register notification if queued
+    // send register notification if queued,
+    // avrcp_handle_l2cap_data_packet_for_signaling_connection will trigger next one
     if (connection->controller_notifications_to_register != 0){
         uint8_t event_id;
         for (event_id = (uint8_t)AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; event_id < (uint8_t)AVRCP_NOTIFICATION_EVENT_LAST_INDEX; event_id++){
