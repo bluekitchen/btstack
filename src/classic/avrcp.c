@@ -790,7 +790,7 @@ static void avrcp_signaling_handle_sdp_query_complete(avrcp_connection_t * conne
                 btstack_assert(false);
                 return;
         }
-        if (connection_with_opposite_role->state == AVCTP_CONNECTION_W4_L2CAP_CONNECTED){
+        if (connection_with_opposite_role->state == AVCTP_CONNECTION_W2_L2CAP_CONNECT){
             connection->state                    = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
             connection_with_opposite_role->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
             l2cap_create_channel(&avrcp_packet_handler, connection->remote_addr, connection->avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
