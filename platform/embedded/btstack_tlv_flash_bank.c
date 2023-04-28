@@ -500,7 +500,7 @@ const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_ban
 		}
 		self->write_offset = it.offset;
 
-		if (self->write_offset < self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
+		if (self->write_offset <= self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
 
 #ifndef ENABLE_TLV_FLASH_WRITE_ONCE
 			// delete older instances of last_tag
