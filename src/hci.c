@@ -7119,13 +7119,13 @@ static bool hci_run_general_pending_commands(void){
                 connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
                 hci_send_cmd(&hci_le_connection_update, connection->con_handle, connection->le_conn_interval_min,
                              connection->le_conn_interval_max, connection->le_conn_latency, connection->le_supervision_timeout,
-                             0x0000, 0xffff);
+                             hci_stack->le_minimum_ce_length, hci_stack->le_maximum_ce_length);
                 return true;
             case CON_PARAMETER_UPDATE_REPLY:
                 connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
                 hci_send_cmd(&hci_le_remote_connection_parameter_request_reply, connection->con_handle, connection->le_conn_interval_min,
                              connection->le_conn_interval_max, connection->le_conn_latency, connection->le_supervision_timeout,
-                             0x0000, 0xffff);
+                             hci_stack->le_minimum_ce_length, hci_stack->le_maximum_ce_length);
                 return true;
             case CON_PARAMETER_UPDATE_NEGATIVE_REPLY:
                 connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
