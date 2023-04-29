@@ -320,6 +320,14 @@ void goep_client_header_add_name(uint16_t goep_cid, const char * name);
 void goep_client_header_add_name_prefix(uint16_t goep_cid, const char * name, uint16_t name_len);
 
 /**
+ * @brief Add string encoded as unicode to current request
+ * @param goep_cid
+ * @param name
+ * @param name_len
+ */
+void goep_client_header_add_unicode_prefix(uint16_t goep_cid, uint8_t header_id, const char * name, uint16_t name_len);
+
+/**
  * @brief Add target header to current request
  * @param goep_cid
  * @param target

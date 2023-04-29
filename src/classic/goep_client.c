@@ -818,6 +818,16 @@ void goep_client_header_add_name_prefix(uint16_t goep_cid, const char * name, ui
     obex_message_builder_header_add_name_prefix(buffer, buffer_len, name, name_len);
 }
 
+void goep_client_header_add_unicode_prefix(uint16_t goep_cid, uint8_t header_id, const char * name, uint16_t name_len){
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
+    obex_message_builder_header_add_unicode_prefix(buffer, buffer_len, header_id, name, name_len);
+}
+
 void goep_client_header_add_type(uint16_t goep_cid, const char * type){
     goep_client_t * goep_client = goep_client_for_cid(goep_cid);
     if (goep_client == NULL){
