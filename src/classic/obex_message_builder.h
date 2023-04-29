@@ -234,6 +234,17 @@ uint8_t obex_message_builder_header_add_name(uint8_t * buffer, uint16_t buffer_l
 uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t buffer_len, const char * name, uint16_t name_len);
 
 /**
+ * @brief Add string encoded in unicode to current request
+ * @param buffer
+ * @param buffer_len
+ * @param header_id
+ * @param string
+ * @param string_len
+ * @return status
+ */
+uint8_t obex_message_builder_header_add_unicode_prefix(uint8_t * buffer, uint16_t buffer_len, uint8_t header_id, const char * name, uint16_t name_len);
+
+/**
  * @brief Add target header to current request
  * @param buffer
  * @param buffer_len

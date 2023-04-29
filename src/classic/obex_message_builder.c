@@ -230,7 +230,7 @@ uint8_t obex_message_builder_body_fillup_static(uint8_t * buffer, uint16_t buffe
     return obex_message_builder_header_fillup_variable(buffer, buffer_len, OBEX_HEADER_END_OF_BODY, data, length, ret_length);
 }
 
-uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t buffer_len, const char * name, uint16_t name_len){
+uint8_t obex_message_builder_header_add_unicode_prefix(uint8_t * buffer, uint16_t buffer_len, uint8_t header_id, const char * name, uint16_t name_len){
     // non-empty string have trailing \0
     bool add_trailing_zero = name_len > 0;
 
@@ -238,11 +238,11 @@ uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t b
     if (buffer_len < header_len) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
 
     uint16_t pos = big_endian_read_16(buffer, 1);
-    buffer[pos++] = OBEX_HEADER_NAME;
+    buffer[pos++] = header_id;
     big_endian_store_16(buffer, pos, header_len);
     pos += 2;
     int i;
-    // @note name[len] == 0 
+    // @note name[len] == 0
     for (i = 0 ; i < name_len ; i++){
         buffer[pos++] = 0;
         buffer[pos++] = *name++;
@@ -254,9 +254,14 @@ uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t b
     big_endian_store_16(buffer, 1, pos);
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t buffer_len, const char * name, uint16_t name_len){
+    return obex_message_builder_header_add_unicode_prefix(buffer, buffer_len, OBEX_HEADER_NAME, name, name_len);
+}
+
 uint8_t obex_message_builder_header_add_name(uint8_t * buffer, uint16_t buffer_len, const char * name){
     uint16_t name_len = (uint16_t) strlen(name);
-    return obex_message_builder_header_add_name_prefix(buffer, buffer_len, name, name_len);
+    return obex_message_builder_header_add_unicode_prefix(buffer, buffer_len, OBEX_HEADER_NAME, name, name_len);
 }
 
 uint8_t obex_message_builder_header_add_type(uint8_t * buffer, uint16_t buffer_len, const char * type){
