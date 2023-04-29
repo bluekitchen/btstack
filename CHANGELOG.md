@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Changed
 - GAP: add gap_set_peer_privacy_mode with default LE_PRIVACY_MODE_DEVICE
+- GAP: use stack defaults for LE Connection Parameter Updates
+- GAP: set minimum and maximum CE length to 0
 - bluetooth: indicated identity address in resolved address type names
 - chipset/bcm: look for PatchRAM file DEVICE_NAME...hcd
 - btstack_audio: added get_samplerate function to help with audio sample rate synchronization 
