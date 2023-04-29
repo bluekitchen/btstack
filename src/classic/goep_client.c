@@ -572,7 +572,7 @@ uint8_t goep_client_get_map_mas_instance_id(uint16_t goep_cid){
     return goep_client->map_mas_instance_id;
 }
 
-uint8_t goep_client_get_map_suported_message_types(uint16_t goep_cid){
+uint8_t goep_client_get_map_supported_message_types(uint16_t goep_cid){
     goep_client_t * goep_client = goep_client_for_cid(goep_cid);
     if (goep_client == NULL){
         return 0;

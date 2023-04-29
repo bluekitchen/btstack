@@ -211,7 +211,7 @@ uint8_t goep_client_get_map_mas_instance_id(uint16_t goep_cid);
 /**
  * @brief Get MAP MAS Supported Message Types found in SDP record during connect
  */
-uint8_t goep_client_get_map_suported_message_types(uint16_t goep_cid);
+uint8_t goep_client_get_map_supported_message_types(uint16_t goep_cid);
 
 /**
  * @brief Check if GOEP 2.0 or higher features can be used
