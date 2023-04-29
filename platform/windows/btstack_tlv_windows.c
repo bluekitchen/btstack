@@ -89,9 +89,9 @@ static int btstack_tlv_windows_append_tag(btstack_tlv_windows_t * self, uint32_t
 		DWORD written_value = 0;
 		(void)WriteFile(
 			self->file,			// file handle
-			&header,			// start of data to write
-			sizeof(header),		// number of bytes to write
-			&written_value,	// number of bytes that were written
+			data,   			// start of data to write
+            data_size,		    // number of bytes to write
+			&written_value,	    // number of bytes that were written
 			NULL);				// no overlapped structure
 		if (written_value != data_size) return 1;
 	}
