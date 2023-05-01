@@ -146,7 +146,7 @@ static int advertisement_report_contains_name(const char * name, uint8_t * adver
                 // compare prefix
                 if (data_size < name_len) break;
                 if (memcmp(data, name, name_len) == 0) return 1;
-                return 1;
+                return 0;
             default:
                 break;
         }
