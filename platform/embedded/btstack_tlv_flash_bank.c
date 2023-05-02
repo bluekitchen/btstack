@@ -83,13 +83,14 @@ static const char * btstack_tlv_header_magic = "BTstack";
 typedef struct {
 	int 	 bank;
 	uint32_t offset;
+    uint32_t size;
 	uint32_t tag;
 	uint32_t len;
 } tlv_iterator_t;
 
 static uint32_t btstack_tlv_flash_bank_align_size(btstack_tlv_flash_bank_t * self, uint32_t size){
-	uint32_t aligment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
-	return (size + aligment - 1) & ~(aligment - 1);
+	uint32_t alignment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
+	return (size + alignment - 1) & ~(alignment - 1);
 }
 
 // support unaligned flash read/writes
@@ -141,6 +142,7 @@ static void btstack_tlv_flash_bank_write(btstack_tlv_flash_bank_t * self, int ba
 // iterator
 
 static void btstack_tlv_flash_bank_iterator_fetch_tag_len(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it){
+    // abort if header doesn't fit into remaining space
     if (it->offset + 8 + self->delete_tag_len >= self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
         it->tag = 0xffffffff;
         return;
@@ -165,13 +167,13 @@ static void btstack_tlv_flash_bank_iterator_init(btstack_tlv_flash_bank_t * self
 	memset(it, 0, sizeof(tlv_iterator_t));
 	it->bank = bank;
 	it->offset = BTSTACK_TLV_HEADER_LEN;
+    it->size = self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context);
 	btstack_tlv_flash_bank_iterator_fetch_tag_len(self, it);
 }
 
-static int btstack_tlv_flash_bank_iterator_has_next(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it){
+static bool btstack_tlv_flash_bank_iterator_has_next(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it){
 	UNUSED(self);
-	if (it->tag == 0xffffffff) return 0;
-	return 1;
+	return it->tag != 0xffffffff;
 }
 
 static void tlv_iterator_fetch_next(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it){
@@ -182,7 +184,7 @@ static void tlv_iterator_fetch_next(btstack_tlv_flash_bank_t * self, tlv_iterato
 	it->offset += self->delete_tag_len;
 #endif
 
-	if (it->offset >= self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)) {
+	if (it->offset >= it->size) {
 		it->tag = 0xffffffff;
 		it->len = 0;
 		return;
@@ -230,7 +232,7 @@ static int btstack_tlv_flash_bank_test_erased(btstack_tlv_flash_bank_t * self, i
 	while (offset < size){
 		uint32_t copy_size = (offset + sizeof(empty16) < size) ? sizeof(empty16) : (size - offset); 
 		btstack_tlv_flash_bank_read(self, bank, offset, buffer, copy_size);
-		if (memcmp(buffer, empty16, copy_size)) {
+		if (memcmp(buffer, empty16, copy_size) != 0) {
 			log_info("not erased %x - %x", (unsigned int) offset, (unsigned int) (offset + copy_size));
 			return 0;
 		}
