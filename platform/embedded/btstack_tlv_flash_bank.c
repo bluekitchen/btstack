@@ -141,6 +141,11 @@ static void btstack_tlv_flash_bank_write(btstack_tlv_flash_bank_t * self, int ba
 // iterator
 
 static void btstack_tlv_flash_bank_iterator_fetch_tag_len(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it){
+    if (it->offset + 8 + self->delete_tag_len >= self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
+        it->tag = 0xffffffff;
+        return;
+    }
+
 	uint8_t entry[8];
 	btstack_tlv_flash_bank_read(self, it->bank, it->offset, entry, 8);
 	it->tag = big_endian_read_32(entry, 0);
