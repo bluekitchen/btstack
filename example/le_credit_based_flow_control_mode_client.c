@@ -127,8 +127,8 @@ static void test_track_data(le_cbm_connection_t * context, int bytes_transferred
 /* LISTING_END(tracking): Tracking throughput */
 
 
-// returns 1 if name is found in advertisement
-static int advertisement_report_contains_name(const char * name, uint8_t * advertisement_report){
+// returns true if name is found in advertisement
+static bool advertisement_report_contains_name(const char * name, uint8_t * advertisement_report){
     // get advertisement from report event
     const uint8_t * adv_data = gap_event_advertising_report_get_data(advertisement_report);
     uint8_t         adv_len  = gap_event_advertising_report_get_data_length(advertisement_report);
@@ -145,8 +145,8 @@ static int advertisement_report_contains_name(const char * name, uint8_t * adver
             case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
                 // compare prefix
                 if (data_size < name_len) break;
-                if (memcmp(data, name, name_len) == 0) return 1;
-                return 1;
+                if (memcmp(data, name, name_len) == 0) return true;
+                break;
             default:
                 break;
         }

@@ -181,8 +181,8 @@ static void le_streamer_client_request_to_send(le_streamer_connection_t * connec
     gatt_client_request_to_write_without_response(&connection->write_without_response_request, connection_handle);
 }
 
-// returns 1 if name is found in advertisement
-static int advertisement_contains_name(const char * name, uint8_t adv_len, const uint8_t * adv_data){
+// returns true if name is found in advertisement
+static bool advertisement_contains_name(const char * name, uint8_t adv_len, const uint8_t * adv_data){
     // get advertisement from report event
     uint16_t        name_len = (uint8_t) strlen(name);
 
@@ -198,12 +198,12 @@ static int advertisement_contains_name(const char * name, uint8_t adv_len, const
                 // compare prefix
                 if (data_size < name_len) break;
                 if (memcmp(data, name, name_len) == 0) return 1;
-                return 1;
+                break;
             default:
                 break;
         }
     }
-    return 0;
+    return false;
 }
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
