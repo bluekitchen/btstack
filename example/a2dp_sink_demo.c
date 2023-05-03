@@ -721,6 +721,8 @@ static void a2dp_sink_demo_cover_art_packet_handler(uint8_t packet_type, uint16_
                             printf("Cover Art       : connection released 0x%02x\n",
                                    avrcp_subevent_cover_art_connection_released_get_cover_art_cid(packet));
                             break;
+                        default:
+                            break;
                     }
                     break;
                 default:
