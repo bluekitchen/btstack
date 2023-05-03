@@ -13,6 +13,7 @@
 #define HAVE_POSIX_TIME
 
 // BTstack features that can be enabled
+#define ENABLE_AVRCP_COVER_ART
 #define ENABLE_ATT_DELAYED_RESPONSE
 #define ENABLE_BLE
 #define ENABLE_CLASSIC
