@@ -76,7 +76,7 @@ const char * avrcp_cover_art_linked_thumbnail_type     = "x-bt/img-thm";
 
 static btstack_linked_list_t avrcp_cover_art_client_connections;
 
-static uint16_t avrcp_cover_art_client_next_cid() {
+static uint16_t avrcp_cover_art_client_next_cid(void) {
     static uint16_t cid = 0;
     cid++;
     if (cid == 0){
