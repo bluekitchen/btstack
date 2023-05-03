@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: support additional LE PHYs for scanning and outgoing connections
 - GATT Client: support GATT over BR/EDR via gatt_client_classic_connect
 - HFP: provide SCO packet types and rx/tx packet lengths in HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
+- AVRCP: support Cover Art via avrcp_cover_art_client
 - example: gatt_streamer_server and le_streamer_client report DLE and PHY changes
 - gatt_client: queue requests with gatt_client_request_to_send_gatt_query and gatt_client_request_to_write_without_response 
 - esp32: warn about unsuitable sdkconfig
@@ -37,6 +38,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - gatt_client: return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER for invalid connection handle
 - A2DP: emit A2DP_SUBEVENT_STREAM_ESTABLISHED with if connection fails, e.g. because of Page Timeout
 - A2DP: use samples as timestamp, fixes issue with Apple Airpods Pro 2nd Gen
+- AVRCP: re-register for notification
 - PBAP Client: make pbap_set_property_selector work for Pull Phonebook
 - esp32: fix power amplifier control on Lyra T v4.3
 
