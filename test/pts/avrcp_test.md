@@ -1,6 +1,20 @@
 ## AVRCP Controller tests:
 Tool: avrcp_test
 
+AVRCP/CT/CA/BV-01-C: c, d, #1, pQ
+AVRCP/CT/CA/BV-03-C: c, d, #1, pQ, pT, pQ, p1
+AVRCP/CT/CA/BV-05-C: c, #1, $
+AVRCP/CT/CA/BV-07-C: c, #1, $, 31, 33
+AVRCP/CT/CA/BV-09-C: c, #1, $, 31, 34
+AVRCP/CT/CA/BV-11-C: c, #1, $, 35
+AVRCP/CT/CA/BV-13-C: c, #1, $, 31, 32
+AVRCP/CT/CA/BV-15-C: c, #1, (auto disconnect), #1, /, 35
+AVRCP/CT/CA/BV-17-C: c, d, #1, (auto disconnect), #1, /, 35
+AVRCP/CT/CA/BV-18-C: c, d, #1, pQ, pT, pQ, -- TODO: auto disconnect --, #1, pQ, pT, pQ, p1, 35
+AVRCP/CT/CA/BV-01-I: c, #1, $, 35, pn, ps, 35
+AVRCP/CT/CA/BV-02-I: c, #1, $, 35
+AVRCP/CT/CA/BV-03-I: c, #1, $, 35
+
 AVRCP/CT/CEC/BV-01-I : a, c
 AVRCP/CT/CEC/BV-02-I : (wait)
 

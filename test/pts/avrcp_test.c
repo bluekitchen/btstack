@@ -20,8 +20,8 @@
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -61,15 +61,8 @@
 #endif
 
 #ifdef HAVE_BTSTACK_STDIN
-// mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
-// pts:         
-static const char * device_addr_string = "00:1B:DC:08:E2:5C";
-// iPod 5G-C:   static const char * device_addr_string = "00:1B:DC:08:E2:5C";
-// mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
-// phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
-// head phones: static const char * device_addr_string = "00:18:09:28:50:18";
-// bt dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
+// static const char * device_addr_string = "00:1B:DC:08:E2:5C";
+static const char * device_addr_string = "00:1B:DC:08:E2:72"; // pts v5.0
 
 #endif
 static bd_addr_t device_addr;
@@ -314,7 +307,7 @@ static uint8_t search_list[] = {};
 static uint8_t now_playing_list[] = {};
 
 static avrcp_media_attribute_id_t now_playing_info_attributes [] = {
-    AVRCP_MEDIA_ATTR_TITLE
+    AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART,
 };
 
 typedef struct {
@@ -323,6 +316,10 @@ typedef struct {
     avrcp_playback_status_t status;
     uint32_t song_position_ms; // 0xFFFFFFFF if not supported
 } avrcp_play_status_info_t;
+
+static const int attr_bitmap_title_and_cover = (1 << AVRCP_MEDIA_ATTR_TITLE ) | (1 << AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART);
+// attribute ids start with 1
+static const int attr_bitmap_all_including_cover_art = ((1 << AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART) - 1) * 2;
 
 // python -c "print('a'*512)"
 static const char title[] = "Really aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa Really Really Long Song Title Name So That This Response Will Fragment Into Enough Pieces For This Test Case";
@@ -334,7 +331,7 @@ avrcp_track_t tracks[] = {
     {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03}, 3, (char *)title, "Decease", "AVRCP Demo", "vivid", 12345},
 };
 
-avrcp_play_status_info_t play_info;
+static avrcp_play_status_info_t play_info;
 static media_codec_configuration_sbc_t sbc_configuration;
 static btstack_sbc_encoder_state_t sbc_encoder_state;
 
@@ -347,6 +344,118 @@ static uint16_t uid_counter = 0x5A73;
 static stream_data_source_t data_source;
 
 /* AVRCP Target context END */
+
+static char avrcp_test_image_handle[8];
+static avrcp_cover_art_client_t a2dp_sink_demo_cover_art_client;
+static bool a2dp_sink_demo_cover_art_client_connected;
+static uint16_t avrcp_test_cover_art_cid;
+static uint8_t a2dp_sink_demo_ertm_buffer[2000];
+static l2cap_ertm_config_t a2dp_sink_demo_ertm_config = {
+        1,  // ertm mandatory
+        2,  // max transmit, some tests require > 1
+        2000,
+        12000,
+        512,    // l2cap ertm mtu
+        2,
+        2,
+        1,      // 16-bit FCS
+};
+static bool a2dp_sink_cover_art_download_active;
+static uint32_t a2dp_sink_cover_art_file_size;
+static const char * a2dp_sink_demo_thumbnail_path = "cover.jpg";
+static FILE * a2dp_sink_cover_art_file;
+
+    static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        UNUSED(channel);
+        UNUSED(size);
+        if (packet_type != HCI_EVENT_PACKET) return;
+        if (hci_event_packet_get_type(packet) == HCI_EVENT_PIN_CODE_REQUEST) {
+            bd_addr_t address;
+            printf("Pin code request - using '0000'\n");
+            hci_event_pin_code_request_get_bd_addr(packet, address);
+            gap_pin_code_response(address, "0000");
+        }
+    }
+
+#ifdef ENABLE_AVRCP_COVER_ART
+static void a2dp_sink_demo_cover_art_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(channel);
+    UNUSED(size);
+    uint8_t status;
+    uint16_t cid;
+    switch (packet_type){
+        case BIP_DATA_PACKET:
+            if (a2dp_sink_cover_art_download_active){
+                a2dp_sink_cover_art_file_size += size;
+#ifdef HAVE_POSIX_FILE_IO
+                fwrite(packet, 1, size, a2dp_sink_cover_art_file);
+#else
+                printf("Cover art       : TODO - store %u bytes image data\n", size);
+#endif
+            } else {
+                uint16_t i;
+                for (i=0;i<size;i++){
+                    putchar(packet[i]);
+                }
+                printf("\n");
+            }
+            break;
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)){
+                case HCI_EVENT_AVRCP_META:
+                    switch (hci_event_avrcp_meta_get_subevent_code(packet)){
+                        case AVRCP_SUBEVENT_COVER_ART_CONNECTION_ESTABLISHED:
+                            status = avrcp_subevent_cover_art_connection_established_get_status(packet);
+                            cid = avrcp_subevent_cover_art_connection_established_get_cover_art_cid(packet);
+                            if (status == ERROR_CODE_SUCCESS){
+                                printf("Cover Art       : connection established, cover art cid 0x%02x\n", cid);
+                                a2dp_sink_demo_cover_art_client_connected = true;
+                            } else {
+                                printf("Cover Art       : connection failed, status 0x%02x\n", status);
+                                avrcp_test_cover_art_cid = 0;
+                            }
+                            break;
+                        case AVRCP_SUBEVENT_COVER_ART_OPERATION_COMPLETE:
+                            if (a2dp_sink_cover_art_download_active){
+                                a2dp_sink_cover_art_download_active = false;
+#ifdef HAVE_POSIX_FILE_IO
+                                printf("Cover Art       : download of '%s complete, size %u bytes'\n",
+                                       a2dp_sink_demo_thumbnail_path, a2dp_sink_cover_art_file_size);
+                                fclose(a2dp_sink_cover_art_file);
+                                a2dp_sink_cover_art_file = NULL;
+#else
+                                printf("Cover Art: download completed\n");
+#endif
+                            }
+                            break;
+                        case AVRCP_SUBEVENT_COVER_ART_CONNECTION_RELEASED:
+                            a2dp_sink_demo_cover_art_client_connected = false;
+                            avrcp_test_cover_art_cid = 0;
+                            printf("Cover Art       : connection released 0x%02x\n",
+                                   avrcp_subevent_cover_art_connection_released_get_cover_art_cid(packet));
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+static uint8_t a2dp_sink_demo_cover_art_connect(void) {
+    uint8_t status;
+    status = avrcp_cover_art_client_connect(&a2dp_sink_demo_cover_art_client, a2dp_sink_demo_cover_art_packet_handler,
+                                            device_addr, a2dp_sink_demo_ertm_buffer,
+                                            sizeof(a2dp_sink_demo_ertm_buffer), &a2dp_sink_demo_ertm_config,
+                                            &avrcp_test_cover_art_cid);
+    return status;
+}
+#endif
+
+
 static void reset_avrcp_context(void){
         avrcp_cid = 0;
         avrcp_connected = 0;
@@ -405,7 +514,7 @@ static void avdtp_sink_connection_establishment_packet_handler(uint8_t packet_ty
             status    = avdtp_subevent_signaling_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("AVDTP connection failed: status 0x%02x.\n", status);
-                break;    
+                break;
             }
             printf("AVDTP connection established: avdtp_cid 0x%02x.\n", avdtp_cid);
             break;
@@ -415,7 +524,7 @@ static void avdtp_sink_connection_establishment_packet_handler(uint8_t packet_ty
             printf("AVDTP connection released: avdtp_cid 0x%02x.\n", avdtp_cid);
             break;
         default:
-            break; 
+            break;
     }
 }
 
@@ -457,7 +566,7 @@ static void avdtp_source_connection_establishment_packet_handler(uint8_t packet_
     }
 
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
-    
+
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
             avdtp_subevent_signaling_connection_established_get_bd_addr(packet, address);
@@ -486,10 +595,10 @@ static void avdtp_source_connection_establishment_packet_handler(uint8_t packet_
             sbc_configuration.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
             sbc_configuration.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             sbc_configuration.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-            
+
             allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
             channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
-            
+
             // Adapt Bluetooth spec definition to SBC Encoder expected input
             sbc_configuration.allocation_method = (btstack_sbc_allocation_method_t)(allocation_method - 1);
             sbc_configuration.num_channels = SBC_CHANNEL_MODE_STEREO;
@@ -512,14 +621,14 @@ static void avdtp_source_connection_establishment_packet_handler(uint8_t packet_
                     break;
             }
 
-            btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD, 
-                sbc_configuration.block_length, sbc_configuration.subbands, 
-                sbc_configuration.allocation_method, sbc_configuration.sampling_frequency, 
+            btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD,
+                sbc_configuration.block_length, sbc_configuration.subbands,
+                sbc_configuration.allocation_method, sbc_configuration.sampling_frequency,
                 sbc_configuration.max_bitpool_value,
                 sbc_configuration.channel_mode);
-            
+
             break;
-        }  
+        }
 
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
             avdtp_subevent_streaming_connection_established_get_bd_addr(packet, address);
@@ -531,7 +640,7 @@ static void avdtp_source_connection_establishment_packet_handler(uint8_t packet_
             local_seid = avdtp_subevent_streaming_connection_established_get_local_seid(packet);
             if (local_seid != media_tracker.local_seid){
                 printf(" AVRCP target test: Stream failed, wrong local seid %d, expected %d.\n", local_seid, media_tracker.local_seid);
-                break;    
+                break;
             }
             printf(" AVRCP target test: Stream established, address %s, a2dp cid 0x%02x, local seid %d, remote seid %d.\n", bd_addr_to_str(address),
                 media_tracker.a2dp_cid, media_tracker.local_seid, avdtp_subevent_streaming_connection_established_get_remote_seid(packet));
@@ -553,7 +662,7 @@ static void avdtp_source_connection_establishment_packet_handler(uint8_t packet_
 
         // case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:
         //     // a2dp_demo_send_media_packet();
-        //     break;        
+        //     break;
 
         // case AVDTP_SUBEVENT_STREAM_SUSPENDED:
         //     play_info.status = AVRCP_PLAYBACK_STATUS_PAUSED;
@@ -586,7 +695,7 @@ static void avdtp_source_connection_establishment_packet_handler(uint8_t packet_
             }
             break;
         default:
-            break; 
+            break;
     }
 }
 
@@ -615,12 +724,12 @@ static void avrcp_connection_establishment_packet_handler(uint8_t packet_type, u
                 browsing_cid = 0;
                 return;
             }
-            
+
             avrcp_cid = local_cid;
             avrcp_connected = 1;
             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
             printf("AVRCP connection established: avrcp_cid 0x%02x.\n", avrcp_cid);
-            
+
             avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             avrcp_target_support_event(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
@@ -644,6 +753,9 @@ static void avrcp_connection_establishment_packet_handler(uint8_t packet_type, u
                 printf("Regular AVRCP Connection -> Create AVRCP Browsing connection to addr %s.\n", bd_addr_to_str(device_addr));
                 status = avrcp_browsing_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &browsing_cid);
             }
+
+            // image handles become invalid on player change, register for notifications
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
             break;
         }
 
@@ -651,7 +763,7 @@ static void avrcp_connection_establishment_packet_handler(uint8_t packet_type, u
             printf("AVRCP connection released: avrcp_cid 0x%02x.\n", avrcp_cid);
             reset_avrcp_context();
             return;
-        
+
         default:
             break;
     }
@@ -694,7 +806,7 @@ static void avrcp_browsing_connection_establishment_packet_handler(uint8_t packe
                 browsing_cid = 0;
                 return;
             }
-            
+
             browsing_cid = local_cid;
             avrcp_browsing_connected = 1;
             avrcp_subevent_browsing_connection_established_get_bd_addr(packet, event_addr);
@@ -703,12 +815,12 @@ static void avrcp_browsing_connection_establishment_packet_handler(uint8_t packe
             printf("AVRCP Browsing: get media players.\n");
             media_player_item_index = -1;
             status = avrcp_browsing_controller_get_media_players(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
-            
+
             if (status != ERROR_CODE_SUCCESS){
                 printf("AVRCP Browsing: Could not get players, status 0x%02x\n", status);
                 break;
-            }         
-            browsing_state = AVRCP_BROWSING_STATE_W4_GET_PLAYERS;              
+            }
+            browsing_state = AVRCP_BROWSING_STATE_W4_GET_PLAYERS;
             return;
         }
 
@@ -716,7 +828,7 @@ static void avrcp_browsing_connection_establishment_packet_handler(uint8_t packe
             printf("AVRCP Browsing released: browsing_cid 0x%02x\n", browsing_cid);
             reset_avrcp_browsing_context();
             return;
-        
+
         default:
             break;
     }
@@ -731,10 +843,10 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
-    
+
     switch (packet[2]){
         case AVRCP_SUBEVENT_PLAY_STATUS_QUERY:
-            avrcp_status = avrcp_target_play_status(avrcp_cid, play_info.song_length_ms, play_info.song_position_ms, play_info.status);            
+            avrcp_status = avrcp_target_play_status(avrcp_cid, play_info.song_length_ms, play_info.song_position_ms, play_info.status);
             break;
         // case AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY:
         //     status = avrcp_target_now_playing_info(avrcp_cid);
@@ -803,7 +915,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                 case AVRCP_OPERATION_ID_ROOT_MENU:
                     printf("AVRCP Target: received operation ROOT_MENU\n");
                     break;
-                
+
                 default:
                     return;
             }
@@ -822,18 +934,18 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    
+
     if (packet_type != HCI_EVENT_PACKET)     return;
     if (packet[0]   != HCI_EVENT_AVRCP_META) return;
-    
+
     uint16_t local_cid = little_endian_read_16(packet, 3);
     if (local_cid != avrcp_cid) return;
 
     int volume_percentage;
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_STATE:
-            printf("Notification %s - %s\n", 
-                avrcp_event2str(avrcp_subevent_notification_state_get_event_id(packet)), 
+            printf("Notification %s - %s\n",
+                avrcp_event2str(avrcp_subevent_notification_state_get_event_id(packet)),
                 avrcp_subevent_notification_state_get_enabled(packet) != 0 ? "enabled" : "disabled");
             break;
         case AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO:
@@ -858,7 +970,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             return;
         case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
             printf("notification changed\n");
-            return; 
+            return;
         case AVRCP_SUBEVENT_NOTIFICATION_EVENT_UIDS_CHANGED:{
             printf("UUIDS changed 0x%2x\n", avrcp_subevent_notification_event_uids_changed_get_uid_counter(packet));
             // reset to root folder
@@ -866,8 +978,13 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             playable_folder_index = 0;
             folder_index = -1;
             parent_folder_set = 0;
+            if (a2dp_sink_demo_cover_art_client_connected){
+                printf("AVRCP Controller: UIDs changed -> disconnect cover art client\n");
+                avrcp_cover_art_client_disconnect(avrcp_test_cover_art_cid);
+            }
             return;
         }
+
         case AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE:{
             uint8_t shuffle_mode = avrcp_subevent_shuffle_and_repeat_mode_get_shuffle_mode(packet);
             uint8_t repeat_mode  = avrcp_subevent_shuffle_and_repeat_mode_get_repeat_mode(packet);
@@ -878,33 +995,40 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             if (avrcp_subevent_now_playing_title_info_get_value_len(packet) > 0){
                 memcpy(avrcp_value, avrcp_subevent_now_playing_title_info_get_value(packet), avrcp_subevent_now_playing_title_info_get_value_len(packet));
                 printf("    Title: %s\n", avrcp_value);
-            }  
+            }
             break;
 
         case AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO:
             if (avrcp_subevent_now_playing_artist_info_get_value_len(packet) > 0){
                 memcpy(avrcp_value, avrcp_subevent_now_playing_artist_info_get_value(packet), avrcp_subevent_now_playing_artist_info_get_value_len(packet));
                 printf("    Artist: %s\n", avrcp_value);
-            }  
+            }
             break;
-        
+
         case AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO:
             if (avrcp_subevent_now_playing_album_info_get_value_len(packet) > 0){
                 memcpy(avrcp_value, avrcp_subevent_now_playing_album_info_get_value(packet), avrcp_subevent_now_playing_album_info_get_value_len(packet));
                 printf("    Album: %s\n", avrcp_value);
-            }  
+            }
             break;
-        
+
         case AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO:
             if (avrcp_subevent_now_playing_genre_info_get_value_len(packet) > 0){
                 memcpy(avrcp_value, avrcp_subevent_now_playing_genre_info_get_value(packet), avrcp_subevent_now_playing_genre_info_get_value_len(packet));
                 printf("    Genre: %s\n", avrcp_value);
-            }  
+            }
             break;
-        
+
+        case AVRCP_SUBEVENT_NOW_PLAYING_COVER_ART_INFO:
+            if (avrcp_subevent_now_playing_cover_art_info_get_value_len(packet) == 7){
+                memcpy(avrcp_test_image_handle, avrcp_subevent_now_playing_cover_art_info_get_value(packet), 7);
+                printf("    Cover Art %s\n", avrcp_test_image_handle);
+            }
+            break;
+
         case AVRCP_SUBEVENT_PLAY_STATUS:
-            printf("song length: %d ms, song position: %d ms, play status: %s\n", 
-                avrcp_subevent_play_status_get_song_length(packet), 
+            printf("song length: %d ms, song position: %d ms, play status: %s\n",
+                avrcp_subevent_play_status_get_song_length(packet),
                 avrcp_subevent_play_status_get_song_position(packet),
                 avrcp_play_status2str(avrcp_subevent_play_status_get_play_status(packet)));
             break;
@@ -932,7 +1056,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
         default:
             printf("AVRCP controller: event not parsed 0x%02x\n", packet[2]);
             break;
-    }             
+    }
 }
 
 
@@ -943,7 +1067,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
     // printf("avrcp_browsing_target_packet_handler event 0x%02x\n", packet[2]);
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
-    
+
     switch (packet[2]){
         case AVRCP_SUBEVENT_BROWSING_SET_BROWSED_PLAYER:{
             uint16_t browsed_player_id =  avrcp_subevent_browsing_set_browsed_player_get_player_id(packet);
@@ -970,7 +1094,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                         pos += name_size;
                         printf(" - %s\n", name);
                     }
-                    
+
                     avrcp_status = avrcp_browsing_target_send_get_folder_items_response(browsing_cid, uid_counter, media_player_list, sizeof(media_player_list));
                     break;
                 case AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM:
@@ -1003,7 +1127,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
             }
             break;
         }
-        
+
         default:
             printf("AVRCP Browsing Target: event 0x%02x not parsed \n", packet[2]);
             break;
@@ -1019,25 +1143,25 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
     UNUSED(size);
     uint8_t  status;
     uint16_t pos = 0;
-    
+
     // printf("avrcp_browsing_controller_packet_handler packet type 0x%02X, subevent 0x%02X\n", packet_type, packet[2]);
-    switch (packet_type) {   
+    switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (packet[0]){
                 case HCI_EVENT_AVRCP_META:
                     if (packet[2] != AVRCP_SUBEVENT_BROWSING_DONE) return;
-                    
+
                     browsing_query_active = 0;
                     browsing_uid_counter = 0;
                     if (avrcp_subevent_browsing_done_get_browsing_status(packet) != AVRCP_BROWSING_ERROR_CODE_SUCCESS){
-                        printf("AVRCP Browsing query done with browsing status 0x%02x, bluetooth status 0x%02x.\n", 
+                        printf("AVRCP Browsing query done with browsing status 0x%02x, bluetooth status 0x%02x.\n",
                             avrcp_subevent_browsing_done_get_browsing_status(packet),
                             avrcp_subevent_browsing_done_get_bluetooth_status(packet));
-                        return;    
+                        return;
                     }
                     browsing_uid_counter = avrcp_subevent_browsing_done_get_uid_counter(packet);
                     printf("DONE, browsing_uid_counter %d.\n", browsing_uid_counter);
-                    
+
                     switch (browsing_state){
                         case AVRCP_BROWSING_STATE_W4_GET_PLAYERS:
                             if (media_player_item_index < 0) {
@@ -1051,13 +1175,13 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                                 printf("Could not set player, status 0x%02X\n", status);
                                 status = AVRCP_BROWSING_STATE_W4_GET_PLAYERS;
                                 break;
-                            }         
+                            }
                             break;
                         case AVRCP_BROWSING_STATE_W4_SET_PLAYER:
                             browsing_state = AVRCP_BROWSING_STATE_READY;
                             break;
                         default:
-                            break; 
+                            break;
                     }
                     break;
                 default:
@@ -1082,7 +1206,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                 case AVRCP_BROWSING_FOLDER_ITEM:{
                     int index = next_folder_index();
                     memcpy(folders[index].uid, packet+pos, 8);
-                
+
                     uint32_t folder_uid_high = big_endian_read_32(packet, pos);
                     pos += 4;
                     uint32_t folder_uid_low  = big_endian_read_32(packet, pos);
@@ -1093,13 +1217,13 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     pos += 2;
                     uint16_t displayable_name_length = big_endian_read_16(packet, pos);
                     pos += 2;
-                    
+
                     char value[AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN];
                     memset(value, 0, AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN);
-                    uint16_t value_len = btstack_min(displayable_name_length, AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN - 1); 
+                    uint16_t value_len = btstack_min(displayable_name_length, AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN - 1);
                     memcpy(value, packet+pos, value_len);
 
-                    printf("Folder UID 0x%08" PRIx32 "%08" PRIx32 ", type 0x%02x, is_playable %d, charset 0x%02x, name %s\n", 
+                    printf("Folder UID 0x%08" PRIx32 "%08" PRIx32 ", type 0x%02x, is_playable %d, charset 0x%02x, name %s\n",
                         folder_uid_high, folder_uid_low, folder_type, is_playable, charset, value);
                     if (is_playable){
                         playable_folder_index = index;
@@ -1124,48 +1248,54 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     media_player_items[next_media_player_item_index()].player_id = player_id;
                     break;
                 }
-                
+
                 case AVRCP_BROWSING_MEDIA_ELEMENT_ITEM:{
                     int index = next_media_element_item_index();
                     memcpy(media_element_items[index].uid, packet+pos, 8);
                     printf("Received media element item UID (index %d): ", index);
-                    
+
                     // uint32_t media_uid_high = big_endian_read_32(packet, pos);
                     pos += 4;
                     // uint32_t media_uid_low  = big_endian_read_32(packet, pos+4);
                     pos += 4;
-                    
+
                     avrcp_browsing_media_type_t media_type = packet[pos++];
                     uint16_t charset = big_endian_read_16(packet, pos);
                     pos += 2;
                     uint16_t displayable_name_length = big_endian_read_16(packet, pos);
                     pos += 2;
-                    
+
                     char value[AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN];
                     memset(value, 0, AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN);
-                    uint16_t value_len = btstack_min(displayable_name_length, AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN - 1); 
+                    uint16_t value_len = btstack_min(displayable_name_length, AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN - 1);
                     memcpy(value, packet+pos, value_len);
                     memcpy(media_element_items[index].name, value, value_len);
 
                     pos += displayable_name_length;
                     // printf("Media UID: 0x%08" PRIx32 "%08" PRIx32 ", media_type 0x%02x, charset 0x%02x, actual len %d, name %s\n", media_uid_high, media_uid_low, media_type, charset, value_len, value);
-                    
+
                     printf_hexdump(media_element_items[index].uid, 8);
                     uint8_t num_attributes = packet[pos++];
                     printf("  Media type 0x%02x, charset 0x%02x, actual len %d, name %s, num attributes %d:\n", media_type, charset, value_len, value, num_attributes);
-                    
+
                     avrcp_media_item_context_t media_item_context;
                     for (avrcp_media_item_iterator_init(&media_item_context, size-pos, packet+pos); avrcp_media_item_iterator_has_more(&media_item_context); avrcp_media_item_iterator_next(&media_item_context)){
                         uint32_t attr_id            = avrcp_media_item_iterator_get_attr_id(&media_item_context);
                         uint16_t attr_charset       = avrcp_media_item_iterator_get_attr_charset(&media_item_context);
                         uint16_t attr_value_length  = avrcp_media_item_iterator_get_attr_value_len(&media_item_context);
                         const uint8_t * attr_value  = avrcp_media_item_iterator_get_attr_value(&media_item_context);
-                        
+
                         memset(value, 0, AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN);
-                        value_len = btstack_min(attr_value_length, AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN - 1); 
+                        value_len = btstack_min(attr_value_length, AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN - 1);
                         memcpy(value, attr_value, value_len);
-                        
+
                         printf("    - attr ID 0x%08" PRIx32 ", charset 0x%02x, actual len %d, name %s\n", attr_id, attr_charset, value_len, value);
+
+                        // cover art
+                        if (attr_id == 8){
+                            printf ("    - cache image handle %s\n", value);
+                            memcpy(avrcp_test_image_handle, value, 7);
+                        }
                     }
                     break;
                 }
@@ -1201,11 +1331,13 @@ static void show_usage(void){
     printf("A      - AVDTP Sink disconnect\n");
     printf("b      - AVDTP Source create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("B      - AVDTP Sink disconnect\n");
-    
+
     printf("c      - AVRCP create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("C      - AVRCP disconnect\n");
     printf("d      - AVRCP Browsing Controller create connection to addr %s\n", bd_addr_to_str(device_addr_browsing));
     printf("D      - AVRCP Browsing Controller disconnect\n");
+    printf("#1     - Cover Art connect to addr %s\n", bd_addr_to_str(iut_address));
+    printf("#2     - Cover Art disconnect\n");
     printf("#3     - trigger outgoing regular AVRCP connection on incoming HCI Connection to test reject and retry\n");
     printf("#4     - trigger outgoing browsing AVRCP connection on incoming AVRCP connection to test reject and retry\n");
 
@@ -1240,13 +1372,19 @@ static void show_usage(void){
     printf("10 - press and hold: mute\n");
     printf("2  - release press and hold cmd\n");
 
+    printf("31 - get image properties\n");
+    printf("32 - get native image\n");
+    printf("33 - get alternative image\n");
+    printf("34 - get thumbnail image\n");
+    printf("35 - get linked thumbnail\n");
+
     printf("R - absolute volume of 50 percent\n");
     printf("u - skip\n");
     printf(". - query repeat and shuffle mode\n");
     printf("o - repeat single track\n");
     printf("x/X - repeat/disable repeat all tracks\n");
     printf("z/Z - shuffle/disable shuffle all tracks\n");
-    
+
     printf("i/I - register/deregister PLAYBACK_STATUS_CHANGED\n");
     printf("s/S - register/deregister TRACK_CHANGED\n");
     printf("e/E - register/deregister TRACK_REACHED_END\n");
@@ -1264,24 +1402,24 @@ static void show_usage(void){
     printf("pp - get media players. Browsing cid 0x%02X\n", browsing_cid);
     printf("pI - Set addressed player\n");
     printf("pO - Set browsed player\n");
-    
+
     printf("pW - go up one level\n");
     printf("pT - go down one level of %s\n", (char *)parent_folder_name);
-    
+
     printf("pQ - browse folders\n");
     printf("pP - browse media items\n");
     printf("pj - browse now playing items\n");
     printf("ps - browse search folder\n");
     printf("pn - search 3\n");
-    
+
     printf("pm - Set max num fragments to 0x02\n");
     printf("pM - Set max num fragments to 0xFF\n");
-    
+
     printf("p1 - Get item attributes of first media element for virtual file system scope\n");
     printf("p2 - Get item attributes of first media element for now playing scope\n");
     printf("p3 - Get item attributes of first media element for search scope\n");
     printf("p4 - Get item attributes of first media element for media player list scope\n");
-    
+
     printf("pl - Get total num items for media player list scope\n");
     printf("pL - Get total num items for now playing scope\n");
     printf("pS - Get total num items for search scope\n");
@@ -1313,15 +1451,27 @@ static uint8_t media_sbc_codec_capabilities[] = {
     0xFF,//(AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
     0xFF,//(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
     2, 53
-}; 
+};
 
 #ifdef HAVE_BTSTACK_STDIN
+
+static const char * avrcp_test_alternative_image_descriptor = \
+"<image-descriptor version=\"1.0\" >\n"
+"<image encoding=\"GIF\" pixel=\"500*500\" />\n"
+"</image-descriptor>\"";
+
+static const char * avrcp_test_thumbnail_image_descriptor = \
+"<image-descriptor version=\"1.0\" >\n"
+"<image encoding=\"JPEG\" pixel=\"200*200\" />\n"
+"</image-descriptor>\"";
+
+
 
 static void stdin_process(char * cmd, int size){
     UNUSED(size);
     uint8_t status = ERROR_CODE_SUCCESS;
     sep.seid = 1;
-    
+
     switch (cmd[0]){
         case 'a':
             printf("Establish AVDTP sink connection to %s\n", bd_addr_to_str(device_addr));
@@ -1366,6 +1516,14 @@ static void stdin_process(char * cmd, int size){
             break;
         case '#':
             switch (cmd[1]){
+                case '1':
+                    printf(" - Create AVRCP Cover Art connection to addr %s.\n", bd_addr_to_str(device_addr));
+                    status = a2dp_sink_demo_cover_art_connect();
+                    break;
+                case '2':
+                    printf(" - AVRCP Cover Art disconnect from addr %s.\n", bd_addr_to_str(device_addr));
+                    status = avrcp_cover_art_client_disconnect(avrcp_test_cover_art_cid);
+                    break;
                 case '3':
                     printf("- Auto-connect AVRCP on incoming HCI connection enabled\n");
                     auto_avrcp_regular = true;
@@ -1378,11 +1536,11 @@ static void stdin_process(char * cmd, int size){
                     break;
             }
             break;
-        
+
         case '\n':
         case '\r':
             break;
-        case 'q': 
+        case 'q':
             printf("AVRCP: get capabilities: supported events\n");
             avrcp_controller_get_supported_events(avrcp_cid);
             break;
@@ -1403,8 +1561,10 @@ static void stdin_process(char * cmd, int size){
             avrcp_controller_get_now_playing_info_for_media_attribute_id(avrcp_cid, AVRCP_MEDIA_ATTR_TITLE);
             break;
         case '$':
-            printf("AVRCP: get TITLE of now playing song\n");
-            avrcp_controller_get_element_attributes(avrcp_cid, sizeof(now_playing_info_attributes)/4, now_playing_info_attributes);
+            printf("AVRCP: get TITLE and COVER IMAGE of now playing song\n");
+            avrcp_controller_get_element_attributes(avrcp_cid,
+                                                    sizeof(now_playing_info_attributes) / sizeof(avrcp_media_attribute_id_t),
+                                                    now_playing_info_attributes);
             break;
 
         case '0':
@@ -1431,7 +1591,7 @@ static void stdin_process(char * cmd, int size){
                     break;
                 case '6':
                     printf("AVRCP: forward\n");
-                    avrcp_controller_forward(avrcp_cid); 
+                    avrcp_controller_forward(avrcp_cid);
                     break;
                 case '7':
                     printf("AVRCP: backward\n");
@@ -1453,8 +1613,8 @@ static void stdin_process(char * cmd, int size){
                     break;
             }
             break;
-         
-         case '1':
+
+        case '1':
             switch (cmd[1]){
                 case '1':
                     printf("AVRCP: play\n");
@@ -1478,7 +1638,7 @@ static void stdin_process(char * cmd, int size){
                     break;
                 case '6':
                     printf("AVRCP: forward\n");
-                    avrcp_controller_press_and_hold_forward(avrcp_cid); 
+                    avrcp_controller_press_and_hold_forward(avrcp_cid);
                     break;
                 case '7':
                     printf("AVRCP: backward\n");
@@ -1501,8 +1661,47 @@ static void stdin_process(char * cmd, int size){
             }
             break;
 
-         case '2':
+        case '2':
             avrcp_controller_release_press_and_hold_cmd(avrcp_cid);
+            break;
+
+        case '3':
+            switch (cmd[1]) {
+                case '1':
+                    printf("Cover art: get image properties\n");
+                    status = avrcp_cover_art_client_get_image_properties(avrcp_test_cover_art_cid, avrcp_test_image_handle);
+                    break;
+                case '2':
+                    printf("Cover art: get native image\n");
+                    a2dp_sink_cover_art_file = fopen(a2dp_sink_demo_thumbnail_path, "w");
+                    a2dp_sink_cover_art_download_active = true;
+                    a2dp_sink_cover_art_file_size = 0;
+                    status = avrcp_cover_art_client_get_image(avrcp_test_cover_art_cid, avrcp_test_image_handle, "");
+                    break;
+                case '3':
+                    printf("Cover art: get alternative image\n%s\n", avrcp_test_alternative_image_descriptor);
+                    a2dp_sink_cover_art_file = fopen(a2dp_sink_demo_thumbnail_path, "w");
+                    a2dp_sink_cover_art_download_active = true;
+                    a2dp_sink_cover_art_file_size = 0;
+                    status = avrcp_cover_art_client_get_image(avrcp_test_cover_art_cid, avrcp_test_image_handle, avrcp_test_alternative_image_descriptor);
+                    break;
+                case '4':
+                    printf("Cover art: get thumbnail image\n%s\n", avrcp_test_thumbnail_image_descriptor);
+                    a2dp_sink_cover_art_file = fopen(a2dp_sink_demo_thumbnail_path, "w");
+                    a2dp_sink_cover_art_download_active = true;
+                    a2dp_sink_cover_art_file_size = 0;
+                    status = avrcp_cover_art_client_get_image(avrcp_test_cover_art_cid, avrcp_test_image_handle, avrcp_test_thumbnail_image_descriptor);
+                    break;
+                case '5':
+                    printf("Cover art: get linked thumbnail\n");
+                    a2dp_sink_cover_art_file = fopen(a2dp_sink_demo_thumbnail_path, "w");
+                    a2dp_sink_cover_art_download_active = true;
+                    a2dp_sink_cover_art_file_size = 0;
+                    status = avrcp_cover_art_client_get_linked_thumbnail(avrcp_test_cover_art_cid, avrcp_test_image_handle);
+                    break;
+                default:
+                    break;
+            }
             break;
         case 'R':
             printf("AVRCP: absolute volume of 50 percent\n");
@@ -1643,8 +1842,8 @@ static void stdin_process(char * cmd, int size){
             avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
             break;
 
-       
-        
+
+
         case 'p':
             switch (cmd[1]){
                  case 'p':
@@ -1672,7 +1871,8 @@ static void stdin_process(char * cmd, int size){
                     printf("AVRCP Browsing: browse folders\n");
                     playable_folder_index = 0;
                     folder_index = -1;
-                    status = avrcp_browsing_controller_browse_file_system(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
+                    // PTS requires to explicitly list Default Cover Art attribute, so we set all bits
+                    status = avrcp_browsing_controller_browse_file_system(browsing_cid, 0, 0xFFFFFFFF, attr_bitmap_all_including_cover_art);
                     break;
                 case 'P':
                     printf("AVRCP Browsing: browse media items\n");
@@ -1697,7 +1897,7 @@ static void stdin_process(char * cmd, int size){
                     status = avrcp_browsing_controller_go_down_one_level(browsing_cid, parent_folder_uid);
                     folder_index = -1;
                     break;
-                
+
                 case 'j':
                     printf("AVRCP Browsing: browse now playing items\n");
                     playable_folder_index = 0;
@@ -1737,19 +1937,19 @@ static void stdin_process(char * cmd, int size){
                     break;
                 case '1':
                     printf("Get item attributes of first media item for virtual file system scope\n");
-                    avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM);
+                    avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, attr_bitmap_title_and_cover, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM);
                     break;
                 case '2':
                     printf("Get item attributes of first media item for now playing scope\n");
-                    avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE, AVRCP_BROWSING_NOW_PLAYING);
+                    avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, attr_bitmap_title_and_cover, AVRCP_BROWSING_NOW_PLAYING);
                     break;
                 case '3':
                     printf("Get item attributes of first media item for search scope\n");
-                    avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE, AVRCP_BROWSING_SEARCH);
+                    avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, attr_bitmap_title_and_cover, AVRCP_BROWSING_SEARCH);
                     break;
                 case '4':
                     printf("Get item attributes of first media item for media player list scope\n");
-                    avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE, AVRCP_BROWSING_MEDIA_PLAYER_LIST);
+                    avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, attr_bitmap_title_and_cover, AVRCP_BROWSING_MEDIA_PLAYER_LIST);
                     break;
                 
                 case 'l': 
@@ -1894,6 +2094,8 @@ int btstack_main(int argc, const char * argv[]){
     (void)argv;
 
     l2cap_init();
+    goep_client_init();
+
     // Initialize AVDTP Sink
     avdtp_sink_init();
     avdtp_sink_register_packet_handler(&avdtp_sink_connection_establishment_packet_handler);
@@ -1912,7 +2114,6 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_source_init();
     avdtp_source_register_packet_handler(&avdtp_source_connection_establishment_packet_handler);
     a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, (uint8_t *) media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), (uint8_t*) media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
-    
 
     // Initialize AVRCP service
     avrcp_init();
@@ -1923,6 +2124,7 @@ int btstack_main(int argc, const char * argv[]){
     avrcp_target_init();
     avrcp_target_register_packet_handler(&avrcp_target_packet_handler);
     avrcp_target_register_set_addressed_player_handler(&avrcp_set_addressed_player_handler);
+    avrcp_cover_art_client_init();
 
     // Initialize AVRCP Browsing service
     avrcp_browsing_init();
@@ -1937,25 +2139,29 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
     // setup AVDTP
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, 1, NULL, NULL);
+    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, sdp_create_service_record_handle(), 1, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
     memset(sdp_avdtp_source_service_buffer, 0, sizeof(sdp_avdtp_source_service_buffer));
-    a2dp_source_create_sdp_record(sdp_avdtp_source_service_buffer, 0x10002, 1, NULL, NULL);
+    a2dp_source_create_sdp_record(sdp_avdtp_source_service_buffer, sdp_create_service_record_handle(), 1, NULL, NULL);
     sdp_register_service(sdp_avdtp_source_service_buffer);
 
     // setup AVRCP
-    uint16_t avrcp_controller_supported_features = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
-    uint16_t avrcp_target_supported_features     = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
-#ifdef AVRCP_BROWSING_ENABLED
-    avrcp_controller_supported_features |= AVRCP_FEATURE_MASK_BROWSING;
-    avrcp_target_supported_features |= AVRCP_FEATURE_MASK_BROWSING;
-#endif
+    uint16_t avrcp_controller_supported_features = 1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER;
+    avrcp_controller_supported_features         |= 1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING;
+    avrcp_controller_supported_features         |= 1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_COVER_ART_GET_IMAGE_PROPERTIES;
+    avrcp_controller_supported_features         |= 1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_COVER_ART_GET_IMAGE;
+    avrcp_controller_supported_features         |= 1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_COVER_ART_GET_LINKED_THUMBNAIL;
+
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
-    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10003, avrcp_controller_supported_features, NULL, NULL);
+    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, sdp_create_service_record_handle(), avrcp_controller_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
 
+    uint16_t avrcp_target_supported_features     = 1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_MONITOR_OR_AMPLIFIER;;
+    avrcp_target_supported_features             |= 1 << AVRCP_TARGET_SUPPORTED_FEATURE_BROWSING;
+    avrcp_target_supported_features             |= 1 << AVRCP_TARGET_SUPPORTED_FEATURE_COVER_ART;
+
     memset(sdp_avrcp_target_service_buffer, 0, sizeof(sdp_avrcp_target_service_buffer));
-    avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10004, avrcp_target_supported_features, NULL, NULL);
+    avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, sdp_create_service_record_handle(), avrcp_target_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_target_service_buffer);
 
     gap_set_local_name("BTstack AVRCP Service PTS 00:00:00:00:00:00");
