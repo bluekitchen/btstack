@@ -71,6 +71,7 @@ ${BTSTACK_ROOT}/src/ble/le_device_db_memory.c \
 ${BTSTACK_ROOT}/src/ble/le_device_db_tlv.c \
 ${BTSTACK_ROOT}/src/ble/sm.c \
 ${BTSTACK_ROOT}/src/btstack_audio.c \
+${BTSTACK_ROOT}/src/btstack_sample_rate_compensation.c \
 ${BTSTACK_ROOT}/src/btstack_crypto.c \
 ${BTSTACK_ROOT}/src/btstack_hid_parser.c \
 ${BTSTACK_ROOT}/src/btstack_linked_list.c \
@@ -304,6 +305,7 @@ LDSCRIPT = STM32F407VGTx_FLASH.ld
 LIBS = -lPDMFilter_CM4_GCC -lc -lm -lnosys 
 LIBDIR = -Lpdm
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+#LDFLAGS += -u_printf_float
 
 # default action: build all
 EXAMPLES = 					\
