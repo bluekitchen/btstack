@@ -323,7 +323,6 @@ static void nxp_read_uart_handler(void){
                 bytes_to_read = 1;
                 break;
         }
-        nxp_start_read(bytes_to_read);
     } else {
         nxp_input_pos += nxp_input_bytes_requested;
         printf("RECV: ");
