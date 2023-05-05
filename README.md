@@ -27,7 +27,7 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 **Protocols:** L2CAP (incl. Enhanced Retransmission Mode and LE Data Channels), RFCOMM, SDP, BNEP, AVDTP, AVCTP, ATT, SM (incl. LE Secure Connections and Cross-transport key derivation).
 
-**Profiles:** A2DP, AVRCP incl. Browsing, GAP, GATT, HFP, HID, HSP, IOP, SPP, PAN, PBAP Client.
+**Profiles:** A2DP, AVRCP incl. Browsing (CT+TG) and Cover Art (CT), GAP, GATT, HFP, HID, HSP, IOP, OPP, SPP, PAN, PBAP.
 
 **GATT Service Servers:** Battery (BAS), Bond Management (BMS), Cycling Power (CPS), Cycling Speed and Cadence (CSCS), Device Information (DID), Heart Rate (HRS), HID over GATT (HIDS) Device , Mesh Provisioning, Mesh Proxy, Nordic SPP, Scan Parameters (SCPS), TX Power (TPS), u-Blox SPP. 
 
