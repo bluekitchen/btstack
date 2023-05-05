@@ -77,11 +77,12 @@
 #define NXP_OPCODE_SET_BDADDR		    0xFC22
 
 // prototypes
-static void nxp_send_chunk_v1(void);
 static void nxp_done_with_status(uint8_t status);
-static void nxp_send_chunk_v3(void);
 static void nxp_read_uart_handler(void);
+static void nxp_send_chunk_v1(void);
+static void nxp_send_chunk_v3(void);
 static void nxp_start(void);
+static void nxp_tx_run(void);
 
 // globals
 static void (*nxp_download_complete)(uint8_t status);
@@ -106,11 +107,11 @@ static const uint8_t nxp_ack_buffer_v3[] = {NXP_ACK_V3, 0x92 };
 static uint16_t      nxp_fw_request_len;
 static uint8_t       nxp_fw_resend_count;
 
-static enum {
-    NXP_TX_IDLE,
-    NXP_TX_SEND_CHUNK_V1,
-    NXP_TX_SEND_CHUNK_V3,
-} nxp_tx_state;
+static bool         nxp_tx_send_ack_v1;
+static bool         nxp_tx_send_ack_v3;
+static bool         nxp_tx_send_chunk_v1;
+static bool         nxp_tx_send_chunk_v3;
+static bool         nxp_tx_active;
 
 #ifdef HAVE_POSIX_FILE_IO
 static char   nxp_firmware_path[1000];
@@ -170,16 +171,17 @@ static void nxp_unload_firmware(void) {
 }
 #endif
 
-static void nxp_dummy(void){
-}
-
 static void nxp_send_ack_v1() {
     printf("SEND: ack v1\n");
+    btstack_assert(nxp_tx_active == false);
+    nxp_tx_active = true;
     nxp_uart_driver->send_block(nxp_ack_buffer_v1, sizeof(nxp_ack_buffer_v1));
 }
 
 static void nxp_send_ack_v3() {
     printf("SEND: ack v3\n");
+    btstack_assert(nxp_tx_active == false);
+    nxp_tx_active = true;
     nxp_uart_driver->send_block(nxp_ack_buffer_v3, sizeof(nxp_ack_buffer_v3));
 }
 
@@ -200,16 +202,16 @@ static bool nxp_valid_packet(void){
 
 static void nxp_handle_chip_version_v1(void){
     printf("RECV: NXP_V1_CHIP_VER_PKT, id = 0x%x02, revision = 0x%02x\n", nxp_input_buffer[0], nxp_input_buffer[1]);
-    nxp_tx_state = NXP_TX_IDLE;
-    nxp_send_ack_v1();
+    nxp_tx_send_ack_v1 = true;
+    nxp_tx_run();
 }
 
 static void nxp_handle_chip_version_v3(void){
     nxp_chip_id = little_endian_read_16(nxp_input_buffer, 1);
     btstack_strcpy(nxp_firmware_path, sizeof(nxp_firmware_path), nxp_fw_name_from_chipid(nxp_chip_id));
     printf("RECV: NXP_V3_CHIP_VER_PKT, id = 0x%04x, loader 0x%02x -> firmware '%s'\n", nxp_chip_id, nxp_input_buffer[3], nxp_firmware_path);
-    nxp_tx_state = NXP_TX_IDLE;
-    nxp_send_ack_v3();
+    nxp_tx_send_ack_v3 = true;
+    nxp_tx_run();
 }
 
 static void nxp_prepare_firmware(void){
@@ -249,7 +251,8 @@ static void nxp_send_chunk_v1(void){
         nxp_fw_resend_count++;
     }
     printf("SEND: firmware %08x - %u bytes (%u. try)\n", nxp_fw_offset, nxp_fw_request_len, nxp_fw_resend_count + 1);
-    nxp_tx_state = NXP_TX_IDLE;
+    btstack_assert(nxp_tx_active == false);
+    nxp_tx_active = true;
     nxp_uart_driver->send_block(nxp_output_buffer, nxp_fw_request_len);
 }
 
@@ -271,7 +274,8 @@ static void nxp_send_chunk_v3(void){
         return;
     }
     printf("SEND: firmware %08x - %u bytes (%u. try)\n", nxp_fw_offset, nxp_fw_request_len, nxp_fw_resend_count + 1);
-    nxp_tx_state = NXP_TX_IDLE;
+    btstack_assert(nxp_tx_active == false);
+    nxp_tx_active = true;
     nxp_uart_driver->send_block(nxp_output_buffer, nxp_fw_request_len);
 }
 
@@ -283,8 +287,9 @@ static void nxp_handle_firmware_request_v1(void){
     if (nxp_have_firmware == false){
         return;
     }
-    nxp_tx_state = NXP_TX_SEND_CHUNK_V1;
-    nxp_send_ack_v1();
+    nxp_tx_send_ack_v1 = true;
+    nxp_tx_send_chunk_v1 = true;
+    nxp_tx_run();
 }
 
 static void nxp_handle_firmware_request_v3(void){
@@ -295,8 +300,9 @@ static void nxp_handle_firmware_request_v3(void){
     if (nxp_have_firmware == false){
         return;
     }
-    nxp_tx_state = NXP_TX_SEND_CHUNK_V3;
-    nxp_send_ack_v3();
+    nxp_tx_send_ack_v3 = true;
+    nxp_tx_send_chunk_v3 = true;
+    nxp_tx_run();
 }
 
 static void nxp_start_read(uint16_t bytes_to_read){
@@ -350,23 +356,40 @@ static void nxp_read_uart_handler(void){
     nxp_start_read(bytes_to_read);
 }
 
-static void nxp_write_uart_handler(void){
-    switch (nxp_tx_state){
-        case NXP_TX_IDLE:
-            break;
-        case NXP_TX_SEND_CHUNK_V1:
-            nxp_send_chunk_v1();
-            break;
-        case NXP_TX_SEND_CHUNK_V3:
-            nxp_send_chunk_v3();
-            break;
-        default:
-            break;
+static void nxp_tx_run(void){
+    if (nxp_tx_active) {
+        return;
+    }
+    if (nxp_tx_send_ack_v1){
+        nxp_tx_send_ack_v1 = false;
+        nxp_send_ack_v1();
+        return;
+    }
+    if (nxp_tx_send_ack_v3){
+        nxp_tx_send_ack_v3 = false;
+        nxp_send_ack_v3();
+        return;
+    }
+    if (nxp_tx_send_chunk_v1){
+        nxp_tx_send_chunk_v1 = false;
+        nxp_send_chunk_v1();
+        return;
+    }
+    if (nxp_tx_send_chunk_v3){
+        nxp_tx_send_chunk_v3 = false;
+        nxp_send_chunk_v3();
+        return;
     }
 }
 
+static void nxp_write_uart_handler(void){
+    btstack_assert(nxp_tx_active == true);
+    printf("SEND: complete\n");
+    nxp_tx_active = false;
+    nxp_tx_run();
+}
+
 static void nxp_start(void){
-    nxp_tx_state = NXP_TX_IDLE;
     nxp_fw_resend_count = 0;
     nxp_fw_offset = 0;
     nxp_have_firmware = false;
