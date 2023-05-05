@@ -372,10 +372,12 @@ static int btstack_uart_posix_close_new(void){
 }
 
 static void btstack_uart_posix_set_block_received( void (*block_handler)(void)){
+    btstack_uart_block_read_bytes_len = 0;
     block_received = block_handler;
 }
 
 static void btstack_uart_posix_set_block_sent( void (*block_handler)(void)){
+    btstack_uart_block_write_bytes_len = 0;
     block_sent = block_handler;
 }
 
