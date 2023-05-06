@@ -483,3 +483,12 @@ static btstack_chipset_t btstack_chipset_nxp = {
 const btstack_chipset_t *btstack_chipset_nxp_instance(void){
     return &btstack_chipset_nxp;
 }
+
+uint32_t btstack_chipset_nxp_get_initial_baudrate(void){
+    switch (nxp_chip_id){
+        case NXP_CHIP_ID_IW612:
+            return 3000000;
+        default:
+            return 115200;
+    }
+}

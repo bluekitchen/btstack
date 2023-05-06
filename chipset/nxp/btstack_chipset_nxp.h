@@ -76,6 +76,12 @@ void btstack_chipset_nxp_set_firmware(const uint8_t * fw_data, uint32_t fw_size)
 void btstack_chipset_nxp_download_firmware_with_uart(const btstack_uart_t *uart_driver, void (*callback)(uint8_t status));
 
 /**
+ * @brief Get baudrate after firmware download
+ * @note iw612 with current firmware is set to 3mbps instead of 115200. to be called after firmware download complete
+ */
+uint32_t btstack_chipset_nxp_get_initial_baudrate(void);
+
+/**
  * Get chipset instance for NXP chipsets
  */
 const btstack_chipset_t *btstack_chipset_nxp_instance(void);
