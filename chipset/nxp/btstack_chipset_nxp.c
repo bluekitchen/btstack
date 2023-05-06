@@ -82,12 +82,11 @@ static void nxp_read_uart_handler(void);
 static void nxp_send_chunk_v1(void);
 static void nxp_send_chunk_v3(void);
 static void nxp_start(void);
-static void nxp_tx_run(void);
+static void nxp_run(void);
 
 // globals
-static void (*nxp_download_complete)(uint8_t status);
+static void (*nxp_download_complete_callback)(uint8_t status);
 static const btstack_uart_t * nxp_uart_driver;
-static bool                   nxp_have_firmware;
 
 static uint16_t nxp_chip_id;
 
@@ -107,11 +106,15 @@ static const uint8_t nxp_ack_buffer_v3[] = {NXP_ACK_V3, 0x92 };
 static uint16_t      nxp_fw_request_len;
 static uint8_t       nxp_fw_resend_count;
 
+// state / tasks
+static bool         nxp_have_firmware;
 static bool         nxp_tx_send_ack_v1;
 static bool         nxp_tx_send_ack_v3;
 static bool         nxp_tx_send_chunk_v1;
 static bool         nxp_tx_send_chunk_v3;
 static bool         nxp_tx_active;
+static bool         nxp_download_done;
+static uint8_t      nxp_download_statue;
 
 #ifdef HAVE_POSIX_FILE_IO
 static char   nxp_firmware_path[1000];
@@ -134,9 +137,10 @@ static char *nxp_fw_name_from_chipid(uint16_t chip_id)
 
 static void nxp_load_firmware(void) {
     if (nxp_firmware_file == NULL){
-        log_info("chipset-bcm: open file %s", nxp_firmware_path);
+        log_info("open file %s", nxp_firmware_path);
         nxp_firmware_file = fopen(nxp_firmware_path, "rb");
         if (nxp_firmware_file != NULL){
+            printf("Open file '%s' failed\n", nxp_firmware_path);
             nxp_have_firmware = true;
         }
     }
@@ -203,7 +207,7 @@ static bool nxp_valid_packet(void){
 static void nxp_handle_chip_version_v1(void){
     printf("RECV: NXP_V1_CHIP_VER_PKT, id = 0x%x02, revision = 0x%02x\n", nxp_input_buffer[0], nxp_input_buffer[1]);
     nxp_tx_send_ack_v1 = true;
-    nxp_tx_run();
+    nxp_run();
 }
 
 static void nxp_handle_chip_version_v3(void){
@@ -211,7 +215,7 @@ static void nxp_handle_chip_version_v3(void){
     btstack_strcpy(nxp_firmware_path, sizeof(nxp_firmware_path), nxp_fw_name_from_chipid(nxp_chip_id));
     printf("RECV: NXP_V3_CHIP_VER_PKT, id = 0x%04x, loader 0x%02x -> firmware '%s'\n", nxp_chip_id, nxp_input_buffer[3], nxp_firmware_path);
     nxp_tx_send_ack_v3 = true;
-    nxp_tx_run();
+    nxp_run();
 }
 
 static void nxp_prepare_firmware(void){
@@ -289,7 +293,7 @@ static void nxp_handle_firmware_request_v1(void){
     }
     nxp_tx_send_ack_v1 = true;
     nxp_tx_send_chunk_v1 = true;
-    nxp_tx_run();
+    nxp_run();
 }
 
 static void nxp_handle_firmware_request_v3(void){
@@ -302,7 +306,7 @@ static void nxp_handle_firmware_request_v3(void){
     }
     nxp_tx_send_ack_v3 = true;
     nxp_tx_send_chunk_v3 = true;
-    nxp_tx_run();
+    nxp_run();
 }
 
 static void nxp_start_read(uint16_t bytes_to_read){
@@ -356,7 +360,7 @@ static void nxp_read_uart_handler(void){
     nxp_start_read(bytes_to_read);
 }
 
-static void nxp_tx_run(void){
+static void nxp_run(void){
     if (nxp_tx_active) {
         return;
     }
@@ -380,13 +384,17 @@ static void nxp_tx_run(void){
         nxp_send_chunk_v3();
         return;
     }
+    if (nxp_download_done){
+        nxp_download_done = false;
+        (*nxp_download_complete_callback)(nxp_download_statue);
+    }
 }
 
 static void nxp_write_uart_handler(void){
     btstack_assert(nxp_tx_active == true);
     printf("SEND: complete\n");
     nxp_tx_active = false;
-    nxp_tx_run();
+    nxp_run();
 }
 
 static void nxp_start(void){
@@ -399,12 +407,10 @@ static void nxp_start(void){
 }
 
 static void nxp_done_with_status(uint8_t status){
-    printf("DONE!\n");
-    (*nxp_download_complete)(status);
-}
-
-static void nxp_done(void){
-    nxp_done_with_status(ERROR_CODE_SUCCESS);
+    nxp_download_statue = status;
+    nxp_download_done = true;
+    printf("DONE! status 0x%02x\n", status);
+    nxp_run();
 }
 
 void btstack_chipset_nxp_set_v1_firmware_path(const char * firmware_path){
@@ -416,15 +422,17 @@ void btstack_chipset_nxp_set_firmware(const uint8_t * fw_data, uint32_t fw_size)
     nxp_fw_size = fw_size;
 }
 
-void btstack_chipset_nxp_download_firmware_with_uart(const btstack_uart_t *uart_driver, void (*done)(uint8_t status)) {
-    nxp_uart_driver   = uart_driver;
-    nxp_download_complete = done;
+void btstack_chipset_nxp_download_firmware_with_uart(const btstack_uart_t *uart_driver, void (*callback)(uint8_t status)) {
+    nxp_uart_driver = uart_driver;
+    nxp_download_complete_callback = callback;
 
     int res = nxp_uart_driver->open();
 
     if (res) {
         log_error("uart_block init failed %u", res);
-        nxp_download_complete(res);
+        nxp_done_with_status(ERROR_CODE_HARDWARE_FAILURE);
+        nxp_run();
+        return;
     }
 
     nxp_start();

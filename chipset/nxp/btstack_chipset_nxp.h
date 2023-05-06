@@ -71,9 +71,9 @@ void btstack_chipset_nxp_set_firmware(const uint8_t * fw_data, uint32_t fw_size)
 /**
 * @brief Download firmware via uart_driver
 * @param uart_driver -- already initialized
-* @param done callback. 0 = Success
+* @param callback. 0 = Success
 */
-void btstack_chipset_nxp_download_firmware_with_uart(const btstack_uart_t *uart_driver, void (*done)(uint8_t status));
+void btstack_chipset_nxp_download_firmware_with_uart(const btstack_uart_t *uart_driver, void (*callback)(uint8_t status));
 
 /**
  * Get chipset instance for NXP chipsets
