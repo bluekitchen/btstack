@@ -197,7 +197,7 @@ static bool advertisement_contains_name(const char * name, uint8_t adv_len, cons
             case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
                 // compare prefix
                 if (data_size < name_len) break;
-                if (memcmp(data, name, name_len) == 0) return 1;
+                if (memcmp(data, name, name_len) == 0) return true;
                 break;
             default:
                 break;
