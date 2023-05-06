@@ -48,6 +48,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
 
 #include "btstack_config.h"
 
@@ -155,6 +156,9 @@ static void nxp_phase2(uint8_t status){
     }
 
     printf("Phase 2: Main app\n");
+
+    // assert last ack was sent at original speed
+    usleep(100000);
 
     // re-configure UART: enable flow control, set initial baudrate
     transport_config.baudrate_init = btstack_chipset_nxp_get_initial_baudrate();
