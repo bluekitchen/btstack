@@ -87,6 +87,7 @@ static void nxp_run(void);
 // globals
 static void (*nxp_download_complete_callback)(uint8_t status);
 static const btstack_uart_t * nxp_uart_driver;
+static btstack_timer_source_t nxp_timer;
 
 static uint16_t nxp_chip_id;
 
@@ -356,6 +357,9 @@ static void nxp_read_uart_handler(void){
         }
         nxp_input_pos = 0;
         bytes_to_read = 1;
+
+        // stop timer
+        btstack_run_loop_remove_timer(&nxp_timer);
     }
     nxp_start_read(bytes_to_read);
 }
@@ -422,6 +426,12 @@ void btstack_chipset_nxp_set_firmware(const uint8_t * fw_data, uint32_t fw_size)
     nxp_fw_size = fw_size;
 }
 
+void nxp_timer_handler(btstack_timer_source_t *ts) {
+    printf("No firmware request received, assuming firmware already loaded\n");
+    nxp_done_with_status(ERROR_CODE_SUCCESS);
+    nxp_run();
+}
+
 void btstack_chipset_nxp_download_firmware_with_uart(const btstack_uart_t *uart_driver, void (*callback)(uint8_t status)) {
     nxp_uart_driver = uart_driver;
     nxp_download_complete_callback = callback;
@@ -434,6 +444,11 @@ void btstack_chipset_nxp_download_firmware_with_uart(const btstack_uart_t *uart_
         nxp_run();
         return;
     }
+
+    // if firmware is loaded, there will be no firmware request
+    btstack_run_loop_set_timer(&nxp_timer, 250);
+    btstack_run_loop_set_timer_handler(&nxp_timer, &nxp_timer_handler);
+    btstack_run_loop_add_timer(&nxp_timer);
 
     nxp_start();
 }
