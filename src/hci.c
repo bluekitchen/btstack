@@ -2569,9 +2569,15 @@ static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn
     // trigger disconnect for dedicated bonding, skip emit security level as disconnect is pending
     if ((conn->bonding_flags & BONDING_DEDICATED) != 0){
         conn->bonding_flags &= ~BONDING_DEDICATED;
-        conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
         conn->bonding_status = security_level == 0 ? ERROR_CODE_INSUFFICIENT_SECURITY : ERROR_CODE_SUCCESS;
+#ifdef ENABLE_EXPLICIT_DEDICATED_BONDING_DISCONNECT
+        // emit dedicated bonding complete, don't disconnect
+        hci_emit_dedicated_bonding_result(conn->address, conn->bonding_status);
+#else
+        // request disconnect, event is emitted after disconnect
+        conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
         return;
+#endif
     }
 
     if ((conn->authentication_flags & AUTH_FLAG_CONNECTION_AUTHENTICATED) != 0) {
@@ -3802,7 +3808,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             handle = hci_event_encryption_change_get_connection_handle(packet);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
-            if (hci_event_encryption_change_get_status(packet) == 0u) {
+            if (hci_event_encryption_change_get_status(packet) == ERROR_CODE_SUCCESS) {
                 uint8_t encryption_enabled = hci_event_encryption_change_get_encryption_enabled(packet);
                 if (encryption_enabled){
                     if (hci_is_le_connection(conn)){
