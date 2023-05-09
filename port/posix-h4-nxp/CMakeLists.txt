@@ -56,6 +56,7 @@ file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_POSIX     "${BTSTACK_ROOT}/platform/posix/*.c")
 file(GLOB SOURCES_NXP       "${BTSTACK_ROOT}/chipset/nxp/*.c")
+file(GLOB SOURCES_LE_AUDIO  "${BTSTACK_ROOT}/src/le-audio/*.c" "${BTSTACK_ROOT}/src/le-audio/gatt-service/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
 file(GLOB SOURCES_PORT      "*.c")
 
@@ -123,6 +124,8 @@ set(SOURCES
 		${SOURCES_UECC}
 		${SOURCES_POSIX}
 		${SOURCES_YXML}
+		${SOURCES_LE_AUDIO}
+		${SOURCES_LC3_GOOGLE}
 )
 list(SORT SOURCES)
 
