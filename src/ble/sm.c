@@ -3968,7 +3968,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                     sm_conn->sm_engine_state = SM_BR_EDR_INITIATOR_W4_FIXED_CHANNEL_MASK;
                                 }
                                 if (defer){
-                                    hci_dedicated_bonding_defer_disconenct(con_handle, true);
+                                    hci_dedicated_bonding_defer_disconnect(con_handle, true);
                                 }
                             }
                             break;
@@ -4051,7 +4051,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_engine_state = SM_BR_EDR_INITIATOR_SEND_PAIRING_REQUEST;
                         } else {
                             sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
-                            hci_dedicated_bonding_defer_disconenct(con_handle, false);
+                            hci_dedicated_bonding_defer_disconnect(con_handle, false);
                         }
                     }
                     break;
@@ -4660,7 +4660,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         case SM_BR_EDR_INITIATOR_W4_PAIRING_RESPONSE:
 
             // dedicated bonding complete
-            hci_dedicated_bonding_defer_disconenct(sm_conn->sm_handle, false);
+            hci_dedicated_bonding_defer_disconnect(sm_conn->sm_handle, false);
 
             if (sm_pdu_code != SM_CODE_PAIRING_RESPONSE){
                 sm_pdu_received_in_wrong_state(sm_conn);

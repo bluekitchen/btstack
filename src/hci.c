@@ -7972,7 +7972,7 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
     return 0;
 }
 
-uint8_t hci_dedicated_bonding_defer_disconenct(hci_con_handle_t con_handle, bool defer){
+uint8_t hci_dedicated_bonding_defer_disconnect(hci_con_handle_t con_handle, bool defer){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

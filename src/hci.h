@@ -1744,7 +1744,7 @@ HCI_STATE hci_get_state(void);
 void hci_deinit(void);
 
 // defer disconnect on dedicated bonding complete, used internally for CTKD
-uint8_t hci_dedicated_bonding_defer_disconenct(hci_con_handle_t con_handle, bool defer);
+uint8_t hci_dedicated_bonding_defer_disconnect(hci_con_handle_t con_handle, bool defer);
 
 // Only for PTS testing
 
