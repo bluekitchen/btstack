@@ -1918,12 +1918,12 @@ static void l2cap_run_signaling_response(void) {
                     case L2CAP_INFO_TYPE_FIXED_CHANNELS_SUPPORTED: {
                             uint8_t map[8];
                             memset(map, 0, 8);
-                            // L2CAP Signaling Channel (bit 1) + Connectionless reception (bit 2)
-                            map[0] = (1 << 1) | (1 << 2);
+                            // L2CAP Signaling Channel + Connectionless reception
+                            map[0] = (1 << L2CAP_CID_SIGNALING) | (1 << L2CAP_CID_CONNECTIONLESS_CHANNEL);
 #if defined(ENABLE_BLE) || defined (ENABLE_EXPLICIT_BR_EDR_SECURITY_MANAGER)
                             // BR/EDR Security Manager (bit 7) if BR/EDR Secure Connections possible
                             if (gap_secure_connections_active()){
-                                map[0] |= (1 << 7);
+                                map[0] |= (1 << L2CAP_CID_BR_EDR_SECURITY_MANAGER);
                             }
 #endif
                             l2cap_send_classic_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0,
