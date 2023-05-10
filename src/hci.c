@@ -2582,17 +2582,16 @@ static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn
     }
 
     if ((conn->authentication_flags & AUTH_FLAG_CONNECTION_AUTHENTICATED) != 0) {
+        // bonding complete if connection is authenticated (either initiated or BR/EDR SC)
         conn->requested_security_level = LEVEL_0;
         hci_emit_security_level(conn->con_handle, security_level);
-        return;
+    } else {
+        // otherwise trigger remote feature request and send authentication request
+        hci_trigger_remote_features_for_connection(conn);
+        if ((conn->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) == 0) {
+            conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
+        }
     }
-
-    // Request remote features if not already done
-    hci_trigger_remote_features_for_connection(conn);
-
-    // Request Authentication if not already done
-    if ((conn->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) return;
-    conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
 }
 #endif
 
@@ -7955,7 +7954,7 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
 
-    // delete linkn key
+    // delete link key
     gap_drop_link_key_for_bd_addr(device);
 
     // configure LEVEL_2/3, dedicated bonding
@@ -7963,12 +7962,6 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
     connection->requested_security_level = mitm_protection_required ? LEVEL_3 : LEVEL_2;
     log_info("gap_dedicated_bonding, mitm %d -> level %u", mitm_protection_required, connection->requested_security_level);
     connection->bonding_flags = BONDING_DEDICATED;
-
-    // wait for GAP Security Result and send GAP Dedicated Bonding complete
-
-    // handle: connnection failure (connection complete != ok)
-    // handle: authentication failure
-    // handle: disconnect on done
 
     hci_run();
 
