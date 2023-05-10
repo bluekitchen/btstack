@@ -533,7 +533,7 @@ typedef struct {
     bd_addr_type_t address_type;
 
     // role: 0 - master, 1 - slave
-    uint8_t role;
+    hci_role_t role;
 
     // connection state
     CONNECTION_STATE state;

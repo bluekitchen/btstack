@@ -311,7 +311,8 @@ static void hci_connection_init(hci_connection_t * conn){
  *
  * @return connection OR NULL, if no memory left
  */
-static hci_connection_t * create_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type){
+static hci_connection_t *
+create_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type, hci_role_t role) {
     log_info("create_connection_for_addr %s, type %x", bd_addr_to_str(addr), addr_type);
 
     hci_connection_t * conn = btstack_memory_hci_connection_get();
@@ -321,7 +322,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(const bd_addr_t
     bd_addr_copy(conn->address, addr);
     conn->address_type = addr_type;
     conn->con_handle = HCI_CON_HANDLE_INVALID;
-    conn->role = HCI_ROLE_INVALID;
+    conn->role = role;
 #ifdef ENABLE_LE_PERIODIC_ADVERTISING
     conn->le_past_sync_handle = HCI_CON_HANDLE_INVALID;
 #endif
@@ -3130,10 +3131,10 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 
     // read fields
     uint8_t status = packet[3];
-    uint8_t role   = packet[6];
-    uint16_t conn_interval;
+    hci_role_t role = (hci_role_t) packet[6];
 
     // support different connection complete events
+    uint16_t conn_interval;
     switch (packet[2]){
         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
             conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
@@ -3202,7 +3203,7 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 
 	// LE connections are auto-accepted, so just create a connection if there isn't one already
 	if (!conn){
-		conn = create_connection_for_bd_addr_and_type(addr, addr_type);
+		conn = create_connection_for_bd_addr_and_type(addr, addr_type, role);
 	}
 
 	// no memory, sorry.
@@ -3211,7 +3212,6 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 	}
 
 	conn->state = OPEN;
-	conn->role  = role;
 	conn->con_handle             = hci_subevent_le_connection_complete_get_connection_handle(packet);
     conn->le_connection_interval = conn_interval;
 
@@ -3500,7 +3500,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             addr_type = (link_type == HCI_LINK_TYPE_ACL) ? BD_ADDR_TYPE_ACL : BD_ADDR_TYPE_SCO;
             conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
             if (!conn) {
-                conn = create_connection_for_bd_addr_and_type(addr, addr_type);
+                conn = create_connection_for_bd_addr_and_type(addr, addr_type, HCI_ROLE_SLAVE);
             }
             if (!conn) {
                 // CONNECTION REJECTED DUE TO LIMITED RESOURCES (0X0D)
@@ -3510,7 +3510,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 // avoid event to higher layer
                 return;
             }
-            conn->role  = HCI_ROLE_SLAVE;
             conn->state = RECEIVED_CONNECTION_REQUEST;
             // store info about eSCO
             if (link_type == HCI_LINK_TYPE_ESCO){
@@ -4002,7 +4001,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             addr_type = BD_ADDR_TYPE_ACL;
             conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
             if (!conn) break;
-            conn->role = packet[9];
+            conn->role = (hci_role_t) packet[9];
             break;
 #endif
 
@@ -6834,7 +6833,6 @@ static bool hci_run_general_pending_commands(void){
 
 #ifdef ENABLE_CLASSIC
             case RECEIVED_CONNECTION_REQUEST:
-                connection->role  = HCI_ROLE_SLAVE;
                 if (connection->address_type == BD_ADDR_TYPE_ACL){
                     log_info("sending hci_accept_connection_request");
                     connection->state = ACCEPTED_CONNECTION_REQUEST;
@@ -7259,14 +7257,13 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
 
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) {
-                conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+                conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL, HCI_ROLE_MASTER);
                 if (!conn) {
                     // notify client that alloc failed
                     hci_emit_connection_complete(addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
                     return BTSTACK_MEMORY_ALLOC_FAILED; // packet not sent to controller
                 }
                 conn->state = SEND_CREATE_CONNECTION;
-                conn->role  = HCI_ROLE_MASTER;
             }
 
             log_info("conn state %u", conn->state);
@@ -7315,11 +7312,11 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
                             return ERROR_CODE_COMMAND_DISALLOWED;
                         }
                         // allocate connection struct
-                        conn = create_connection_for_bd_addr_and_type(conn->address, BD_ADDR_TYPE_SCO);
+                        conn = create_connection_for_bd_addr_and_type(conn->address, BD_ADDR_TYPE_SCO,
+                                                                      HCI_ROLE_MASTER);
                         if (!conn) {
                             return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
                         }
-                        conn->role  = HCI_ROLE_MASTER;
                         break;
                     case BD_ADDR_TYPE_SCO:
                         // update of existing SCO connection
@@ -7952,7 +7949,7 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
 int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
 
     // create connection state machine
-    hci_connection_t * connection = create_connection_for_bd_addr_and_type(device, BD_ADDR_TYPE_ACL);
+    hci_connection_t * connection = create_connection_for_bd_addr_and_type(device, BD_ADDR_TYPE_ACL, HCI_ROLE_MASTER);
 
     if (!connection){
         return BTSTACK_MEMORY_ALLOC_FAILED;
@@ -8035,7 +8032,7 @@ uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type){
         }
 
         log_info("gap_connect: no connection exists yet, creating context");
-        conn = create_connection_for_bd_addr_and_type(addr, addr_type);
+        conn = create_connection_for_bd_addr_and_type(addr, addr_type, HCI_ROLE_MASTER);
         if (!conn){
             // notify client that alloc failed
             hci_emit_le_connection_complete(addr_type, addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
