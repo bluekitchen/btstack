@@ -44,7 +44,10 @@
 
 #include "btstack.h"
 
-static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
+static const char * device_addr_string = "00:1A:7D:DA:71:03";
+static bd_addr_t device_addr;
+
+static const int mitm_protection_required = 0;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -58,7 +61,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started 
             if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                gap_dedicated_bonding(remote, 1);
+                printf("GAP Dedicated Bonding to %s\n", bd_addr_to_str(device_addr));
+                gap_dedicated_bonding(device_addr, mitm_protection_required);
             }
             break;
         case GAP_EVENT_DEDICATED_BONDING_COMPLETED:
@@ -83,6 +87,9 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize LE Security Manager. Needed for cross-transport key derivation
     sm_init();
 #endif
+
+    // parse human readable device address
+    sscanf_bd_addr(device_addr_string, device_addr);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
