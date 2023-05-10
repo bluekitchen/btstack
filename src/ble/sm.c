@@ -275,8 +275,9 @@ static uint8_t sm_aes128_key[16];
 static uint8_t sm_aes128_plaintext[16];
 static uint8_t sm_aes128_ciphertext[16];
 
-// to receive hci events
+// to receive events
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t l2cap_event_callback_registration;
 
 /* to dispatch sm event */
 static btstack_linked_list_t sm_event_handlers;
@@ -3946,13 +3947,23 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
                         case SM_BR_EDR_W4_ENCRYPTION_COMPLETE:
+                            // CTKD requires BR/EDR Secure Connection
                             if (sm_conn->sm_connection_encrypted != 2) break;
                             // prepare for pairing request
                             if (IS_RESPONDER(sm_conn->sm_role)){
                                 sm_conn->sm_engine_state = SM_BR_EDR_RESPONDER_W4_PAIRING_REQUEST;
                             } else if (sm_conn->sm_pairing_requested){
-                                // only send LE pairing request after BR/EDR SSP
-                                sm_conn->sm_engine_state = SM_BR_EDR_INITIATOR_SEND_PAIRING_REQUEST;
+                                // check if remote supports fixed channels
+                                const hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+                                if (hci_connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_DONE){
+                                    // check if remote supports SMP over BR/EDR
+                                    if ((hci_connection->l2cap_state.fixed_channels_supported & (1 << L2CAP_CID_BR_EDR_SECURITY_MANAGER)) != 0){
+                                        sm_conn->sm_engine_state = SM_BR_EDR_INITIATOR_SEND_PAIRING_REQUEST;
+                                    }
+                                } else {
+                                    // wait for fixed channel info
+                                    sm_conn->sm_engine_state = SM_BR_EDR_INITIATOR_W4_FIXED_CHANNEL_MASK;
+                                }
                             }
                             break;
 #endif
@@ -4022,6 +4033,22 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         le_device_db_set_local_bd_addr(addr);
                     }
                     break;
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+                case L2CAP_EVENT_INFORMATION_RESPONSE:
+                    con_handle = l2cap_event_information_response_get_con_handle(packet);
+                    sm_conn = sm_get_connection_for_handle(con_handle);
+                    if (!sm_conn) break;
+                    if (sm_conn->sm_engine_state == SM_BR_EDR_INITIATOR_W4_FIXED_CHANNEL_MASK){
+                        // check if remote supports SMP over BR/EDR
+                        const hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+                        if ((hci_connection->l2cap_state.fixed_channels_supported & (1 << L2CAP_CID_BR_EDR_SECURITY_MANAGER)) != 0){
+                            sm_conn->sm_engine_state = SM_BR_EDR_INITIATOR_SEND_PAIRING_REQUEST;
+                        } else {
+                            sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                        }
+                    }
+                    break;
+#endif
                 default:
                     break;
 			}
@@ -4853,9 +4880,13 @@ void sm_init(void){
     // other
     btstack_run_loop_set_timer_handler(&sm_run_timer, &sm_run_timer_handler);
 
-    // register for HCI Events from HCI
+    // register for HCI Events
     hci_event_callback_registration.callback = &sm_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for L2CAP events
+    l2cap_event_callback_registration.callback = &sm_event_packet_handler;
+    l2cap_add_event_handler(&l2cap_event_callback_registration);
 
     //
     btstack_crypto_init();
