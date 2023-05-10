@@ -253,7 +253,6 @@ static uint8_t           sm_cmac_sc_buffer[80];
 
 // resolvable private address lookup / CSRK calculation
 static int       sm_address_resolution_test;
-static int       sm_address_resolution_ah_calculation_active;
 static uint8_t   sm_address_resolution_addr_type;
 static bd_addr_t sm_address_resolution_address;
 static void *    sm_address_resolution_context;
@@ -2249,7 +2248,6 @@ static bool sm_run_csrk(void){
 
             (void)memcpy(sm_aes128_key, irk, 16);
             sm_ah_r_prime(sm_address_resolution_address, sm_aes128_plaintext);
-            sm_address_resolution_ah_calculation_active = 1;
             sm_aes128_state = SM_AES128_ACTIVE;
             btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_aes128_key, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_address_resolution, NULL);
             return true;
@@ -3455,7 +3453,6 @@ static void sm_handle_encryption_result_address_resolution(void *arg){
     UNUSED(arg);
     sm_aes128_state = SM_AES128_IDLE;
 
-    sm_address_resolution_ah_calculation_active = 0;
     // compare calulated address against connecting device
     uint8_t * hash = &sm_aes128_ciphertext[13];
     if (memcmp(&sm_address_resolution_address[3], hash, 3) == 0){
@@ -4821,7 +4818,6 @@ static void sm_state_reset(void) {
     rau_state = RAU_IDLE;
     sm_aes128_state = SM_AES128_IDLE;
     sm_address_resolution_test = -1;    // no private address to resolve yet
-    sm_address_resolution_ah_calculation_active = 0;
     sm_address_resolution_mode = ADDRESS_RESOLUTION_IDLE;
     sm_address_resolution_general_queue = NULL;
     sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
