@@ -466,8 +466,10 @@ static void avrcp_cover_art_handle_sdp_query_complete(avrcp_connection_t * conne
     if (status == ERROR_CODE_SUCCESS) {
         // ready to connect
         cover_art_client->state = AVRCP_COVER_ART_W2_GOEP_CONNECT;
-        avrcp_cover_art_client_setup_connection(cover_art_client, connection->cover_art_psm);
-    } else {
+        status = avrcp_cover_art_client_setup_connection(cover_art_client, connection->cover_art_psm);
+    }
+
+    if (status != ERROR_CODE_SUCCESS){
         btstack_packet_handler_t packet_handler = cover_art_client->packet_handler;
         uint16_t cover_art_cid = cover_art_client->cover_art_cid;
         uint16_t avrcp_cid =  cover_art_client->avrcp_cid;
