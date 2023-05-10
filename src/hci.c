@@ -6996,7 +6996,7 @@ static bool hci_run_general_pending_commands(void){
             return true;
         }
 
-        if (connection->bonding_flags & BONDING_DISCONNECT_DEDICATED_DONE){
+        if ((connection->bonding_flags & (BONDING_DISCONNECT_DEDICATED_DONE | BONDING_DEDICATED_DEFER_DISCONNECT)) == BONDING_DISCONNECT_DEDICATED_DONE){
             connection->bonding_flags &= ~BONDING_DISCONNECT_DEDICATED_DONE;
             connection->bonding_flags |= BONDING_EMIT_COMPLETE_ON_DISCONNECT;
             connection->state = SENT_DISCONNECT;
@@ -7970,6 +7970,21 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
     hci_run();
 
     return 0;
+}
+
+uint8_t hci_dedicated_bonding_defer_disconenct(hci_con_handle_t con_handle, bool defer){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (defer){
+        connection->bonding_flags |= BONDING_DEDICATED_DEFER_DISCONNECT;
+    } else {
+        connection->bonding_flags &= ~BONDING_DEDICATED_DEFER_DISCONNECT;
+        // trigger disconnect
+        hci_run();
+    }
+    return ERROR_CODE_SUCCESS;
 }
 
 void gap_set_local_name(const char * local_name){

@@ -270,7 +270,8 @@ enum {
     BONDING_SEND_ENCRYPTION_REQUEST           =  0x2000,
     BONDING_SEND_READ_ENCRYPTION_KEY_SIZE     =  0x4000,
     BONDING_DEDICATED                         =  0x8000,
-    BONDING_EMIT_COMPLETE_ON_DISCONNECT       = 0x10000,
+    BONDING_DEDICATED_DEFER_DISCONNECT        = 0x10000,
+    BONDING_EMIT_COMPLETE_ON_DISCONNECT       = 0x20000,
 };
 
 typedef enum {
@@ -1727,13 +1728,6 @@ uint8_t gap_periodic_advertising_terminate_sync(uint16_t sync_handle);
  */
 uint16_t hci_get_manufacturer(void);
 
-// Only for PTS testing
-
-/** 
- * Disable automatic L2CAP disconnect if no L2CAP connection is established
- */
-void hci_disable_l2cap_timeout_check(void);
-
 /**
  *  Get Classic Allow Role Switch param
  */
@@ -1748,6 +1742,14 @@ HCI_STATE hci_get_state(void);
  * @brief De-Init HCI
  */
 void hci_deinit(void);
+
+// defer disconnect on dedicated bonding complete, used internally for CTKD
+uint8_t hci_dedicated_bonding_defer_disconenct(hci_con_handle_t con_handle, bool defer);
+
+// Only for PTS testing
+
+// Disable automatic L2CAP disconnect if no L2CAP connection is established
+void hci_disable_l2cap_timeout_check(void);
 
 // setup test connections, used for fuzzing
 void hci_setup_test_connections_fuzz(void);
