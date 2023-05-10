@@ -2562,6 +2562,13 @@ static void handle_event_for_current_stack_state(const uint8_t * packet, uint16_
 }
 
 #ifdef ENABLE_CLASSIC
+static void hci_handle_mutual_authentication_completed(hci_connection_t * conn){
+    // bonding complete if connection is authenticated (either initiated or BR/EDR SC)
+    conn->requested_security_level = LEVEL_0;
+    gap_security_level_t security_level = gap_security_level_for_connection(conn);
+    hci_emit_security_level(conn->con_handle, security_level);
+}
+
 static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn, uint8_t encryption_key_size) {
     conn->authentication_flags |= AUTH_FLAG_CONNECTION_ENCRYPTED;
     conn->encryption_key_size = encryption_key_size;
@@ -2582,9 +2589,7 @@ static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn
     }
 
     if ((conn->authentication_flags & AUTH_FLAG_CONNECTION_AUTHENTICATED) != 0) {
-        // bonding complete if connection is authenticated (either initiated or BR/EDR SC)
-        conn->requested_security_level = LEVEL_0;
-        hci_emit_security_level(conn->con_handle, security_level);
+        hci_handle_mutual_authentication_completed(conn);
     } else {
         // otherwise trigger remote feature request and send authentication request
         hci_trigger_remote_features_for_connection(conn);
@@ -3886,8 +3891,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 }
             }
 
-            // emit updated security level
-            hci_emit_security_level(handle, gap_security_level_for_connection(conn));
+            // emit updated security level (will be 0 if not authenticated)
+            hci_handle_mutual_authentication_completed(conn);
             break;
 
         case HCI_EVENT_SIMPLE_PAIRING_COMPLETE:
