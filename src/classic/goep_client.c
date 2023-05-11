@@ -167,19 +167,15 @@ static goep_client_t * goep_client_for_cid(uint16_t cid){
 }
 
 static goep_client_t * goep_client_for_bearer_cid(uint16_t bearer_cid){
-    if (bearer_cid == goep_client_singleton.bearer_cid){
-        return &goep_client_singleton;
-    } else {
-        btstack_linked_list_iterator_t it;
-        btstack_linked_list_iterator_init(&it, &goep_clients);
-        while (btstack_linked_list_iterator_has_next(&it)){
-            goep_client_t * goep_client = (goep_client_t *) btstack_linked_list_iterator_next(&it);
-            if (goep_client->bearer_cid == bearer_cid){
-                return goep_client;
-            }
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &goep_clients);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        goep_client_t * goep_client = (goep_client_t *) btstack_linked_list_iterator_next(&it);
+        if (goep_client->bearer_cid == bearer_cid){
+            return goep_client;
         }
-        return NULL;
     }
+    return NULL;
 }
 
 static void goep_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -443,9 +439,7 @@ static void goep_client_packet_init(goep_client_t *goep_client, uint8_t opcode) 
 }
 
 void goep_client_init(void){
-    goep_client_t * goep_client = &goep_client_singleton;
-    memset(goep_client, 0, sizeof(goep_client_t));
-    goep_client->state = GOEP_CLIENT_INIT;
+    goep_client_singleton.state = GOEP_CLIENT_INIT;
 }
 
 void goep_client_deinit(void){
