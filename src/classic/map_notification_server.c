@@ -83,6 +83,10 @@ typedef struct {
         uint32_t payload_len;
         uint32_t payload_position;
         uint8_t  abort_response;
+        obex_app_param_parser_t app_param_parser;
+        struct {
+            uint8_t  mas_instance_id;
+        } app_params;
     } request;
     uint8_t response_code;
     uint16_t maximum_obex_packet_length;
@@ -122,6 +126,20 @@ static void map_notification_server_reset_request (map_notification_server_t *mn
 
 /* OBEX related functions */
 
+static void map_notification_server_app_param_callback (void * user_data, uint8_t tag_id, uint8_t total_len, uint8_t data_offset, const uint8_t * data_buffer, uint8_t data_len){
+    map_notification_server_t *mns = (map_notification_server_t *) user_data;
+
+    switch (tag_id) {
+        case MAP_APPLICATION_PARAMETER_MAS_INSTANCE_ID:
+            mns->request.app_params.mas_instance_id = data_buffer[0];
+            log_info ("MAS instance ID %02d\n", mns->request.app_params.mas_instance_id);
+            break;
+        default:
+            log_info ("unhandled application parameter %02x\n", tag_id);
+            break;
+    }
+}
+
 static void map_notification_server_obex_parser_callback (void *user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t *data_buffer, uint16_t data_len){
     map_notification_server_t *mns = (map_notification_server_t *) user_data;
 
@@ -151,6 +169,15 @@ static void map_notification_server_obex_parser_callback (void *user_data, uint8
             mns->request.length = big_endian_read_32 (data_buffer, 0);
             log_info ("length of data: %d\n", mns->request.length);
             break;
+        case OBEX_HEADER_APPLICATION_PARAMETERS:
+            log_info ("application parameters: %d bytes\n", data_len);
+            if (data_offset == 0){
+                obex_app_param_parser_init(&mns->request.app_param_parser,
+                                           &map_notification_server_app_param_callback, total_len, mns);
+            }
+            obex_app_param_parser_process_data(&mns->request.app_param_parser, data_buffer, data_len);
+            break;
+
         default:
             log_info ("received unhandled MNS header type %d\n", header_id);
             break;
