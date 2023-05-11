@@ -141,7 +141,7 @@ static void stdin_process(char c){
                                       sizeof(map_access_client_ertm_buffer),
                                       map_access_client_ertm_buffer, &packet_handler, remote_addr, 0, &map_cid);
 #else
-            map_access_client_connect(&map_access_client, NULL, 0, NULL, &packet_handler, remote_addr, &map_cid);
+            map_access_client_connect(&map_access_client, NULL, 0, NULL, &packet_handler, remote_addr, 0, &map_cid);
 #endif
             break;
         case 'A':
