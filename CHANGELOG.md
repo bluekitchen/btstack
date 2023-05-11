@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP: emit A2DP_SUBEVENT_STREAM_ESTABLISHED with if connection fails, e.g. because of Page Timeout
 - A2DP: use samples as timestamp, fixes issue with Apple Airpods Pro 2nd Gen
 - AVRCP: re-register for notification
+- HFP: fix setup/accept of synchronous connection 
 - PBAP Client: make pbap_set_property_selector work for Pull Phonebook
 - esp32: fix power amplifier control on Lyra T v4.3
 
