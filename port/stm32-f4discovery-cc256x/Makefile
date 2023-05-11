@@ -305,6 +305,7 @@ LDSCRIPT = STM32F407VGTx_FLASH.ld
 LIBS = -lPDMFilter_CM4_GCC -lc -lm -lnosys 
 LIBDIR = -Lpdm
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+# this is required for libc based compiler if printf support for floating point is needed 
 #LDFLAGS += -u_printf_float
 
 # default action: build all
