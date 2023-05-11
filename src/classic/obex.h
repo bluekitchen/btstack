@@ -148,5 +148,12 @@
 // PbapSupportedFeatures - 0x10 - 4 bytes
 #define PBAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES 0x10
 
+/**
+ * MAP
+ */
+
+// MAP Application Parameters Tag IDs
+#define MAP_APPLICATION_PARAMETER_MAS_INSTANCE_ID 0x0f
+
 
 #endif
