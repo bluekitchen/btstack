@@ -96,6 +96,9 @@ typedef struct {
     uint8_t operation_complete_status;
 } map_notification_server_t;
 
+#define ENTER_STATE(mns, s) \
+    do { log_info ("entering state %s", #s); mns->state = s; } while (0)
+
 static btstack_packet_handler_t map_notification_server_user_packet_handler;
 
 static map_notification_server_t  map_notification_server_singleton;
@@ -187,9 +190,9 @@ static void map_notification_server_obex_parser_callback (void *user_data, uint8
 static void map_notification_server_handle_put_request (map_notification_server_t *mns, uint8_t opcode, bool do_push_event){
     if (opcode & OBEX_OPCODE_FINAL_BIT_MASK ||
         !obex_srm_is_enabled (&mns->obex_srm)) {
-        mns->state = MAP_SEND_REQUEST_RESPONSE;
+        ENTER_STATE (mns, MAP_SEND_REQUEST_RESPONSE);
     } else {
-        mns->state = MAP_W4_REQUEST;
+        ENTER_STATE (mns, MAP_W4_REQUEST);
     }
 
     if (do_push_event) {
@@ -225,13 +228,22 @@ static void map_notification_server_handle_put_request (map_notification_server_
 static void map_notification_server_handle_can_send_now (map_notification_server_t *mns){
     switch (mns->state){
         case MAP_W2_SEND_CONNECT_RESPONSE:
-            mns->state = MAP_CONNECTED;
-            map_notification_send_connect_response(mns->goep_cid);
+            if (mns->response_code == OBEX_RESP_SUCCESS){
+                ENTER_STATE (mns, MAP_CONNECTED);
+                map_notification_send_connect_response(mns->goep_cid);
+            } else {
+                ENTER_STATE (mns, MAP_INIT);
+                map_notification_send_general_response(mns->goep_cid, mns->response_code);
+            }
             break;
         case MAP_W2_SEND_DISCONNECT_RESPONSE:
             // TODO: should we disconnect after sending the disconnect response?
-            mns->state = MAP_INIT;
+            ENTER_STATE (mns, MAP_INIT);
             map_notification_send_general_response(mns->goep_cid, OBEX_RESP_SUCCESS);
+            break;
+        case MAP_SEND_REQUEST_RESPONSE:
+            ENTER_STATE (mns, MAP_CONNECTED);
+            map_notification_send_general_response(mns->goep_cid, mns->response_code);
             break;
         default:
             break;
@@ -262,7 +274,7 @@ static void map_notification_server_packet_handler_hci(uint8_t *packet, uint16_t
                         mns->goep_cid = goep_cid;
                         goep_subevent_connection_opened_get_bd_addr(packet, mns->bd_addr);
                         mns->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
-                        mns->state = MAP_CONNECTED;
+                        ENTER_STATE (mns, MAP_INIT);
                         // TODO: emit connection success event
                         // map_emit_connected_event(mns, status);
                     } else {
@@ -276,7 +288,7 @@ static void map_notification_server_packet_handler_hci(uint8_t *packet, uint16_t
                     mns = map_notification_server_for_goep_cid(goep_cid);
                     btstack_assert(mns != NULL);
                     log_info("MNS: connection closed");
-                    mns->state = MAP_INIT;
+                    ENTER_STATE (mns, MAP_INIT);
                     // TODO: emit connection closed event
                     // map_emit_connection_closed_event(&map_server.connection);
                     break;
@@ -296,51 +308,88 @@ static void map_notification_server_packet_handler_hci(uint8_t *packet, uint16_t
 
 static void map_notification_server_packet_handler_goep(map_notification_server_t *mns, uint8_t *packet, uint16_t size){
     obex_parser_object_state_t parser_state;
+    uint8_t opcode;
     int i;
 
-    if (mns->state != MAP_CONNECTED &&
-        mns->state != MAP_W4_REQUEST)
-        return;
+    btstack_assert (size > 0);
 
-    if (size < 3)
-        return;
-
-    if (mns->state == MAP_CONNECTED){
-        map_notification_server_reset_request (mns);
-        mns->state = MAP_W4_REQUEST;
-        if (packet[0] == OBEX_OPCODE_PUT) {
-            obex_parser_init_for_request(&mns->obex_parser, &map_notification_server_obex_parser_callback, (void*) mns);
-            obex_srm_init(&mns->obex_srm);
-        } else {
+    switch (mns->state){
+        case MAP_INIT:
             obex_parser_init_for_request(&mns->obex_parser, NULL, NULL);
-        }
-    }
+            parser_state = obex_parser_process_data(&mns->obex_parser, packet, size);
+            if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
+                obex_parser_operation_info_t op_info;
+                obex_parser_get_operation_info(&mns->obex_parser, &op_info);
+                switch (op_info.opcode){
+                    case OBEX_OPCODE_CONNECT:
+                        ENTER_STATE (mns, MAP_W2_SEND_CONNECT_RESPONSE);
+                        mns->flags = packet[2];
+                        mns->maximum_obex_packet_length = btstack_min(maximum_obex_packet_length, big_endian_read_16(packet, 3));
+                        mns->response_code = OBEX_RESP_SUCCESS;
+                        goep_server_request_can_send_now(mns->goep_cid);
+                        break;
 
-    switch (goep_data_packet_get_opcode(packet)){
-        case OBEX_OPCODE_CONNECT:
-            mns->state = MAP_W2_SEND_CONNECT_RESPONSE;
-            mns->flags = packet[2];
-            mns->maximum_obex_packet_length = btstack_min(maximum_obex_packet_length, big_endian_read_16(packet, 3));
+                    default:
+                        ENTER_STATE (mns, MAP_W2_SEND_CONNECT_RESPONSE);
+                        mns->response_code = OBEX_RESP_BAD_REQUEST;
+                        goep_server_request_can_send_now(mns->goep_cid);
+                        break;
+                }
+            }
             break;
-         case OBEX_OPCODE_DISCONNECT:
-             mns->state = MAP_W2_SEND_DISCONNECT_RESPONSE;
-             break;
-         case OBEX_OPCODE_PUT:
-         case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
-             parser_state = obex_parser_process_data(&mns->obex_parser, packet, size);
-             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
-                 obex_parser_operation_info_t op_info;
-                 obex_parser_get_operation_info(&mns->obex_parser, &op_info);
 
-                 map_notification_server_handle_put_request(mns, op_info.opcode, false);
-                 if (mns->request.abort_response == 0) {
-                     (*map_notification_server_user_packet_handler)(MAP_DATA_PACKET, mns->mns_cid, (uint8_t *) mns->request.payload_data, mns->request.payload_len);
-                 }
-             }
-             break;
-        // case OBEX_OPCODE_ABORT:
-        // case OBEX_OPCODE_GET:
-        // case OBEX_OPCODE_SETPATH:
+        case MAP_CONNECTED:
+            opcode = goep_data_packet_get_opcode(packet);
+            // default headers
+            switch (opcode){
+                case OBEX_OPCODE_PUT:
+                case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
+                    log_info ("handling PUT\n");
+                    map_notification_server_reset_request (mns);
+                    ENTER_STATE (mns, MAP_W4_REQUEST);
+                    obex_parser_init_for_request(&mns->obex_parser, &map_notification_server_obex_parser_callback, (void*) mns);
+                    break;
+                case OBEX_OPCODE_DISCONNECT:
+                    ENTER_STATE (mns, MAP_W4_REQUEST);
+                    obex_parser_init_for_request(&mns->obex_parser, NULL, NULL);
+                    break;
+                default:
+                    ENTER_STATE (mns, MAP_W4_REQUEST);
+                    obex_parser_init_for_request(&mns->obex_parser, NULL, NULL);
+                    break;
+            }
+
+            /* fall through */
+
+        case MAP_W4_REQUEST:
+            obex_srm_init(&mns->obex_srm);
+            parser_state = obex_parser_process_data(&mns->obex_parser, packet, size);
+            if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
+                obex_parser_operation_info_t op_info;
+                obex_parser_get_operation_info(&mns->obex_parser, &op_info);
+                switch (op_info.opcode){
+                    case OBEX_OPCODE_PUT:
+                    case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
+                        mns->request.abort_response = 0;
+                        map_notification_server_handle_put_request(mns, op_info.opcode, false);
+                        if (mns->request.abort_response == 0) {
+                            (*map_notification_server_user_packet_handler)(MAP_DATA_PACKET, mns->mns_cid, (uint8_t *) mns->request.payload_data, mns->request.payload_len);
+                        }
+                        break;
+                    case OBEX_OPCODE_DISCONNECT:
+                        ENTER_STATE (mns, MAP_W2_SEND_DISCONNECT_RESPONSE);
+                        goep_server_request_can_send_now(mns->goep_cid);
+                        break;
+
+                    default:
+                        ENTER_STATE (mns, MAP_SEND_REQUEST_RESPONSE);
+                        mns->response_code = OBEX_RESP_BAD_REQUEST;
+                        goep_server_request_can_send_now(mns->goep_cid);
+                        break;
+                }
+            }
+            break;
+
         default:
             printf("MAP server: GOEP data packet'");
             for (i=0;i<size;i++){
@@ -349,7 +398,6 @@ static void map_notification_server_packet_handler_goep(map_notification_server_
             printf("'\n");
             return;
     }
-    goep_server_request_can_send_now(mns->goep_cid);
 }
 
 static void map_notification_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
