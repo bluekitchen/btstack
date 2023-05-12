@@ -1332,6 +1332,18 @@ typedef struct {
 static btstack_linked_list_t att_server_eatt_bearer_pool;
 static btstack_linked_list_t att_server_eatt_bearer_active;
 
+static att_server_eatt_bearer_t * att_server_eatt_bearer_for_cid(uint16_t cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &att_server_eatt_bearer_active);
+    while(btstack_linked_list_iterator_has_next(&it)){
+        att_server_eatt_bearer_t * eatt_bearer = (att_server_eatt_bearer_t *) btstack_linked_list_iterator_next(&it);
+        if (eatt_bearer->l2cap_cid == cid) {
+            return eatt_bearer;
+        }
+    }
+    return NULL;
+}
+
 static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint16_t cid;
     uint8_t status;
@@ -1344,6 +1356,7 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
     uint8_t * receive_buffers[5];
     uint16_t cids[5];
     att_server_eatt_bearer_t * eatt_bearers[5];
+    att_server_eatt_bearer_t * eatt_bearer;
 
     switch (packet_type) {
 
@@ -1394,6 +1407,15 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
                 case L2CAP_EVENT_ECBM_RECONFIGURED:
                     break;
 
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    eatt_bearer = att_server_eatt_bearer_for_cid(l2cap_event_channel_closed_get_local_cid(packet));
+                    btstack_assert(eatt_bearers != NULL);
+
+                    // TODO: finalize - abort queued writes
+
+                    btstack_linked_list_remove(&att_server_eatt_bearer_active, (btstack_linked_item_t  *) eatt_bearers);
+                    btstack_linked_list_add(&att_server_eatt_bearer_pool, (btstack_linked_item_t  *) eatt_bearer);
+                    break;
                 default:
                     break;
             }
