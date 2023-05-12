@@ -1327,7 +1327,9 @@ typedef struct {
     btstack_linked_item_t item;
     uint16_t l2cap_cid;
     hci_con_handle_t con_handle;
-    uint8_t * reassemble_buffer;
+    uint8_t * receive_buffer;
+    uint8_t * request_buffer;
+    uint16_t  request_len;
 } att_server_eatt_bearer_t;
 static btstack_linked_list_t att_server_eatt_bearer_pool;
 static btstack_linked_list_t att_server_eatt_bearer_active;
@@ -1363,6 +1365,9 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
         case L2CAP_DATA_PACKET:
             printf("L2CAP data cid 0x%02x len %u: ", channel, size);
             printf_hexdump(packet, size);
+
+            // TODO: copy packet into request buffer
+
             break;
 
         case HCI_EVENT_PACKET:
@@ -1385,7 +1390,7 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
                             break;
                         }
                         eatt_bearers[i]->con_handle = l2cap_event_ecbm_incoming_connection_get_handle(packet);
-                        receive_buffers[i] = eatt_bearers[i]->reassemble_buffer;
+                        receive_buffers[i] = eatt_bearers[i]->receive_buffer;
                         btstack_linked_list_add(&att_server_eatt_bearer_active, (btstack_linked_item_t *) eatt_bearers[i]);
                     }
                     num_accepted_bearers = i;
@@ -1433,16 +1438,21 @@ uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer,
 
     memset(storage_buffer, 0, storage_size);
     att_server_num_eatt_bearer = num_eatt_bearers;
-    uint16_t reassemble_buffer_size = (storage_size-size_for_structs) / num_eatt_bearers;
+    uint16_t bearer_buffer_size = ((storage_size - size_for_structs) / num_eatt_bearers);
+    att_server_eatt_receive_buffer_size = bearer_buffer_size / 2;
+    uint16_t request_buffer_size = bearer_buffer_size / 2;
     uint16_t size_per_bearer = storage_size / num_eatt_bearers;
-    uint8_t * reassemble_buffer = &storage_buffer[size_for_structs];
+    uint8_t * bearer_buffer = &storage_buffer[size_for_structs];
     uint8_t i;
     att_server_eatt_bearer_t * eatt_bearer = (att_server_eatt_bearer_t *) storage_buffer;
-    log_info("%u EATT bearers with reassemble buffer of size %u ", num_eatt_bearers, reassemble_buffer_size);
+    log_info("%u EATT bearers with receive buffer size %u and request buffer size %u",
+             num_eatt_bearers, att_server_eatt_receive_buffer_size, request_buffer_size);
     for (i=0;i<num_eatt_bearers;i++){
         eatt_bearer->con_handle = HCI_CON_HANDLE_INVALID;
-        eatt_bearer->reassemble_buffer = reassemble_buffer;
-        reassemble_buffer += reassemble_buffer_size;
+        eatt_bearer->receive_buffer = bearer_buffer;
+        bearer_buffer += att_server_eatt_receive_buffer_size;
+        eatt_bearer->request_buffer = bearer_buffer;
+        bearer_buffer += request_buffer_size;
         btstack_linked_list_add(&att_server_eatt_bearer_pool, (btstack_linked_item_t *) eatt_bearer);
         eatt_bearer++;
     }
