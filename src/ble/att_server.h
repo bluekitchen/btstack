@@ -61,6 +61,16 @@ extern "C" {
  */
 void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_write_callback_t write_callback);
 
+/**
+ * @brief Enable support for Enhanced ATT bearer
+ * @note Requires ENABLE_GATT_OVER_EATT
+ * @param num_eatt_bearers
+ * @param storage_buffer
+ * @param storage_size
+ * @return
+ */
+uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer, uint16_t storage_size);
+
 /*
  * @brief register packet handler for ATT server events:
  *        - ATT_EVENT_CAN_SEND_NOW

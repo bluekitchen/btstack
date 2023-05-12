@@ -65,6 +65,8 @@
 #include "btstack_tlv.h"
 #ifdef ENABLE_LE_SIGNED_WRITE
 #include "ble/sm.h"
+#include "bluetooth_psm.h"
+
 #endif
 
 #ifdef ENABLE_TESTING_SUPPORT
@@ -1317,3 +1319,111 @@ void att_server_deinit(void){
     att_client_packet_handler = NULL;
     service_handlers = NULL;
 }
+
+#ifdef ENABLE_GATT_OVER_EATT
+static uint8_t att_server_num_eatt_bearer;
+static uint16_t att_server_eatt_receive_buffer_size;
+typedef struct {
+    btstack_linked_item_t item;
+    uint16_t l2cap_cid;
+    hci_con_handle_t con_handle;
+    uint8_t * reassemble_buffer;
+} att_server_eatt_bearer_t;
+static btstack_linked_list_t att_server_eatt_bearers;
+
+static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    uint16_t cid;
+    uint8_t status;
+    uint16_t remote_mtu;
+
+    uint8_t i;
+    uint8_t num_requested_bearers;
+    uint8_t num_accepted_bearers;
+    uint8_t initial_credits = 5;
+    uint8_t * receive_buffers[5];
+    uint16_t cids[5];
+    att_server_eatt_bearer_t * eatt_bearers[5];
+
+    switch (packet_type) {
+
+        case L2CAP_DATA_PACKET:
+            printf("L2CAP data cid 0x%02x len %u: ", channel, size);
+            printf_hexdump(packet, size);
+            break;
+
+        case HCI_EVENT_PACKET:
+            switch (packet[0]) {
+
+                case L2CAP_EVENT_CAN_SEND_NOW:
+                    break;
+
+                case L2CAP_EVENT_PACKET_SENT:
+                    cid = l2cap_event_packet_sent_get_local_cid(packet);
+                    printf("L2CAP: LE Data Channel Packet sent0x%02x\n", cid);
+                    break;
+
+                case L2CAP_EVENT_ECBM_INCOMING_CONNECTION:
+                    cid = l2cap_event_ecbm_incoming_connection_get_local_cid(packet);
+                    num_requested_bearers = l2cap_event_ecbm_incoming_connection_get_num_channels(packet);
+                    for (i = 0; i < num_requested_bearers; i++){
+                        eatt_bearers[i] = (att_server_eatt_bearer_t *) btstack_linked_list_get_first_item(&att_server_eatt_bearers);
+                        if (eatt_bearers[i] == NULL) {
+                            break;
+                        }
+                        eatt_bearers[i]->l2cap_cid = cid + i;
+                        eatt_bearers[i]->con_handle = l2cap_event_ecbm_incoming_connection_get_handle(packet);
+                        receive_buffers[i] = eatt_bearers[i]->reassemble_buffer;
+                    }
+                    num_accepted_bearers = i;
+                    status = l2cap_ecbm_accept_channels(cid, num_accepted_bearers, initial_credits, att_server_eatt_receive_buffer_size, receive_buffers, cids);
+                    btstack_assert(status == ERROR_CODE_SUCCESS);
+                    log_info("requested %u, accepted %u", num_requested_bearers, num_accepted_bearers);
+                    break;
+
+                case L2CAP_EVENT_ECBM_CHANNEL_OPENED:
+                    cid = l2cap_event_ecbm_channel_opened_get_local_cid(packet);
+                    status = l2cap_event_channel_opened_get_status(packet);
+                    remote_mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
+                    log_info("L2CAP_EVENT_ECBM_CHANNEL_OPENED - cid 0x%04x mtu %u, status 0x%02x", cid, remote_mtu, status);
+                    break;
+
+
+                case L2CAP_EVENT_ECBM_RECONFIGURED:
+                    break;
+
+                default:
+                    break;
+            }
+    }
+}
+
+// create eatt bearers
+uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer, uint16_t storage_size){
+    uint16_t size_for_structs = num_eatt_bearers * sizeof(att_server_eatt_bearer_t);
+    if (storage_size < size_for_structs) {
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+
+    // TODO: The minimum ATT_MTU for an Enhanced ATT bearer is 64 octets.
+
+    memset(storage_buffer, 0, storage_size);
+    att_server_num_eatt_bearer = num_eatt_bearers;
+    uint16_t reassemble_buffer_size = (storage_size-size_for_structs) / num_eatt_bearers;
+    uint16_t size_per_bearer = storage_size / num_eatt_bearers;
+    uint8_t * reassemble_buffer = &storage_buffer[size_for_structs];
+    uint8_t i;
+    att_server_eatt_bearer_t * eatt_bearer = (att_server_eatt_bearer_t *) storage_buffer;
+    log_info("%u EATT bearers with reassemble buffer of size %u ", num_eatt_bearers, reassemble_buffer_size);
+    for (i=0;i<num_eatt_bearers;i++){
+        eatt_bearer->con_handle = HCI_CON_HANDLE_INVALID;
+        eatt_bearer->reassemble_buffer = reassemble_buffer;
+        reassemble_buffer += reassemble_buffer_size;
+        btstack_linked_list_add(&att_server_eatt_bearers, (btstack_linked_item_t *) eatt_bearer);
+        eatt_bearer++;
+    }
+    // TODO: define minimum EATT MTU
+    l2cap_ecbm_register_service(att_server_eatt_handler, BLUETOOTH_PSM_EATT, 64, 0);
+
+    return 0;
+}
+#endif
