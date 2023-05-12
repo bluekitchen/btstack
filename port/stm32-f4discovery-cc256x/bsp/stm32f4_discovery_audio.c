@@ -186,12 +186,19 @@ static const i2s_pll_entry_t i2s_pll_table[] = {
 };
 
 #define BARRIER do { __asm__ volatile("" ::: "memory"); } while (0)
-#define BINARY(I) do {                                          \
-                base = ((base)[I].freq <= key)?base+I:base;     \
-                BARRIER;                                        \
+#define BINARY(I) do {                                            \
+                base = ((base)[I].freq <= frequency)?base+I:base; \
+                BARRIER;                                          \
         } while (0)
 
-static i2s_pll_entry_t const *i2s_find_pll_params( uint32_t key ) {
+/** @brief  Searches I2S PLL parameter giving highest frequency accuracy possible
+  * @param  frequency: the frequency to seach PLL parameter for
+  * @retval The PLL config with helps setting specified frequency
+  * @note   This assembles a unrolled binary search for a fixed table size,
+  *         so changes to the table size need to be reflected here. Or should
+  *         be auto-generated
+  */
+static i2s_pll_entry_t const *i2s_find_pll_params( uint32_t frequency ) {
     i2s_pll_entry_t const* base = i2s_pll_table;
     BINARY(5);
     BINARY(2);
@@ -898,7 +905,7 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 
 /**
   * @brief  Retrive the audio frequency.
-  * @ret    AudioFreq: Audio frequency used to play the audio stream.
+  * @retval AudioFreq: Audio frequency used to play the audio stream.
   * @note   This API should be called after the BSP_AUDIO_OUT_Init() to adjust the
   *         audio frequency. 
   */
