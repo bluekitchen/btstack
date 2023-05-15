@@ -54,6 +54,7 @@
 #include <string.h>
 
 #include "btstack_event.h"
+#include "yxml.h"
 #include "classic/goep_client.h"
 #include "classic/goep_server.h"
 #include "classic/map.h"
@@ -127,6 +128,7 @@ static void show_usage(void){
     printf("l - get message for last found handle\n");
     printf("n - enable notifications\n");
     printf("N - disable notifications\n");
+    printf("m - toggle notification filter for new messages\n");
     printf("i - get MAS Instance Information\n");
 
     printf("\n");
@@ -155,11 +157,11 @@ static void stdin_process(char c){
             break;
         case 'f':
             printf("[+] Get folder listing\n");
-            map_access_client_get_folder_listing(map_cid);
+            map_access_client_get_folder_listing(map_cid, packet_handler);
             break;
         case 'F':
             printf("[+] Get message listing for folder \'%s\'\n", folder_name);
-            map_access_client_get_message_listing_for_folder(map_cid, folder_name);
+            map_access_client_get_message_listing_for_folder(map_cid, folder_name, packet_handler);
             break;
         case 'i':
             printf("[+] Get MAS instance info for default instance\n");
