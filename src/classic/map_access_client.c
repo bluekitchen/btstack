@@ -179,6 +179,13 @@ static void map_access_client_parser_callback_get_operation(void * user_data, ui
             switch(map_access_client->state){
                 case MAP_W4_FOLDERS:
                 case MAP_W4_MESSAGES_IN_FOLDER:
+                    map_util_xml_parser_parse (&map_access_client->mu_parser,
+                                               (uint8_t *) data_buffer,
+                                               data_len);
+                    if (map_access_client->state == OBEX_HEADER_END_OF_BODY)
+                        map_util_xml_parser_parse (&map_access_client->mu_parser,
+                                                   NULL, 0);
+                    break;
                 case MAP_W4_MESSAGE:
                 case MAP_W4_MAS_INSTANCE_INFO:
                     map_access_client->client_handler(MAP_DATA_PACKET, map_access_client->goep_client.cid, (uint8_t *) data_buffer, data_len);
@@ -675,7 +682,7 @@ uint8_t map_access_client_disconnect(uint16_t map_cid){
     return 0;
 }
 
-uint8_t map_access_client_get_folder_listing(uint16_t map_cid){
+uint8_t map_access_client_get_folder_listing(uint16_t map_cid, btstack_packet_handler_t  callback){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -686,11 +693,15 @@ uint8_t map_access_client_get_folder_listing(uint16_t map_cid){
 
     map_access_client->state = MAP_W2_SEND_GET_FOLDERS;
     map_access_client->request_number = 0;
+    map_util_message_listing_parser_init (&map_access_client->mu_parser,
+                                          MAP_UTIL_PARSER_TYPE_FOLDER_LISTING,
+                                          callback,
+                                          map_cid);
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
     return 0;
 }
 
-uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name){
+uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name, btstack_packet_handler_t  callback){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -702,6 +713,10 @@ uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const
     map_access_client->state = MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER;
     map_access_client->request_number = 0;
     map_access_client->folder_name = folder_name;
+    map_util_message_listing_parser_init (&map_access_client->mu_parser,
+                                          MAP_UTIL_PARSER_TYPE_MESSAGE_LISTING,
+                                          callback,
+                                          map_cid);
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
     return 0;
 }

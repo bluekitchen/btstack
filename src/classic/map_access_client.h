@@ -47,6 +47,9 @@ extern "C" {
 #include "btstack_defines.h"
 #include "classic/map.h"
 #include "classic/obex_parser.h"
+#include "yxml.h"
+#include "classic/map_util.h"
+
 #include <stdint.h>
 
 /* API_START */
@@ -88,7 +91,7 @@ typedef enum {
     SRM_W4_CONFIRM,
     SRM_ENABLED_BUT_WAITING,
     SRM_ENABLED
-} map_acces_client_srm_state_t;
+} map_access_client_srm_state_t;
 
 typedef struct {
     uint8_t srm_value;
@@ -116,7 +119,7 @@ typedef struct {
     uint8_t obex_header_buffer[4];
     /* srm */
     map_access_client_obex_srm_t obex_srm;
-    map_acces_client_srm_state_t srm_state;
+    map_access_client_srm_state_t srm_state;
 
     const char * folder_name;
     const char * current_folder;
@@ -127,6 +130,8 @@ typedef struct {
 
     map_message_handle_t message_handle;
     uint8_t get_message_attachment;
+
+    map_util_xml_parser mu_parser;
 } map_access_client_t;
 
 /**
@@ -163,7 +168,7 @@ uint8_t map_access_client_disconnect(uint16_t map_cid);
  * @param map_cid
  * @return status
  */
-uint8_t map_access_client_get_folder_listing(uint16_t map_cid);
+uint8_t map_access_client_get_folder_listing(uint16_t map_cid, btstack_packet_handler_t callback);
 
 /** 
  * @brief Set current folder
@@ -178,7 +183,7 @@ uint8_t map_access_client_set_path(uint16_t map_cid, const char * path);
  * @param folder_name
  * @return status
  */
-uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name);
+uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name, btstack_packet_handler_t  callback);
 
 /** 
  * @brief Get message with particular handle.
