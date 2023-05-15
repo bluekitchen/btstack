@@ -1321,16 +1321,15 @@ void att_server_deinit(void){
 }
 
 #ifdef ENABLE_GATT_OVER_EATT
-static uint8_t att_server_num_eatt_bearer;
 static uint16_t att_server_eatt_receive_buffer_size;
 typedef struct {
     btstack_linked_item_t item;
     uint16_t l2cap_cid;
-    hci_con_handle_t con_handle;
+    att_server_t     att_server;
+    att_connection_t att_connection;
     uint8_t * receive_buffer;
-    uint8_t * request_buffer;
-    uint16_t  request_len;
 } att_server_eatt_bearer_t;
+
 static btstack_linked_list_t att_server_eatt_bearer_pool;
 static btstack_linked_list_t att_server_eatt_bearer_active;
 
@@ -1378,6 +1377,9 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
 
                 case L2CAP_EVENT_PACKET_SENT:
                     cid = l2cap_event_packet_sent_get_local_cid(packet);
+                    eatt_bearer = att_server_eatt_bearer_for_cid(cid);
+                    btstack_assert(eatt_bearers != NULL);
+                    // cache request
                     printf("L2CAP: LE Data Channel Packet sent0x%02x\n", cid);
                     break;
 
@@ -1389,7 +1391,7 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
                         if (eatt_bearers[i] == NULL) {
                             break;
                         }
-                        eatt_bearers[i]->con_handle = l2cap_event_ecbm_incoming_connection_get_handle(packet);
+                        eatt_bearers[i]->att_connection.con_handle = l2cap_event_ecbm_incoming_connection_get_handle(packet);
                         receive_buffers[i] = eatt_bearers[i]->receive_buffer;
                         btstack_linked_list_add(&att_server_eatt_bearer_active, (btstack_linked_item_t *) eatt_bearers[i]);
                     }
@@ -1406,6 +1408,9 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
                     cid = l2cap_event_ecbm_channel_opened_get_local_cid(packet);
                     status = l2cap_event_channel_opened_get_status(packet);
                     remote_mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
+                    eatt_bearer = att_server_eatt_bearer_for_cid(cid);
+                    btstack_assert(eatt_bearer != NULL);
+                    eatt_bearer->att_connection.max_mtu = remote_mtu;
                     log_info("L2CAP_EVENT_ECBM_CHANNEL_OPENED - cid 0x%04x mtu %u, status 0x%02x", cid, remote_mtu, status);
                     break;
 
@@ -1437,22 +1442,16 @@ uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer,
     // TODO: The minimum ATT_MTU for an Enhanced ATT bearer is 64 octets.
 
     memset(storage_buffer, 0, storage_size);
-    att_server_num_eatt_bearer = num_eatt_bearers;
-    uint16_t bearer_buffer_size = ((storage_size - size_for_structs) / num_eatt_bearers);
-    att_server_eatt_receive_buffer_size = bearer_buffer_size / 2;
-    uint16_t request_buffer_size = bearer_buffer_size / 2;
-    uint16_t size_per_bearer = storage_size / num_eatt_bearers;
+    att_server_eatt_receive_buffer_size = ((storage_size - size_for_structs) / num_eatt_bearers);
     uint8_t * bearer_buffer = &storage_buffer[size_for_structs];
     uint8_t i;
     att_server_eatt_bearer_t * eatt_bearer = (att_server_eatt_bearer_t *) storage_buffer;
-    log_info("%u EATT bearers with receive buffer size %u and request buffer size %u",
-             num_eatt_bearers, att_server_eatt_receive_buffer_size, request_buffer_size);
+    log_info("%u EATT bearers with receive buffer size %u",
+             num_eatt_bearers, att_server_eatt_receive_buffer_size);
     for (i=0;i<num_eatt_bearers;i++){
-        eatt_bearer->con_handle = HCI_CON_HANDLE_INVALID;
+        eatt_bearer->att_connection.con_handle = HCI_CON_HANDLE_INVALID;
         eatt_bearer->receive_buffer = bearer_buffer;
         bearer_buffer += att_server_eatt_receive_buffer_size;
-        eatt_bearer->request_buffer = bearer_buffer;
-        bearer_buffer += request_buffer_size;
         btstack_linked_list_add(&att_server_eatt_bearer_pool, (btstack_linked_item_t *) eatt_bearer);
         eatt_bearer++;
     }
