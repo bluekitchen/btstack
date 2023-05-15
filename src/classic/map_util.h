@@ -80,14 +80,51 @@ void map_util_create_access_service_sdp_record(uint8_t * service, uint32_t servi
 void map_util_create_notification_service_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t instance_id,
                                                      uint8_t rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, uint32_t supported_features, const char * name);
 
+/**
+ * @brief XML parser for message listing
+ */
+
+typedef enum {
+    MAP_UTIL_PARSER_TYPE_INVALID = 0,
+    MAP_UTIL_PARSER_TYPE_FOLDER_LISTING,
+    MAP_UTIL_PARSER_TYPE_MESSAGE_LISTING,
+} map_util_xml_parser_type;
+
+typedef struct {
+    btstack_packet_handler_t callback;
+    uint16_t cid;
+    yxml_t   xml_parser;
+    uint8_t  payload_type;
+    uint8_t  xml_buffer[50];
+    union {
+        struct {
+            int message_found;
+            int handle_found;
+            char handle[MAP_MESSAGE_HANDLE_SIZE * 2 + 1];
+            map_message_handle_t msg_handle;
+        } msg_listing;
+        struct {
+            int folder_found;
+            int name_found;
+            char name[MAP_MAX_VALUE_LEN];
+        } folder_listing;
+    };
+} map_util_xml_parser;
+
+void map_util_message_listing_parser_init (map_util_xml_parser      *mu_parser,
+                                           map_util_xml_parser_type  payload_type,
+                                           btstack_packet_handler_t  callback,
+                                           uint16_t cid);
+void map_util_xml_parser_parse (map_util_xml_parser *mu_parser,
+                                const uint8_t       *data,
+                                uint16_t             data_len);
+
 /* API_END */
 
 // only for testing
     
 void map_message_str_to_handle(const char * value, map_message_handle_t msg_handle);
 void map_message_handle_to_str(char * p, const map_message_handle_t msg_handle);
-void map_client_parse_folder_listing(btstack_packet_handler_t callback, uint16_t cid, const uint8_t * data, uint16_t data_len);
-void map_client_parse_message_listing(btstack_packet_handler_t callback, uint16_t cid, const uint8_t * data, uint16_t data_len);
 
 #if defined __cplusplus
 }
