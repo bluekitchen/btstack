@@ -74,6 +74,8 @@ typedef enum {
     MAP_W4_MESSAGES_IN_FOLDER,
     MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE,
     MAP_W4_MESSAGE,
+    MAP_W2_SEND_SET_MESSAGE_STATUS,
+    MAP_W4_SET_MESSAGE_STATUS,
     MAP_W2_SET_NOTIFICATION,
     MAP_W4_SET_NOTIFICATION,
     MAP_W2_SET_NOTIFICATION_FILTER,
@@ -130,6 +132,7 @@ typedef struct {
 
     map_message_handle_t message_handle;
     uint8_t get_message_attachment;
+    int read_status;   /* for set_message_status */
 
     map_util_xml_parser mu_parser;
 } map_access_client_t;
@@ -169,6 +172,16 @@ uint8_t map_access_client_disconnect(uint16_t map_cid);
  * @return status
  */
 uint8_t map_access_client_get_folder_listing(uint16_t map_cid);
+
+/** 
+ * @brief Set message status
+ * @param map_cid
+ * @param map_message_handle
+ * @param read_status
+ * @return status
+ */
+uint8_t map_access_client_set_message_status(uint16_t map_cid, const map_message_handle_t map_message_handle, int read_status);
+
 
 /** 
  * @brief Set current folder
