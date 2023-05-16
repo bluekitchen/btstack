@@ -1361,7 +1361,6 @@ static uint16_t att_server_eatt_receive_buffer_size;
 static uint16_t att_server_eatt_send_buffer_size;
 typedef struct {
     btstack_linked_item_t item;
-    uint16_t l2cap_cid;
     att_server_t     att_server;
     att_connection_t att_connection;
     uint8_t * receive_buffer;
@@ -1376,7 +1375,7 @@ static att_server_eatt_bearer_t * att_server_eatt_bearer_for_cid(uint16_t cid){
     btstack_linked_list_iterator_init(&it, &att_server_eatt_bearer_active);
     while(btstack_linked_list_iterator_has_next(&it)){
         att_server_eatt_bearer_t * eatt_bearer = (att_server_eatt_bearer_t *) btstack_linked_list_iterator_next(&it);
-        if (eatt_bearer->l2cap_cid == cid) {
+        if (eatt_bearer->att_server.l2cap_cid == cid) {
             return eatt_bearer;
         }
     }
@@ -1402,23 +1401,31 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
     switch (packet_type) {
 
         case L2CAP_DATA_PACKET:
-            printf("L2CAP data cid 0x%02x len %u: ", channel, size);
-            printf_hexdump(packet, size);
-
-            // TODO: copy packet into request buffer
-
+            eatt_bearer = att_server_eatt_bearer_for_cid(channel);
+            btstack_assert(eatt_bearer != NULL);
+            att_server = &eatt_bearer->att_server;
+            att_connection = &eatt_bearer->att_connection;
+            att_server_handle_att_pdu(att_server, att_connection, packet, size);
             break;
 
         case HCI_EVENT_PACKET:
             switch (packet[0]) {
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
+                    cid = l2cap_event_packet_sent_get_local_cid(packet);
+                    eatt_bearer = att_server_eatt_bearer_for_cid(cid);
+                    btstack_assert(eatt_bearer != NULL);
+                    att_server = &eatt_bearer->att_server;
+                    att_connection = &eatt_bearer->att_connection;
+                    // only used for EATT request responses
+                    btstack_assert(att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED);
+                    att_server_process_validated_request(att_server, att_connection, eatt_bearer->send_buffer);
                     break;
 
                 case L2CAP_EVENT_PACKET_SENT:
                     cid = l2cap_event_packet_sent_get_local_cid(packet);
                     eatt_bearer = att_server_eatt_bearer_for_cid(cid);
-                    btstack_assert(eatt_bearers != NULL);
+                    btstack_assert(eatt_bearer != NULL);
                     att_server = &eatt_bearer->att_server;
                     att_connection = &eatt_bearer->att_connection;
                     att_server_handle_att_pdu(att_server, att_connection, packet, size);
@@ -1433,6 +1440,7 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
                             break;
                         }
                         eatt_bearers[i]->att_connection.con_handle = l2cap_event_ecbm_incoming_connection_get_handle(packet);
+                        eatt_bearers[i]->att_server.bearer_type = ATT_BEARER_ENHANCED_LE;
                         receive_buffers[i] = eatt_bearers[i]->receive_buffer;
                         btstack_linked_list_add(&att_server_eatt_bearer_active, (btstack_linked_item_t *) eatt_bearers[i]);
                     }
@@ -1440,7 +1448,7 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
                     status = l2cap_ecbm_accept_channels(cid, num_accepted_bearers, initial_credits, att_server_eatt_receive_buffer_size, receive_buffers, cids);
                     btstack_assert(status == ERROR_CODE_SUCCESS);
                     for (i=0;i<num_accepted_bearers;i++){
-                        eatt_bearers[i]->l2cap_cid = cids[i];
+                        eatt_bearers[i]->att_server.l2cap_cid = cids[i];
                     }
                     log_info("requested %u, accepted %u", num_requested_bearers, num_accepted_bearers);
                     break;
