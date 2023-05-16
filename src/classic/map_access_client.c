@@ -186,6 +186,8 @@ static void map_access_client_parser_callback_get_operation(void * user_data, ui
                         map_util_xml_parser_parse (&map_access_client->mu_parser,
                                                    NULL, 0);
                     break;
+                case MAP_W4_SET_MESSAGE_STATUS:
+                    break;
                 case MAP_W4_MESSAGE:
                 case MAP_W4_MAS_INSTANCE_INFO:
                     map_access_client->client_handler(MAP_DATA_PACKET, map_access_client->goep_client.cid, (uint8_t *) data_buffer, data_len);
@@ -364,6 +366,32 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
             map_access_client->state = MAP_W4_MESSAGE;
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_client.cid);
+            break;
+
+        case MAP_W2_SEND_SET_MESSAGE_STATUS:
+            goep_client_request_create_put(map_access_client->goep_client.cid);
+            goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/messageStatus");
+
+            map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
+            goep_client_header_add_name(map_access_client->goep_client.cid, map_message_handle_to_str_buffer);
+
+            if (map_access_client->read_status >= 0 && map_access_client->read_status <= 1) {
+                application_parameters[pos++] = 0x17;  // StatusIndicator
+                application_parameters[pos++] = 1;
+                application_parameters[pos++] = 0;     // readStatus
+
+                application_parameters[pos++] = 0x18; // StatusValue
+                application_parameters[pos++] = 1;
+                application_parameters[pos++] = map_access_client->read_status;
+                goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
+            }
+
+            goep_client_body_add_static(map_access_client->goep_client.cid, (uint8_t *) "0", 1);
+
+            map_access_client->state = MAP_W4_SET_MESSAGE_STATUS;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_PUT);
             map_access_client->request_number++;
             goep_client_execute(map_access_client->goep_client.cid);
             break;
@@ -577,6 +605,7 @@ map_access_client_packet_handler_goep(uint16_t goep_cid, uint8_t *packet, uint16
         case MAP_W4_FOLDERS:
         case MAP_W4_MESSAGES_IN_FOLDER:
         case MAP_W4_MESSAGE:
+        case MAP_W4_SET_MESSAGE_STATUS:
         case MAP_W4_SET_NOTIFICATION:
         case MAP_W4_SET_NOTIFICATION_FILTER:
         case MAP_W4_MAS_INSTANCE_INFO:
@@ -734,6 +763,22 @@ uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_me
     map_access_client->request_number = 0;
     memcpy(map_access_client->message_handle, map_message_handle, MAP_MESSAGE_HANDLE_SIZE);
     map_access_client->get_message_attachment = with_attachment;
+    goep_client_request_can_send_now(map_access_client->goep_client.cid);
+    return 0;
+}
+
+uint8_t map_access_client_set_message_status(uint16_t map_cid, const map_message_handle_t map_message_handle, int read_status){
+    map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+    map_access_client->state = MAP_W2_SEND_SET_MESSAGE_STATUS;
+    map_access_client->request_number = 0;
+    map_access_client->read_status = read_status;
+    memcpy(map_access_client->message_handle, map_message_handle, MAP_MESSAGE_HANDLE_SIZE);
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
     return 0;
 }
