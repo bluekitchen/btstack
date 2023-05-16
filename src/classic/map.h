@@ -54,7 +54,8 @@ extern "C" {
 typedef uint8_t map_message_handle_t[MAP_MESSAGE_HANDLE_SIZE];
 
 typedef enum {
-    MAP_MESSAGE_TYPE_EMAIL = 0,
+    MAP_MESSAGE_TYPE_UNKNOWN = 0,
+    MAP_MESSAGE_TYPE_EMAIL,
     MAP_MESSAGE_TYPE_SMS_GSM,
     MAP_MESSAGE_TYPE_SMS_CDMA,
     MAP_MESSAGE_TYPE_MMS,
