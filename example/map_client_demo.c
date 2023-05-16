@@ -196,6 +196,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     int i;
     uint8_t status;
+    map_message_type_t msg_type;
+    map_message_status_t msg_status;
 
     int value_len;
     char value[MAP_MAX_VALUE_LEN];
@@ -248,9 +250,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         case MAP_SUBEVENT_MESSAGE_LISTING_ITEM:
                             memcpy((uint8_t *) message_handle, map_subevent_message_listing_item_get_handle(packet), MAP_MESSAGE_HANDLE_SIZE);
-                            printf("Message handle: ");
+                            msg_type = map_subevent_message_listing_item_get_type (packet);
+                            msg_status = map_subevent_message_listing_item_get_read (packet);
+                            printf("Message (%s, %s) handle: ",
+                                   msg_type == MAP_MESSAGE_TYPE_EMAIL    ? "email" :
+                                   msg_type == MAP_MESSAGE_TYPE_SMS_GSM  ? "sms_gsm" :
+                                   msg_type == MAP_MESSAGE_TYPE_SMS_CDMA ? "sms_cdma" :
+                                   msg_type == MAP_MESSAGE_TYPE_MMS      ? "mms" :
+                                   msg_type == MAP_MESSAGE_TYPE_IM       ? "im" :
+                                   "unknown type",
+                                   msg_status == MAP_MESSAGE_STATUS_UNREAD ? "unread" :
+                                   msg_status == MAP_MESSAGE_STATUS_READ   ? "read" :
+                                   "unknown status");
                             printf_hexdump((uint8_t *) message_handle, MAP_MESSAGE_HANDLE_SIZE);
-                            printf("\n");
                             break;
                         case MAP_SUBEVENT_PARSING_DONE:
                             break;
