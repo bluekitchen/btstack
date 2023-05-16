@@ -133,8 +133,15 @@ static void att_server_request_can_send_now(att_server_t * att_server, att_conne
         case ATT_BEARER_UNENHANCED_LE:
             att_dispatch_server_request_can_send_now_event(att_connection->con_handle);
             break;
+#if defined (ENABLE_GATT_OVER_CLASSIC) || defined (ENABLE_GATT_OVER_EATT)
 #ifdef ENABLE_GATT_OVER_CLASSIC
         case ATT_BEARER_UNENHANCED_CLASSIC:
+            /* fall through */
+#endif
+#ifdef ENABLE_GATT_OVER_EATT
+        case ATT_BEARER_ENHANCED_LE:
+            /* fall through */
+#endif
             l2cap_request_can_send_now_event(att_server->l2cap_cid);
             break;
 #endif
@@ -148,9 +155,15 @@ static bool att_server_can_send_packet(att_server_t * att_server, att_connection
     switch (att_server->bearer_type) {
         case ATT_BEARER_UNENHANCED_LE:
             return att_dispatch_server_can_send_now(att_connection->con_handle) != 0;
+#if defined (ENABLE_GATT_OVER_CLASSIC) || defined (ENABLE_GATT_OVER_EATT)
 #ifdef ENABLE_GATT_OVER_CLASSIC
         case ATT_BEARER_UNENHANCED_CLASSIC:
-            return l2cap_can_send_packet_now(att_server->l2cap_cid) != 0;
+            /* fall through */
+#endif
+#ifdef ENABLE_GATT_OVER_EATT
+        case ATT_BEARER_ENHANCED_LE:
+#endif
+            return l2cap_can_send_packet_now(att_server->l2cap_cid);
 #endif
         default:
             btstack_unreachable();
@@ -652,8 +665,14 @@ static void att_run_for_context(att_server_t * att_server, att_connection_t * at
                         return;
                     };
                     break;
+#if defined(ENABLE_GATT_OVER_CLASSIC) || defined (ENABLE_GATT_OVER_EATT)
 #ifdef ENABLE_GATT_OVER_CLASSIC
                 case ATT_BEARER_UNENHANCED_CLASSIC:
+                    /* fall through */
+#endif
+#ifdef ENABLE_GATT_OVER_EATT
+                case ATT_BEARER_ENHANCED_LE:
+#endif
                     // ok
                     break;
 #endif
@@ -1358,6 +1377,8 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
     uint16_t cids[5];
     att_server_eatt_bearer_t * eatt_bearers[5];
     att_server_eatt_bearer_t * eatt_bearer;
+    att_server_t * att_server;
+    att_connection_t * att_connection;
 
     switch (packet_type) {
 
@@ -1379,8 +1400,9 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
                     cid = l2cap_event_packet_sent_get_local_cid(packet);
                     eatt_bearer = att_server_eatt_bearer_for_cid(cid);
                     btstack_assert(eatt_bearers != NULL);
-                    // cache request
-                    printf("L2CAP: LE Data Channel Packet sent0x%02x\n", cid);
+                    att_server = &eatt_bearer->att_server;
+                    att_connection = &eatt_bearer->att_connection;
+                    att_server_handle_att_pdu(att_server, att_connection, packet, size);
                     break;
 
                 case L2CAP_EVENT_ECBM_INCOMING_CONNECTION:
