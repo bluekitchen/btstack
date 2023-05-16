@@ -123,9 +123,7 @@ static hci_connection_t * hci_connection_for_state(att_server_state_t state){
 }
 #endif
 
-static void att_server_request_can_send_now(hci_connection_t * hci_connection){
-    att_connection_t * att_connection = &hci_connection->att_connection;
-    att_server_t * att_server = &hci_connection->att_server;
+static void att_server_request_can_send_now(att_server_t * att_server, att_connection_t * att_connection ){
     switch (att_server->bearer_type){
         case ATT_BEARER_UNENHANCED_LE:
             att_dispatch_server_request_can_send_now_event(att_connection->con_handle);
@@ -489,7 +487,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server = &hci_connection->att_server;
                     att_connection = &hci_connection->att_connection;
                     att_connection->authorized = sm_event_authorization_result_get_authorization_result(packet);
-                    att_server_request_can_send_now(hci_connection);
+                    att_server_request_can_send_now(att_server, att_connection);
                 	break;
                 }
                 default:
@@ -538,6 +536,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     hci_connection_t * hci_connection = hci_connection_for_state(ATT_SERVER_W4_SIGNED_WRITE_VALIDATION);
     if (!hci_connection) return;
     att_server_t * att_server = &hci_connection->att_server;
+    att_connection_t * att_connection = &hci_connection->att_connection;
 
     uint8_t hash_flipped[8];
     reverse_64(hash, hash_flipped);
@@ -558,7 +557,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     uint32_t counter_packet = little_endian_read_32(att_server->request_buffer, att_server->request_size-12);
     le_device_db_remote_counter_set(att_server->ir_le_device_db_index, counter_packet+1);
     att_server->state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
-    att_server_request_can_send_now(hci_connection);
+    att_server_request_can_send_now(att_server, att_connection);
 }
 #endif
 
@@ -628,11 +627,11 @@ uint8_t att_server_response_ready(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     att_server_t * att_server = &hci_connection->att_server;
-
+    att_connection_t * att_connection = &hci_connection->att_connection;
     if (att_server->state != ATT_SERVER_RESPONSE_PENDING)   return ERROR_CODE_COMMAND_DISALLOWED;
 
     att_server->state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
-    att_server_request_can_send_now(hci_connection);
+    att_server_request_can_send_now(att_server, att_connection);
     return ERROR_CODE_SUCCESS;
 }
 #endif
@@ -707,7 +706,7 @@ static void att_run_for_context(hci_connection_t * hci_connection){
 #endif
             // move on
             att_server->state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
-            att_server_request_can_send_now(hci_connection);
+            att_server_request_can_send_now(att_server, att_connection);
             break;
 
         default:
@@ -820,7 +819,10 @@ static void att_server_handle_can_send_now(void){
     }
 
     if (request_hci_connection == NULL) return;
-    att_server_request_can_send_now(request_hci_connection);
+
+    att_server_t * att_server = &request_hci_connection->att_server;
+    att_connection_t * att_connection = &request_hci_connection->att_connection;
+    att_server_request_can_send_now(att_server, att_connection);
 }
 
 static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t * packet, uint16_t size){
@@ -843,7 +845,7 @@ static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t
         uint16_t att_handle = att_server->value_indication_handle;
         att_server->value_indication_handle = 0u;    
         att_handle_value_indication_notify_client(0u, att_connection->con_handle, att_handle);
-        att_server_request_can_send_now(hci_connection);
+        att_server_request_can_send_now(att_server, att_connection);
         return;
     }
 
@@ -1244,8 +1246,9 @@ uint8_t att_server_request_to_send_notification(btstack_context_callback_registr
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     att_server_t * att_server = &hci_connection->att_server;
+    att_connection_t * att_connection = &hci_connection->att_connection;
     bool added = btstack_linked_list_add_tail(&att_server->notification_requests, (btstack_linked_item_t*) callback_registration);
-    att_server_request_can_send_now(hci_connection);
+    att_server_request_can_send_now(att_server, att_connection);
     if (added){
         return ERROR_CODE_SUCCESS;
     } else {
@@ -1257,8 +1260,9 @@ uint8_t att_server_request_to_send_indication(btstack_context_callback_registrat
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     att_server_t * att_server = &hci_connection->att_server;
+    att_connection_t * att_connection = &hci_connection->att_connection;
     bool added = btstack_linked_list_add_tail(&att_server->indication_requests, (btstack_linked_item_t*) callback_registration);
-    att_server_request_can_send_now(hci_connection);
+    att_server_request_can_send_now(att_server, att_connection);
     if (added){
         return ERROR_CODE_SUCCESS;
     } else {
