@@ -79,7 +79,7 @@ static void att_run_for_context(att_server_t * att_server, att_connection_t * at
 static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle);
 static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t handle);
 static void att_server_handle_can_send_now(void);
-static void att_server_persistent_ccc_restore(hci_connection_t * hci_connection);
+static void att_server_persistent_ccc_restore(att_server_t * att_server, att_connection_t * att_connection);
 static void att_server_persistent_ccc_clear(hci_connection_t * hci_connection);
 static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t * packet, uint16_t size);
 
@@ -309,7 +309,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
 
                     // restore persisten ccc if encrypted
                     if ( gap_security_level(con_handle) >= LEVEL_2){
-                        att_server_persistent_ccc_restore(hci_connection);
+                        att_server_persistent_ccc_restore(att_server, att_connection);
                     }
                     // TODO: what to do about le device db?
                     att_server->pairing_active = 0;
@@ -376,7 +376,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE){
                         // restore CCC values when encrypted for LE Connections
                         if (hci_event_encryption_change_get_encryption_enabled(packet) != 0){
-                            att_server_persistent_ccc_restore(hci_connection);
+                            att_server_persistent_ccc_restore(att_server, att_connection);
                         } 
                     }
                     att_run_for_context(att_server, att_connection);
@@ -1045,11 +1045,7 @@ static void att_server_persistent_ccc_clear(hci_connection_t * hci_connection){
     }  
 }
 
-static void att_server_persistent_ccc_restore(hci_connection_t * hci_connection){
-    if (!hci_connection) return;
-    att_server_t * att_server = &hci_connection->att_server;
-    att_connection_t * att_connection = &hci_connection->att_connection;
-
+static void att_server_persistent_ccc_restore(att_server_t * att_server, att_connection_t * att_connection){
     int le_device_index = att_server->ir_le_device_db_index;
     log_info("Restore CCC values of remote %s, le device id %d", bd_addr_to_str(att_server->peer_address), le_device_index);
     // check if bonded
