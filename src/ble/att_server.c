@@ -80,7 +80,7 @@ static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle
 static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t handle);
 static void att_server_handle_can_send_now(void);
 static void att_server_persistent_ccc_restore(att_server_t * att_server, att_connection_t * att_connection);
-static void att_server_persistent_ccc_clear(hci_connection_t * hci_connection);
+static void att_server_persistent_ccc_clear(att_server_t * att_server);
 static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t * packet, uint16_t size);
 
 typedef enum {
@@ -1018,10 +1018,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
     }
 }
 
-static void att_server_persistent_ccc_clear(hci_connection_t * hci_connection){
-    if (!hci_connection) return;
-    att_server_t * att_server = &hci_connection->att_server;
-
+static void att_server_persistent_ccc_clear(att_server_t * att_server){
     int le_device_index = att_server->ir_le_device_db_index;
     log_info("Clear CCC values of remote %s, le device id %d", bd_addr_to_str(att_server->peer_address), le_device_index);
     // check if bonded
