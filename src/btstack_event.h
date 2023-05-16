@@ -17929,6 +17929,24 @@ static inline uint16_t map_subevent_message_listing_item_get_map_cid(const uint8
 static inline const uint8_t * map_subevent_message_listing_item_get_handle(const uint8_t * event){
     return (const uint8_t *) &event[5];
 }
+/**
+ * @brief Get field type from event MAP_SUBEVENT_MESSAGE_LISTING_ITEM
+ * @param event packet
+ * @return type
+ * @note: btstack_type 1
+ */
+static inline uint8_t map_subevent_message_listing_item_get_type(const uint8_t * event){
+    return event[13];
+}
+/**
+ * @brief Get field read from event MAP_SUBEVENT_MESSAGE_LISTING_ITEM
+ * @param event packet
+ * @return read
+ * @note: btstack_type 1
+ */
+static inline uint8_t map_subevent_message_listing_item_get_read(const uint8_t * event){
+    return event[14];
+}
 
 /**
  * @brief Get field map_cid from event MAP_SUBEVENT_PARSING_DONE
@@ -17938,6 +17956,34 @@ static inline const uint8_t * map_subevent_message_listing_item_get_handle(const
  */
 static inline uint16_t map_subevent_parsing_done_get_map_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field map_cid from event MAP_SUBEVENT_NOTIFICATION_EVENT
+ * @param event packet
+ * @return map_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t map_subevent_notification_event_get_map_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field mas_instance_id from event MAP_SUBEVENT_NOTIFICATION_EVENT
+ * @param event packet
+ * @return mas_instance_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t map_subevent_notification_event_get_mas_instance_id(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field length from event MAP_SUBEVENT_NOTIFICATION_EVENT
+ * @param event packet
+ * @return length
+ * @note: btstack_type 4
+ */
+static inline uint32_t map_subevent_notification_event_get_length(const uint8_t * event){
+    return little_endian_read_32(event, 6);
 }
 
 
