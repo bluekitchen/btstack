@@ -132,6 +132,8 @@ static void show_usage(void){
     printf("3 - Get last listed \"sms_cdma\" message\n");
     printf("4 - Get last listed \"mms\" message\n");
     printf("5 - Get last listed \"im\" message\n");
+    printf("r - mark last retrieved message as read\n");
+    printf("u - mark last retrieved message as unread\n");
     printf("n - enable notifications\n");
     printf("N - disable notifications\n");
     printf("m - toggle notification filter for new messages\n");
@@ -175,27 +177,41 @@ static void stdin_process(char c){
             break;
         case '0':
             printf("[+] Get last listed \"unknown\" message\n");
-            map_access_client_get_message_with_handle(map_cid, message_handles[MAP_MESSAGE_TYPE_UNKNOWN], 1);
+            memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_UNKNOWN], MAP_MESSAGE_HANDLE_SIZE);
+            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         case '1':
             printf("[+] Get last listed \"email\" message\n");
-            map_access_client_get_message_with_handle(map_cid, message_handles[MAP_MESSAGE_TYPE_EMAIL], 1);
+            memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_EMAIL], MAP_MESSAGE_HANDLE_SIZE);
+            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         case '2':
             printf("[+] Get last listed \"sms_gsm\" message\n");
-            map_access_client_get_message_with_handle(map_cid, message_handles[MAP_MESSAGE_TYPE_SMS_GSM], 1);
+            memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_SMS_GSM], MAP_MESSAGE_HANDLE_SIZE);
+            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         case '3':
             printf("[+] Get last listed \"sms_cmda\" message\n");
-            map_access_client_get_message_with_handle(map_cid, message_handles[MAP_MESSAGE_TYPE_SMS_CDMA], 1);
+            memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_SMS_CDMA], MAP_MESSAGE_HANDLE_SIZE);
+            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         case '4':
             printf("[+] Get last listed \"mms\" message\n");
-            map_access_client_get_message_with_handle(map_cid, message_handles[MAP_MESSAGE_TYPE_MMS], 1);
+            memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_MMS], MAP_MESSAGE_HANDLE_SIZE);
+            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         case '5':
             printf("[+] Get last listed \"im\" message\n");
-            map_access_client_get_message_with_handle(map_cid, message_handles[MAP_MESSAGE_TYPE_IM], 1);
+            memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_IM], MAP_MESSAGE_HANDLE_SIZE);
+            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
+            break;
+        case 'r':
+            printf("[+] mark last retrieved message as read\n");
+            map_access_client_set_message_status(map_cid, message_handle, 1);
+            break;
+        case 'u':
+            printf("[+] mark last retrieved message as unread\n");
+            map_access_client_set_message_status(map_cid, message_handle, 0);
             break;
         case 'n':
             printf("[+] Enable notifications\n");
