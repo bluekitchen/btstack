@@ -139,9 +139,7 @@ static void att_server_request_can_send_now(att_server_t * att_server, att_conne
     }
 }
 
-static bool att_server_can_send_packet(hci_connection_t * hci_connection){
-    att_connection_t * att_connection = &hci_connection->att_connection;
-    att_server_t * att_server = &hci_connection->att_server;
+static bool att_server_can_send_packet(att_server_t * att_server, att_connection_t * att_connection){
     switch (att_server->bearer_type) {
         case ATT_BEARER_UNENHANCED_LE:
             return att_dispatch_server_can_send_now(att_connection->con_handle) != 0;
@@ -786,7 +784,7 @@ static void att_server_handle_can_send_now(void){
                     if (can_send_now){
                         att_server_trigger_send_for_phase(connection, phase);
                         last_send_con_handle = att_connection->con_handle;
-                        can_send_now = att_server_can_send_packet(connection);
+                        can_send_now = att_server_can_send_packet(att_server, att_connection);
                         data_ready = att_server_data_ready_for_phase(att_server, phase);
                         if (data_ready && (request_hci_connection == NULL)){
                             request_hci_connection = connection;
@@ -1227,7 +1225,9 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler){
 int  att_server_can_send_packet_now(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (!hci_connection) return 0;
-    return att_server_can_send_packet(hci_connection);
+    att_server_t * att_server = &hci_connection->att_server;
+    att_connection_t * att_connection = &hci_connection->att_connection;
+    return att_server_can_send_packet(att_server, att_connection);
 }
 
 uint8_t att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
@@ -1271,14 +1271,14 @@ uint8_t att_server_request_to_send_indication(btstack_context_callback_registrat
 uint8_t att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    att_server_t * att_server = &hci_connection->att_server;
     att_connection_t * att_connection = &hci_connection->att_connection;
 
-    if (!att_server_can_send_packet(hci_connection)) return BTSTACK_ACL_BUFFERS_FULL;
+    if (!att_server_can_send_packet(att_server, att_connection)) return BTSTACK_ACL_BUFFERS_FULL;
 
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_notification(att_connection, attribute_handle, value, value_len, packet_buffer);
-    att_server_t * att_server = &hci_connection->att_server;
 
     return att_server_send_prepared(att_server, att_connection, size);
 }
@@ -1290,7 +1290,7 @@ uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_hand
     att_connection_t * att_connection = &hci_connection->att_connection;
 
     if (att_server->value_indication_handle != 0u) return ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS;
-    if (!att_server_can_send_packet(hci_connection)) return BTSTACK_ACL_BUFFERS_FULL;
+    if (!att_server_can_send_packet(att_server, att_connection)) return BTSTACK_ACL_BUFFERS_FULL;
 
     // track indication
     att_server->value_indication_handle = attribute_handle;
