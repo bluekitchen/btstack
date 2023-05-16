@@ -561,9 +561,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
 // pre: att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED
 // pre: can send now
 // returns: 1 if packet was sent
-static int att_server_process_validated_request(hci_connection_t * hci_connection){
-    att_server_t * att_server = & hci_connection->att_server;
-    att_connection_t * att_connection = &hci_connection->att_connection;
+static int att_server_process_validated_request(att_server_t * att_server, att_connection_t * att_connection){
 
     l2cap_reserve_packet_buffer();
     uint8_t * att_response_buffer = l2cap_get_outgoing_buffer();
@@ -726,9 +724,10 @@ static bool att_server_data_ready_for_phase(att_server_t * att_server,  att_serv
 static void att_server_trigger_send_for_phase(hci_connection_t * hci_connection,  att_server_run_phase_t phase){
     btstack_context_callback_registration_t * client;
     att_server_t * att_server = &hci_connection->att_server;
+    att_connection_t * att_connection = &hci_connection->att_connection;
     switch (phase){
         case ATT_SERVER_RUN_PHASE_1_REQUESTS:
-            att_server_process_validated_request(hci_connection);
+            att_server_process_validated_request(att_server, att_connection);
             break;
         case ATT_SERVER_RUN_PHASE_2_INDICATIONS:
             client = (btstack_context_callback_registration_t*) att_server->indication_requests;
