@@ -104,7 +104,8 @@ static uint16_t rfcomm_channel_id;
 static const char * remote_addr_string = "008098090B32";
 
 static const char * folder_name = "inbox";
-static map_message_handle_t message_handle = {0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+static map_message_handle_t message_handle = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+static map_message_handle_t message_handles[MAP_MESSAGE_TYPE_IM+1] = { 0, };
 
 static const char * path = "telecom/msg";
 
@@ -125,7 +126,12 @@ static void show_usage(void){
     printf("p - set path \'%s\'\n", path);
     printf("f - get folder listing\n");
     printf("F - get message listing for folder \'%s\'\n", folder_name);
-    printf("l - get message for last found handle\n");
+    printf("0 - Get last listed \"unknown\" message\n");
+    printf("1 - Get last listed \"email\" message\n");
+    printf("2 - Get last listed \"sms_gsm\" message\n");
+    printf("3 - Get last listed \"sms_cdma\" message\n");
+    printf("4 - Get last listed \"mms\" message\n");
+    printf("5 - Get last listed \"im\" message\n");
     printf("n - enable notifications\n");
     printf("N - disable notifications\n");
     printf("m - toggle notification filter for new messages\n");
@@ -167,9 +173,29 @@ static void stdin_process(char c){
             printf("[+] Get MAS instance info for default instance\n");
             map_access_client_get_mas_instance_info(map_cid, 0);
             break;
-        case 'l':
-            printf("[+] Get message for hardcoded handle\n");
-            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
+        case '0':
+            printf("[+] Get last listed \"unknown\" message\n");
+            map_access_client_get_message_with_handle(map_cid, message_handles[MAP_MESSAGE_TYPE_UNKNOWN], 1);
+            break;
+        case '1':
+            printf("[+] Get last listed \"email\" message\n");
+            map_access_client_get_message_with_handle(map_cid, message_handles[MAP_MESSAGE_TYPE_EMAIL], 1);
+            break;
+        case '2':
+            printf("[+] Get last listed \"sms_gsm\" message\n");
+            map_access_client_get_message_with_handle(map_cid, message_handles[MAP_MESSAGE_TYPE_SMS_GSM], 1);
+            break;
+        case '3':
+            printf("[+] Get last listed \"sms_cmda\" message\n");
+            map_access_client_get_message_with_handle(map_cid, message_handles[MAP_MESSAGE_TYPE_SMS_CDMA], 1);
+            break;
+        case '4':
+            printf("[+] Get last listed \"mms\" message\n");
+            map_access_client_get_message_with_handle(map_cid, message_handles[MAP_MESSAGE_TYPE_MMS], 1);
+            break;
+        case '5':
+            printf("[+] Get last listed \"im\" message\n");
+            map_access_client_get_message_with_handle(map_cid, message_handles[MAP_MESSAGE_TYPE_IM], 1);
             break;
         case 'n':
             printf("[+] Enable notifications\n");
@@ -249,9 +275,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("Folder \'%s\'\n", value);
                             break;
                         case MAP_SUBEVENT_MESSAGE_LISTING_ITEM:
-                            memcpy((uint8_t *) message_handle, map_subevent_message_listing_item_get_handle(packet), MAP_MESSAGE_HANDLE_SIZE);
                             msg_type = map_subevent_message_listing_item_get_type (packet);
                             msg_status = map_subevent_message_listing_item_get_read (packet);
+                            memcpy((uint8_t *) message_handle, map_subevent_message_listing_item_get_handle(packet), MAP_MESSAGE_HANDLE_SIZE);
+                            memcpy((uint8_t *) message_handles[msg_type], message_handle, MAP_MESSAGE_HANDLE_SIZE);
                             printf("Message (%s, %s) handle: ",
                                    msg_type == MAP_MESSAGE_TYPE_EMAIL    ? "email" :
                                    msg_type == MAP_MESSAGE_TYPE_SMS_GSM  ? "sms_gsm" :
