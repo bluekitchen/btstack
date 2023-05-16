@@ -99,8 +99,10 @@ typedef struct {
     union {
         struct {
             int message_found;
-            int handle_found;
-            char handle[MAP_MESSAGE_HANDLE_SIZE * 2 + 1];
+            int cur_attr;
+            char attr_val[MAP_MAX_VALUE_LEN];
+            map_message_type_t   msg_type;
+            map_message_status_t msg_status;
             map_message_handle_t msg_handle;
         } msg_listing;
         struct {
