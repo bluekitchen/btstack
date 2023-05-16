@@ -584,11 +584,19 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
 
 // pre: att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED
 // pre: can send now
+// uses l2cap outgoing buffer if no eatt_buffer provided
 // returns: 1 if packet was sent
-static int att_server_process_validated_request(att_server_t * att_server, att_connection_t * att_connection){
+static int
+att_server_process_validated_request(att_server_t *att_server, att_connection_t *att_connection, uint8_t *eatt_buffer) {
 
-    l2cap_reserve_packet_buffer();
-    uint8_t * att_response_buffer = l2cap_get_outgoing_buffer();
+    uint8_t * att_response_buffer;
+    if (eatt_buffer != NULL){
+        att_response_buffer = eatt_buffer;
+    } else {
+        l2cap_reserve_packet_buffer();
+        att_response_buffer = l2cap_get_outgoing_buffer();
+    }
+
     uint16_t  att_response_size   = att_handle_request(att_connection, att_server->request_buffer, att_server->request_size, att_response_buffer);
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
@@ -602,7 +610,9 @@ static int att_server_process_validated_request(att_server_t * att_server, att_c
         }
 
         // free reserved buffer
-        l2cap_release_packet_buffer();
+        if (eatt_buffer == NULL){
+            l2cap_release_packet_buffer();
+        }
         return 0;
     }
 #endif
@@ -615,11 +625,15 @@ static int att_server_process_validated_request(att_server_t * att_server, att_c
 
         switch (gap_authorization_state(att_connection->con_handle)){
             case AUTHORIZATION_UNKNOWN:
-                l2cap_release_packet_buffer();
+                if (eatt_buffer == NULL){
+                    l2cap_release_packet_buffer();
+                }
                 sm_request_pairing(att_connection->con_handle);
                 return 0;
             case AUTHORIZATION_PENDING:
-                l2cap_release_packet_buffer();
+                if (eatt_buffer == NULL){
+                    l2cap_release_packet_buffer();
+                }
                 return 0;
             default:
                 break;
@@ -628,11 +642,13 @@ static int att_server_process_validated_request(att_server_t * att_server, att_c
 
     att_server->state = ATT_SERVER_IDLE;
     if (att_response_size == 0u) {
-        l2cap_release_packet_buffer();
+        if (eatt_buffer == NULL){
+            l2cap_release_packet_buffer();
+        }
         return 0;
     }
 
-    (void) att_server_send_prepared(att_server, att_connection, NULL, att_response_size);
+    (void) att_server_send_prepared(att_server, att_connection, eatt_buffer, att_response_size);
 
     // notify client about MTU exchange result
     if (att_response_buffer[0] == ATT_EXCHANGE_MTU_RESPONSE){
