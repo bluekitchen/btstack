@@ -211,9 +211,7 @@ static void att_emit_can_send_now_event(void * context){
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
-static void att_emit_connected_event(hci_connection_t * hci_connection){
-    att_server_t * att_server = &hci_connection->att_server;
-    att_connection_t * att_connection = &hci_connection->att_connection;
+static void att_emit_connected_event(att_server_t * att_server,  att_connection_t * att_connection){
     uint8_t event[11];
     int pos = 0;
     event[pos++] = ATT_EVENT_CONNECTED;
@@ -309,7 +307,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                         att_connection->encryption_key_size, att_connection->authenticated, att_connection->secure_connection);
 
                     // notify connection opened
-                    att_emit_connected_event(hci_connection);
+                    att_emit_connected_event(att_server, att_connection);
 
                     // restore persisten ccc if encrypted
                     if ( gap_security_level(con_handle) >= LEVEL_2){
@@ -353,7 +351,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             // notify all - old
                             att_emit_event_to_all(packet, size);
                             // notify all - new
-                            att_emit_connected_event(hci_connection);
+                            att_emit_connected_event(att_server, att_connection);
                             break;
 
                         default:
