@@ -81,7 +81,7 @@ static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t ha
 static void att_server_handle_can_send_now(void);
 static void att_server_persistent_ccc_restore(att_server_t * att_server, att_connection_t * att_connection);
 static void att_server_persistent_ccc_clear(att_server_t * att_server);
-static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t * packet, uint16_t size);
+static void att_server_handle_att_pdu(att_server_t * att_server, att_connection_t * att_connection, uint8_t * packet, uint16_t size);
 
 typedef enum {
     ATT_SERVER_RUN_PHASE_1_REQUESTS = 0,
@@ -499,8 +499,9 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
             while(btstack_linked_list_iterator_has_next(&it)){
                 hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
                 att_server = &hci_connection->att_server;
+                att_connection = &hci_connection->att_connection;
                 if (att_server->l2cap_cid == channel) {
-                    att_server_handle_att_pdu(hci_connection, packet, size);
+                    att_server_handle_att_pdu(att_server, att_connection, packet, size);
                     break;
                 }
             }
@@ -817,9 +818,7 @@ static void att_server_handle_can_send_now(void){
     att_server_request_can_send_now(att_server, att_connection);
 }
 
-static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t * packet, uint16_t size){
-    att_server_t * att_server = &hci_connection->att_server;
-    att_connection_t * att_connection = &hci_connection->att_connection;
+static void att_server_handle_att_pdu(att_server_t * att_server, att_connection_t * att_connection, uint8_t * packet, uint16_t size){
 
     uint8_t opcode  = packet[0u];
     uint8_t method  = opcode & 0x03fu;
@@ -883,6 +882,7 @@ static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     hci_connection_t * hci_connection;
     att_connection_t * att_connection;
+    att_server_t     * att_server;
 
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -907,7 +907,9 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             hci_connection = hci_connection_for_handle(handle);
             if (!hci_connection) break;
 
-            att_server_handle_att_pdu(hci_connection, packet, size);
+            att_server = &hci_connection->att_server;
+            att_connection = &hci_connection->att_connection;
+            att_server_handle_att_pdu(att_server, att_connection, packet, size);
             break;
             
         default:
