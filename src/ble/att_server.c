@@ -1340,13 +1340,16 @@ void att_server_deinit(void){
 }
 
 #ifdef ENABLE_GATT_OVER_EATT
+
 static uint16_t att_server_eatt_receive_buffer_size;
+static uint16_t att_server_eatt_send_buffer_size;
 typedef struct {
     btstack_linked_item_t item;
     uint16_t l2cap_cid;
     att_server_t     att_server;
     att_connection_t att_connection;
     uint8_t * receive_buffer;
+    uint8_t * send_buffer;
 } att_server_eatt_bearer_t;
 
 static btstack_linked_list_t att_server_eatt_bearer_pool;
@@ -1464,7 +1467,9 @@ uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer,
     // TODO: The minimum ATT_MTU for an Enhanced ATT bearer is 64 octets.
 
     memset(storage_buffer, 0, storage_size);
-    att_server_eatt_receive_buffer_size = ((storage_size - size_for_structs) / num_eatt_bearers);
+    uint16_t buffer_size_per_bearer = ((storage_size - size_for_structs) / num_eatt_bearers);
+    att_server_eatt_receive_buffer_size = buffer_size_per_bearer / 2;
+    att_server_eatt_send_buffer_size    = buffer_size_per_bearer / 2;
     uint8_t * bearer_buffer = &storage_buffer[size_for_structs];
     uint8_t i;
     att_server_eatt_bearer_t * eatt_bearer = (att_server_eatt_bearer_t *) storage_buffer;
@@ -1474,6 +1479,8 @@ uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer,
         eatt_bearer->att_connection.con_handle = HCI_CON_HANDLE_INVALID;
         eatt_bearer->receive_buffer = bearer_buffer;
         bearer_buffer += att_server_eatt_receive_buffer_size;
+        eatt_bearer->send_buffer = bearer_buffer;
+        bearer_buffer += att_server_eatt_send_buffer_size;
         btstack_linked_list_add(&att_server_eatt_bearer_pool, (btstack_linked_item_t *) eatt_bearer);
         eatt_bearer++;
     }
