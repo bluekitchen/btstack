@@ -168,7 +168,7 @@ uint8_t map_access_client_disconnect(uint16_t map_cid);
  * @param map_cid
  * @return status
  */
-uint8_t map_access_client_get_folder_listing(uint16_t map_cid, btstack_packet_handler_t callback);
+uint8_t map_access_client_get_folder_listing(uint16_t map_cid);
 
 /** 
  * @brief Set current folder
@@ -183,7 +183,7 @@ uint8_t map_access_client_set_path(uint16_t map_cid, const char * path);
  * @param folder_name
  * @return status
  */
-uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name, btstack_packet_handler_t  callback);
+uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name);
 
 /** 
  * @brief Get message with particular handle.
