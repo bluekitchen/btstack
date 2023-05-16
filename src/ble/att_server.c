@@ -111,15 +111,18 @@ static att_write_callback_t                   att_server_client_write_callback;
 static hci_con_handle_t att_server_last_can_send_now = HCI_CON_HANDLE_INVALID;
 
 #ifdef ENABLE_LE_SIGNED_WRITE
-static hci_connection_t * hci_connection_for_state(att_server_state_t state){
+static bool att_server_connections_for_state(att_server_state_t state, att_server_t ** att_server_out, att_connection_t ** att_connection_out){
     btstack_linked_list_iterator_t it;
     hci_connections_get_iterator(&it);
     while(btstack_linked_list_iterator_has_next(&it)){
-        hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
-        att_server_t * att_server = &connection->att_server;
-        if (att_server->state == state) return connection;
+        hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+        if (hci_connection->att_server.state == state) {
+            *att_server_out     = &hci_connection->att_server;
+            *att_connection_out = &hci_connection->att_connection;
+            return true;
+        }
     }
-    return NULL;
+    return false;
 }
 #endif
 
@@ -528,15 +531,13 @@ static uint8_t att_server_send_prepared(const att_server_t *att_server, const at
 
 #ifdef ENABLE_LE_SIGNED_WRITE
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
-    
-    hci_connection_t * hci_connection = hci_connection_for_state(ATT_SERVER_W4_SIGNED_WRITE_VALIDATION);
-    if (!hci_connection) return;
-    att_server_t * att_server = &hci_connection->att_server;
-    att_connection_t * att_connection = &hci_connection->att_connection;
+    att_server_t * att_server = NULL;
+    att_connection_t * att_connection = NULL;
+    bool found = att_server_connections_for_state(ATT_SERVER_W4_SIGNED_WRITE_VALIDATION, &att_server, &att_connection);
 
     uint8_t hash_flipped[8];
     reverse_64(hash, hash_flipped);
-    if (memcmp(hash_flipped, &att_server->request_buffer[att_server->request_size-8], 8)){
+    if (memcmp(hash_flipped, &att_server->request_buffer[att_server->request_size-8], 8) != 0){
         log_info("ATT Signed Write, invalid signature");
 #ifdef ENABLE_TESTING_SUPPORT
         printf("ATT Signed Write, invalid signature\n");
