@@ -124,26 +124,38 @@ static hci_connection_t * hci_connection_for_state(att_server_state_t state){
 #endif
 
 static void att_server_request_can_send_now(hci_connection_t * hci_connection){
-#ifdef ENABLE_GATT_OVER_CLASSIC
-    att_server_t * att_server = &hci_connection->att_server;
-    if (att_server->l2cap_cid != 0){
-        l2cap_request_can_send_now_event(att_server->l2cap_cid);
-        return;
-    }
-#endif
     att_connection_t * att_connection = &hci_connection->att_connection;
-    att_dispatch_server_request_can_send_now_event(att_connection->con_handle);
+    att_server_t * att_server = &hci_connection->att_server;
+    switch (att_server->bearer_type){
+        case ATT_BEARER_UNENHANCED_LE:
+            att_dispatch_server_request_can_send_now_event(att_connection->con_handle);
+            break;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+        case ATT_BEARER_UNENHANCED_CLASSIC:
+            l2cap_request_can_send_now_event(att_server->l2cap_cid);
+            break;
+#endif
+        default:
+            btstack_unreachable();
+            break;
+    }
 }
 
 static bool att_server_can_send_packet(hci_connection_t * hci_connection){
-#ifdef ENABLE_GATT_OVER_CLASSIC
-    att_server_t * att_server = &hci_connection->att_server;
-    if (att_server->l2cap_cid != 0){
-        return l2cap_can_send_packet_now(att_server->l2cap_cid) != 0;
-    }
-#endif
     att_connection_t * att_connection = &hci_connection->att_connection;
-    return att_dispatch_server_can_send_now(att_connection->con_handle) != 0;
+    att_server_t * att_server = &hci_connection->att_server;
+    switch (att_server->bearer_type) {
+        case ATT_BEARER_UNENHANCED_LE:
+            return att_dispatch_server_can_send_now(att_connection->con_handle) != 0;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+        case ATT_BEARER_UNENHANCED_CLASSIC:
+            return l2cap_can_send_packet_now(att_server->l2cap_cid) != 0;
+#endif
+        default:
+            btstack_unreachable();
+            break;
+    }
+    return false;
 }
 
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
@@ -275,6 +287,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     if (!hci_connection) break;
                     att_server = &hci_connection->att_server;
                     // store connection info
+                    att_server->bearer_type = ATT_BEARER_UNENHANCED_CLASSIC;
                     att_server->peer_addr_type = BD_ADDR_TYPE_ACL;
                     l2cap_event_channel_opened_get_address(packet, att_server->peer_address);
                     att_connection = &hci_connection->att_connection;
@@ -326,6 +339,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             att_connection->con_handle = con_handle;
                             // reset connection properties
                             att_server->state = ATT_SERVER_IDLE;
+                            att_server->bearer_type = ATT_BEARER_UNENHANCED_LE;
                             att_connection->mtu = ATT_DEFAULT_MTU;
                             att_connection->max_mtu = l2cap_max_le_mtu();
                             if (att_connection->max_mtu > ATT_REQUEST_BUFFER_SIZE){
@@ -583,13 +597,18 @@ static int att_server_process_validated_request(hci_connection_t * hci_connectio
         return 0;
     }
 
+    switch (att_server->bearer_type){
+        case ATT_BEARER_UNENHANCED_LE:
+            l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_size);
+            break;
 #ifdef ENABLE_GATT_OVER_CLASSIC
-    if (att_server->l2cap_cid != 0u){
-        l2cap_send_prepared(att_server->l2cap_cid, att_response_size);
-    } else
+        case ATT_BEARER_UNENHANCED_CLASSIC:
+            l2cap_send_prepared(att_server->l2cap_cid, att_response_size);
+            break;
 #endif
-    {
-        l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_size);
+        default:
+            btstack_unreachable();
+            break;
     }
 
     // notify client about MTU exchange result
@@ -618,15 +637,21 @@ static void att_run_for_context(hci_connection_t * hci_connection){
     att_connection_t * att_connection = &hci_connection->att_connection;
     switch (att_server->state){
         case ATT_SERVER_REQUEST_RECEIVED:
-
+            switch (att_server->bearer_type){
+                case ATT_BEARER_UNENHANCED_LE:
+                    // wait until re-encryption as central is complete
+                    if (gap_reconnect_security_setup_active(att_connection->con_handle)) {
+                        return;
+                    };
+                    break;
 #ifdef ENABLE_GATT_OVER_CLASSIC
-            if (att_server->l2cap_cid != 0){
-                // ok
-            } else
+                case ATT_BEARER_UNENHANCED_CLASSIC:
+                    // ok
+                    break;
 #endif
-            {
-                // wait until re-encryption as central is complete
-                if (gap_reconnect_security_setup_active(att_connection->con_handle)) break;
+                default:
+                    btstack_unreachable();
+                    break;
             }
 
             // wait until pairing is complete
@@ -1246,13 +1271,21 @@ uint8_t att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_notification(att_connection, attribute_handle, value, value_len, packet_buffer);
-#ifdef ENABLE_GATT_OVER_CLASSIC
+
+    uint8_t status = ERROR_CODE_SUCCESS;
     att_server_t * att_server = &hci_connection->att_server;
-    if (att_server->l2cap_cid != 0){
-        return  l2cap_send_prepared(att_server->l2cap_cid, size);;
-    }
+    switch (att_server->bearer_type) {
+        case ATT_BEARER_UNENHANCED_LE:
+            status = l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
+#ifdef ENABLE_GATT_OVER_CLASSIC
+        case ATT_BEARER_UNENHANCED_CLASSIC:
+            status = l2cap_send_prepared(att_server->l2cap_cid, size);
 #endif
-	return l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
+        default:
+            btstack_unreachable();
+            break;
+    }
+    return status;
 }
 
 uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
@@ -1273,13 +1306,20 @@ uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_hand
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_indication(att_connection, attribute_handle, value, value_len, packet_buffer);
+
+    uint8_t status = ERROR_CODE_SUCCESS;
+    switch (att_server->bearer_type) {
+        case ATT_BEARER_UNENHANCED_LE:
+            status = l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
 #ifdef ENABLE_GATT_OVER_CLASSIC
-    if (att_server->l2cap_cid != 0){
-        return  l2cap_send_prepared(att_server->l2cap_cid, size);;
-    }
+        case ATT_BEARER_UNENHANCED_CLASSIC:
+            status = l2cap_send_prepared(att_server->l2cap_cid, size);;
 #endif
-	l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
-    return 0;
+        default:
+            btstack_unreachable();
+            break;
+    }
+    return status;
 }
 
 uint16_t att_server_get_mtu(hci_con_handle_t con_handle){
