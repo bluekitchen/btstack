@@ -478,11 +478,20 @@ typedef enum {
     ATT_SERVER_RESPONSE_PENDING,
 } att_server_state_t;
 
+typedef enum {
+    ATT_BEARER_UNENHANCED_LE,
+    ATT_BEARER_UNENHANCED_CLASSIC,
+    ATT_BEARER_ENHANCED_LE,
+    ATT_BEARER_ENHANCED_CLASSIC
+} att_bearer_type_t;
+
 typedef struct {
     att_server_state_t      state;
 
     uint8_t                 peer_addr_type;
     bd_addr_t               peer_address;
+
+    att_bearer_type_t       bearer_type;
 
     int                     ir_le_device_db_index;
     uint8_t                 ir_lookup_active;
