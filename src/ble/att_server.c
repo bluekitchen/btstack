@@ -513,7 +513,9 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
     }
 }
 
-static uint8_t att_server_send_prepared(const att_server_t *att_server, const att_connection_t *att_connection, uint16_t size) {
+static uint8_t
+att_server_send_prepared(const att_server_t *att_server, const att_connection_t *att_connection, uint8_t *buffer,
+                         uint16_t size) {
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (att_server->bearer_type) {
         case ATT_BEARER_UNENHANCED_LE:
@@ -521,6 +523,12 @@ static uint8_t att_server_send_prepared(const att_server_t *att_server, const at
 #ifdef ENABLE_GATT_OVER_CLASSIC
         case ATT_BEARER_UNENHANCED_CLASSIC:
             status = l2cap_send_prepared(att_server->l2cap_cid, size);
+            break;
+#endif
+#ifdef ENABLE_GATT_OVER_EATT
+        case ATT_BEARER_ENHANCED_LE:
+            btstack_assert(buffer != NULL);
+            status = l2cap_send(att_server->l2cap_cid, buffer, size);
             break;
 #endif
         default:
@@ -609,7 +617,7 @@ static int att_server_process_validated_request(att_server_t * att_server, att_c
         return 0;
     }
 
-    (void) att_server_send_prepared(att_server, att_connection, att_response_size);
+    (void) att_server_send_prepared(att_server, att_connection, NULL, att_response_size);
 
     // notify client about MTU exchange result
     if (att_response_buffer[0] == ATT_EXCHANGE_MTU_RESPONSE){
@@ -726,7 +734,7 @@ static void att_server_trigger_send_for_phase(att_server_t * att_server, att_con
     btstack_context_callback_registration_t * client;
     switch (phase){
         case ATT_SERVER_RUN_PHASE_1_REQUESTS:
-            att_server_process_validated_request(att_server, att_connection);
+            att_server_process_validated_request(att_server, att_connection, NULL);
             break;
         case ATT_SERVER_RUN_PHASE_2_INDICATIONS:
             client = (btstack_context_callback_registration_t*) att_server->indication_requests;
@@ -1271,7 +1279,7 @@ uint8_t att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_notification(att_connection, attribute_handle, value, value_len, packet_buffer);
 
-    return att_server_send_prepared(att_server, att_connection, size);
+    return att_server_send_prepared(att_server, att_connection, NULL, size);
 }
 
 uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
@@ -1293,7 +1301,7 @@ uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_hand
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_indication(att_connection, attribute_handle, value, value_len, packet_buffer);
 
-    return att_server_send_prepared(att_server, att_connection, size);
+    return att_server_send_prepared(att_server, att_connection, NULL, size);
 }
 
 uint16_t att_server_get_mtu(hci_con_handle_t con_handle){
