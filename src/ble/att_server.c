@@ -515,6 +515,23 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+static uint8_t att_server_send_prepared(const att_server_t *att_server, const att_connection_t *att_connection, uint16_t size) {
+    uint8_t status = ERROR_CODE_SUCCESS;
+    switch (att_server->bearer_type) {
+        case ATT_BEARER_UNENHANCED_LE:
+            status = l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
+#ifdef ENABLE_GATT_OVER_CLASSIC
+        case ATT_BEARER_UNENHANCED_CLASSIC:
+            status = l2cap_send_prepared(att_server->l2cap_cid, size);
+            break;
+#endif
+        default:
+            btstack_unreachable();
+            break;
+    }
+    return status;
+}
+
 #ifdef ENABLE_LE_SIGNED_WRITE
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     
@@ -597,19 +614,7 @@ static int att_server_process_validated_request(hci_connection_t * hci_connectio
         return 0;
     }
 
-    switch (att_server->bearer_type){
-        case ATT_BEARER_UNENHANCED_LE:
-            l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_size);
-            break;
-#ifdef ENABLE_GATT_OVER_CLASSIC
-        case ATT_BEARER_UNENHANCED_CLASSIC:
-            l2cap_send_prepared(att_server->l2cap_cid, att_response_size);
-            break;
-#endif
-        default:
-            btstack_unreachable();
-            break;
-    }
+    (void) att_server_send_prepared(att_server, att_connection, att_response_size);
 
     // notify client about MTU exchange result
     if (att_response_buffer[0] == ATT_EXCHANGE_MTU_RESPONSE){
@@ -1271,21 +1276,9 @@ uint8_t att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_notification(att_connection, attribute_handle, value, value_len, packet_buffer);
-
-    uint8_t status = ERROR_CODE_SUCCESS;
     att_server_t * att_server = &hci_connection->att_server;
-    switch (att_server->bearer_type) {
-        case ATT_BEARER_UNENHANCED_LE:
-            status = l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
-#ifdef ENABLE_GATT_OVER_CLASSIC
-        case ATT_BEARER_UNENHANCED_CLASSIC:
-            status = l2cap_send_prepared(att_server->l2cap_cid, size);
-#endif
-        default:
-            btstack_unreachable();
-            break;
-    }
-    return status;
+
+    return att_server_send_prepared(att_server, att_connection, size);
 }
 
 uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
@@ -1307,19 +1300,7 @@ uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_hand
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_indication(att_connection, attribute_handle, value, value_len, packet_buffer);
 
-    uint8_t status = ERROR_CODE_SUCCESS;
-    switch (att_server->bearer_type) {
-        case ATT_BEARER_UNENHANCED_LE:
-            status = l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
-#ifdef ENABLE_GATT_OVER_CLASSIC
-        case ATT_BEARER_UNENHANCED_CLASSIC:
-            status = l2cap_send_prepared(att_server->l2cap_cid, size);;
-#endif
-        default:
-            btstack_unreachable();
-            break;
-    }
-    return status;
+    return att_server_send_prepared(att_server, att_connection, size);
 }
 
 uint16_t att_server_get_mtu(hci_con_handle_t con_handle){
