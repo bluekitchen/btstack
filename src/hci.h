@@ -503,7 +503,7 @@ typedef struct {
     btstack_linked_list_t   notification_requests;
     btstack_linked_list_t   indication_requests;
 
-#ifdef ENABLE_GATT_OVER_CLASSIC
+#if defined(ENABLE_GATT_OVER_CLASSIC) || defined(ENABLE_GATT_OVER_EATT)
     uint16_t                l2cap_cid;
 #endif
 
