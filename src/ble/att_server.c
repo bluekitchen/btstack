@@ -721,10 +721,8 @@ static bool att_server_data_ready_for_phase(att_server_t * att_server,  att_serv
     }
 }
 
-static void att_server_trigger_send_for_phase(hci_connection_t * hci_connection,  att_server_run_phase_t phase){
+static void att_server_trigger_send_for_phase(att_server_t * att_server, att_connection_t * att_connection, att_server_run_phase_t phase){
     btstack_context_callback_registration_t * client;
-    att_server_t * att_server = &hci_connection->att_server;
-    att_connection_t * att_connection = &hci_connection->att_connection;
     switch (phase){
         case ATT_SERVER_RUN_PHASE_1_REQUESTS:
             att_server_process_validated_request(att_server, att_connection);
@@ -780,7 +778,7 @@ static void att_server_handle_can_send_now(void){
 
                 if (data_ready){
                     if (can_send_now){
-                        att_server_trigger_send_for_phase(connection, phase);
+                        att_server_trigger_send_for_phase(att_server, att_connection, phase);
                         last_send_con_handle = att_connection->con_handle;
                         can_send_now = att_server_can_send_packet(att_server, att_connection);
                         data_ready = att_server_data_ready_for_phase(att_server, phase);
