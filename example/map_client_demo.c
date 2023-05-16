@@ -157,11 +157,11 @@ static void stdin_process(char c){
             break;
         case 'f':
             printf("[+] Get folder listing\n");
-            map_access_client_get_folder_listing(map_cid, packet_handler);
+            map_access_client_get_folder_listing(map_cid);
             break;
         case 'F':
             printf("[+] Get message listing for folder \'%s\'\n", folder_name);
-            map_access_client_get_message_listing_for_folder(map_cid, folder_name, packet_handler);
+            map_access_client_get_message_listing_for_folder(map_cid, folder_name);
             break;
         case 'i':
             printf("[+] Get MAS instance info for default instance\n");
