@@ -74,6 +74,8 @@ typedef enum {
     MAP_W4_MESSAGES_IN_FOLDER,
     MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE,
     MAP_W4_MESSAGE,
+    MAP_W2_SEND_GET_CONVERSATION_LISTING,
+    MAP_W4_CONVERSATION_LISTING,
     MAP_W2_SEND_SET_MESSAGE_STATUS,
     MAP_W4_SET_MESSAGE_STATUS,
     MAP_W2_SET_NOTIFICATION,
@@ -132,6 +134,8 @@ typedef struct {
     uint8_t  notifications_enabled;
     uint32_t notification_filter_mask;
     uint8_t  mas_instance_id;
+    int max_list_count;
+    int list_start_offset;
 
     map_message_handle_t message_handle;
     uint8_t get_message_attachment;
@@ -207,6 +211,15 @@ uint8_t map_access_client_set_path(uint16_t map_cid, const char * path);
  * @return status
  */
 uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name);
+
+/** 
+ * @brief Get list of conversations
+ * @param map_cid
+ * @param max_list_count
+ * @param list_start_offset
+ * @return status
+ */
+uint8_t map_access_client_get_conversation_listing(uint16_t map_cid, int max_list_count, int list_start_offset);
 
 /** 
  * @brief Get message with particular handle.
