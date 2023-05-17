@@ -128,6 +128,7 @@ static void show_usage(void){
     printf("A - disconnect from MAS ID 0 - %s\n", bd_addr_to_str(remote_addr));
     printf("b - establish connection to MAS ID #1 - %s\n", bd_addr_to_str(remote_addr));
     printf("B - disconnect from MAS ID 1 - %s\n", bd_addr_to_str(remote_addr));
+    printf("U - request an update on the inbox\n");
     printf("p - set path \'%s\'\n", path);
     printf("f - get folder listing\n");
     printf("F - get message listing for folder \'%s\'\n", folder_name);
@@ -178,6 +179,11 @@ static void stdin_process(char c){
         case 'B':
             printf("[+] Disconnect from %s...\n", bd_addr_to_str(remote_addr));
             map_access_client_disconnect(map_cid);
+            break;
+
+        case 'U':
+            printf("[+] Requesting inbox update\n");
+            map_access_client_update_inbox(map_cid);
             break;
 
         case 'p':
