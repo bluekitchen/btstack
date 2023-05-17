@@ -189,6 +189,7 @@ static void map_access_client_parser_callback_get_operation(void * user_data, ui
                 case MAP_W4_SET_MESSAGE_STATUS:
                     break;
                 case MAP_W4_MESSAGE:
+                case MAP_W4_CONVERSATION_LISTING:
                 case MAP_W4_MAS_INSTANCE_INFO:
                     map_access_client->client_handler(MAP_DATA_PACKET, map_access_client->goep_client.cid, (uint8_t *) data_buffer, data_len);
                     break;
@@ -376,6 +377,33 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             }
 
             map_access_client->state = MAP_W4_MESSAGE;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_client.cid);
+            break;
+
+        case MAP_W2_SEND_GET_CONVERSATION_LISTING:
+            goep_client_request_create_get(map_access_client->goep_client.cid);
+
+            if (map_access_client->request_number == 0){
+                map_access_client_prepare_srm_header(map_access_client);
+
+                goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/MAP-convo-listing");
+
+                application_parameters[pos++] = 0x01; // MaxListCount
+                application_parameters[pos++] = 2;
+                big_endian_store_16(application_parameters,pos,map_access_client->max_list_count);
+                pos += 2;
+
+                application_parameters[pos++] = 0x02; // ListStartOffset
+                application_parameters[pos++] = 2;
+                big_endian_store_16(application_parameters,pos,map_access_client->list_start_offset);
+                pos += 2;
+
+                goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
+            }
+
+            map_access_client->state = MAP_W4_CONVERSATION_LISTING;
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
             map_access_client->request_number++;
             goep_client_execute(map_access_client->goep_client.cid);
@@ -617,6 +645,7 @@ map_access_client_packet_handler_goep(uint16_t goep_cid, uint8_t *packet, uint16
         case MAP_W4_UPDATE_INBOX:
         case MAP_W4_MESSAGES_IN_FOLDER:
         case MAP_W4_MESSAGE:
+        case MAP_W4_CONVERSATION_LISTING:
         case MAP_W4_SET_MESSAGE_STATUS:
         case MAP_W4_SET_NOTIFICATION:
         case MAP_W4_SET_NOTIFICATION_FILTER:
@@ -631,6 +660,7 @@ map_access_client_packet_handler_goep(uint16_t goep_cid, uint8_t *packet, uint16
                     map_access_client->state =
                        (map_access_client->state == MAP_W4_FOLDERS ? MAP_W2_SEND_GET_FOLDERS :
                         map_access_client->state == MAP_W4_MESSAGES_IN_FOLDER ? MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER :
+                        map_access_client->state == MAP_W4_CONVERSATION_LISTING ? MAP_W2_SEND_GET_CONVERSATION_LISTING :
                         map_access_client->state == MAP_W4_MESSAGE ? MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE :
                         MAP_CONNECTED);
 
@@ -773,6 +803,29 @@ uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const
                                           MAP_UTIL_PARSER_TYPE_MESSAGE_LISTING,
                                           map_access_client->client_handler,
                                           map_cid);
+    goep_client_request_can_send_now(map_access_client->goep_client.cid);
+    return 0;
+}
+
+uint8_t map_access_client_get_conversation_listing(uint16_t map_cid, int max_list_count, int list_start_offset){
+    map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+
+    map_access_client->state = MAP_W2_SEND_GET_CONVERSATION_LISTING;
+    map_access_client->request_number = 0;
+    map_access_client->max_list_count = max_list_count;
+    map_access_client->list_start_offset = list_start_offset;
+    /*
+    map_util_conversation_listing_parser_init (&map_access_client->mu_parser,
+                                                MAP_UTIL_PARSER_TYPE_CONVERSATION_LISTING,
+                                                map_access_client->client_handler,
+                                                map_cid);
+     */
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
     return 0;
 }
