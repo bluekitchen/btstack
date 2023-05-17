@@ -46,12 +46,19 @@ extern "C" {
 #include <stdint.h>
 
 /* API_START */
-#define MAP_MAX_VALUE_LEN    32
+#define MAP_MAX_VALUE_LEN    33   // conversation handle * 2 + 1 for zero-termination
 #define MAP_MESSAGE_HANDLE_SIZE 8
+#define MAP_CONVERSATION_ID_SIZE 16
+
 /**
  * @brief MAP Message handle
  */
 typedef uint8_t map_message_handle_t[MAP_MESSAGE_HANDLE_SIZE];
+
+/**
+ * @brief MAP Message handle
+ */
+typedef uint8_t map_conversation_id_t[MAP_CONVERSATION_ID_SIZE];
 
 typedef enum {
     MAP_MESSAGE_TYPE_UNKNOWN = 0,
