@@ -337,7 +337,7 @@ void map_client_parse_message_listing(map_util_xml_parser *mu_parser, const uint
                         } else if (strcmp (mu_parser->msg_listing.attr_val, "MMS") == 0) {
                             mu_parser->msg_listing.msg_type = MAP_MESSAGE_TYPE_MMS;
                         } else if (strcmp (mu_parser->msg_listing.attr_val, "IM") == 0) {
-                            mu_parser->msg_listing.msg_type = MAP_MESSAGE_TYPE_MMS;
+                            mu_parser->msg_listing.msg_type = MAP_MESSAGE_TYPE_IM;
                         } else {
                             mu_parser->msg_listing.msg_type = MAP_MESSAGE_TYPE_UNKNOWN;
                         }
