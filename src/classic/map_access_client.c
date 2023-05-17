@@ -688,7 +688,7 @@ uint8_t map_access_client_connect(map_access_client_t *map_access_client, l2cap_
     map_access_client->client_handler = handler;
     uint8_t status = goep_client_connect((goep_client_t *) map_access_client, l2cap_ertm_config,
                                          l2cap_ertm_buffer, l2cap_ertm_buffer_size, &map_access_client_packet_handler,
-                                         addr, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER, 0,
+                                         addr, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER, instance_id,
                                          &map_access_client->cid);
     btstack_assert(status == ERROR_CODE_SUCCESS);
     btstack_linked_list_add(&map_access_clients, (btstack_linked_item_t *) map_access_client);
