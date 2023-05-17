@@ -107,6 +107,7 @@ static const char * remote_addr_string = "001BDC08E272";
 static const char * folder_name = "inbox";
 static map_message_handle_t message_handle = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static map_message_handle_t message_handles[MAP_MESSAGE_TYPE_IM+1] = { 0, };
+static map_conversation_id_t conv_id = { 0x00, };
 
 static const char * path = "telecom/msg";
 
@@ -337,6 +338,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                    msg_status == MAP_MESSAGE_STATUS_READ   ? "read  " :
                                    "unknown status");
                             printf_hexdump((uint8_t *) message_handle, MAP_MESSAGE_HANDLE_SIZE);
+                            break;
+                        case MAP_SUBEVENT_CONVERSATION_LISTING_ITEM:
+                            memcpy((uint8_t *) conv_id, map_subevent_conversation_listing_item_get_id(packet), MAP_CONVERSATION_ID_SIZE);
+                            printf ("Conversation: ");
+                            printf_hexdump((uint8_t *) conv_id, MAP_CONVERSATION_ID_SIZE);
                             break;
                         case MAP_SUBEVENT_PARSING_DONE:
                             break;
