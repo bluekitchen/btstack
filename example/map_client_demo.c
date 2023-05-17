@@ -126,14 +126,15 @@ static void show_usage(void){
     printf("p - set path \'%s\'\n", path);
     printf("f - get folder listing\n");
     printf("F - get message listing for folder \'%s\'\n", folder_name);
-    printf("0 - Get last listed \"unknown\" message\n");
-    printf("1 - Get last listed \"email\" message\n");
-    printf("2 - Get last listed \"sms_gsm\" message\n");
-    printf("3 - Get last listed \"sms_cdma\" message\n");
-    printf("4 - Get last listed \"mms\" message\n");
-    printf("5 - Get last listed \"im\" message\n");
-    printf("r - mark last retrieved message as read\n");
-    printf("u - mark last retrieved message as unread\n");
+    printf("0 - Select last listed \"unknown\" message\n");
+    printf("1 - Select last listed \"email\" message\n");
+    printf("2 - Select last listed \"sms_gsm\" message\n");
+    printf("3 - Select last listed \"sms_cdma\" message\n");
+    printf("4 - Select last listed \"mms\" message\n");
+    printf("5 - Select last listed \"im\" message\n");
+    printf("g - Get selected message "); printf_hexdump(message_handle, sizeof(message_handle));
+    printf("r - Mark selected messages as read\n");
+    printf("u - Mark selected messagee as unread\n");
     printf("n - enable notifications\n");
     printf("N - disable notifications\n");
     printf("m - toggle notification filter for new messages\n");
@@ -176,41 +177,39 @@ static void stdin_process(char c){
             map_access_client_get_mas_instance_info(map_cid, 0);
             break;
         case '0':
-            printf("[+] Get last listed \"unknown\" message\n");
+            printf("[+] Select last listed \"unknown\" message\n");
             memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_UNKNOWN], MAP_MESSAGE_HANDLE_SIZE);
-            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         case '1':
-            printf("[+] Get last listed \"email\" message\n");
+            printf("[+] Select last listed \"email\" message\n");
             memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_EMAIL], MAP_MESSAGE_HANDLE_SIZE);
-            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         case '2':
-            printf("[+] Get last listed \"sms_gsm\" message\n");
+            printf("[+] Select last listed \"sms_gsm\" message\n");
             memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_SMS_GSM], MAP_MESSAGE_HANDLE_SIZE);
-            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         case '3':
-            printf("[+] Get last listed \"sms_cmda\" message\n");
+            printf("[+] Select last listed \"sms_cmda\" message\n");
             memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_SMS_CDMA], MAP_MESSAGE_HANDLE_SIZE);
-            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         case '4':
-            printf("[+] Get last listed \"mms\" message\n");
+            printf("[+] Select last listed \"mms\" message\n");
             memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_MMS], MAP_MESSAGE_HANDLE_SIZE);
-            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         case '5':
-            printf("[+] Get last listed \"im\" message\n");
+            printf("[+] Select last listed \"im\" message\n");
             memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_IM], MAP_MESSAGE_HANDLE_SIZE);
+            break;
+        case 'l':
+            printf("[+] Get selected message\n");
             map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         case 'r':
-            printf("[+] mark last retrieved message as read\n");
+            printf("[+] Mark selected messages as read\n");
             map_access_client_set_message_status(map_cid, message_handle, 1);
             break;
         case 'u':
-            printf("[+] mark last retrieved message as unread\n");
+            printf("[+] Mark selected message as unread\n");
             map_access_client_set_message_status(map_cid, message_handle, 0);
             break;
         case 'n':
