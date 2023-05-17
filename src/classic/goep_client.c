@@ -237,12 +237,16 @@ static void goep_client_handle_sdp_query_end_of_record(goep_client_t * goep_clie
     if (goep_client->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER){
         if (goep_client->mas_info.instance_id == goep_client->map_mas_instance_id){
             // Requested MAS Instance found, accept info
-            log_info("MAS Instance #%u found", goep_client->map_mas_instance_id);
             goep_client->rfcomm_port = goep_client->mas_info.rfcomm_port;
             goep_client->profile_supported_features = goep_client->mas_info.supported_features;
             goep_client->map_supported_message_types = goep_client->mas_info.supported_message_types;
 #ifdef ENABLE_GOEP_L2CAP
             goep_client->l2cap_psm = goep_client->mas_info.l2cap_psm;
+            log_info("MAS Instance #%u found, rfcomm #%u, l2cap 0x%04x", goep_client->map_mas_instance_id,
+                     goep_client->rfcomm_port, goep_client->l2cap_psm);
+#else
+            log_info("MAS Instance #%u found, rfcomm #%u", goep_client->map_mas_instance_id,
+                     goep_client->rfcomm_port);
 #endif
         }
     }
