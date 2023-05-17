@@ -81,6 +81,9 @@ typedef enum {
     MAP_W2_SET_NOTIFICATION_FILTER,
     MAP_W4_SET_NOTIFICATION_FILTER,
 
+    MAP_W2_SEND_UPDATE_INBOX,
+    MAP_W4_UPDATE_INBOX,
+
     MAP_W2_SEND_GET_MAS_INSTANCE_INFO,
     MAP_W4_MAS_INSTANCE_INFO,
 
@@ -165,6 +168,13 @@ uint8_t map_access_client_connect(map_access_client_t *map_access_client, l2cap_
  * @return status
  */
 uint8_t map_access_client_disconnect(uint16_t map_cid);
+
+/** 
+ * @brief Request update on inbox
+ * @param map_cid
+ * @return status
+ */
+uint8_t map_access_client_update_inbox(uint16_t map_cid);
 
 /** 
  * @brief Get list of folders.
