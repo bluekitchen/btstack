@@ -112,6 +112,18 @@ static att_write_callback_t                   att_server_client_write_callback;
 // round robin
 static hci_con_handle_t att_server_last_can_send_now = HCI_CON_HANDLE_INVALID;
 
+#ifdef ENABLE_GATT_OVER_EATT
+typedef struct {
+    btstack_linked_item_t item;
+    att_server_t     att_server;
+    att_connection_t att_connection;
+    uint8_t * receive_buffer;
+    uint8_t * send_buffer;
+} att_server_eatt_bearer_t;
+static btstack_linked_list_t att_server_eatt_bearer_pool;
+static btstack_linked_list_t att_server_eatt_bearer_active;
+#endif
+
 #ifdef ENABLE_LE_SIGNED_WRITE
 static bool att_server_connections_for_state(att_server_state_t state, att_server_t ** att_server_out, att_connection_t ** att_connection_out){
     btstack_linked_list_iterator_t it;
@@ -124,6 +136,19 @@ static bool att_server_connections_for_state(att_server_state_t state, att_serve
             return true;
         }
     }
+
+#ifdef ENABLE_GATT_OVER_EATT
+    btstack_linked_list_iterator_init(&it, &att_server_eatt_bearer_active);
+    while(btstack_linked_list_iterator_has_next(&it)){
+        att_server_eatt_bearer_t * eatt_bearer = (att_server_eatt_bearer_t *) btstack_linked_list_iterator_next(&it);
+        if (eatt_bearer->att_server.state == state) {
+            *att_server_out     = &eatt_bearer->att_server;
+            *att_connection_out = &eatt_bearer->att_connection;
+            return true;
+        }
+    }
+#endif
+
     return false;
 }
 #endif
@@ -558,6 +583,10 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     att_server_t * att_server = NULL;
     att_connection_t * att_connection = NULL;
     bool found = att_server_connections_for_state(ATT_SERVER_W4_SIGNED_WRITE_VALIDATION, &att_server, &att_connection);
+
+    if (found == false){
+        return;
+    }
 
     uint8_t hash_flipped[8];
     reverse_64(hash, hash_flipped);
@@ -1370,16 +1399,6 @@ void att_server_deinit(void){
 
 static uint16_t att_server_eatt_receive_buffer_size;
 static uint16_t att_server_eatt_send_buffer_size;
-typedef struct {
-    btstack_linked_item_t item;
-    att_server_t     att_server;
-    att_connection_t att_connection;
-    uint8_t * receive_buffer;
-    uint8_t * send_buffer;
-} att_server_eatt_bearer_t;
-
-static btstack_linked_list_t att_server_eatt_bearer_pool;
-static btstack_linked_list_t att_server_eatt_bearer_active;
 
 static att_server_eatt_bearer_t * att_server_eatt_bearer_for_cid(uint16_t cid){
     btstack_linked_list_iterator_t it;
@@ -1446,7 +1465,7 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
                     cid = l2cap_event_ecbm_incoming_connection_get_local_cid(packet);
                     num_requested_bearers = l2cap_event_ecbm_incoming_connection_get_num_channels(packet);
                     for (i = 0; i < num_requested_bearers; i++){
-                        eatt_bearers[i] = (att_server_eatt_bearer_t *) btstack_linked_list_get_first_item(&att_server_eatt_bearer_pool);
+                        eatt_bearers[i] = (att_server_eatt_bearer_t *) btstack_linked_list_pop(&att_server_eatt_bearer_pool);
                         if (eatt_bearers[i] == NULL) {
                             break;
                         }
@@ -1458,18 +1477,21 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
                     num_accepted_bearers = i;
                     status = l2cap_ecbm_accept_channels(cid, num_accepted_bearers, initial_credits, att_server_eatt_receive_buffer_size, receive_buffers, cids);
                     btstack_assert(status == ERROR_CODE_SUCCESS);
+                    log_info("requested %u, accepted %u", num_requested_bearers, num_accepted_bearers);
                     for (i=0;i<num_accepted_bearers;i++){
+                        log_info("eatt l2cap cid: 0x%04x", cids[i]);
                         eatt_bearers[i]->att_server.l2cap_cid = cids[i];
                     }
-                    log_info("requested %u, accepted %u", num_requested_bearers, num_accepted_bearers);
                     break;
 
                 case L2CAP_EVENT_ECBM_CHANNEL_OPENED:
-                    cid = l2cap_event_ecbm_channel_opened_get_local_cid(packet);
-                    status = l2cap_event_channel_opened_get_status(packet);
-                    remote_mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
+                    cid         = l2cap_event_ecbm_channel_opened_get_local_cid(packet);
+                    status      = l2cap_event_ecbm_channel_opened_get_status(packet);
+                    remote_mtu  = l2cap_event_ecbm_channel_opened_get_remote_mtu(packet);
                     eatt_bearer = att_server_eatt_bearer_for_cid(cid);
                     btstack_assert(eatt_bearer != NULL);
+                    eatt_bearer->att_connection.mtu_exchanged = true;
+                    eatt_bearer->att_connection.mtu = remote_mtu;
                     eatt_bearer->att_connection.max_mtu = remote_mtu;
                     log_info("L2CAP_EVENT_ECBM_CHANNEL_OPENED - cid 0x%04x mtu %u, status 0x%02x", cid, remote_mtu, status);
                     break;
