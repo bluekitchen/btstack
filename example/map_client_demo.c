@@ -167,7 +167,7 @@ static void stdin_process(char c){
             break;
 
         case 'b':
-            printf("[+] Connecting to MAS ID #0 of %s...\n", bd_addr_to_str(remote_addr));
+            printf("[+] Connecting to MAS ID #1 of %s...\n", bd_addr_to_str(remote_addr));
 #ifdef ENABLE_GOEP_L2CAP
             map_access_client_connect(&map_access_client, &map_access_client_ertm_config,
                                       sizeof(map_access_client_ertm_buffer_mas_1),
