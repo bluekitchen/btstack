@@ -114,7 +114,7 @@ static uint16_t map_cid;
 static uint8_t notification_filter = 0;
 
 #ifdef HAVE_BTSTACK_STDIN
-// Testig User Interface 
+// Testing User Interface
 static void show_usage(void){
     bd_addr_t iut_address;
     gap_local_bd_addr(iut_address);
@@ -200,7 +200,7 @@ static void stdin_process(char c){
             printf("[+] Select last listed \"im\" message\n");
             memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_IM], MAP_MESSAGE_HANDLE_SIZE);
             break;
-        case 'l':
+        case 'g':
             printf("[+] Get selected message\n");
             map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
