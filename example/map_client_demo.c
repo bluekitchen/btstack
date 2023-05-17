@@ -79,15 +79,16 @@ static map_access_client_t map_access_client;
 
 #ifdef ENABLE_GOEP_L2CAP
 // singleton instance
-static uint8_t map_access_client_ertm_buffer[1000];
+static uint8_t map_access_client_ertm_buffer_mas_0[4000];
+static uint8_t map_access_client_ertm_buffer_mas_1[4000];
 static l2cap_ertm_config_t map_access_client_ertm_config = {
         1,  // ertm mandatory
         2,  // max transmit, some tests require > 1
         2000,
         12000,
         512,    // l2cap ertm mtu
-        2,
-        2,
+        4,
+        4,
         1,      // 16-bit FCS
 };
 #endif
@@ -101,7 +102,7 @@ static uint16_t rfcomm_channel_id;
 // PTS "001BDC080AA5"
 // iPhone 5 static  char * remote_addr_string = "6C:72:E7:10:22:EE";
 // Android
-static const char * remote_addr_string = "008098090B32";
+static const char * remote_addr_string = "001BDC08E272";
 
 static const char * folder_name = "inbox";
 static map_message_handle_t message_handle = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -111,6 +112,8 @@ static const char * path = "telecom/msg";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t map_cid;
+static uint16_t map_mas_0_cid;
+static uint16_t map_mas_1_cid;
 static uint8_t notification_filter = 0;
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -121,8 +124,10 @@ static void show_usage(void){
 
     printf("\n--- Bluetooth MAP Client Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("\n");
-    printf("a - establish MAP connection to %s\n", bd_addr_to_str(remote_addr));
-    printf("A - disconnect from %s\n", bd_addr_to_str(remote_addr));
+    printf("a - establish connection to MAS ID #0 - %s\n", bd_addr_to_str(remote_addr));
+    printf("A - disconnect from MAS ID 0 - %s\n", bd_addr_to_str(remote_addr));
+    printf("b - establish connection to MAS ID #1 - %s\n", bd_addr_to_str(remote_addr));
+    printf("B - disconnect from MAS ID 1 - %s\n", bd_addr_to_str(remote_addr));
     printf("p - set path \'%s\'\n", path);
     printf("f - get folder listing\n");
     printf("F - get message listing for folder \'%s\'\n", folder_name);
@@ -146,16 +151,31 @@ static void show_usage(void){
 static void stdin_process(char c){
     switch (c){
         case 'a':
-            printf("[+] Connecting to %s...\n", bd_addr_to_str(remote_addr));
+            printf("[+] Connecting to MAS ID #0 of %s...\n", bd_addr_to_str(remote_addr));
 #ifdef ENABLE_GOEP_L2CAP
             map_access_client_connect(&map_access_client, &map_access_client_ertm_config,
-                                      sizeof(map_access_client_ertm_buffer),
-                                      map_access_client_ertm_buffer, &packet_handler, remote_addr, 0, &map_cid);
+                                      sizeof(map_access_client_ertm_buffer_mas_0),
+                                      map_access_client_ertm_buffer_mas_0, &packet_handler, remote_addr, 0, &map_mas_0_cid);
 #else
             map_access_client_connect(&map_access_client, NULL, 0, NULL, &packet_handler, remote_addr, 0, &map_cid);
 #endif
             break;
         case 'A':
+            printf("[+] Disconnect from %s...\n", bd_addr_to_str(remote_addr));
+            map_access_client_disconnect(map_cid);
+            break;
+
+        case 'b':
+            printf("[+] Connecting to MAS ID #0 of %s...\n", bd_addr_to_str(remote_addr));
+#ifdef ENABLE_GOEP_L2CAP
+            map_access_client_connect(&map_access_client, &map_access_client_ertm_config,
+                                      sizeof(map_access_client_ertm_buffer_mas_1),
+                                      map_access_client_ertm_buffer_mas_1, &packet_handler, remote_addr, 1, &map_mas_1_cid);
+#else
+            map_access_client_connect(&map_access_client, NULL, 0, NULL, &packet_handler, remote_addr, 0, &map_cid);
+#endif
+            break;
+        case 'B':
             printf("[+] Disconnect from %s...\n", bd_addr_to_str(remote_addr));
             map_access_client_disconnect(map_cid);
             break;
@@ -275,6 +295,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 printf("[!] Connection failed, status 0x%02x\n", status);
                             } else {
                                 printf("[+] Connected\n");
+                                map_cid = map_subevent_connection_opened_get_map_cid(packet);
                             }
                             break;
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
@@ -294,15 +315,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             msg_status = map_subevent_message_listing_item_get_read (packet);
                             memcpy((uint8_t *) message_handle, map_subevent_message_listing_item_get_handle(packet), MAP_MESSAGE_HANDLE_SIZE);
                             memcpy((uint8_t *) message_handles[msg_type], message_handle, MAP_MESSAGE_HANDLE_SIZE);
-                            printf("Message (%s, %s) handle: ",
-                                   msg_type == MAP_MESSAGE_TYPE_EMAIL    ? "email" :
-                                   msg_type == MAP_MESSAGE_TYPE_SMS_GSM  ? "sms_gsm" :
+                            printf("Message (%s / %s) handle: ",
+                                   msg_type == MAP_MESSAGE_TYPE_EMAIL    ? "email   " :
+                                   msg_type == MAP_MESSAGE_TYPE_SMS_GSM  ? "sms_gsm " :
                                    msg_type == MAP_MESSAGE_TYPE_SMS_CDMA ? "sms_cdma" :
-                                   msg_type == MAP_MESSAGE_TYPE_MMS      ? "mms" :
-                                   msg_type == MAP_MESSAGE_TYPE_IM       ? "im" :
+                                   msg_type == MAP_MESSAGE_TYPE_MMS      ? "mms     " :
+                                   msg_type == MAP_MESSAGE_TYPE_IM       ? "im      " :
                                    "unknown type",
                                    msg_status == MAP_MESSAGE_STATUS_UNREAD ? "unread" :
-                                   msg_status == MAP_MESSAGE_STATUS_READ   ? "read" :
+                                   msg_status == MAP_MESSAGE_STATUS_READ   ? "read  " :
                                    "unknown status");
                             printf_hexdump((uint8_t *) message_handle, MAP_MESSAGE_HANDLE_SIZE);
                             break;
