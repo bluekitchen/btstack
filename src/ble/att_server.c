@@ -597,7 +597,18 @@ att_server_process_validated_request(att_server_t *att_server, att_connection_t 
         att_response_buffer = l2cap_get_outgoing_buffer();
     }
 
-    uint16_t  att_response_size   = att_handle_request(att_connection, att_server->request_buffer, att_server->request_size, att_response_buffer);
+    uint16_t  att_response_size = 0;
+    // Send Error Response for MTU Request over connection-oriented channel
+    if ((att_server->bearer_type != ATT_BEARER_UNENHANCED_LE) && (att_server->request_buffer[0] == ATT_EXCHANGE_MTU_REQUEST)){
+        att_response_size = 5;
+        att_response_buffer[0] = ATT_ERROR_RESPONSE;
+        att_response_buffer[1] = ATT_EXCHANGE_MTU_REQUEST;
+        att_response_buffer[2] = 0;
+        att_response_buffer[3] = 0;
+        att_response_buffer[4] = ATT_ERROR_REQUEST_NOT_SUPPORTED;
+    } else {
+        att_response_size = att_handle_request(att_connection, att_server->request_buffer, att_server->request_size, att_response_buffer);
+    }
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
     if ((att_response_size == ATT_READ_RESPONSE_PENDING) || (att_response_size == ATT_INTERNAL_WRITE_RESPONSE_PENDING)){
