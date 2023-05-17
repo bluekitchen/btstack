@@ -276,6 +276,17 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_execute(map_access_client->goep_client.cid);
             break;
 
+        case MAP_W2_SEND_UPDATE_INBOX:
+            goep_client_request_create_put(map_access_client->goep_client.cid);
+            goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/MAP-messageUpdate");
+
+            goep_client_body_add_static(map_access_client->goep_client.cid, (uint8_t *) "0", 1);
+            map_access_client->state = MAP_W4_UPDATE_INBOX;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_PUT);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_client.cid);
+            break;
+
         case MAP_W2_SET_PATH_ROOT:
             goep_client_request_create_set_path(map_access_client->goep_client.cid, 1 << 1); // Don’t create directory
             goep_client_header_add_name(map_access_client->goep_client.cid, "");
@@ -603,6 +614,7 @@ map_access_client_packet_handler_goep(uint16_t goep_cid, uint8_t *packet, uint16
             break;
 
         case MAP_W4_FOLDERS:
+        case MAP_W4_UPDATE_INBOX:
         case MAP_W4_MESSAGES_IN_FOLDER:
         case MAP_W4_MESSAGE:
         case MAP_W4_SET_MESSAGE_STATUS:
@@ -706,6 +718,21 @@ uint8_t map_access_client_disconnect(uint16_t map_cid){
     }
 
     map_access_client->state = MAP_W2_SEND_DISCONNECT_REQUEST;
+    map_access_client->request_number = 0;
+    goep_client_request_can_send_now(map_access_client->goep_client.cid);
+    return 0;
+}
+
+uint8_t map_access_client_update_inbox(uint16_t map_cid){
+    map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+
+    map_access_client->state = MAP_W2_SEND_UPDATE_INBOX;
     map_access_client->request_number = 0;
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
     return 0;
