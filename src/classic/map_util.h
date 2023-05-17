@@ -88,6 +88,7 @@ typedef enum {
     MAP_UTIL_PARSER_TYPE_INVALID = 0,
     MAP_UTIL_PARSER_TYPE_FOLDER_LISTING,
     MAP_UTIL_PARSER_TYPE_MESSAGE_LISTING,
+    MAP_UTIL_PARSER_TYPE_CONVERSATION_LISTING,
 } map_util_xml_parser_type;
 
 typedef struct {
@@ -96,15 +97,19 @@ typedef struct {
     yxml_t   xml_parser;
     uint8_t  payload_type;
     uint8_t  xml_buffer[50];
+    int      cur_attr;
+    char     attr_val[MAP_MAX_VALUE_LEN];
     union {
         struct {
             int message_found;
-            int cur_attr;
-            char attr_val[MAP_MAX_VALUE_LEN];
             map_message_type_t   msg_type;
             map_message_status_t msg_status;
             map_message_handle_t msg_handle;
         } msg_listing;
+        struct {
+            int conv_found;
+            map_conversation_id_t conv_id;
+        } conv_listing;
         struct {
             int folder_found;
             int name_found;
@@ -113,10 +118,10 @@ typedef struct {
     };
 } map_util_xml_parser;
 
-void map_util_message_listing_parser_init (map_util_xml_parser      *mu_parser,
-                                           map_util_xml_parser_type  payload_type,
-                                           btstack_packet_handler_t  callback,
-                                           uint16_t cid);
+void map_util_xml_parser_init (map_util_xml_parser      *mu_parser,
+                               map_util_xml_parser_type  payload_type,
+                               btstack_packet_handler_t  callback,
+                               uint16_t cid);
 void map_util_xml_parser_parse (map_util_xml_parser *mu_parser,
                                 const uint8_t       *data,
                                 uint16_t             data_len);
@@ -127,6 +132,7 @@ void map_util_xml_parser_parse (map_util_xml_parser *mu_parser,
     
 void map_message_str_to_handle(const char * value, map_message_handle_t msg_handle);
 void map_message_handle_to_str(char * p, const map_message_handle_t msg_handle);
+void map_conversation_str_to_id(const char * value, map_conversation_id_t conv_id);
 
 #if defined __cplusplus
 }

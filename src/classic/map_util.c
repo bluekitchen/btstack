@@ -174,6 +174,24 @@ void map_message_str_to_handle(const char * value, map_message_handle_t msg_hand
     }
 }
 
+void map_conversation_str_to_id(const char * value, map_conversation_id_t conv_id){
+    int pos = strlen (value);
+    int i = 0;
+    int nibble;
+
+    memset (conv_id, 0, MAP_CONVERSATION_ID_SIZE);
+    while (pos) {
+        pos--;
+        nibble = nibble_for_char(value[pos]);
+        if (i % 2)
+            conv_id[MAP_CONVERSATION_ID_SIZE-1-i/2] |= (nibble << 4);
+        else
+            conv_id[MAP_CONVERSATION_ID_SIZE-1-i/2] |= (nibble << 0);
+
+        i++;
+    }
+}
+
 void map_message_handle_to_str(char * p, const map_message_handle_t msg_handle){
     int i;
     for (i = 0; i < MAP_MESSAGE_HANDLE_SIZE ; i++) {
@@ -221,6 +239,23 @@ static void map_client_emit_message_listing_item_event(btstack_packet_handler_t 
     if (pos > sizeof(event)) log_error("map_client_emit_message_listing_item_event size %u", pos);
     (*callback)(HCI_EVENT_PACKET, cid, &event[0], pos);
 } 
+
+static void map_client_emit_conversation_listing_item_event(btstack_packet_handler_t callback, uint16_t cid, map_conversation_id_t conv_id){
+    uint8_t event[5 + MAP_CONVERSATION_ID_SIZE];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_MAP_META;
+    pos++;  // skip len
+    event[pos++] = MAP_SUBEVENT_CONVERSATION_LISTING_ITEM;
+    little_endian_store_16(event,pos,cid);
+    pos+=2;
+
+    memcpy(event+pos, conv_id, MAP_CONVERSATION_ID_SIZE);
+    pos += MAP_CONVERSATION_ID_SIZE;
+
+    event[1] = pos - 2;
+    if (pos > sizeof(event)) log_error("map_client_emit_conversation_listing_item_event size %u", pos);
+    (*callback)(HCI_EVENT_PACKET, cid, &event[0], pos);
+}
 
 static void map_client_emit_parsing_done_event(btstack_packet_handler_t callback, uint16_t cid){
     uint8_t event[5];
@@ -275,10 +310,11 @@ static void map_client_parse_folder_listing(map_util_xml_parser *mu_parser, cons
 }
 
 enum {
-    MAP_MSG_ATTR_INVALID = 0,
+    MAP_ATTR_INVALID = 0,
     MAP_MSG_ATTR_HANDLE,
     MAP_MSG_ATTR_TYPE,
     MAP_MSG_ATTR_READ,
+    MAP_CONV_ATTR_ID,
 };
 
 void map_client_parse_message_listing(map_util_xml_parser *mu_parser, const uint8_t * data, uint16_t data_len){
@@ -298,54 +334,54 @@ void map_client_parse_message_listing(map_util_xml_parser *mu_parser, const uint
                                                            mu_parser->msg_listing.msg_type, mu_parser->msg_listing.msg_status);
                 break;
             case YXML_ATTRSTART:
-                mu_parser->msg_listing.cur_attr = MAP_MSG_ATTR_INVALID;
+                mu_parser->cur_attr = MAP_ATTR_INVALID;
                 if (mu_parser->msg_listing.message_found == 0) break;
 
                 if (strcmp("handle", mu_parser->xml_parser.attr) == 0){
-                    mu_parser->msg_listing.cur_attr = MAP_MSG_ATTR_HANDLE;
+                    mu_parser->cur_attr = MAP_MSG_ATTR_HANDLE;
                 } else if (strcmp("type", mu_parser->xml_parser.attr) == 0){
-                    mu_parser->msg_listing.cur_attr = MAP_MSG_ATTR_TYPE;
+                    mu_parser->cur_attr = MAP_MSG_ATTR_TYPE;
                 } else if (strcmp("read", mu_parser->xml_parser.attr) == 0){
-                    mu_parser->msg_listing.cur_attr = MAP_MSG_ATTR_READ;
+                    mu_parser->cur_attr = MAP_MSG_ATTR_READ;
                 }
-                mu_parser->msg_listing.attr_val[0] = 0;
+                mu_parser->attr_val[0] = 0;
                 break;
             case YXML_ATTRVAL:
-                if (mu_parser->msg_listing.cur_attr == MAP_MSG_ATTR_INVALID) break;
+                if (mu_parser->cur_attr == MAP_ATTR_INVALID) break;
                 if (strlen(mu_parser->xml_parser.data) != 1) break;
-                if (strlen(mu_parser->msg_listing.attr_val) >= MAP_MAX_VALUE_LEN) break;
-                strcat(mu_parser->msg_listing.attr_val, mu_parser->xml_parser.data);
+                if (strlen(mu_parser->attr_val) >= MAP_MAX_VALUE_LEN) break;
+                strcat(mu_parser->attr_val, mu_parser->xml_parser.data);
                 break;
             case YXML_ATTREND:
-                switch (mu_parser->msg_listing.cur_attr){
+                switch (mu_parser->cur_attr){
                     case MAP_MSG_ATTR_HANDLE:
-                        if (strlen(mu_parser->msg_listing.attr_val) > MAP_MESSAGE_HANDLE_SIZE * 2){
-                            log_info("message handle string length %u > %u", (unsigned int) strlen(mu_parser->msg_listing.attr_val), MAP_MESSAGE_HANDLE_SIZE*2);
+                        if (strlen(mu_parser->attr_val) > MAP_MESSAGE_HANDLE_SIZE * 2){
+                            log_info("message handle string length %u > %u", (unsigned int) strlen(mu_parser->attr_val), MAP_MESSAGE_HANDLE_SIZE*2);
                             /* discard message */
                             mu_parser->msg_listing.message_found = 0;
                             break;
                         }
-                        map_message_str_to_handle(mu_parser->msg_listing.attr_val, mu_parser->msg_listing.msg_handle);
+                        map_message_str_to_handle(mu_parser->attr_val, mu_parser->msg_listing.msg_handle);
                         break;
                     case MAP_MSG_ATTR_TYPE:
-                        if (strcmp (mu_parser->msg_listing.attr_val, "EMAIL") == 0) {
+                        if (strcmp (mu_parser->attr_val, "EMAIL") == 0) {
                             mu_parser->msg_listing.msg_type = MAP_MESSAGE_TYPE_EMAIL;
-                        } else if (strcmp (mu_parser->msg_listing.attr_val, "SMS_GSM") == 0) {
+                        } else if (strcmp (mu_parser->attr_val, "SMS_GSM") == 0) {
                             mu_parser->msg_listing.msg_type = MAP_MESSAGE_TYPE_SMS_GSM;
-                        } else if (strcmp (mu_parser->msg_listing.attr_val, "SMS_CDMA") == 0) {
+                        } else if (strcmp (mu_parser->attr_val, "SMS_CDMA") == 0) {
                             mu_parser->msg_listing.msg_type = MAP_MESSAGE_TYPE_SMS_CDMA;
-                        } else if (strcmp (mu_parser->msg_listing.attr_val, "MMS") == 0) {
+                        } else if (strcmp (mu_parser->attr_val, "MMS") == 0) {
                             mu_parser->msg_listing.msg_type = MAP_MESSAGE_TYPE_MMS;
-                        } else if (strcmp (mu_parser->msg_listing.attr_val, "IM") == 0) {
+                        } else if (strcmp (mu_parser->attr_val, "IM") == 0) {
                             mu_parser->msg_listing.msg_type = MAP_MESSAGE_TYPE_IM;
                         } else {
                             mu_parser->msg_listing.msg_type = MAP_MESSAGE_TYPE_UNKNOWN;
                         }
                         break;
                     case MAP_MSG_ATTR_READ:
-                        if (strcmp (mu_parser->msg_listing.attr_val, "yes") == 0) {
+                        if (strcmp (mu_parser->attr_val, "yes") == 0) {
                             mu_parser->msg_listing.msg_status = MAP_MESSAGE_STATUS_READ;
-                        } else if (strcmp (mu_parser->msg_listing.attr_val, "no") == 0) {
+                        } else if (strcmp (mu_parser->attr_val, "no") == 0) {
                             mu_parser->msg_listing.msg_status = MAP_MESSAGE_STATUS_UNREAD;
                         } else {
                             mu_parser->msg_listing.msg_status = MAP_MESSAGE_STATUS_UNKNOWN;
@@ -354,7 +390,61 @@ void map_client_parse_message_listing(map_util_xml_parser *mu_parser, const uint
                     default:
                         break;
                 }
-                mu_parser->msg_listing.cur_attr = MAP_MSG_ATTR_INVALID;
+                mu_parser->cur_attr = MAP_ATTR_INVALID;
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void map_client_parse_conversation_listing(map_util_xml_parser *mu_parser, const uint8_t * data, uint16_t data_len){
+    while (data_len > 0){
+        data_len -= 1;
+        yxml_ret_t r = yxml_parse(&mu_parser->xml_parser, *data++);
+        switch (r){
+            case YXML_ELEMSTART:
+                if (strcmp("conversation", mu_parser->xml_parser.elem) == 0) {
+                    mu_parser->conv_listing.conv_found = 1;
+                }
+                break;
+            case YXML_ELEMEND:
+                if (mu_parser->conv_listing.conv_found == 0) break;
+                if (strcmp("conversation", mu_parser->xml_parser.elem) == 0) {
+                    mu_parser->conv_listing.conv_found = 0;
+                }
+                map_client_emit_conversation_listing_item_event(mu_parser->callback, mu_parser->cid, mu_parser->conv_listing.conv_id);
+                break;
+            case YXML_ATTRSTART:
+                mu_parser->cur_attr = MAP_ATTR_INVALID;
+                if (mu_parser->conv_listing.conv_found == 0) break;
+
+                if (strcmp("id", mu_parser->xml_parser.attr) == 0){
+                    mu_parser->cur_attr = MAP_CONV_ATTR_ID;
+                }
+                mu_parser->attr_val[0] = 0;
+                break;
+            case YXML_ATTRVAL:
+                if (mu_parser->cur_attr == MAP_ATTR_INVALID) break;
+                if (strlen(mu_parser->xml_parser.data) != 1) break;
+                if (strlen(mu_parser->attr_val) >= MAP_MAX_VALUE_LEN) break;
+                strcat(mu_parser->attr_val, mu_parser->xml_parser.data);
+                break;
+            case YXML_ATTREND:
+                switch (mu_parser->cur_attr){
+                    case MAP_CONV_ATTR_ID:
+                        if (strlen(mu_parser->attr_val) > MAP_CONVERSATION_ID_SIZE * 2){
+                            log_info("conversation handle string length %u > %u", (unsigned int) strlen(mu_parser->attr_val), MAP_CONVERSATION_ID_SIZE*2);
+                            /* discard message */
+                            mu_parser->conv_listing.conv_found = 0;
+                            break;
+                        }
+                        map_conversation_str_to_id(mu_parser->attr_val, mu_parser->conv_listing.conv_id);
+                        break;
+                    default:
+                        break;
+                }
+                mu_parser->cur_attr = MAP_ATTR_INVALID;
                 break;
             default:
                 break;
@@ -363,10 +453,10 @@ void map_client_parse_message_listing(map_util_xml_parser *mu_parser, const uint
 }
 
 void
-map_util_message_listing_parser_init (map_util_xml_parser      *mu_parser,
-                                      map_util_xml_parser_type  payload_type,
-                                      btstack_packet_handler_t  callback,
-                                      uint16_t cid){
+map_util_xml_parser_init (map_util_xml_parser      *mu_parser,
+                          map_util_xml_parser_type  payload_type,
+                          btstack_packet_handler_t  callback,
+                          uint16_t cid){
     memset (mu_parser, 0, sizeof (map_util_xml_parser));
     yxml_init(&mu_parser->xml_parser, mu_parser->xml_buffer, sizeof(mu_parser->xml_buffer));
     mu_parser->callback = callback;
@@ -394,6 +484,10 @@ map_util_xml_parser_parse (map_util_xml_parser *mu_parser,
 
         case MAP_UTIL_PARSER_TYPE_MESSAGE_LISTING:
             map_client_parse_message_listing (mu_parser, data, data_len);
+            break;
+
+        case MAP_UTIL_PARSER_TYPE_CONVERSATION_LISTING:
+            map_client_parse_conversation_listing (mu_parser, data, data_len);
             break;
 
         default:
