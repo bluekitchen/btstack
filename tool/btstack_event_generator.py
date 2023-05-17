@@ -200,6 +200,7 @@ param_read = {
     'B' : 'reverse_bytes(&event[{offset}], {result_name}, 6);',
     'R' : 'return &event[{offset}];',
     'N' : 'return (const char *) &event[{offset}];',
+    'P' : 'return (const uint8_t *) &event[{offset}];',
     'T' : 'return (const char *) &event[{offset}];',
     'D' : 'return (const uint8_t *) &event[{offset}];',
     'K' : 'reverse_bytes(&event[{offset}], {result_name}, 16);',
