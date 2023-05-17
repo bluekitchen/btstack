@@ -203,6 +203,7 @@ static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * 
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
 static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16_t signaling_cid, uint8_t * command, uint8_t sig_id);
+static void l2cap_run_trigger_callback(void * context);
 #endif
 
 // l2cap_fixed_channel_t entries
@@ -229,6 +230,7 @@ static btstack_linked_list_t l2cap_le_services;
 static btstack_linked_list_t l2cap_enhanced_services;
 static uint16_t l2cap_enhanced_mps_min;
 static uint16_t l2cap_enhanced_mps_max;
+static btstack_context_callback_registration_t l2cap_trigger_run_registration;
 #endif
 
 // single list of channels for connection-oriented channels (basic, ertm, cbm, ecbf) Classic Connectionless, ATT, and SM
@@ -965,6 +967,7 @@ void l2cap_init(void){
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
     l2cap_enhanced_mps_min = 0x0001;
     l2cap_enhanced_mps_max = 0xffff;
+    l2cap_trigger_run_registration.callback = &l2cap_run_trigger_callback;
 #endif
 
     //
@@ -2094,6 +2097,15 @@ static inline uint8_t l2cap_cbm_status_for_result(uint16_t result) {
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
+
+static void l2cap_run_trigger_callback(void * context){
+    UNUSED(context);
+    l2cap_run();
+}
+
+static void l2cap_run_trigger(void){
+    btstack_run_loop_execute_on_main_thread(&l2cap_trigger_run_registration);
+}
 
 // 11BH22222
 static void l2cap_ecbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
@@ -5421,7 +5433,7 @@ uint8_t l2cap_ecbm_accept_channels(uint16_t local_cid, uint8_t num_channels, uin
         // update state
         channel->state = L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_RESPONSE;
     }
-    l2cap_run();
+    l2cap_run_trigger();
     return ERROR_CODE_SUCCESS;
 }
 
@@ -5447,7 +5459,7 @@ uint8_t l2cap_ecbm_decline_channels(uint16_t local_cid, uint16_t result){
         channel->reason = result;
         channel->state = L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_RESPONSE;
     }
-    l2cap_run();
+    l2cap_run_trigger();
     return ERROR_CODE_SUCCESS;
 }
 
