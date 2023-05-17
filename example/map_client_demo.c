@@ -132,6 +132,7 @@ static void show_usage(void){
     printf("p - set path \'%s\'\n", path);
     printf("f - get folder listing\n");
     printf("F - get message listing for folder \'%s\'\n", folder_name);
+    printf("C - get conversation listing\n");
     printf("0 - Select last listed \"unknown\" message\n");
     printf("1 - Select last listed \"email\" message\n");
     printf("2 - Select last listed \"sms_gsm\" message\n");
@@ -197,6 +198,10 @@ static void stdin_process(char c){
         case 'F':
             printf("[+] Get message listing for folder \'%s\'\n", folder_name);
             map_access_client_get_message_listing_for_folder(map_cid, folder_name);
+            break;
+        case 'C':
+            printf("[+] Get conversation listing\n");
+            map_access_client_get_conversation_listing(map_cid, 10, 0);
             break;
         case 'i':
             printf("[+] Get MAS instance info for default instance\n");
