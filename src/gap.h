@@ -892,7 +892,7 @@ uint8_t gap_cis_accept(hci_con_handle_t cis_con_handle);
 uint8_t gap_cis_reject(hci_con_handle_t cis_con_handle);
 
 /**
- * @brief Set connection parameters for outgoing connections
+ * @brief Set connection parameters for outgoing connections and connection parameter updates
  * @param conn_scan_interval (unit: 0.625 msec), default: 60 ms
  * @param conn_scan_window (unit: 0.625 msec), default: 30 ms
  * @param conn_interval_min (unit: 1.25ms), default: 10 ms

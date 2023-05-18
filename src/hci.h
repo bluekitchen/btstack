@@ -1158,6 +1158,16 @@ typedef struct {
     // LE Whitelist Management
     uint8_t               le_whitelist_capacity;
     btstack_linked_list_t le_whitelist;
+
+    // Connection parameters
+    uint16_t le_connection_scan_interval;
+    uint16_t le_connection_scan_window;
+    uint16_t le_connection_interval_min;
+    uint16_t le_connection_interval_max;
+    uint16_t le_connection_latency;
+    uint16_t le_supervision_timeout;
+    uint16_t le_minimum_ce_length;
+    uint16_t le_maximum_ce_length;
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
@@ -1175,15 +1185,6 @@ typedef struct {
     uint16_t le_scan_interval;
     uint16_t le_scan_window;
 
-    // Connection parameters
-    uint16_t le_connection_interval_min;
-    uint16_t le_connection_interval_max;
-    uint16_t le_connection_latency;
-    uint16_t le_supervision_timeout;
-    uint16_t le_minimum_ce_length;
-    uint16_t le_maximum_ce_length;
-    uint16_t le_connection_scan_interval;
-    uint16_t le_connection_scan_window;
     uint8_t  le_connection_own_addr_type;
     uint8_t  le_connection_phys;
     bd_addr_t le_connection_own_address;

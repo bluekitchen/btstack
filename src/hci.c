@@ -4654,8 +4654,7 @@ void hci_init(const hci_transport_t *transport, const void *config){
     // voice setting - signed 16 bit pcm data with CVSD over the air
     hci_stack->sco_voice_setting = 0x60;
 
-#ifdef ENABLE_LE_CENTRAL
-    // connection parameter to use for outgoing connections
+#ifdef ENABLE_BLE
     hci_stack->le_connection_scan_interval = 0x0060;   //    60 ms
     hci_stack->le_connection_scan_window   = 0x0030;    //   30 ms
     hci_stack->le_connection_interval_min  = 0x0008;    //   10 ms
@@ -4664,6 +4663,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->le_supervision_timeout      = 0x0048;    //  720 ms
     hci_stack->le_minimum_ce_length        =      0;    //    0 ms
     hci_stack->le_maximum_ce_length        =      0;    //    0 ms
+#endif
+
+#ifdef ENABLE_LE_CENTRAL
     hci_stack->le_connection_phys          =   0x01;    // LE 1M PHY
 
     // default LE Scanning
@@ -8152,9 +8154,16 @@ uint8_t gap_connect_cancel(void){
  * @param max_ce_length (unit: 0.625ms), default: 30 ms
  */
 
-void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_scan_window, 
-    uint16_t conn_interval_min, uint16_t conn_interval_max, uint16_t conn_latency,
-    uint16_t supervision_timeout, uint16_t min_ce_length, uint16_t max_ce_length){
+void gap_set_connection_phys(uint8_t phys){
+    // LE Coded, LE 1M, LE 2M PHY
+    hci_stack->le_connection_phys = phys & 7;
+}
+
+#endif
+
+void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_scan_window,
+                                   uint16_t conn_interval_min, uint16_t conn_interval_max, uint16_t conn_latency,
+                                   uint16_t supervision_timeout, uint16_t min_ce_length, uint16_t max_ce_length){
     hci_stack->le_connection_scan_interval = conn_scan_interval;
     hci_stack->le_connection_scan_window = conn_scan_window;
     hci_stack->le_connection_interval_min = conn_interval_min;
@@ -8164,13 +8173,6 @@ void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_sc
     hci_stack->le_minimum_ce_length = min_ce_length;
     hci_stack->le_maximum_ce_length = max_ce_length;
 }
-
-void gap_set_connection_phys(uint8_t phys){
-    // LE Coded, LE 1M, LE 2M PHY
-    hci_stack->le_connection_phys = phys & 7;
-}
-
-#endif
 
 /**
  * @brief Updates the connection parameters for a given LE connection
