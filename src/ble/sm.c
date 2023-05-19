@@ -4344,6 +4344,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             reverse_128(&packet[1], setup->sm_peer_random);
             sm_conn->sm_engine_state = SM_PH2_C1_GET_ENC_C;
             break;
+
+        case SM_PH4_W4_CONNECTION_ENCRYPTED:
+            // ignore Security Request, see SM_INITIATOR_PH1_W4_PAIRING_RESPONSE above
+            if (sm_pdu_code != SM_CODE_SECURITY_REQUEST){
+                sm_pdu_received_in_wrong_state(sm_conn);
+            }
+            break;
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
