@@ -1180,13 +1180,12 @@ static void stdin_process(char cmd){
     uint8_t volume;
     avrcp_battery_status_t old_battery_status;
 
-    a2dp_sink_demo_stream_endpoint_t *  stream_endpoint  = &a2dp_sink_demo_stream_endpoint;
     a2dp_sink_demo_a2dp_connection_t *  a2dp_connection  = &a2dp_sink_demo_a2dp_connection;
     a2dp_sink_demo_avrcp_connection_t * avrcp_connection = &a2dp_sink_demo_avrcp_connection;
 
     switch (cmd){
         case 'b':
-            status = a2dp_sink_establish_stream(device_addr, stream_endpoint->a2dp_local_seid, &a2dp_connection->a2dp_cid);
+            status = a2dp_sink_establish_stream(device_addr, &a2dp_connection->a2dp_cid);
             printf(" - Create AVDTP connection to addr %s, and local seid %d, cid 0x%02x.\n",
                    bd_addr_to_str(device_addr), a2dp_connection->a2dp_local_seid, a2dp_connection->a2dp_cid);
             break;

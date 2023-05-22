@@ -116,10 +116,9 @@ void a2dp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8
 /**
  * @brief Establish stream.
  * @param remote
- * @param local_seid  		ID of a local stream endpoint.
- * @param out_a2dp_cid 		Assigned A2DP channel identifier used for furhter A2DP commands.   
+ * @param out_a2dp_cid 		Assigned A2DP channel identifier used for furhter A2DP commands.
  */
-uint8_t a2dp_sink_establish_stream(bd_addr_t remote, uint8_t local_seid, uint16_t * out_a2dp_cid);
+uint8_t a2dp_sink_establish_stream(bd_addr_t remote, uint16_t * out_a2dp_cid);
 
 #ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
 /**

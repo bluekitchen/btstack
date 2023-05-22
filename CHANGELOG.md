@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: use stack defaults for LE Connection Parameter Updates
 - GAP: set minimum and maximum CE length to 0
 - GAP: ENABLE_EXPLICIT_DEDICATED_BONDING_DISCONNECT disables disconnect after dedicated bonding
+- A2DP Sink: drop unused local seid argument in a2dp_sink_establish_stream
 - bluetooth: indicated identity address in resolved address type names
 - chipset/bcm: look for PatchRAM file DEVICE_NAME...hcd
 - btstack_audio: added get_samplerate function to help with audio sample rate synchronization 
