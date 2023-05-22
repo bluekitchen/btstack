@@ -97,13 +97,190 @@ static uint16_t msc_server_get_next_media_player_id(void){
 }
 
 
+static char * media_state_names[] = {
+    "INACTIVE",
+    "PLAYING",
+    "PAUSED",
+    "SEEKING",
+    "RFU"
+};
+
+static char * media_control_opcode_names[] = {
+    "PLAY",
+    "PAUSE",
+    "FAST_REWIND",
+    "FAST_FORWARD",
+    "STOP",
+    "MOVE_RELATIVE",
+    "PREVIOUS_SEGMENT",
+    "NEXT_SEGMENT",
+    "FIRST_SEGMENT",
+    "LAST_SEGMENT",
+    "GOTO_SEGMENT",
+    "PREVIOUS_TRACK",
+    "NEXT_TRACK",
+    "FIRST_TRACK",
+    "LAST_TRACK",
+    "GOTO_TRACK",
+    "PREVIOUS_GROUP",
+    "NEXT_GROUP",
+    "FIRST_GROUP",
+    "LAST_GROUP",
+    "GOTO_GROUP",
+    "RFU"
+};
+
+static char * media_control_characteristic_names[] = {
+    "MEDIA_PLAYER_NAME",
+    "MEDIA_PLAYER_ICON_OBJECT_ID",
+    "MEDIA_PLAYER_ICON_URL",
+    "TRACK_CHANGED",
+    "TRACK_TITLE",
+    "TRACK_DURATION",
+    "TRACK_POSITION",
+    "PLAYBACK_SPEED",
+    "SEEKING_SPEED",
+    "CURRENT_TRACK_SEGMENTS_OBJECT_ID",
+    "CURRENT_TRACK_OBJECT_ID",
+    "NEXT_TRACK_OBJECT_ID",
+    "PARENT_GROUP_OBJECT_ID",
+    "CURRENT_GROUP_OBJECT_ID",
+    "PLAYING_ORDER",
+    "PLAYING_ORDERS_SUPPORTED",
+    "MEDIA_STATE",
+    "MEDIA_CONTROL_POINT",
+    "MEDIA_CONTROL_POINT_OPCODES_SUPPORTED",
+    "SEARCH_RESULTS_OBJECT_ID",
+    "SEARCH_CONTROL_POINT",
+    "CONTENT_CONTROL_ID",
+    "RFU",
+};
+
+static void mcs_server_schedule_task(media_control_service_server_t * media_player, msc_characteristic_id_t characteristic_id);
+
+static uint8_t mcs_media_control_point_opcode_index(media_control_point_opcode_t opcode){
+    switch (opcode){
+        case MEDIA_CONTROL_POINT_OPCODE_PLAY:
+            return 0;
+        case MEDIA_CONTROL_POINT_OPCODE_PAUSE:           
+            return 1;
+        case MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND:     
+            return 2;
+        case MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD:    
+            return 3;
+        case MEDIA_CONTROL_POINT_OPCODE_STOP:   
+            return 4;
+        case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:   
+            return 5;
+        case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_SEGMENT:
+            return 6;
+        case MEDIA_CONTROL_POINT_OPCODE_NEXT_SEGMENT:
+            return 7;
+        case MEDIA_CONTROL_POINT_OPCODE_FIRST_SEGMENT:   
+            return 8;
+        case MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT:  
+            return 9;
+        case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:   
+            return 10;
+        case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_TRACK: 
+            return 11;
+        case MEDIA_CONTROL_POINT_OPCODE_NEXT_TRACK:
+            return 12;
+        case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
+            return 13;
+        case MEDIA_CONTROL_POINT_OPCODE_LAST_TRACK:
+            return 14;
+        case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
+            return 15;
+        case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
+            return 16;
+        case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
+            return 17;
+        case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
+            return 18;
+        case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
+            return 19;
+        case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
+            return 20;
+        default:
+            return 21;
+    }
+}
+
+char * mcs_server_media_control_opcode2str(media_control_point_opcode_t opcode){
+    uint8_t opcode_index = mcs_media_control_point_opcode_index(opcode);
+    return media_control_opcode_names[opcode_index];
+}
+
+char * mcs_server_media_state2str(mcs_media_state_t media_state){
+    if (media_state >= MCS_MEDIA_STATE_RFU){
+        return media_state_names[(uint8_t) MCS_MEDIA_STATE_RFU];
+    }
+    return media_state_names[(uint8_t)media_state];
+}
+
+static char * mcs_server_characteristic2str(msc_characteristic_id_t msc_characteristic){
+    if (msc_characteristic >= NUM_MCS_CHARACTERISTICS){
+        return media_control_characteristic_names[(uint8_t) NUM_MCS_CHARACTERISTICS];
+    }
+    return media_control_characteristic_names[(uint8_t) msc_characteristic];
+}
+
+static bool mcs_media_control_point_opcode_supported(media_control_service_server_t * media_player, media_control_point_opcode_t opcode){
+    switch (opcode){
+        case MEDIA_CONTROL_POINT_OPCODE_PLAY:
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_PLAY) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_PAUSE:           
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_PAUSE) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND:     
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_FAST_REWIND) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD:    
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_FAST_FORWARD) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_STOP:   
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_STOP) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:   
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_MOVE_RELATIVE) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_SEGMENT:
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_PREVIOUS_SEGMENT) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_NEXT_SEGMENT:
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_NEXT_SEGMENT) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_FIRST_SEGMENT:   
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_FIRST_SEGMENT) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT:  
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_LAST_SEGMENT) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:   
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_GOTO_SEGMENT) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_TRACK: 
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_PREVIOUS_TRACK) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_NEXT_TRACK:
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_NEXT_TRACK) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_FIRST_TRACK) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_LAST_TRACK:
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_LAST_TRACK) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_GOTO_TRACK) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_PREVIOUS_GROUP) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_NEXT_GROUP) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_FIRST_GROUP) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_LAST_GROUP) != 0;
+        case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
+            return ( media_player->data.media_control_point_opcodes_supported & MEDIA_CONTROL_POINT_OPCODE_MASK_GOTO_GROUP) != 0;
+        default:
+            return false;
+    }
+}
+
 static void mcs_server_reset_media_player(media_control_service_server_t * media_player){
     media_player->con_handle = HCI_CON_HANDLE_INVALID;
     
     memset(&media_player->data, 0, sizeof(mcs_media_player_data_t));
     media_player->data.track_duration_10ms = 0xFFFFFFFF;    
     media_player->data.track_position_10ms = 0xFFFFFFFF;       
-    media_player->data.track_position_offset_10ms = 0xFFFFFFFF;
     
     media_player->data.name_value_changed = false;
     media_player->data.track_title_value_changed = false;
@@ -174,7 +351,7 @@ static msc_characteristic_id_t msc_server_find_index_for_attribute_handle(media_
 static void mcs_server_emit_media_value_changed(media_control_service_server_t * media_player, msc_characteristic_id_t characteristic_id){
     btstack_assert(media_player->event_callback != NULL);
     
-    uint8_t event[6];
+    uint8_t event[9];
     memset(event, 0, sizeof(event));
 
     uint8_t pos = 0;
@@ -183,7 +360,10 @@ static void mcs_server_emit_media_value_changed(media_control_service_server_t *
     event[pos++] = GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED;
     little_endian_store_16(event, pos, media_player->con_handle);
     pos += 2;
-    event[pos++] = characteristic_id;
+    little_endian_store_16(event, pos, media_player->player_id);
+    pos += 2;
+    event[pos++] = media_player->data.media_state;
+    event[pos++] = (uint8_t)characteristic_id;
 
     (*media_player->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
@@ -191,7 +371,7 @@ static void mcs_server_emit_media_value_changed(media_control_service_server_t *
 static void mcs_server_emit_media_control_notification_task(media_control_service_server_t * media_player, media_control_point_opcode_t opcode, uint8_t * buffer, uint16_t buffer_size){
     btstack_assert(media_player->event_callback != NULL);
     
-    uint8_t event[10];
+    uint8_t event[13];
     memset(event, 0, sizeof(event));
 
     uint8_t pos = 0;
@@ -200,10 +380,13 @@ static void mcs_server_emit_media_control_notification_task(media_control_servic
     event[pos++] = GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK;
     little_endian_store_16(event, pos, media_player->con_handle);
     pos += 2;
+    little_endian_store_16(event, pos, media_player->player_id);
+    pos += 2;
+    event[pos++] = media_player->data.media_state;
     event[pos++] = (uint8_t)opcode;
 
     if (buffer_size == 4){
-        reverse_bytes(buffer, &event[pos], 4);
+        memcpy(&event[pos], buffer, 4);
     }
 
     (*media_player->event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -212,7 +395,7 @@ static void mcs_server_emit_media_control_notification_task(media_control_servic
 static void mcs_server_emit_search_control_notification_task(media_control_service_server_t * media_player, uint8_t * buffer, uint16_t buffer_size){
     btstack_assert(media_player->event_callback != NULL);
     
-    uint8_t event[6 + MCS_SEARCH_CONTROL_POINT_COMMAND_MAX_LENGTH];
+    uint8_t event[9 + MCS_SEARCH_CONTROL_POINT_COMMAND_MAX_LENGTH];
     memset(event, 0, sizeof(event));
 
     uint8_t pos = 0;
@@ -221,7 +404,9 @@ static void mcs_server_emit_search_control_notification_task(media_control_servi
     event[pos++] = GATTSERVICE_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK;
     little_endian_store_16(event, pos, media_player->con_handle);
     pos += 2;
-
+    little_endian_store_16(event, pos, media_player->player_id);
+    pos += 2;
+    event[pos++] = media_player->data.media_state;
     event[pos++] = buffer_size;
     memcpy(&event[pos], buffer, buffer_size);
     pos += buffer_size;
@@ -231,7 +416,12 @@ static void mcs_server_emit_search_control_notification_task(media_control_servi
 
 static void mcs_server_set_con_handle(media_control_service_server_t * media_player, uint16_t characteristic_index, hci_con_handle_t con_handle, uint16_t configuration){
     media_player->characteristics[characteristic_index].client_configuration = configuration;
-    media_player->con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
+    if (configuration == 0){
+        media_player->con_handle = HCI_CON_HANDLE_INVALID;
+    } else {
+        media_player->con_handle = con_handle;
+        mcs_server_schedule_task(media_player, characteristic_index);
+    }
 }
 
 static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -275,6 +465,8 @@ static void mcs_server_can_send_now(void * context){
         return;
     }
 
+    // uint32_t scheduled_tasks = media_player->scheduled_tasks;
+
     if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_MEDIA_PLAYER_NAME) != 0){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_MEDIA_PLAYER_NAME;
 
@@ -285,9 +477,9 @@ static void mcs_server_can_send_now(void * context){
     
     } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_TRACK_CHANGED) != 0){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_TRACK_CHANGED;
-
+        
     	att_server_notify(media_player->con_handle, 
-            media_player->characteristics[MEDIA_PLAYER_NAME].value_handle, 
+            media_player->characteristics[TRACK_CHANGED].value_handle,
             NULL, 0);
 
     } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_TRACK_TITLE) != 0){
@@ -338,7 +530,8 @@ static void mcs_server_can_send_now(void * context){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_SEEKING_SPEED;
         uint8_t value[1];
         value[0] = media_player->data.seeking_speed;
-        
+        // printf("     *** mcs_server_can_send_now: notify MCS_NOTIFICATION_TASK_SEEKING_SPEED %d\n", value[0]);
+
         att_server_notify(media_player->con_handle, 
             media_player->characteristics[SEEKING_SPEED].value_handle, 
             (uint8_t *)value, sizeof(value));
@@ -403,7 +596,8 @@ static void mcs_server_can_send_now(void * context){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_MEDIA_STATE;
         uint8_t value[1];
         value[0] = (uint8_t)media_player->data.media_state;
-        
+        // printf("     *** mcs_server_can_send_now: notify MCS_NOTIFICATION_TASK_MEDIA_STATE %s\n",mcs_server_media_state2str(media_player->data.media_state));
+
         att_server_notify(media_player->con_handle, 
             media_player->characteristics[MEDIA_STATE].value_handle, 
             (uint8_t *)value, sizeof(value));
@@ -422,7 +616,8 @@ static void mcs_server_can_send_now(void * context){
         uint8_t value[2];
         value[0] = media_player->data.media_control_point_requested_opcode;
         value[1] = media_player->data.media_control_point_result_code;
-        
+        // printf("     *** mcs_server_can_send_now: notify MCS_NOTIFICATION_TASK_MEDIA_CONTROL_POINT %s\n", mcs_server_media_control_opcode2str(media_player->data.media_control_point_requested_opcode));
+
         att_server_notify(media_player->con_handle, 
             media_player->characteristics[MEDIA_CONTROL_POINT].value_handle, 
             (uint8_t *)value, sizeof(value));
@@ -430,9 +625,23 @@ static void mcs_server_can_send_now(void * context){
     } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_SEARCH_CONTROL_POINT) != 0){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_SEARCH_CONTROL_POINT;
         // TODO
+    } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_MEDIA_PLAYER_ICON_OBJECT_ID) != 0){
+        media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_MEDIA_PLAYER_ICON_OBJECT_ID;
+        // TODO
+    } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_MEDIA_PLAYER_ICON_URL) != 0){
+        media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_MEDIA_PLAYER_ICON_URL;
+        // TODO
+    } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_CURRENT_TRACK_SEGMENTS_OBJECT_ID) != 0){
+        media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_CURRENT_TRACK_SEGMENTS_OBJECT_ID;
+        // TODO
+    } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_CONTENT_CONTROL_ID) != 0){
+        media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_CONTENT_CONTROL_ID;
+        // TODO
     }
+    // printf("     ***    - scheduled task %x -> %x\n", scheduled_tasks, media_player->scheduled_tasks);
 
     if (media_player->scheduled_tasks != 0){
+        // printf("   ** mcs_server_can_send_now: att_server_register_can_send_now_callback %x\n", media_player->scheduled_tasks);
         att_server_register_can_send_now_callback(&media_player->scheduled_tasks_callback, media_player->con_handle);
     }
 }
@@ -446,57 +655,36 @@ static void mcs_server_schedule_task(media_control_service_server_t * media_play
         return;
     }
 
-    uint32_t task_id = 1 << ((uint8_t)characteristic_id);
+    
+    uint32_t task_bit_mask = 1 << ((uint8_t)characteristic_id);
 
-    switch (task_id){
-        case MCS_NOTIFICATION_TASK_TRACK_DURATION:
-            if ((media_player->data.media_state == MCS_MEDIA_STATE_PLAYING) && (media_player->data.playback_speed == 1)){
-                // too avoid an excessive number of notifications, 
-                // the Track Position should not be notified when the Media State is set 
-                // to “Playing” and playback happens at a constant speed
-                return;
-            }
-            break;
-        
-        case MCS_NOTIFICATION_TASK_MEDIA_STATE:
-            switch (media_player->data.media_state){
-                case MCS_MEDIA_STATE_PAUSED:
-                    if (media_player->data.track_duration_10ms != 0xFFFFFFFF){
-                        media_player->scheduled_tasks |= TRACK_DURATION;
-                    }
-                    break;
-                case MCS_MEDIA_STATE_SEEKING:
-                    // TODO start timer for track_duration_10ms
-                    if (media_player->data.track_duration_10ms != 0xFFFFFFFF){
-                        media_player->scheduled_tasks |= TRACK_DURATION;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        
-        case MCS_NOTIFICATION_TASK_PLAYBACK_SPEED:
-            if ((media_player->data.media_state != MCS_MEDIA_STATE_PLAYING) || (media_player->data.playback_speed != 1)){
-                media_player->scheduled_tasks |= TRACK_DURATION;
-            }
-            break;
-
-        default:
-            break;
-    }
+    // switch (task_bit_mask){
+    //     case MCS_NOTIFICATION_TASK_TRACK_DURATION:
+    //     case MCS_NOTIFICATION_TASK_TRACK_POSITION:
+    //         if ((media_player->data.media_state == MCS_MEDIA_STATE_PLAYING) && (media_player->data.playback_speed == 1)){
+    //             // too avoid an excessive number of notifications, 
+    //             // the Track Position should not be notified when the Media State is set 
+    //             // to “Playing” and playback happens at a constant speed
+    //             return;
+    //         }
+    //         break;
+    //     default:
+    //         break;
+    // }
     
     // skip if already scheduled
-    if ((media_player->scheduled_tasks & task_id) != 0){
+    if ((media_player->scheduled_tasks & task_bit_mask) != 0){
         return;
     }
 
-    uint16_t scheduled_tasks = media_player->scheduled_tasks;
-    media_player->scheduled_tasks |= (uint32_t)task_id;
-        
+    uint32_t scheduled_tasks = media_player->scheduled_tasks;
+    media_player->scheduled_tasks |= task_bit_mask;
+    // printf(" * mcs_server_schedule_task: %s (%x -> %x)\n", mcs_server_characteristic2str(characteristic_id), scheduled_tasks, media_player->scheduled_tasks );
+
     if (scheduled_tasks == 0){
         media_player->scheduled_tasks_callback.callback = &mcs_server_can_send_now;
         media_player->scheduled_tasks_callback.context  = (void*) media_player;
+        // printf("   ** mcs_server_schedule_task: att_server_register_can_send_now_callback: %s\n", mcs_server_characteristic2str(characteristic_id));
         att_server_register_can_send_now_callback(&media_player->scheduled_tasks_callback, media_player->con_handle);
     }
 }
@@ -518,6 +706,8 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 		default:
 			break;
 	}
+
+    // printf("mcs_server_read_callback, characteristic %s\n", mcs_server_characteristic2str(characteristic_id));
 
 	switch (characteristic_id){
 		case MEDIA_PLAYER_NAME:
@@ -619,16 +809,20 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 	msc_characteristic_id_t characteristic_id = msc_server_find_index_for_attribute_handle(media_player, attribute_handle, &type);
     media_control_point_opcode_t      media_control_point_opcode;
     media_control_point_error_code_t  media_control_point_result_code;
+    uint8_t media_control_poind_data_length;
 
 	switch (type){
 		case HANDLE_TYPE_CHARACTERISTIC_CCD:
 			mcs_server_set_con_handle(media_player, (uint16_t)characteristic_id, con_handle, little_endian_read_16(buffer, 0));
+
 			return 0;
 		default:
 			break;
 	}
 
     playing_order_t playing_order;
+
+    printf(" * mcs_server_write_callback, characteristic_id %s\n", mcs_server_characteristic2str(characteristic_id));
 
     switch (characteristic_id){
 		case MEDIA_PLAYER_NAME: 
@@ -697,22 +891,29 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             break;
         
         case MEDIA_CONTROL_POINT:
+            
             if (buffer_size == 0){
                 return 0;
             }
             media_control_point_opcode      = (media_control_point_opcode_t) buffer[0];
             media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS;
 
-            if ( (media_control_point_opcode < MEDIA_CONTROL_POINT_OPCODE_PLAY) || 
+            media_control_poind_data_length = 0;
+
+            printf("     - received remote opcode %s\n",
+                   mcs_server_media_control_opcode2str(media_control_point_opcode));
+
+            if ( (media_control_point_opcode < MEDIA_CONTROL_POINT_OPCODE_START_GROUP) || 
                 (media_control_point_opcode >= MEDIA_CONTROL_POINT_OPCODE_RFU)  ||
-                ((media_player->data.media_control_point_opcodes_supported & (1 << media_control_point_opcode)) != 0)){
+                // ((media_player->data.media_control_point_opcodes_supported & (1 << media_control_point_opcode)) != 0)){
+                mcs_media_control_point_opcode_supported(media_player, media_control_point_opcode) == false){
 
                 media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_OPCODE_NOT_SUPPORTED;
                 
             } else if (media_player->data.media_state >= MCS_MEDIA_STATE_RFU){
                 media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_COMMAND_CANNOT_BE_COMPLETED;
             } else {
-                switch (media_player->data.media_control_point_requested_opcode){
+                switch (media_control_point_opcode){
                     case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
                     case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
                     case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
@@ -720,6 +921,8 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                         if ((buffer == NULL) || (buffer_size != 5)){
                             media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_COMMAND_CANNOT_BE_COMPLETED;
                         }
+                        media_control_poind_data_length = 4;
+
                         break;
                     default:
                         if (buffer_size != 1){
@@ -728,14 +931,25 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                         break;
                 }
             }
-
+            
+    
             if (media_control_point_result_code != MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS){
+                // printf("     - notify remote opcode %s, state %s\n", 
+                //     mcs_server_media_control_opcode2str(media_control_point_opcode), 
+                //     mcs_server_media_state2str(media_player->data.media_state));
+
                 media_player->data.media_control_point_requested_opcode = media_control_point_opcode;
                 media_player->data.media_control_point_result_code      = media_control_point_result_code;
                 mcs_server_schedule_task(media_player, characteristic_id);
 
             } else {
-                mcs_server_emit_media_control_notification_task(media_player, media_control_point_opcode, &buffer[1], buffer_size - 1);
+                // printf("     - emit event to APP, opcode nr 0x%02x, opcode %s, result %d, state %s\n",
+                //     media_control_point_opcode, 
+                //     mcs_server_media_control_opcode2str(media_control_point_opcode), 
+                //     media_control_point_result_code,
+                //     mcs_server_media_state2str(media_player->data.media_state));
+
+                mcs_server_emit_media_control_notification_task(media_player, media_control_point_opcode, &buffer[1], media_control_poind_data_length);
             }
             break;
 		default:
@@ -950,14 +1164,12 @@ uint8_t media_control_service_server_set_track_duration(uint16_t media_player_id
 	return ERROR_CODE_SUCCESS;
 }
 
-uint8_t media_control_service_server_set_track_position_offset(uint16_t media_player_id, int32_t track_position_offset_10ms){
-	UNUSED(track_position_offset_10ms);
+uint8_t media_control_service_server_set_track_position(uint16_t media_player_id, int32_t track_position_10ms){
 	media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
-	// media_player->data.track_position_10ms = track_position_10ms;
-	// TODO
+	media_player->data.track_position_10ms = track_position_10ms;
 	mcs_server_schedule_task(media_player, TRACK_POSITION);
 	return ERROR_CODE_SUCCESS;
 }
@@ -982,7 +1194,7 @@ uint8_t media_control_service_server_set_seeking_speed(uint16_t media_player_id,
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
 	media_player->data.seeking_speed = seeking_speed;
-	
+	printf(" * mcs_set_seeking_speed: %d\n", seeking_speed);
 	mcs_server_schedule_task(media_player, SEEKING_SPEED);
 	return ERROR_CODE_SUCCESS;
 }
@@ -1044,11 +1256,36 @@ uint8_t media_control_service_server_set_media_state(uint16_t media_player_id, m
 	if (media_player->data.media_state == media_state){
 		return ERROR_CODE_SUCCESS;
 	}
-	
+	    
+    media_player->data.media_state = media_state;
+    printf(" * mcs_set_media_state: %s\n", mcs_server_media_state2str(media_state));
 	mcs_server_schedule_task(media_player, MEDIA_STATE);
 	return ERROR_CODE_SUCCESS;
 }
 
+mcs_media_state_t media_control_service_server_get_media_state(uint16_t media_player_id){
+    media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
+    btstack_assert(media_player != NULL);
+    return media_player->data.media_state;
+}
+
+uint8_t media_control_service_server_media_control_point_response(
+    uint16_t media_player_id, 
+    media_control_point_opcode_t      media_control_point_opcode,
+    media_control_point_error_code_t  media_control_point_result_code){
+
+    media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    media_player->data.media_control_point_requested_opcode = media_control_point_opcode;
+    media_player->data.media_control_point_result_code      = media_control_point_result_code;
+    printf(" * mcs_control_point_response: %s\n", mcs_server_media_control_opcode2str(media_control_point_opcode));
+    mcs_server_schedule_task(media_player, MEDIA_CONTROL_POINT);
+
+    return ERROR_CODE_SUCCESS;
+}
 
 uint8_t media_control_service_server_unregister_media_player(media_control_service_server_t * media_player){
 	if (media_player == NULL){
