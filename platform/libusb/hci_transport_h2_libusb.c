@@ -1345,13 +1345,13 @@ static int usb_close(void) {
 }
 
 static int acknowledge_count = 0;
-static void signal_acknowledge() {
+static void signal_acknowledge(void) {
     ++acknowledge_count;
     btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static int sco_can_send_now_count = 0;
-static void signal_sco_can_send_now() {
+static void signal_sco_can_send_now(void) {
     ++sco_can_send_now_count;
     btstack_run_loop_poll_data_sources_from_irq();
 }
