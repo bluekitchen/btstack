@@ -67,17 +67,17 @@ typedef enum {
     MEDIA_PLAYER_ICON_URL,
     TRACK_CHANGED,
     TRACK_TITLE,
-    TRACK_DURATION,
+    TRACK_DURATION,                     // 5
     TRACK_POSITION,
     PLAYBACK_SPEED,
     SEEKING_SPEED,
     CURRENT_TRACK_SEGMENTS_OBJECT_ID,
-    CURRENT_TRACK_OBJECT_ID,
+    CURRENT_TRACK_OBJECT_ID,            // 10
     NEXT_TRACK_OBJECT_ID,
     PARENT_GROUP_OBJECT_ID,
     CURRENT_GROUP_OBJECT_ID,
     PLAYING_ORDER,
-    PLAYING_ORDERS_SUPPORTED,
+    PLAYING_ORDERS_SUPPORTED,           // 15
     MEDIA_STATE,
     MEDIA_CONTROL_POINT,
     MEDIA_CONTROL_POINT_OPCODES_SUPPORTED,
@@ -121,7 +121,6 @@ typedef struct {
     uint32_t track_duration_10ms;               // 0xFFFFFFFF unknown, or not set
     
     uint32_t track_position_10ms;               // 0xFFFFFFFF unknown, or not set
-    uint32_t track_position_offset_10ms;        // 0xFFFFFFFF unknown, or not set
 
     int8_t playback_speed;
     int8_t seeking_speed;
@@ -140,6 +139,8 @@ typedef struct {
     uint32_t media_control_point_opcodes_supported;
     media_control_point_opcode_t      media_control_point_requested_opcode;
     media_control_point_error_code_t  media_control_point_result_code;
+    uint8_t media_control_point_data[4];
+    uint8_t media_control_poind_data_length;
 
     mcs_media_state_t media_state;
 } mcs_media_player_data_t;
@@ -159,6 +160,7 @@ typedef struct {
 
     btstack_packet_handler_t event_callback;
     mcs_media_player_data_t  data;
+    btstack_timer_source_t   seeking_speed_timer;
 } media_control_service_server_t;
 
 /**
@@ -183,7 +185,9 @@ uint8_t media_control_service_server_set_media_track_changed(uint16_t media_play
 uint8_t media_control_service_server_set_track_title(uint16_t media_player_id, const char * track_title);
 
 uint8_t media_control_service_server_set_track_duration(uint16_t media_player_id, uint32_t track_duration_10ms);
-uint8_t media_control_service_server_set_track_position_offset(uint16_t media_player_id, int32_t track_position_offset_10ms);
+
+uint8_t media_control_service_server_set_track_position(uint16_t media_player_id, int32_t track_position_10ms);
+
 uint8_t media_control_service_server_set_playback_speed(uint16_t media_player_id, int8_t playback_speed);
 uint8_t media_control_service_server_set_seeking_speed( uint16_t media_player_id, int8_t seeking_speed);
 
@@ -191,10 +195,19 @@ uint8_t media_control_service_server_set_playing_orders_supported(uint16_t media
 uint8_t media_control_service_server_support_playing_order(uint16_t media_player_id, playing_order_t playing_order);
 uint8_t media_control_service_server_set_playing_order(uint16_t media_player_id, playing_order_t playing_order);
 
-
+mcs_media_state_t media_control_service_server_get_media_state(uint16_t media_player_id);
 uint8_t media_control_service_server_set_media_state(uint16_t media_player_id, mcs_media_state_t media_state);
 
 uint8_t media_control_service_server_unregister_media_player(media_control_service_server_t * media_player);
+
+uint8_t media_control_service_server_media_control_point_response(
+    uint16_t media_player_id, 
+    media_control_point_opcode_t      media_control_point_opcode,
+    media_control_point_error_code_t  media_control_point_result_code);
+
+
+char * mcs_server_media_control_opcode2str(media_control_point_opcode_t opcode);
+char * mcs_server_media_state2str(mcs_media_state_t media_state);
 
 /* API_END */
 
