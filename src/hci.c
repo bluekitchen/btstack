@@ -10170,41 +10170,36 @@ void hci_setup_test_connections_fuzz(void){
 
     // setup incoming Classic ACL connection with con handle 0x0001, 66:55:44:33:22:01
     addr[5] = 0x01;
-    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL, HCI_ROLE_SLAVE);
     conn->con_handle = addr[5];
-    conn->role  = HCI_ROLE_SLAVE;
     conn->state = RECEIVED_CONNECTION_REQUEST;
     conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 
     // setup incoming Classic SCO connection with con handle 0x0002
     addr[5] = 0x02;
-    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO, HCI_ROLE_SLAVE);
     conn->con_handle = addr[5];
-    conn->role  = HCI_ROLE_SLAVE;
     conn->state = RECEIVED_CONNECTION_REQUEST;
     conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 
     // setup ready Classic ACL connection with con handle 0x0003
     addr[5] = 0x03;
-    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL, HCI_ROLE_SLAVE);
     conn->con_handle = addr[5];
-    conn->role  = HCI_ROLE_SLAVE;
     conn->state = OPEN;
     conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 
     // setup ready Classic SCO connection with con handle 0x0004
     addr[5] = 0x04;
-    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO, HCI_ROLE_SLAVE);
     conn->con_handle = addr[5];
-    conn->role  = HCI_ROLE_SLAVE;
     conn->state = OPEN;
     conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 
     // setup ready LE ACL connection with con handle 0x005 and public address
     addr[5] = 0x05;
-    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_LE_PUBLIC);
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_LE_PUBLIC, HCI_ROLE_SLAVE);
     conn->con_handle = addr[5];
-    conn->role  = HCI_ROLE_SLAVE;
     conn->state = OPEN;
     conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
     conn->sm_connection.sm_connection_encrypted = 1;
