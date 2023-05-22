@@ -277,7 +277,9 @@ static uint8_t sm_aes128_ciphertext[16];
 
 // to receive events
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
 static btstack_packet_callback_registration_t l2cap_event_callback_registration;
+#endif
 
 /* to dispatch sm event */
 static btstack_linked_list_t sm_event_handlers;
