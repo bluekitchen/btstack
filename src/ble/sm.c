@@ -4902,9 +4902,11 @@ void sm_init(void){
     hci_event_callback_registration.callback = &sm_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
     // register for L2CAP events
     l2cap_event_callback_registration.callback = &sm_event_packet_handler;
     l2cap_add_event_handler(&l2cap_event_callback_registration);
+#endif
 
     //
     btstack_crypto_init();
