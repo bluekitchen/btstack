@@ -638,7 +638,7 @@ static void stdin_process(char cmd){
 
     switch (cmd){
         case 'b':
-            status = a2dp_sink_establish_stream(device_addr, a2dp_local_seid, &a2dp_cid);
+            status = a2dp_sink_establish_stream(device_addr, &a2dp_cid);
             printf(" - Create AVDTP connection to addr %s, and local seid %d, expected cid 0x%02x.\n", bd_addr_to_str(device_addr), a2dp_local_seid, a2dp_cid);
             break;
         case 'B':
