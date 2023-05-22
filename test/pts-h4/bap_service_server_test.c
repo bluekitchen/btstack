@@ -65,10 +65,6 @@ static bap_app_server_state_t  bap_app_server_state      = BAP_APP_SERVER_STATE_
 static hci_con_handle_t        bap_app_server_con_handle = HCI_CON_HANDLE_INVALID;
 static bd_addr_t               bap_app_client_addr;
 
-// MCS
-static char * long_string1 = "abcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijk";
-static char * long_string2 = "ghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefgfgfgf";
-
 #define APP_AD_FLAGS 0x06
 
 static uint8_t adv_data[] = {
@@ -329,13 +325,6 @@ static uint8_t ase_id = 0;
 
 static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
 static ascs_server_connection_t ascs_clients[ASCS_NUM_CLIENTS];
-
-// MCS
-static uint16_t media_player_id1 = 0;
-static media_control_service_server_t media_player1;
-
-static uint16_t media_player_id2 = 0;
-static media_control_service_server_t media_player2;
 
 static uint8_t sirk[] = {
     0x83, 0x8E, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A,
@@ -623,23 +612,6 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     }
 }
 
-static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
-
-    if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
-
-    hci_con_handle_t con_handle;
-    uint8_t status;
-    uint8_t ris[6];
-
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        default:
-            break;
-    }
-}
-
 // ATT Client Read Callback for Dynamic Data
 // - if buffer == NULL, don't copy data, just return size of value
 // - if buffer != NULL, copy data and return number bytes copied
@@ -711,10 +683,6 @@ static void show_usage(void){
     printf("H - Simulate server unlock by another remote coordinator\n");
     printf("i - generate RIS\n");
     printf("I - set SIRK\n");
-
-    printf("\n## MCS\n");
-    printf("j - set long media player name\n");
-
 }
 
 static void stdin_process(char cmd){
@@ -887,19 +855,6 @@ static void stdin_process(char cmd){
             break;
         }
 
-        case 'j':
-            status = media_control_service_server_set_media_player_name(media_player_id1, long_string1);
-            break;
-        case 'J':
-            status = media_control_service_server_set_media_player_name(media_player_id1, long_string2);
-            break;
-        case 'k':
-            status = media_control_service_server_set_track_title(media_player_id1, long_string1);
-            break;
-        case 'K':
-            status = media_control_service_server_set_track_title(media_player_id1, long_string2);
-            break;
-
         case '\n':
         case '\r':
             break;
@@ -953,38 +908,12 @@ int btstack_main(void)
     audio_stream_control_service_server_init(ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS, ascs_streamendpoint_characteristics, ASCS_NUM_CLIENTS, ascs_clients);
     audio_stream_control_service_server_register_packet_handler(&ascs_server_packet_handler);
 
-    // setup MCS
-    media_control_service_server_init();
-
-    uint8_t icon_object_id[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
-    char * icon_url = "https://www.bluetooth.com/";
-
-    media_control_service_server_register_media_player(&media_player1, 
-        &mcs_server_packet_handler, 0xFFFF, 
-        &media_player_id1);
-    media_control_service_server_set_media_player_name(media_player_id1, "BK Player1");
-    media_control_service_server_set_icon_object_id(media_player_id1, icon_object_id, sizeof(icon_object_id));
-    media_control_service_server_set_icon_url(media_player_id1, icon_url);
-    media_control_service_server_set_track_title(media_player_id1, "Track Title 1");
-    media_control_service_server_set_playing_orders_supported(media_player_id1, 0x3FF);
-    media_control_service_server_set_playing_order(media_player_id1, PLAYING_ORDER_IN_ORDER_ONCE);
-
-    // media_control_service_server_register_media_player(&media_player2, 
-    //     &mcs_server_packet_handler, 0xFFFF, &media_player_id2);
-    // media_control_service_server_set_media_player_name(media_player_id2, "BK Player2");
-    // media_control_service_server_set_icon_object_id(media_player_id2, icon_object_id, sizeof(icon_object_id));
-    // media_control_service_server_set_icon_url(media_player_id2, icon_url);
-    // media_control_service_server_set_track_title(media_player_id2, "");
-    // media_control_service_server_set_playing_orders_supported(media_player_id2, 0x3FF);
-    // media_control_service_server_set_playing_order(media_player_id2, PLAYING_ORDER_IN_ORDER_ONCE);
-
     coordinated_set_identification_service_server_init(CSIS_COORDINATORS_MAX_NUM, &csis_coordiantors[0], CSIS_COORDINATORS_MAX_NUM, 1);
     coordinated_set_identification_service_server_register_packet_handler(&csis_server_packet_handler);
     coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, &sirk[0], false);
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
 
     // setup advertisements
     setup_advertising();
