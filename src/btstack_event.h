@@ -17633,13 +17633,31 @@ static inline hci_con_handle_t gattservice_subevent_mcs_server_media_control_poi
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field media_player_id from event GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK
+ * @param event packet
+ * @return media_player_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_server_media_control_point_notification_task_get_media_player_id(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field media_state from event GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK
+ * @param event packet
+ * @return media_state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_server_media_control_point_notification_task_get_media_state(const uint8_t * event){
+    return event[7];
+}
+/**
  * @brief Get field opcode from event GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK
  * @param event packet
  * @return opcode
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_mcs_server_media_control_point_notification_task_get_opcode(const uint8_t * event){
-    return event[5];
+    return event[8];
 }
 /**
  * @brief Get field data from event GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK
@@ -17648,7 +17666,7 @@ static inline uint8_t gattservice_subevent_mcs_server_media_control_point_notifi
  * @note: btstack_type 4
  */
 static inline uint32_t gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(const uint8_t * event){
-    return little_endian_read_32(event, 6);
+    return little_endian_read_32(event, 9);
 }
 
 /**
@@ -17661,13 +17679,31 @@ static inline hci_con_handle_t gattservice_subevent_mcs_server_search_control_po
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field media_player_id from event GATTSERVICE_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK
+ * @param event packet
+ * @return media_player_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_server_search_control_point_notification_task_get_media_player_id(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field media_state from event GATTSERVICE_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK
+ * @param event packet
+ * @return media_state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_server_search_control_point_notification_task_get_media_state(const uint8_t * event){
+    return event[7];
+}
+/**
  * @brief Get field data_length from event GATTSERVICE_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK
  * @param event packet
  * @return data_length
  * @note: btstack_type J
  */
 static inline uint8_t gattservice_subevent_mcs_server_search_control_point_notification_task_get_data_length(const uint8_t * event){
-    return event[5];
+    return event[8];
 }
 /**
  * @brief Get field data from event GATTSERVICE_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK
@@ -17676,7 +17712,7 @@ static inline uint8_t gattservice_subevent_mcs_server_search_control_point_notif
  * @note: btstack_type V
  */
 static inline const uint8_t * gattservice_subevent_mcs_server_search_control_point_notification_task_get_data(const uint8_t * event){
-    return &event[6];
+    return &event[9];
 }
 
 /**
@@ -17689,13 +17725,31 @@ static inline hci_con_handle_t gattservice_subevent_mcs_server_value_changed_get
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field media_player_id from event GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED
+ * @param event packet
+ * @return media_player_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_mcs_server_value_changed_get_media_player_id(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field media_state from event GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED
+ * @param event packet
+ * @return media_state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_server_value_changed_get_media_state(const uint8_t * event){
+    return event[7];
+}
+/**
  * @brief Get field characteristic_id from event GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED
  * @param event packet
  * @return characteristic_id
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_mcs_server_value_changed_get_characteristic_id(const uint8_t * event){
-    return event[5];
+    return event[8];
 }
 
 /**

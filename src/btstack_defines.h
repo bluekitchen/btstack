@@ -5383,27 +5383,33 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION_RESULT         0x97u
 
 /**
- * @format 1H14
+ * @format 1H2114
  * @param subevent_code
  * @param con_handle
+ * @param media_player_id
+ * @param media_state
  * @param opcode
  * @param data
  */
 #define GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK           0x98u
 
 /**
- * @format 1HJV
+ * @format 1H21JV
  * @param subevent_code
  * @param con_handle
+ * @param media_player_id
+ * @param media_state
  * @param data_length
  * @param data
  */
 #define GATTSERVICE_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK           0x99u
 
 /**
- * @format 1H1
+ * @format 1H211
  * @param subevent_code
  * @param con_handle
+ * @param media_player_id
+ * @param media_state
  * @param characteristic_id
  */
 #define GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED                                   0x9Au
