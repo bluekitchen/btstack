@@ -2564,6 +2564,145 @@ static void sm_key_distribution_complete_initiator(sm_connection_t * connection)
     }
 }
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+static void sm_run_state_sc_send_confirmation(sm_connection_t *connection) {
+    uint8_t buffer[17];
+    buffer[0] = SM_CODE_PAIRING_CONFIRM;
+    reverse_128(setup->sm_local_confirm, &buffer[1]);
+    if (IS_RESPONDER(connection->sm_role)){
+        connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
+    } else {
+        connection->sm_engine_state = SM_SC_W4_CONFIRMATION;
+    }
+    sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
+    sm_timeout_reset(connection);
+}
+
+static void sm_run_state_sc_send_pairing_random(sm_connection_t *connection) {
+    uint8_t buffer[17];
+    buffer[0] = SM_CODE_PAIRING_RANDOM;
+    reverse_128(setup->sm_local_nonce, &buffer[1]);
+    log_info("stk method %u, bit num: %u", setup->sm_stk_generation_method, setup->sm_passkey_bit);
+    if (sm_passkey_entry(setup->sm_stk_generation_method) && (setup->sm_passkey_bit < 20u)){
+        log_info("SM_SC_SEND_PAIRING_RANDOM A");
+        if (IS_RESPONDER(connection->sm_role)){
+            // responder
+            connection->sm_engine_state = SM_SC_W4_CONFIRMATION;
+        } else {
+            // initiator
+            connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
+        }
+    } else {
+        log_info("SM_SC_SEND_PAIRING_RANDOM B");
+        if (IS_RESPONDER(connection->sm_role)){
+            // responder
+            if (setup->sm_stk_generation_method == NUMERIC_COMPARISON){
+                log_info("SM_SC_SEND_PAIRING_RANDOM B1");
+                connection->sm_engine_state = SM_SC_W2_CALCULATE_G2;
+            } else {
+                log_info("SM_SC_SEND_PAIRING_RANDOM B2");
+                sm_sc_prepare_dhkey_check(connection);
+            }
+        } else {
+            // initiator
+            connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
+        }
+    }
+    sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
+    sm_timeout_reset(connection);
+}
+
+static void sm_run_state_sc_send_dhkey_check_command(sm_connection_t *connection) {
+    uint8_t buffer[17];
+    buffer[0] = SM_CODE_PAIRING_DHKEY_CHECK;
+    reverse_128(setup->sm_local_dhkey_check, &buffer[1]);
+
+    if (IS_RESPONDER(connection->sm_role)){
+        connection->sm_engine_state = SM_SC_W4_LTK_REQUEST_SC;
+    } else {
+        connection->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND;
+    }
+
+    sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
+    sm_timeout_reset(connection);
+}
+
+static void sm_run_state_sc_send_public_key_command(sm_connection_t *connection) {
+    bool trigger_user_response   = false;
+    bool trigger_start_calculating_local_confirm = false;
+    uint8_t buffer[65];
+    buffer[0] = SM_CODE_PAIRING_PUBLIC_KEY;
+    //
+    reverse_256(&ec_q[0],  &buffer[1]);
+    reverse_256(&ec_q[32], &buffer[33]);
+
+#ifdef ENABLE_TESTING_SUPPORT
+    if (test_pairing_failure == SM_REASON_DHKEY_CHECK_FAILED){
+            log_info("testing_support: invalidating public key");
+            // flip single bit of public key coordinate
+            buffer[1] ^= 1;
+        }
+#endif
+
+    // stk generation method
+// passkey entry: notify app to show passkey or to request passkey
+    switch (setup->sm_stk_generation_method){
+        case JUST_WORKS:
+        case NUMERIC_COMPARISON:
+            if (IS_RESPONDER(connection->sm_role)){
+                // responder
+                trigger_start_calculating_local_confirm = true;
+                connection->sm_engine_state = SM_SC_W4_LOCAL_NONCE;
+            } else {
+                // initiator
+                connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
+            }
+            break;
+        case PK_INIT_INPUT:
+        case PK_RESP_INPUT:
+        case PK_BOTH_INPUT:
+            // use random TK for display
+            (void)memcpy(setup->sm_ra, setup->sm_tk, 16);
+            (void)memcpy(setup->sm_rb, setup->sm_tk, 16);
+            setup->sm_passkey_bit = 0;
+
+            if (IS_RESPONDER(connection->sm_role)){
+                // responder
+                connection->sm_engine_state = SM_SC_W4_CONFIRMATION;
+            } else {
+                // initiator
+                connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
+            }
+            trigger_user_response = true;
+            break;
+        case OOB:
+            if (IS_RESPONDER(connection->sm_role)){
+                // responder
+                connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
+            } else {
+                // initiator
+                connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
+            }
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
+
+    sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
+    sm_timeout_reset(connection);
+
+    // trigger user response and calc confirm after sending pdu
+    if (trigger_user_response){
+        sm_trigger_user_response(connection);
+    }
+    if (trigger_start_calculating_local_confirm){
+        sm_sc_start_calculating_local_confirm(connection);
+    }
+}
+#endif
+
+
 static void sm_run(void){
 
     // assert that stack has already bootet
@@ -2722,144 +2861,18 @@ static void sm_run(void){
 #endif
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-
-            case SM_SC_SEND_PUBLIC_KEY_COMMAND: {
-                bool trigger_user_response   = false;
-                bool trigger_start_calculating_local_confirm = false;
-                uint8_t buffer[65];
-                buffer[0] = SM_CODE_PAIRING_PUBLIC_KEY;
-                //
-                reverse_256(&ec_q[0],  &buffer[1]);
-                reverse_256(&ec_q[32], &buffer[33]);
-
-#ifdef ENABLE_TESTING_SUPPORT
-                if (test_pairing_failure == SM_REASON_DHKEY_CHECK_FAILED){
-                    log_info("testing_support: invalidating public key");
-                    // flip single bit of public key coordinate
-                    buffer[1] ^= 1;
-                }
-#endif
-
-                // stk generation method
-                // passkey entry: notify app to show passkey or to request passkey
-                switch (setup->sm_stk_generation_method){
-                    case JUST_WORKS:
-                    case NUMERIC_COMPARISON:
-                        if (IS_RESPONDER(connection->sm_role)){
-                            // responder
-                            trigger_start_calculating_local_confirm = true;
-                            connection->sm_engine_state = SM_SC_W4_LOCAL_NONCE;
-                        } else {
-                            // initiator
-                            connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
-                        }
-                        break;
-                    case PK_INIT_INPUT:
-                    case PK_RESP_INPUT:
-                    case PK_BOTH_INPUT:
-                        // use random TK for display
-                        (void)memcpy(setup->sm_ra, setup->sm_tk, 16);
-                        (void)memcpy(setup->sm_rb, setup->sm_tk, 16);
-                        setup->sm_passkey_bit = 0;
-
-                        if (IS_RESPONDER(connection->sm_role)){
-                            // responder
-                            connection->sm_engine_state = SM_SC_W4_CONFIRMATION;
-                        } else {
-                            // initiator
-                            connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
-                        }
-                        trigger_user_response = true;
-                        break;
-                    case OOB:
-                        if (IS_RESPONDER(connection->sm_role)){
-                            // responder
-                            connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
-                        } else {
-                            // initiator
-                            connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
-                        }
-                        break;
-                    default:
-                        btstack_assert(false);
-                        break;
-                }
-
-                sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
-                sm_timeout_reset(connection);
-
-                // trigger user response and calc confirm after sending pdu
-                if (trigger_user_response){
-                    sm_trigger_user_response(connection);
-                }
-                if (trigger_start_calculating_local_confirm){
-                    sm_sc_start_calculating_local_confirm(connection);
-                }
+            case SM_SC_SEND_PUBLIC_KEY_COMMAND:
+                sm_run_state_sc_send_public_key_command(connection);
                 break;
-            }
-            case SM_SC_SEND_CONFIRMATION: {
-                uint8_t buffer[17];
-                buffer[0] = SM_CODE_PAIRING_CONFIRM;
-                reverse_128(setup->sm_local_confirm, &buffer[1]);
-                if (IS_RESPONDER(connection->sm_role)){
-                    connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
-                } else {
-                    connection->sm_engine_state = SM_SC_W4_CONFIRMATION;
-                }
-                sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
-                sm_timeout_reset(connection);
+            case SM_SC_SEND_CONFIRMATION:
+                sm_run_state_sc_send_confirmation(connection);
                 break;
-            }
-            case SM_SC_SEND_PAIRING_RANDOM: {
-                uint8_t buffer[17];
-                buffer[0] = SM_CODE_PAIRING_RANDOM;
-                reverse_128(setup->sm_local_nonce, &buffer[1]);
-                log_info("stk method %u, bit num: %u", setup->sm_stk_generation_method, setup->sm_passkey_bit);
-                if (sm_passkey_entry(setup->sm_stk_generation_method) && (setup->sm_passkey_bit < 20u)){
-                    log_info("SM_SC_SEND_PAIRING_RANDOM A");
-                    if (IS_RESPONDER(connection->sm_role)){
-                        // responder
-                        connection->sm_engine_state = SM_SC_W4_CONFIRMATION;
-                    } else {
-                        // initiator
-                        connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
-                    }
-                } else {
-                    log_info("SM_SC_SEND_PAIRING_RANDOM B");
-                    if (IS_RESPONDER(connection->sm_role)){
-                        // responder
-                        if (setup->sm_stk_generation_method == NUMERIC_COMPARISON){
-                            log_info("SM_SC_SEND_PAIRING_RANDOM B1");
-                            connection->sm_engine_state = SM_SC_W2_CALCULATE_G2;
-                        } else {
-                            log_info("SM_SC_SEND_PAIRING_RANDOM B2");
-                            sm_sc_prepare_dhkey_check(connection);
-                        }
-                    } else {
-                        // initiator
-                        connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
-                    }
-                }
-                sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
-                sm_timeout_reset(connection);
+            case SM_SC_SEND_PAIRING_RANDOM:
+                sm_run_state_sc_send_pairing_random(connection);
                 break;
-            }
-            case SM_SC_SEND_DHKEY_CHECK_COMMAND: {
-                uint8_t buffer[17];
-                buffer[0] = SM_CODE_PAIRING_DHKEY_CHECK;
-                reverse_128(setup->sm_local_dhkey_check, &buffer[1]);
-
-                if (IS_RESPONDER(connection->sm_role)){
-                    connection->sm_engine_state = SM_SC_W4_LTK_REQUEST_SC;
-                } else {
-                    connection->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND;
-                }
-
-                sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
-                sm_timeout_reset(connection);
+            case SM_SC_SEND_DHKEY_CHECK_COMMAND:
+                sm_run_state_sc_send_dhkey_check_command(connection);
                 break;
-            }
-
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
