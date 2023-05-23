@@ -975,7 +975,15 @@ static int is_value_valid(gatt_client_t *gatt_client, uint8_t *packet, uint16_t 
     return memcmp(&gatt_client->attribute_value[gatt_client->attribute_offset], &packet[5], size - 5u) == 0u;
 }
 
-// returns 1 if packet was sent
+static void gatt_client_run_for_client_start_signed_write(gatt_client_t *gatt_client) {
+    sm_key_t csrk;
+    le_device_db_local_csrk_get(gatt_client->le_device_index, csrk);
+    uint32_t sign_counter = le_device_db_local_counter_get(gatt_client->le_device_index);
+    gatt_client->gatt_client_state = P_W4_CMAC_RESULT;
+    sm_cmac_signed_write_start(csrk, ATT_SIGNED_WRITE_COMMAND, gatt_client->attribute_handle, gatt_client->attribute_length, gatt_client->attribute_value, sign_counter, att_signed_write_handle_cmac_result);
+}
+
+// returns true if packet was sent
 static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
 
     // wait until re-encryption is complete
@@ -1185,24 +1193,22 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
                 case IRK_LOOKUP_SUCCEEDED:
                     gatt_client->le_device_index = sm_le_device_index(gatt_client->con_handle);
                     gatt_client->gatt_client_state = P_W4_CMAC_READY;
+                    if (sm_cmac_ready()){
+                        gatt_client_run_for_client_start_signed_write(gatt_client);
+                    }
                     break;
                 case IRK_LOOKUP_FAILED:
                     gatt_client_handle_transaction_complete(gatt_client);
                     emit_gatt_complete_event(gatt_client, ATT_ERROR_BONDING_INFORMATION_MISSING);
-                    return false;
+                    break;
                 default:
-                    return false;
+                    break;
             }
-
-            /* Fall through */
+            return false;
 
         case P_W4_CMAC_READY:
             if (sm_cmac_ready()){
-                sm_key_t csrk;
-                le_device_db_local_csrk_get(gatt_client->le_device_index, csrk);
-                uint32_t sign_counter = le_device_db_local_counter_get(gatt_client->le_device_index);
-                gatt_client->gatt_client_state = P_W4_CMAC_RESULT;
-                sm_cmac_signed_write_start(csrk, ATT_SIGNED_WRITE_COMMAND, gatt_client->attribute_handle, gatt_client->attribute_length, gatt_client->attribute_value, sign_counter, att_signed_write_handle_cmac_result);
+                gatt_client_run_for_client_start_signed_write(gatt_client);
             }
             return false;
 
