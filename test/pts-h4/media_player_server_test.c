@@ -343,36 +343,48 @@ static mcs_track_t * mcs_goto_previous_track(uint16_t media_player_id){
     return current_track;
 }
 
-static mcs_track_t * mcs_goto_track(uint16_t media_player_id, int32_t track_index){
+static bool mcs_goto_track(uint16_t media_player_id, int32_t track_index){
     mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
     if (media_player == NULL){
-        return NULL;
+        return false;
     }
     mcs_track_group_t * current_track_group = mcs_get_current_group_for_media_player(media_player);
     if (current_track_group == NULL){
-        return NULL;
+        return false;
     }
 
+    
     if (current_track_group->tracks_num == 0){
-        return NULL;
+        return false;
     }
+    
     mcs_seeking_speed_timer_stop(media_player_id);
     uint32_t previous_track_index = media_player->current_track_index;
-    if (track_index > 0){
-        if (track_index < current_track_group->tracks_num){
-            media_player->current_track_index = track_index;
-        }
-    } else {
-        uint32_t abs_track_index = -track_index + 1;
-        if (abs_track_index <= current_track_group->tracks_num){
-            media_player->current_track_index = current_track_group->tracks_num - abs_track_index;
+        
+    if (track_index != 0){
+        if (track_index > 0){
+            track_index--;
+        } else {
+            track_index++;
+        } 
+
+        if (track_index > 0){
+            if (track_index < current_track_group->tracks_num){
+                media_player->current_track_index = track_index;
+
+            }
+        } else {
+            uint32_t abs_track_index = -track_index;
+            if (abs_track_index <= current_track_group->tracks_num){
+                media_player->current_track_index = current_track_group->tracks_num - abs_track_index;
+            }
         }
     }
     printf(" * mcs_goto_track[%d/%d]: previous %d, current %d\n", track_index,  current_track_group->tracks_num, previous_track_index, media_player->current_track_index);
-
-    mcs_track_t * current_track = mcs_set_current_track_for_media_player(media_player, media_player->current_track_index);
+    mcs_set_current_track_for_media_player(media_player, media_player->current_track_index);
     mcs_seeking_speed_timer_start(media_player_id);
-    return current_track;
+
+    return previous_track_index != media_player->current_track_index ;
 }
 
 static uint32_t mcs_get_current_track_position_10ms(uint16_t media_player_id){
@@ -392,6 +404,155 @@ static void mcs_reset_current_track(uint16_t media_player_id){
     // reset current track
     current_track->track_position_10ms = 0;
 }
+
+static bool mcs_goto_group(uint16_t media_player_id, int32_t group_index){
+    mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return NULL;
+    }
+    if (media_player->track_groups_num == 0){
+        return NULL;
+    }
+
+    int32_t previous_group_index = media_player->current_group_index;
+    if (group_index != 0){
+
+        if (group_index > 0 ){
+            group_index--;
+        } else {
+            group_index++;
+        }
+
+        if (media_player->current_group_index != group_index){
+            mcs_seeking_speed_timer_stop(media_player_id);
+            if (group_index >= 0 ){
+                if (group_index < media_player->track_groups_num){
+                    mcs_reset_current_track(media_player_id);
+                    media_player->current_group_index = group_index;
+                    media_player->current_track_index = 0;
+                    mcs_reset_current_track(media_player_id);
+                }
+            } else {
+                int32_t abs_group_index = -group_index + 1;
+                if (abs_group_index <= media_player->track_groups_num){
+                    mcs_reset_current_track(media_player_id);
+                    media_player->current_group_index = media_player->track_groups_num - abs_group_index;
+                    media_player->current_track_index = 0;
+                    mcs_reset_current_track(media_player_id);
+                }
+            }
+            mcs_seeking_speed_timer_start(media_player_id);
+        }
+    }
+
+    printf(" * mcs_goto_group: previous %d, current %d\n", previous_group_index, media_player->current_group_index);
+    return  previous_group_index != media_player->current_group_index;
+}
+
+static mcs_track_group_t * mcs_goto_previous_group(uint16_t media_player_id){
+    mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return NULL;
+    }
+    if (media_player->track_groups_num == 0){
+        return NULL;
+    }
+
+    int32_t previous_group_index = media_player->current_group_index;
+
+    if (media_player->current_group_index > 0){
+        mcs_seeking_speed_timer_stop(media_player_id);
+        
+        mcs_reset_current_track(media_player_id);
+        media_player->current_group_index--;
+        media_player->current_track_index = 0;
+        mcs_reset_current_track(media_player_id);
+
+        mcs_seeking_speed_timer_start(media_player_id);
+    }
+    
+    printf(" * mcs_goto_previous_group: previous %d, current %d\n", previous_group_index, media_player->current_group_index);
+    return mcs_get_current_group_for_media_player(media_player);
+}
+
+static mcs_track_group_t * mcs_goto_first_group(uint16_t media_player_id){
+    mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return NULL;
+    }
+    if (media_player->track_groups_num == 0){
+        return NULL;
+    }
+
+    int32_t previous_group_index = media_player->current_group_index;
+
+    if (media_player->current_group_index > 0){
+        mcs_seeking_speed_timer_stop(media_player_id);
+        
+        mcs_reset_current_track(media_player_id);
+        media_player->current_group_index = 0;
+        media_player->current_track_index = 0;
+        mcs_reset_current_track(media_player_id);
+
+        mcs_seeking_speed_timer_start(media_player_id);
+    }
+    
+    printf(" * mcs_goto_previous_group: previous %d, current %d\n", previous_group_index, media_player->current_group_index);
+    return mcs_get_current_group_for_media_player(media_player);
+}
+
+static mcs_track_group_t * mcs_goto_next_group(uint16_t media_player_id){
+    mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return NULL;
+    }
+    if (media_player->track_groups_num == 0){
+        return NULL;
+    }
+
+    int32_t previous_group_index = media_player->current_group_index;
+
+    if (media_player->current_group_index < (media_player->track_groups_num - 1)){
+        mcs_seeking_speed_timer_stop(media_player_id);
+        
+        mcs_reset_current_track(media_player_id);
+        media_player->current_group_index++;
+        media_player->current_track_index = 0;
+        mcs_reset_current_track(media_player_id);
+
+        mcs_seeking_speed_timer_start(media_player_id);
+    }
+    
+    printf(" * mcs_goto_next_group: previous %d, current %d\n", previous_group_index, media_player->current_group_index);
+    return mcs_get_current_group_for_media_player(media_player);
+}
+
+static mcs_track_group_t * mcs_goto_last_group(uint16_t media_player_id){
+    mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return NULL;
+    }
+    if (media_player->track_groups_num == 0){
+        return NULL;
+    }
+
+    int32_t previous_group_index = media_player->current_group_index;
+
+    if (media_player->current_group_index < (media_player->track_groups_num - 1)){
+        mcs_seeking_speed_timer_stop(media_player_id);
+        
+        mcs_reset_current_track(media_player_id);
+        media_player->current_group_index = media_player->track_groups_num - 1;
+        media_player->current_track_index = 0;
+        mcs_reset_current_track(media_player_id);
+
+        mcs_seeking_speed_timer_start(media_player_id);
+    }
+    
+    printf(" * mcs_goto_last_group: previous %d, current %d\n", previous_group_index, media_player->current_group_index);
+    return mcs_get_current_group_for_media_player(media_player);
+}
+
 
 static void mcs_current_track_apply_relative_offset(uint16_t media_player_id, int32_t offset_10ms){
     mcs_track_t * track = mcs_get_current_track_for_media_player_id(media_player_id);
@@ -770,10 +931,12 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             int32_t relative_offset_10ms;
             int32_t segment;
             int32_t track_index;
+            int32_t group_index;
 
             mcs_track_t * track;
+            mcs_track_group_t * group;
             // bool set_track_position = media_player->media_state != MCS_MEDIA_STATE_PLAYING;
-
+            bool track_changed;
             switch (opcode){
                 case MEDIA_CONTROL_POINT_OPCODE_PLAY:
                     switch (media_player->media_state){
@@ -804,6 +967,13 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                                  mcs_seeking_speed_timer_stop(media_player_id);
                                  media_player->media_state = MCS_MEDIA_STATE_PAUSED;
                             }
+                            
+                            track = mcs_get_current_track_for_media_player(media_player);
+                            if (track == NULL){
+                                return;
+                            }
+                            media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
+                            media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
                             return;
                         default:
                             break;
@@ -962,15 +1132,18 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                             //      media_player->media_state = MCS_MEDIA_STATE_PAUSED;
                             // }
                             
-                            mcs_goto_track(media_player_id, track_index);
+                            track_changed = mcs_goto_track(media_player_id, track_index);
                             track = mcs_get_current_track_for_media_player(media_player);
                             if (track == NULL){
                                 return;
                             }
-                            media_control_service_server_set_media_track_changed(media_player_id);
-                            media_control_service_server_set_track_title(media_player_id,    track->title);
-                            media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-
+                            
+                            if (track_changed){
+                                media_control_service_server_set_media_track_changed(media_player_id);
+                                media_control_service_server_set_track_title(media_player_id,    track->title);
+                                media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
+                            }
+                            
                             if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
                                 media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
                             }
@@ -1216,6 +1389,74 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                             break;
                     }
                     break;
+
+                    case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
+                    case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
+                    case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
+                    case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
+                    case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
+                        switch (media_player->media_state){
+                            case MCS_MEDIA_STATE_INACTIVE:
+                                media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
+                                break;
+
+                            case MCS_MEDIA_STATE_SEEKING:
+                                status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
+                                if (status == ERROR_CODE_SUCCESS){
+                                     mcs_seeking_speed_timer_stop(media_player_id);
+                                     media_player->media_state = MCS_MEDIA_STATE_PAUSED;
+                                }
+                                // fall through
+                            case MCS_MEDIA_STATE_PLAYING:
+                            case MCS_MEDIA_STATE_PAUSED:
+                                media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                                track_changed = true;
+
+                                switch (opcode){
+                                    case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
+                                        mcs_goto_previous_group(media_player_id);
+                                        break;
+                                    case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
+                                        mcs_goto_next_group(media_player_id);
+                                        break;
+                                    case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
+                                        mcs_goto_first_group(media_player_id);
+                                        break;
+                                    case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
+                                        mcs_goto_last_group(media_player_id);
+                                        break;
+                                    case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
+                                        group_index = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
+                                        track_changed = mcs_goto_group(media_player_id, group_index);
+                                        break;
+                                    default: 
+                                        break;
+
+                                }                                
+                                
+                                group = mcs_get_current_group_for_media_player(media_player);
+                                if (group == NULL) return;
+                                track = mcs_get_current_track_for_media_player_id(media_player_id);
+                                if (track == NULL) return;
+
+                                if (track_changed){
+                                    media_control_service_server_set_media_track_changed(media_player_id);
+                                    media_control_service_server_set_track_title(media_player_id,    track->title);
+                                    media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
+                                }
+
+                                if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
+                                    media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
+                                }
+                                return;
+                            
+                            default:
+                                break;
+                        }
+                        break;
+
+
+
                 default:
                     break;
             }
@@ -1337,7 +1578,17 @@ static void stdin_process(char cmd){
             }
             mcs_goto_last_track(current_media_player_id);
             break;
-            
+        
+        case '6':
+            printf(" - Goto the second group\n");
+
+            status = media_control_service_server_set_media_state(current_media_player_id, MCS_MEDIA_STATE_PLAYING);
+            if (status == ERROR_CODE_SUCCESS){
+                media_player->media_state = MCS_MEDIA_STATE_PLAYING;
+            }
+            mcs_goto_group(current_media_player_id, 2);
+            break;
+
         case 'j':
             status = media_control_service_server_set_media_player_name(current_media_player_id, long_string1);
             break;
