@@ -823,6 +823,7 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     playing_order_t playing_order;
 
     printf(" * mcs_server_write_callback, characteristic_id %s\n", mcs_server_characteristic2str(characteristic_id));
+    int32_t value;
 
     switch (characteristic_id){
 		case MEDIA_PLAYER_NAME: 
@@ -834,8 +835,12 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             if (buffer_size != 4){
                 break;
             }
-            media_player->data.track_position_10ms = (int32_t) little_endian_read_32(buffer, 0);
-            mcs_server_emit_media_value_changed(media_player, characteristic_id);
+            value = (int32_t) little_endian_read_32(buffer, 0);
+            if (value <= media_player->data.track_duration_10ms){
+                media_player->data.track_position_10ms = (int32_t) little_endian_read_32(buffer, 0);
+                mcs_server_emit_media_value_changed(media_player, characteristic_id);
+            }
+            
             break;
         
         case PLAYBACK_SPEED:
