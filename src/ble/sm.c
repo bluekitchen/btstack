@@ -2702,6 +2702,21 @@ static void sm_run_state_sc_send_public_key_command(sm_connection_t *connection)
 }
 #endif
 
+static bool sm_run_non_connection_logic(void){
+    bool done;;
+
+    done = sm_run_dpkg();
+    if (done) return true;
+
+    done = sm_run_rau();
+    if (done) return true;
+
+    done = sm_run_csrk();
+    if (done) return true;
+
+    done = sm_run_oob();
+    return done;
+}
 
 static void sm_run(void){
 
@@ -2714,22 +2729,8 @@ static void sm_run(void){
     // pause until IR/ER are ready
     if (sm_persistent_keys_random_active) return;
 
-    bool done;
-
-    //
     // non-connection related behaviour
-    //
-
-    done = sm_run_dpkg();
-    if (done) return;
-
-    done = sm_run_rau();
-    if (done) return;
-
-    done = sm_run_csrk();
-    if (done) return;
-
-    done = sm_run_oob();
+    bool done = sm_run_non_connection_logic();
     if (done) return;
 
     // assert that we can send at least commands - cmd might have been sent by crypto engine
