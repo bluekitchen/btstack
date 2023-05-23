@@ -730,6 +730,7 @@ static void hfp_handle_slc_setup_error(hfp_connection_t * hfp_connection, uint8_
     // cache fields for event
     hfp_role_t local_role = hfp_connection->local_role;
     bd_addr_t remote_addr;
+    // cppcheck-suppress uninitvar ; remote_addr is reported as uninitialized although it's the destination of the memcpy
     (void)memcpy(remote_addr, hfp_connection->remote_addr, 6);
     // finalize connection struct
     hfp_finalize_connection_context(hfp_connection);

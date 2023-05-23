@@ -604,6 +604,7 @@ static void sm_reencryption_started(sm_connection_t * sm_conn){
     } else {
         // for legacy pairing with LTK re-construction, use current peer addr
         identity_addr_type = sm_conn->sm_peer_addr_type;
+        // cppcheck-suppress uninitvar ; identity_addr is reported as uninitialized although it's the destination of the memcpy
         memcpy(identity_addr, sm_conn->sm_peer_address, 6);
     }
 
@@ -624,6 +625,7 @@ static void sm_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
     } else {
         // for legacy pairing with LTK re-construction, use current peer addr
         identity_addr_type = sm_conn->sm_peer_addr_type;
+        // cppcheck-suppress uninitvar ; identity_addr is reported as uninitialized although it's the destination of the memcpy
         memcpy(identity_addr, sm_conn->sm_peer_address, 6);
     }
 
@@ -779,6 +781,7 @@ static void sm_c1_t3(sm_key_t t2, bd_addr_t ia, bd_addr_t ra, uint8_t * t3){
     // 0xB1B2B3B4B5B6 then p2 is 0x00000000A1A2A3A4A5A6B1B2B3B4B5B6.
 
     sm_key_t p2;
+    // cppcheck-suppress uninitvar ; p2 is reported as uninitialized
     memset(p2, 0, 16);
     (void)memcpy(&p2[4], ia, 6);
     (void)memcpy(&p2[10], ra, 6);

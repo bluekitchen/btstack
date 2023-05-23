@@ -2720,6 +2720,7 @@ static gatt_client_t * gatt_client_get_context_for_l2cap_cid(uint16_t l2cap_cid)
 
 static void gatt_client_classic_handle_connected(gatt_client_t * gatt_client, uint8_t status){
     bd_addr_t addr;
+    // cppcheck-suppress uninitvar ; addr is reported as uninitialized although it's the destination of the memcpy
     memcpy(addr, gatt_client->addr, 6);
     hci_con_handle_t con_handle = gatt_client->con_handle;
     btstack_packet_handler_t callback = gatt_client->callback;
