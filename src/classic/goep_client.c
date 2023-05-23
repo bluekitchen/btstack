@@ -253,7 +253,7 @@ static void goep_client_handle_sdp_query_end_of_record(goep_client_t * goep_clie
 }
 static uint8_t goep_client_start_connect(goep_client_t * goep_client){
 #ifdef ENABLE_GOEP_L2CAP
-    if (goep_client->l2cap_psm){
+    if (goep_client->l2cap_psm && (goep_client->ertm_buffer != NULL)){
         log_info("Remote GOEP L2CAP PSM: %u", goep_client->l2cap_psm);
         return l2cap_ertm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->l2cap_psm,
         &goep_client->ertm_config, goep_client->ertm_buffer,
@@ -468,6 +468,8 @@ uint8_t
 goep_client_connect(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_config, uint8_t *l2cap_ertm_buffer,
                     uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid,
                     uint8_t instance_id, uint16_t *out_cid) {
+    btstack_assert(goep_client != NULL);
+
     // get new goep cid, skip 0x0000
     goep_client_cid++;
     if (goep_client_cid == 0) {
@@ -487,7 +489,9 @@ goep_client_connect(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_
     goep_client->sdp_query_request.context = (void *)(uintptr_t) goep_client->cid;
     goep_client->obex_connection_id = OBEX_CONNECTION_ID_INVALID;
 #ifdef ENABLE_GOEP_L2CAP
-    memcpy(&goep_client->ertm_config, l2cap_ertm_config, sizeof(l2cap_ertm_config_t));
+    if (l2cap_ertm_config != NULL){
+        memcpy(&goep_client->ertm_config, l2cap_ertm_config, sizeof(l2cap_ertm_config_t));
+    }
     goep_client->ertm_buffer_size = l2cap_ertm_buffer_size;
     goep_client->ertm_buffer = l2cap_ertm_buffer;
 #endif
@@ -504,6 +508,10 @@ goep_client_connect(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_
 uint8_t goep_client_connect_l2cap(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_config, uint8_t *l2cap_ertm_buffer,
                           uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t l2cap_psm,
                           uint16_t *out_cid){
+    btstack_assert(goep_client != NULL);
+    btstack_assert(l2cap_ertm_config != NULL);
+    btstack_assert(l2cap_ertm_buffer != NULL);
+
     // get new goep cid, skip 0x0000
     goep_client_cid++;
     if (goep_client_cid == 0) {
