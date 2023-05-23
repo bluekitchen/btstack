@@ -975,6 +975,7 @@ static int is_value_valid(gatt_client_t *gatt_client, uint8_t *packet, uint16_t 
     return memcmp(&gatt_client->attribute_value[gatt_client->attribute_offset], &packet[5], size - 5u) == 0u;
 }
 
+#ifdef ENABLE_LE_SIGNED_WRITE
 static void gatt_client_run_for_client_start_signed_write(gatt_client_t *gatt_client) {
     sm_key_t csrk;
     le_device_db_local_csrk_get(gatt_client->le_device_index, csrk);
@@ -982,6 +983,7 @@ static void gatt_client_run_for_client_start_signed_write(gatt_client_t *gatt_cl
     gatt_client->gatt_client_state = P_W4_CMAC_RESULT;
     sm_cmac_signed_write_start(csrk, ATT_SIGNED_WRITE_COMMAND, gatt_client->attribute_handle, gatt_client->attribute_length, gatt_client->attribute_value, sign_counter, att_signed_write_handle_cmac_result);
 }
+#endif
 
 // returns true if packet was sent
 static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
@@ -1052,96 +1054,98 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
             break;
     }
 
+    bool packet_sent = true;
+    bool done = true;
     switch (gatt_client->gatt_client_state){
         case P_W2_SEND_SERVICE_QUERY:
             gatt_client->gatt_client_state = P_W4_SERVICE_QUERY_RESULT;
             send_gatt_services_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_SEND_SERVICE_WITH_UUID_QUERY:
             gatt_client->gatt_client_state = P_W4_SERVICE_WITH_UUID_RESULT;
             send_gatt_services_by_uuid_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_SEND_ALL_CHARACTERISTICS_OF_SERVICE_QUERY:
             gatt_client->gatt_client_state = P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT;
             send_gatt_characteristic_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_SEND_CHARACTERISTIC_WITH_UUID_QUERY:
             gatt_client->gatt_client_state = P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT;
             send_gatt_characteristic_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_SEND_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY:
             gatt_client->gatt_client_state = P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT;
             send_gatt_characteristic_descriptor_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_SEND_INCLUDED_SERVICE_QUERY:
             gatt_client->gatt_client_state = P_W4_INCLUDED_SERVICE_QUERY_RESULT;
             send_gatt_included_service_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_SEND_INCLUDED_SERVICE_WITH_UUID_QUERY:
             gatt_client->gatt_client_state = P_W4_INCLUDED_SERVICE_UUID_WITH_QUERY_RESULT;
             send_gatt_included_service_uuid_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY:
             gatt_client->gatt_client_state = P_W4_READ_CHARACTERISTIC_VALUE_RESULT;
             send_gatt_read_characteristic_value_request(gatt_client);
-            return true;
+            break;
             
         case P_W2_SEND_READ_BLOB_QUERY:
             gatt_client->gatt_client_state = P_W4_READ_BLOB_RESULT;
             send_gatt_read_blob_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_SEND_READ_BY_TYPE_REQUEST:
             gatt_client->gatt_client_state = P_W4_READ_BY_TYPE_RESPONSE;
             send_gatt_read_by_type_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_SEND_READ_MULTIPLE_REQUEST:
             gatt_client->gatt_client_state = P_W4_READ_MULTIPLE_RESPONSE;
             send_gatt_read_multiple_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
             gatt_client->gatt_client_state = P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
             send_gatt_write_attribute_value_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_PREPARE_WRITE:
             gatt_client->gatt_client_state = P_W4_PREPARE_WRITE_RESULT;
             send_gatt_prepare_write_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_PREPARE_WRITE_SINGLE:
             gatt_client->gatt_client_state = P_W4_PREPARE_WRITE_SINGLE_RESULT;
             send_gatt_prepare_write_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_PREPARE_RELIABLE_WRITE:
             gatt_client->gatt_client_state = P_W4_PREPARE_RELIABLE_WRITE_RESULT;
             send_gatt_prepare_write_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_EXECUTE_PREPARED_WRITE:
             gatt_client->gatt_client_state = P_W4_EXECUTE_PREPARED_WRITE_RESULT;
             send_gatt_execute_write_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_CANCEL_PREPARED_WRITE:
             gatt_client->gatt_client_state = P_W4_CANCEL_PREPARED_WRITE_RESULT;
             send_gatt_cancel_prepared_write_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_CANCEL_PREPARED_WRITE_DATA_MISMATCH:
             gatt_client->gatt_client_state = P_W4_CANCEL_PREPARED_WRITE_DATA_MISMATCH_RESULT;
             send_gatt_cancel_prepared_write_request(gatt_client);
-            return true;
+            break;
 
 #ifdef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
         case P_W2_SEND_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY:    
@@ -1154,37 +1158,37 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
             gatt_client->gatt_client_state = P_W4_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT;
             send_gatt_read_client_characteristic_configuration_request(gatt_client);
 #endif
-            return true;
+            break;
 
         case P_W2_SEND_READ_CHARACTERISTIC_DESCRIPTOR_QUERY:
             gatt_client->gatt_client_state = P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT;
             send_gatt_read_characteristic_descriptor_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY:
             gatt_client->gatt_client_state = P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT;
             send_gatt_read_blob_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR:
             gatt_client->gatt_client_state = P_W4_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT;
             send_gatt_write_attribute_value_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
             gatt_client->gatt_client_state = P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT;
             send_gatt_write_client_characteristic_configuration_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR:
             gatt_client->gatt_client_state = P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT;
             send_gatt_prepare_write_request(gatt_client);
-            return true;
+            break;
 
         case P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR:
             gatt_client->gatt_client_state = P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT;
             send_gatt_execute_write_request(gatt_client);
-            return true;
+            break;
 
 #ifdef ENABLE_LE_SIGNED_WRITE
         case P_W4_IDENTITY_RESOLVING:
@@ -1204,13 +1208,15 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
                 default:
                     break;
             }
-            return false;
+            packet_sent = false;
+            break;
 
         case P_W4_CMAC_READY:
             if (sm_cmac_ready()){
                 gatt_client_run_for_client_start_signed_write(gatt_client);
             }
-            return false;
+            packet_sent = false;
+            break;
 
         case P_W2_SEND_SIGNED_WRITE: {
             gatt_client->gatt_client_state = P_W4_SEND_SINGED_WRITE_DONE;
@@ -1226,7 +1232,12 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
         }
 #endif
         default:
+            packet_sent = false;
             break;
+    }
+
+    if (done){
+        return packet_sent;
     }
 
     // write without response callback
