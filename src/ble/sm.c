@@ -4174,7 +4174,7 @@ static void sm_initiator_connected_handle_security_request(sm_connection_t * sm_
 }
 #endif
 
-static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
+static uint8_t sm_pdu_validate_and_get_opcode(uint8_t packet_type, const uint8_t *packet, uint16_t size){
 
     // size of complete sm_pdu used to validate input
     static const uint8_t sm_pdu_size[] = {
@@ -4195,18 +4195,26 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             2,  // 0x0e keypress notification
     };
 
-    if ((packet_type == HCI_EVENT_PACKET) && (packet[0] == L2CAP_EVENT_CAN_SEND_NOW)){
-        sm_run();
-    }
-
-    if (packet_type != SM_DATA_PACKET) return;
-    if (size == 0u) return;
+    if (packet_type != SM_DATA_PACKET) return 0;
+    if (size == 0u) return 0;
 
     uint8_t sm_pdu_code = packet[0];
 
     // validate pdu size
-    if (sm_pdu_code >= sizeof(sm_pdu_size)) return;
-    if (sm_pdu_size[sm_pdu_code] != size)   return;
+    if (sm_pdu_code >= sizeof(sm_pdu_size)) return 0;
+    if (sm_pdu_size[sm_pdu_code] != size)   return 0;
+
+    return sm_pdu_code;
+}
+
+static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
+
+    if ((packet_type == HCI_EVENT_PACKET) && (packet[0] == L2CAP_EVENT_CAN_SEND_NOW)){
+        sm_run();
+    }
+
+    uint8_t sm_pdu_code = sm_pdu_validate_and_get_opcode(packet_type, packet, size);
+    if (sm_pdu_code == 0) return;
 
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;
