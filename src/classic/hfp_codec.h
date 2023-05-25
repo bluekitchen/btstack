@@ -95,7 +95,7 @@ struct hfp_codec {
     hfp_h2_framing_t h2_framing;
     void (*encode)(struct hfp_codec * hfp_codec, int16_t * pcm_samples);
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-    btstack_sbc_encoder_state_t msbc_state;
+    btstack_sbc_encoder_state_t * msbc_encoder_context;
 #endif
 #ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
     const btstack_lc3_encoder_t * lc3_encoder;
@@ -110,9 +110,10 @@ typedef struct hfp_codec hfp_codec_t;
 /**
  * @brief Initialize HFP Audio Codec for mSBC
  * @param hfp_codec
+ * @param msbc_encoder_context for msbc encoder
  * @return status
  */
-void hfp_codec_init_msbc(hfp_codec_t * hfp_codec);
+void hfp_codec_init_msbc(hfp_codec_t * hfp_codec, btstack_sbc_encoder_state_t * msbc_encoder_context);
 
 /**
  * @brief Initialize HFP Audio Codec for LC3-SWB

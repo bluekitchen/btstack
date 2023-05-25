@@ -86,12 +86,13 @@ void hfp_h2_framing_add_header(hfp_h2_framing_t * hfp_h2_framing, uint8_t * buff
     hfp_h2_framing->sequence_number = (hfp_h2_framing->sequence_number + 1) & 3;
 }
 
-void hfp_codec_init_msbc(hfp_codec_t * hfp_codec){
+void hfp_codec_init_msbc(hfp_codec_t * hfp_codec, btstack_sbc_encoder_state_t * msbc_encoder_context){
     memset(hfp_codec, 0, sizeof(hfp_codec_t));
     hfp_h2_framing_init(&hfp_codec->h2_framing);
     hfp_codec->samples_per_frame = 120;
     hfp_codec->encode = &hfp_codec_encode_msbc;
-    btstack_sbc_encoder_init(&hfp_codec->msbc_state, SBC_MODE_mSBC, 16, 8, SBC_ALLOCATION_METHOD_LOUDNESS, 16000, 26, SBC_CHANNEL_MODE_MONO);
+    hfp_codec->msbc_encoder_context = msbc_encoder_context;
+    btstack_sbc_encoder_init(hfp_codec->msbc_encoder_context, SBC_MODE_mSBC, 16, 8, SBC_ALLOCATION_METHOD_LOUDNESS, 16000, 26, SBC_CHANNEL_MODE_MONO);
 }
 
 void hfp_codec_init_lc3_swb(hfp_codec_t * hfp_codec, const btstack_lc3_encoder_t * lc3_encoder, void * lc3_encoder_context){

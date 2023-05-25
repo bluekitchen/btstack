@@ -142,6 +142,7 @@ static int count_received = 0;
 static btstack_cvsd_plc_state_t cvsd_plc_state;
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+static btstack_sbc_encoder_state_t msbc_encoder_state;
 static btstack_sbc_decoder_state_t msbc_decoder_state;
 #endif
 
@@ -450,7 +451,7 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 static void sco_demo_msbc_init(void){
     printf("SCO Demo: Init mSBC\n");
     btstack_sbc_decoder_init(&msbc_decoder_state, SBC_MODE_mSBC, &handle_pcm_data, NULL);
-    hfp_codec_init_msbc(&hfp_codec);
+    hfp_codec_init_msbc(&hfp_codec, &msbc_encoder_state);
 }
 
 static void sco_demo_msbc_receive(const uint8_t * packet, uint16_t size){
