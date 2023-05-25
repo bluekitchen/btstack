@@ -148,6 +148,7 @@ static btstack_sbc_decoder_state_t msbc_decoder_state;
 #ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
 static const btstack_lc3_decoder_t * lc3_decoder;
 static btstack_lc3_decoder_google_t lc3_decoder_context;
+static btstack_lc3_encoder_google_t lc3_encoder_context;
 static hfp_h2_sync_t    hfp_h2_sync;
 #endif
 
@@ -449,7 +450,7 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 static void sco_demo_msbc_init(void){
     printf("SCO Demo: Init mSBC\n");
     btstack_sbc_decoder_init(&msbc_decoder_state, SBC_MODE_mSBC, &handle_pcm_data, NULL);
-    hfp_codec_init(&hfp_codec, HFP_CODEC_MSBC);
+    hfp_codec_init_msbc(&hfp_codec);
 }
 
 static void sco_demo_msbc_receive(const uint8_t * packet, uint16_t size){
@@ -511,7 +512,8 @@ static void sco_demo_lc3swb_init(void){
 
     printf("SCO Demo: Init LC3-SWB\n");
 
-    hfp_codec_init(&hfp_codec, HFP_CODEC_LC3_SWB);
+    const btstack_lc3_encoder_t * lc3_encoder = btstack_lc3_encoder_google_init_instance((btstack_lc3_encoder_google_t *) hfp_codec.lc3_encoder_context);
+    hfp_codec_init_lc3_swb(&hfp_codec, lc3_encoder, &lc3_encoder_context);
 
     // init lc3 decoder
     lc3_decoder = btstack_lc3_decoder_google_init_instance(&lc3_decoder_context);

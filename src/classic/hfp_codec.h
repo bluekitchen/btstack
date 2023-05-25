@@ -99,7 +99,7 @@ struct hfp_codec {
 #endif
 #ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
     const btstack_lc3_encoder_t * lc3_encoder;
-    btstack_lc3_encoder_google_t lc3_encoder_context;
+    void * lc3_encoder_context;
 #endif
 };
 
@@ -108,13 +108,20 @@ struct hfp_codec {
 typedef struct hfp_codec hfp_codec_t;
 
 /**
- * @brief Initialize HFP Audio Codec
- * @note  btstack_assert if codec_id is not supported
+ * @brief Initialize HFP Audio Codec for mSBC
  * @param hfp_codec
- * @param codec_id see HFP_CODEC_xxx in hfp.h
  * @return status
  */
-void hfp_codec_init(hfp_codec_t * hfp_codec, uint8_t codec_id);
+void hfp_codec_init_msbc(hfp_codec_t * hfp_codec);
+
+/**
+ * @brief Initialize HFP Audio Codec for LC3-SWB
+ * @param hfp_codec
+ * @param lc3_encoder
+ * @param lc3_encoder_context for lc3_encoder
+ * @return status
+ */
+void hfp_codec_init_lc3_swb(hfp_codec_t * hfp_codec, const btstack_lc3_encoder_t * lc3_encoder, void * lc3_encoder_context);
 
 /**
  * @brief Get number of audio samples per HFP SCO frame
