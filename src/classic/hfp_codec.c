@@ -95,6 +95,7 @@ void hfp_codec_init_msbc(hfp_codec_t * hfp_codec, btstack_sbc_encoder_state_t * 
     btstack_sbc_encoder_init(hfp_codec->msbc_encoder_context, SBC_MODE_mSBC, 16, 8, SBC_ALLOCATION_METHOD_LOUDNESS, 16000, 26, SBC_CHANNEL_MODE_MONO);
 }
 
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
 void hfp_codec_init_lc3_swb(hfp_codec_t * hfp_codec, const btstack_lc3_encoder_t * lc3_encoder, void * lc3_encoder_context){
     memset(hfp_codec, 0, sizeof(hfp_codec_t));
     hfp_h2_framing_init(&hfp_codec->h2_framing);
@@ -105,6 +106,7 @@ void hfp_codec_init_lc3_swb(hfp_codec_t * hfp_codec, const btstack_lc3_encoder_t
     hfp_codec->lc3_encoder_context = lc3_encoder_context;
     hfp_codec->lc3_encoder->configure(&hfp_codec->lc3_encoder_context, 32000, BTSTACK_LC3_FRAME_DURATION_7500US, LC3_SWB_OCTETS_PER_FRAME);
 }
+#endif
 
 bool hfp_codec_can_encode_audio_frame_now(const hfp_codec_t * hfp_codec){
     return hfp_codec->write_pos <= SCO_FRAME_SIZE;
