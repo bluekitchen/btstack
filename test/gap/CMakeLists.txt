@@ -31,6 +31,7 @@ set(SOURCES
 	../../src/hci.c
 	../../src/hci_cmd.c
 	../../src/hci_dump.c
+	../../platform/posix/btstack_run_loop_posix.c
 	../../platform/posix/hci_dump_posix_fs.c
 )
 

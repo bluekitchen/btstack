@@ -15,7 +15,8 @@ COMMON = \
 	btstack_memory.c            \
 	btstack_memory_pool.c       \
 	btstack_util.c              \
-	btstack_run_loop.c           \
+	btstack_run_loop.c          \
+	btstack_run_loop_posix.c    \
 	hci.c                       \
 	hci_cmd.c                   \
 	hci_dump.c                  \

@@ -16,6 +16,8 @@
 #include "hci_dump.h"
 #include "hci_dump_posix_fs.h"
 #include "btstack_debug.h"
+#include "btstack_util.h"
+#include "btstack_run_loop_posix.h"
 
 typedef struct {
     uint8_t type;
@@ -115,17 +117,168 @@ TEST(HCI, GetSetConnectionRange){
 
 TEST(HCI, ConnectionRangeValid){
     le_connection_parameter_range_t range = {
-            1, 10,
-            1, 10,
-            1,10
+            .le_conn_interval_min = 1, 
+            .le_conn_interval_max = 10,
+            .le_conn_latency_min = 1, 
+            .le_conn_latency_max = 10,
+            .le_supervision_timeout_min = 1,
+            .le_supervision_timeout_max = 10
     };
     CHECK_EQUAL( 0, gap_connection_parameter_range_included(&range, 0, 0, 0, 0));
+    CHECK_EQUAL( 0, gap_connection_parameter_range_included(&range, 2, 11, 0, 0));
+    CHECK_EQUAL( 0, gap_connection_parameter_range_included(&range, 2, 9, 11, 0));
     CHECK_EQUAL( 0, gap_connection_parameter_range_included(&range, 2, 0, 0, 0));
     CHECK_EQUAL( 0, gap_connection_parameter_range_included(&range, 2, 9, 0, 0));
     CHECK_EQUAL( 0, gap_connection_parameter_range_included(&range, 2, 9, 10, 0));
     CHECK_EQUAL( 0, gap_connection_parameter_range_included(&range, 2, 9, 5, 0));
     CHECK_EQUAL( 0, gap_connection_parameter_range_included(&range, 2, 9, 5, 11));
     CHECK_EQUAL( 1, gap_connection_parameter_range_included(&range, 2, 9, 5, 5));
+}
+
+TEST(HCI, other_functions){
+    gap_set_scan_phys(1);
+    gap_set_connection_phys(1);
+    hci_enable_custom_pre_init();
+    gap_whitelist_clear();
+}
+
+TEST(HCI, gap_whitelist_add_remove){
+    bd_addr_type_t addr_type = BD_ADDR_TYPE_ACL;
+    bd_addr_t addr = { 0 };
+
+    uint8_t status = gap_whitelist_add(addr_type, addr);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    status = gap_whitelist_add(addr_type, addr);
+    CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
+
+    status = gap_whitelist_remove(addr_type, addr);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    status = gap_whitelist_remove(addr_type, addr);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    status = gap_whitelist_remove(BD_ADDR_TYPE_SCO, addr);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+}
+
+TEST(HCI, gap_connect_with_whitelist){
+    uint8_t status = gap_connect_with_whitelist();
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    status = gap_connect_with_whitelist();
+    CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
+}
+
+TEST(HCI, gap_auto_connection_start_stop){
+    bd_addr_type_t addr_type = BD_ADDR_TYPE_LE_PUBLIC;
+    bd_addr_t addr = { 0 };
+
+    uint8_t status = gap_auto_connection_start(addr_type, addr);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    status = gap_auto_connection_stop(addr_type, addr);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+}
+
+TEST(HCI, gap_auto_connection_stop_all){
+    bd_addr_type_t addr_type = BD_ADDR_TYPE_LE_PUBLIC;
+    bd_addr_t addr = { 0 };
+
+    uint8_t status = gap_auto_connection_start(addr_type, addr);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    status = gap_auto_connection_stop_all();
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+}
+
+TEST(HCI, gap_read_rssi){
+    int status = gap_read_rssi(HCI_CON_HANDLE_INVALID);
+    CHECK_EQUAL(0, status);
+
+    status = gap_read_rssi(0x01);
+    CHECK_EQUAL(1, status);
+}
+
+TEST(HCI, gap_le_connection_interval){
+    uint16_t con_interval = gap_le_connection_interval(HCI_CON_HANDLE_INVALID);
+    CHECK_EQUAL(0, con_interval);
+
+    con_interval = gap_le_connection_interval(0x01);
+    CHECK_EQUAL(0, con_interval);
+}
+
+
+TEST(HCI, gap_get_connection_type){
+    gap_connection_type_t type = gap_get_connection_type(HCI_CON_HANDLE_INVALID);
+    CHECK_EQUAL(GAP_CONNECTION_INVALID, type);
+
+    type = gap_get_connection_type(0x01);
+    CHECK_EQUAL(GAP_CONNECTION_ACL, type);
+}
+
+TEST(HCI, gap_le_set_phy){
+    uint8_t status = gap_le_set_phy(HCI_CON_HANDLE_INVALID, 0, 0, 0, 0);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    status = gap_le_set_phy(0x01, 0, 0, 0, 0);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+}
+
+TEST(HCI, hci_connection_for_bd_addr_and_type){
+    bd_addr_type_t addr_type = BD_ADDR_TYPE_ACL;
+    bd_addr_t addr = { 0 };
+
+    hci_connection_t * con = hci_connection_for_bd_addr_and_type(addr , addr_type);
+    CHECK_EQUAL(NULL, con);
+}
+
+TEST(HCI, hci_number_free_acl_slots_for_handle){
+    int free_acl_slots_num = hci_number_free_acl_slots_for_handle(HCI_CON_HANDLE_INVALID);
+    CHECK_EQUAL(0, free_acl_slots_num);
+}
+
+TEST(HCI, hci_send_acl_packet_buffer){
+    hci_reserve_packet_buffer();
+    uint8_t status = hci_send_acl_packet_buffer(HCI_CON_HANDLE_INVALID);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+}
+
+TEST(HCI, hci_send_cmd_packet){
+    bd_addr_t addr = { 0 };
+
+    uint8_t status = hci_send_cmd(&hci_write_loopback_mode, 1);
+    CHECK_EQUAL(0, status);
+
+    uint8_t i;
+    for (i = 0; i < 3; i++){
+        status = hci_send_cmd(&hci_le_create_connection, 
+            1000,      // scan interval: 625 ms
+            1000,      // scan interval: 625 ms
+            i,         // don't use whitelist
+            0,         // peer address type: public
+            addr,      // remote bd addr
+            0, // random or public
+            80,        // conn interval min
+            80,        // conn interval max (3200 * 0.625)
+            0,         // conn latency
+            2000,      // supervision timeout
+            0,         // min ce length
+            1000       // max ce length
+        );
+        CHECK_EQUAL(0, status);
+    }
+}
+
+TEST(HCI, hci_send_cmd_va_arg){
+    hci_reserve_packet_buffer();
+    uint8_t status = hci_send_cmd(&hci_write_loopback_mode, 1);
+    CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
+}
+
+TEST(HCI, hci_power_control){
+    int status = hci_power_control(HCI_POWER_ON);
+    CHECK_EQUAL(0, status);
 }
 
 TEST(HCI, NumPeripherals){
@@ -228,5 +381,6 @@ TEST(HCI, GetRole){
 }
 
 int main (int argc, const char * argv[]){
+    btstack_run_loop_init(btstack_run_loop_posix_get_instance());
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
