@@ -107,6 +107,7 @@ struct hfp_codec {
 
 typedef struct hfp_codec hfp_codec_t;
 
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 /**
  * @brief Initialize HFP Audio Codec for mSBC
  * @param hfp_codec
@@ -114,6 +115,7 @@ typedef struct hfp_codec hfp_codec_t;
  * @return status
  */
 void hfp_codec_init_msbc(hfp_codec_t * hfp_codec, btstack_sbc_encoder_state_t * msbc_encoder_context);
+#endif
 
 #ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
 /**

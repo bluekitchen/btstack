@@ -170,7 +170,9 @@ typedef struct {
 static const codec_support_t * codec_current = NULL;
 
 // hfp_codec
+#if defined(ENABLE_HFP_WIDE_BAND_SPEECH) || defined(ENABLE_HFP_SUPER_WIDE_BAND_SPEECH)
 static hfp_codec_t hfp_codec;
+#endif
 
 // Sine Wave
 
