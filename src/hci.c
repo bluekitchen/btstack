@@ -965,20 +965,20 @@ uint8_t hci_send_acl_packet_buffer(int size){
     uint8_t * packet = hci_stack->hci_packet_buffer;
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
 
-    // check for free places on Bluetooth module
-    if (!hci_can_send_prepared_acl_packet_now(con_handle)) {
-        log_error("hci_send_acl_packet_buffer called but no free ACL buffers on controller");
-        hci_release_packet_buffer();
-        hci_emit_transport_packet_sent();
-        return BTSTACK_ACL_BUFFERS_FULL;
-    }
-
     hci_connection_t *connection = hci_connection_for_handle( con_handle);
     if (!connection) {
         log_error("hci_send_acl_packet_buffer called but no connection for handle 0x%04x", con_handle);
         hci_release_packet_buffer();
         hci_emit_transport_packet_sent();
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    // check for free places on Bluetooth module
+    if (!hci_can_send_prepared_acl_packet_now(con_handle)) {
+        log_error("hci_send_acl_packet_buffer called but no free ACL buffers on controller");
+        hci_release_packet_buffer();
+        hci_emit_transport_packet_sent();
+        return BTSTACK_ACL_BUFFERS_FULL;
     }
 
 #ifdef ENABLE_CLASSIC
