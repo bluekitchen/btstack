@@ -8603,14 +8603,23 @@ static uint8_t hci_whitelist_add(bd_addr_type_t address_type, const bd_addr_t ad
         if (memcmp(entry->address, address, 6) != 0) {
             continue;
         }
-		// disallow if already scheduled to add
-		if ((entry->state & LE_WHITELIST_ADD_TO_CONTROLLER) != 0){
-			return ERROR_CODE_COMMAND_DISALLOWED;
-		}
-		// still on controller, but scheduled to remove -> re-add
-		entry->state |= LE_WHITELIST_ADD_TO_CONTROLLER;
-		return ERROR_CODE_SUCCESS;
+
+        // if already on controller:
+        if ((entry->state & LE_WHITELIST_ON_CONTROLLER) != 0){
+            if ((entry->state & LE_WHITELIST_REMOVE_FROM_CONTROLLER) != 0){
+                // drop remove request
+                entry->state = LE_WHITELIST_ON_CONTROLLER;
+                return ERROR_CODE_SUCCESS;
+            } else {
+                // disallow as already on controller
+                return ERROR_CODE_COMMAND_DISALLOWED;
+            }
+        } 
+
+        // assume scheduled to add
+		return ERROR_CODE_COMMAND_DISALLOWED;
     }
+
     // alloc and add to list
     whitelist_entry_t * entry = btstack_memory_whitelist_entry_get();
     if (!entry) return BTSTACK_MEMORY_ALLOC_FAILED;
