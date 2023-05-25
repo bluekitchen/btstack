@@ -163,7 +163,6 @@ TEST_GROUP(L2CAP_CHANNELS){
     }
     void teardown(void){
         l2cap_remove_event_handler(&l2cap_event_callback_registration);
-        l2cap_finalize_channel_close();
         l2cap_deinit();
         hci_deinit();
         btstack_memory_deinit();
