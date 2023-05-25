@@ -123,13 +123,11 @@ static void print_acl(const char * name, const uint8_t * packet, uint16_t size){
 static void l2cap_channel_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    uint16_t psm;
     uint16_t cid;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 case L2CAP_EVENT_CBM_INCOMING_CONNECTION:
-                    psm = l2cap_event_cbm_incoming_connection_get_psm(packet);
                     cid = l2cap_event_cbm_incoming_connection_get_local_cid(packet);
                     if (l2cap_channel_accept_incoming){
                         l2cap_cbm_accept_connection(cid, data_channel_buffer, sizeof(data_channel_buffer), initial_credits);
@@ -164,6 +162,8 @@ TEST_GROUP(L2CAP_CHANNELS){
         l2cap_channel_opened = false;
     }
     void teardown(void){
+        l2cap_remove_event_handler(&l2cap_event_callback_registration);
+        l2cap_finalize_channel_close();
         l2cap_deinit();
         hci_deinit();
         btstack_memory_deinit();
@@ -200,6 +200,22 @@ TEST(L2CAP_CHANNELS, some_functions){
     l2cap_cbm_accept_connection(0X01, NULL, 0, 0);
     l2cap_cbm_decline_connection(0x01, L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE);
     l2cap_disconnect(0x01);
+
+    uint16_t credits = 10;
+    uint16_t mtu = 23;
+    uint8_t  buffer[10];
+    uint16_t out_local_cid;
+
+    l2cap_le_register_service(&l2cap_channel_packet_handler, TEST_PSM, LEVEL_2);
+    l2cap_le_unregister_service(TEST_PSM);
+    l2cap_le_accept_connection(0X01, buffer, mtu, credits);
+    l2cap_le_decline_connection(0X01);
+    l2cap_le_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM, buffer, mtu, credits, LEVEL_2, &out_local_cid);
+    l2cap_le_provide_credits(0X01, credits);
+    l2cap_le_can_send_now(0X01);
+    l2cap_le_request_can_send_now_event(0X01);
+    l2cap_le_send_data(0X01, (const uint8_t * )buffer, sizeof(buffer));
+    l2cap_le_disconnect(0X01);
 }
 
 TEST(L2CAP_CHANNELS, outgoing_no_connection){
