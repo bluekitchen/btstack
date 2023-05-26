@@ -1129,7 +1129,7 @@ typedef struct {
     hfp_command_t command_id;
 } hfp_command_entry_t;
 
-static hfp_command_entry_t hfp_ag_commmand_table[] = {
+static hfp_command_entry_t hfp_ag_command_table[] = {
     { "AT+BAC=",   HFP_CMD_AVAILABLE_CODECS },
     { "AT+BCC",    HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP },
     { "AT+BCS=",   HFP_CMD_HF_CONFIRMED_CODEC },
@@ -1164,7 +1164,7 @@ static hfp_command_entry_t hfp_ag_commmand_table[] = {
     { "ATA",       HFP_CMD_CALL_ANSWERED },
 };
 
-static hfp_command_entry_t hfp_hf_commmand_table[] = {
+static hfp_command_entry_t hfp_hf_command_table[] = {
     { "+BCS:",  HFP_CMD_AG_SUGGESTED_CODEC },
     { "+BIND:", HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS },
     { "+BINP:", HFP_CMD_AG_SENT_PHONE_NUMBER },
@@ -1218,11 +1218,11 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     uint16_t num_entries;
     hfp_command_entry_t * table;
     if (isHandsFree == 0){
-        table = hfp_ag_commmand_table;
-        num_entries = sizeof(hfp_ag_commmand_table) / sizeof(hfp_command_entry_t);
+        table = hfp_ag_command_table;
+        num_entries = sizeof(hfp_ag_command_table) / sizeof(hfp_command_entry_t);
     } else {
-        table = hfp_hf_commmand_table;
-        num_entries = sizeof(hfp_hf_commmand_table) / sizeof(hfp_command_entry_t);
+        table = hfp_hf_command_table;
+        num_entries = sizeof(hfp_hf_command_table) / sizeof(hfp_command_entry_t);
     }
     // binary search
     uint16_t left = 0;
