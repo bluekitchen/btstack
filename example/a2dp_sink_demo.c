@@ -1062,6 +1062,7 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
 
             a2dp_subevent_stream_established_get_bd_addr(packet, a2dp_conn->addr);
             a2dp_conn->a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
+            a2dp_conn->a2dp_local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
             a2dp_conn->stream_state = STREAM_STATE_OPEN;
 
             printf("A2DP  Sink      : Streaming connection is established, address %s, cid 0x%02x, local seid %d\n",
