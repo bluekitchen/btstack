@@ -641,6 +641,9 @@ typedef struct hfp_connection {
     // HF: AT Command, AG: Unsolicited Result Code
     const char * send_custom_message;
 
+    // HF:  Unsolicited Result Code, AG:  AT Command
+    uint16_t custom_at_command_id;
+
     bool emit_vra_enabled_after_audio_established;
     // AG only
     uint8_t change_in_band_ring_tone_setting;
@@ -665,7 +668,6 @@ typedef struct hfp_connection {
 
     int send_status_of_current_calls;
     int next_call_index;
-    uint16_t ag_custom_at_command_id;
 
     // HF only
     // HF: track command for which ok/error response need to be received

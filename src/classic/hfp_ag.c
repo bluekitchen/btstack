@@ -895,7 +895,7 @@ static void hfp_ag_emit_custom_command_event(hfp_connection_t * hfp_connection){
     event[1] = 5 + line_len;
     event[2] = HFP_SUBEVENT_CUSTOM_AT_COMMAND;
     little_endian_store_16(event, 3, hfp_connection->acl_handle);
-    little_endian_store_16(event, 5, hfp_connection->ag_custom_at_command_id);
+    little_endian_store_16(event, 5, hfp_connection->custom_at_command_id);
     memcpy(&event[7], hfp_connection->line_buffer, line_len);
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, 7 + line_len);
 }
@@ -2532,7 +2532,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
             case HFP_CMD_CUSTOM_MESSAGE:
                 hfp_connection->command = HFP_CMD_NONE;
                 hfp_parser_reset_line_buffer(hfp_connection);
-                log_info("Custom AT Command ID 0x%04x", hfp_connection->ag_custom_at_command_id);
+                log_info("Custom AT Command ID 0x%04x", hfp_connection->custom_at_command_id);
                 hfp_ag_emit_custom_command_event(hfp_connection);
                 break;
             case HFP_CMD_UNKNOWN:

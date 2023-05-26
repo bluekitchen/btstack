@@ -1381,7 +1381,7 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             // store command id for custom command and just store rest of line
             if (hfp_connection->command == HFP_CMD_CUSTOM_MESSAGE){
                 const hfp_custom_at_command_t * at_command = hfp_custom_command_lookup((const char *)hfp_connection->line_buffer);
-                hfp_connection->ag_custom_at_command_id = at_command->command_id;
+                hfp_connection->custom_at_command_id = at_command->command_id;
                 hfp_connection->parser_state = HFP_PARSER_CUSTOM_COMMAND;
                 return true;
             }
