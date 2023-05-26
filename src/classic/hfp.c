@@ -1192,9 +1192,11 @@ static hfp_command_entry_t hfp_hf_command_table[] = {
     { "RING",   HFP_CMD_RING },
 };
 
-static const hfp_custom_at_command_t * hfp_custom_command_lookup(const char * text){
+static const hfp_custom_at_command_t *
+hfp_custom_command_lookup(bool isHandsFree, const char *text) {
     btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &hfp_custom_commands_ag);
+    btstack_linked_list_t * custom_commands = isHandsFree ? &hfp_custom_commands_hf : &hfp_custom_commands_ag;
+    btstack_linked_list_iterator_init(&it, custom_commands);
     while (btstack_linked_list_iterator_has_next(&it)) {
         hfp_custom_at_command_t *at_command = (hfp_custom_at_command_t *) btstack_linked_list_iterator_next(&it);
         int match = strcmp(text, at_command->command);
@@ -1209,7 +1211,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
 
     // check for custom commands, AG only
     if (isHandsFree == 0) {
-        const hfp_custom_at_command_t * custom_at_command = hfp_custom_command_lookup(line_buffer);
+        const hfp_custom_at_command_t * custom_at_command = hfp_custom_command_lookup(isHandsFree, line_buffer);
         if (custom_at_command != NULL){
             return HFP_CMD_CUSTOM_MESSAGE;
         }
@@ -1381,7 +1383,7 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
 
             // store command id for custom command and just store rest of line
             if (hfp_connection->command == HFP_CMD_CUSTOM_MESSAGE){
-                const hfp_custom_at_command_t * at_command = hfp_custom_command_lookup((const char *)hfp_connection->line_buffer);
+                const hfp_custom_at_command_t * at_command = hfp_custom_command_lookup(isHandsFree, (const char *) hfp_connection->line_buffer);
                 hfp_connection->custom_at_command_id = at_command->command_id;
                 hfp_connection->parser_state = HFP_PARSER_CUSTOM_COMMAND;
                 return true;
