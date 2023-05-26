@@ -121,6 +121,19 @@ static const struct {
         {0x0008, 0x02, SCO_PACKET_TYPES_EV3,  true,  CODEC_MASK_OTHER}, // HFP_LINK_SETTINGS_T1
         {0x000d, 0x02, SCO_PACKET_TYPES_2EV3, true,  CODEC_MASK_OTHER}  // HFP_LINK_SETTINGS_T2
 };
+
+// table 5.8 'mandatory safe settings' for eSCO + similar entries for SCO
+static const struct hfp_mandatory_safe_setting {
+    const uint8_t codec_mask;
+    const bool secure_connection_in_use;
+    hfp_link_settings_t link_setting;
+} hfp_mandatory_safe_settings[] = {
+        { CODEC_MASK_CVSD,  false, HFP_LINK_SETTINGS_D1},
+        { CODEC_MASK_CVSD,  true,  HFP_LINK_SETTINGS_D1},
+        { CODEC_MASK_CVSD,  false, HFP_LINK_SETTINGS_S1},
+        { CODEC_MASK_CVSD,  true,  HFP_LINK_SETTINGS_S4},
+        { CODEC_MASK_OTHER, false, HFP_LINK_SETTINGS_T1},
+        { CODEC_MASK_OTHER, true,  HFP_LINK_SETTINGS_T2},
 };
 
 static const char * hfp_hf_features[] = {
@@ -1909,27 +1922,34 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
         sco_voice_setting, hfp_link_settings[setting].retransmission_effort, packet_types_flipped);
 }
 
-void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool incoming_eSCO){
-
-    // remote supported feature eSCO is set if link type is eSCO
-    // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms,
-    uint16_t max_latency;
-    uint8_t  retransmission_effort;
-    uint16_t packet_types;
-
-    if (incoming_eSCO && hci_extended_sco_link_supported() && hci_remote_esco_supported(hfp_connection->acl_handle)){
-        max_latency = 0x000c;
-        retransmission_effort = 0x02;
-        // eSCO: EV3 and 2-EV3
-        packet_types = 0x0048;
-    } else {
-        max_latency = 0xffff;
-        retransmission_effort = 0xff;
-        // sco: HV1 and HV3
-        packet_types = 0x005;
+hfp_link_settings_t hfp_safe_settings_for_context(bool use_eSCO, uint8_t negotiated_codec, bool secure_connection_in_use){
+    uint8_t i;
+    hfp_link_settings_t link_setting = HFP_LINK_SETTINGS_NONE;
+    for (i=0 ; i < ( sizeof(hfp_mandatory_safe_settings) / sizeof(struct hfp_mandatory_safe_setting) ) ; i++){
+        if (hfp_link_settings[(uint8_t)(hfp_mandatory_safe_settings[i].link_setting)].eSCO != use_eSCO) continue;
+        if ((hfp_mandatory_safe_settings[i].codec_mask & (1 << negotiated_codec)) == 0) continue;
+        if (hfp_mandatory_safe_settings[i].secure_connection_in_use != secure_connection_in_use) continue;
+        link_setting = hfp_mandatory_safe_settings[i].link_setting;
+        break;
     }
+    return link_setting;
+}
 
-    // mSBC only allows for transparent data
+void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool use_eSCO){
+
+    bool secure_connection_in_use = gap_secure_connection(hfp_connection->acl_handle);
+
+    // lookup safe settings based on SCO type, SC use and Codec type
+    hfp_link_settings_t link_setting = hfp_safe_settings_for_context(use_eSCO, hfp_connection->negotiated_codec, secure_connection_in_use);
+    btstack_assert(link_setting != HFP_LINK_SETTINGS_NONE);
+
+    uint16_t max_latency = hfp_link_settings[(uint8_t) link_setting].max_latency;
+    uint16_t retransmission_effort = hfp_link_settings[(uint8_t) link_setting].retransmission_effort;
+
+    // safer to allow more packet types:
+    uint16_t packet_types = use_eSCO ? (SCO_PACKET_TYPES_EV3 | SCO_PACKET_TYPES_2EV3) : (SCO_PACKET_TYPES_HV1 | SCO_PACKET_TYPES_HV3);
+
+    // transparent data for non-CVSD connections or if codec provided by Controller
     uint16_t sco_voice_setting = hci_get_sco_voice_setting();
     if (hfp_connection->negotiated_codec != HFP_CODEC_CVSD){
 #ifdef ENABLE_BCM_PCM_WBS
