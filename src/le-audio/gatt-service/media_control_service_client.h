@@ -384,7 +384,7 @@ uint8_t media_control_service_client_command_goto_group(uint16_t mcs_cid, int32_
 
 
 uint8_t media_control_service_client_search_control_command_init(uint16_t mcs_cid);
-uint8_t media_control_service_client_search_control_command_add(uint16_t mcs_cid, search_control_point_opcode_t opcode, const char * data);
+uint8_t media_control_service_client_search_control_command_add(uint16_t mcs_cid, search_control_point_type_t type, const char * data);
 uint8_t media_control_service_client_search_control_command_execute(uint16_t mcs_cid);
 
 /**

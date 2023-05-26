@@ -871,7 +871,7 @@ uint8_t media_control_service_client_search_control_command_init(uint16_t mcs_ci
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t media_control_service_client_search_control_command_add(uint16_t mcs_cid, search_control_point_opcode_t opcode, const char * data){
+uint8_t media_control_service_client_search_control_command_add(uint16_t mcs_cid, search_control_point_type_t type, const char * data){
     mcs_client_connection_t * connection = (mcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&mcs_client, mcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -884,13 +884,13 @@ uint8_t media_control_service_client_search_control_command_add(uint16_t mcs_cid
 
     if (data == NULL){
         connection->write_buffer[connection->write_buffer_length++] = 1;
-        connection->write_buffer[connection->write_buffer_length++] = (uint8_t) opcode;
+        connection->write_buffer[connection->write_buffer_length++] = (uint8_t) type;
     } else {
         if ((remaining_bytes - 2) < strlen(data)){
             return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
         } else {
             connection->write_buffer[connection->write_buffer_length++] = 1 + strlen(data);
-            connection->write_buffer[connection->write_buffer_length++] = (uint8_t) opcode;
+            connection->write_buffer[connection->write_buffer_length++] = (uint8_t) type;
         }
     }
     return ERROR_CODE_SUCCESS;
