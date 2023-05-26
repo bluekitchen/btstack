@@ -2264,6 +2264,10 @@ void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
 	de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
 }
 
+void hfp_hf_register_custom_at_command(hfp_custom_at_command_t * custom_at_command){
+    hfp_register_custom_hf_command(custom_at_command);
+}
+
 void hfp_hf_register_packet_handler(btstack_packet_handler_t callback){
 	btstack_assert(callback != NULL);
     

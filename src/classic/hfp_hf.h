@@ -560,6 +560,12 @@ int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle);
 uint8_t hfp_hf_send_at_command(hci_con_handle_t acl_handle, const char * at_command);
 
 /**
+ * @brief Register custom AT command.
+ * @param hfp_custom_at_command (with '+' prefix)
+ */
+void hfp_hf_register_custom_at_command(hfp_custom_at_command_t * custom_at_command);
+
+/**
  * @brief De-Init HFP HF
  */
 void hfp_hf_deinit(void);
