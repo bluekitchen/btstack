@@ -2430,6 +2430,13 @@ typedef uint8_t sm_key_t[16];
  */
 #define HFP_SUBEVENT_CUSTOM_AT_COMMAND                               0x28u
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status 0 == OK
+ */
+#define HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT                          0x29u
 
 // ANCS Client
 

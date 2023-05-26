@@ -1135,7 +1135,7 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
             break;
         case HFP_CMD_CUSTOM_MESSAGE:
-            hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, status);
+            hfp_emit_event(hfp_connection, HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT, status);
             break;
         default:
             event_emited = false;
