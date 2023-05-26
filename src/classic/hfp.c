@@ -96,6 +96,7 @@ static btstack_context_callback_registration_t hfp_sdp_query_request;
 
 // custom commands
 static btstack_linked_list_t hfp_custom_commands_ag;
+static btstack_linked_list_t hfp_custom_commands_hf;
 
 // prototypes
 static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
@@ -2050,6 +2051,7 @@ void hfp_deinit(void){
     hfp_ag_rfcomm_packet_handler = NULL;
     hfp_sco_establishment_active = NULL;
     hfp_custom_commands_ag = NULL;
+    hfp_custom_commands_hf = NULL;
     (void) memset(&hfp_sdp_query_context, 0, sizeof(hfp_sdp_query_context_t));
     (void) memset(&hfp_sdp_query_request, 0, sizeof(btstack_context_callback_registration_t));
 }
@@ -2127,6 +2129,10 @@ void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size){
 
 void hfp_register_custom_ag_command(hfp_custom_at_command_t * custom_at_command){
     btstack_linked_list_add(&hfp_custom_commands_ag, (btstack_linked_item_t *) custom_at_command);
+}
+
+void hfp_register_custom_hf_command(hfp_custom_at_command_t * custom_at_command){
+    btstack_linked_list_add(&hfp_custom_commands_hf, (btstack_linked_item_t *) custom_at_command);
 }
 
 // HFP H2 Synchronization - might get moved into a hfp_h2.c

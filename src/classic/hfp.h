@@ -805,6 +805,7 @@ void hfp_init(void);
 void hfp_deinit(void);
 
 void hfp_register_custom_ag_command(hfp_custom_at_command_t * at_command);
+void hfp_register_custom_hf_command(hfp_custom_at_command_t * at_command);
 
 void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
 void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role);
