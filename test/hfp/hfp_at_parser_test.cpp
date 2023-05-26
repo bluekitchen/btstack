@@ -44,7 +44,9 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
+#include "btstack_event.h"
 #include "classic/hfp.h"
+#include "classic/hfp_hf.h"
 #include "classic/hfp_ag.h"
 
 void hfp_parse(hfp_connection_t * context, uint8_t byte, int isHandsFree);
@@ -84,6 +86,7 @@ TEST_GROUP(HFPParser){
     int offset;
 
     void setup(void){
+        hfp_init();
         memset(&context, 0, sizeof(hfp_connection_t));
         context.parser_state = HFP_PARSER_CMD_HEADER;
         context.parser_item_index = 0;
@@ -93,6 +96,10 @@ TEST_GROUP(HFPParser){
         context.bnip_number[0] = 0;
         context.bnip_type = 0;
         memset(packet,0, sizeof(packet));
+    }
+
+    void teardown(void){
+        hfp_deinit();
     }
 };
 
@@ -580,6 +587,51 @@ TEST(HFPParser, HFP_CMD_AG_SENT_CALL_WAITING_INFORMATION){
     CHECK_EQUAL(145, context.bnip_type);
     CHECK_EQUAL(true, context.clip_have_alpha);
     STRCMP_EQUAL("BlueKitchen GmbH", (const char *)context.line_buffer);
+}
+
+// #define LOG_LINE_BUFFER
+static void hfp_at_parser_test_dump_line_buffer(void){
+#ifdef LOG_LINE_BUFFER
+    uint16_t line_len = strlen(reinterpret_cast<const char *>(context.line_buffer));
+    printf("\nLine buffer: %s\n", context.line_buffer);
+    printf_hexdump(context.line_buffer, line_len);
+#endif
+}
+
+TEST(HFPParser, custom_command_hf){
+    hfp_custom_at_command_t custom_hf_command = {
+            .command = "+FOO:",
+            .command_id = 1
+    };
+    const char * custom_hf_command_string = "\r\n+FOO:1,2,3\r\n";
+    hfp_register_custom_hf_command(&custom_hf_command);
+    parse_hf(custom_hf_command_string);
+    CHECK_EQUAL(1, context.custom_at_command_id);
+    hfp_at_parser_test_dump_line_buffer();
+}
+
+TEST(HFPParser, custom_command_ag_with_colon){
+    hfp_custom_at_command_t custom_ag_command = {
+            .command = "AT+FOO:",
+            .command_id = 2
+    };
+    const char * custom_hf_command_string = "\r\nAT+FOO:1,2,3\r\n";
+    hfp_register_custom_ag_command(&custom_ag_command);
+    parse_ag(custom_hf_command_string);
+    CHECK_EQUAL(2, context.custom_at_command_id);
+    hfp_at_parser_test_dump_line_buffer();
+}
+
+TEST(HFPParser, custom_command_ag_with_question){
+    hfp_custom_at_command_t custom_ag_command = {
+            .command = "AT+FOO?",
+            .command_id = 3
+    };
+    const char * custom_hf_command_string = "\r\nAT+FOO?\r\n";
+    hfp_register_custom_ag_command(&custom_ag_command);
+    parse_ag(custom_hf_command_string);
+    CHECK_EQUAL(3, context.custom_at_command_id);
+    hfp_at_parser_test_dump_line_buffer();
 }
 
 int main (int argc, const char * argv[]){
