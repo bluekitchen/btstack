@@ -102,23 +102,25 @@ static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_setting
 static void parse_sequence(hfp_connection_t * context);
 
 
-#define CODEC_MASK_CVSD         (1 << HFP_CODEC_CVSD)
-#define CODEC_MASK_MSBC_AND_LC3 (1 << HFP_CODEC_MSBC) | (1 << HFP_CODEC_LC3_SWB)
-static const struct link_settings {
+#define CODEC_MASK_CVSD   (1 << HFP_CODEC_CVSD)
+#define CODEC_MASK_OTHER ((1 << HFP_CODEC_MSBC) | (1 << HFP_CODEC_LC3_SWB))
+
+static const struct {
     const uint16_t max_latency;
     const uint8_t  retransmission_effort;
     const uint16_t packet_types;
     const bool     eSCO;
     const uint8_t  codec_mask;
 } hfp_link_settings [] = {
-        { 0xffff, 0xff, SCO_PACKET_TYPES_HV1,  false, CODEC_MASK_CVSD }, // HFP_LINK_SETTINGS_D0
-        { 0xffff, 0xff, SCO_PACKET_TYPES_HV3,  false, CODEC_MASK_CVSD }, // HFP_LINK_SETTINGS_D1
-        { 0x0007, 0x01, SCO_PACKET_TYPES_EV3,  true,  CODEC_MASK_CVSD }, // HFP_LINK_SETTINGS_S1
-        { 0x0007, 0x01, SCO_PACKET_TYPES_2EV3, true,  CODEC_MASK_CVSD }, // HFP_LINK_SETTINGS_S2
-        { 0x000a, 0x01, SCO_PACKET_TYPES_2EV3, true,  CODEC_MASK_CVSD }, // HFP_LINK_SETTINGS_S3
-        { 0x000c, 0x02, SCO_PACKET_TYPES_2EV3, true,  CODEC_MASK_CVSD }, // HFP_LINK_SETTINGS_S4
-        { 0x0008, 0x02, SCO_PACKET_TYPES_EV3,  true,  CODEC_MASK_MSBC_AND_LC3 }, // HFP_LINK_SETTINGS_T1
-        { 0x000d, 0x02, SCO_PACKET_TYPES_2EV3, true,  CODEC_MASK_MSBC_AND_LC3 }  // HFP_LINK_SETTINGS_T2
+        {0x0004, 0xff, SCO_PACKET_TYPES_HV1,  false, CODEC_MASK_CVSD }, // HFP_LINK_SETTINGS_D0
+        {0x0005, 0xff, SCO_PACKET_TYPES_HV3,  false, CODEC_MASK_CVSD }, // HFP_LINK_SETTINGS_D1
+        {0x0007, 0x01, SCO_PACKET_TYPES_EV3,  true,  CODEC_MASK_CVSD }, // HFP_LINK_SETTINGS_S1
+        {0x0007, 0x01, SCO_PACKET_TYPES_2EV3, true,  CODEC_MASK_CVSD }, // HFP_LINK_SETTINGS_S2
+        {0x000a, 0x01, SCO_PACKET_TYPES_2EV3, true,  CODEC_MASK_CVSD }, // HFP_LINK_SETTINGS_S3
+        {0x000c, 0x02, SCO_PACKET_TYPES_2EV3, true,  CODEC_MASK_CVSD }, // HFP_LINK_SETTINGS_S4
+        {0x0008, 0x02, SCO_PACKET_TYPES_EV3,  true,  CODEC_MASK_OTHER}, // HFP_LINK_SETTINGS_T1
+        {0x000d, 0x02, SCO_PACKET_TYPES_2EV3, true,  CODEC_MASK_OTHER}  // HFP_LINK_SETTINGS_T2
+};
 };
 
 static const char * hfp_hf_features[] = {
