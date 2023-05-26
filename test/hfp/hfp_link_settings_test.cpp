@@ -81,6 +81,25 @@ TEST(HFPLinkSettings, 2EV3){
     CHECK_EQUAL(HFP_LINK_SETTINGS_T2, hfp_next_link_setting(HFP_LINK_SETTINGS_NONE, true, true, true,  HFP_CODEC_MSBC));
 }
 
+TEST(HFPLinkSettings, Safe_CVSD_SCO_NOSC){
+    CHECK_EQUAL(HFP_LINK_SETTINGS_D1, hfp_safe_settings_for_context(false, HFP_CODEC_CVSD, false));
+}
+
+TEST(HFPLinkSettings, Safe_CVSD_eSCO_NOSC){
+    CHECK_EQUAL(HFP_LINK_SETTINGS_S1, hfp_safe_settings_for_context(true, HFP_CODEC_CVSD, false));
+}
+
+TEST(HFPLinkSettings, Safe_CVSD_eSCO_SC){
+    CHECK_EQUAL(HFP_LINK_SETTINGS_S4, hfp_safe_settings_for_context(true, HFP_CODEC_CVSD, true));
+}
+
+TEST(HFPLinkSettings, Safe_MSBC_eSCO_NOSC){
+    CHECK_EQUAL(HFP_LINK_SETTINGS_T1, hfp_safe_settings_for_context(true, HFP_CODEC_MSBC, false));
+}
+
+TEST(HFPLinkSettings, Safe_MSBC_eSCO_SC){
+    CHECK_EQUAL(HFP_LINK_SETTINGS_T2, hfp_safe_settings_for_context(true, HFP_CODEC_MSBC, true));
+}
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
