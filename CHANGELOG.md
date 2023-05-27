@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: support additional LE PHYs for scanning and outgoing connections
 - GATT Client: support GATT over BR/EDR via gatt_client_classic_connect
 - HFP: provide SCO packet types and rx/tx packet lengths in HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
+- HFP: allow to register custom at commands with hfp_hf_register_custom_at_command 
 - AVRCP: support Cover Art via avrcp_cover_art_client
 - example: gatt_streamer_server and le_streamer_client report DLE and PHY changes
 - gatt_client: queue requests with gatt_client_request_to_send_gatt_query and gatt_client_request_to_write_without_response 
