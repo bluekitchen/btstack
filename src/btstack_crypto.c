@@ -1352,7 +1352,7 @@ void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t l
 }
 
 
-static void btstack_crypto_state_reset() {
+static void btstack_crypto_state_reset(void) {
 #ifndef USE_BTSTACK_AES128
     btstack_crypto_cmac_state = CMAC_IDLE;
 #endif
