@@ -488,7 +488,7 @@ static void hfp_emit_audio_connection_released(hfp_connection_t * hfp_connection
 void hfp_emit_sco_connection_established(hfp_connection_t *hfp_connection, uint8_t status, uint8_t negotiated_codec,
                                          uint16_t rx_packet_length, uint16_t tx_packet_length) {
     btstack_assert(hfp_connection != NULL);
-    uint8_t event[17];
+    uint8_t event[21];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = sizeof(event) - 2;
@@ -502,6 +502,10 @@ void hfp_emit_sco_connection_established(hfp_connection_t *hfp_connection, uint8
     pos += 6;
     event[pos++] = negotiated_codec;
     little_endian_store_16(event, pos, hfp_connection->packet_types);
+    little_endian_store_16(event, pos, rx_packet_length);
+    pos += 2;
+    little_endian_store_16(event, pos, tx_packet_length);
+    pos += 2;
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
