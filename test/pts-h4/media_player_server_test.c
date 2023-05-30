@@ -968,6 +968,20 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             mcs_track_group_t * group;
             // bool set_track_position = media_player->media_state != MCS_MEDIA_STATE_PLAYING;
             bool track_changed;
+
+            if (media_player->media_state == MCS_MEDIA_STATE_INACTIVE){
+                switch (opcode){
+                    case MEDIA_CONTROL_POINT_OPCODE_PLAY:
+                    case MEDIA_CONTROL_POINT_OPCODE_PAUSE:
+                        // dealt in the same way as other states (see below)
+                        break; 
+
+                    default:
+                        media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
+                        return;
+                }
+            }
+
             switch (opcode){
                 case MEDIA_CONTROL_POINT_OPCODE_PLAY:
                     switch (media_player->media_state){
@@ -1012,387 +1026,203 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     break;
 
                 case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            break;
-
-                        case MCS_MEDIA_STATE_PAUSED:
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            mcs_goto_first_track(media_player_id);
-                            track = mcs_get_current_track_for_media_player(media_player);
-                            if (track == NULL){
-                                return;
-                            }
-                            media_control_service_server_set_media_track_changed(media_player_id);
-                            media_control_service_server_set_track_title(media_player_id,    track->title);
-                            media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-
-                            if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
-                                media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                            }
-                            return;
-
-
-                        default:
-                            break;
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    mcs_goto_first_track(media_player_id);
+                    track = mcs_get_current_track_for_media_player(media_player);
+                    if (track == NULL){
+                        return;
                     }
-                    break;
+                    media_control_service_server_set_media_track_changed(media_player_id);
+                    media_control_service_server_set_track_title(media_player_id,    track->title);
+                    media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
+
+                    if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
+                        media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
+                    }
+                    return;
                 
                 case MEDIA_CONTROL_POINT_OPCODE_LAST_TRACK:
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            break;
-
-                        case MCS_MEDIA_STATE_PAUSED:
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            // status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
-                            // if (status == ERROR_CODE_SUCCESS){
-                            //      mcs_seeking_speed_timer_stop(media_player_id);
-                            //      media_player->media_state = MCS_MEDIA_STATE_PAUSED;
-                            // }
-
-                            mcs_goto_last_track(media_player_id);
-                            mcs_track_t * track = mcs_get_current_track_for_media_player(media_player);
-                            if (track == NULL){
-                                return;
-                            }
-                            media_control_service_server_set_media_track_changed(media_player_id);
-                            media_control_service_server_set_track_title(media_player_id,    track->title);
-                            media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-
-                            if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
-                                media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                            }
-                            return;
-                        default:
-                            break;
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    mcs_goto_last_track(media_player_id);
+                    mcs_track_t * track = mcs_get_current_track_for_media_player(media_player);
+                    if (track == NULL){
+                        return;
                     }
-                    break;
+                    media_control_service_server_set_media_track_changed(media_player_id);
+                    media_control_service_server_set_track_title(media_player_id,    track->title);
+                    media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
+
+                    if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
+                        media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
+                    }
+                    return;
                 
                 case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_TRACK:
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            break;
-
-                        case MCS_MEDIA_STATE_PAUSED:
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            // status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
-                            // if (status == ERROR_CODE_SUCCESS){
-                            //      mcs_seeking_speed_timer_stop(media_player_id);
-                            //      media_player->media_state = MCS_MEDIA_STATE_PAUSED;
-                            // }
-
-                            mcs_goto_previous_track(media_player_id);
-                            track = mcs_get_current_track_for_media_player(media_player);
-                            if (track == NULL){
-                                return;
-                            }
-                            media_control_service_server_set_media_track_changed(media_player_id);
-                            media_control_service_server_set_track_title(media_player_id,    track->title);
-                            media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-
-                            if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
-                                media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                            }
-                            return;
-                        default:
-                            break;
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    mcs_goto_previous_track(media_player_id);
+                    track = mcs_get_current_track_for_media_player(media_player);
+                    if (track == NULL){
+                        return;
                     }
-                    break;
+                    media_control_service_server_set_media_track_changed(media_player_id);
+                    media_control_service_server_set_track_title(media_player_id,    track->title);
+                    media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
 
+                    if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
+                        media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
+                    }
+                    return;
+    
                 case MEDIA_CONTROL_POINT_OPCODE_NEXT_TRACK:
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            break;
-
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                        case MCS_MEDIA_STATE_PAUSED:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            // status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
-                            // if (status == ERROR_CODE_SUCCESS){
-                            //      mcs_seeking_speed_timer_stop(media_player_id);
-                            //      media_player->media_state = MCS_MEDIA_STATE_PAUSED;
-                            // }
-
-                            mcs_goto_next_track(media_player_id);
-                            track = mcs_get_current_track_for_media_player(media_player);
-                            if (track == NULL){
-                                return;
-                            }
-                            media_control_service_server_set_media_track_changed(media_player_id);
-                            media_control_service_server_set_track_title(media_player_id,    track->title);
-                            media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-
-                            if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
-                                media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                            }
-                            return;
-                        
-                        default:
-                            break;
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    mcs_goto_next_track(media_player_id);
+                    track = mcs_get_current_track_for_media_player(media_player);
+                    if (track == NULL){
+                        return;
                     }
-                    break;
-                
+                    media_control_service_server_set_media_track_changed(media_player_id);
+                    media_control_service_server_set_track_title(media_player_id,    track->title);
+                    media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
+
+                    if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
+                        media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
+                    }
+                    return;
+                    
                 case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
                     track_index = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
                     
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            break;
-
-                        case MCS_MEDIA_STATE_PAUSED:
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            // status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
-                            // if (status == ERROR_CODE_SUCCESS){
-                            //      mcs_seeking_speed_timer_stop(media_player_id);
-                            //      media_player->media_state = MCS_MEDIA_STATE_PAUSED;
-                            // }
-                            
-                            track_changed = mcs_goto_track(media_player_id, track_index);
-                            track = mcs_get_current_track_for_media_player(media_player);
-                            if (track == NULL){
-                                return;
-                            }
-                            
-                            if (track_changed){
-                                media_control_service_server_set_media_track_changed(media_player_id);
-                                media_control_service_server_set_track_title(media_player_id,    track->title);
-                                media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-                            }
-                            
-                            if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
-                                media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                            }
-                            return;
-                        default:
-                            break;
+                    track_changed = mcs_goto_track(media_player_id, track_index);
+                    track = mcs_get_current_track_for_media_player(media_player);
+                    if (track == NULL){
+                        return;
                     }
-                    break;
-
+                    
+                    if (track_changed){
+                        media_control_service_server_set_media_track_changed(media_player_id);
+                        media_control_service_server_set_track_title(media_player_id,    track->title);
+                        media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
+                    }
+                    
+                    if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
+                        media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
+                    }
+                    return;
+            
                 case MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND:
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                        case MCS_MEDIA_STATE_PAUSED:
+                    media_player->seeking_forward = false;
+                    status = media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("MCS Server App: MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND, media_control_point_response failed\n");
+                        return;
+                    } 
+
+                    status = media_control_service_server_set_seeking_speed(media_player_id, 64);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("MCS Server App: MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND, set_seeking_speed failed\n");
+                        return;
+                    }
+                    
+                    status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_SEEKING);
+                    if (status == ERROR_CODE_SUCCESS){
+                        media_player->media_state = MCS_MEDIA_STATE_SEEKING;
+                    }
+                    return;
                         
-                        // case MCS_MEDIA_STATE_INACTIVE:
-                            media_player->seeking_forward = false;
-                            status = media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            if (status != ERROR_CODE_SUCCESS){
-                                printf("MCS Server App: MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND, media_control_point_response failed\n");
-                                return;
-                            } 
-
-                            status = media_control_service_server_set_seeking_speed(media_player_id, 64);
-                            if (status != ERROR_CODE_SUCCESS){
-                                printf("MCS Server App: MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND, set_seeking_speed failed\n");
-                                return;
-                            }
-                            
-                            status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_SEEKING);
-                            if (status == ERROR_CODE_SUCCESS){
-                                media_player->media_state = MCS_MEDIA_STATE_SEEKING;
-                            }
-                            return;
-                        default:
-                            break;
-                    }
-                    break;
-
                 case MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD:
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            break;
+                    media_player->seeking_forward = true;
+                    status = media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("MCS Server App: MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD, media_control_point_response failed\n");
+                        return;
+                    } 
 
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                        case MCS_MEDIA_STATE_PAUSED:
-                            media_player->seeking_forward = true;
-                            status = media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            if (status != ERROR_CODE_SUCCESS){
-                                printf("MCS Server App: MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD, media_control_point_response failed\n");
-                                return;
-                            } 
-
-                            status = media_control_service_server_set_seeking_speed(media_player_id, 64);
-                            
-                            if (status != ERROR_CODE_SUCCESS){
-                                printf("MCS Server App: MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD, set_seeking_speed failed\n");
-                                return;
-                            }
-                            
-                            status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_SEEKING);
-                            if (status == ERROR_CODE_SUCCESS){
-                                media_player->media_state = MCS_MEDIA_STATE_SEEKING;
-                            }
-                            return;
-                        default:
-                            break;
+                    status = media_control_service_server_set_seeking_speed(media_player_id, 64);
+                    
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("MCS Server App: MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD, set_seeking_speed failed\n");
+                        return;
                     }
-                    break;
-
+                    
+                    status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_SEEKING);
+                    if (status == ERROR_CODE_SUCCESS){
+                        media_player->media_state = MCS_MEDIA_STATE_SEEKING;
+                    }
+                    return;
+                        
                 case MEDIA_CONTROL_POINT_OPCODE_STOP:
                     mcs_seeking_speed_timer_stop(media_player_id);
                     mcs_reset_current_track(media_player_id);
 
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            return;
-
-                        case MCS_MEDIA_STATE_PAUSED:
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
-                            if (status == ERROR_CODE_SUCCESS){
-                                 mcs_seeking_speed_timer_stop(media_player_id);
-                                 media_player->media_state = MCS_MEDIA_STATE_PAUSED;
-                            }
-                            media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
-                            return;
-                        default:
-                            break;
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
+                    if (status == ERROR_CODE_SUCCESS){
+                         mcs_seeking_speed_timer_stop(media_player_id);
+                         media_player->media_state = MCS_MEDIA_STATE_PAUSED;
                     }
-                    break;
+                    media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
+                    return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
                     relative_offset_10ms = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
                     mcs_current_track_apply_relative_offset(media_player_id, relative_offset_10ms);
 
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            return;
-
-                        case MCS_MEDIA_STATE_PAUSED:
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            media_control_service_server_set_track_position(media_player_id,
-                                                                                     mcs_get_current_track_position_10ms(media_player_id));
-                            return;
-                        default:
-                            break;
-                    }
-                    break;
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    media_control_service_server_set_track_position(media_player_id,
+                                                                             mcs_get_current_track_position_10ms(media_player_id));
+                    return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_SEGMENT:
                     track = mcs_get_current_track_for_media_player_id(media_player_id);
                     if (track == NULL) return;
                     printf(" - Goto previous segment, current %d\n", mcs_track_current_segment(track));
                     
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            return;
-
-                        case MCS_MEDIA_STATE_PAUSED:
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            mcs_current_track_goto_previous_segment(track);
-                            
-                            if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
-                                media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
-                            }
-                            return;
-
-                        default:
-                            break;
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    mcs_current_track_goto_previous_segment(track);
+                    
+                    if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
+                        media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
                     }
-                    break;
+                    return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_NEXT_SEGMENT:
                     track = mcs_get_current_track_for_media_player_id(media_player_id);
                     if (track == NULL) return;
                     printf(" - Goto next segment, current %d\n", mcs_track_current_segment(track));
                     
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            return;
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    mcs_current_track_goto_next_segment(track);
 
-                        case MCS_MEDIA_STATE_PAUSED:
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            mcs_current_track_goto_next_segment(track);
-
-                            if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
-                                media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
-                            }
-                            return;
-                        default:
-                            break;
+                    if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
+                        media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
                     }
-                    break;
+                    return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_FIRST_SEGMENT:
                     track = mcs_get_current_track_for_media_player_id(media_player_id);
                     if (track == NULL) return;
                     printf(" - Goto first segment, current %d\n", mcs_track_current_segment(track));
                     
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            return;
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    mcs_current_track_goto_first_segment(track);
 
-                        case MCS_MEDIA_STATE_PAUSED:
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            mcs_current_track_goto_first_segment(track);
-
-                            if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
-                                media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
-                            }
-                            return;
-                        default:
-                            break;
+                    if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
+                        media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
                     }
-                    break;
+                    return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT:
                     track = mcs_get_current_track_for_media_player_id(media_player_id);
                     if (track == NULL) return;
                     printf(" - Goto last segment, current %d\n", mcs_track_current_segment(track));
-                    
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            return;
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    mcs_current_track_goto_last_segment(track);
 
-                        case MCS_MEDIA_STATE_PAUSED:
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            mcs_current_track_goto_last_segment(track);
-
-                            if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
-                                media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
-                            }
-                            return;
-                        default:
-                            break;
+                    if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
+                        media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
                     }
-                    break;
+                    return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
                     track = mcs_get_current_track_for_media_player_id(media_player_id);
@@ -1400,93 +1230,67 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     segment = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
 
                     printf(" - Goto %d segment, current %d\n", segment, mcs_track_current_segment(track));
-                    
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                            return;
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    mcs_current_track_goto_segment(track, segment);
 
-                        case MCS_MEDIA_STATE_PAUSED:
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            mcs_current_track_goto_segment(track, segment);
-
-                            if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
-                                media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
-                            }
-                            return;
-                        default:
-                            break;
+                    if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
+                        media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
                     }
-                    break;
+                    return;
 
-                    case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
-                    case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
-                    case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
-                    case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
-                    case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
-                        switch (media_player->media_state){
-                            case MCS_MEDIA_STATE_INACTIVE:
-                                media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
-                                break;
-
-                            case MCS_MEDIA_STATE_SEEKING:
-                                status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
-                                if (status == ERROR_CODE_SUCCESS){
-                                     mcs_seeking_speed_timer_stop(media_player_id);
-                                     media_player->media_state = MCS_MEDIA_STATE_PAUSED;
-                                }
-                                // fall through
-                            case MCS_MEDIA_STATE_PLAYING:
-                            case MCS_MEDIA_STATE_PAUSED:
-                                media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                                track_changed = true;
-
-                                switch (opcode){
-                                    case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
-                                        mcs_goto_previous_group(media_player_id);
-                                        break;
-                                    case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
-                                        mcs_goto_next_group(media_player_id);
-                                        break;
-                                    case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
-                                        mcs_goto_first_group(media_player_id);
-                                        break;
-                                    case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
-                                        mcs_goto_last_group(media_player_id);
-                                        break;
-                                    case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
-                                        group_index = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
-                                        track_changed = mcs_goto_group(media_player_id, group_index);
-                                        break;
-                                    default: 
-                                        break;
-
-                                }                                
-                                
-                                group = mcs_get_current_group_for_media_player(media_player);
-                                if (group == NULL) return;
-                                track = mcs_get_current_track_for_media_player_id(media_player_id);
-                                if (track == NULL) return;
-
-                                if (track_changed){
-                                    media_control_service_server_set_media_track_changed(media_player_id);
-                                    media_control_service_server_set_track_title(media_player_id,    track->title);
-                                    media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-                                }
-
-                                if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
-                                    media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                                }
-                                return;
-                            
-                            default:
-                                break;
+                case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
+                case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
+                case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
+                case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
+                case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
+                    if (media_player->media_state == MCS_MEDIA_STATE_SEEKING){
+                        status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
+                        if (status == ERROR_CODE_SUCCESS){
+                             mcs_seeking_speed_timer_stop(media_player_id);
+                             media_player->media_state = MCS_MEDIA_STATE_PAUSED;
                         }
-                        break;
+                    }
 
+                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+                    track_changed = true;
 
+                    switch (opcode){
+                        case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
+                            mcs_goto_previous_group(media_player_id);
+                            break;
+                        case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
+                            mcs_goto_next_group(media_player_id);
+                            break;
+                        case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
+                            mcs_goto_first_group(media_player_id);
+                            break;
+                        case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
+                            mcs_goto_last_group(media_player_id);
+                            break;
+                        case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
+                            group_index = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
+                            track_changed = mcs_goto_group(media_player_id, group_index);
+                            break;
+                        default: 
+                            break;
+
+                    }                                
+                    
+                    group = mcs_get_current_group_for_media_player(media_player);
+                    if (group == NULL) return;
+                    track = mcs_get_current_track_for_media_player_id(media_player_id);
+                    if (track == NULL) return;
+
+                    if (track_changed){
+                        media_control_service_server_set_media_track_changed(media_player_id);
+                        media_control_service_server_set_track_title(media_player_id,    track->title);
+                        media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
+                    }
+
+                    if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
+                        media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
+                    }
+                    return;
 
                 default:
                     break;
