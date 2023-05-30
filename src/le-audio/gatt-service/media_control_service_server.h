@@ -130,9 +130,11 @@ typedef struct {
     uint8_t next_track_object_id[6];
     uint8_t parent_group_object_id[6];
     uint8_t current_group_object_id[6];
-    uint8_t search_results_object_id[6];
     uint8_t content_control_id;
 
+    uint8_t search_results_object_id[6];
+    uint8_t search_results_object_id_len;
+    
     playing_order_t playing_order;
     uint16_t playing_orders_supported;
 
@@ -141,6 +143,8 @@ typedef struct {
     media_control_point_error_code_t  media_control_point_result_code;
     uint8_t media_control_point_data[4];
     uint8_t media_control_poind_data_length;
+
+    search_control_point_error_code_t search_control_point_result_code;
 
     mcs_media_state_t media_state;
 } mcs_media_player_data_t;
@@ -205,6 +209,9 @@ uint8_t media_control_service_server_media_control_point_response(
     media_control_point_opcode_t      media_control_point_opcode,
     media_control_point_error_code_t  media_control_point_result_code);
 
+uint8_t media_control_service_server_search_control_point_response(
+    uint16_t media_player_id, 
+    uint8_t * search_results_object_id);
 
 char * mcs_server_media_control_opcode2str(media_control_point_opcode_t opcode);
 char * mcs_server_media_state2str(mcs_media_state_t media_state);
