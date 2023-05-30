@@ -530,7 +530,6 @@ static void mcs_server_can_send_now(void * context){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_SEEKING_SPEED;
         uint8_t value[1];
         value[0] = media_player->data.seeking_speed;
-        // printf("     *** mcs_server_can_send_now: notify MCS_NOTIFICATION_TASK_SEEKING_SPEED %d\n", value[0]);
 
         att_server_notify(media_player->con_handle, 
             media_player->characteristics[SEEKING_SPEED].value_handle, 
@@ -596,7 +595,6 @@ static void mcs_server_can_send_now(void * context){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_MEDIA_STATE;
         uint8_t value[1];
         value[0] = (uint8_t)media_player->data.media_state;
-        // printf("     *** mcs_server_can_send_now: notify MCS_NOTIFICATION_TASK_MEDIA_STATE %s\n",mcs_server_media_state2str(media_player->data.media_state));
 
         att_server_notify(media_player->con_handle, 
             media_player->characteristics[MEDIA_STATE].value_handle, 
@@ -616,7 +614,6 @@ static void mcs_server_can_send_now(void * context){
         uint8_t value[2];
         value[0] = media_player->data.media_control_point_requested_opcode;
         value[1] = media_player->data.media_control_point_result_code;
-        // printf("     *** mcs_server_can_send_now: notify MCS_NOTIFICATION_TASK_MEDIA_CONTROL_POINT %s\n", mcs_server_media_control_opcode2str(media_player->data.media_control_point_requested_opcode));
 
         att_server_notify(media_player->con_handle, 
             media_player->characteristics[MEDIA_CONTROL_POINT].value_handle, 
@@ -644,10 +641,8 @@ static void mcs_server_can_send_now(void * context){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_CONTENT_CONTROL_ID;
         // TODO
     }
-    // printf("     ***    - scheduled task %x -> %x\n", scheduled_tasks, media_player->scheduled_tasks);
 
     if (media_player->scheduled_tasks != 0){
-        // printf("   ** mcs_server_can_send_now: att_server_register_can_send_now_callback %x\n", media_player->scheduled_tasks);
         att_server_register_can_send_now_callback(&media_player->scheduled_tasks_callback, media_player->con_handle);
     }
 }
@@ -660,24 +655,9 @@ static void mcs_server_schedule_task(media_control_service_server_t * media_play
     if (media_player->con_handle == HCI_CON_HANDLE_INVALID){
         return;
     }
-
     
     uint32_t task_bit_mask = 1 << ((uint8_t)characteristic_id);
 
-    // switch (task_bit_mask){
-    //     case MCS_NOTIFICATION_TASK_TRACK_DURATION:
-    //     case MCS_NOTIFICATION_TASK_TRACK_POSITION:
-    //         if ((media_player->data.media_state == MCS_MEDIA_STATE_PLAYING) && (media_player->data.playback_speed == 1)){
-    //             // too avoid an excessive number of notifications, 
-    //             // the Track Position should not be notified when the Media State is set 
-    //             // to “Playing” and playback happens at a constant speed
-    //             return;
-    //         }
-    //         break;
-    //     default:
-    //         break;
-    // }
-    
     // skip if already scheduled
     if ((media_player->scheduled_tasks & task_bit_mask) != 0){
         return;
@@ -685,12 +665,10 @@ static void mcs_server_schedule_task(media_control_service_server_t * media_play
 
     uint32_t scheduled_tasks = media_player->scheduled_tasks;
     media_player->scheduled_tasks |= task_bit_mask;
-    // printf(" * mcs_server_schedule_task: %s (%x -> %x)\n", mcs_server_characteristic2str(characteristic_id), scheduled_tasks, media_player->scheduled_tasks );
 
     if (scheduled_tasks == 0){
         media_player->scheduled_tasks_callback.callback = &mcs_server_can_send_now;
         media_player->scheduled_tasks_callback.context  = (void*) media_player;
-        // printf("   ** mcs_server_schedule_task: att_server_register_can_send_now_callback: %s\n", mcs_server_characteristic2str(characteristic_id));
         att_server_register_can_send_now_callback(&media_player->scheduled_tasks_callback, media_player->con_handle);
     }
 }
@@ -712,8 +690,6 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 		default:
 			break;
 	}
-
-    // printf("mcs_server_read_callback, characteristic %s\n", mcs_server_characteristic2str(characteristic_id));
 
 	switch (characteristic_id){
 		case MEDIA_PLAYER_NAME:
@@ -851,8 +827,6 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 	}
 
     playing_order_t playing_order;
-
-    printf(" * mcs_server_write_callback, characteristic_id %s\n", mcs_server_characteristic2str(characteristic_id));
     int32_t value;
 
     switch (characteristic_id){
@@ -949,12 +923,8 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 
             media_control_poind_data_length = 0;
 
-            printf("     - received remote opcode %s\n",
-                   mcs_server_media_control_opcode2str(media_control_point_opcode));
-
             if ( (media_control_point_opcode < MEDIA_CONTROL_POINT_OPCODE_START_GROUP) || 
                 (media_control_point_opcode >= MEDIA_CONTROL_POINT_OPCODE_RFU)  ||
-                // ((media_player->data.media_control_point_opcodes_supported & (1 << media_control_point_opcode)) != 0)){
                 mcs_media_control_point_opcode_supported(media_player, media_control_point_opcode) == false){
 
                     media_control_point_result_code = MEDIA_CONTROL_POINT_ERROR_CODE_OPCODE_NOT_SUPPORTED;
@@ -981,23 +951,11 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 }
             }
             
-    
             if (media_control_point_result_code != MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS){
-                // printf("     - notify remote opcode %s, state %s\n", 
-                //     mcs_server_media_control_opcode2str(media_control_point_opcode), 
-                //     mcs_server_media_state2str(media_player->data.media_state));
-
                 media_player->data.media_control_point_requested_opcode = media_control_point_opcode;
                 media_player->data.media_control_point_result_code      = media_control_point_result_code;
                 mcs_server_schedule_task(media_player, characteristic_id);
-
             } else {
-                // printf("     - emit event to APP, opcode nr 0x%02x, opcode %s, result %d, state %s\n",
-                //     media_control_point_opcode, 
-                //     mcs_server_media_control_opcode2str(media_control_point_opcode), 
-                //     media_control_point_result_code,
-                //     mcs_server_media_state2str(media_player->data.media_state));
-
                 mcs_server_emit_media_control_notification_task(media_player, media_control_point_opcode, &buffer[1], media_control_poind_data_length);
             }
             break;
@@ -1243,7 +1201,6 @@ uint8_t media_control_service_server_set_seeking_speed(uint16_t media_player_id,
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
 	media_player->data.seeking_speed = seeking_speed;
-	printf(" * mcs_set_seeking_speed: %d\n", seeking_speed);
 	mcs_server_schedule_task(media_player, SEEKING_SPEED);
 	return ERROR_CODE_SUCCESS;
 }
@@ -1307,7 +1264,6 @@ uint8_t media_control_service_server_set_media_state(uint16_t media_player_id, m
 	}
 	    
     media_player->data.media_state = media_state;
-    printf(" * mcs_set_media_state: %s\n", mcs_server_media_state2str(media_state));
 	mcs_server_schedule_task(media_player, MEDIA_STATE);
 	return ERROR_CODE_SUCCESS;
 }
@@ -1330,7 +1286,6 @@ uint8_t media_control_service_server_media_control_point_response(
 
     media_player->data.media_control_point_requested_opcode = media_control_point_opcode;
     media_player->data.media_control_point_result_code      = media_control_point_result_code;
-    printf(" * mcs_control_point_response: %s\n", mcs_server_media_control_opcode2str(media_control_point_opcode));
     mcs_server_schedule_task(media_player, MEDIA_CONTROL_POINT);
 
     return ERROR_CODE_SUCCESS;
