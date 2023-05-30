@@ -67,6 +67,14 @@ static uint8_t call_status_index = 2;
 static uint8_t callsetup_status_index = 3;
 static uint8_t callheld_status_index = 7;
 
+// #define LOG_LINE_BUFFER
+static void hfp_at_parser_test_dump_line_buffer(void){
+#ifdef LOG_LINE_BUFFER
+    uint16_t line_len = strlen(reinterpret_cast<const char *>(context.line_buffer));
+    printf("\nLine buffer: %s\n", context.line_buffer);
+    printf_hexdump(context.line_buffer, line_len);
+#endif
+}
 
 static void parse_ag(const char * packet){
     for (uint16_t pos = 0; pos < strlen(packet); pos++){
@@ -229,8 +237,10 @@ TEST(HFPParser, HFP_GENERIC_STATUS_INDICATOR_TEST){
 }
 
 TEST(HFPParser, HFP_GENERIC_STATUS_INDICATOR_SET){
-    int param = 1;
-    snprintf(packet, sizeof(packet), "\r\nAT%s=%u\r\n", HFP_GENERIC_STATUS_INDICATOR, param);
+    int param1 = 1;
+    int param2 = 2;
+    int param3 = 3;
+    snprintf(packet, sizeof(packet), "\r\nAT%s= %u,%u,%u\r\n", HFP_GENERIC_STATUS_INDICATOR, param1, param2, param3);
     parse_ag(packet);
     CHECK_EQUAL(HFP_CMD_LIST_GENERIC_STATUS_INDICATORS, context.command);
 }
@@ -589,15 +599,6 @@ TEST(HFPParser, HFP_CMD_AG_SENT_CALL_WAITING_INFORMATION){
     STRCMP_EQUAL("BlueKitchen GmbH", (const char *)context.line_buffer);
 }
 
-// #define LOG_LINE_BUFFER
-static void hfp_at_parser_test_dump_line_buffer(void){
-#ifdef LOG_LINE_BUFFER
-    uint16_t line_len = strlen(reinterpret_cast<const char *>(context.line_buffer));
-    printf("\nLine buffer: %s\n", context.line_buffer);
-    printf_hexdump(context.line_buffer, line_len);
-#endif
-}
-
 TEST(HFPParser, custom_command_hf){
     hfp_custom_at_command_t custom_hf_command = {
             .command = "+FOO:",
@@ -607,6 +608,7 @@ TEST(HFPParser, custom_command_hf){
     hfp_register_custom_hf_command(&custom_hf_command);
     parse_hf(custom_hf_command_string);
     CHECK_EQUAL(1, context.custom_at_command_id);
+    STRCMP_EQUAL("+FOO:1,2,3\r", (const char *)context.line_buffer);
     hfp_at_parser_test_dump_line_buffer();
 }
 
@@ -619,6 +621,7 @@ TEST(HFPParser, custom_command_ag_with_colon){
     hfp_register_custom_ag_command(&custom_ag_command);
     parse_ag(custom_hf_command_string);
     CHECK_EQUAL(2, context.custom_at_command_id);
+    STRCMP_EQUAL("AT+FOO:1,2,3\r", (const char *)context.line_buffer);
     hfp_at_parser_test_dump_line_buffer();
 }
 
@@ -631,6 +634,20 @@ TEST(HFPParser, custom_command_ag_with_question){
     hfp_register_custom_ag_command(&custom_ag_command);
     parse_ag(custom_hf_command_string);
     CHECK_EQUAL(3, context.custom_at_command_id);
+    STRCMP_EQUAL("AT+FOO?\r", (const char *)context.line_buffer);
+    hfp_at_parser_test_dump_line_buffer();
+}
+
+TEST(HFPParser, custom_command_hf_with_assignment){
+    hfp_custom_at_command_t custom_ag_command = {
+            .command = "AT+TEST=",
+            .command_id = 3
+    };
+    const char * custom_hf_command_string = "\r\nAT+TEST=ABCDE\r\n";
+    hfp_register_custom_ag_command(&custom_ag_command);
+    parse_ag(custom_hf_command_string);
+    CHECK_EQUAL(3, context.custom_at_command_id);
+    STRCMP_EQUAL("AT+TEST=ABCDE\r", (const char *)context.line_buffer);
     hfp_at_parser_test_dump_line_buffer();
 }
 
