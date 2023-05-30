@@ -219,7 +219,7 @@ char * mcs_server_media_state2str(mcs_media_state_t media_state){
     return media_state_names[(uint8_t)media_state];
 }
 
-static char * mcs_server_characteristic2str(msc_characteristic_id_t msc_characteristic){
+char * mcs_server_characteristic2str(msc_characteristic_id_t msc_characteristic){
     if (msc_characteristic >= NUM_MCS_CHARACTERISTICS){
         return media_control_characteristic_names[(uint8_t) NUM_MCS_CHARACTERISTICS];
     }

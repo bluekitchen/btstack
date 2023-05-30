@@ -215,7 +215,7 @@ uint8_t media_control_service_server_search_control_point_response(
 
 char * mcs_server_media_control_opcode2str(media_control_point_opcode_t opcode);
 char * mcs_server_media_state2str(mcs_media_state_t media_state);
-
+char * mcs_server_characteristic2str(msc_characteristic_id_t msc_characteristic);
 /* API_END */
 
 #if defined __cplusplus
