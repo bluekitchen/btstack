@@ -1310,7 +1310,17 @@ static bool hfp_parser_is_separator( uint8_t byte){
     }
 }
 
+// returns true if received bytes was processed. Otherwise, functions will be called with same byte again
+// this is used to for a one byte lookahead, where an unexpected byte is pushed back by returning false
 static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree){
+
+#ifdef HFP_DEBUG
+    if (byte >= ' '){
+        printf("Parse  '%c' - state %u, buffer %s\n", byte, hfp_connection->parser_state, hfp_connection->line_buffer);
+    } else {
+        printf("Parse 0x%02x - state %u, buffer %s\n", byte, hfp_connection->parser_state, hfp_connection->line_buffer);
+    }
+#endif
 
     // handle doubles quotes
     if (byte == '"'){
@@ -1384,7 +1394,7 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                 const hfp_custom_at_command_t * at_command = hfp_custom_command_lookup(isHandsFree, (const char *) hfp_connection->line_buffer);
                 hfp_connection->custom_at_command_id = at_command->command_id;
                 hfp_connection->parser_state = HFP_PARSER_CUSTOM_COMMAND;
-                return true;
+                return processed;
             }
 
             // next state
