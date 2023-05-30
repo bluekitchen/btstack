@@ -608,7 +608,7 @@ TEST(HFPParser, custom_command_hf){
     hfp_register_custom_hf_command(&custom_hf_command);
     parse_hf(custom_hf_command_string);
     CHECK_EQUAL(1, context.custom_at_command_id);
-    STRCMP_EQUAL("+FOO:1,2,3\r", (const char *)context.line_buffer);
+    STRCMP_EQUAL("+FOO:1,2,3", (const char *)context.line_buffer);
     hfp_at_parser_test_dump_line_buffer();
 }
 
@@ -621,7 +621,7 @@ TEST(HFPParser, custom_command_ag_with_colon){
     hfp_register_custom_ag_command(&custom_ag_command);
     parse_ag(custom_hf_command_string);
     CHECK_EQUAL(2, context.custom_at_command_id);
-    STRCMP_EQUAL("AT+FOO:1,2,3\r", (const char *)context.line_buffer);
+    STRCMP_EQUAL("AT+FOO:1,2,3", (const char *)context.line_buffer);
     hfp_at_parser_test_dump_line_buffer();
 }
 
@@ -634,7 +634,7 @@ TEST(HFPParser, custom_command_ag_with_question){
     hfp_register_custom_ag_command(&custom_ag_command);
     parse_ag(custom_hf_command_string);
     CHECK_EQUAL(3, context.custom_at_command_id);
-    STRCMP_EQUAL("AT+FOO?\r", (const char *)context.line_buffer);
+    STRCMP_EQUAL("AT+FOO?", (const char *)context.line_buffer);
     hfp_at_parser_test_dump_line_buffer();
 }
 
@@ -647,7 +647,7 @@ TEST(HFPParser, custom_command_hf_with_assignment){
     hfp_register_custom_ag_command(&custom_ag_command);
     parse_ag(custom_hf_command_string);
     CHECK_EQUAL(3, context.custom_at_command_id);
-    STRCMP_EQUAL("AT+TEST=ABCDE\r", (const char *)context.line_buffer);
+    STRCMP_EQUAL("AT+TEST=ABCDE", (const char *)context.line_buffer);
     hfp_at_parser_test_dump_line_buffer();
 }
 

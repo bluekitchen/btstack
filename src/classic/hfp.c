@@ -1529,7 +1529,9 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             return true;
 
         case HFP_PARSER_CUSTOM_COMMAND:
-            hfp_parser_store_byte(hfp_connection, byte);
+            if (hfp_parser_is_end_of_line(byte) == false){
+                hfp_parser_store_byte(hfp_connection, byte);
+            }
             return true;
 
         default:

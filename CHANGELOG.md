@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVRCP: re-register for notification
 - HFP: fix setup/accept of synchronous connection
 - HFP: use mandatory safe settings considering BR/EDR Secure Connections to accept synchronous connections
+- HFP: remove trailing newline/carriage return in custom command event 
 - PBAP Client: make pbap_set_property_selector work for Pull Phonebook
 - esp32: fix power amplifier control on Lyra T v4.3
 
