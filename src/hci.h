@@ -746,7 +746,7 @@ typedef struct {
 #endif
 
 /**
- * HCI Inititizlization State Machine
+ * HCI Initialization State Machine
  */
 typedef enum hci_init_state{
     HCI_INIT_SEND_RESET = 0,
@@ -767,11 +767,11 @@ typedef enum hci_init_state{
     HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT_LINK_RESET,
 
     HCI_INIT_W4_CUSTOM_INIT_BCM_DELAY,
-#endif
 
     // Support for Pre-Init before HCI Reset
     HCI_INIT_CUSTOM_PRE_INIT,
     HCI_INIT_W4_CUSTOM_PRE_INIT,
+#endif
 
     HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS,
     HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS,
