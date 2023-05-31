@@ -4994,9 +4994,12 @@ static void hci_power_enter_initializing_state(void){
     hci_stack->hci_packet_buffer_reserved = false;
     hci_stack->state = HCI_STATE_INITIALIZING;
 
+#ifndef HAVE_HOST_CONTROLLER_API
     if (hci_stack->chipset_pre_init) {
         hci_stack->substate = HCI_INIT_CUSTOM_PRE_INIT;
-    } else {
+    } else
+#endif
+    {
         hci_stack->substate = HCI_INIT_SEND_RESET;
     }
 }
