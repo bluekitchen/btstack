@@ -62,7 +62,7 @@ int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
 	return 0;
 }
 
-void hci_setup_le_connection(uint16_t con_handle){
+static void hci_setup_connection(uint16_t con_handle, bd_addr_type_t type){
     hci_connection.att_connection.mtu = 23;
     hci_connection.att_connection.con_handle = con_handle;
     hci_connection.att_connection.max_mtu = 23;
@@ -73,11 +73,21 @@ void hci_setup_le_connection(uint16_t con_handle){
     hci_connection.att_server.ir_le_device_db_index = 0;
 
     hci_connection.con_handle = con_handle;
+    hci_connection.address_type = type;
 
     if (btstack_linked_list_empty(&connections)){
         btstack_linked_list_add(&connections, (btstack_linked_item_t *)&hci_connection);
     }
 }
+
+void hci_setup_le_connection(uint16_t con_handle){
+    hci_setup_connection(con_handle, BD_ADDR_TYPE_LE_PUBLIC);
+}
+
+void hci_setup_classic_connection(uint16_t con_handle){
+    hci_setup_connection(con_handle, BD_ADDR_TYPE_ACL);
+}
+
 
 void mock_l2cap_set_max_mtu(uint16_t mtu){
     max_mtu = mtu;
@@ -173,15 +183,22 @@ uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16
 	return ERROR_CODE_SUCCESS;
 }
 
+static int cmac_ready = 1;
+void set_cmac_ready(int ready){
+    cmac_ready = ready;
+}
+
 void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
 }
 
 int  sm_cmac_ready(void){
-	return 1;
+	return cmac_ready;
 }
+
 void sm_cmac_signed_write_start(const sm_key_t key, uint8_t opcode, uint16_t attribute_handle, uint16_t message_len, const uint8_t * message, uint32_t sign_counter, void (*done_callback)(uint8_t * hash)){
-	//sm_notify_client(SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);      
+	// sm_notify_client(SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);      
 }
+
 int sm_le_device_index(uint16_t handle ){
 	return -1;
 }
@@ -248,9 +265,23 @@ uint8_t gap_encryption_key_size(hci_con_handle_t con_handle){
 bool gap_secure_connection(hci_con_handle_t con_handle){
 	return false;
 }
-gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle){
-	return GAP_CONNECTION_INVALID;
+gap_connection_type_t gap_get_connection_type(hci_con_handle_t con_handle){
+    if (hci_connection.con_handle != con_handle){
+        return GAP_CONNECTION_INVALID;
+    }
+    switch (hci_connection.address_type){
+        case BD_ADDR_TYPE_LE_PUBLIC:
+        case BD_ADDR_TYPE_LE_RANDOM:
+            return GAP_CONNECTION_LE;
+        case BD_ADDR_TYPE_SCO:
+            return GAP_CONNECTION_SCO;
+        case BD_ADDR_TYPE_ACL:
+            return GAP_CONNECTION_ACL;
+        default:
+            return GAP_CONNECTION_INVALID;
+    }
 }
+
 int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_t conn_interval_min,
 	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout){
 	return 0;	

@@ -407,12 +407,13 @@ static void a2dp_config_process_handle_media_configuration(avdtp_role_t role, co
 
 void a2dp_config_process_set_config(avdtp_role_t role, avdtp_connection_t *connection) {
     a2dp_config_process_t * config_process = a2dp_config_process_for_role(role, connection);
+    uint8_t local_seid  = avdtp_stream_endpoint_seid(config_process->local_stream_endpoint);
     uint8_t remote_seid = config_process->local_stream_endpoint->set_config_remote_seid;
     log_info("A2DP initiate set configuration locally and wait for response ... local seid 0x%02x, remote seid 0x%02x",
-             avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint), remote_seid);
+             local_seid, remote_seid);
     config_process->state = A2DP_W4_SET_CONFIGURATION;
     avdtp_set_configuration(connection->avdtp_cid,
-                            avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
+                            local_seid,
                             remote_seid,
                             config_process->local_stream_endpoint->remote_configuration_bitmap,
                             config_process->local_stream_endpoint->remote_configuration);
@@ -501,13 +502,15 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             if (status != ERROR_CODE_SUCCESS){
                 // notify about connection error only if we're initiator
                 if (config_process->outgoing_active){
-                    log_info("A2DP source signaling connection failed status 0x%02x", status);
+                    log_info("A2DP signaling connection failed status 0x%02x", status);
                     config_process->outgoing_active = false;
                     a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
+                    // also emit streaming connection failed
+                    a2dp_emit_streaming_connection_failed_for_role(role, connection, status);
                 }
                 break;
             }
-            log_info("A2DP source signaling connection established avdtp_cid 0x%02x", cid);
+            log_info("A2DP signaling connection established avdtp_cid 0x%02x", cid);
             config_process->state = A2DP_CONNECTED;
 
             // notify app

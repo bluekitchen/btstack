@@ -100,7 +100,7 @@ typedef struct {
 // global
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
-static btstack_packet_handler_t               att_client_packet_handler = NULL;
+static btstack_packet_handler_t               att_client_packet_handler;
 static btstack_linked_list_t                  service_handlers;
 static btstack_context_callback_registration_t att_client_waiting_for_can_send_registration;
 
@@ -367,7 +367,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                         att_connection->encryption_key_size, att_connection->authenticated, att_connection->secure_connection);
                     if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE){
                         // restore CCC values when encrypted for LE Connections
-                        if (hci_event_encryption_change_get_encryption_enabled(packet)){
+                        if (hci_event_encryption_change_get_encryption_enabled(packet) != 0){
                             att_server_persistent_ccc_restore(hci_connection);
                         } 
                     }
@@ -1145,8 +1145,16 @@ static int att_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
  * @param att_service_handler_t
  */
 void att_server_register_service_handler(att_service_handler_t * handler){
-    if (att_service_handler_for_handle(handler->start_handle) ||
-        att_service_handler_for_handle(handler->end_handle)){
+    bool att_server_registered = false;
+    if (att_service_handler_for_handle(handler->start_handle)){
+        att_server_registered = true;
+    }
+
+    if (att_service_handler_for_handle(handler->end_handle)){
+        att_server_registered = true;
+    }
+    
+    if (att_server_registered){
         log_error("handler for range 0x%04x-0x%04x already registered", handler->start_handle, handler->end_handle);
         return;
     }
@@ -1279,4 +1287,11 @@ uint16_t att_server_get_mtu(hci_con_handle_t con_handle){
     if (!hci_connection) return 0;
     att_connection_t * att_connection = &hci_connection->att_connection;
     return att_connection->mtu;
+}
+
+void att_server_deinit(void){
+    att_server_client_read_callback  = NULL;
+    att_server_client_write_callback = NULL;
+    att_client_packet_handler = NULL;
+    service_handlers = NULL;
 }

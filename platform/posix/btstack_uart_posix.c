@@ -372,14 +372,18 @@ static int btstack_uart_posix_close_new(void){
 }
 
 static void btstack_uart_posix_set_block_received( void (*block_handler)(void)){
+    btstack_uart_block_read_bytes_len = 0;
     block_received = block_handler;
 }
 
 static void btstack_uart_posix_set_block_sent( void (*block_handler)(void)){
+    btstack_uart_block_write_bytes_len = 0;
     block_sent = block_handler;
 }
 
 static void btstack_uart_posix_send_block(const uint8_t *data, uint16_t size){
+    btstack_assert(btstack_uart_block_write_bytes_len == 0);
+
     // setup async write
     btstack_uart_block_write_bytes_data = data;
     btstack_uart_block_write_bytes_len  = size;
@@ -387,6 +391,9 @@ static void btstack_uart_posix_send_block(const uint8_t *data, uint16_t size){
 }
 
 static void btstack_uart_posix_receive_block(uint8_t *buffer, uint16_t len){
+    btstack_assert(btstack_uart_block_read_bytes_len == 0);
+
+    // setup async read
     btstack_uart_block_read_bytes_data = buffer;
     btstack_uart_block_read_bytes_len = len;
     btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_READ);

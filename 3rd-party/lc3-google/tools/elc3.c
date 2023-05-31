@@ -177,7 +177,8 @@ int main(int argc, char *argv[])
     if (pcm_sbits != 16 && pcm_sbits != 24)
         error(EINVAL, "Bitdepth %d", pcm_sbits);
 
-    if (pcm_sbytes != (pcm_sbits == 16 ? 2 : 4))
+    if ((pcm_sbits == 16 && pcm_sbytes != 16/8) ||
+        (pcm_sbits == 24 && pcm_sbytes != 24/8 && pcm_sbytes != 32/8))
         error(EINVAL, "Sample storage on %d bytes", pcm_sbytes);
 
     if (nch  < 1 || nch  > 2)
@@ -199,7 +200,8 @@ int main(int argc, char *argv[])
     lc3_encoder_t enc[nch];
     int8_t alignas(int32_t) pcm[nch * frame_samples * pcm_sbytes];
     enum lc3_pcm_format pcm_fmt =
-        pcm_sbits == 24 ? LC3_PCM_FORMAT_S24 : LC3_PCM_FORMAT_S16;
+        pcm_sbytes == 32/8 ? LC3_PCM_FORMAT_S24 :
+        pcm_sbytes == 24/8 ? LC3_PCM_FORMAT_S24_3LE : LC3_PCM_FORMAT_S16;
     uint8_t out[nch][frame_bytes];
 
     for (int ich = 0; ich < nch; ich++)
@@ -217,7 +219,7 @@ int main(int argc, char *argv[])
 
         int nread = wave_read_pcm(fp_in, pcm_sbytes, nch, frame_samples, pcm);
 
-        memset(pcm + nread * nch, 0,
+        memset(pcm + nread * nch * pcm_sbytes, 0,
             nch * (frame_samples - nread) * pcm_sbytes);
 
         if (floorf(i * frame_us * 1e-6) > nsec) {

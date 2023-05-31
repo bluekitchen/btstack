@@ -16,7 +16,7 @@
 
 import numpy as np
 
-import build.lc3 as lc3
+import lc3
 import tables as T, appendix_c as C
 
 
@@ -81,11 +81,11 @@ class BandwidthDetector:
         return 0 if self.sr == 0 else \
                1 + np.log2(self.sr).astype(int)
 
-    def store_bw(self, b):
+    def store(self, b):
 
         b.write_uint(self.bw, self.get_nbits())
 
-    def get_bw(self, b):
+    def get(self, b):
 
         return b.read_uint(self.get_nbits())
 

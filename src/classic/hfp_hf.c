@@ -275,6 +275,20 @@ static void hfp_hf_emit_enhanced_voice_recognition_text(hfp_connection_t * hfp_c
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
+static void hfp_hf_emit_custom_command_event(hfp_connection_t * hfp_connection){
+    btstack_assert(sizeof(hfp_connection->line_buffer) < (255-5));
+
+    uint16_t line_len = strlen((const char*)hfp_connection->line_buffer) + 1;
+    uint8_t event[7 + sizeof(hfp_connection->line_buffer)];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = 5 + line_len;
+    event[2] = HFP_SUBEVENT_CUSTOM_AT_COMMAND;
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    little_endian_store_16(event, 5, hfp_connection->custom_at_command_id);
+    memcpy(&event[7], hfp_connection->line_buffer, line_len);
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 7 + line_len);
+}
+
 /* send commands */
 
 static inline int hfp_hf_send_cmd(uint16_t cid, const char * cmd){
@@ -711,6 +725,7 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if (done) return 1;
     
     if (hfp_connection->codecs_state != HFP_CODECS_EXCHANGED) return 0;
+    if (hci_can_send_command_packet_now() == false) return 0;
     if (hfp_connection->establish_audio_connection){
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
         hfp_connection->establish_audio_connection = 0;
@@ -1134,7 +1149,7 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
             break;
         case HFP_CMD_CUSTOM_MESSAGE:
-            hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, status);
+            hfp_emit_event(hfp_connection, HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT, status);
             break;
         default:
             event_emited = false;
@@ -1352,7 +1367,8 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
                     switch (hfp_connection->codecs_state){
                         case HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE:
                             hfp_reset_context_flags(hfp_connection);
-                            hfp_emit_sco_event(hfp_connection, HFP_REMOTE_REJECTS_AUDIO_CONNECTION, 0, hfp_connection->remote_addr, hfp_connection->negotiated_codec);
+                            hfp_emit_sco_connection_established(hfp_connection, HFP_REMOTE_REJECTS_AUDIO_CONNECTION,
+                                                                hfp_connection->negotiated_codec, 0, 0);
                             return;
                         default:
                             break;
@@ -1410,6 +1426,12 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
 			break;
         case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_IN_BAND_RING_TONE, get_bit(hfp_connection->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE));
+        case HFP_CMD_CUSTOM_MESSAGE:
+            hfp_connection->command = HFP_CMD_NONE;
+            hfp_parser_reset_line_buffer(hfp_connection);
+            log_info("Custom AT Command ID 0x%04x", hfp_connection->custom_at_command_id);
+            hfp_hf_emit_custom_command_event(hfp_connection);
+            break;
         default:
             break;
     }
@@ -2260,6 +2282,10 @@ void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
     
 	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
 	de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
+}
+
+void hfp_hf_register_custom_at_command(hfp_custom_at_command_t * custom_at_command){
+    hfp_register_custom_hf_command(custom_at_command);
 }
 
 void hfp_hf_register_packet_handler(btstack_packet_handler_t callback){

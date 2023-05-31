@@ -279,19 +279,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             status = gatt_event_query_complete_get_att_status(packet);
             switch (status){
                 case ATT_ERROR_INSUFFICIENT_ENCRYPTION:
-                    printf("GATT Query result: Insufficient Encryption\n");
+                    printf("GATT Query failed, Insufficient Encryption\n");
                     break;
                 case ATT_ERROR_INSUFFICIENT_AUTHENTICATION:
-                    printf("GATT Query result: Insufficient Authentication\n");
+                    printf("GATT Query failed, Insufficient Authentication\n");
                     break;
                 case ATT_ERROR_BONDING_INFORMATION_MISSING:
-                    printf("GATT Query result: Bonding Information Missing\n");
+                    printf("GATT Query failed, Bonding Information Missing\n");
                     break;
                 case ATT_ERROR_SUCCESS:
-                    printf("GATT Query result: OK\n");
+                    printf("GATT Query successful\n");
                     break;
                 default:
-                    printf("GATT Query result: 0x%02x\n", gatt_event_query_complete_get_att_status(packet));
+                    printf("GATT Query failed, status 0x%02x\n", gatt_event_query_complete_get_att_status(packet));
                     break;
             }
             break;

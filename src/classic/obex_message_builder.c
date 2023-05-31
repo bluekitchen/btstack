@@ -92,6 +92,23 @@ uint8_t obex_message_builder_header_add_variable(uint8_t * buffer, uint16_t buff
     return obex_message_builder_packet_append(buffer, buffer_len, header_data, header_data_length);        
 }
 
+uint8_t obex_message_builder_header_fillup_variable(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length, uint32_t * ret_length){
+    uint8_t header[3];
+    header[0] = header_type;
+    uint16_t pos = big_endian_read_16(buffer, 1);
+
+    if (sizeof (header) + header_data_length + pos > buffer_len)
+        header_data_length = buffer_len - pos - sizeof (header);
+
+    big_endian_store_16(header, 1, sizeof(header) + header_data_length);
+    *ret_length = 0;
+    uint8_t status = obex_message_builder_packet_append(buffer, buffer_len, &header[0], sizeof(header));
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    *ret_length = header_data_length;
+    return obex_message_builder_packet_append(buffer, buffer_len, header_data, header_data_length);
+}
+
 static uint8_t obex_message_builder_header_add_connection_id(uint8_t * buffer, uint16_t buffer_len, uint32_t obex_connection_id){
     // add connection_id header if set, must be first header if used
     if (obex_connection_id == OBEX_CONNECTION_ID_INVALID) return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
@@ -171,6 +188,20 @@ uint8_t obex_message_builder_request_create_disconnect(uint8_t * buffer, uint16_
     return obex_message_builder_header_add_connection_id(buffer, buffer_len, obex_connection_id);
 }
 
+uint8_t obex_message_builder_set_final_bit (uint8_t * buffer, uint16_t buffer_len, bool final){
+    if (buffer_len < 1) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    if (buffer[0] == OBEX_OPCODE_CONNECT ||
+        buffer[0] == OBEX_OPCODE_DISCONNECT ||
+        buffer[0] == OBEX_OPCODE_SETPATH ||
+        buffer[0] == OBEX_OPCODE_SESSION ||
+        buffer[0] == OBEX_OPCODE_ABORT){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    buffer[0] &= ~OBEX_OPCODE_FINAL_BIT_MASK;
+    buffer[0] |= (final ? OBEX_OPCODE_FINAL_BIT_MASK : 0);
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t obex_message_builder_header_add_srm_enable(uint8_t * buffer, uint16_t buffer_len){
     return obex_message_builder_header_add_byte(buffer, buffer_len, OBEX_HEADER_SINGLE_RESPONSE_MODE, OBEX_SRM_ENABLE);
 }
@@ -195,7 +226,11 @@ uint8_t obex_message_builder_body_add_static(uint8_t * buffer, uint16_t buffer_l
     return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_END_OF_BODY, data, length);
 }
 
-uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t buffer_len, const char * name, uint16_t name_len){
+uint8_t obex_message_builder_body_fillup_static(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length, uint32_t *ret_length){
+    return obex_message_builder_header_fillup_variable(buffer, buffer_len, OBEX_HEADER_END_OF_BODY, data, length, ret_length);
+}
+
+uint8_t obex_message_builder_header_add_unicode_prefix(uint8_t * buffer, uint16_t buffer_len, uint8_t header_id, const char * name, uint16_t name_len){
     // non-empty string have trailing \0
     bool add_trailing_zero = name_len > 0;
 
@@ -203,11 +238,11 @@ uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t b
     if (buffer_len < header_len) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
 
     uint16_t pos = big_endian_read_16(buffer, 1);
-    buffer[pos++] = OBEX_HEADER_NAME;
+    buffer[pos++] = header_id;
     big_endian_store_16(buffer, pos, header_len);
     pos += 2;
     int i;
-    // @note name[len] == 0 
+    // @note name[len] == 0
     for (i = 0 ; i < name_len ; i++){
         buffer[pos++] = 0;
         buffer[pos++] = *name++;
@@ -219,9 +254,14 @@ uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t b
     big_endian_store_16(buffer, 1, pos);
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t buffer_len, const char * name, uint16_t name_len){
+    return obex_message_builder_header_add_unicode_prefix(buffer, buffer_len, OBEX_HEADER_NAME, name, name_len);
+}
+
 uint8_t obex_message_builder_header_add_name(uint8_t * buffer, uint16_t buffer_len, const char * name){
     uint16_t name_len = (uint16_t) strlen(name);
-    return obex_message_builder_header_add_name_prefix(buffer, buffer_len, name, name_len);
+    return obex_message_builder_header_add_unicode_prefix(buffer, buffer_len, OBEX_HEADER_NAME, name, name_len);
 }
 
 uint8_t obex_message_builder_header_add_type(uint8_t * buffer, uint16_t buffer_len, const char * type){
@@ -233,4 +273,8 @@ uint8_t obex_message_builder_header_add_type(uint8_t * buffer, uint16_t buffer_l
     uint8_t status = obex_message_builder_packet_append(buffer, buffer_len, &header[0], sizeof(header));
     if (status != ERROR_CODE_SUCCESS) return status;
     return obex_message_builder_packet_append(buffer, buffer_len, (const uint8_t*)type, len_incl_zero);
+}
+
+uint8_t obex_message_builder_header_add_length(uint8_t * buffer, uint16_t buffer_len, uint32_t length){
+    return obex_message_builder_header_add_word(buffer, buffer_len, OBEX_HEADER_LENGTH, length);
 }

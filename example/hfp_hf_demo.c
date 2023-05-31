@@ -66,6 +66,7 @@ uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "HFP HF Demo";
 
+
 #ifdef HAVE_BTSTACK_STDIN
 // static const char * device_addr_string = "6C:72:E7:10:22:EE";
 static const char * device_addr_string = "00:02:72:DC:31:C1";
@@ -80,40 +81,42 @@ static void show_usage(void);
 #endif
 static hci_con_handle_t acl_handle = HCI_CON_HANDLE_INVALID;
 static hci_con_handle_t sco_handle = HCI_CON_HANDLE_INVALID;
+
+static uint8_t codecs[] = {
+        HFP_CODEC_CVSD,
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
-#else
-static uint8_t codecs[] = {HFP_CODEC_CVSD};
+        HFP_CODEC_MSBC,
 #endif
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+        HFP_CODEC_LC3_SWB,
+#endif
+};
+
 static uint16_t indicators[1] = {0x01};
 static uint8_t  negotiated_codec = HFP_CODEC_CVSD;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static char cmd;
 
 static void dump_supported_codecs(void){
-    unsigned int i;
-    int mSBC_skipped = 0;
-    printf("Supported codecs: ");
-    for (i = 0; i < sizeof(codecs); i++){
-        switch(codecs[i]){
-            case HFP_CODEC_CVSD:
-                printf("CVSD");
-                break;
-            case HFP_CODEC_MSBC:
-                if (hci_extended_sco_link_supported()){
-                    printf(", mSBC");
-                } else {
-                    mSBC_skipped = 1;
-                }
-                break;
-            default:
-                btstack_assert(false);
-                break;
-        }
+    printf("Supported codecs: CVSD");
+    if (hci_extended_sco_link_supported()) {
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+        printf(", mSBC");
+#endif
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+        printf(", LC3-SWB");
+#endif
+        printf("\n");
+    } else {
+        printf("\nmSBC and/or LC3-SWB disabled as eSCO not supported by local controller.\n");
     }
-    printf("\n");
-    if (mSBC_skipped){
-        printf("mSBC codec disabled because eSCO not supported by local controller.\n");
+}
+
+static void report_status(uint8_t status, const char * message){
+    if (status != ERROR_CODE_SUCCESS){
+        printf("%s command failed, status 0x%02x\n", message, status);
+    } else {
+        printf("%s command successful\n", message);
     }
 }
 
@@ -158,14 +161,6 @@ static void show_usage(void){
     printf("? - Query Subscriber Number (NUM)\n");
     printf("! - Update HF indicator with assigned number 1 (HFI)\n");
     printf("\n");
-}
-
-static void report_status(uint8_t status, const char * message){
-    if (status != ERROR_CODE_SUCCESS){
-        printf("%s command failed, status 0x%02x\n", message, status);
-    } else {
-        printf("%s command successful\n", message);
-    }
 }
 
 static void stdin_process(char c){
@@ -449,7 +444,49 @@ static void stdin_process(char c){
 }
 #endif
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+    UNUSED(channel);
+    bd_addr_t event_addr;
+
+    switch (packet_type){
+
+        case HCI_SCO_DATA_PACKET:
+            // forward received SCO / audio packets to SCO component
+            if (READ_SCO_CONNECTION_HANDLE(event) != sco_handle) break;
+            sco_demo_receive(event, event_size);
+            break;
+
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(event)){
+                case BTSTACK_EVENT_STATE:
+                    // list supported codecs after stack has started up
+                    if (btstack_event_state_get_state(event) != HCI_STATE_WORKING) break;
+                    dump_supported_codecs();
+                    break;
+
+                case HCI_EVENT_PIN_CODE_REQUEST:
+                    // inform about pin code request and respond with '0000'
+                    printf("Pin code request - using '0000'\n");
+                    hci_event_pin_code_request_get_bd_addr(event, event_addr);
+                    gap_pin_code_response(event_addr, "0000");
+                    break;
+
+                case HCI_EVENT_SCO_CAN_SEND_NOW:
+                    sco_demo_send(sco_handle);
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        default:
+            break;
+    }
+
+}
+
+static void hfp_hf_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     UNUSED(channel);
     uint8_t status;
     bd_addr_t event_addr;
@@ -505,11 +542,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
                             negotiated_codec = hfp_subevent_audio_connection_established_get_negotiated_codec(event);
                             switch (negotiated_codec){
-                                case 0x01:
+                                case HFP_CODEC_CVSD:
                                     printf("Using CVSD codec.\n");
                                     break;
-                                case 0x02:
+                                case HFP_CODEC_MSBC:
                                     printf("Using mSBC codec.\n");
+                                    break;
+                                case HFP_CODEC_LC3_SWB:
+                                    printf("Using LC3-SWB codec.\n");
                                     break;
                                 default:
                                     printf("Using unknown codec 0x%02x.\n", negotiated_codec);
@@ -550,19 +590,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             break;
 
                         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-                            printf("AG Indicator Status  | INDEX %d: status %d, '%s'\n", 
+                            printf("AG Indicator Status  | INDEX %d: status 0x%02x, '%s'\n", 
                                 hfp_subevent_ag_indicator_status_changed_get_indicator_index(event), 
                                 hfp_subevent_ag_indicator_status_changed_get_indicator_status(event),
                                 (const char*) hfp_subevent_ag_indicator_status_changed_get_indicator_name(event));
                             break;
                         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
-                            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", 
+                            printf("NETWORK_OPERATOR_CHANGED, operator mode %d, format %d, name %s\n", 
                                 hfp_subevent_network_operator_changed_get_network_operator_mode(event), 
                                 hfp_subevent_network_operator_changed_get_network_operator_format(event), 
                                 (char *) hfp_subevent_network_operator_changed_get_network_operator_name(event));          
                             break;
                         case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
-                            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status: 0x%02x\n",
+                            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status 0x%02x\n",
                                 hfp_subevent_extended_audio_gateway_error_get_error(event));
                             break;
                         case HFP_SUBEVENT_START_RINGING:
@@ -604,7 +644,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED:
                             status = hfp_subevent_voice_recognition_activated_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
-                                printf("Voice Recognition Activate command failed\n");
+                                printf("Voice Recognition Activate command failed, status 0x%02x\n", status);
                                 break;
                             }
                             
@@ -623,7 +663,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED:
                             status = hfp_subevent_voice_recognition_deactivated_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
-                                printf("Voice Recognition Deactivate command failed\n");
+                                printf("Voice Recognition Deactivate command failed, status 0x%02x\n", status);
                                 break;
                             }
                             printf("\nVoice Recognition DEACTIVATED\n\n");
@@ -683,20 +723,17 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 
-    sco_demo_init();
-
-    gap_discoverable_control(1);
-    gap_set_class_of_device(0x200408);   
-    gap_set_local_name("HFP HF Demo 00:00:00:00:00:00");
-
+    // Init protocols
     // init L2CAP
     l2cap_init();
-
+    rfcomm_init();
+    sdp_init();
 #ifdef ENABLE_BLE
     // Initialize LE Security Manager. Needed for cross-transport key derivation
     sm_init();
 #endif
 
+    // Init profiles
     uint16_t hf_supported_features          =
         (1<<HFP_HFSF_ESCO_S4)               |
         (1<<HFP_HFSF_CLI_PRESENTATION_CAPABILITY) |
@@ -709,42 +746,56 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_HFSF_EC_NR_FUNCTION) |
         (1<<HFP_HFSF_REMOTE_VOLUME_CONTROL);
     int wide_band_speech = 1;
-
-    rfcomm_init();
     hfp_hf_init(rfcomm_channel_nr);
     hfp_hf_init_supported_features(hf_supported_features);
     hfp_hf_init_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
     hfp_hf_init_codecs(sizeof(codecs), codecs);
-    
-    sdp_init();    
+    hfp_hf_register_packet_handler(hfp_hf_packet_handler);
+
+
+    // Configure SDP
+
+    // - Create and register HFP HF service record
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
-    hfp_hf_create_sdp_record(hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_hf_service_name, hf_supported_features, wide_band_speech);
+    hfp_hf_create_sdp_record(hfp_service_buffer, sdp_create_service_record_handle(),
+                             rfcomm_channel_nr, hfp_hf_service_name, hf_supported_features, wide_band_speech);
     printf("SDP service record size: %u\n", de_get_len(hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
 
-    // register for HCI events and SCO packets
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-    hci_register_sco_packet_handler(&packet_handler);
-    hci_register_sco_packet_handler(&packet_handler);
+    // Configure GAP - discovery / connection
 
-    // Service Class: Audio, Major Device Class: Audio, Minor: Hands-Free device
+    // - Set local name with a template Bluetooth address, that will be automatically
+    //   replaced with an actual address once it is available, i.e. when BTstack boots
+    //   up and starts talking to a Bluetooth module.
+    gap_set_local_name("HFP HF Demo 00:00:00:00:00:00");
+
+    // - Allow to show up in Bluetooth inquiry
+    gap_discoverable_control(1);
+
+    // - Set Class of Device - Service Class: Audio, Major Device Class: Audio, Minor: Hands-Free device
     gap_set_class_of_device(0x200408);
 
-    // allow for role switch in general and sniff mode
+    // - Allow for role switch in general and sniff mode
     gap_set_default_link_policy_settings( LM_LINK_POLICY_ENABLE_ROLE_SWITCH | LM_LINK_POLICY_ENABLE_SNIFF_MODE );
 
-    // allow for role switch on outgoing connections - this allows HFP AG, e.g. smartphone, to become master when we re-connect to it
+    // - Allow for role switch on outgoing connections - this allows HFP AG, e.g. smartphone, to become master when we re-connect to it
     gap_set_allow_role_switch(true);
 
-    // register for HFP events
-    hfp_hf_register_packet_handler(packet_handler);
+    // Register for HCI events and SCO packets
+    hci_event_callback_registration.callback = &hci_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+    hci_register_sco_packet_handler(&hci_packet_handler);
+
+
+    // Init SCO / HFP audio processing
+    sco_demo_init();
 
 #ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address
     sscanf_bd_addr(device_addr_string, device_addr);
     btstack_stdin_setup(stdin_process);
 #endif
+
     // turn on!
     hci_power_control(HCI_POWER_ON);
     return 0;

@@ -67,6 +67,8 @@ typedef enum {
 
 
 static uint8_t battery_level = 100;
+static uint8_t cgm_status = 0;
+
 static uint8_t att_request[200];
 static uint8_t att_response[1000];
 
@@ -167,13 +169,33 @@ TEST_GROUP(AttDb){
 		
 		// 0x2AAB
 		att_db_util_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_CGM_SESSION_RUN_TIME, ATT_PROPERTY_WRITE_WITHOUT_RESPONSE | ATT_PROPERTY_DYNAMIC | ATT_PROPERTY_NOTIFY, ATT_SECURITY_NONE, ATT_SECURITY_NONE, &battery_level, 1);
+		// 0x2A5C
+        att_db_util_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_CSC_FEATURE, ATT_PROPERTY_AUTHENTICATED_SIGNED_WRITE | ATT_PROPERTY_DYNAMIC, ATT_SECURITY_NONE, ATT_SECURITY_NONE, &battery_level, 1);
+        
+        const uint8_t uuid128_service[] = {0xAA, 0xBB, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+        att_db_util_add_service_uuid128(uuid128_service);
+        // 0x2AA9
+		att_db_util_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_CGM_STATUS, ATT_PROPERTY_WRITE_WITHOUT_RESPONSE | ATT_PROPERTY_DYNAMIC | ATT_PROPERTY_NOTIFY, ATT_SECURITY_NONE, ATT_SECURITY_NONE, &cgm_status, 1);
+		
+		const uint8_t uuid128_chr_no_notify[] = {0xAA, 0xCC, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+		att_db_util_add_characteristic_uuid128(uuid128_chr_no_notify, ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC, ATT_SECURITY_NONE, ATT_SECURITY_NONE, &battery_level, 1);
+		
+		att_db_util_add_included_service_uuid16(0x50, 0x51, 0xAACC);
 
+		// const uint8_t uuid128_incl_service[] = {0xAA, 0xEE, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+		// att_db_util_add_included_service_uuid128(0x50, 0x51, uuid128_incl_service);
 		// set callbacks
 		att_set_db(att_db_util_get_address());
 		att_set_read_callback(&att_read_callback);
 		att_set_write_callback(&att_write_callback);
 	}
 };
+
+TEST(AttDb, SetDB_NullAddress){
+	// test some function
+	att_set_db(NULL);
+}
+
 
 TEST(AttDb, MtuExchange){
 	// test some function
@@ -579,6 +601,115 @@ TEST(AttDb, att_uuid_for_handle){
 	uuid = att_uuid_for_handle(0x0014);
 	expected_response = 0;
 	CHECK_EQUAL(expected_response, uuid);
+}
+
+TEST(AttDb, gatt_server_get_handle_range){
+	uint16_t start_handle;
+	uint16_t end_handle;
+
+	bool service_exists = gatt_server_get_handle_range_for_service_with_uuid16(0x00, &start_handle, &end_handle);
+	CHECK_EQUAL(false, service_exists);
+
+	uint16_t attribute_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(0, 0xffff, 0x00);
+	CHECK_EQUAL(0x00, attribute_handle);
+	
+	attribute_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+	uint16_t configuration_handle = gatt_server_get_server_configuration_handle_for_characteristic_with_uuid16(0, 0xffff, attribute_handle);
+	CHECK_EQUAL(0x00, configuration_handle);
+}
+
+TEST(AttDb, gatt_server_get_handle_range_for_service){
+	uint16_t start_handle;
+	uint16_t end_handle;
+
+	const uint8_t uuid128_1[] = {0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+	const uint8_t uuid128_2[] = {0xAA, 0xBB, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+	const uint8_t uuid128_3[] = {0xAA, 0xDD, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+	
+
+	bool service_exists = gatt_server_get_handle_range_for_service_with_uuid128(uuid128_1, &start_handle, &end_handle);
+	CHECK_EQUAL(false, service_exists);
+	
+	service_exists = gatt_server_get_handle_range_for_service_with_uuid128(uuid128_2, &start_handle, &end_handle);
+	CHECK_EQUAL(true, service_exists);
+
+	uint16_t out_included_service_handle;
+	uint16_t out_included_service_start_handle;
+	uint16_t out_included_service_end_handle;
+
+	service_exists = gatt_server_get_included_service_with_uuid16(0, 0xffff, 0xAA,
+		&out_included_service_handle, &out_included_service_start_handle, &out_included_service_end_handle);
+	CHECK_EQUAL(false, service_exists);
+
+	service_exists = gatt_server_get_included_service_with_uuid16(0, 0, 0xAA,
+		&out_included_service_handle, &out_included_service_start_handle, &out_included_service_end_handle);
+	CHECK_EQUAL(false, service_exists);
+
+	service_exists = gatt_server_get_included_service_with_uuid16(0, 0xffff, 0xAACC,
+		&out_included_service_handle, &out_included_service_start_handle, &out_included_service_end_handle);
+	CHECK_EQUAL(true, service_exists);
+}
+
+
+TEST(AttDb, gatt_server_get_value_handle_for_characteristic_with_uuid128){
+	const uint8_t uuid128_1[] = {0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+	const uint8_t uuid128_2[] = {0xAA, 0xBB, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+	
+	uint16_t value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid128(0, 0xffff, uuid128_1);
+	CHECK_EQUAL(20, value_handle);
+	CHECK_EQUAL(false, att_is_persistent_ccc(value_handle));
+	CHECK_EQUAL(false, att_is_persistent_ccc(0x60));
+
+	value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid128(0, 0xffff, uuid128_2);
+	CHECK_EQUAL(0, value_handle);
+
+	value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid128(0, 0, uuid128_2);
+	CHECK_EQUAL(0, value_handle);
+
+	value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid128(0xffff, 0, uuid128_2);
+	CHECK_EQUAL(0, value_handle);
+}
+
+
+TEST(AttDb, gatt_server_get_client_configuration_handle_for_characteristic){
+	const uint8_t uuid128_1[] = {0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+	const uint8_t uuid128_2[] = {0xAA, 0xBB, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+	const uint8_t uuid128_3[] = {0xAA, 0xCC, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+	
+	uint16_t value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid128(0, 0xffff, uuid128_1);
+	CHECK_EQUAL(21, value_handle);
+	
+	value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid128(0, 0xffff, uuid128_2);
+	CHECK_EQUAL(0, value_handle);
+
+	value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid128(0, 0, uuid128_2);
+	CHECK_EQUAL(0, value_handle);
+
+	value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid128(0xffff, 0, uuid128_2);
+	CHECK_EQUAL(0, value_handle);
+
+	value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid128(0xffff, 0, uuid128_3);
+	CHECK_EQUAL(0, value_handle); 
+
+
+	value_handle = gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BLOOD_PRESSURE_MEASUREMENT, GATT_SERVER_CHARACTERISTICS_CONFIGURATION);
+	CHECK_EQUAL(0, value_handle);
+	
+	value_handle = gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, GATT_SERVER_CHARACTERISTICS_CONFIGURATION);
+	CHECK_EQUAL(0, value_handle);
+
+	value_handle = gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(0, 0, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, GATT_SERVER_CHARACTERISTICS_CONFIGURATION);
+	CHECK_EQUAL(0, value_handle);
+}
+
+
+TEST(AttDb, handle_signed_write_command){
+	uint16_t attribute_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_CSC_FEATURE);
+	
+	att_request[0] = ATT_SIGNED_WRITE_COMMAND;
+	att_request_len = 1;
+	att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+	CHECK_EQUAL(0, att_response_len);
 }
 
 TEST(AttDb, handle_write_command){

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 BlueKitchen GmbH
+ * Copyright (C) 2023 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -76,6 +76,10 @@
 #include "btstack_stdin.h"
 #endif
 
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+#include "btstack_sample_rate_compensation.h"
+#endif
+
 #include "btstack_ring_buffer.h"
 
 #ifdef HAVE_POSIX_FILE_IO
@@ -88,8 +92,12 @@
 #define MAX_SBC_FRAME_SIZE 120
 
 #ifdef HAVE_BTSTACK_STDIN
-static const char * device_addr_string = "5C:F3:70:60:7B:87"; // pts
+static const char * device_addr_string = "00:1B:DC:08:E2:72"; // pts v5.0
 static bd_addr_t device_addr;
+#endif
+
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+static btstack_sample_rate_compensation_t sample_rate_compensation;
 #endif
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -118,9 +126,9 @@ static btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
 
 // ring buffer for SBC Frames
 // below 30: add samples, 30-40: fine, above 40: drop samples
-#define OPTIMAL_FRAMES_MIN 30
-#define OPTIMAL_FRAMES_MAX 40
-#define ADDITIONAL_FRAMES  20
+#define OPTIMAL_FRAMES_MIN 60
+#define OPTIMAL_FRAMES_MAX 80
+#define ADDITIONAL_FRAMES  30
 static uint8_t sbc_frame_storage[(OPTIMAL_FRAMES_MAX + ADDITIONAL_FRAMES) * MAX_SBC_FRAME_SIZE];
 static btstack_ring_buffer_t sbc_frame_ring_buffer;
 static unsigned int sbc_frame_size;
@@ -131,6 +139,9 @@ static btstack_ring_buffer_t decoded_audio_ring_buffer;
 
 static int media_initialized = 0;
 static int audio_stream_started;
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+static int l2cap_stream_started;
+#endif
 static btstack_resample_t resample_instance;
 
 // temp storage of lower-layer request for audio samples
@@ -140,6 +151,30 @@ static int       request_frames;
 // sink state
 static int volume_percentage = 0;
 static avrcp_battery_status_t battery_status = AVRCP_BATTERY_STATUS_WARNING;
+
+#ifdef ENABLE_AVRCP_COVER_ART
+static char a2dp_sink_demo_image_handle[8];
+static avrcp_cover_art_client_t a2dp_sink_demo_cover_art_client;
+static bool a2dp_sink_demo_cover_art_client_connected;
+static uint16_t a2dp_sink_demo_cover_art_cid;
+static uint8_t a2dp_sink_demo_ertm_buffer[2000];
+static l2cap_ertm_config_t a2dp_sink_demo_ertm_config = {
+        1,  // ertm mandatory
+        2,  // max transmit, some tests require > 1
+        2000,
+        12000,
+        512,    // l2cap ertm mtu
+        2,
+        2,
+        1,      // 16-bit FCS
+};
+static bool a2dp_sink_cover_art_download_active;
+static uint32_t a2dp_sink_cover_art_file_size;
+#ifdef HAVE_POSIX_FILE_IO
+static const char * a2dp_sink_demo_thumbnail_path = "cover.jpg";
+static FILE * a2dp_sink_cover_art_file;
+#endif
+#endif
 
 typedef struct {
     uint8_t  reconfigure;
@@ -179,6 +214,7 @@ typedef struct {
     bd_addr_t addr;
     uint16_t  avrcp_cid;
     bool playing;
+    uint16_t notifications_supported_by_target;
 } a2dp_sink_demo_avrcp_connection_t;
 static a2dp_sink_demo_avrcp_connection_t a2dp_sink_demo_avrcp_connection;
 
@@ -189,7 +225,7 @@ static a2dp_sink_demo_avrcp_connection_t a2dp_sink_demo_avrcp_connection;
  * - hci_packet_handler - handles legacy pairing, here by using fixed '0000' pin code.
  * - a2dp_sink_packet_handler - handles events on stream connection status (established, released), the media codec configuration, and, the status of the stream itself (opened, paused, stopped).
  * - handle_l2cap_media_data_packet - used to receive streaming data. If STORE_TO_WAV_FILE directive (check btstack_config.h) is used, the SBC decoder will be used to decode the SBC data into PCM frames. The resulting PCM frames are then processed in the SBC Decoder callback.
- * - avrcp_packet_handler - receives connect/disconnect event.
+ * - avrcp_packet_handler - receives AVRCP connect/disconnect event.
  * - avrcp_controller_packet_handler - receives answers for sent AVRCP commands.
  * - avrcp_target_packet_handler - receives AVRCP commands, and registered notifications.
  * - stdin_process - used to trigger AVRCP commands to the A2DP Source device, such are get now playing info, start, stop, volume control. Requires HAVE_BTSTACK_STDIN.
@@ -215,94 +251,107 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 static void stdin_process(char cmd);
 #endif
 
-static int a2dp_and_avrcp_setup(void){
+static int setup_demo(void){
 
+    // init protocols
     l2cap_init();
-
+    sdp_init();
 #ifdef ENABLE_BLE
     // Initialize LE Security Manager. Needed for cross-transport key derivation
     sm_init();
 #endif
+#ifdef ENABLE_AVRCP_COVER_ART
+    goep_client_init();
+    avrcp_cover_art_client_init();
+#endif
 
-    // Initialize AVDTP Sink
+    // Init profiles
     a2dp_sink_init();
+    avrcp_init();
+    avrcp_controller_init();
+    avrcp_target_init();
+
+
+    // Configure A2DP Sink
     a2dp_sink_register_packet_handler(&a2dp_sink_packet_handler);
     a2dp_sink_register_media_handler(&handle_l2cap_media_data_packet);
-
-    // Create stream endpoint
     a2dp_sink_demo_stream_endpoint_t * stream_endpoint = &a2dp_sink_demo_stream_endpoint;
     avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_sink_create_stream_endpoint(AVDTP_AUDIO,
                                                                                        AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities),
                                                                                        stream_endpoint->media_sbc_codec_configuration, sizeof(stream_endpoint->media_sbc_codec_configuration));
-    if (!local_stream_endpoint){
-        printf("A2DP Sink: not enough memory to create local stream endpoint\n");
-        return 1;
-    }
-
-    // Store stream enpoint's SEP ID, as it is used by A2DP API to identify the stream endpoint
+    btstack_assert(local_stream_endpoint != NULL);
+    // - Store stream enpoint's SEP ID, as it is used by A2DP API to identify the stream endpoint
     stream_endpoint->a2dp_local_seid = avdtp_local_seid(local_stream_endpoint);
 
-    // Initialize AVRCP service
-    avrcp_init();
-    avrcp_register_packet_handler(&avrcp_packet_handler);
 
-    // Initialize AVRCP Controller
-    avrcp_controller_init();
+    // Configure AVRCP Controller + Target
+    avrcp_register_packet_handler(&avrcp_packet_handler);
     avrcp_controller_register_packet_handler(&avrcp_controller_packet_handler);
-    
-     // Initialize AVRCP Target
-    avrcp_target_init();
     avrcp_target_register_packet_handler(&avrcp_target_packet_handler);
     
-    // Initialize SDP 
-    sdp_init();
 
-    // Create A2DP Sink service record and register it with SDP
+    // Configure SDP
+
+    // - Create and register A2DP Sink service record
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, AVDTP_SINK_FEATURE_MASK_HEADPHONE, NULL, NULL);
+    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, sdp_create_service_record_handle(),
+                                AVDTP_SINK_FEATURE_MASK_HEADPHONE, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
 
-    // Create AVRCP Controller service record and register it with SDP. We send Category 1 commands to the media player, e.g. play/pause
+    // - Create AVRCP Controller service record and register it with SDP. We send Category 1 commands to the media player, e.g. play/pause
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
-    uint16_t controller_supported_features = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
+    uint16_t controller_supported_features = 1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER;
 #ifdef AVRCP_BROWSING_ENABLED
-    controller_supported_features |= AVRCP_FEATURE_MASK_BROWSING;
+    controller_supported_features |= 1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING;
 #endif
-    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10002, controller_supported_features, NULL, NULL);
+#ifdef ENABLE_AVRCP_COVER_ART
+    controller_supported_features |= 1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_COVER_ART_GET_LINKED_THUMBNAIL;
+#endif
+    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, sdp_create_service_record_handle(),
+                                       controller_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
-    
-    // Create AVRCP Target service record and register it with SDP. We receive Category 2 commands from the media player, e.g. volume up/down
+
+    // - Create and register A2DP Sink service record
+    //   -  We receive Category 2 commands from the media player, e.g. volume up/down
     memset(sdp_avrcp_target_service_buffer, 0, sizeof(sdp_avrcp_target_service_buffer));
-    uint16_t target_supported_features = AVRCP_FEATURE_MASK_CATEGORY_MONITOR_OR_AMPLIFIER;
-    avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10003, target_supported_features, NULL, NULL);
+    uint16_t target_supported_features = 1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_MONITOR_OR_AMPLIFIER;
+    avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer,
+                                   sdp_create_service_record_handle(), target_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_target_service_buffer);
 
-    // Create Device ID (PnP) service record and register it with SDP
+    // - Create and register Device ID (PnP) service record
     memset(device_id_sdp_service_buffer, 0, sizeof(device_id_sdp_service_buffer));
-    device_id_create_sdp_record(device_id_sdp_service_buffer, 0x10004, DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
+    device_id_create_sdp_record(device_id_sdp_service_buffer,
+                                sdp_create_service_record_handle(), DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
     sdp_register_service(device_id_sdp_service_buffer);
 
-    // Set local name with a template Bluetooth address, that will be automatically
-    // replaced with an actual address once it is available, i.e. when BTstack boots
-    // up and starts talking to a Bluetooth module.
+
+    // Configure GAP - discovery / connection
+
+    // - Set local name with a template Bluetooth address, that will be automatically
+    //   replaced with an actual address once it is available, i.e. when BTstack boots
+    //   up and starts talking to a Bluetooth module.
     gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");
 
-    // allot to show up in Bluetooth inquiry
+    // - Allow to show up in Bluetooth inquiry
     gap_discoverable_control(1);
 
-    // Service Class: Audio, Major Device Class: Audio, Minor: Loudspeaker
+    // - Set Class of Device - Service Class: Audio, Major Device Class: Audio, Minor: Loudspeaker
     gap_set_class_of_device(0x200414);
 
-    // allow for role switch in general and sniff mode
+    // - Allow for role switch in general and sniff mode
     gap_set_default_link_policy_settings( LM_LINK_POLICY_ENABLE_ROLE_SWITCH | LM_LINK_POLICY_ENABLE_SNIFF_MODE );
 
-    // allow for role switch on outgoing connections - this allows A2DP Source, e.g. smartphone, to become master when we re-connect to it
+    // - Allow for role switch on outgoing connections
+    //   - This allows A2DP Source, e.g. smartphone, to become master when we re-connect to it.
     gap_set_allow_role_switch(true);
+
 
     // Register for HCI events
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+    // Inform about audio playback / test options
 #ifdef HAVE_POSIX_FILE_IO
     if (!btstack_audio_sink_get_instance()){
         printf("No audio playback.\n");
@@ -316,6 +365,7 @@ static int a2dp_and_avrcp_setup(void){
     return 0;
 }
 /* LISTING_END */
+
 
 static void playback_handler(int16_t * buffer, uint16_t num_audio_frames){
 
@@ -388,7 +438,6 @@ static void handle_pcm_data(int16_t * data, int num_audio_frames, int num_channe
 
 static int media_processing_init(media_codec_configuration_sbc_t * configuration){
     if (media_initialized) return 0;
-
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
 
 #ifdef STORE_TO_WAV_FILE
@@ -412,6 +461,10 @@ static int media_processing_init(media_codec_configuration_sbc_t * configuration
 
 static void media_processing_start(void){
     if (!media_initialized) return;
+
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+    btstack_sample_rate_compensation_reset( &sample_rate_compensation, btstack_run_loop_get_time_ms() );
+#endif
     // setup audio playback
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (audio){
@@ -422,19 +475,31 @@ static void media_processing_start(void){
 
 static void media_processing_pause(void){
     if (!media_initialized) return;
+
     // stop audio playback
     audio_stream_started = 0;
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+    l2cap_stream_started = 0;
+#endif
+
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (audio){
         audio->stop_stream();
     }
+    // discard pending data
+    btstack_ring_buffer_reset(&decoded_audio_ring_buffer);
+    btstack_ring_buffer_reset(&sbc_frame_ring_buffer);
 }
 
 static void media_processing_close(void){
     if (!media_initialized) return;
+
     media_initialized = 0;
     audio_stream_started = 0;
     sbc_frame_size = 0;
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+    l2cap_stream_started = 0;
+#endif
 
 #ifdef STORE_TO_WAV_FILE                 
     wav_writer_close();
@@ -473,23 +538,38 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     avdtp_sbc_codec_header_t sbc_header;
     if (!read_sbc_header(packet, size, &pos, &sbc_header)) return;
 
+    int packet_length = size-pos;
+    uint8_t *packet_begin = packet+pos;
+
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     // process data right away if there's no audio implementation active, e.g. on posix systems to store as .wav
     if (!audio){
-        btstack_sbc_decoder_process_data(&state, 0, packet+pos, size-pos);
+        btstack_sbc_decoder_process_data(&state, 0, packet_begin, packet_length);
         return;
     }
 
+
     // store sbc frame size for buffer management
-    sbc_frame_size = (size-pos)/ sbc_header.num_frames;
-        
-    int status = btstack_ring_buffer_write(&sbc_frame_ring_buffer, packet+pos, size-pos);
+    sbc_frame_size = packet_length / sbc_header.num_frames;
+    int status = btstack_ring_buffer_write(&sbc_frame_ring_buffer, packet_begin, packet_length);
     if (status != ERROR_CODE_SUCCESS){
         printf("Error storing samples in SBC ring buffer!!!\n");
     }
 
     // decide on audio sync drift based on number of sbc frames in queue
     int sbc_frames_in_buffer = btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer) / sbc_frame_size;
+#ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
+    if( !l2cap_stream_started && audio_stream_started ) {
+        l2cap_stream_started = 1;
+        btstack_sample_rate_compensation_init( &sample_rate_compensation, btstack_run_loop_get_time_ms(), a2dp_sink_demo_a2dp_connection.sbc_configuration.sampling_frequency, FLOAT_TO_Q15(1.f) );
+    }
+    // update sample rate compensation
+    if( audio_stream_started && (audio != NULL)) {
+        uint32_t resampling_factor = btstack_sample_rate_compensation_update( &sample_rate_compensation, btstack_run_loop_get_time_ms(), sbc_header.num_frames*128, audio->get_samplerate() );
+        btstack_resample_set_factor(&resample_instance, resampling_factor);
+//        printf("sbc buffer level :            %"PRIu32"\n", btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer));
+    }
+#else
     uint32_t resampling_factor;
 
     // nominal factor (fixed-point 2^16) and compensation offset
@@ -505,7 +585,7 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     }
 
     btstack_resample_set_factor(&resample_instance, resampling_factor);
-
+#endif
     // start stream if enough frames buffered
     if (!audio_stream_started && sbc_frames_in_buffer >= OPTIMAL_FRAMES_MIN){
         media_processing_start();
@@ -572,6 +652,98 @@ static void dump_sbc_configuration(media_codec_configuration_sbc_t * configurati
     printf("\n");
 }
 
+static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) == HCI_EVENT_PIN_CODE_REQUEST) {
+        bd_addr_t address;
+        printf("Pin code request - using '0000'\n");
+        hci_event_pin_code_request_get_bd_addr(packet, address);
+        gap_pin_code_response(address, "0000");
+    }
+}
+
+#ifdef ENABLE_AVRCP_COVER_ART
+static void a2dp_sink_demo_cover_art_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(channel);
+    UNUSED(size);
+    uint8_t status;
+    uint16_t cid;
+    switch (packet_type){
+        case BIP_DATA_PACKET:
+            if (a2dp_sink_cover_art_download_active){
+                a2dp_sink_cover_art_file_size += size;
+#ifdef HAVE_POSIX_FILE_IO
+                fwrite(packet, 1, size, a2dp_sink_cover_art_file);
+#else
+                printf("Cover art       : TODO - store %u bytes image data\n", size);
+#endif
+            } else {
+                uint16_t i;
+                for (i=0;i<size;i++){
+                    putchar(packet[i]);
+                }
+                printf("\n");
+            }
+            break;
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)){
+                case HCI_EVENT_AVRCP_META:
+                    switch (hci_event_avrcp_meta_get_subevent_code(packet)){
+                        case AVRCP_SUBEVENT_COVER_ART_CONNECTION_ESTABLISHED:
+                            status = avrcp_subevent_cover_art_connection_established_get_status(packet);
+                            cid = avrcp_subevent_cover_art_connection_established_get_cover_art_cid(packet);
+                            if (status == ERROR_CODE_SUCCESS){
+                                printf("Cover Art       : connection established, cover art cid 0x%02x\n", cid);
+                                a2dp_sink_demo_cover_art_client_connected = true;
+                            } else {
+                                printf("Cover Art       : connection failed, status 0x%02x\n", status);
+                                a2dp_sink_demo_cover_art_cid = 0;
+                            }
+                            break;
+                        case AVRCP_SUBEVENT_COVER_ART_OPERATION_COMPLETE:
+                            if (a2dp_sink_cover_art_download_active){
+                                a2dp_sink_cover_art_download_active = false;
+#ifdef HAVE_POSIX_FILE_IO
+                                printf("Cover Art       : download of '%s complete, size %u bytes'\n",
+                                       a2dp_sink_demo_thumbnail_path, a2dp_sink_cover_art_file_size);
+                                fclose(a2dp_sink_cover_art_file);
+                                a2dp_sink_cover_art_file = NULL;
+#else
+                                printf("Cover Art: download completed\n");
+#endif
+                            }
+                            break;
+                        case AVRCP_SUBEVENT_COVER_ART_CONNECTION_RELEASED:
+                            a2dp_sink_demo_cover_art_client_connected = false;
+                            a2dp_sink_demo_cover_art_cid = 0;
+                            printf("Cover Art       : connection released 0x%02x\n",
+                                   avrcp_subevent_cover_art_connection_released_get_cover_art_cid(packet));
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+static uint8_t a2dp_sink_demo_cover_art_connect(void) {
+    uint8_t status;
+    status = avrcp_cover_art_client_connect(&a2dp_sink_demo_cover_art_client, a2dp_sink_demo_cover_art_packet_handler,
+                                            device_addr, a2dp_sink_demo_ertm_buffer,
+                                            sizeof(a2dp_sink_demo_ertm_buffer), &a2dp_sink_demo_ertm_config,
+                                            &a2dp_sink_demo_cover_art_cid);
+    return status;
+}
+#endif
+
 static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -588,7 +760,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
             status = avrcp_subevent_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP: Connection failed: status 0x%02x\n", status);
+                printf("AVRCP: Connection failed, status 0x%02x\n", status);
                 connection->avrcp_cid = 0;
                 return;
             }
@@ -597,20 +769,24 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             avrcp_subevent_connection_established_get_bd_addr(packet, address);
             printf("AVRCP: Connected to %s, cid 0x%02x\n", bd_addr_to_str(address), connection->avrcp_cid);
 
+#ifdef HAVE_BTSTACK_STDIN
+            // use address for outgoing connections
+            avrcp_subevent_connection_established_get_bd_addr(packet, device_addr);
+#endif
+
             avrcp_target_support_event(connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
             avrcp_target_support_event(connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
             avrcp_target_battery_status_changed(connection->avrcp_cid, battery_status);
-    
-            // automatically enable notifications
-            avrcp_controller_enable_notification(connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
-            avrcp_controller_enable_notification(connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
-            avrcp_controller_enable_notification(connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+        
+            // query supported events:
+            avrcp_controller_get_supported_events(connection->avrcp_cid);
             return;
         }
         
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("AVRCP: Channel released: cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             connection->avrcp_cid = 0;
+            connection->notifications_supported_by_target = 0;
             return;
         default:
             break;
@@ -622,8 +798,9 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     UNUSED(size);
 
     // helper to print c strings
-    uint8_t  avrcp_subevent_value[256];
+    uint8_t avrcp_subevent_value[256];
     uint8_t play_status;
+    uint8_t event_id;
 
     a2dp_sink_demo_avrcp_connection_t * avrcp_connection = &a2dp_sink_demo_avrcp_connection;
 
@@ -633,6 +810,37 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 
     memset(avrcp_subevent_value, 0, sizeof(avrcp_subevent_value));
     switch (packet[2]){
+        case AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID:
+            avrcp_connection->notifications_supported_by_target |= (1 << avrcp_subevent_get_capability_event_id_get_event_id(packet));
+            break;
+        case AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE:
+            
+            printf("AVRCP Controller: supported notifications by target:\n");
+            for (event_id = (uint8_t) AVRCP_NOTIFICATION_EVENT_FIRST_INDEX; event_id < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; event_id++){
+                printf("   - [%s] %s\n", 
+                    (avrcp_connection->notifications_supported_by_target & (1 << event_id)) != 0 ? "X" : " ", 
+                    avrcp_notification2str((avrcp_notification_event_id_t)event_id));
+            }
+            printf("\n\n");
+
+            // automatically enable notifications
+            avrcp_controller_enable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+            avrcp_controller_enable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
+            avrcp_controller_enable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+
+#ifdef ENABLE_AVRCP_COVER_ART
+            // image handles become invalid on player change, registe for notifications
+            avrcp_controller_enable_notification(a2dp_sink_demo_avrcp_connection.avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
+            // trigger cover art client connection
+            a2dp_sink_demo_cover_art_connect();
+#endif
+            break;
+
+        case AVRCP_SUBEVENT_NOTIFICATION_STATE:
+            event_id = (avrcp_notification_event_id_t)avrcp_subevent_notification_state_get_event_id(packet);
+            printf("AVRCP Controller: %s notification registered\n", avrcp_notification2str(event_id));
+            break;
+
         case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED:
             printf("AVRCP Controller: Playback position changed, position %d ms\n", (unsigned int) avrcp_subevent_notification_playback_pos_changed_get_playback_position_ms(packet));
             break;
@@ -647,16 +855,20 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
                     avrcp_connection->playing = false;
                     break;
             }
-            printf("AVRCP Controller: Playback status changed %s\n", avrcp_play_status2str(play_status));            return;
+            break;
+
         case AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED:
             printf("AVRCP Controller: Playing content changed\n");
-            return;
+            break;
+
         case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
             printf("AVRCP Controller: Track changed\n");
-            return;
+            break;
+
         case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
-            printf("AVRCP Controller: Changed\n");
-            return; 
+            printf("AVRCP Controller: Available Players Changed\n");
+            break;
+
         case AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE:{
             uint8_t shuffle_mode = avrcp_subevent_shuffle_and_repeat_mode_get_shuffle_mode(packet);
             uint8_t repeat_mode  = avrcp_subevent_shuffle_and_repeat_mode_get_repeat_mode(packet);
@@ -664,41 +876,41 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             break;
         }
         case AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO:
-            printf("AVRCP Controller:     Track: %d\n", avrcp_subevent_now_playing_track_info_get_track(packet));
+            printf("AVRCP Controller: Track %d\n", avrcp_subevent_now_playing_track_info_get_track(packet));
             break;
 
         case AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO:
-            printf("AVRCP Controller:     Total Tracks: %d\n", avrcp_subevent_now_playing_total_tracks_info_get_total_tracks(packet));
+            printf("AVRCP Controller: Total Tracks %d\n", avrcp_subevent_now_playing_total_tracks_info_get_total_tracks(packet));
             break;
 
         case AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO:
             if (avrcp_subevent_now_playing_title_info_get_value_len(packet) > 0){
                 memcpy(avrcp_subevent_value, avrcp_subevent_now_playing_title_info_get_value(packet), avrcp_subevent_now_playing_title_info_get_value_len(packet));
-                printf("AVRCP Controller:     Title: %s\n", avrcp_subevent_value);
+                printf("AVRCP Controller: Title %s\n", avrcp_subevent_value);
             }  
             break;
 
         case AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO:
             if (avrcp_subevent_now_playing_artist_info_get_value_len(packet) > 0){
                 memcpy(avrcp_subevent_value, avrcp_subevent_now_playing_artist_info_get_value(packet), avrcp_subevent_now_playing_artist_info_get_value_len(packet));
-                printf("AVRCP Controller:     Artist: %s\n", avrcp_subevent_value);
+                printf("AVRCP Controller: Artist %s\n", avrcp_subevent_value);
             }  
             break;
         
         case AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO:
             if (avrcp_subevent_now_playing_album_info_get_value_len(packet) > 0){
                 memcpy(avrcp_subevent_value, avrcp_subevent_now_playing_album_info_get_value(packet), avrcp_subevent_now_playing_album_info_get_value_len(packet));
-                printf("AVRCP Controller:     Album: %s\n", avrcp_subevent_value);
+                printf("AVRCP Controller: Album %s\n", avrcp_subevent_value);
             }  
             break;
         
         case AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO:
             if (avrcp_subevent_now_playing_genre_info_get_value_len(packet) > 0){
                 memcpy(avrcp_subevent_value, avrcp_subevent_now_playing_genre_info_get_value(packet), avrcp_subevent_now_playing_genre_info_get_value_len(packet));
-                printf("AVRCP Controller:     Genre: %s\n", avrcp_subevent_value);
+                printf("AVRCP Controller: Genre %s\n", avrcp_subevent_value);
             }  
             break;
-        
+
         case AVRCP_SUBEVENT_PLAY_STATUS:
             printf("AVRCP Controller: Song length %"PRIu32" ms, Song position %"PRIu32" ms, Play status %s\n", 
                 avrcp_subevent_play_status_get_song_length(packet), 
@@ -721,7 +933,23 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
         case AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE:
             printf("AVRCP Controller: Set Player App Value %s\n", avrcp_ctype2str(avrcp_subevent_player_application_value_response_get_command_type(packet)));
             break;
-            
+
+#ifdef ENABLE_AVRCP_COVER_ART
+        case AVRCP_SUBEVENT_NOTIFICATION_EVENT_UIDS_CHANGED:
+            if (a2dp_sink_demo_cover_art_client_connected){
+                printf("AVRCP Controller: UIDs changed -> disconnect cover art client\n");
+                avrcp_cover_art_client_disconnect(a2dp_sink_demo_cover_art_cid);
+            }
+            break;
+
+        case AVRCP_SUBEVENT_NOW_PLAYING_COVER_ART_INFO:
+            if (avrcp_subevent_now_playing_cover_art_info_get_value_len(packet) == 7){
+                memcpy(a2dp_sink_demo_image_handle, avrcp_subevent_now_playing_cover_art_info_get_value(packet), 7);
+                printf("AVRCP Controller: Cover Art %s\n", a2dp_sink_demo_image_handle);
+            }
+            break;
+#endif
+
         default:
             break;
     }  
@@ -773,22 +1001,9 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     }
 }
 
-static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
-    if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) == HCI_EVENT_PIN_CODE_REQUEST) {
-        bd_addr_t address;
-        printf("Pin code request - using '0000'\n");
-        hci_event_pin_code_request_get_bd_addr(packet, address);
-        gap_pin_code_response(address, "0000");
-    }
-}
-
 static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    bd_addr_t address;
     uint8_t status;
 
     uint8_t allocation_method;
@@ -836,30 +1051,31 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             }
             dump_sbc_configuration(&a2dp_conn->sbc_configuration);
             break;
-        }  
-        case A2DP_SUBEVENT_STREAM_ESTABLISHED:
-            a2dp_subevent_stream_established_get_bd_addr(packet, a2dp_conn->addr);
+        }
 
+        case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             status = a2dp_subevent_stream_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("A2DP  Sink      : Streaming connection failed, status 0x%02x\n", status);
                 break;
             }
 
+            a2dp_subevent_stream_established_get_bd_addr(packet, a2dp_conn->addr);
             a2dp_conn->a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
+            a2dp_conn->a2dp_local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
             a2dp_conn->stream_state = STREAM_STATE_OPEN;
 
-            printf("A2DP  Sink      : Streaming connection is established, address %s, cid 0x%02X, local seid %d\n",
-                   bd_addr_to_str(address), a2dp_conn->a2dp_cid, a2dp_conn->a2dp_local_seid);
+            printf("A2DP  Sink      : Streaming connection is established, address %s, cid 0x%02x, local seid %d\n",
+                   bd_addr_to_str(a2dp_conn->addr), a2dp_conn->a2dp_cid, a2dp_conn->a2dp_local_seid);
 #ifdef HAVE_BTSTACK_STDIN
             // use address for outgoing connections
-            memcpy(device_addr, address, 6);
+            memcpy(device_addr, a2dp_conn->addr, 6);
 #endif
             break;
         
 #ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
         case A2DP_SUBEVENT_START_STREAM_REQUESTED:
-            printf("A2DP  Sink      : Explicit Accept to start stream, local_seid 0x%02x\n", a2dp_subevent_start_stream_requested_get_local_seid(packet));
+            printf("A2DP  Sink      : Explicit Accept to start stream, local_seid %d\n", a2dp_subevent_start_stream_requested_get_local_seid(packet));
             a2dp_sink_start_stream_accept(a2dp_cid, a2dp_local_seid);
             break;
 #endif
@@ -901,15 +1117,13 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
-    printf("\n--- Bluetooth AVDTP Sink/AVRCP Connection Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("b      - AVDTP Sink create  connection to addr %s\n", bd_addr_to_str(device_addr));
-    printf("B      - AVDTP Sink disconnect\n");
-    printf("c      - AVRCP create connection to addr %s\n", bd_addr_to_str(device_addr));
-    printf("C      - AVRCP disconnect\n");
+    printf("\n--- A2DP Sink Demo Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("b - A2DP Sink create connection to addr %s\n", bd_addr_to_str(device_addr));
+    printf("B - A2DP Sink disconnect\n");
 
-    printf("w - delay report\n");
-
-    printf("\n--- Bluetooth AVRCP Commands %s ---\n", bd_addr_to_str(iut_address));
+    printf("\n--- AVRCP Controller ---\n");
+    printf("c - AVRCP create connection to addr %s\n", bd_addr_to_str(device_addr));
+    printf("C - AVRCP disconnect\n");
     printf("O - get play status\n");
     printf("j - get now playing info\n");
     printf("k - play\n");
@@ -925,6 +1139,7 @@ static void show_usage(void){
     printf("r - skip\n");
     printf("q - query repeat and shuffle mode\n");
     printf("v - repeat single track\n");
+    printf("w - delay report\n");
     printf("x - repeat all tracks\n");
     printf("X - disable repeat mode\n");
     printf("z - shuffle all tracks\n");
@@ -939,24 +1154,40 @@ static void show_usage(void){
     printf("t - volume up   for 10 percent\n");
     printf("T - volume down for 10 percent\n");
     printf("V - toggle Battery status from AVRCP_BATTERY_STATUS_NORMAL to AVRCP_BATTERY_STATUS_FULL_CHARGE\n");
+
+#ifdef ENABLE_AVRCP_COVER_ART
+    printf("\n--- Cover Art Client ---\n");
+    printf("d - connect to addr %s\n", bd_addr_to_str(device_addr));
+    printf("D - disconnect\n");
+    if (a2dp_sink_demo_cover_art_client_connected == false){
+        if (a2dp_sink_demo_avrcp_connection.avrcp_cid == 0){
+            printf("Not connected, press 'b' or 'c' to first connect AVRCP, then press 'd' to connect cover art client\n");
+        } else {
+            printf("Not connected, press 'd' to connect cover art client\n");
+        }
+    } else if (a2dp_sink_demo_image_handle[0] == 0){
+        printf("No image handle, use 'j' to get current track info\n");
+    }
     printf("---\n");
+#endif
+
 }
 #endif
 
 #ifdef HAVE_BTSTACK_STDIN
+
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     uint8_t volume;
     avrcp_battery_status_t old_battery_status;
 
-    a2dp_sink_demo_stream_endpoint_t *  stream_endpoint  = &a2dp_sink_demo_stream_endpoint;
     a2dp_sink_demo_a2dp_connection_t *  a2dp_connection  = &a2dp_sink_demo_a2dp_connection;
     a2dp_sink_demo_avrcp_connection_t * avrcp_connection = &a2dp_sink_demo_avrcp_connection;
 
     switch (cmd){
         case 'b':
-            status = a2dp_sink_establish_stream(device_addr, stream_endpoint->a2dp_local_seid, &a2dp_connection->a2dp_cid);
-            printf(" - Create AVDTP connection to addr %s, and local seid %d, expected cid 0x%02x.\n",
+            status = a2dp_sink_establish_stream(device_addr, &a2dp_connection->a2dp_cid);
+            printf(" - Create AVDTP connection to addr %s, and local seid %d, cid 0x%02x.\n",
                    bd_addr_to_str(device_addr), a2dp_connection->a2dp_local_seid, a2dp_connection->a2dp_cid);
             break;
         case 'B':
@@ -971,7 +1202,7 @@ static void stdin_process(char cmd){
             printf(" - AVRCP disconnect from addr %s.\n", bd_addr_to_str(device_addr));
             status = avrcp_disconnect(avrcp_connection->avrcp_cid);
             break;
-        
+
         case '\n':
         case '\r':
             break;
@@ -1083,28 +1314,47 @@ static void stdin_process(char cmd){
             break;
         case 'a':
             printf("AVRCP: enable notification TRACK_CHANGED\n");
-            avrcp_controller_enable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            status = avrcp_controller_enable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             break;
         case 'A':
             printf("AVRCP: disable notification TRACK_CHANGED\n");
-            avrcp_controller_disable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            status = avrcp_controller_disable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             break;
         case 'R':
             printf("AVRCP: enable notification PLAYBACK_POS_CHANGED\n");
-            avrcp_controller_enable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
+            status = avrcp_controller_enable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
             break;
         case 'P':
             printf("AVRCP: disable notification PLAYBACK_POS_CHANGED\n");
-            avrcp_controller_disable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
+            status = avrcp_controller_disable_notification(avrcp_connection->avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
             break;
          case 's':
             printf("AVRCP: send long button press REWIND\n");
-            avrcp_controller_start_press_and_hold_cmd(avrcp_connection->avrcp_cid, AVRCP_OPERATION_ID_REWIND);
+            status = avrcp_controller_start_press_and_hold_cmd(avrcp_connection->avrcp_cid, AVRCP_OPERATION_ID_REWIND);
             break;
         case 'S':
             printf("AVRCP: release long button press REWIND\n");
-            avrcp_controller_release_press_and_hold_cmd(avrcp_connection->avrcp_cid);
+            status = avrcp_controller_release_press_and_hold_cmd(avrcp_connection->avrcp_cid);
             break;
+#ifdef ENABLE_AVRCP_COVER_ART
+        case 'd':
+            printf(" - Create AVRCP Cover Art connection to addr %s.\n", bd_addr_to_str(device_addr));
+            status = a2dp_sink_demo_cover_art_connect();
+            break;
+        case 'D':
+            printf(" - AVRCP Cover Art disconnect from addr %s.\n", bd_addr_to_str(device_addr));
+            status = avrcp_cover_art_client_disconnect(a2dp_sink_demo_cover_art_cid);
+            break;
+        case '@':
+            printf("Get linked thumbnail for '%s'\n", a2dp_sink_demo_image_handle);
+#ifdef HAVE_POSIX_FILE_IO
+            a2dp_sink_cover_art_file = fopen(a2dp_sink_demo_thumbnail_path, "w");
+#endif
+            a2dp_sink_cover_art_download_active = true;
+            a2dp_sink_cover_art_file_size = 0;
+            status = avrcp_cover_art_client_get_linked_thumbnail(a2dp_sink_demo_cover_art_cid, a2dp_sink_demo_image_handle);
+            break;
+#endif
         default:
             show_usage();
             return;
@@ -1120,7 +1370,7 @@ int btstack_main(int argc, const char * argv[]){
     UNUSED(argc);
     (void)argv;
 
-    a2dp_and_avrcp_setup();
+    setup_demo();
 
 #ifdef HAVE_BTSTACK_STDIN
     // parse human-readable Bluetooth address

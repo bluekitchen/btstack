@@ -481,7 +481,7 @@ uint8_t hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t 
 
 /**
  * @brief Send unsolicited result code (most likely a response to a vendor-specific command not part of standard HFP).
- * @note  Emits HFP_SUBEVENT_COMPLETE when result code was sent
+ * @note  Emits HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT when result code was sent
  *
  * @param unsolicited_result_code to send
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:

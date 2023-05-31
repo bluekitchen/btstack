@@ -53,19 +53,116 @@ extern "C" {
 #include <string.h>
 
 #include "btstack_defines.h"
+#include "l2cap.h"
+
+typedef enum {
+    GOEP_CLIENT_INIT,
+    GOEP_CLIENT_W4_SDP,
+    GOEP_CLIENT_CONNECTED,
+} goep_client_state_t;
 
 /* API_START */
 
+typedef struct {
+    btstack_linked_item_t item;
+
+    uint16_t         cid;
+
+    goep_client_state_t     state;
+    bd_addr_t        bd_addr;
+    uint16_t         uuid;
+    hci_con_handle_t con_handle;
+    uint8_t          incoming;
+
+    btstack_packet_handler_t client_handler;
+    btstack_context_callback_registration_t sdp_query_request;
+
+    uint8_t          rfcomm_port;
+    uint16_t         l2cap_psm;
+    uint16_t         bearer_cid;
+    uint16_t         bearer_mtu;
+
+    uint16_t         record_index;
+
+    // cached higher layer information PBAP + MAP
+    uint32_t         profile_supported_features;
+    uint8_t          map_mas_instance_id;
+    uint8_t          map_supported_message_types;
+
+    // needed to select one of multiple MAS Instances
+    struct {
+        uint32_t supported_features;
+        uint8_t  instance_id;
+        uint8_t  supported_message_types;
+        uint8_t  rfcomm_port;
+#ifdef ENABLE_GOEP_L2CAP
+        uint16_t l2cap_psm;
+#endif
+    } mas_info;
+
+    uint8_t          obex_opcode;
+    uint32_t         obex_connection_id;
+    int              obex_connection_id_set;
+
+#ifdef ENABLE_GOEP_L2CAP
+    l2cap_ertm_config_t ertm_config;
+    uint16_t            ertm_buffer_size;
+    uint8_t           * ertm_buffer;
+#endif
+} goep_client_t;
+
+
 // remote does not expose PBAP features in SDP record
 #define PBAP_FEATURES_NOT_PRESENT ((uint32_t) -1)
+#define MAP_FEATURES_NOT_PRESENT ((uint32_t) -1)
+#define PROFILE_FEATURES_NOT_PRESENT ((uint32_t) -1)
 
 /**
  * Setup GOEP Client
  */
 void goep_client_init(void);
 
+/**
+ * @brief Connect to a GEOP server with specified UUID on a remote device.
+ * @param goep_client
+ * @param l2cap_ertm_config
+ * @param l2cap_ertm_buffer_size
+ * @param l2cap_ertm_buffer
+ * @param handler
+ * @param addr
+ * @param uuid
+ * @param instance_id e.g. used to connect to different MAP Access Servers, default: 0
+ * @param out_cid
+ * @return
+ */
+uint8_t
+goep_client_connect(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_config, uint8_t *l2cap_ertm_buffer,
+                    uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid,
+                    uint8_t instance_id, uint16_t *out_cid);
+
+/**
+ * @brief Connect to a GEOP server over L2CAP with specified PSM on a remote device.
+ * @note In contrast to goep_client_connect which searches for a OBEX service with a given UUID, this
+ *       function only supports GOEP v2.0 (L2CAP) to a specified L2CAP PSM
+ * @param goep_client
+ * @param l2cap_ertm_config
+ * @param l2cap_ertm_buffer_size
+ * @param l2cap_ertm_buffer
+ * @param handler
+ * @param addr
+ * @param l2cap_psm
+ * @param out_cid
+ * @return
+ */
+uint8_t
+goep_client_connect_l2cap(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_config, uint8_t *l2cap_ertm_buffer,
+                    uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t l2cap_psm,
+                    uint16_t *out_cid);
+
 /*
- * @brief Create GOEP connection to a GEOP server with specified UUID on a remote deivce.
+ * @brief Connect to a GEOP server with specified UUID on a remote device.
+ * @note This functions uses a single goep_client_t instance and only allows for a single goep connection
+ *       Please use goep_client_connect instead
  * @param handler 
  * @param addr
  * @param uuid
@@ -99,7 +196,22 @@ uint8_t goep_client_get_request_opcode(uint16_t goep_cid);
 /**
  * @brief Get PBAP Supported Features found in SDP record during connect
  */
-uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid); 
+uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid);
+
+/**
+ * @brief Get MAP Supported Features found in SDP record during connect
+ */
+uint32_t goep_client_get_map_supported_features(uint16_t goep_cid);
+
+/**
+ * @brief Get MAP MAS Instance ID found in SDP record during connect
+ */
+uint8_t goep_client_get_map_mas_instance_id(uint16_t goep_cid);
+
+/**
+ * @brief Get MAP MAS Supported Message Types found in SDP record during connect
+ */
+uint8_t goep_client_get_map_supported_message_types(uint16_t goep_cid);
 
 /**
  * @brief Check if GOEP 2.0 or higher features can be used
@@ -208,6 +320,14 @@ void goep_client_header_add_name(uint16_t goep_cid, const char * name);
 void goep_client_header_add_name_prefix(uint16_t goep_cid, const char * name, uint16_t name_len);
 
 /**
+ * @brief Add string encoded as unicode to current request
+ * @param goep_cid
+ * @param name
+ * @param name_len
+ */
+void goep_client_header_add_unicode_prefix(uint16_t goep_cid, uint8_t header_id, const char * name, uint16_t name_len);
+
+/**
  * @brief Add target header to current request
  * @param goep_cid
  * @param target
@@ -228,6 +348,13 @@ void goep_client_header_add_type(uint16_t goep_cid, const char * type);
  * @param count
  */
 void goep_client_header_add_count(uint16_t goep_cid, uint32_t count);
+
+/**
+ * @brief Add length header to current request
+ * @param goep_cid
+ * @param length
+ */
+void goep_client_header_add_length(uint16_t goep_cid, uint32_t length);
 
 /**
  * @brief Add application parameters header to current request
@@ -254,11 +381,34 @@ void goep_client_header_add_challenge_response(uint16_t goep_cid, const uint8_t 
 void goep_client_body_add_static(uint16_t goep_cid, const uint8_t * data, uint32_t length);
 
 /**
+ * @brief Query remaining buffer size
+ * @param goep_cid
+ * @return size
+ */
+uint16_t goep_client_body_get_outgoing_buffer_len(uint16_t goep_cid);
+
+/**
+ * @brief Add body
+ * @param goep_cid
+ * @param data
+ * @param length
+ * @param ret_length
+ */
+void goep_client_body_fillup_static(uint16_t goep_cid, const uint8_t * data, uint32_t length, uint32_t * ret_length);
+
+/**
  * @brief Execute prepared request
  * @param goep_cid
  * @param daa 
  */
 int goep_client_execute(uint16_t goep_cid);
+
+/**
+ * @brief Execute prepared request with final bit
+ * @param goep_cid
+ * @param final
+ */
+int goep_client_execute_with_final_bit(uint16_t goep_cid, bool final);
 
 /**
  * @brief De-Init GOEP Client

@@ -17,9 +17,15 @@
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 // Provide additional bytes for 3 x delete fields (in both banks)
 #define HAL_FLASH_BANK_MEMORY_STORAGE_SIZE (256 + 24)
+#define TAG_OVERHEAD 16
 #else
 #define HAL_FLASH_BANK_MEMORY_STORAGE_SIZE (256)
+#define TAG_OVERHEAD 8
 #endif
+#define HAL_FLASH_BANK_MEMORY_BANK_SIZE (HAL_FLASH_BANK_MEMORY_STORAGE_SIZE / 2)
+
+
+
 static uint8_t hal_flash_bank_memory_storage[HAL_FLASH_BANK_MEMORY_STORAGE_SIZE];
 
 static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
@@ -245,6 +251,60 @@ TEST(BSTACK_TLV, TestWriteResetRead){
     CHECK_EQUAL(buffer, data);
 }
 
+TEST(BSTACK_TLV, TestFullBank){
+    btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
+
+    // fill-up flash bank
+    uint32_t tag = 'abcd';
+    uint8_t blob[HAL_FLASH_BANK_MEMORY_BANK_SIZE - 8 - TAG_OVERHEAD];
+    btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, (uint8_t *) &blob, sizeof(blob));
+    CHECK_EQUAL(0, btstack_tlv_context.current_bank);
+    CHECK_EQUAL(HAL_FLASH_BANK_MEMORY_BANK_SIZE, btstack_tlv_context.write_offset);
+
+    // check
+    btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
+    CHECK_EQUAL(0, btstack_tlv_context.current_bank);
+    CHECK_EQUAL(HAL_FLASH_BANK_MEMORY_BANK_SIZE, btstack_tlv_context.write_offset);
+}
+
+TEST(BSTACK_TLV, TestAlmostFullBank){
+    btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
+
+    // fill-up flash bank without the last byte
+    uint32_t tag = 'abcd';
+    uint8_t blob[HAL_FLASH_BANK_MEMORY_BANK_SIZE - 8 - TAG_OVERHEAD - 1];
+    btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, (uint8_t *) &blob, sizeof(blob));
+    CHECK_EQUAL(0, btstack_tlv_context.current_bank);
+    CHECK_EQUAL(HAL_FLASH_BANK_MEMORY_BANK_SIZE-1, btstack_tlv_context.write_offset);
+
+    // check
+    btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
+    CHECK_EQUAL(0, btstack_tlv_context.current_bank);
+    CHECK_EQUAL(HAL_FLASH_BANK_MEMORY_BANK_SIZE-1, btstack_tlv_context.write_offset);
+}
+
+TEST(BSTACK_TLV, TestFullBankPlusMigrate){
+    btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
+
+    // fill-up flash bank
+    uint32_t tag = 'abcd';
+    uint8_t blob[((HAL_FLASH_BANK_MEMORY_BANK_SIZE - 8) / 2) - TAG_OVERHEAD];
+    btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, (uint8_t *) &blob, sizeof(blob));
+    btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, (uint8_t *) &blob, sizeof(blob));
+    CHECK_EQUAL(0, btstack_tlv_context.current_bank);
+    CHECK_EQUAL(HAL_FLASH_BANK_MEMORY_BANK_SIZE, btstack_tlv_context.write_offset);
+
+    // check
+    btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
+    CHECK_EQUAL(0, btstack_tlv_context.current_bank);
+    CHECK_EQUAL(HAL_FLASH_BANK_MEMORY_BANK_SIZE, btstack_tlv_context.write_offset);
+
+    // store one more -> trigger migration
+    btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, (uint8_t *) &blob, sizeof(blob));
+    CHECK_EQUAL(1, btstack_tlv_context.current_bank);
+    CHECK_EQUAL(8 + 2 * (TAG_OVERHEAD + sizeof(blob)), btstack_tlv_context.write_offset);
+}
+
 //
 TEST_GROUP(LINK_KEY_DB){
 	const hal_flash_bank_t * hal_flash_bank_impl;
@@ -329,7 +389,11 @@ TEST(LINK_KEY_DB, KeyReplacement){
 
 int main (int argc, const char * argv[]){
     // log into file using HCI_DUMP_PACKETLOGGER format
+#ifdef ENABLE_TLV_FLASH_WRITE_ONCE
+    const char * pklg_path = "hci_dump_write_once.pklg";
+#else
     const char * pklg_path = "hci_dump.pklg";
+#endif
     hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
     hci_dump_init(hci_dump_posix_fs_get_instance());
     printf("Packet Log: %s\n", pklg_path);

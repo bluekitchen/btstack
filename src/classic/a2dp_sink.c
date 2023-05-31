@@ -123,14 +123,8 @@ void a2dp_sink_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoin
     avdtp_sink_finalize_stream_endpoint(stream_endpoint);
 }
 
-uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16_t * avdtp_cid){
-	avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
-    if (stream_endpoint == NULL){
-        log_info("No local_stream_endpoint for seid %d", local_seid);
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
+uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint16_t * avdtp_cid){
     uint16_t outgoing_cid;
-
     uint8_t status = avdtp_sink_connect(bd_addr, &outgoing_cid);
     if (status != ERROR_CODE_SUCCESS){
         return status;

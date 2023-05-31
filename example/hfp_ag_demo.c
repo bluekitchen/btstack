@@ -72,11 +72,15 @@ const char hfp_ag_service_name[] = "HFP AG Demo";
 static bd_addr_t device_addr;
 static const char * device_addr_string = "00:1A:7D:DA:71:13";
 
+static uint8_t codecs[] = {
+        HFP_CODEC_CVSD,
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
-#else
-static uint8_t codecs[] = {HFP_CODEC_CVSD};
+        HFP_CODEC_MSBC,
 #endif
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+        HFP_CODEC_LC3_SWB,
+#endif
+};
 
 static uint8_t negotiated_codec = HFP_CODEC_CVSD;
 
@@ -118,29 +122,17 @@ enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
 static void dump_supported_codecs(void){
-    unsigned int i;
-    int mSBC_skipped = 0;
-    printf("Supported codecs: ");
-    for (i = 0; i < sizeof(codecs); i++){
-        switch(codecs[i]){
-            case HFP_CODEC_CVSD:
-                printf("CVSD");
-                break;
-            case HFP_CODEC_MSBC:
-                if (hci_extended_sco_link_supported()){
-                    printf(", mSBC");
-                } else {
-                    mSBC_skipped = 1;
-                }
-                break;
-            default:
-                btstack_assert(false);
-                break;
-        }
-    }
-    printf("\n");
-    if (mSBC_skipped){
-        printf("mSBC codec disabled because eSCO not supported by local controller.\n");
+    printf("Supported codecs: CVSD");
+    if (hci_extended_sco_link_supported()) {
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+        printf(", mSBC");
+#endif
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+        printf(", LC3-SWB");
+#endif
+        printf("\n");
+    } else {
+        printf("\nmSBC and/or LC3-SWB disabled as eSCO not supported by local controller.\n");
     }
 }
 
@@ -535,17 +527,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break;
                 case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
                     if (hfp_subevent_audio_connection_established_get_status(event) != ERROR_CODE_SUCCESS){
-                        printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
+                        printf("Audio connection establishment failed with status 0x%02x\n", hfp_subevent_audio_connection_established_get_status(event));
                     } else {
                         sco_handle = hfp_subevent_audio_connection_established_get_sco_handle(event);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
                         negotiated_codec = hfp_subevent_audio_connection_established_get_negotiated_codec(event);
                         switch (negotiated_codec){
-                            case 0x01:
+                            case HFP_CODEC_CVSD:
                                 printf("Using CVSD codec.\n");
                                 break;
-                            case 0x02:
+                            case HFP_CODEC_MSBC:
                                 printf("Using mSBC codec.\n");
+                                break;
+                            case HFP_CODEC_LC3_SWB:
+                                printf("Using LC3-SWB codec.\n");
                                 break;
                             default:
                                 printf("Using unknown codec 0x%02x.\n", negotiated_codec);
@@ -679,7 +674,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("Received BATTERY LEVEL indicator, value %d\n", hfp_subevent_hf_indicator_get_value(event));
                             break;
                         default:
-                            printf("Received HF INDICATOR indicator, UUID 0x%4X, value %d\n", hfp_subevent_hf_indicator_get_uuid(event), hfp_subevent_hf_indicator_get_value(event));
+                            printf("Received HF INDICATOR indicator, UUID 0x%4x, value %d\n", hfp_subevent_hf_indicator_get_uuid(event), hfp_subevent_hf_indicator_get_value(event));
                             break;
                     }
                     break;

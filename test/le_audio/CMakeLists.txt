@@ -89,6 +89,7 @@ include_directories(../../3rd-party/tinydir)
 include_directories(../../src)
 include_directories(../../example)
 include_directories(../../chipset/zephyr)
+include_directories(../../chipset/bcm)
 include_directories(../../platform/posix)
 include_directories(../../platform/embedded)
 include_directories(../../platform/lwip)
@@ -108,6 +109,7 @@ file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
 file(GLOB SOURCES_MAIN      "main.c" "btstack_lc3plus_fraunhofer.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
+file(GLOB SOURCES_BCM       "../../chipset/bcm/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 
 file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
@@ -132,6 +134,7 @@ set(SOURCES
 	${SOURCES_UECC}
 	${SOURCES_HXCMOD}
 	${SOURCES_ZEPHYR}
+	${SOURCES_BCM}
 )
 list(SORT SOURCES)
 

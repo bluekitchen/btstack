@@ -339,7 +339,11 @@ typedef enum {
     HCI_OPCODE_HCI_BCM_ENABLE_WBS = HCI_OPCODE(0x3f, 0x7e),
     HCI_OPCODE_HCI_BCM_WRITE_TX_POWER_TABLE = HCI_OPCODE (0x3f, 0x1C9),
     HCI_OPCODE_HCI_BCM_SET_TX_PWR = HCI_OPCODE (0x3f, 0x1A5),
+
     HCI_OPCODE_HCI_TI_VS_CONFIGURE_DDIP = 0xFD55,
+
+    HCI_OPCODE_HCI_RTK_CONFIGURE_SCO_ROUTING = HCI_OPCODE (0x3f, 0x93),
+    HCI_OPCODE_HCI_RTK_READ_CARD_INFO = 0xFC61,
 } hci_opcode_t;
 
 // HCI Commands - see hci_cmd.c for info on parameters
@@ -598,6 +602,7 @@ extern const hci_cmd_t hci_ti_write_hardware_register;
 
 // Relatek specific HCI commands
 extern const hci_cmd_t hci_rtk_configure_sco_routing;
+extern const hci_cmd_t hci_rtk_read_card_info;
 
 /**
  * construct HCI Command based on template

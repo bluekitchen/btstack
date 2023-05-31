@@ -507,6 +507,8 @@ int btstack_main(int argc, const char * argv[]){
     log_info("FAILURE: %u", sm_failure);
     if (we_are_central){
         log_info("ROLE: CENTRAL");
+        // match older params
+        gap_set_connection_parameters(0x60, 0x30, 0x08, 0x18, 4, 0x48, 0x02, 0x30);
     } else {
         log_info("ROLE: PERIPHERAL");
 

@@ -150,9 +150,9 @@ static const uint8_t extended_adv_data[] = {
 
 #define BASS_NUM_CLIENTS 1
 #define BASS_NUM_SOURCES 1
-static bass_source_data_t   bass_source_new;
-static bass_server_source_t bass_sources[BASS_NUM_SOURCES];
-static bass_remote_client_t bass_clients[BASS_NUM_CLIENTS];
+static bass_source_data_t       bass_source_new;
+static bass_server_source_t     bass_sources[BASS_NUM_SOURCES];
+static bass_server_connection_t bass_clients[BASS_NUM_CLIENTS];
 
 //
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -495,7 +495,7 @@ static void got_base_and_big_info() {
         printf("BASS: add Broadcast Source\n");
         // add source
         uint8_t source_index = 0;
-        broadcast_audio_scan_service_server_add_source(bass_source_new, &source_index);
+        broadcast_audio_scan_service_server_add_source(&bass_source_new, &source_index);
         broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
     }
 
@@ -964,11 +964,11 @@ static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t 
     printf("BASS Event 0x%02x: ", hci_event_gattservice_meta_get_subevent_code(packet));
     printf_hexdump(packet, size);
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED:
+        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_ADDED:
             printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED, source_id 0x%04x, pa_sync %u\n",
-                   gattservice_subevent_bass_source_added_get_source_id(packet),
-                   gattservice_subevent_bass_source_added_get_pa_sync(packet));
-            switch (gattservice_subevent_bass_source_added_get_pa_sync(packet)){
+                   gattservice_subevent_bass_server_source_added_get_source_id(packet),
+                   gattservice_subevent_bass_server_source_added_get_pa_sync(packet));
+            switch (gattservice_subevent_bass_server_source_added_get_pa_sync(packet)){
                 case LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE:
                     printf("LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE -> Request SyncInfo\n");
                     broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST);
@@ -979,10 +979,10 @@ static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t 
                     break;
             }
             break;
-        case GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED:
+        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED:
             printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED, source_id 0x%04x, pa_sync %u\n",
-                   gattservice_subevent_bass_source_added_get_source_id(packet),
-                   gattservice_subevent_bass_source_added_get_pa_sync(packet));
+                   gattservice_subevent_bass_server_source_added_get_source_id(packet),
+                   gattservice_subevent_bass_server_source_added_get_pa_sync(packet));
             // handle 'bis sync == 0'
             printf("PA Sync %u, bis_sync[0] = %u\n", bass_sources[0].data.pa_sync, bass_sources[0].data.subgroups[0].bis_sync);
             if (bass_sources[0].data.subgroups[0].bis_sync == 0){
@@ -991,8 +991,8 @@ static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t 
                 broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
             }
             break;
-        case GATTSERVICE_SUBEVENT_BASS_BROADCAST_CODE:
-            gattservice_subevent_bass_broadcast_code_get_broadcast_code(packet, broadcast_code);
+        case GATTSERVICE_SUBEVENT_BASS_SERVER_BROADCAST_CODE:
+            gattservice_subevent_bass_server_broadcast_code_get_broadcast_code(packet, broadcast_code);
             printf("GATTSERVICE_SUBEVENT_BASS_BROADCAST_CODE received: ");
             printf_hexdump(broadcast_code, 16);
             bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_DECRYPTING;

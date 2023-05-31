@@ -180,48 +180,12 @@ void btstack_chipset_bcm_set_hcd_folder_path(const char * path){
     hcd_folder_path = path;
 }
 
-static int equal_ignore_case(const char *str1, const char *str2){
-    if (!str1 || !str2) return (1);
-    int i = 0;
-    while (true){
-        if (!str1[i] && !str2[i]) return 1;
-        if (tolower(str1[i]) != tolower(str2[i])) return 0;
-        if (!str1[i] || !str2[i]) return 0;
-        i++;
-    }
-}
-
-// assumption starts with BCM or bcm
-#define MAX_DEVICE_NAME_LEN 15
 void btstack_chipset_bcm_set_device_name(const char * device_name){
     // ignore if file path already set
     if (hcd_file_path) {
         log_error("chipset-bcm: set device name called %s although path %s already set", device_name, hcd_file_path);
         return;
-    } 
-    // construct filename for long variant
-    if (strlen(device_name) > MAX_DEVICE_NAME_LEN){
-        log_error("chipset-bcm: device name %s too long", device_name);
-        return;
     }
-    char filename_complete[MAX_DEVICE_NAME_LEN+5];
-    strcpy(filename_complete, device_name);
-    strcat(filename_complete, ".hcd");
-
-    // construct short variant without revision info
-    char filename_short[MAX_DEVICE_NAME_LEN+5];
-    strcpy(filename_short, device_name);
-    uint16_t len = (uint16_t) strlen(filename_short);
-    while (len > 3){
-        char c = filename_short[len-1];
-        if (isdigit(c) == 0) break;
-        len--;
-    }    
-    if (len > 3){
-        filename_short[len-1] = 0;
-    }
-    strcat(filename_short, ".hcd");
-    log_info("chipset-bcm: looking for %s and %s", filename_short, filename_complete);
 
     // find in folder
     tinydir_dir dir = { 0 };
@@ -230,37 +194,33 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
         log_error("chipset-bcm: could not get directory for %s", hcd_folder_path);
         return;
     }
-
-    int match_short = 0;
-    int match_complete = 0;
+    uint16_t device_name_len = (uint16_t) strlen(device_name);
     while (dir.has_next) {
         tinydir_file file;
         tinydir_readfile(&dir, &file);
         tinydir_next(&dir);
-        if (equal_ignore_case(filename_complete, file.name)){
-            match_complete = 1;
+        // starts with $device_name?
+        if (strncasecmp(device_name, file.name, device_name_len) != 0) {
             continue;
         }
-        if (equal_ignore_case(filename_short, file.name)){
-            match_short = 1;
+        // long enough to have ".hcd" suffix
+        uint16_t filename_len = (uint16_t) strlen(file.name);
+        if (filename_len < 5) {
+            continue;
+        }
+        // check suffix
+        if (strncasecmp(".hcd", &file.name[filename_len - 4], device_name_len) == 0) {
+            btstack_strcpy(matched_file, sizeof(matched_file), hcd_folder_path);
+            btstack_strcat(matched_file, sizeof(matched_file), "/");
+            btstack_strcat(matched_file, sizeof(matched_file), file.name);
+            hcd_file_path = matched_file;
+            break;
         }
     }
     tinydir_close(&dir);
-    if (match_complete){
-        btstack_strcpy(matched_file, sizeof(matched_file), hcd_folder_path);
-        btstack_strcat(matched_file, sizeof(matched_file), "/");
-        btstack_strcat(matched_file, sizeof(matched_file), filename_complete);
-        hcd_file_path = matched_file;
-        return;
+    if (hcd_file_path == NULL) {
+        log_error("chipset-bcm: could not find .hcd that starts with %s at path %s", device_name, hcd_folder_path);
     }
-    if (match_short){
-        btstack_strcpy(matched_file, sizeof(matched_file), hcd_folder_path);
-        btstack_strcat(matched_file, sizeof(matched_file), "/");
-        btstack_strcat(matched_file, sizeof(matched_file), filename_short);
-        hcd_file_path = matched_file;
-        return;
-    }
-    log_error("chipset-bcm: could not find %s or %s, please provide .hcd file in %s", filename_complete, filename_short, hcd_folder_path);
 }
 
 #else

@@ -168,14 +168,13 @@ void avdtp_source_deinit(void){
     avdtp_deinit();
 }
 
-static void avdtp_source_setup_media_header(uint8_t * media_packet, uint8_t marker, uint16_t sequence_number){
+static void
+avdtp_source_setup_media_header(uint8_t *media_packet, uint8_t marker, uint16_t sequence_number, uint32_t timestamp) {
     uint8_t  rtp_version = 2;
     uint8_t  padding = 0;
     uint8_t  extension = 0;
     uint8_t  csrc_count = 0;
     uint8_t  payload_type = 0x60;
-    // uint16_t sequence_number = stream_endpoint->sequence_number;
-    uint32_t timestamp = btstack_run_loop_get_time_ms();
     uint32_t ssrc = 0x11223344;
 
     // rtp header (min size 12B)
@@ -189,36 +188,9 @@ static void avdtp_source_setup_media_header(uint8_t * media_packet, uint8_t mark
     big_endian_store_32(media_packet, pos, ssrc); // only used for multicast
 }
 
-// @deprecated, use avdtp_source_stream_send_media_payload_rtp instead
-int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, const uint8_t * payload, uint16_t payload_size, uint8_t num_frames, uint8_t marker){
-    UNUSED(avdtp_cid);
-
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
-    if (!stream_endpoint) {
-        log_error("avdtp source: no stream_endpoint with seid %d", local_seid);
-        return 0;
-    }
-
-    if (stream_endpoint->l2cap_media_cid == 0){
-        log_error("avdtp source: no media connection for seid %d", local_seid);
-        return 0;
-    }
-
-    uint32_t buffer_size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
-    uint32_t packet_size = AVDTP_MEDIA_PAYLOAD_HEADER_SIZE + payload_size + 1;
-    if (packet_size > buffer_size) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
-
-    l2cap_reserve_packet_buffer();
-    uint8_t * media_packet = l2cap_get_outgoing_buffer();
-    avdtp_source_setup_media_header(media_packet, marker, stream_endpoint->sequence_number);
-    media_packet[AVDTP_MEDIA_PAYLOAD_HEADER_SIZE] = num_frames; // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
-    (void)memcpy(&media_packet[AVDTP_MEDIA_PAYLOAD_HEADER_SIZE +1], payload, payload_size);
-    stream_endpoint->sequence_number++;
-    l2cap_send_prepared(stream_endpoint->l2cap_media_cid, (uint16_t) packet_size);
-    return packet_size;
-}
-
-uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, const uint8_t * payload, uint16_t payload_size){
+uint8_t
+avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, uint32_t timestamp,
+                                           const uint8_t *payload, uint16_t payload_size) {
     UNUSED(avdtp_cid);
 
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
@@ -237,7 +209,7 @@ uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t l
     if (packet_size > buffer_size) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     l2cap_reserve_packet_buffer();
     uint8_t * media_packet = l2cap_get_outgoing_buffer();
-    avdtp_source_setup_media_header(media_packet, marker, stream_endpoint->sequence_number);
+    avdtp_source_setup_media_header(media_packet, marker, stream_endpoint->sequence_number, timestamp);
     (void)memcpy(&media_packet[AVDTP_MEDIA_PAYLOAD_HEADER_SIZE], payload, payload_size);
     stream_endpoint->sequence_number++;
     return l2cap_send_prepared(stream_endpoint->l2cap_media_cid, (uint16_t) packet_size);

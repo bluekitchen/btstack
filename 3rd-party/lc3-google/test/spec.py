@@ -16,7 +16,7 @@
 
 import numpy as np
 
-import build.lc3 as lc3
+import lc3
 import tables as T, appendix_c as C
 
 import bwdet as m_bwdet
@@ -66,7 +66,9 @@ class SpectrumAnalysis(SpectrumQuantization):
         self.nbits_spec = 0
         self.nbits_est  = 0
 
-        self.g_idx = None
+        (self.g_idx, self.noise_factor, self.xq, self.lastnz,
+                self.nbits_residual_max, self.xg) = \
+            (None, None, None, None, None, None)
 
     def estimate_gain(self, x, nbits_spec, nbits_off, g_off):
 
@@ -309,6 +311,7 @@ class SpectrumAnalysis(SpectrumQuantization):
 
         b.write_uint((self.lastnz >> 1) - 1, nbits_lastnz)
         b.write_uint(self.lsb_mode, 1)
+        b.write_uint(self.g_idx, 8)
 
     def encode(self, bits):
 
@@ -401,6 +404,9 @@ class SpectrumSynthesis(SpectrumQuantization):
     def __init__(self, dt, sr):
 
         super().__init__(dt, sr)
+
+        (self.lastnz, self.lsb_mode, self.g_idx) = \
+            (None, None, None)
 
     def fill_noise(self, bw, x, lastnz, f_nf, nf_seed):
 
@@ -537,7 +543,7 @@ class SpectrumSynthesis(SpectrumQuantization):
         nf_seed = sum(abs(x.astype(np.int)) * range(len(x)))
 
         zero_frame = (self.lastnz <= 2 and x[0] == 0 and x[1] == 0
-                      and self.g_idx <= 0 and nf >= 7)
+                      and self.g_idx <= 0 and f_nf >= 7)
 
         if self.lsb_mode == 0:
 

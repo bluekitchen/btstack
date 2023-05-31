@@ -9,6 +9,7 @@
 #include "ble/att_db.h"
 #include "ble/sm.h"
 #include "gap.h"
+#include "btstack_debug.h"
 
 #define PREBUFFER_SIZE (HCI_INCOMING_PRE_BUFFER_SIZE + 8)
 #define TEST_MAX_MTU 23
@@ -20,6 +21,9 @@ static btstack_linked_list_t     connections;
 static uint8_t  l2cap_stack_buffer[PREBUFFER_SIZE + TEST_MAX_MTU];	// pre buffer + HCI Header + L2CAP header
 static uint16_t gatt_client_handle = 0x40;
 static hci_connection_t hci_connection;
+
+static uint8_t packet_buffer[256];
+static uint16_t packet_buffer_len;
 
 uint16_t get_gatt_client_handle(void){
 	return gatt_client_handle;
@@ -76,6 +80,28 @@ static void att_init_connection(att_connection_t * att_connection){
     att_connection->encryption_key_size = 0;
     att_connection->authenticated = 0;
 	att_connection->authorized = 0;
+}
+
+HCI_STATE hci_get_state(void){
+	return HCI_STATE_WORKING;
+}
+
+uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
+
+	btstack_assert(false);
+
+    va_list argptr;
+    va_start(argptr, cmd);
+    uint16_t len = hci_cmd_create_from_template(packet_buffer, cmd, argptr);
+    va_end(argptr);
+	hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet_buffer, len);
+	// dump_packet(HCI_COMMAND_DATA_PACKET, packet_buffer, len);
+	packet_buffer_len = len;
+	return ERROR_CODE_SUCCESS;
+}
+
+bool hci_can_send_command_packet_now(void){
+	return true;
 }
 
 bool hci_can_send_acl_le_packet_now(void){
@@ -143,9 +169,14 @@ void sm_cmac_signed_write_start(const sm_key_t key, uint8_t opcode, uint16_t att
 	//sm_notify_client(SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);      
 }
 int sm_le_device_index(uint16_t handle ){
-	return -1;
+	return 0;
 }
 void sm_send_security_request(hci_con_handle_t con_handle){
+}
+
+uint8_t sm_get_ltk(hci_con_handle_t con_handle, sm_key_t ltk){
+	memset((uint8_t*) ltk, 0x22, 16);
+	return ERROR_CODE_SUCCESS;
 }
 
 irk_lookup_state_t sm_identity_resolving_state(hci_con_handle_t con_handle){
@@ -172,11 +203,37 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_
 	return NULL;
 }
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
-	return &hci_connection;
+    if (con_handle == hci_connection.con_handle){
+        return &hci_connection;
+    } else {
+        return NULL;
+    }
 }
 void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
 	// printf("hci_connections_get_iterator not implemented in mock backend\n");
     btstack_linked_list_iterator_init(it, &connections);
+}
+
+static void hci_setup_connection(uint16_t con_handle, bd_addr_type_t type){
+    hci_connection.att_connection.mtu = 23;
+    hci_connection.att_connection.con_handle = con_handle;
+    hci_connection.att_connection.max_mtu = 23;
+    hci_connection.att_connection.encryption_key_size = 0;
+    hci_connection.att_connection.authenticated = 0;
+    hci_connection.att_connection.authorized = 0;
+
+    hci_connection.att_server.ir_le_device_db_index = 0;
+
+    hci_connection.con_handle = con_handle;
+    hci_connection.address_type = type;
+
+    if (btstack_linked_list_empty(&connections)){
+        btstack_linked_list_add(&connections, (btstack_linked_item_t *)&hci_connection);
+    }
+}
+
+void hci_setup_le_connection(uint16_t con_handle){
+    hci_setup_connection(con_handle, BD_ADDR_TYPE_LE_PUBLIC);
 }
 
 // int hci_send_cmd(const hci_cmd_t *cmd, ...){

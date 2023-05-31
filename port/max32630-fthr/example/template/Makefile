@@ -218,6 +218,7 @@ SBC_DECODER += \
 SBC_ENCODER += \
 	btstack_sbc_encoder_bluedroid.c \
 	hfp_msbc.c \
+    hfp_codec.c
 
 HXCMOD_PLAYER = \
 	hxcmod.c 						\

@@ -115,15 +115,15 @@ uint16_t bass_util_source_data_header_virtual_memcpy(const bass_source_data_t * 
 uint16_t bass_util_source_data_subgroups_virtual_memcpy(const bass_source_data_t *data, bool use_state_fields, uint16_t *source_offset,
                                                         uint16_t buffer_offset, uint8_t *buffer, uint16_t buffer_size);
 
-bool bass_util_pa_sync_state_and_subgroups_in_valid_range(uint8_t *buffer, uint16_t buffer_size);
+bool bass_util_pa_sync_state_and_subgroups_in_valid_range(const uint8_t *buffer, uint16_t buffer_size);
 
-bool bass_util_source_buffer_in_valid_range(uint8_t *buffer, uint16_t buffer_size);
+bool bass_util_source_buffer_in_valid_range(const uint8_t *buffer, uint16_t buffer_size);
 
-void bass_util_source_data_parse(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
+void bass_util_source_data_parse(const uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
                                  bool is_broadcast_receive_state);
 
-void bass_util_pa_info_and_subgroups_parse(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
-                                      bool is_broadcast_receive_state);
+void bass_util_pa_info_and_subgroups_parse(const uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
+                                           bool is_broadcast_receive_state);
 
 /* API_END */
 

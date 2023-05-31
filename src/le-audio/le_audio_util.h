@@ -45,6 +45,7 @@
 
 #include <stdint.h>
 #include "le_audio.h"
+#include "btstack_lc3.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -56,9 +57,31 @@ uint16_t le_audio_util_virtual_memcpy_helper(
 
 uint16_t le_audio_util_metadata_virtual_memcpy(const le_audio_metadata_t * metadata, uint8_t metadata_length, uint16_t * records_offset, uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset);
 
-uint16_t le_audio_util_metadata_parse(uint8_t * buffer, uint8_t buffer_size, le_audio_metadata_t * metadata);
+uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size, le_audio_metadata_t * metadata);
 
-uint16_t le_audio_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_t * event, uint16_t event_size);
+uint16_t le_audio_util_metadata_serialize(const le_audio_metadata_t *metadata, uint8_t * event, uint16_t event_size);
+
+uint16_t le_audio_util_metadata_serialize_using_mask(const le_audio_metadata_t *metadata, uint8_t * tlv_buffer, uint16_t tlv_buffer_size);
+
+
+btstack_lc3_frame_duration_t le_audio_util_get_btstack_lc3_frame_duration(le_audio_codec_frame_duration_index_t frame_duration_index);
+
+uint16_t le_audio_get_frame_duration_us(le_audio_codec_frame_duration_index_t frame_duration_index);
+le_audio_codec_frame_duration_index_t le_audio_get_frame_duration_index(uint16_t frame_duration_us);
+
+
+uint32_t le_audio_get_sampling_frequency_hz(le_audio_codec_sampling_frequency_index_t sampling_frequency_index);
+le_audio_codec_sampling_frequency_index_t le_audio_get_sampling_frequency_index(uint32_t sampling_frequency_hz);
+
+const le_audio_codec_configuration_t * le_audio_util_get_codec_setting(
+    le_audio_codec_sampling_frequency_index_t sampling_frequency_index, 
+    le_audio_codec_frame_duration_index_t frame_duration_index, 
+    le_audio_quality_t audio_quality);
+
+const le_audio_qos_configuration_t * le_audio_util_get_qos_setting(
+    le_audio_codec_sampling_frequency_index_t sampling_frequency_index, 
+    le_audio_codec_frame_duration_index_t frame_duration_index, 
+    le_audio_quality_t audio_quality, uint8_t num_channels);
 
 #if defined __cplusplus
 }

@@ -102,9 +102,12 @@ int wave_read_header(FILE *fp, int *bitdepth, int *samplesize,
         return -1;
 
     if (fread(&format, sizeof(format), 1, fp) != 1
-            || format.id       != WAVE_FORMAT_ID
-            || format.fmt      != WAVE_FORMAT_PCM
-            || format.byterate != format.samplerate * format.framesize)
+            || format.id         != WAVE_FORMAT_ID
+            || format.fmt        != WAVE_FORMAT_PCM
+            || format.channels   <= 0
+            || format.samplerate <= 0
+            || format.framesize  <= 0
+            || format.byterate   != format.samplerate * format.framesize)
         return -1;
 
     fseek(fp, sizeof(format) - (8 + format.size), SEEK_CUR);

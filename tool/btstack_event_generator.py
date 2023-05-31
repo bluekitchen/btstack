@@ -23,6 +23,7 @@ meta_events = [
     'MAP',
     'MESH',
     'PBAP',
+    'OPP'
 ]
 
 supported_event_groups = meta_events + [

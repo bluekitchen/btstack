@@ -13,6 +13,7 @@ SRC_CLASSIC_FILES = \
     avrcp_browsing_controller.c \
     avrcp_browsing_target.c \
     avrcp_controller.c \
+    avrcp_cover_art_client.c \
     avrcp_media_item_iterator.c \
     avrcp_target.c \
     bnep.c \
@@ -30,6 +31,7 @@ SRC_CLASSIC_FILES = \
     hfp_gsm_model.c \
     hfp_hf.c \
     hfp_msbc.c \
+    hfp_codec.c \
     hid_device.c \
     hsp_ag.c \
     hsp_hs.c \

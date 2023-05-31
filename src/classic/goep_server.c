@@ -526,6 +526,8 @@ uint8_t goep_server_request_can_send_now(uint16_t goep_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
+    btstack_assert(connection->state == GOEP_SERVER_CONNECTED);
+
     switch (connection->type){
         case GOEP_CONNECTION_RFCOMM:
             rfcomm_request_can_send_now_event(connection->bearer_cid);
@@ -561,6 +563,7 @@ static uint16_t goep_server_get_outgoing_buffer_len(goep_server_connection_t * c
 }
 
 static void goep_server_packet_init(goep_server_connection_t * connection){
+    btstack_assert(connection->state == GOEP_SERVER_CONNECTED);
     switch (connection->type){
 #ifdef ENABLE_GOEP_L2CAP
         case GOEP_CONNECTION_L2CAP:
@@ -573,6 +576,7 @@ static void goep_server_packet_init(goep_server_connection_t * connection){
             btstack_unreachable();
             break;
     }
+    connection->state = GOEP_SERVER_OUTGOING_BUFFER_RESERVED;
 }
 
 uint8_t goep_server_response_create_connect(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length){
@@ -602,15 +606,12 @@ uint8_t goep_server_response_create_general(uint16_t goep_cid){
     return obex_message_builder_response_create_general(buffer, buffer_len, OBEX_RESP_SUCCESS);
 }
 
-uint16_t goep_server_response_get_max_body_size(uint16_t goep_cid){
+uint16_t goep_server_response_get_max_message_size(uint16_t goep_cid){
     goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
     if (connection == NULL) {
         return 0;
     }
-    uint8_t * buffer = goep_server_get_outgoing_buffer(connection);
-    uint16_t buffer_len = goep_server_get_outgoing_buffer_len(connection);
-    uint16_t pos = big_endian_read_16(buffer, 1);
-    return buffer_len - pos;
+    return goep_server_get_outgoing_buffer_len(connection);
 }
 
 uint8_t goep_server_header_add_end_of_body(uint16_t goep_cid, const uint8_t * end_of_body, uint16_t length){
@@ -663,8 +664,12 @@ uint8_t goep_server_execute(uint16_t goep_cid, uint8_t response_code){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
+    btstack_assert(connection->state == GOEP_SERVER_OUTGOING_BUFFER_RESERVED);
+
+    connection->state = GOEP_SERVER_CONNECTED;
+
     uint8_t * buffer = goep_server_get_outgoing_buffer(connection);
-    // set reponse code
+    // set response code
     buffer[0] = response_code;
     uint16_t pos = big_endian_read_16(buffer, 1);
     switch (connection->type) {

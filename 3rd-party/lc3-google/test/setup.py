@@ -15,13 +15,12 @@
 # limitations under the License.
 #
 
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
 import os, sys, glob
 
 if len(sys.argv) <= 1:
   sys.argv = sys.argv + [
-    'build', '--build-base', os.getcwd() + os.sep + 'build',
-    'install', '--install-lib', os.getcwd() + os.sep + 'build' ]
+    'build', '--build-platlib', os.getcwd() + os.sep + 'build' ]
 
 INC_DIR = '..' + os.sep + 'include'
 SRC_DIR = '..' + os.sep + 'src'
@@ -37,8 +36,8 @@ depends = [ 'ctypes.h' ] + \
 
 includes = [ SRC_DIR, INC_DIR ]
 
-ctiming = Extension('lc3',
-  extra_compile_args = ['-std=c11'],
+extension = Extension('lc3',
+  extra_compile_args = [ '-std=c11', '-ffast-math' ],
   define_macros = [ ('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION') ],
   sources = sources,
   depends = depends,
@@ -47,4 +46,4 @@ ctiming = Extension('lc3',
 setup(name = 'LC3',
       version = '1.0',
       description = 'LC3 Test Python Module',
-      ext_modules = [ctiming])
+      ext_modules = [ extension ])

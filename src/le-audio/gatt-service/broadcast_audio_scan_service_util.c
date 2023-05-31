@@ -113,7 +113,7 @@ bass_util_source_data_subgroups_virtual_memcpy(const bass_source_data_t *data, b
     return stored_bytes;
 }
 
-bool bass_util_pa_sync_state_and_subgroups_in_valid_range(uint8_t *buffer, uint16_t buffer_size){
+bool bass_util_pa_sync_state_and_subgroups_in_valid_range(const uint8_t *buffer, uint16_t buffer_size){
     uint8_t pos = 0;
     // pa_sync_state
     uint8_t pa_sync_state = buffer[pos++];
@@ -169,7 +169,7 @@ bool bass_util_pa_sync_state_and_subgroups_in_valid_range(uint8_t *buffer, uint1
     return (pos == buffer_size);
 }
 
-bool bass_util_source_buffer_in_valid_range(uint8_t *buffer, uint16_t buffer_size){
+bool bass_util_source_buffer_in_valid_range(const uint8_t *buffer, uint16_t buffer_size){
     if (buffer_size < 15){ 
         log_info("Add Source opcode, buffer too small");
         return false;
@@ -199,7 +199,7 @@ bool bass_util_source_buffer_in_valid_range(uint8_t *buffer, uint16_t buffer_siz
 }
 
 void
-bass_util_pa_info_and_subgroups_parse(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
+bass_util_pa_info_and_subgroups_parse(const uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
                                       bool is_broadcast_receive_state) {
     UNUSED(buffer_size);
     uint8_t pos = 0;
@@ -234,7 +234,7 @@ bass_util_pa_info_and_subgroups_parse(uint8_t *buffer, uint16_t buffer_size, bas
     }
 }
 
-void bass_util_source_data_parse(uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
+void bass_util_source_data_parse(const uint8_t *buffer, uint16_t buffer_size, bass_source_data_t *source_data,
                                  bool is_broadcast_receive_state) {
     UNUSED(buffer_size);
     uint8_t pos = 0;

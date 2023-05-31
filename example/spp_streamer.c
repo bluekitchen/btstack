@@ -207,17 +207,17 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr);
                     rfcomm_channel_nr = rfcomm_event_incoming_connection_get_server_channel(packet);
                     rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
-                    printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
+                    printf("RFCOMM channel 0x%02x requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
                     rfcomm_accept_connection(rfcomm_cid);
 					break;
 					
 				case RFCOMM_EVENT_CHANNEL_OPENED:
 					if (rfcomm_event_channel_opened_get_status(packet)) {
-                        printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
+                        printf("RFCOMM channel open failed, status 0x%02x\n", rfcomm_event_channel_opened_get_status(packet));
                     } else {
                         rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
                         rfcomm_mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
-                        printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_cid, rfcomm_mtu);
+                        printf("RFCOMM channel open succeeded. New RFCOMM Channel ID 0x%02x, max frame size %u\n", rfcomm_cid, rfcomm_mtu);
 
                         spp_test_data_len = rfcomm_mtu;
                         if (spp_test_data_len > sizeof(test_data)){

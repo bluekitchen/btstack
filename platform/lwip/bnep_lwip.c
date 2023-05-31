@@ -41,7 +41,6 @@
  * bnep_lwip_lwip_.c
  */
 
-#include "lwip/netif.h"
 #include "lwip/sys.h"
 #include "lwip/arch.h"
 #include "lwip/api.h"
@@ -52,6 +51,8 @@
 #include "lwip/sockets.h"
 #include "lwip/prot/dhcp.h"
 #include "netif/etharp.h"
+
+#include "btstack_bool.h"
 
 #if LWIP_IPV6
 #include "lwip/ethip6.h"
@@ -70,7 +71,13 @@
 #include "btstack_run_loop.h"
 #include "lwip/timeouts.h"
 #else
-#include "btstack_run_loop_freertos.h"
+#ifdef HAVE_FREERTOS_INCLUDE_PREFIX
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#else
+#include "FreeRTOS.h"
+#include "queue.h"
+#endif
 #endif
 
 /* Short name used for netif in lwIP */
@@ -80,7 +87,7 @@
 #define LWIP_TIMER_INTERVAL_MS 25
 
 static void bnep_lwip_outgoing_process(void * arg);
-static int bnep_lwip_outgoing_packets_empty(void);
+static bool bnep_lwip_outgoing_packets_empty(void);
 
 // lwip data
 static struct netif btstack_netif;
@@ -92,6 +99,7 @@ static btstack_ring_buffer_t bnep_lwip_outgoing_queue;
 #else
 static QueueHandle_t bnep_lwip_outgoing_queue;
 #endif
+btstack_context_callback_registration_t bnep_lwip_outgoing_callback_registration;
 
 #if NO_SYS
 static btstack_timer_source_t   bnep_lwip_timer;
@@ -152,9 +160,9 @@ static struct pbuf * bnep_lwip_outgoing_pop_packet(void){
     return p;
 }
 
-static int bnep_lwip_outgoing_packets_empty(void){
+static bool bnep_lwip_outgoing_packets_empty(void){
 #if NO_SYS
-    return btstack_ring_buffer_empty(&bnep_lwip_outgoing_queue);
+    return btstack_ring_buffer_empty(&bnep_lwip_outgoing_queue) != 0;
  #else
     return uxQueueMessagesWaiting(bnep_lwip_outgoing_queue) == 0;
 #endif
@@ -181,7 +189,8 @@ static void bnep_lwip_trigger_outgoing_process(void){
 #if NO_SYS
     bnep_lwip_outgoing_process(NULL);
 #else
-    btstack_run_loop_freertos_execute_code_on_main_thread(&bnep_lwip_outgoing_process, NULL);
+    bnep_lwip_outgoing_callback_registration.callback = &bnep_lwip_outgoing_process;
+    btstack_run_loop_execute_on_main_thread(&bnep_lwip_outgoing_callback_registration);
 #endif
 }
 
@@ -545,4 +554,8 @@ uint8_t bnep_lwip_connect(bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src,
     } else {
         return ERROR_CODE_SUCCESS;
     }
+}
+
+struct netif *bnep_lwip_get_interface(void){
+    return &btstack_netif;
 }

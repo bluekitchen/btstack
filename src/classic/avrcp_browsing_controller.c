@@ -73,7 +73,7 @@ static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avr
             attribute_count = AVRCP_MEDIA_ATTR_ALL;  // 0
             break;
         default:
-            attribute_count    = count_set_bits_uint32(connection->attr_bitmap & 0xff);
+            attribute_count    = count_set_bits_uint32(connection->attr_bitmap & ((1 << AVRCP_MEDIA_ATTR_RESERVED)-1));
             attributes_to_copy = attribute_count;
             break;
     }
@@ -120,7 +120,7 @@ static int avrcp_browsing_controller_send_get_item_attributes_cmd(uint16_t cid, 
             attribute_count = 0;
             break;
         default:
-            attribute_count = count_set_bits_uint32(connection->attr_bitmap & 0xff);
+            attribute_count    = count_set_bits_uint32(connection->attr_bitmap & ((1 << AVRCP_MEDIA_ATTR_RESERVED)-1));
             attributes_to_copy = attribute_count;
             break;
     }

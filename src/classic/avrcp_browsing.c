@@ -49,12 +49,6 @@
 #include "classic/sdp_util.h"
 #include "classic/avrcp_browsing.h"
 
-typedef struct {
-    uint16_t browsing_cid;
-    uint16_t browsing_l2cap_psm;
-    uint16_t browsing_version;
-} avrcp_browsing_sdp_query_context_t; 
-
 static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // higher layer callbacks
@@ -65,7 +59,6 @@ static btstack_packet_handler_t avrcp_browsing_target_packet_handler;
 // sdp query
 static bd_addr_t avrcp_browsing_sdp_addr;
 static btstack_context_callback_registration_t avrcp_browsing_handle_sdp_client_query_request;
-static avrcp_browsing_sdp_query_context_t avrcp_browsing_sdp_query_context;
 
 static bool avrcp_browsing_l2cap_service_registered;
 
@@ -384,12 +377,65 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
 
 }
 
-void avrcp_browsing_init(void){
-    if (avrcp_browsing_l2cap_service_registered) return;
-    int status = l2cap_register_service(&avrcp_browsing_packet_handler, PSM_AVCTP_BROWSING, 0xffff, LEVEL_2);
+static void avrcp_browsing_handle_sdp_query_complete(avrcp_connection_t * connection, uint8_t status){
 
-    if (status != ERROR_CODE_SUCCESS) return;
-    avrcp_browsing_l2cap_service_registered = true;
+    if (connection->browsing_connection == NULL) {
+        return;
+    }
+    if (connection->browsing_connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE){
+        return;
+    }
+
+    // l2cap available?
+    if (status == ERROR_CODE_SUCCESS){
+        if (connection->browsing_l2cap_psm == 0){
+            status = SDP_SERVICE_NOT_FOUND;
+        }
+    }
+
+    if (status == ERROR_CODE_SUCCESS) {
+        // ready to connect
+        connection->browsing_connection->state = AVCTP_CONNECTION_W2_L2CAP_CONNECT;
+
+        // check if both events have been handled
+        avrcp_connection_t *connection_with_opposite_role;
+        switch (connection->role) {
+            case AVRCP_CONTROLLER:
+                connection_with_opposite_role = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET,
+                                                                                            connection->avrcp_cid);
+                break;
+            case AVRCP_TARGET:
+                connection_with_opposite_role = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER,
+                                                                                            connection->avrcp_cid);
+                break;
+            default:
+                btstack_assert(false);
+                return;
+        }
+        if (connection_with_opposite_role->browsing_connection->state == AVCTP_CONNECTION_W2_L2CAP_CONNECT) {
+
+            connection->browsing_connection->state                    = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+            connection_with_opposite_role->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+
+            l2cap_ertm_create_channel(avrcp_browsing_packet_handler,
+                                      connection->remote_addr,
+                                      connection->browsing_l2cap_psm,
+                                      &connection->browsing_connection->ertm_config,
+                                      connection->browsing_connection->ertm_buffer,
+                                      connection->browsing_connection->ertm_buffer_size,
+                                      NULL);
+        }
+    } else {
+        avrcp_browsing_finalize_connection(connection);
+        avrcp_browsing_emit_connection_established(connection->avrcp_browsing_cid, connection->remote_addr, status);
+    }
+}
+
+void avrcp_browsing_init(void){
+    avrcp_register_browsing_sdp_query_complete_handler(&avrcp_browsing_handle_sdp_query_complete);
+    if (avrcp_browsing_l2cap_service_registered) return;
+    uint8_t status = l2cap_register_service(&avrcp_browsing_packet_handler, PSM_AVCTP_BROWSING, 0xffff, LEVEL_2);
+    avrcp_browsing_l2cap_service_registered = status == ERROR_CODE_SUCCESS;
 }
 
 void avrcp_browsing_deinit(void){
@@ -399,105 +445,9 @@ void avrcp_browsing_deinit(void){
 
     (void) memset(avrcp_browsing_sdp_addr, 0, 6);
     (void) memset(&avrcp_browsing_handle_sdp_client_query_request, 0, sizeof(avrcp_browsing_handle_sdp_client_query_request));
-    (void) memset(&avrcp_browsing_sdp_query_context, 0, sizeof(avrcp_browsing_sdp_query_context_t));
 
     avrcp_browsing_l2cap_service_registered = false;
 }
-
-static void avrcp_browsing_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(packet_type);
-    UNUSED(channel);
-    UNUSED(size);
-
-    avrcp_connection_t * avrcp_target_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_sdp_query_context.browsing_cid);
-    avrcp_connection_t * avrcp_controller_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_sdp_query_context.browsing_cid);
-
-    if ((avrcp_target_connection == NULL) || (avrcp_target_connection->browsing_connection == NULL)) return;
-    if (avrcp_target_connection->browsing_connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) return;
-
-    if ((avrcp_controller_connection == NULL) || (avrcp_controller_connection->browsing_connection == NULL)) return;
-    if (avrcp_controller_connection->browsing_connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) return;
-    
-
-    uint8_t status;
-    uint16_t browsing_l2cap_psm;
-
-    switch (hci_event_packet_get_type(packet)){
-        case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
-            avrcp_handle_sdp_client_query_attribute_value(packet);
-            break;
-
-        case SDP_EVENT_QUERY_COMPLETE:
-            status = sdp_event_query_complete_get_status(packet);
-
-            if (status != ERROR_CODE_SUCCESS){
-                avrcp_browsing_emit_connection_established(avrcp_target_connection->avrcp_browsing_cid, avrcp_browsing_sdp_addr, status);
-                avrcp_browsing_finalize_connection(avrcp_target_connection);
-                avrcp_browsing_finalize_connection(avrcp_controller_connection);
-                break;
-            }
-
-            browsing_l2cap_psm = avrcp_sdp_query_browsing_l2cap_psm();
-            if (!browsing_l2cap_psm){
-                avrcp_browsing_emit_connection_established(avrcp_target_connection->avrcp_browsing_cid, avrcp_browsing_sdp_addr, SDP_SERVICE_NOT_FOUND);
-                avrcp_browsing_finalize_connection(avrcp_target_connection);
-                avrcp_browsing_finalize_connection(avrcp_controller_connection);
-                break;
-            }
-
-            l2cap_ertm_create_channel(avrcp_browsing_packet_handler, avrcp_browsing_sdp_addr, browsing_l2cap_psm,
-                                            &avrcp_controller_connection->browsing_connection->ertm_config,
-                                            avrcp_controller_connection->browsing_connection->ertm_buffer,
-                                            avrcp_controller_connection->browsing_connection->ertm_buffer_size, NULL);
-            break;
-
-        default:
-            break;
-    }
-    // register the SDP Query request to check if there is another connection waiting for the query
-    // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
-    (void) sdp_client_register_query_callback(&avrcp_browsing_handle_sdp_client_query_request);
-}
-
-static void avrcp_browsing_handle_start_sdp_client_query(void * context){
-    UNUSED(context);
-    // TODO
-
-    btstack_linked_list_t connections = avrcp_get_connections();
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->browsing_connection == NULL) continue;
-        if (connection->browsing_connection->state != AVCTP_CONNECTION_W2_SEND_SDP_QUERY) continue;
-        connection->browsing_connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
-        
-        // prevent triggering SDP query twice (for each role once)
-        avrcp_connection_t * connection_with_opposite_role;       
-        switch (connection->role){
-            case AVRCP_CONTROLLER:
-                connection_with_opposite_role = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, connection->avrcp_cid);
-                break;
-            case AVRCP_TARGET:
-                connection_with_opposite_role = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, connection->avrcp_cid);
-                break;
-            default:    
-                btstack_assert(false);
-                return;
-        }
-        if (connection->browsing_connection != NULL){
-            connection_with_opposite_role->browsing_connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
-        }
-
-        avrcp_browsing_sdp_query_context.browsing_l2cap_psm = 0;
-        avrcp_browsing_sdp_query_context.browsing_version = 0;
-        avrcp_browsing_sdp_query_context.browsing_cid = connection->avrcp_browsing_cid;
-        
-        sdp_client_query_uuid16(&avrcp_browsing_handle_sdp_client_query_result, (uint8_t *) connection->remote_addr, BLUETOOTH_PROTOCOL_AVCTP);
-        return;
-    }
-}
-
 
 uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid){
     btstack_assert(avrcp_browsing_controller_packet_handler != NULL);
@@ -538,12 +488,10 @@ uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uin
 
     if (connection_controller->browsing_l2cap_psm == 0){
         memcpy(avrcp_browsing_sdp_addr, remote_addr, 6);
-        connection_controller->browsing_connection->state = AVCTP_CONNECTION_W2_SEND_SDP_QUERY;
-        connection_target->browsing_connection->state     = AVCTP_CONNECTION_W2_SEND_SDP_QUERY;
-        avrcp_browsing_handle_sdp_client_query_request.callback = &avrcp_browsing_handle_start_sdp_client_query;
+        connection_controller->browsing_connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+        connection_target->browsing_connection->state     = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
 
-        // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
-        (void) sdp_client_register_query_callback(&avrcp_browsing_handle_sdp_client_query_request);
+        avrcp_trigger_sdp_query(connection_controller, connection_target);
         return ERROR_CODE_SUCCESS;
     } else {
         connection_controller->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;

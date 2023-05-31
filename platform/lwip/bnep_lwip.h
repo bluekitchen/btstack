@@ -49,6 +49,8 @@
 #include "bluetooth.h"
 #include "btstack_defines.h"
 
+#include "lwip/netif.h"
+
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -79,6 +81,11 @@ uint8_t bnep_lwip_register_service(uint16_t service_uuid, uint16_t max_frame_siz
  * @param uuid_dest
  */
 uint8_t bnep_lwip_connect(bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src, uint16_t uuid_dest);
+
+/**
+ * @brief Get the Bluetooth lwIP network interface
+ */
+struct netif *bnep_lwip_get_interface(void);
 
 #if defined __cplusplus
 }

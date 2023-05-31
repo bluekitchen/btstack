@@ -2608,5 +2608,12 @@ const hci_cmd_t hci_ti_write_hardware_register = {
  * @brief Configure SCO routing on Realtek Controllers
  */
 const hci_cmd_t hci_rtk_configure_sco_routing = {
-    HCI_OPCODE (0x3f, 0x93), "111111111"
+    HCI_OPCODE_HCI_RTK_CONFIGURE_SCO_ROUTING, "111111111"
+};
+
+/**
+* @brief Read Card Information
+*/
+const hci_cmd_t hci_rtk_read_card_info = {
+    HCI_OPCODE_HCI_RTK_READ_CARD_INFO, "11111"
 };

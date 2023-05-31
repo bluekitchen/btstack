@@ -12,6 +12,7 @@ link_libraries( CppUTestExt )
 
 include_directories(.)
 include_directories(../../src)
+include_directories(../../3rd-party/rijndael/)
 include_directories( ${CMAKE_CURRENT_BINARY_DIR})
 
 set(SOURCES
@@ -26,13 +27,16 @@ set(SOURCES
 	../../src/btstack_util.c
 	../../src/hci_cmd.c
 	../../src/hci_dump.c
+	../../src/le-audio/gatt-service/coordinated_set_identification_service_client.c
+	../../src/btstack_crypto.c
+	../../3rd-party/rijndael/rijndael.c
 )
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
 # create targets
-foreach(EXAMPLE_FILE le_central.cpp gatt_client_test.cpp)
+foreach(EXAMPLE_FILE le_central.cpp gatt_client_test.cpp gatt_client_crypto_test.cpp)
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
 	set (SOURCE_FILES ${EXAMPLE_FILE} mock.c)
 	# profile.h

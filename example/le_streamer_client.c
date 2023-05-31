@@ -57,8 +57,16 @@
 
 #include "btstack.h"
 
-// prototypes
-static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+typedef struct {
+    char name;
+    int le_notification_enabled;
+    int  counter;
+    char test_data[200];
+    int  test_data_len;
+    uint32_t test_data_sent;
+    uint32_t test_data_start;
+    btstack_context_callback_registration_t write_without_response_request;
+} le_streamer_connection_t;
 
 typedef enum {
     TC_OFF,
@@ -72,6 +80,7 @@ typedef enum {
     TC_W4_TEST_DATA
 } gc_state_t;
 
+static char *const le_streamer_server_name = "LE Streamer";
 static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
@@ -96,6 +105,11 @@ static int listener_registered;
 static gc_state_t state = TC_OFF;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+// prototypes
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void le_streamer_handle_can_write_without_response(void * context);
+static void le_streamer_client_request_to_send(le_streamer_connection_t * connection);
+
 /*
  * @section Track throughput
  * @text We calculate the throughput by setting a start time and measuring the amount of 
@@ -115,16 +129,6 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 #define REPORT_INTERVAL_MS 3000
 
 // support for multiple clients
-typedef struct {
-    char name;
-    int le_notification_enabled;
-    int  counter;
-    char test_data[200];
-    int  test_data_len;
-    uint32_t test_data_sent;
-    uint32_t test_data_start;
-} le_streamer_connection_t;
-
 static le_streamer_connection_t le_streamer_connection;
 
 static void test_reset(le_streamer_connection_t * context){
@@ -149,34 +153,37 @@ static void test_track_data(le_streamer_connection_t * context, int bytes_sent){
 /* LISTING_END(tracking): Tracking throughput */
 
 
-// stramer
-static void streamer(le_streamer_connection_t * context){
-    if (connection_handle == HCI_CON_HANDLE_INVALID) return;
+// streamer
+static void le_streamer_handle_can_write_without_response(void * context){
+    le_streamer_connection_t * connection = (le_streamer_connection_t *) context;
 
     // create test data
-    context->counter++;
-    if (context->counter > 'Z') context->counter = 'A';
-    memset(context->test_data, context->counter, context->test_data_len);
+    connection->counter++;
+    if (connection->counter > 'Z') connection->counter = 'A';
+    memset(connection->test_data, connection->counter, connection->test_data_len);
 
     // send
-    uint8_t status = gatt_client_write_value_of_characteristic_without_response(connection_handle, le_streamer_characteristic_rx.value_handle, context->test_data_len, (uint8_t*) context->test_data);
+    uint8_t status = gatt_client_write_value_of_characteristic_without_response(connection_handle, le_streamer_characteristic_rx.value_handle, connection->test_data_len, (uint8_t*) connection->test_data);
     if (status){
-        printf("error %02x for write without response!\n", status);
+        printf("Write without response failed, status 0x%02x.\n", status);
         return;
     } else {
-        test_track_data(&le_streamer_connection, context->test_data_len);
+        test_track_data(connection, connection->test_data_len);
     }
 
     // request again
-    gatt_client_request_can_write_without_response_event(handle_gatt_client_event, connection_handle);
+    le_streamer_client_request_to_send(connection);
 }
 
+static void le_streamer_client_request_to_send(le_streamer_connection_t * connection){
+    connection->write_without_response_request.callback = &le_streamer_handle_can_write_without_response;
+    connection->write_without_response_request.context = connection;
+    gatt_client_request_to_write_without_response(&connection->write_without_response_request, connection_handle);
+}
 
-// returns 1 if name is found in advertisement
-static int advertisement_report_contains_name(const char * name, uint8_t * advertisement_report){
+// returns true if name is found in advertisement
+static bool advertisement_contains_name(const char * name, uint8_t adv_len, const uint8_t * adv_data){
     // get advertisement from report event
-    const uint8_t * adv_data = gap_event_advertising_report_get_data(advertisement_report);
-    uint8_t         adv_len  = gap_event_advertising_report_get_data_length(advertisement_report);
     uint16_t        name_len = (uint8_t) strlen(name);
 
     // iterate over advertisement data
@@ -190,13 +197,13 @@ static int advertisement_report_contains_name(const char * name, uint8_t * adver
             case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
                 // compare prefix
                 if (data_size < name_len) break;
-                if (memcmp(data, name, name_len) == 0) return 1;
-                return 1;
+                if (memcmp(data, name, name_len) == 0) return true;
+                break;
             default:
                 break;
         }
     }
-    return 0;
+    return false;
 }
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -216,7 +223,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case GATT_EVENT_QUERY_COMPLETE:
                     att_status = gatt_event_query_complete_get_att_status(packet);
                     if (att_status != ATT_ERROR_SUCCESS){
-                        printf("SERVICE_QUERY_RESULT - Error status %x.\n", att_status);
+                        printf("SERVICE_QUERY_RESULT, ATT Error 0x%02x.\n", att_status);
                         gap_disconnect(connection_handle);
                         break;  
                     } 
@@ -238,7 +245,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case GATT_EVENT_QUERY_COMPLETE:
                     att_status = gatt_event_query_complete_get_att_status(packet);
                     if (att_status != ATT_ERROR_SUCCESS){
-                        printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", att_status);
+                        printf("CHARACTERISTIC_QUERY_RESULT, ATT Error 0x%02x.\n", att_status);
                         gap_disconnect(connection_handle);
                         break;  
                     } 
@@ -260,7 +267,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case GATT_EVENT_QUERY_COMPLETE:
                     att_status = gatt_event_query_complete_get_att_status(packet);
                     if (att_status != ATT_ERROR_SUCCESS){
-                        printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", att_status);
+                        printf("CHARACTERISTIC_QUERY_RESULT, ATT Error 0x%02x.\n", att_status);
                         gap_disconnect(connection_handle);
                         break;  
                     } 
@@ -285,7 +292,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     state = TC_W4_TEST_DATA;
 #if (TEST_MODE & TEST_MODE_WRITE_WITHOUT_RESPONSE)
                     printf("Start streaming - request can send now.\n");
-                    gatt_client_request_can_write_without_response_event(handle_gatt_client_event, connection_handle);
+                    le_streamer_client_request_to_send(&le_streamer_connection);
 #endif
                     break;
                 default:
@@ -296,12 +303,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case TC_W4_ENABLE_NOTIFICATIONS_COMPLETE:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_QUERY_COMPLETE:
-                    printf("Notifications enabled, ATT status %02x\n", gatt_event_query_complete_get_att_status(packet));
+                    printf("Notifications enabled, ATT status 0x%02x\n", gatt_event_query_complete_get_att_status(packet));
                     if (gatt_event_query_complete_get_att_status(packet) != ATT_ERROR_SUCCESS) break;
                     state = TC_W4_TEST_DATA;
 #if (TEST_MODE & TEST_MODE_WRITE_WITHOUT_RESPONSE)
                     printf("Start streaming - request can send now.\n");
-                    gatt_client_request_can_write_without_response_event(handle_gatt_client_event, connection_handle);
+                    le_streamer_client_request_to_send(&le_streamer_connection);
 #endif
                     break;
                 default:
@@ -317,10 +324,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case GATT_EVENT_QUERY_COMPLETE:
                     break;
                 case GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE:
-                    streamer(&le_streamer_connection);
+                    le_streamer_handle_can_write_without_response(&le_streamer_connection);
                     break;
                 default:
-                    printf("Unknown packet type %x\n", hci_event_packet_get_type(packet));
+                    printf("Unknown packet type 0x%02x\n", hci_event_packet_get_type(packet));
                     break;
             }
             break;
@@ -346,15 +353,30 @@ static void le_streamer_client_start(void){
     }
 }
 
+static void le_stream_server_found(void) {
+    // stop scanning, and connect to the device
+    state = TC_W4_CONNECT;
+    gap_stop_scan();
+    printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(le_streamer_addr));
+    gap_connect(le_streamer_addr,le_streamer_addr_type);
+}
+
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    
+
+    static const char * const phy_names[] = {
+            "1 M", "2 M", "Codec"
+    };
+
     uint16_t conn_interval;
-    uint8_t event = hci_event_packet_get_type(packet);
-    switch (event) {
+    hci_con_handle_t con_handle;
+    const uint8_t * adv_data;
+    uint8_t         adv_len;
+
+    switch (hci_event_packet_get_type(packet)) {
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
             if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
@@ -366,30 +388,66 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         case GAP_EVENT_ADVERTISING_REPORT:
             if (state != TC_W4_SCAN_RESULT) return;
             // check name in advertisement
-            if (!advertisement_report_contains_name("LE Streamer", packet)) return;
+            adv_data = gap_event_advertising_report_get_data(packet);
+            adv_len  = gap_event_advertising_report_get_data_length(packet);
+            if (!advertisement_contains_name(le_streamer_server_name, adv_len, adv_data)) return;
+            // match connecting phy
+            gap_set_connection_phys(1);
             // store address and type
             gap_event_advertising_report_get_address(packet, le_streamer_addr);
             le_streamer_addr_type = gap_event_advertising_report_get_address_type(packet);
-            // stop scanning, and connect to the device
-            state = TC_W4_CONNECT;
-            gap_stop_scan();
-            printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(le_streamer_addr));
-            gap_connect(le_streamer_addr,le_streamer_addr_type);
+            le_stream_server_found();
             break;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
+            if (state != TC_W4_SCAN_RESULT) return;
+            // check name in advertisement
+            adv_data = gap_event_extended_advertising_report_get_data(packet);
+            adv_len  = gap_event_extended_advertising_report_get_data_length(packet);
+            if (!advertisement_contains_name(le_streamer_server_name, adv_len, adv_data)) return;
+            // match connecting phy
+            if (gap_event_extended_advertising_report_get_primary_phy(packet) == 1){
+                // LE 1M PHY => use 1M or 2M PHY
+                gap_set_connection_phys(3);
+            } else {
+                // Coded PHY => use Coded PHY
+                gap_set_connection_phys(4);
+            }
+            // store address and type
+            gap_event_extended_advertising_report_get_address(packet, le_streamer_addr);
+            le_streamer_addr_type = gap_event_extended_advertising_report_get_address_type(packet);
+            le_stream_server_found();
+            break;
+#endif
         case HCI_EVENT_LE_META:
             // wait for connection complete
-            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-            if (state != TC_W4_CONNECT) return;
-            connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-            // print connection parameters (without using float operations)
-            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
-            printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
-            printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));  
-            // initialize gatt client context with handle, and add it to the list of active clients
-            // query primary services
-            printf("Search for LE Streamer service.\n");
-            state = TC_W4_SERVICE_RESULT;
-            gatt_client_discover_primary_services_by_uuid128(handle_gatt_client_event, connection_handle, le_streamer_service_uuid);
+            switch (hci_event_le_meta_get_subevent_code(packet)){
+                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    if (state != TC_W4_CONNECT) return;
+                    connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    // print connection parameters (without using float operations)
+                    conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+                    printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
+                    printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));
+                    // initialize gatt client context with handle, and add it to the list of active clients
+                    // query primary services
+                    printf("Search for LE Streamer service.\n");
+                    state = TC_W4_SERVICE_RESULT;
+                    gatt_client_discover_primary_services_by_uuid128(handle_gatt_client_event, connection_handle, le_streamer_service_uuid);
+                    break;
+                case HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE:
+                    con_handle = hci_subevent_le_data_length_change_get_connection_handle(packet);
+                    printf("- LE Connection 0x%04x: data length change - max %u bytes per packet\n", con_handle,
+                           hci_subevent_le_data_length_change_get_max_tx_octets(packet));
+                    break;
+                case HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE:
+                    con_handle = hci_subevent_le_phy_update_complete_get_connection_handle(packet);
+                    printf("- LE Connection 0x%04x: PHY update - using LE %s PHY now\n", con_handle,
+                           phy_names[hci_subevent_le_phy_update_complete_get_tx_phy(packet)]);
+                    break;
+                default:
+                    break;
+            }
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             // unregister listener
@@ -454,6 +512,11 @@ int btstack_main(int argc, const char * argv[]){
 
     // use different connection parameters: conn interval min/max (* 1.25 ms), slave latency, supervision timeout, CE len min/max (* 0.6125 ms) 
     // gap_set_connection_parameters(0x06, 0x06, 4, 1000, 0x01, 0x06 * 2);
+
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    // scan on Coded and 1M PHYs
+    gap_set_scan_phys(5);
+#endif
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

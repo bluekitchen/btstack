@@ -207,12 +207,10 @@ int a2dp_max_media_payload_size(uint16_t avdtp_cid, uint8_t local_seid){
     return avdtp_max_media_payload_size(avdtp_cid, local_seid);
 }
 
-int a2dp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker){
-    return avdtp_source_stream_send_media_payload(avdtp_cid, local_seid, storage, num_bytes_to_copy, num_frames, marker);
-}
-
-uint8_t a2dp_source_stream_send_media_payload_rtp(uint16_t a2dp_cid, uint8_t local_seid, uint8_t marker, uint8_t * payload, uint16_t payload_size){
-    return avdtp_source_stream_send_media_payload_rtp(a2dp_cid, local_seid, marker, payload, payload_size);
+uint8_t
+a2dp_source_stream_send_media_payload_rtp(uint16_t a2dp_cid, uint8_t local_seid, uint8_t marker, uint32_t timestamp,
+                                          uint8_t *payload, uint16_t payload_size) {
+    return avdtp_source_stream_send_media_payload_rtp(a2dp_cid, local_seid, marker, timestamp, payload, payload_size);
 }
 
 uint8_t	a2dp_source_stream_send_media_packet(uint16_t a2dp_cid, uint8_t local_seid, const uint8_t * packet, uint16_t size){

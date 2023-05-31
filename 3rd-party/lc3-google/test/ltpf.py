@@ -17,7 +17,7 @@
 import numpy as np
 import scipy.signal as signal
 
-import build.lc3 as lc3
+import lc3
 import tables as T, appendix_c as C
 
 ### ------------------------------------------------------------------------ ###
@@ -133,15 +133,6 @@ class Ltpf:
 
         (self.pitch_present, self.pitch_index) = (None, None)
 
-    def get_data(self):
-
-        return { 'active' : self.active,
-                 'pitch_index' : self.pitch_index }
-
-    def get_nbits(self):
-
-        return 1 + 10 * int(self.pitch_present)
-
 
 class LtpfAnalysis(Ltpf):
 
@@ -159,6 +150,15 @@ class LtpfAnalysis(Ltpf):
         self.tc = 0
         self.pitch = 0
         self.nc = np.zeros(2)
+
+    def get_data(self):
+
+        return { 'active' : self.active,
+                 'pitch_index' : self.pitch_index }
+
+    def get_nbits(self):
+
+        return 1 + 10 * int(self.pitch_present)
 
     def correlate(self, x, n, k0, k1):
 

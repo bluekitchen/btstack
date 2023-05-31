@@ -550,11 +550,22 @@ static int hfp_ag_send_enhanced_voice_recognition_msg_cmd(hfp_connection_t * hfp
 static uint8_t hfp_ag_suggest_codec(hfp_connection_t *hfp_connection){
     if (hfp_connection->sco_for_msbc_failed) return HFP_CODEC_CVSD;
 
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+    if (hfp_supports_codec(HFP_CODEC_LC3_SWB, hfp_ag_codecs_nr, hfp_ag_codecs)){
+        if (hfp_supports_codec(HFP_CODEC_LC3_SWB, hfp_connection->remote_codecs_nr, hfp_connection->remote_codecs)){
+            return HFP_CODEC_LC3_SWB;
+        }
+    }
+#endif
+
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
     if (hfp_supports_codec(HFP_CODEC_MSBC, hfp_ag_codecs_nr, hfp_ag_codecs)){
         if (hfp_supports_codec(HFP_CODEC_MSBC, hfp_connection->remote_codecs_nr, hfp_connection->remote_codecs)){
             return HFP_CODEC_MSBC;
         }
     }
+#endif
+
     return HFP_CODEC_CVSD;
 }
 
@@ -884,7 +895,7 @@ static void hfp_ag_emit_custom_command_event(hfp_connection_t * hfp_connection){
     event[1] = 5 + line_len;
     event[2] = HFP_SUBEVENT_CUSTOM_AT_COMMAND;
     little_endian_store_16(event, 3, hfp_connection->acl_handle);
-    little_endian_store_16(event, 5, hfp_connection->ag_custom_at_command_id);
+    little_endian_store_16(event, 5, hfp_connection->custom_at_command_id);
     memcpy(&event[7], hfp_connection->line_buffer, line_len);
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, 7 + line_len);
 }
@@ -1122,6 +1133,7 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if (sent) return 1;
 
     if (hfp_connection->codecs_state != HFP_CODECS_EXCHANGED) return 0;
+    if (hci_can_send_command_packet_now() == false) return 0;
     if (hfp_connection->establish_audio_connection){
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
         hfp_connection->establish_audio_connection = 0;
@@ -2089,7 +2101,7 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         const char * message = hfp_connection->send_custom_message;
         hfp_connection->send_custom_message = NULL;
         send_str_over_rfcomm(hfp_connection->rfcomm_cid, message);
-        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_SUCCESS);
+        hfp_emit_event(hfp_connection, HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT, ERROR_CODE_SUCCESS);
         return 1;
     }
 
@@ -2520,7 +2532,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
             case HFP_CMD_CUSTOM_MESSAGE:
                 hfp_connection->command = HFP_CMD_NONE;
                 hfp_parser_reset_line_buffer(hfp_connection);
-                log_info("Custom AT Command ID 0x%04x", hfp_connection->ag_custom_at_command_id);
+                log_info("Custom AT Command ID 0x%04x", hfp_connection->custom_at_command_id);
                 hfp_ag_emit_custom_command_event(hfp_connection);
                 break;
             case HFP_CMD_UNKNOWN:

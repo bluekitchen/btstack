@@ -159,10 +159,54 @@ b) RECORD A FILE:
 /** @defgroup STM32F4_DISCOVERY_AUDIO_Private_Defines STM32F4 DISCOVERY AUDIO Private Defines
   * @{
   */ 
-/* These PLL parameters are valid when the f(VCO clock) = 1Mhz */
-static const uint32_t I2SFreq[8] = {8000, 11025, 16000, 22050, 32000, 44100, 48000, 96000};
-static const uint32_t I2SPLLN[8] = {256, 429, 213, 429, 426, 271, 258, 344};
-static const uint32_t I2SPLLR[8] = {5, 4, 4, 4, 4, 6, 3, 1};
+static uint32_t bsp_audio_out_actual_frequency = 0;
+static uint32_t bsp_audio_out_frequency = 0;
+
+typedef struct {
+    uint32_t freq;
+    uint32_t actual;
+    uint16_t r;
+    uint16_t n;
+} i2s_pll_entry_t;
+
+// HSE_VALUE = 8000000
+// PLLM = 4 
+// MCK on
+static const i2s_pll_entry_t i2s_pll_table[] = {
+    {  8000,  8000, 5, 128 }, /* i2sdiv:  12, odd: 1, rate error % (desired vs actual)%: 0.0000 */
+    { 11025, 11024, 2, 127 }, /* i2sdiv:  22, odd: 1, rate error % (desired vs actual)%: 0.0063 */
+    { 12000, 12000, 5, 192 }, /* i2sdiv:  12, odd: 1, rate error % (desired vs actual)%: 0.0000 */
+    { 16000, 16000, 4, 213 }, /* i2sdiv:  13, odd: 0, rate error % (desired vs actual)%: 0.0038 */
+    { 22050, 22048, 5, 127 }, /* i2sdiv:   4, odd: 1, rate error % (desired vs actual)%: 0.0063 */
+    { 24000, 24003, 3, 212 }, /* i2sdiv:  11, odd: 1, rate error % (desired vs actual)%: 0.0151 */
+    { 32000, 32001, 4, 213 }, /* i2sdiv:   6, odd: 1, rate error % (desired vs actual)%: 0.0038 */
+    { 44100, 44084, 2,  79 }, /* i2sdiv:   3, odd: 1, rate error % (desired vs actual)%: 0.0344 */
+    { 48000, 47991, 2,  86 }, /* i2sdiv:   3, odd: 1, rate error % (desired vs actual)%: 0.0186 */
+    { 96000, 95982, 2, 172 }, /* i2sdiv:   3, odd: 1, rate error % (desired vs actual)%: 0.0186 */
+};
+
+#define BARRIER do { __asm__ volatile("" ::: "memory"); } while (0)
+#define BINARY(I) do {                                            \
+                base = ((base)[I].freq <= frequency)?base+I:base; \
+                BARRIER;                                          \
+        } while (0)
+
+/** @brief  Searches I2S PLL parameter giving highest frequency accuracy possible
+  * @param  frequency: the frequency to seach PLL parameter for
+  * @retval The PLL config with helps setting specified frequency
+  * @note   This assembles a unrolled binary search for a fixed table size,
+  *         so changes to the table size need to be reflected here. Or should
+  *         be auto-generated
+  */
+static i2s_pll_entry_t const *i2s_find_pll_params( uint32_t frequency ) {
+    i2s_pll_entry_t const* base = i2s_pll_table;
+    BINARY(5);
+    BINARY(2);
+    BINARY(1);
+    BINARY(1);
+    return base;
+}
+
 /**
   * @}
   */ 
@@ -274,6 +318,7 @@ uint8_t BSP_AUDIO_OUT_Play(uint16_t* pBuffer, uint32_t Size)
   }
   else 
   {
+    bsp_audio_out_frequency = bsp_audio_out_actual_frequency;
     /* Update the Media layer and enable it for play */  
     HAL_I2S_Transmit_DMA(&hAudioOutI2s, pBuffer, DMA_MAX(Size/AUDIODATA_SIZE)); 
     
@@ -352,7 +397,9 @@ uint8_t BSP_AUDIO_OUT_Stop(uint32_t Option)
 {
   /* Call DMA Stop to disable DMA stream before stopping codec */
   HAL_I2S_DMAStop(&hAudioOutI2s);
-  
+
+  bsp_audio_out_frequency = 0;
+
   /* Call Audio Codec Stop function */
   if(pAudioDrv->Stop(AUDIO_I2C_ADDRESS, Option) != 0)
   {
@@ -444,9 +491,9 @@ uint8_t BSP_AUDIO_OUT_SetOutputMode(uint8_t Output)
   */
 void BSP_AUDIO_OUT_SetFrequency(uint32_t AudioFreq)
 {
-  /* PLL clock is set depending by the AudioFreq (44.1khz vs 48khz groups) */ 
+  /* PLL clock is set depending by the AudioFreq (44.1khz vs 48khz groups) */
   BSP_AUDIO_OUT_ClockConfig(&hAudioOutI2s, AudioFreq, NULL);
-  
+
   /* Update the I2S audio frequency configuration */
   I2S3_Init(AudioFreq);
 }
@@ -487,42 +534,24 @@ void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
   * @param  Params : pointer on additional configuration parameters, can be NULL.
   */
 __weak void BSP_AUDIO_OUT_ClockConfig(I2S_HandleTypeDef *hi2s, uint32_t AudioFreq, void *Params)
-{ 
+{
   RCC_PeriphCLKInitTypeDef rccclkinit;
-  uint8_t index = 0, freqindex = 0xFF;
-  
-  for(index = 0; index < 8; index++)
-  {
-    if(I2SFreq[index] == AudioFreq)
-    {
-      freqindex = index;
-    }
-  }
+
+  i2s_pll_entry_t const *pll_params = i2s_find_pll_params( AudioFreq );
+
+  bsp_audio_out_actual_frequency = pll_params->actual;
+
   /* Enable PLLI2S clock */
   HAL_RCCEx_GetPeriphCLKConfig(&rccclkinit);
-  /* PLLI2S_VCO Input = HSE_VALUE/PLL_M = 1 Mhz */
+  /* PLLI2S_VCO Input = HSE_VALUE/PLL_M */
 
-  // BK use table if frequency found in table, otherwise use same settings as for 48 kHz
-  if (freqindex != 0xFF)
-  {
-    /* I2S clock config 
-    PLLI2S_VCO = f(VCO clock) = f(PLLI2S clock input) � (PLLI2SN/PLLM)
-    I2SCLK = f(PLLI2S clock output) = f(VCO clock) / PLLI2SR */
-    rccclkinit.PeriphClockSelection = RCC_PERIPHCLK_I2S;
-    rccclkinit.PLLI2S.PLLI2SN = I2SPLLN[freqindex];
-    rccclkinit.PLLI2S.PLLI2SR = I2SPLLR[freqindex];
-    HAL_RCCEx_PeriphCLKConfig(&rccclkinit);
-  }
-  else 
-  {
-    /* I2S clock config 
-    PLLI2S_VCO = f(VCO clock) = f(PLLI2S clock input) � (PLLI2SN/PLLM)
-    I2SCLK = f(PLLI2S clock output) = f(VCO clock) / PLLI2SR */
-    rccclkinit.PeriphClockSelection = RCC_PERIPHCLK_I2S;
-    rccclkinit.PLLI2S.PLLI2SN = 258;
-    rccclkinit.PLLI2S.PLLI2SR = 3;
-    HAL_RCCEx_PeriphCLKConfig(&rccclkinit);
-  }
+  /* I2S clock config 
+  PLLI2S_VCO = f(VCO clock) = f(PLLI2S clock input) � (PLLI2SN/PLLM)
+  I2SCLK = f(PLLI2S clock output) = f(VCO clock) / PLLI2SR */
+  rccclkinit.PeriphClockSelection = RCC_PERIPHCLK_I2S;
+  rccclkinit.PLLI2S.PLLI2SN = pll_params->n;
+  rccclkinit.PLLI2S.PLLI2SR = pll_params->r;
+  HAL_RCCEx_PeriphCLKConfig(&rccclkinit);
 }
 
 /**
@@ -875,6 +904,17 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 }
 
 /**
+  * @brief  Retrive the audio frequency.
+  * @retval AudioFreq: Audio frequency used to play the audio stream.
+  * @note   This API should be called after the BSP_AUDIO_OUT_Init() to adjust the
+  *         audio frequency. 
+  */
+uint32_t BSP_AUDIO_OUT_GetFrequency(uint32_t AudioFreq)
+{
+  return bsp_audio_out_frequency;
+}
+
+/**
   * @brief  Audio In Clock Config.
   * @param  hi2s: I2S handle
   * @param  AudioFreq: Audio frequency used to record the audio stream.  
@@ -888,27 +928,13 @@ __weak void BSP_AUDIO_IN_ClockConfig(I2S_HandleTypeDef *hi2s, uint32_t AudioFreq
 
   /*Enable PLLI2S clock*/
   HAL_RCCEx_GetPeriphCLKConfig(&rccclkinit);
-  /* PLLI2S_VCO Input = HSE_VALUE/PLL_M = 1 Mhz */
-  if ((AudioFreq & 0x7) == 0)
-  {
-    /* Audio frequency multiple of 8 (8/16/32/48/96/192)*/
-    /* PLLI2S_VCO Output = PLLI2S_VCO Input * PLLI2SN = 192 Mhz */
-    /* I2SCLK = PLLI2S_VCO Output/PLLI2SR = 192/6 = 32 Mhz */
-    rccclkinit.PeriphClockSelection = RCC_PERIPHCLK_I2S;
-    rccclkinit.PLLI2S.PLLI2SN = 192;
-    rccclkinit.PLLI2S.PLLI2SR = 6;
-    HAL_RCCEx_PeriphCLKConfig(&rccclkinit);
-  }
-  else
-  {
-    /* Other Frequency (11.025/22.500/44.100) */
-    /* PLLI2S_VCO Output = PLLI2S_VCO Input * PLLI2SN = 290 Mhz */
-    /* I2SCLK = PLLI2S_VCO Output/PLLI2SR = 290/2 = 145 Mhz */
-    rccclkinit.PeriphClockSelection = RCC_PERIPHCLK_I2S;
-    rccclkinit.PLLI2S.PLLI2SN = 290;
-    rccclkinit.PLLI2S.PLLI2SR = 2;
-    HAL_RCCEx_PeriphCLKConfig(&rccclkinit);
-  }
+
+  i2s_pll_entry_t const *pll_params = i2s_find_pll_params( AudioFreq );
+
+  rccclkinit.PeriphClockSelection = RCC_PERIPHCLK_I2S;
+  rccclkinit.PLLI2S.PLLI2SN = pll_params->n;
+  rccclkinit.PLLI2S.PLLI2SR = pll_params->r;
+  HAL_RCCEx_PeriphCLKConfig(&rccclkinit);
 }
 
 /**

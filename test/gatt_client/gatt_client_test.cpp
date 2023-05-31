@@ -24,6 +24,8 @@
 #include "profile.h"
 #include "expected_results.h"
 
+extern "C" void hci_setup_le_connection(uint16_t con_handle);
+
 static uint16_t gatt_client_handle = 0x40;
 static int gatt_query_complete = 0;
 
@@ -298,18 +300,54 @@ TEST_GROUP(GATTClient){
 		result_counter = 0;
 		result_index = 0;
 		test = IDLE;
+		hci_setup_le_connection(gatt_client_handle);
+	}
+
+	gatt_client_t * get_gatt_client(hci_con_handle_t con_handle){
+        gatt_client_t * gatt_client;
+		(void) gatt_client_get_client(gatt_client_handle, &gatt_client);
+		return gatt_client;
 	}
 
 	void reset_query_state(void){
+		gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
+		gatt_client->gatt_client_state = P_READY;
+		
+		gatt_client_set_required_security_level(LEVEL_0);
+		gatt_client_mtu_enable_auto_negotiation(1);
+
 		gatt_query_complete = 0;
 		result_counter = 0;
 		result_index = 0;
 	}
+
+	void set_wrong_gatt_client_state(void){
+		gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
+	    CHECK_TRUE(gatt_client != NULL);
+	    gatt_client->gatt_client_state = P_W2_SEND_SERVICE_QUERY;
+	}
 };
 
+TEST(GATTClient, gatt_client_setters){
+	gatt_client_set_required_security_level(LEVEL_4);
+	gatt_client_mtu_enable_auto_negotiation(0);
+}
+
+TEST(GATTClient, gatt_client_is_ready_mtu_exchange_disabled){
+	gatt_client_mtu_enable_auto_negotiation(0);
+	int status = gatt_client_is_ready(gatt_client_handle);
+	CHECK_EQUAL(1, status);
+}
 
 TEST(GATTClient, TestDiscoverPrimaryServices){
 	test = DISCOVER_PRIMARY_SERVICES;
+	status = gatt_client_discover_primary_services(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
+	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+	set_wrong_gatt_client_state();
+	status = gatt_client_discover_primary_services(handle_ble_client_event, gatt_client_handle);
+	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
 	reset_query_state();
 	status = gatt_client_discover_primary_services(handle_ble_client_event, gatt_client_handle);
 	CHECK_EQUAL(0, status);
@@ -335,6 +373,14 @@ TEST(GATTClient, TestDiscoverPrimaryServicesByUUID128){
 	CHECK_EQUAL(1, result_counter);
 	verify_primary_services_with_uuid128();
 	CHECK_EQUAL(1, gatt_query_complete);
+
+	// invalid con handle
+    status = gatt_client_discover_primary_services_by_uuid128(handle_ble_client_event, HCI_CON_HANDLE_INVALID, primary_service_uuid128);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_discover_primary_services_by_uuid128(handle_ble_client_event, gatt_client_handle, primary_service_uuid128);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 }
 
 TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID16){
@@ -363,6 +409,14 @@ TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID128){
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 	verify_included_services_uuid128();
+
+	// invalid con handle
+    status = gatt_client_find_included_services_for_service(handle_ble_client_event, HCI_CON_HANDLE_INVALID, &services[0]);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_find_included_services_for_service(handle_ble_client_event, gatt_client_handle, &services[0]);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristicsForService){
@@ -377,6 +431,14 @@ TEST(GATTClient, TestDiscoverCharacteristicsForService){
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 	verify_charasteristics();
+
+	// invalid con handle
+    status = gatt_client_discover_characteristics_for_service(handle_ble_client_event, HCI_CON_HANDLE_INVALID, &services[0]);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_discover_characteristics_for_service(handle_ble_client_event, gatt_client_handle, &services[0]);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristicsByUUID16){
@@ -386,6 +448,14 @@ TEST(GATTClient, TestDiscoverCharacteristicsByUUID16){
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
+
+	// invalid con handle
+    status = gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_ble_client_event, HCI_CON_HANDLE_INVALID, 0x30, 0x32, 0xF102);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_discover_characteristics_for_handle_range_by_uuid16(handle_ble_client_event, gatt_client_handle, 0x30, 0x32, 0xF102);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristicsByUUID128){
@@ -395,6 +465,14 @@ TEST(GATTClient, TestDiscoverCharacteristicsByUUID128){
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
+
+	// invalid con handle
+    status = gatt_client_discover_characteristics_for_handle_range_by_uuid128(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristic_handles[1][0], characteristic_handles[1][1], characteristic_uuids[1]);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_discover_characteristics_for_handle_range_by_uuid128(handle_ble_client_event, gatt_client_handle, characteristic_handles[1][0], characteristic_handles[1][1], characteristic_uuids[1]);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID128){
@@ -443,6 +521,16 @@ TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID16){
 
 TEST(GATTClient, TestDiscoverCharacteristicDescriptor){
 	test = DISCOVER_CHARACTERISTIC_DESCRIPTORS;
+	
+	reset_query_state();
+	// invalid con handle
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, HCI_CON_HANDLE_INVALID, service_uuid16);
+	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+	set_wrong_gatt_client_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
 	reset_query_state();
 	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
 	CHECK_EQUAL(0, status);
@@ -480,11 +568,29 @@ TEST(GATTClient, TestWriteClientCharacteristicConfiguration){
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
 
+	// invalid con handle
+    status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, HCI_CON_HANDLE_INVALID, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
 	reset_query_state();
 	status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
  	CHECK_EQUAL(0, status);
  	CHECK_EQUAL(1, gatt_query_complete);
  	CHECK_EQUAL(1, result_counter);
+
+ 	reset_query_state();
+	characteristics->properties = 0;
+	status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+ 	CHECK_EQUAL(GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED, status);
+ 
+ 	reset_query_state();
+	characteristics->properties = 0;
+	status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
+ 	CHECK_EQUAL(GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED, status);
 }
 
 TEST(GATTClient, TestReadCharacteristicDescriptor){
@@ -507,11 +613,233 @@ TEST(GATTClient, TestReadCharacteristicDescriptor){
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(3, result_counter);
 
+	// invalid con handle
+    status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, HCI_CON_HANDLE_INVALID,  &characteristics[0]);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, gatt_client_handle,  &characteristics[0]);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
+	reset_query_state();
+	uint16_t end_handle = characteristics[0].end_handle;
+	characteristics[0].end_handle = characteristics[0].value_handle;
+	status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, gatt_client_handle, &characteristics[0]);
+	CHECK_EQUAL(0, status);
+	characteristics[0].end_handle = end_handle;
+
 	reset_query_state();
 	status = gatt_client_read_characteristic_descriptor(handle_ble_client_event, gatt_client_handle, &descriptors[0]);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(3, result_counter);
+
+	// invalid con handle
+	status = gatt_client_read_characteristic_descriptor(handle_ble_client_event, HCI_CON_HANDLE_INVALID, &descriptors[0]);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+	status = gatt_client_read_characteristic_descriptor(handle_ble_client_event, gatt_client_handle, &descriptors[0]);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+}
+
+TEST(GATTClient, gatt_client_read_value_of_characteristic_using_value_handle){
+	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	// invalid con handle
+    status = gatt_client_read_value_of_characteristic_using_value_handle(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_read_value_of_characteristic_using_value_handle(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset){
+	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	// invalid con handle
+    status = gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, 0);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+
+TEST(GATTClient, gatt_client_read_value_of_characteristics_by_uuid16){
+	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_read_value_of_characteristics_by_uuid16(handle_ble_client_event, gatt_client_handle, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid16);
+ 	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+
+	// invalid con handle
+    status = gatt_client_read_value_of_characteristics_by_uuid16(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid16);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_read_value_of_characteristics_by_uuid16(handle_ble_client_event, gatt_client_handle, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid16);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_read_value_of_characteristics_by_uuid128){
+	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_read_value_of_characteristics_by_uuid128(handle_ble_client_event, gatt_client_handle, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid128);
+ 	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+
+	// invalid con handle
+    status = gatt_client_read_value_of_characteristics_by_uuid128(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid128);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_read_value_of_characteristics_by_uuid128(handle_ble_client_event, gatt_client_handle, characteristics[0].start_handle, characteristics[0].end_handle, characteristics[0].uuid128);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_write_characteristic_descriptor_using_descriptor_handle){
+	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+
+	reset_query_state();
+	status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, gatt_client_handle, &characteristics[0]);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(3, result_counter);
+
+	reset_query_state();
+	status = gatt_client_write_characteristic_descriptor_using_descriptor_handle(handle_ble_client_event, gatt_client_handle, descriptors[0].handle, characteristics[0].end_handle, characteristics[0].uuid128);
+ 	CHECK_EQUAL(0, status);
+
+	// invalid con handle
+    status = gatt_client_write_characteristic_descriptor_using_descriptor_handle(handle_ble_client_event, HCI_CON_HANDLE_INVALID, descriptors[0].handle, characteristics[0].end_handle, characteristics[0].uuid128);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_write_characteristic_descriptor_using_descriptor_handle(handle_ble_client_event, gatt_client_handle, descriptors[0].handle, characteristics[0].end_handle, characteristics[0].uuid128);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_prepare_write){
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_prepare_write(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0, short_value_length, (uint8_t*)short_value);
+ 	CHECK_EQUAL(0, status);
+
+	// invalid con handle
+    status = gatt_client_prepare_write(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, 0, short_value_length, (uint8_t*)short_value);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_prepare_write(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0, short_value_length, (uint8_t*)short_value);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_execute_write){
+	reset_query_state();
+	status = gatt_client_execute_write(handle_ble_client_event, gatt_client_handle);
+ 	CHECK_EQUAL(0, status);
+
+	// invalid con handle
+    status = gatt_client_execute_write(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_execute_write(handle_ble_client_event, gatt_client_handle);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
+TEST(GATTClient, gatt_client_cancel_write){
+	reset_query_state();
+	status = gatt_client_cancel_write(handle_ble_client_event, gatt_client_handle);
+ 	CHECK_EQUAL(0, status);
+
+	// invalid con handle
+    status = gatt_client_cancel_write(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_cancel_write(handle_ble_client_event, gatt_client_handle);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
 }
 
 TEST(GATTClient, TestReadCharacteristicValue){
@@ -548,6 +876,15 @@ TEST(GATTClient, TestWriteCharacteristicValue){
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
+
+// invalid con handle
+    status = gatt_client_write_value_of_characteristic(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
+	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_write_value_of_characteristic(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
+	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
 
 	reset_query_state();
 	status = gatt_client_write_value_of_characteristic(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
@@ -599,7 +936,7 @@ TEST(GATTClient, TestReadLongCharacteristicValue){
 	status = gatt_client_read_long_value_of_characteristic(handle_ble_client_event, gatt_client_handle, &characteristics[0]);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
-	CHECK_EQUAL(7, result_counter);
+	CHECK_EQUAL(4, result_counter);
 }
 
 TEST(GATTClient, TestReadLongCharacteristicDescriptor){
@@ -627,7 +964,7 @@ TEST(GATTClient, TestReadLongCharacteristicDescriptor){
 	status = gatt_client_read_long_characteristic_descriptor(handle_ble_client_event, gatt_client_handle, &descriptors[0]);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
-	CHECK_EQUAL(7, result_counter);
+	CHECK_EQUAL(4, result_counter);
 }
 
 
@@ -693,10 +1030,292 @@ TEST(GATTClient, TestWriteReliableLongCharacteristicValue){
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
 
+	// invalid con handle
+	status = gatt_client_reliable_write_long_value_of_characteristic(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+	status = gatt_client_reliable_write_long_value_of_characteristic(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
 	reset_query_state();
 	status = gatt_client_reliable_write_long_value_of_characteristic(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
+}
+
+TEST(GATTClient, gatt_client_write_long_value_of_characteristic_with_offset){
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_write_long_value_of_characteristic_with_offset(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0, long_value_length, (uint8_t*)long_value);
+	CHECK_EQUAL(0, status);
+
+	reset_query_state();
+	// invalid con handle
+	status = gatt_client_write_long_value_of_characteristic_with_offset(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, 0, long_value_length, (uint8_t*)long_value);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    reset_query_state();
+    set_wrong_gatt_client_state();
+	status = gatt_client_write_long_value_of_characteristic_with_offset(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0, long_value_length, (uint8_t*)long_value);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+}
+
+TEST(GATTClient, gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_with_offset){
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, gatt_client_handle, &characteristics[0]);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK(result_counter);
+	CHECK_EQUAL(3, result_index);
+	CHECK_EQUAL(0x2902, descriptors[0].uuid16);
+	CHECK_EQUAL(0x2900, descriptors[1].uuid16);
+	CHECK_EQUAL(0x2901, descriptors[2].uuid16);
+
+	reset_query_state();
+	status = gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_with_offset(handle_ble_client_event, gatt_client_handle, descriptors[0].handle, 0);
+	CHECK_EQUAL(0, status);
+
+	reset_query_state();
+	// invalid con handle
+	status = gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_with_offset(handle_ble_client_event, HCI_CON_HANDLE_INVALID, descriptors[0].handle, 0);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    reset_query_state();
+    set_wrong_gatt_client_state();
+	status = gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_with_offset(handle_ble_client_event, gatt_client_handle, descriptors[0].handle, 0);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+}
+
+TEST(GATTClient, gatt_client_read_multiple_characteristic_values){
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	uint16_t value_handles[] = {characteristics[0].value_handle};
+
+	reset_query_state();
+	status = gatt_client_read_multiple_characteristic_values(handle_ble_client_event, gatt_client_handle, 1, value_handles);
+	CHECK_EQUAL(0, status);
+
+	reset_query_state();
+	// invalid con handle
+	status = gatt_client_read_multiple_characteristic_values(handle_ble_client_event, HCI_CON_HANDLE_INVALID, 1, value_handles);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+	
+	reset_query_state();
+    set_wrong_gatt_client_state();
+	status = gatt_client_read_multiple_characteristic_values(handle_ble_client_event, gatt_client_handle, 1, value_handles);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+}
+
+TEST(GATTClient, gatt_client_write_value_of_characteristic_without_response){
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	// invalid con handle
+	status = gatt_client_write_value_of_characteristic_without_response(HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+	reset_query_state();
+    set_wrong_gatt_client_state();
+	status = gatt_client_write_value_of_characteristic_without_response(gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+    CHECK_EQUAL(GATT_CLIENT_VALUE_TOO_LONG, status);
+
+	reset_query_state();
+
+	status = gatt_client_write_value_of_characteristic_without_response(gatt_client_handle, characteristics[0].value_handle, 19, (uint8_t*)long_value);
+	CHECK_EQUAL(0, status);
+}
+
+TEST(GATTClient, gatt_client_is_ready){
+	int status = gatt_client_is_ready(HCI_CON_HANDLE_INVALID);
+	CHECK_EQUAL(0, status);
+
+	status = gatt_client_is_ready(gatt_client_handle);
+	CHECK_EQUAL(1, status);
+}
+
+
+TEST(GATTClient, register_for_notification){
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	gatt_client_notification_t notification;
+
+	gatt_client_listen_for_characteristic_value_updates(&notification, handle_ble_client_event, gatt_client_handle, &characteristics[0]);
+	gatt_client_stop_listening_for_characteristic_value_updates(&notification);
+
+	gatt_client_listen_for_characteristic_value_updates(&notification, handle_ble_client_event, gatt_client_handle, NULL);
+	gatt_client_stop_listening_for_characteristic_value_updates(&notification);
+}
+
+TEST(GATTClient, gatt_client_signed_write_without_response){
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	// invalid con handle
+	status = gatt_client_signed_write_without_response(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+	reset_query_state();
+    set_wrong_gatt_client_state();
+	status = gatt_client_signed_write_without_response(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
+	reset_query_state();
+
+	status = gatt_client_signed_write_without_response(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+	CHECK_EQUAL(0, status);
+}
+
+TEST(GATTClient, gatt_client_discover_secondary_services){
+	reset_query_state();
+	// invalid con handle
+	status = gatt_client_discover_secondary_services(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+	reset_query_state();
+    set_wrong_gatt_client_state();
+	status = gatt_client_discover_secondary_services(handle_ble_client_event, gatt_client_handle);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
+	reset_query_state();
+
+	status = gatt_client_discover_secondary_services(handle_ble_client_event, gatt_client_handle);
+	CHECK_EQUAL(0, status);
+}
+
+TEST(GATTClient, gatt_client_request_can_write_without_response_event){
+	uint8_t status = gatt_client_request_can_write_without_response_event(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
+	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+	gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
+	CHECK_TRUE(gatt_client != NULL);
+	gatt_client->write_without_response_callback = handle_ble_client_event;
+	status = gatt_client_request_can_write_without_response_event(handle_ble_client_event, gatt_client_handle);
+	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
+	gatt_client->write_without_response_callback = NULL;
+	status = gatt_client_request_can_write_without_response_event(handle_ble_client_event, gatt_client_handle);
+	CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+}
+
+TEST(GATTClient, gatt_client_request_to_write_without_response){
+    btstack_context_callback_registration_t callback_registration = { 0 };
+    uint8_t status = gatt_client_request_to_write_without_response(&callback_registration, HCI_CON_HANDLE_INVALID);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    status = gatt_client_request_can_write_without_response_event(handle_ble_client_event, gatt_client_handle);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+}
+
+static void dummy_callback(void * context){
+    (void) context;
+}
+TEST(GATTClient, gatt_client_request_to_send_gatt_query){
+    btstack_context_callback_registration_t callback_registration = { 0 };
+    callback_registration.callback = &dummy_callback;
+
+    uint8_t status = gatt_client_request_to_send_gatt_query(&callback_registration, HCI_CON_HANDLE_INVALID);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    status = gatt_client_request_to_send_gatt_query(&callback_registration, gatt_client_handle);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+}
+
+TEST(GATTClient, gatt_client_send_mtu_negotiation){
+	gatt_client_send_mtu_negotiation(handle_ble_client_event, HCI_CON_HANDLE_INVALID);
+
+	gatt_client_send_mtu_negotiation(handle_ble_client_event, gatt_client_handle);
+
+	gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
+	CHECK_TRUE(gatt_client != NULL);
+	gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
+	gatt_client_send_mtu_negotiation(handle_ble_client_event, gatt_client_handle);
+
+	gatt_client->mtu_state = SEND_MTU_EXCHANGE;
+}
+
+TEST(GATTClient, gatt_client_get_mtu){
+	reset_query_state();
+	uint16_t mtu;
+	int status = gatt_client_get_mtu(HCI_CON_HANDLE_INVALID, &mtu);
+	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+	status = gatt_client_get_mtu(gatt_client_handle, &mtu);
+	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	CHECK_EQUAL(ATT_DEFAULT_MTU, mtu);
+
+	gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
+	CHECK_TRUE(gatt_client != NULL);
+	gatt_client->mtu = 30;
+	
+	gatt_client->mtu_state = MTU_EXCHANGED;
+	status = gatt_client_get_mtu(gatt_client_handle, &mtu);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(gatt_client->mtu, mtu);
+
+	gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
+	status = gatt_client_get_mtu(gatt_client_handle, &mtu);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(gatt_client->mtu, mtu);
+
+	gatt_client->mtu_state = SEND_MTU_EXCHANGE;
 }
 
 

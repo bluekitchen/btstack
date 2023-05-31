@@ -72,6 +72,8 @@ assigned_uuids = {
     'GAP_RECONNECTION_ADDRESS'    : 0x2A03,
     'GAP_PERIPHERAL_PREFERRED_CONNECTION_PARAMETERS' : 0x2A04,
     'GATT_SERVICE_CHANGED' : 0x2a05,
+    'GATT_CLIENT_SUPPORTED_FEATURES' : 0x2b29,
+    'GATT_SERVER_SUPPORTED_FEATURES' : 0x2b3a,
     'GATT_DATABASE_HASH' : 0x2b2a
 }
 
@@ -714,7 +716,7 @@ def parseGenericDynamicReadOnlyDescriptor(fout, parts, uuid, name):
     write_16(fout, size)
     write_16(fout, flags)
     write_16(fout, handle)
-    write_16(fout, 0x2903)
+    write_16(fout, uuid)
     fout.write("\n")
 
     database_hash_append_uint16(handle)

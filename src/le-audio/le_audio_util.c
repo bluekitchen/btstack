@@ -41,6 +41,93 @@
 #include "btstack_debug.h"
 #include "le-audio/le_audio_util.h"
 
+
+static const le_audio_codec_configuration_t codec_specific_config_settings[] = {
+    {"8_1",  LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ,  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   26},
+    {"8_2",  LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ,  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US,  30},
+    {"16_1", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_16000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   30},
+    {"16_2", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_16000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US,  40},
+    {"24_1", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_24000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   45},
+    {"24_2", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_24000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US,  60},
+    {"32_1", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_32000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   60},
+    {"32_2", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_32000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US,  80},
+    {"441_1",LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   97},
+    {"441_2",LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 130},
+    {"48_1", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   75},
+    {"48_2", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 100},
+    {"48_3", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   90},
+    {"48_4", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 120},
+    {"48_5", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,  117},
+    {"48_6", LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ, LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US, 155},
+};
+
+static const le_audio_qos_configuration_t qos_config_settings[] = {
+    {"8_1_1",    7500, 0,  26, 2, 8},
+    {"8_2_1",   10000, 0,  30, 2, 10},
+    {"16_1_1",   7500, 0,  30, 2, 8},
+    {"16_2_1",  10000, 0,  40, 2, 10},
+    {"24_1_1",   7500, 0,  45, 2, 8},
+    {"24_2_1",  10000, 0,  60, 2, 10},
+    {"32_1_1",   7500, 0,  60, 2, 8},
+    {"32_2_1",  10000, 0,  80, 2, 10},
+    {"441_1_1",  8163, 1,  97, 5, 24},
+    {"441_2_1", 10884, 1, 130, 5, 31},
+    {"48_1_1",   7500, 0,  75, 5, 15},
+    {"48_2_1",  10000, 0, 100, 5, 20},
+    {"48_3_1",   7500, 0,  90, 5, 15},
+    {"48_4_1",  10000, 0, 120, 5, 20},
+    {"48_5_1",   7500, 0, 117, 5, 15},
+    {"48_6_1",  10000, 0, 115, 5, 20},
+
+    {"8_1_2",    7500, 0,  26, 13, 75},
+    {"8_2_2",   10000, 0,  30, 13, 95},
+    {"16_1_2",   7500, 0,  30, 13, 75},
+    {"16_2_2",  10000, 0,  40, 13, 95},
+    {"24_1_2",   7500, 0,  45, 13, 75},
+    {"24_2_2",  10000, 0,  60, 13, 95},
+    {"32_1_2",   7500, 0,  60, 13, 75},
+    {"32_2_2",  10000, 0,  80, 13, 95},
+    {"441_1_2",  8163, 1,  97, 13, 80},
+    {"441_2_2", 10884, 1, 130, 13, 85},
+    {"48_1_2",   7500, 0,  75, 13, 75},
+    {"48_2_2",  10000, 0, 100, 13, 95},
+    {"48_3_2",   7500, 0,  90, 13, 75},
+    {"48_4_2",  10000, 0, 120, 13, 100},
+    {"48_5_2",   7500, 0, 117, 13, 75},
+    {"48_6_2",  10000, 0, 115, 13, 100}
+};
+
+static uint8_t codec_offset(le_audio_codec_sampling_frequency_index_t sampling_frequency_index, 
+    le_audio_codec_frame_duration_index_t frame_duration_index, 
+    le_audio_quality_t audio_quality){
+
+    btstack_assert(audio_quality <= LE_AUDIO_QUALITY_HIGH);
+    
+    if (sampling_frequency_index == LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ){
+        return 10 + (audio_quality - LE_AUDIO_QUALITY_LOW) * 2 + (frame_duration_index - LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US);
+    }
+    return (sampling_frequency_index - LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ) * 2 + (frame_duration_index - LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US);
+}
+
+const le_audio_codec_configuration_t * le_audio_util_get_codec_setting(
+    le_audio_codec_sampling_frequency_index_t sampling_frequency_index, 
+    le_audio_codec_frame_duration_index_t frame_duration_index, 
+    le_audio_quality_t audio_quality){
+    
+    return &codec_specific_config_settings[codec_offset(sampling_frequency_index, frame_duration_index, audio_quality)];
+}
+
+const le_audio_qos_configuration_t * le_audio_util_get_qos_setting(
+    le_audio_codec_sampling_frequency_index_t sampling_frequency_index, 
+    le_audio_codec_frame_duration_index_t frame_duration_index, 
+    le_audio_quality_t audio_quality, uint8_t num_channels){
+
+    btstack_assert((num_channels >= 1) && (num_channels <= 2));
+
+    return &qos_config_settings[(num_channels - 1) * 16 + codec_offset(sampling_frequency_index, frame_duration_index, audio_quality)];
+}
+
+
 // help with buffer == NULL
 uint16_t le_audio_util_virtual_memcpy_helper(
     const uint8_t * field_data, uint16_t field_len, uint16_t field_offset,
@@ -173,7 +260,7 @@ uint16_t le_audio_util_metadata_virtual_memcpy(const le_audio_metadata_t * metad
 }
 
 
-uint16_t le_audio_util_metadata_parse(uint8_t * buffer, uint8_t buffer_size, le_audio_metadata_t * metadata){
+uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size, le_audio_metadata_t * metadata){
     // parse config to get sampling frequency and frame duration
     uint8_t offset = 0;
     uint8_t metadata_config_lenght = buffer[offset++];
@@ -249,7 +336,7 @@ uint16_t le_audio_util_metadata_parse(uint8_t * buffer, uint8_t buffer_size, le_
     return offset;
 }
 
-uint16_t le_audio_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_t * event, uint16_t event_size){
+uint16_t le_audio_util_metadata_serialize(const le_audio_metadata_t *metadata, uint8_t * event, uint16_t event_size){
     uint8_t pos = 0;
     
     event[pos++] = (uint8_t)metadata->metadata_mask;
@@ -291,3 +378,198 @@ uint16_t le_audio_util_metadata_serialize(le_audio_metadata_t * metadata, uint8_
 
     return pos;
 }
+
+static uint16_t le_audio_util_get_value_size_for_metadata_type(const le_audio_metadata_t *metadata, le_audio_metadata_type_t metadata_type){
+    switch (metadata_type){
+        case LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS:
+        case LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS:
+            return 2;
+
+        case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO:
+            return metadata->program_info_length;
+
+        case LE_AUDIO_METADATA_TYPE_LANGUAGE:
+            return 3;
+
+        case LE_AUDIO_METADATA_TYPE_CCID_LIST:
+            return metadata->ccids_num;
+
+        case LE_AUDIO_METADATA_TYPE_PARENTAL_RATING:
+            return 1;
+
+        case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO_URI:
+            return metadata->program_info_uri_length;
+
+        case LE_AUDIO_METADATA_TYPE_MAPPED_EXTENDED_METADATA_BIT_POSITION:
+            return 2 + metadata->extended_metadata_length;
+
+        case LE_AUDIO_METADATA_TYPE_MAPPED_VENDOR_SPECIFIC_METADATA_BIT_POSITION:
+            return 2 + metadata->vendor_specific_metadata_length;
+        default:
+            break;
+    }
+    return 0;
+}
+
+uint16_t le_audio_util_metadata_serialize_using_mask(const le_audio_metadata_t *metadata, uint8_t * tlv_buffer, uint16_t tlv_buffer_size){
+    uint16_t metadata_type;
+    uint16_t pos = 0;
+
+    uint16_t remaining_bytes = tlv_buffer_size;
+
+    for (metadata_type = (uint16_t)LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS; metadata_type < (uint16_t) LE_AUDIO_METADATA_TYPE_RFU; metadata_type++){
+        if ((metadata->metadata_mask & (1 << metadata_type)) == 0){
+            continue;
+        }
+
+        uint8_t payload_length = le_audio_util_get_value_size_for_metadata_type(metadata, (le_audio_metadata_type_t)metadata_type);
+        // ensure that there is enough space in TLV to store length (1), type(1) and payload
+        if (remaining_bytes < (2 + payload_length)){
+            return pos;
+        }
+
+        tlv_buffer[pos++] = 1 + payload_length; // add one extra byte to count size of type (1 byte)
+        tlv_buffer[pos++] = metadata_type;
+
+        switch ((le_audio_metadata_type_t)metadata_type){
+            case LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS:
+                little_endian_store_16(tlv_buffer, pos, metadata->preferred_audio_contexts_mask);
+                break;
+            case LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS:
+                little_endian_store_16(tlv_buffer, pos, metadata->streaming_audio_contexts_mask);
+                break;
+            case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO:
+                memcpy(&tlv_buffer[pos], metadata->program_info, metadata->program_info_length);
+                break;
+            case LE_AUDIO_METADATA_TYPE_LANGUAGE:
+                little_endian_store_24(tlv_buffer, pos, metadata->language_code);
+                break;
+            case LE_AUDIO_METADATA_TYPE_CCID_LIST:
+                memcpy(&tlv_buffer[pos], metadata->ccids, metadata->ccids_num);
+                break;
+            case LE_AUDIO_METADATA_TYPE_PARENTAL_RATING:
+                break;
+            case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO_URI:
+                memcpy(&tlv_buffer[pos], metadata->program_info_uri, metadata->program_info_uri_length);
+                break;
+            case LE_AUDIO_METADATA_TYPE_MAPPED_EXTENDED_METADATA_BIT_POSITION:
+                little_endian_store_16(tlv_buffer, pos, metadata->extended_metadata_type);
+                memcpy(&tlv_buffer[pos + 2], metadata->extended_metadata, metadata->extended_metadata_length);
+                break;
+            case LE_AUDIO_METADATA_TYPE_MAPPED_VENDOR_SPECIFIC_METADATA_BIT_POSITION:
+                little_endian_store_16(tlv_buffer, pos, metadata->vendor_specific_company_id);
+                memcpy(&tlv_buffer[pos + 2], metadata->vendor_specific_metadata, metadata->vendor_specific_metadata_length);
+                break;
+            default:
+                break;
+        }
+        pos += payload_length;
+        remaining_bytes -= (payload_length + 2);
+    }
+    return pos;
+}
+
+btstack_lc3_frame_duration_t le_audio_util_get_btstack_lc3_frame_duration(le_audio_codec_frame_duration_index_t frame_duration_index){
+    switch (frame_duration_index){
+        case LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US:
+            return BTSTACK_LC3_FRAME_DURATION_7500US;
+        case LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US:
+            return BTSTACK_LC3_FRAME_DURATION_10000US;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    return 0;
+}
+
+uint16_t le_audio_get_frame_duration_us(le_audio_codec_frame_duration_index_t frame_duration_index){
+    switch (frame_duration_index){
+        case LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US:
+            return 7500;
+        case LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US:
+            return 10000;
+        default:
+            return 0;
+    }
+}
+
+le_audio_codec_frame_duration_index_t le_audio_get_frame_duration_index(uint16_t frame_duration_us){
+    switch (frame_duration_us){
+        case 7500:
+            return LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US;
+        case 10000:
+            return LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US;
+        default:
+            return LE_AUDIO_CODEC_FRAME_DURATION_INDEX_RFU;
+    }
+}
+
+uint32_t le_audio_get_sampling_frequency_hz(le_audio_codec_sampling_frequency_index_t sampling_frequency_index){
+    switch (sampling_frequency_index){
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ:
+                return 8000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_11025_HZ:
+                return 11025;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_16000_HZ:
+                return 16000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_22050_HZ:
+                return 22050;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_24000_HZ:
+                return 24000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_32000_HZ:
+                return 32000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ:
+                return 44100;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ:
+                return 48000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_88200_HZ:
+                return 88200;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_96000_HZ:
+                return 96000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_176400_HZ:
+                return 176400;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_192000_HZ:
+                return 192000;
+        case LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_384000_HZ:
+                return 384000;
+        default:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_INVALID;
+    }
+}
+
+le_audio_codec_sampling_frequency_index_t le_audio_get_sampling_frequency_index(uint32_t sampling_frequency_hz){
+    switch (sampling_frequency_hz){
+        case 0:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_INVALID;
+        case 8000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ;
+        case 11025:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_11025_HZ;
+        case 16000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_16000_HZ;
+        case 22050:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_22050_HZ;
+        case 24000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_24000_HZ;
+        case 32000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_32000_HZ;
+        case 44100:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_44100_HZ;
+        case 48000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_48000_HZ;
+        case 88200:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_88200_HZ;
+        case 96000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_96000_HZ;
+        case 176400:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_176400_HZ;
+        case 192000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_192000_HZ;
+        case 384000:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_384000_HZ;
+        default:
+            return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_RFU;
+    }
+}
+
+

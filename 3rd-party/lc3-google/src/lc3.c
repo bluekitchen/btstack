@@ -161,10 +161,8 @@ static void load_s16(
     float *xs = encoder->xs;
     int ns = LC3_NS(dt, sr);
 
-    for (int i = 0; i < ns; i++) {
-        int16_t in = pcm[i*stride];
-        xt[i] = in, xs[i] = in;
-    }
+    for (int i = 0; i < ns; i++, pcm += stride)
+        xt[i] = *pcm, xs[i] = *pcm;
 }
 
 /**
@@ -184,11 +182,59 @@ static void load_s24(
     float *xs = encoder->xs;
     int ns = LC3_NS(dt, sr);
 
-    for (int i = 0; i < ns; i++) {
-        int32_t in = pcm[i*stride];
+    for (int i = 0; i < ns; i++, pcm += stride) {
+        xt[i] = *pcm >> 8;
+        xs[i] = ldexpf(*pcm, -8);
+    }
+}
 
-        xt[i] = in >> 8;
-        xs[i] = ldexpf(in, -8);
+/**
+ * Input PCM Samples from signed 24 bits packed
+ * encoder         Encoder state
+ * pcm, stride     Input PCM samples, and count between two consecutives
+ */
+static void load_s24_3le(
+    struct lc3_encoder *encoder, const void *_pcm, int stride)
+{
+    const uint8_t *pcm = _pcm;
+
+    enum lc3_dt dt = encoder->dt;
+    enum lc3_srate sr = encoder->sr_pcm;
+
+    int16_t *xt = encoder->xt;
+    float *xs = encoder->xs;
+    int ns = LC3_NS(dt, sr);
+
+    for (int i = 0; i < ns; i++, pcm += 3*stride) {
+        int32_t in = ((uint32_t)pcm[0] <<  8) |
+                     ((uint32_t)pcm[1] << 16) |
+                     ((uint32_t)pcm[2] << 24)  ;
+
+        xt[i] = in >> 16;
+        xs[i] = ldexpf(in, -16);
+    }
+}
+
+/**
+ * Input PCM Samples from float 32 bits
+ * encoder         Encoder state
+ * pcm, stride     Input PCM samples, and count between two consecutives
+ */
+static void load_float(
+    struct lc3_encoder *encoder, const void *_pcm, int stride)
+{
+    const float *pcm = _pcm;
+
+    enum lc3_dt dt = encoder->dt;
+    enum lc3_srate sr = encoder->sr_pcm;
+
+    int16_t *xt = encoder->xt;
+    float *xs = encoder->xs;
+    int ns = LC3_NS(dt, sr);
+
+    for (int i = 0; i < ns; i++, pcm += stride) {
+        xs[i] = ldexpf(*pcm, 15);
+        xt[i] = LC3_SAT16((int32_t)xs[i]);
     }
 }
 
@@ -290,7 +336,7 @@ unsigned lc3_encoder_size(int dt_us, int sr_hz)
         return 0;
 
     return sizeof(struct lc3_encoder) +
-        LC3_ENCODER_BUFFER_COUNT(dt_us, sr_hz) * sizeof(float);
+        (LC3_ENCODER_BUFFER_COUNT(dt_us, sr_hz)-1) * sizeof(float);
 }
 
 /**
@@ -335,8 +381,10 @@ int lc3_encode(struct lc3_encoder *encoder, enum lc3_pcm_format fmt,
     const void *pcm, int stride, int nbytes, void *out)
 {
     static void (* const load[])(struct lc3_encoder *, const void *, int) = {
-        [LC3_PCM_FORMAT_S16] = load_s16,
-        [LC3_PCM_FORMAT_S24] = load_s24,
+        [LC3_PCM_FORMAT_S16    ] = load_s16,
+        [LC3_PCM_FORMAT_S24    ] = load_s24,
+        [LC3_PCM_FORMAT_S24_3LE] = load_s24_3le,
+        [LC3_PCM_FORMAT_FLOAT  ] = load_float,
     };
 
     /* --- Check parameters --- */
@@ -406,6 +454,55 @@ static void store_s24(
         int32_t s = *xs >= 0 ? (int32_t)(ldexpf(*xs, 8) + 0.5f)
                              : (int32_t)(ldexpf(*xs, 8) - 0.5f);
         *pcm = LC3_SAT24(s);
+    }
+}
+
+/**
+ * Output PCM Samples to signed 24 bits packed
+ * decoder         Decoder state
+ * pcm, stride     Output PCM samples, and count between two consecutives
+ */
+static void store_s24_3le(
+    struct lc3_decoder *decoder, void *_pcm, int stride)
+{
+    uint8_t *pcm = _pcm;
+
+    enum lc3_dt dt = decoder->dt;
+    enum lc3_srate sr = decoder->sr_pcm;
+
+    float *xs = decoder->xs;
+    int ns = LC3_NS(dt, sr);
+
+    for ( ; ns > 0; ns--, xs++, pcm += 3*stride) {
+        int32_t s = *xs >= 0 ? (int32_t)(ldexpf(*xs, 8) + 0.5f)
+                             : (int32_t)(ldexpf(*xs, 8) - 0.5f);
+
+        s = LC3_SAT24(s);
+        pcm[0] = (s >>  0) & 0xff;
+        pcm[1] = (s >>  8) & 0xff;
+        pcm[2] = (s >> 16) & 0xff;
+    }
+}
+
+/**
+ * Output PCM Samples to float 32 bits
+ * decoder         Decoder state
+ * pcm, stride     Output PCM samples, and count between two consecutives
+ */
+static void store_float(
+    struct lc3_decoder *decoder, void *_pcm, int stride)
+{
+    float *pcm = _pcm;
+
+    enum lc3_dt dt = decoder->dt;
+    enum lc3_srate sr = decoder->sr_pcm;
+
+    float *xs = decoder->xs;
+    int ns = LC3_NS(dt, sr);
+
+    for ( ; ns > 0; ns--, xs++, pcm += stride) {
+        float s = ldexpf(*xs, -15);
+        *pcm = fminf(fmaxf(s, -1.f), 1.f);
     }
 }
 
@@ -525,7 +622,7 @@ unsigned lc3_decoder_size(int dt_us, int sr_hz)
         return 0;
 
     return sizeof(struct lc3_decoder) +
-        LC3_DECODER_BUFFER_COUNT(dt_us, sr_hz) * sizeof(float);
+        (LC3_DECODER_BUFFER_COUNT(dt_us, sr_hz)-1) * sizeof(float);
 }
 
 /**
@@ -574,8 +671,10 @@ int lc3_decode(struct lc3_decoder *decoder, const void *in, int nbytes,
     enum lc3_pcm_format fmt, void *pcm, int stride)
 {
     static void (* const store[])(struct lc3_decoder *, void *, int) = {
-        [LC3_PCM_FORMAT_S16] = store_s16,
-        [LC3_PCM_FORMAT_S24] = store_s24,
+        [LC3_PCM_FORMAT_S16    ] = store_s16,
+        [LC3_PCM_FORMAT_S24    ] = store_s24,
+        [LC3_PCM_FORMAT_S24_3LE] = store_s24_3le,
+        [LC3_PCM_FORMAT_FLOAT  ] = store_float,
     };
 
     /* --- Check parameters --- */

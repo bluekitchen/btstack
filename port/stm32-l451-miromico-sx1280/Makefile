@@ -81,11 +81,11 @@ ${BTSTACK_ROOT}/src/btstack_util.c \
 ${BTSTACK_ROOT}/src/hci.c \
 ${BTSTACK_ROOT}/src/hci_cmd.c \
 ${BTSTACK_ROOT}/src/hci_dump.c \
+${BTSTACK_ROOT}/src/hci_event.c \
 ${BTSTACK_ROOT}/src/hci_transport_h4.c \
 ${BTSTACK_ROOT}/src/l2cap.c \
 ${BTSTACK_ROOT}/src/l2cap_signaling.c \
 ${BTSTACK_ROOT}/chipset/cinnamon/controller.c \
-${BTSTACK_ROOT}/chipset/cinnamon/hci_event.c \
 ${BTSTACK_ROOT}/chipset/cinnamon/hopping.c \
 ${BTSTACK_ROOT}/chipset/sx128x/ll_sx1280.c \
 ${BTSTACK_ROOT}/chipset/sx128x/SMTC_Drivers/sx1280-driver-c/sx1280-hal.c \

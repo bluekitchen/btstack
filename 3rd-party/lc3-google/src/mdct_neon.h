@@ -16,7 +16,8 @@
  *
  ******************************************************************************/
 
-#if __ARM_NEON && __ARM_ARCH_ISA_A64
+#if __ARM_NEON && __ARM_ARCH_ISA_A64 && \
+        !defined(TEST_ARM) || defined(TEST_NEON)
 
 #ifndef TEST_NEON
 #include <arm_neon.h>
@@ -28,7 +29,7 @@
  * The number of interleaved transform `n` assumed to be even
  */
 #ifndef fft_5
-#define fft_5 neon_fft_5
+
 LC3_HOT static inline void neon_fft_5(
     const struct lc3_complex *x, struct lc3_complex *y, int n)
 {
@@ -97,13 +98,18 @@ LC3_HOT static inline void neon_fft_5(
         vst1_f32( (float *)(y + 9), vget_high_f32(y4) );
     }
 }
+
+#ifndef TEST_NEON
+#define fft_5 neon_fft_5
+#endif
+
 #endif /* fft_5 */
 
 /**
  * FFT Butterfly 3 Points
  */
 #ifndef fft_bf3
-#define fft_bf3 neon_fft_bf3
+
 LC3_HOT static inline void neon_fft_bf3(
     const struct lc3_fft_bf3_twiddles *twiddles,
     const struct lc3_complex *x, struct lc3_complex *y, int n)
@@ -206,13 +212,18 @@ LC3_HOT static inline void neon_fft_bf3(
 
     }
 }
+
+#ifndef TEST_NEON
+#define fft_bf3 neon_fft_bf3
+#endif
+
 #endif /* fft_bf3 */
 
 /**
  * FFT Butterfly 2 Points
  */
 #ifndef fft_bf2
-#define fft_bf2 neon_fft_bf2
+
 LC3_HOT static inline void neon_fft_bf2(
     const struct lc3_fft_bf2_twiddles *twiddles,
     const struct lc3_complex *x, struct lc3_complex *y, int n)
@@ -275,6 +286,11 @@ LC3_HOT static inline void neon_fft_bf2(
         }
     }
 }
+
+#ifndef TEST_NEON
+#define fft_bf2 neon_fft_bf2
+#endif
+
 #endif /* fft_bf2 */
 
 #endif /* __ARM_NEON && __ARM_ARCH_ISA_A64 */

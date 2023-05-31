@@ -96,11 +96,19 @@ static dhcp_config_t *config = NULL;
 
 char magic_cookie[] = {0x63,0x82,0x53,0x63};
 
+static uint32_t get_addr32(const uint8_t addr[4]) {
+	return PP_HTONL(LWIP_MAKEU32(addr[0],addr[1],addr[2],addr[3]));
+}
+
+static void set_addr32(uint8_t *dst, uint32_t src) {
+	memcpy(dst, &src, 4);
+}
+
 static dhcp_entry_t *entry_by_ip(uint32_t ip)
 {
 	int i;
 	for (i = 0; i < config->num_entry; i++)
-		if (*(uint32_t *)config->entries[i].addr == ip)
+		if (get_addr32(config->entries[i].addr) == ip)
 			return &config->entries[i];
 	return NULL;
 }
@@ -165,7 +173,7 @@ static int fill_options(void *dest,
 	/* dhcp server identifier */
 	*ptr++ = DHCP_SERVERID;
 	*ptr++ = 4;
-	*(uint32_t *)ptr = serverid;
+	set_addr32(ptr, serverid);
 	ptr += 4;
 
 	/* lease time */
@@ -179,7 +187,7 @@ static int fill_options(void *dest,
 	/* subnet mask */
 	*ptr++ = DHCP_SUBNETMASK;
 	*ptr++ = 4;
-	*(uint32_t *)ptr = subnet;
+	set_addr32(ptr, subnet);
 	ptr += 4;
 
 	/* router */
@@ -187,7 +195,7 @@ static int fill_options(void *dest,
 	{
 		*ptr++ = DHCP_ROUTER;
 		*ptr++ = 4;
-		*(uint32_t *)ptr = router;
+		set_addr32(ptr, router);
 		ptr += 4;
 	}
 
@@ -206,7 +214,7 @@ static int fill_options(void *dest,
 	{
 		*ptr++ = DHCP_DNSSERVER;
 		*ptr++ = 4;
-		*(uint32_t *)ptr = dns;
+		set_addr32(ptr, dns);
 		ptr += 4;
 	}
 
@@ -223,6 +231,7 @@ static void udp_recv_proc(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
 	uint8_t *ptr;
 	dhcp_entry_t *entry;
 	struct pbuf *pp;
+	struct netif *nif;
 
 	unsigned int n = p->len;
 	if (n > sizeof(dhcp_data)) n = sizeof(dhcp_data);
@@ -237,7 +246,7 @@ static void udp_recv_proc(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
 			dhcp_data.dp_op = 2; /* reply */
 			dhcp_data.dp_secs = 0;
 			dhcp_data.dp_flags = 0;
-			*(uint32_t *)dhcp_data.dp_yiaddr = *(uint32_t *)entry->addr;
+			set_addr32(dhcp_data.dp_yiaddr, get_addr32(entry->addr));
 			memcpy(dhcp_data.dp_magic, magic_cookie, 4);
 
 			memset(dhcp_data.dp_options, 0, sizeof(dhcp_data.dp_options));
@@ -245,16 +254,21 @@ static void udp_recv_proc(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
 			fill_options(dhcp_data.dp_options,
 				DHCP_OFFER,
 				config->domain,
-				*(uint32_t *)config->dns,
+				get_addr32(config->dns),
 				entry->lease, 
-				*(uint32_t *)config->addr,
-				*(uint32_t *)config->addr, 
-				*(uint32_t *)entry->subnet);
+				get_addr32(config->addr),
+				get_addr32(config->addr),
+				get_addr32(entry->subnet));
 
 			pp = pbuf_alloc(PBUF_TRANSPORT, sizeof(dhcp_data), PBUF_POOL);
 			if (pp == NULL) break;
 			memcpy(pp->payload, &dhcp_data, sizeof(dhcp_data));
-			udp_sendto(upcb, pp, IP_ADDR_BROADCAST, port);
+			nif = ip_current_input_netif();
+			if (nif) {
+				udp_sendto_if(upcb, pp, IP_ADDR_BROADCAST, port, nif);
+			} else {
+				udp_sendto(upcb, pp, IP_ADDR_BROADCAST, port);
+			}
 			pbuf_free(pp);
 			break;
 
@@ -270,7 +284,7 @@ static void udp_recv_proc(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
 			if (entry != NULL) free_entry(entry);
 
 			/* 3. find requested ipaddr */
-			entry = entry_by_ip(*(uint32_t *)ptr);
+			entry = entry_by_ip(get_addr32(ptr));
 			if (entry == NULL) break;
 			if (!is_vacant(entry)) break;
 
@@ -287,18 +301,23 @@ static void udp_recv_proc(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
 			fill_options(dhcp_data.dp_options,
 				DHCP_ACK,
 				config->domain,
-				*(uint32_t *)config->dns,
+				get_addr32(config->dns),
 				entry->lease, 
-				*(uint32_t *)config->addr,
-				*(uint32_t *)config->addr, 
-				*(uint32_t *)entry->subnet);
+				get_addr32(config->addr),
+				get_addr32(config->addr), 
+				get_addr32(entry->subnet));
 
 			/* 6. send ACK */
 			pp = pbuf_alloc(PBUF_TRANSPORT, sizeof(dhcp_data), PBUF_POOL);
 			if (pp == NULL) break;
 			memcpy(entry->mac, dhcp_data.dp_chaddr, 6);
 			memcpy(pp->payload, &dhcp_data, sizeof(dhcp_data));
-			udp_sendto(upcb, pp, IP_ADDR_BROADCAST, port);
+			nif = ip_current_input_netif();
+			if (nif) {
+				udp_sendto_if(upcb, pp, IP_ADDR_BROADCAST, port, nif);
+			} else {
+				udp_sendto(upcb, pp, IP_ADDR_BROADCAST, port);
+			}
 			pbuf_free(pp);
 			break;
 

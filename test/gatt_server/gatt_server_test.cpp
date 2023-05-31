@@ -34,6 +34,8 @@ extern "C" void mock_call_att_server_packet_handler(uint8_t packet_type, uint16_
 extern "C" void hci_setup_le_connection(uint16_t con_handle);
 extern "C" void mock_call_att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 extern "C" void mock_l2cap_set_max_mtu(uint16_t mtu);
+extern "C" void hci_setup_classic_connection(uint16_t con_handle);
+extern "C" void set_cmac_ready(int ready);
 
 static uint8_t att_request[255];
 static uint16_t att_write_request(uint16_t request_type, uint16_t attribute_handle, uint16_t value_length, const uint8_t * value){
@@ -41,6 +43,12 @@ static uint16_t att_write_request(uint16_t request_type, uint16_t attribute_hand
     little_endian_store_16(att_request, 1, attribute_handle);
     (void)memcpy(&att_request[3], value, value_length);
     return 3 + value_length;
+}
+
+static uint16_t att_read_request(uint16_t request_type, uint16_t attribute_handle){
+    att_request[0] = request_type;
+    little_endian_store_16(att_request, 1, attribute_handle);
+    return 3;
 }
 
 static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
@@ -123,10 +131,10 @@ TEST_GROUP(ATT_SERVER){
 
     void teardown(void) {
         mock_btstack_tlv_deinit(&tlv_context);
+        att_server_deinit();
         hci_deinit();
     }
 };
-
 
 TEST(ATT_SERVER, gatt_server_get_value_handle_for_characteristic_with_uuid16){
     // att_dump_attributes();
@@ -263,12 +271,138 @@ TEST(ATT_SERVER, att_server_register_can_send_now_callback){
     att_server_register_packet_handler(&att_event_packet_handler);
 }
 
-TEST(ATT_SERVER, opcode_ATT_WRITE_REQUEST){
+TEST(ATT_SERVER, att_packet_handler_ATT_DATA_PACKET){
     uint16_t value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
     uint8_t buffer[] = {1, 0};
 
     uint16_t att_request_len = att_write_request(ATT_WRITE_REQUEST, value_handle, sizeof(buffer), buffer);
     mock_call_att_server_packet_handler(ATT_DATA_PACKET, att_con_handle, &att_request[0], att_request_len);
+}
+
+TEST(ATT_SERVER, att_packet_handler_ATT_DATA_PACKET1){
+    uint16_t value_handle;
+    uint16_t att_request_len;
+
+    value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+    att_request_len = att_read_request(ATT_READ_REQUEST, value_handle);
+    mock_call_att_server_packet_handler(ATT_DATA_PACKET, att_con_handle, &att_request[0], att_request_len);
+}
+
+TEST(ATT_SERVER, att_packet_handler_invalid_opcode){
+    uint16_t value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_POWER_STATE);
+    uint8_t  buffer[] = {1, 0};
+
+    uint16_t att_request_len = att_write_request(0xFF, value_handle, sizeof(buffer), buffer);
+    mock_call_att_server_packet_handler(ATT_DATA_PACKET, att_con_handle, &att_request[0], att_request_len);
+}
+
+TEST(ATT_SERVER, att_packet_handler_ATT_HANDLE_VALUE_CONFIRMATION){
+    hci_setup_le_connection(att_con_handle);
+    static uint8_t value[] = {0x55};
+    uint16_t value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+    l2cap_can_send_fixed_channel_packet_now_set_status(1);
+    // correct command
+    uint8_t status = att_server_indicate(att_con_handle, value_handle, &value[0], 0);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    static uint8_t buffer[0];
+    uint16_t att_request_len = att_write_request(ATT_HANDLE_VALUE_CONFIRMATION, value_handle, 0, buffer);
+    mock_call_att_server_packet_handler(ATT_DATA_PACKET, att_con_handle, &att_request[0], att_request_len);
+}
+
+TEST(ATT_SERVER, att_packet_handler_ATT_WRITE_COMMAND){
+    uint16_t value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+    static uint8_t buffer[] = {0x55};
+    uint16_t att_request_len = att_write_request(ATT_WRITE_COMMAND, value_handle, sizeof(buffer), buffer);
+    mock_call_att_server_packet_handler(ATT_DATA_PACKET, att_con_handle, &att_request[0], att_request_len);
+}
+
+TEST(ATT_SERVER, att_packet_handler_ATT_WRITE_COMMAND_wrong_buffer_size){
+    uint16_t value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+    static uint8_t buffer[] = {0x55};
+    att_write_request(ATT_SIGNED_WRITE_COMMAND, value_handle, sizeof(buffer), buffer);
+    mock_call_att_server_packet_handler(ATT_DATA_PACKET, att_con_handle, &att_request[0], ATT_REQUEST_BUFFER_SIZE + 100);
+}
+
+TEST(ATT_SERVER, att_packet_handler_ATT_WRITE_COMMAND_signed_write_confirmation){
+    hci_setup_le_connection(att_con_handle);
+
+    uint8_t signed_write_value[] = {0x12};
+    uint8_t hash[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+    uint16_t signed_write_characteristic_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_CSC_FEATURE);
+    
+    uint8_t att_request[20];
+    int value_length = sizeof(signed_write_value);
+    att_request[0] = ATT_SIGNED_WRITE_COMMAND;
+    little_endian_store_16(att_request, 1, signed_write_characteristic_handle);
+    memcpy(&att_request[3], signed_write_value, value_length);
+    little_endian_store_32(att_request, 3 + value_length, 0);
+    reverse_64(hash, &att_request[3 + value_length + 4]);
+
+    // wrong size
+    mock_call_att_server_packet_handler(ATT_DATA_PACKET, att_con_handle, &att_request[0], value_length + 12u);
+
+    set_cmac_ready(0);
+    mock_call_att_server_packet_handler(ATT_DATA_PACKET, att_con_handle, &att_request[0], value_length + 12u + 3u);
+
+    set_cmac_ready(1);
+    mock_call_att_server_packet_handler(ATT_DATA_PACKET, att_con_handle, &att_request[0], value_length + 12u + 3u);
+
+    // set ir_lookup_active = 1
+    uint8_t buffer[20];
+    buffer[0] = SM_EVENT_IDENTITY_RESOLVING_STARTED;
+    buffer[1] = 9;
+    little_endian_store_16(buffer, 2, att_con_handle);
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], 11);
+    
+    mock_call_att_server_packet_handler(ATT_DATA_PACKET, att_con_handle, &att_request[0], value_length + 12u + 3u);
+
+    buffer[0] = SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED;
+    buffer[1] = 18; // H1B1B2
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], 11);
+}
+
+
+TEST(ATT_SERVER, att_packet_handler_ATT_UNKNOWN_PACKET){
+    uint16_t value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+    uint8_t buffer[] = {1, 0};
+
+    uint16_t att_request_len = att_write_request(ATT_WRITE_REQUEST, value_handle, sizeof(buffer), buffer);
+    mock_call_att_server_packet_handler(0xFF, att_con_handle, &att_request[0], att_request_len);
+}
+
+TEST(ATT_SERVER, att_packet_handler_HCI_EVENT_PACKET_L2CAP_EVENT_CAN_SEND_NOW){
+    uint16_t value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+    // local cid
+    uint8_t buffer[] = {1, 0};
+
+    uint16_t att_request_len = att_write_request(L2CAP_EVENT_CAN_SEND_NOW, value_handle, sizeof(buffer), buffer);
+    mock_call_att_server_packet_handler(HCI_EVENT_PACKET, att_con_handle, &att_request[0], att_request_len);
+}
+
+TEST(ATT_SERVER, att_packet_handler_HCI_EVENT_PACKET_ATT_EVENT_MTU_EXCHANGE_COMPLETE){
+    uint16_t value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+    uint8_t buffer[4];
+    
+    // invalid con handle
+    memset(buffer, 0, sizeof(buffer));
+    little_endian_store_16(buffer, 2, 256);
+    
+    uint16_t att_request_len = att_write_request(ATT_EVENT_MTU_EXCHANGE_COMPLETE, value_handle, sizeof(buffer), buffer);
+    mock_call_att_server_packet_handler(HCI_EVENT_PACKET, 0, &att_request[0], att_request_len);
+
+    little_endian_store_16(buffer, 0, att_con_handle);
+    att_request_len = att_write_request(ATT_EVENT_MTU_EXCHANGE_COMPLETE, value_handle, sizeof(buffer), buffer);
+    mock_call_att_server_packet_handler(HCI_EVENT_PACKET, att_con_handle, &att_request[0], att_request_len);
+}
+
+TEST(ATT_SERVER, att_packet_handler_HCI_EVENT_PACKET_ATT_EVENT_UNKNOWN){
+    uint16_t value_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+    uint8_t buffer[] = {1, 0};
+
+    // unknown subevent
+    uint16_t att_request_len = att_write_request(0x7bu, value_handle, sizeof(buffer), buffer);
+    mock_call_att_server_packet_handler(HCI_EVENT_PACKET, att_con_handle, &att_request[0], att_request_len);
 }
 
 TEST(ATT_SERVER, connection_complete_event){
@@ -294,6 +428,16 @@ TEST(ATT_SERVER, connection_complete_event){
     mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
 }
 
+TEST(ATT_SERVER, unknown_packet_type){
+    uint8_t buffer[21];
+    buffer[0] = HCI_EVENT_LE_META;
+    buffer[1] = 1;
+    buffer[2] = HCI_SUBEVENT_LE_CONNECTION_COMPLETE;
+
+    mock_call_att_packet_handler(0xFF, 0, &buffer[0], sizeof(buffer));
+}
+
+
 TEST(ATT_SERVER, connection_disconnect_complete_event) {
     uint8_t buffer[6];
     buffer[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
@@ -305,10 +449,16 @@ TEST(ATT_SERVER, connection_disconnect_complete_event) {
     little_endian_store_16(buffer, 3, HCI_CON_HANDLE_INVALID);
     mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
 
-    // call with correct con_handle
+    // call with correct con_handle, classic connection
+    hci_setup_classic_connection(att_con_handle);
+    little_endian_store_16(buffer, 3, att_con_handle);
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
+
+    // call with correct con_handle, le connection
     hci_setup_le_connection(att_con_handle);
     little_endian_store_16(buffer, 3, att_con_handle);
     mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
+
 
     hci_setup_le_connection(att_con_handle);
     static uint8_t value[] = {0x55};
@@ -321,7 +471,181 @@ TEST(ATT_SERVER, connection_disconnect_complete_event) {
     mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
 }
 
+static void test_hci_event_encryption_events(hci_con_handle_t con_handle, uint8_t con_handle_index, uint8_t * buffer, uint16_t buffer_size){
+    // call with wrong con_handle
+    hci_setup_le_connection(con_handle);
+    little_endian_store_16(buffer, con_handle_index, HCI_CON_HANDLE_INVALID);
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], buffer_size);
 
+    // call with correct con_handle, classic connection
+    hci_setup_classic_connection(con_handle);
+    little_endian_store_16(buffer, con_handle_index, con_handle);
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], buffer_size);
+
+    // call with correct con_handle, le connection
+    hci_setup_le_connection(con_handle);
+    little_endian_store_16(buffer, con_handle_index, con_handle);
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], buffer_size);
+}
+
+TEST(ATT_SERVER, hci_event_encryption_key_refresh_complete_event) {
+    uint8_t buffer[5];
+    buffer[0] = HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE;
+    buffer[1] = 3;
+    buffer[2] = 0;
+    // con_handle (2)
+    test_hci_event_encryption_events(att_con_handle, 3, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, hci_event_encryption_change_v2_event) {
+    uint8_t buffer[7];
+    buffer[0] = HCI_EVENT_ENCRYPTION_CHANGE_V2;
+    buffer[1] = 5;
+    buffer[2] = 0;
+    // con_handle (2)
+    // encryption_key_size
+    buffer[6] = 1;
+    // encryption_enabled (1)
+    buffer[5] = 0;
+    test_hci_event_encryption_events(att_con_handle, 3, buffer, sizeof(buffer));
+
+    // encryption_enabled (1)
+    buffer[5] = 1;
+    test_hci_event_encryption_events(att_con_handle, 3, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, hci_event_encryption_change_event) {
+    uint8_t buffer[6];
+    buffer[0] = HCI_EVENT_ENCRYPTION_CHANGE;
+    buffer[1] = 4;
+    buffer[2] = 0;
+    // con_handle (2)att_packet_handler_ATT_UNKNOWN_PACKET
+
+    // encryption_enabled (1)
+    buffer[5] = 0;
+    test_hci_event_encryption_events(att_con_handle, 3, buffer, sizeof(buffer));
+
+    // encryption_enabled (1)
+    buffer[5] = 1;
+    test_hci_event_encryption_events(att_con_handle, 3, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, sm_event_identity_resolving_started_event) {
+    uint8_t buffer[11];
+    buffer[0] = SM_EVENT_IDENTITY_RESOLVING_STARTED;
+    buffer[1] = 9;
+
+    test_hci_event_encryption_events(att_con_handle, 2, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, sm_event_identity_resolving_succeeded_event) {
+    uint8_t buffer[20];
+    buffer[0] = SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED;
+    buffer[1] = 18; // H1B1B2
+
+    test_hci_event_encryption_events(att_con_handle, 2, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, sm_event_identity_resolving_failed_event) {
+    uint8_t buffer[11];
+    buffer[0] = SM_EVENT_IDENTITY_RESOLVING_FAILED;
+    buffer[1] = 9; 
+
+    test_hci_event_encryption_events(att_con_handle, 2, buffer, sizeof(buffer));
+}
+
+// 
+
+TEST(ATT_SERVER, sm_event_just_works_request_event) {
+    uint8_t buffer[11];
+    buffer[0] = SM_EVENT_JUST_WORKS_REQUEST;
+    buffer[1] = 9; 
+
+    test_hci_event_encryption_events(att_con_handle, 2, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, sm_event_passkey_display_number_event) {
+    uint8_t buffer[11];
+    buffer[0] = SM_EVENT_PASSKEY_DISPLAY_NUMBER;
+    buffer[1] = 9; 
+
+    test_hci_event_encryption_events(att_con_handle, 2, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, sm_event_passkey_input_number_event) {
+    uint8_t buffer[11];
+    buffer[0] = SM_EVENT_PASSKEY_INPUT_NUMBER;
+    buffer[1] = 9; 
+
+    test_hci_event_encryption_events(att_con_handle, 2, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, sm_event_numeric_comparison_request_event) {
+    uint8_t buffer[11];
+    buffer[0] = SM_EVENT_NUMERIC_COMPARISON_REQUEST;
+    buffer[1] = 9; 
+
+    test_hci_event_encryption_events(att_con_handle, 2, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, sm_event_identity_created_event) {
+    uint8_t buffer[20];
+    buffer[0] = SM_EVENT_IDENTITY_CREATED;
+    buffer[1] = 9; 
+
+    test_hci_event_encryption_events(att_con_handle, 2, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, sm_event_pairing_complete_event) {
+    uint8_t buffer[11];
+    buffer[0] = SM_EVENT_PAIRING_COMPLETE;
+    buffer[1] = 9; 
+
+    test_hci_event_encryption_events(att_con_handle, 2, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, sm_event_authorization_result_event) {
+    uint8_t buffer[12];
+    buffer[0] = SM_EVENT_AUTHORIZATION_RESULT;
+    buffer[1] = 9; 
+
+    test_hci_event_encryption_events(att_con_handle, 2, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, unknown_event) {
+    uint8_t buffer[11];
+    buffer[0] = 0xFF;
+    buffer[1] = 9; 
+
+    test_hci_event_encryption_events(att_con_handle, 2, buffer, sizeof(buffer));
+}
+
+TEST(ATT_SERVER, att_server_register_service_handler) {
+    att_service_handler_t test_service;
+    test_service.read_callback = att_read_callback;
+    test_service.write_callback = att_write_callback;
+
+    uint16_t start_handle = 0;
+    uint16_t end_handle   = 0xffff;
+    int service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE, &start_handle, &end_handle);
+    CHECK_EQUAL(service_found, 1);
+    
+    test_service.start_handle   = start_handle;
+    test_service.end_handle     = end_handle;
+    att_server_register_service_handler(&test_service);
+
+    test_service.start_handle   = start_handle;
+    test_service.end_handle     = 0;
+    att_server_register_service_handler(&test_service);
+
+    test_service.start_handle   = 0;
+    test_service.end_handle     = end_handle;
+    att_server_register_service_handler(&test_service);
+
+    test_service.start_handle   = 0;
+    test_service.end_handle     = 0;
+    att_server_register_service_handler(&test_service);
+}   
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);

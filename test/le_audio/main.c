@@ -69,6 +69,7 @@
 #include "hci_dump_posix_fs.h"
 #include "hci_transport.h"
 #include "hci_transport_h4.h"
+#include "btstack_chipset_bcm.h"
 
 #define HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS 0xFC09
 const hci_cmd_t hci_zephyr_read_static_address = {
@@ -95,7 +96,7 @@ static void local_version_information_handler(uint8_t * packet);
 
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
-    1000000,
+    115200,
     0,  // main baudrate
     1,  // flow control
     NULL,
@@ -198,6 +199,12 @@ static void local_version_information_handler(uint8_t * packet){
         case BLUETOOTH_COMPANY_ID_THE_LINUX_FOUNDATION:
             printf("Zephyr HCI Controller\n");
             is_zephyr = true;
+            break;
+        case BLUETOOTH_COMPANY_ID_INFINEON_TECHNOLOGIES_AG:
+        case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:
+            printf("Broadcom/Cypress/Infineon Controller\n");
+            config.baudrate_main = 921600;
+            hci_set_chipset(btstack_chipset_bcm_instance());
             break;
         default:
             printf("Unknown manufacturer / manufacturer not supported yet.\n");

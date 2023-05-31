@@ -63,13 +63,17 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];
 
 /**
  * Address types
- * @note: BTstack uses a custom addr type to refer to classic ACL and SCO devices
  */
  typedef enum {
+    // Public Device Address
     BD_ADDR_TYPE_LE_PUBLIC = 0,
+    // Random Device Address
     BD_ADDR_TYPE_LE_RANDOM = 1,
-    BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_PUBLIC = 2,
-    BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_RANDOM = 3,
+    // Public Identity Address (Corresponds to Resolved Private Address)
+    BD_ADDR_TYPE_LE_PUBLIC_IDENTITY = 2,
+    // Random (static) Identity Address (Corresponds to Resolved Private Address)
+    BD_ADDR_TYPE_LE_RANDOM_IDENTITY = 3,
+    // internal BTstack addr types for Classic connections
     BD_ADDR_TYPE_SCO       = 0xfc,
     BD_ADDR_TYPE_ACL       = 0xfd,
     BD_ADDR_TYPE_UNKNOWN   = 0xfe,  // also used as 'invalid'
@@ -107,6 +111,14 @@ typedef enum {
   UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256, // SSP Simpe Pairing
   AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256,   // SSP Passkey, Number confirm, OOB
 } link_key_type_t;
+
+/**
+ * LE Privacy 1.2
+ */
+typedef enum {
+    LE_PRIVACY_MODE_NETWORK = 0,
+    LE_PRIVACY_MODE_DEVICE = 1,
+} le_privacy_mode_t;
 
 /**
  * @brief Extended Inquiry Response
@@ -379,8 +391,19 @@ typedef enum {
 #define HCI_ACL_3DH3_SIZE          552
 #define HCI_ACL_2DH5_SIZE          679
 #define HCI_ACL_3DH5_SIZE         1021
-       
+#define HCI_SCO_HV1_SIZE            10
+#define HCI_SCO_HV2_SIZE            20
+#define HCI_SCO_HV3_SIZE            30
+#define HCI_SCO_EV3_SIZE            30
+#define HCI_SCO_EV4_SIZE           120
+#define HCI_SCO_EV5_SIZE           180
+#define HCI_SCO_2EV3_SIZE           60
+#define HCI_SCO_2EV5_SIZE          360
+#define HCI_SCO_3EV3_SIZE           90
+#define HCI_SCO_3EV5_SIZE          540
+
 #define LE_ADVERTISING_DATA_SIZE    31
+#define LE_EXTENDED_ADVERTISING_DATA_SIZE    229
 #define LE_EXTENDED_ADVERTISING_MAX_HANDLE 0xEFu
 #define LE_EXTENDED_ADVERTISING_MAX_CHUNK_LEN 251
 
@@ -397,9 +420,15 @@ typedef enum {
 // SCO Packet Types
 #define SCO_PACKET_TYPES_NONE  0x0000
 #define SCO_PACKET_TYPES_HV1   0x0001
+#define SCO_PACKET_TYPES_HV2   0x0002
 #define SCO_PACKET_TYPES_HV3   0x0004
 #define SCO_PACKET_TYPES_EV3   0x0008
+#define SCO_PACKET_TYPES_EV4   0x0010
+#define SCO_PACKET_TYPES_EV5   0x0020
 #define SCO_PACKET_TYPES_2EV3  0x0040
+#define SCO_PACKET_TYPES_3EV3  0x0080
+#define SCO_PACKET_TYPES_2EV5  0x0100
+#define SCO_PACKET_TYPES_3EV5  0x0200
 #define SCO_PACKET_TYPES_ALL   0x03FF
 
 // Link Policy Settings

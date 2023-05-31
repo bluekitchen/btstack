@@ -46,6 +46,7 @@
 #include "btstack_run_loop.h"
 #include "btstack_em9304_spi.h"
 #include "hal_em9304_spi.h"
+#include <stddef.h> // NULL
 
 // data source for integration with BTstack Runloop
 static btstack_data_source_t btstack_em9304_spi_embedded_data_source;
@@ -67,6 +68,7 @@ static void btstack_em9304_spi_transfer_done(void){
 }
 
 static void btstack_em9304_spi_embedded_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    UNUSED(ds);
     switch (callback_type){
         case DATA_SOURCE_CALLBACK_POLL:
             if (btstack_em9304_spi_embedded_notify_ready){

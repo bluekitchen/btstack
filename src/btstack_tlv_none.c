@@ -33,6 +33,7 @@
 
 #include "btstack_tlv.h"
 #include "btstack_tlv_none.h"
+#include "btstack_debug.h"
 
 /**
  * Get Value for Tag
@@ -42,6 +43,10 @@
  * @return size of value
  */
 static int btstack_tlv_none_get_tag(void * context, uint32_t tag, uint8_t * buffer, uint32_t buffer_size){
+    UNUSED(context);
+    UNUSED(tag);
+    UNUSED(buffer);
+    UNUSED(buffer_size);
 	return 0;
 }
 
@@ -52,7 +57,11 @@ static int btstack_tlv_none_get_tag(void * context, uint32_t tag, uint8_t * buff
  * @param data_size
  */
 static int btstack_tlv_none_store_tag(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size){
-	return 0;
+    UNUSED(context);
+    UNUSED(tag);
+    UNUSED(data);
+    UNUSED(data_size);
+    return 0;
 }
 
 /**
@@ -60,6 +69,8 @@ static int btstack_tlv_none_store_tag(void * context, uint32_t tag, const uint8_
  * @param tag
  */
 static void btstack_tlv_none_delete_tag(void * context, uint32_t tag){
+    UNUSED(context);
+    UNUSED(tag);
 }
 
 static const btstack_tlv_t btstack_tlv_none = {

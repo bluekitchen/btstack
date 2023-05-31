@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 BlueKitchen GmbH
+ * Copyright (C) 2023 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -98,38 +98,45 @@ static uint8_t * hci_receive_buffer = &hci_packet_with_pre_buffer[HCI_INCOMING_P
 
 static SemaphoreHandle_t ring_buffer_mutex;
 
-// data source for integration with BTstack Runloop
-static btstack_data_source_t transport_data_source;
-static int                   transport_signal_sent;
-static int                   transport_packets_to_deliver;
+static void transport_notify_packet_send(void *context);
+static btstack_context_callback_registration_t packet_send_callback_context = {
+        .callback = transport_notify_packet_send,
+        .context = NULL,
+};
 
-// TODO: remove once stable 
-void report_recv_called_from_isr(void){
-     printf("host_recv_pkt_cb called from ISR!\n");
+static void transport_deliver_packets(void *context);
+static btstack_context_callback_registration_t packet_receive_callback_context = {
+        .callback = transport_deliver_packets,
+        .context = NULL,
+};
+
+// never supposed to happen, just panic if it does happen anyway
+static void panic_recv_called_from_isr(void) {
+    btstack_assert(0);
+    printf("host_recv_pkt_cb called from ISR!\n");
 }
 
-void report_sent_called_from_isr(void){
-     printf("host_send_pkt_available_cb called from ISR!\n");
+static void panic_sent_called_from_isr(void) {
+    btstack_assert(0);
+    printf("host_send_pkt_available_cb called from ISR!\n");
 }
 
 // VHCI callbacks, run from VHCI Task "BT Controller"
 
 static void host_send_pkt_available_cb(void){
 
-    if (xPortInIsrContext()){
-        report_sent_called_from_isr();
+    if (xPortInIsrContext()) {
+        panic_sent_called_from_isr();
         return;
     }
 
-    // set flag and trigger polling of transport data source on main thread
-    transport_signal_sent = 1;
-    btstack_run_loop_freertos_trigger();
+    btstack_run_loop_execute_on_main_thread(&packet_send_callback_context);
 }
 
 static int host_recv_pkt_cb(uint8_t *data, uint16_t len){
 
     if (xPortInIsrContext()){
-        report_recv_called_from_isr();
+        panic_recv_called_from_isr();
         return 0;
     }
 
@@ -153,9 +160,7 @@ static int host_recv_pkt_cb(uint8_t *data, uint16_t len){
 
     xSemaphoreGive(ring_buffer_mutex);
 
-    // set flag and trigger delivery of packets on main thread
-    transport_packets_to_deliver = 1;
-    btstack_run_loop_freertos_trigger();
+    btstack_run_loop_execute_on_main_thread(&packet_receive_callback_context);
     return 0;
 }
 
@@ -166,13 +171,15 @@ static const esp_vhci_host_callback_t vhci_host_cb = {
 
 // run from main thread
 
-static void transport_notify_packet_send(void){
+static void transport_notify_packet_send(void *context){
+    UNUSED(context);
     // notify upper stack that it might be possible to send again
     uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
     transport_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
 }
 
-static void transport_deliver_packets(void){
+static void transport_deliver_packets(void *context){
+    UNUSED(context);
     xSemaphoreTake(ring_buffer_mutex, portMAX_DELAY);
     while (btstack_ring_buffer_bytes_available(&hci_ringbuffer)){
         uint32_t number_read;
@@ -188,23 +195,6 @@ static void transport_deliver_packets(void){
 }
 
 
-static void transport_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    switch (callback_type){
-        case DATA_SOURCE_CALLBACK_POLL:
-            if (transport_signal_sent){
-                transport_signal_sent = 0;
-                transport_notify_packet_send();
-            }
-            if (transport_packets_to_deliver){
-                transport_packets_to_deliver = 0;
-                transport_deliver_packets();
-            }
-            break;
-        default:
-            break;
-    }
-}
-
 /**
  * init transport
  * @param transport_config
@@ -212,11 +202,6 @@ static void transport_process(btstack_data_source_t *ds, btstack_data_source_cal
 static void transport_init(const void *transport_config){
     log_info("transport_init");
     ring_buffer_mutex = xSemaphoreCreateMutex();
-
-    // set up polling data_source
-    btstack_run_loop_set_data_source_handler(&transport_data_source, &transport_process);
-    btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_POLL);
-    btstack_run_loop_add_data_source(&transport_data_source);
 }
 
 /**
@@ -413,9 +398,11 @@ uint8_t btstack_init(void){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+#if CONFIG_BTSTACK_AUDIO
     // setup i2s audio for sink and source
     btstack_audio_sink_set_instance(btstack_audio_esp32_sink_get_instance());
     btstack_audio_source_set_instance(btstack_audio_esp32_source_get_instance());
+#endif
 
     return ERROR_CODE_SUCCESS;
 }

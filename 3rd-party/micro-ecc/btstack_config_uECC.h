@@ -9,6 +9,11 @@
 #define uECC_CURVE uECC_secp256r1
 #define uECC_NO_DEFAULT_RNG
 
+// avoid warning for undefined preprocessing identifier
+#ifndef uECC_SUPPORTS_secp256r1
+#define uECC_SUPPORTS_secp256r1 0
+#endif
+
 // optimization: size vs. speed: uECC_asm_none - uECC_asm_small - uECC_asm_fast
 #ifndef uECC_ASM
 #define uECC_ASM uECC_asm_none

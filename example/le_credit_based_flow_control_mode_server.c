@@ -186,7 +186,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // free connection
-                    printf("%c: Disconnect, reason %02x\n", le_cbm_connection.name, hci_event_disconnection_complete_get_reason(packet));
+                    printf("%c: Disconnect, reason 0x%02x\n", le_cbm_connection.name, hci_event_disconnection_complete_get_reason(packet));
                     le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
                     break;
                 case HCI_EVENT_LE_META:
@@ -198,7 +198,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             printf("%c: Connection Latency: %u\n", le_cbm_connection.name, hci_subevent_le_connection_complete_get_conn_latency(packet));
 
                             // min con interval 15 ms - supported from iOS 11 
-                            gap_request_connection_parameter_update(le_cbm_connection.connection_handle, 12, 12, 0, 0x0048);
+                            gap_request_connection_parameter_update(le_cbm_connection.connection_handle, 12, 12, 4, 0x0048);
                             printf("Connected, requesting conn param update for handle 0x%04x\n", le_cbm_connection.connection_handle);
                             // 
                             test_reset(&le_cbm_connection);
@@ -216,7 +216,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;  
 
                 case L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE:
-                    printf("L2CAP Connection Parameter Update Complete, response: %x\n", l2cap_event_connection_parameter_update_response_get_result(packet));
+                    printf("L2CAP Connection Parameter Update Complete, result: 0x%02x\n", l2cap_event_connection_parameter_update_response_get_result(packet));
                     break;
 
                 // LE Credit-based Flow-Control Mode
@@ -237,7 +237,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     handle = l2cap_event_cbm_channel_opened_get_handle(packet);
                     status = l2cap_event_cbm_channel_opened_get_status(packet);
                     if (status == ERROR_CODE_SUCCESS) {
-                        printf("L2CAP: Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                        printf("L2CAP: Channel successfully opened: %s, handle 0x%04x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
                         // setup new 
                         le_cbm_connection.counter = 'A';
@@ -250,7 +250,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         l2cap_cbm_request_can_send_now_event(le_data_channel_connection.cid);
 #endif
                     } else {
-                        printf("L2CAP: Connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), status);
+                        printf("L2CAP: Connection to device %s failed, status 0x%02x\n", bd_addr_to_str(event_address), status);
                     }
                     break;
 

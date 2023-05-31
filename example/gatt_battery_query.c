@@ -285,9 +285,10 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                     printf("Battery service client connected, found %d services, poll bitmap 0x%02x\n", 
                         gattservice_subevent_battery_service_connected_get_num_instances(packet),
                         gattservice_subevent_battery_service_connected_get_poll_bitmap(packet));
+                        battery_service_client_read_battery_level(battery_service_cid, 0);
                     break;
                 default:
-                    printf("Battery service client connection failed, err 0x%02x.\n", status);
+                    printf("Battery service client connection failed, status 0x%02x.\n", status);
                     add_to_blacklist(report.address);
                     gap_disconnect(connection_handle);
                     break;

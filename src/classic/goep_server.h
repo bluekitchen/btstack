@@ -57,7 +57,8 @@ typedef enum {
     GOEP_SERVER_IDLE,
     GOEP_SERVER_W4_ACCEPT_REJECT,
     GOEP_SERVER_W4_CONNECTED,
-    GOEP_SERVER_CONNECTED
+    GOEP_SERVER_CONNECTED,
+    GOEP_SERVER_OUTGOING_BUFFER_RESERVED,
 } goep_server_state_t;
 
 typedef enum {
@@ -127,6 +128,13 @@ uint8_t goep_server_accept_connection(uint16_t goep_cid);
 uint8_t goep_server_decline_connection(uint16_t goep_cid);
 
 /**
+ * @brief Get max size of GOEP message
+ * @param goep_cid
+ * @return size in bytes or 0
+ */
+uint16_t goep_server_response_get_max_message_size(uint16_t goep_cid);
+
+/**
  * Request GOEP_SUBEVENT_CAN_SEND_NOW
  * @param goep_cid
  * @return status
@@ -153,18 +161,9 @@ uint8_t goep_server_response_create_connect(uint16_t goep_cid, uint8_t obex_vers
 uint8_t goep_server_response_create_general(uint16_t goep_cid);
 
 /**
- * @brief Get max size of body data that can be added to current response with goep_server_header_add_end_of_body
- * @param goep_cid
- * @param data
- * @param length
- * @return size in bytes or 0
- */
-uint16_t goep_server_response_get_max_body_size(uint16_t goep_cid);
-
-/**
  * @brief Add who header to current response
  * @param goep_cid
- * @param who - 16 bytes
+ * @param who 16 bytes
  * @return status
  */
 uint8_t goep_server_header_add_who(uint16_t goep_cid, const uint8_t * who);

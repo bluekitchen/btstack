@@ -48,6 +48,10 @@
 #include <stdint.h>
 #include "btstack_config.h"
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 #define BTSTACK_UART_PARITY_OFF  0
 #define BTSTACK_UART_PARITY_EVEN 1
 #define BTSTACK_UART_PARITY_ODD  2
@@ -183,5 +187,9 @@ typedef struct {
 
 // common implementations
 const btstack_uart_t * btstack_uart_posix_instance(void);
+
+#if defined __cplusplus
+}
+#endif
 
 #endif

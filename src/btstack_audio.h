@@ -69,6 +69,12 @@ typedef struct {
                 void (*playback) (int16_t * buffer, uint16_t num_samples));
 
     /**
+     * @brief Get the current playback sample rate, may differ from the
+     *        specified sample rate
+     */
+    uint32_t (*get_samplerate)(void);
+
+    /**
      * @brief Set volume
      * @param Volume 0..127
      */
@@ -104,6 +110,12 @@ typedef struct {
     int (*init)(uint8_t channels,
                 uint32_t samplerate, 
                 void (*recording)(const int16_t * buffer, uint16_t num_samples));
+
+    /**
+     * @brief Get the current recording sample rate, may differ from the
+     *        specified sameple rate
+     */
+    uint32_t (*get_samplerate)(void);
 
     /**
      * @brief Set Gain

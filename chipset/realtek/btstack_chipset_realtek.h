@@ -77,12 +77,6 @@ void btstack_chipset_realtek_set_config_file_path(const char *path);
 void btstack_chipset_realtek_set_config_folder_path(const char *path);
 
 /**
- * @brief Set lmp subversion version
- * @param lmp_subversion
- */
-void btstack_chipset_realtek_set_lmp_subversion(uint16_t version);
-
-/**
  * @brief Set product id
  * @param id
  */

@@ -50,34 +50,42 @@
 
 #define OBEX_OPCODE_FINAL_BIT_MASK         0x80
 
-#define OBEX_RESP_SUCCESS                  0xA0
 #define OBEX_RESP_CONTINUE                 0x90
+#define OBEX_RESP_SUCCESS                  0xA0
 #define OBEX_RESP_BAD_REQUEST              0xC0
 #define OBEX_RESP_UNAUTHORIZED             0xC1
 #define OBEX_RESP_FORBIDDEN                0xC3
 #define OBEX_RESP_NOT_FOUND                0xC4
 #define OBEX_RESP_NOT_ACCEPTABLE           0xC6
+#define OBEX_RESP_UNSUPPORTED_MEDIA_TYPE   0xCF
+#define OBEX_RESP_ENTITY_TOO_LARGE         0xCD
+#define OBEX_RESP_NOT_IMPLEMENTED          0xD1
 
-#define OBEX_HEADER_BODY                           0x48
-#define OBEX_HEADER_END_OF_BODY                    0x49
-#define OBEX_HEADER_COUNT                          0xC0
 #define OBEX_HEADER_NAME                           0x01
-#define OBEX_HEADER_TYPE                           0x42
-#define OBEX_HEADER_LENGTH                         0xC3
-#define OBEX_HEADER_TIME_ISO_8601                  0x44
-#define OBEX_HEADER_TIME_4_BYTE                    0xC4
 #define OBEX_HEADER_DESCRIPTION                    0x05
+// user defined 0x30..0x3f: unicode string
+#define OBEX_HEADER_IMG_HANDLE                     0x30
+#define OBEX_HEADER_TYPE                           0x42
+#define OBEX_HEADER_TIME_ISO_8601                  0x44
 #define OBEX_HEADER_TARGET                         0x46
 #define OBEX_HEADER_HTTP                           0x47
+#define OBEX_HEADER_BODY                           0x48
+#define OBEX_HEADER_END_OF_BODY                    0x49
 #define OBEX_HEADER_WHO                            0x4A
-#define OBEX_HEADER_OBJECT_CLASS                   0x4F
 #define OBEX_HEADER_APPLICATION_PARAMETERS         0x4C
-#define OBEX_HEADER_CONNECTION_ID                  0xCB
 #define OBEX_HEADER_AUTHENTICATION_CHALLENGE       0x4D
 #define OBEX_HEADER_AUTHENTICATION_RESPONSE        0x4E
+#define OBEX_HEADER_OBJECT_CLASS                   0x4F
+// user defined 0x70..0x7f: byte sequence
+#define OBEX_HEADER_IMG_DESCRIPTOR                 0x71
 #define OBEX_HEADER_SINGLE_RESPONSE_MODE           0x97
 #define OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER 0x98
-
+// user defined 0xB0..0xBF: single byte
+#define OBEX_HEADER_COUNT                          0xC0
+#define OBEX_HEADER_LENGTH                         0xC3
+#define OBEX_HEADER_TIME_4_BYTE                    0xC4
+#define OBEX_HEADER_CONNECTION_ID                  0xCB
+// user defined 0xF0..0xFF: 4 byte integer
 
 #define OBEX_VERSION                       0x14
 

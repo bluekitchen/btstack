@@ -101,7 +101,8 @@ typedef struct {
     btstack_timer_source_t audio_timer;
     uint8_t  streaming;
     int      max_media_payload_size;
-    
+    uint32_t rtp_timestamp;
+
     uint8_t  sbc_storage[SBC_STORAGE_SIZE];
     uint16_t sbc_storage_count;
     uint8_t  sbc_ready_to_send;
@@ -351,10 +352,16 @@ static void a2dp_demo_hexcmod_configure_sample_rate(int sample_rate){
 static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
     int bytes_in_storage = media_tracker.sbc_storage_count;
-    uint8_t num_frames = bytes_in_storage / num_bytes_in_frame;
+    uint8_t num_sbc_frames = bytes_in_storage / num_bytes_in_frame;
     // Prepend SBC Header
-    media_tracker.sbc_storage[0] = num_frames;  // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
-    avdtp_source_stream_send_media_payload_rtp(media_tracker.a2dp_cid, media_tracker.local_seid, 0, media_tracker.sbc_storage, bytes_in_storage + 1);
+    media_tracker.sbc_storage[0] = num_sbc_frames;  // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
+    a2dp_source_stream_send_media_payload_rtp(media_tracker.a2dp_cid, media_tracker.local_seid, 0,
+                                               media_tracker.rtp_timestamp,
+                                               media_tracker.sbc_storage, bytes_in_storage + 1);
+
+    // update rtp_timestamp
+    unsigned int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
+    media_tracker.rtp_timestamp += num_sbc_frames * num_audio_samples_per_sbc_buffer;
 
     media_tracker.sbc_storage_count = 0;
     media_tracker.sbc_ready_to_send = 0;
@@ -523,7 +530,7 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
     switch (hci_event_packet_get_type(packet)){
 #ifndef HAVE_BTSTACK_STDIN
-        case  BTSTACK_EVENT_STATE):
+        case  BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
             a2dp_source_demo_start_scanning();
             break;
@@ -690,7 +697,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             cid = a2dp_subevent_stream_reconfigured_get_a2dp_cid(packet);
 
             if (status != ERROR_CODE_SUCCESS){
-                printf("A2DP Source: Stream reconfiguration failed with status 0x%02x\n", status);
+                printf("A2DP Source: Stream reconfiguration failed, status 0x%02x\n", status);
                 break;
             }
 
@@ -804,7 +811,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     }
 
     if (status != ERROR_CODE_SUCCESS){
-        printf("Responding to event 0x%02x failed with status 0x%02x\n", packet[2], status);
+        printf("Responding to event 0x%02x failed, status 0x%02x\n", packet[2], status);
     }
 }
 
@@ -856,7 +863,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     }
 
     if (status != ERROR_CODE_SUCCESS){
-        printf("Responding to event 0x%02x failed with status 0x%02x\n", packet[2], status);
+        printf("Responding to event 0x%02x failed, status 0x%02x\n", packet[2], status);
     }
 }
 
@@ -874,7 +881,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             break;
         case AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:
             // see avrcp_battery_status_t
-            printf("AVRCP Controller: Notification Battery Status %d\n", avrcp_subevent_notification_event_batt_status_changed_get_battery_status(packet));
+            printf("AVRCP Controller: Notification Battery Status 0x%02x\n", avrcp_subevent_notification_event_batt_status_changed_get_battery_status(packet));
             break;
         case AVRCP_SUBEVENT_NOTIFICATION_STATE:
             printf("AVRCP Controller: Notification %s - %s\n", 

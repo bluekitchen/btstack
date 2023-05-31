@@ -133,9 +133,12 @@ static void driver_timer_handler_source(btstack_timer_source_t * ts){
     btstack_run_loop_add_timer(ts);
 }
 
+
+static uint32_t sink_samplerate = 0;
+
 static int btstack_audio_embedded_sink_init(
     uint8_t channels,
-    uint32_t samplerate, 
+    uint32_t samplerate,
     void (*playback)(int16_t * buffer, uint16_t num_samples)
 ){
     btstack_assert(playback != NULL);
@@ -148,15 +151,21 @@ static int btstack_audio_embedded_sink_init(
 #endif
 
     playback_callback  = playback;
-
+    sink_samplerate = samplerate;
     hal_audio_sink_init(channels, samplerate, &btstack_audio_audio_played);
 
     return 0;
 }
 
+static uint32_t btstack_audio_embedded_sink_get_samplerate() {
+    return BSP_AUDIO_OUT_GetFrequency();
+}
+
+static uint32_t source_samplerate = 0;
+
 static int btstack_audio_embedded_source_init(
     uint8_t channels,
-    uint32_t samplerate, 
+    uint32_t samplerate,
     void (*recording)(const int16_t * buffer, uint16_t num_samples)
 ){
     if (!recording){
@@ -165,10 +174,14 @@ static int btstack_audio_embedded_source_init(
     }
 
     recording_callback  = recording;
-
+    source_samplerate = samplerate;
     hal_audio_source_init(channels, samplerate, &btstack_audio_audio_recorded);
 
     return 0;
+}
+
+static uint32_t btstack_audio_embedded_source_get_samplerate() {
+    return source_samplerate;
 }
 
 static void btstack_audio_embedded_sink_set_volume(uint8_t volume){
@@ -260,19 +273,21 @@ static void btstack_audio_embedded_source_close(void){
 }
 
 static const btstack_audio_sink_t btstack_audio_embedded_sink = {
-    /* int (*init)(..);*/                                       &btstack_audio_embedded_sink_init,
-    /* void (*set_volume)(uint8_t volume); */                   &btstack_audio_embedded_sink_set_volume,
-    /* void (*start_stream(void));*/                            &btstack_audio_embedded_sink_start_stream,
-    /* void (*stop_stream)(void)  */                            &btstack_audio_embedded_sink_stop_stream,
-    /* void (*close)(void); */                                  &btstack_audio_embedded_sink_close
+        .init           = &btstack_audio_embedded_sink_init,
+        .get_samplerate = &btstack_audio_embedded_sink_get_samplerate,
+        .set_volume     = &btstack_audio_embedded_sink_set_volume,
+        .start_stream   = &btstack_audio_embedded_sink_start_stream,
+        .stop_stream    = &btstack_audio_embedded_sink_stop_stream,
+        .close          = &btstack_audio_embedded_sink_close
 };
 
 static const btstack_audio_source_t btstack_audio_embedded_source = {
-    /* int (*init)(..);*/                                       &btstack_audio_embedded_source_init,
-    /* void (*set_gain)(uint8_t gain); */                       &btstack_audio_embedded_source_set_gain,
-    /* void (*start_stream(void));*/                            &btstack_audio_embedded_source_start_stream,
-    /* void (*stop_stream)(void)  */                            &btstack_audio_embedded_source_stop_stream,
-    /* void (*close)(void); */                                  &btstack_audio_embedded_source_close
+        .init           = &btstack_audio_embedded_source_init,
+        .get_samplerate = &btstack_audio_embedded_source_get_samplerate,
+        .set_gain       = &btstack_audio_embedded_source_set_gain,
+        .start_stream   = &btstack_audio_embedded_source_start_stream,
+        .stop_stream    = &btstack_audio_embedded_source_stop_stream,
+        .close          = &btstack_audio_embedded_source_close
 };
 
 const btstack_audio_sink_t * btstack_audio_embedded_sink_get_instance(void){

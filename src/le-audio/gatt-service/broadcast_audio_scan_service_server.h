@@ -86,7 +86,7 @@ typedef struct {
     uint8_t  long_write_buffer[512];
     uint16_t long_write_value_size;
     uint16_t long_write_attribute_handle;
-} bass_remote_client_t;
+} bass_server_connection_t;
 
 /**
  * @brief Init Broadcast Audio Scan Service Server with ATT DB
@@ -95,13 +95,19 @@ typedef struct {
  * @param clients_num
  * @param clients
  */
-void broadcast_audio_scan_service_server_init(uint8_t const sources_num, bass_server_source_t * sources, uint8_t const clients_num, bass_remote_client_t * clients);
+void broadcast_audio_scan_service_server_init(uint8_t const sources_num, bass_server_source_t * sources, uint8_t const clients_num, bass_server_connection_t * clients);
 
 /**
- * @brief Register callback.
- * @param callback
+ * @brief Register packet handler to receive events:
+ * - GATTSERVICE_SUBEVENT_BASS_SERVER_SCAN_STOPPED
+ * - GATTSERVICE_SUBEVENT_BASS_SERVER_SCAN_STARTED
+ * - GATTSERVICE_SUBEVENT_BASS_SERVER_BROADCAST_CODE
+ * - GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_ADDED
+ * - GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED
+ * - GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED
+ * @param packet_handler
  */
-void broadcast_audio_scan_service_server_register_packet_handler(btstack_packet_handler_t callback);
+void broadcast_audio_scan_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
 /**
  * @brief Set PA state of source.
@@ -111,11 +117,11 @@ void broadcast_audio_scan_service_server_register_packet_handler(btstack_packet_
 void broadcast_audio_scan_service_server_set_pa_sync_state(uint8_t source_index, le_audio_pa_sync_state_t sync_state);
 
 /**
- * @brief Register callback.
+ * @brief Add source.
  * @param source_data
  * @param source_index
  */
-void broadcast_audio_scan_service_server_add_source(bass_source_data_t source_data, uint8_t * source_index);
+void broadcast_audio_scan_service_server_add_source(const bass_source_data_t *source_data, uint8_t * source_index);
 
 /**
  * @brief Deinit Broadcast Audio Scan Service Server

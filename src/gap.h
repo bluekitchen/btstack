@@ -590,6 +590,12 @@ void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t
 void gap_set_scan_duplicate_filter(bool enabled);
 
 /**
+ * @brief Set PHYs for LE Scan
+ * @param phy bitmask: 1 = LE 1M PHY, 4 = LE Coded PHY
+ */
+void gap_set_scan_phys(uint8_t phys);
+
+/**
  * @brief Start LE Scan 
  */
 void gap_start_scan(void);
@@ -886,7 +892,7 @@ uint8_t gap_cis_accept(hci_con_handle_t cis_con_handle);
 uint8_t gap_cis_reject(hci_con_handle_t cis_con_handle);
 
 /**
- * @brief Set connection parameters for outgoing connections
+ * @brief Set connection parameters for outgoing connections and connection parameter updates
  * @param conn_scan_interval (unit: 0.625 msec), default: 60 ms
  * @param conn_scan_window (unit: 0.625 msec), default: 30 ms
  * @param conn_interval_min (unit: 1.25ms), default: 10 ms
@@ -899,6 +905,12 @@ uint8_t gap_cis_reject(hci_con_handle_t cis_con_handle);
 void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_scan_window, 
     uint16_t conn_interval_min, uint16_t conn_interval_max, uint16_t conn_latency,
     uint16_t supervision_timeout, uint16_t min_ce_length, uint16_t max_ce_length);
+
+/**
+ * @brief Set initiating PHYs for outgoing connections
+ * @param phy bitmask: 1 = LE 1M PHY, 2 = LE 2M PHY, 4 = LE Coded PHY
+ */
+void gap_set_connection_phys(uint8_t phys);
 
 /**
  * @brief Request an update of the connection parameter for a given LE connection
@@ -1384,6 +1396,13 @@ void gap_delete_bonding(bd_addr_type_t address_type, bd_addr_t address);
 /**
  * LE Privacy 1.2 - requires support by Controller and ENABLE_LE_RESOLVING_LIST to be defined
  */
+
+/**
+ * Set Privacy Mode for use in Resolving List. Default: LE_PRIVACY_MODE_DEVICE
+ * @note Only applies for new devices added to resolving list, please call before startup
+ * @param privacy_mode
+ */
+void gap_set_peer_privacy_mode(le_privacy_mode_t privacy_mode );
 
 /**
  * @brief Load LE Device DB entries into Controller Resolving List to allow filtering on

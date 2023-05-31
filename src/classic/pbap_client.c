@@ -619,11 +619,13 @@ static uint16_t pbap_client_application_params_add_property_selector(const pbap_
     // TODO: support format
     uint16_t pos = 0;
     uint32_t property_selector_lower = client->property_selector;
-    if (strncmp(pbap_client->vcard_name, "X-BT-UID:", 9) == 0) {
-        property_selector_lower |= 1U << 31;
-    }
-    if (strncmp(pbap_client->vcard_name, "X-BT-UCI:", 9) == 0) {
-        property_selector_lower |= 1U << 30;
+    if (pbap_client->vcard_name != NULL){
+        if (strncmp(pbap_client->vcard_name, "X-BT-UID:", 9) == 0) {
+            property_selector_lower |= 1U << 31;
+        }
+        if (strncmp(pbap_client->vcard_name, "X-BT-UCI:", 9) == 0) {
+            property_selector_lower |= 1U << 30;
+        }
     }
     if (property_selector_lower != 0){
         application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_PROPERTY_SELECTOR;
@@ -782,6 +784,7 @@ static void pbap_handle_can_send_now(void){
                 goep_client_header_add_type(pbap_client->goep_cid, pbap_phonebook_type);
 
                 pos = 0;
+                pos += pbap_client_application_params_add_property_selector(pbap_client, &application_parameters[pos]);
                 pos += pbap_client_application_params_add_vcard_selector(pbap_client, &application_parameters[pos]);
                 pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
             }
@@ -1209,6 +1212,7 @@ uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path){
     }
     pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
     pbap_client->phonebook_path = path;
+    pbap_client->vcard_name = NULL;
     pbap_client->request_number = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return ERROR_CODE_SUCCESS;

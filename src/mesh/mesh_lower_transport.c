@@ -1000,6 +1000,8 @@ bool mesh_lower_transport_can_send_to_dest(uint16_t dest){
 #ifdef MAX_NR_MESH_OUTGOING_SEGMENTED_MESSAGES
     // limit number of parallel outgoing messages if configured
     if (num_messages >= MAX_NR_MESH_OUTGOING_SEGMENTED_MESSAGES) return false;
+#else
+    UNUSED(num_messages);    
 #endif
     return true;
 }

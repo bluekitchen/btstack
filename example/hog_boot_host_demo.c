@@ -354,7 +354,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case GATT_EVENT_QUERY_COMPLETE:
                     att_status = gatt_event_query_complete_get_att_status(packet);
                     if (att_status != ATT_ERROR_SUCCESS) {
-                        printf("ATT Error status %x.\n", att_status);
+                        printf("Query failed, ATT Error 0x%02x.\n", att_status);
                         handle_outgoing_connection_error();
                         break;
                     }
@@ -391,7 +391,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case GATT_EVENT_QUERY_COMPLETE:
                     att_status = gatt_event_query_complete_get_att_status(packet);
                     if (att_status != ATT_ERROR_SUCCESS) {
-                        printf("ATT Error status %x.\n", att_status);
+                        printf("Query failed, ATT Error 0x%02x.\n", att_status);
                         handle_outgoing_connection_error();
                         break;
                     }
@@ -408,7 +408,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case GATT_EVENT_QUERY_COMPLETE:
                     att_status = gatt_event_query_complete_get_att_status(packet);
                     if (att_status != ATT_ERROR_SUCCESS) {
-                        printf("ATT Error status %x.\n", att_status);
+                        printf("Query failed, ATT Error 0x%02x.\n", att_status);
                         handle_outgoing_connection_error();
                         break;
                     }
@@ -428,7 +428,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case GATT_EVENT_QUERY_COMPLETE:
                     att_status = gatt_event_query_complete_get_att_status(packet);
                     if (att_status != ATT_ERROR_SUCCESS) {
-                        printf("ATT Error status %x.\n", att_status);
+                        printf("Query failed, ATT Error 0x%02x.\n", att_status);
                         handle_outgoing_connection_error();
                         break;
                     }

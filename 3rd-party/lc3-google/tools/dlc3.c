@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
          error(EINVAL, "Samplerate %d Hz", srate_hz);
 
     int pcm_sbits = p.bitdepth;
-    int pcm_sbytes = 2 + 2*(pcm_sbits > 16);
+    int pcm_sbytes = pcm_sbits / 8;
 
     int pcm_srate_hz = !p.srate_hz ? srate_hz : p.srate_hz;
     int pcm_samples = !p.srate_hz ? nsamples :
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
     uint8_t in[nch * LC3_MAX_FRAME_BYTES];
     int8_t alignas(int32_t) pcm[nch * frame_samples * pcm_sbytes];
     enum lc3_pcm_format pcm_fmt =
-        pcm_sbits == 24 ? LC3_PCM_FORMAT_S24 : LC3_PCM_FORMAT_S16;
+        pcm_sbits == 24 ? LC3_PCM_FORMAT_S24_3LE : LC3_PCM_FORMAT_S16;
 
     for (int ich = 0; ich < nch; ich++)
         dec[ich] = lc3_setup_decoder(frame_us, srate_hz, p.srate_hz,

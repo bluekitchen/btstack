@@ -402,3 +402,8 @@ void inject_hfp_command_to_ag(uint8_t * data, int len){
 bool hci_extended_sco_link_supported(void){
     return true;
 }
+
+bool gap_secure_connection(hci_con_handle_t con_handle){
+    UNUSED(con_handle);
+    return true;
+}

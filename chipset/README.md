@@ -45,9 +45,13 @@ Unfortunately, the HCI standard misses a few relevant details:
 ## Documentation and Support
 The level of developer documentation and support varies widely between the various Bluetooth chipset providers.
 
-From our experience, only Texas Instruments and EM Microelectronics provide all relevant information directly on their website. Nordic Semiconductor does not officially have Bluetooth chipsets with HCI interface, but their documentation on the nRF5 series is complete and very informative. TI and Nordic also provide excellent support via their respective web forum.
+From our experience, only Texas Instruments and EM Microelectronics provide all relevant information directly on their website. 
+Nordic Semiconductor does not officially have Bluetooth chipsets with HCI interface, but their documentation on the nRF5 series is complete and very informative.
+TI and Nordic also provide excellent support via their respective web forum.
 
-Broadcom, whose Bluetooth + Wifi division has been acquired by the Cypress Semiconductor Corporation, provides developer documentation only to large customers as far as we know. It's possible to join their Community forum and download the WICED SDK. The WICED SDK is targeted at Wifi + Bluetooth Combo chipsets and contains the necessary chipset patch files.
+Infineon acquired Cypress Semiconductor Corporation in 2020, which acquired the Bluetooth + Wifi division of Broadcom in 2016 provides
+support via their Community Forum. In addition, firmware updates (PatchRAM files) for Bluetooth + Wifi controllers 
+are available via [Murata's Cypress GitHub](https://github.com/murata-wireless/cyw-bt-patch).
 
 CSR, which has been acquired by Qualcomm, provides all relevant information on their Support website after signing an NDA.
 
@@ -61,9 +65,10 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 | Broadcom USB Dongles                 | Dual mode        | USB            | Yes          | Yes              | No         | No                    | BCM20702: No      |                    | bcm            |                                                  |
 | CSR UART                             | Dual mode        | H4, H5, BCSP   | Rarely       | Partially (2)    | No         | No                    | CSR8811:  No      |                    | csr            |                                                  |
 | CSR USB Dongles                      | Dual mode        | USB            | Mostly       | Yes              | No         | No                    | CSR8510:  No      |                    | csr            |                                                  |
-| Cypress CYW20704/7                   | Dual mode        | H4, H5, USB    | Don't know   | Partially (2)    | Yes        | Yes                   | Yes               | Yes                | bcm            |                                                  |
-| Cypress CYW20819                     | Dual mode        | H4, H5, USB    | Don't know   | Partially (2)    | Yes        | Yes                   | Yes               | Don't know         | bcm            | Keep CTS high during power cycle                 |
-| Cypress CYW43xxx                     | Dual mode + Wifi | H4, H5         | Don't know   | Partially (2)    | Don't know | On newer versions     | On wewer versions | On newer versions  | bcm            | Bluetooth + Wifi Combo Controller                |
+| Infineon CYW207xx                    | Dual mode        | H4, H5, USB    | Don't know   | Partially (2)    | Yes        | Yes                   | Yes               | Yes                | bcm            |                                                  |
+| Infineon CYW208xx                    | Dual mode        | H4, H5, USB    | Don't know   | Partially (2)    | Yes        | Yes                   | Yes               | Don't know         | bcm            | Keep CTS high during power cycle                 |
+| Infineon CYW43xxx                    | Dual mode + Wifi | H4, H5         | Don't know   | Partially (2)    | Don't know | On newer versions     | On wewer versions | On newer versions  | bcm            | Bluetooth + Wifi Combo Controller                |
+| Infineon CYW5557x                    | Dual mode + Wifi | H4, H5         | No           | Yes              | Yes        | Yes                   | Yes               | Yes                | bcm            | Bautobaud-mode needed, see posix-h4-bcm          |
 | Cypress PSoC 4                       | LE               | H4             | Don't know   | n.a.             | Yes        | Don't know            | n.a.              | Don't know         |                | HCI Firmware part of PSoC Creator kits examples  |
 | Dialog DA14531                       | LE               | H4             | No           | n.a.             | Yes        | Yes                   | n.a.              | Don't know         | da145xx        | Official HCI firmware included in BTstack        |
 | Dialog DA14581                       | LE               | H4, SPI        | No           | n.a.             | No         | No                    | n.a.              | Don't know         | da145xx        | Official HCI firmware included in BTstack        |
@@ -73,8 +78,12 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 | Espressif ESP32-S3,C3                | LE + Wifi        | VHCI, H4       | Yes          | No               | Yes        | Yes                   | Yes               | Yes                |                | SoC with Bluetooth and Wifi                      |
 | EM 9301                              | LE               | SPI, H4        | No           | n.a.             | No         | No                    | n.a.              | Don't know         | em9301         | Custom HCI SPI implementation                    |
 | EM 9304                              | LE               | SPI, H4        | Yes          | n.a.             | Yes        | Yes                   | n.a.              | Don't know         | em9301         | Custom HCI SPI implementation                    |
+| EM 9305                              | LE               | SPI, H4        | Yes          | n.a.             | Yes        | Yes                   | n.a.              | Yes                | em9301         | Custom HCI SPI implementation                    |
 | Intel Dual Wireless 3165, 8260, 8265 | Dual mode        | USB            | Yes          | Probably         | Don't know | Don't know            | Don't know        | Don't know         | intel          | Firmware size: 400 kB                            |
 | Nordic nRF                           | LE               | H4             | Fixed Random | n.a.             | Yes        | Yes                   | n.a.              | Yes                |                | Requires HCI firmware                            |
+| NXP 88W8997                          | Dual mode        | H4             | Yes          | Partially(2)     | Yes        | Yes                   | No                | Yes                | nxp            | Requires initial firmware                        |
+| NXP IW416                            | Dual mode        | H4             | Yes          | No               | Yes        | Yes                   | No                | Yes                | nxp            | Requires initial firmware                        |
+| NXP IW61x                            | Dual mode        | H4             | Yes          | Partially(2)     | Yes        | Yes                   | No                | Yes                | nxp            | Requires initial firmware                        |
 | STM STLC2500D                        | Classic          | H4             | No           | Don't know       | n.a        | n.a.                  | No                | n.a.               | stlc2500d      | Custom deep sleep management not supported       |
 | Renesas RX23W                        | LE               | H4             | No           | n.a.             | Yes        | Yes                   | n.a .             | Don't know         |                | HCI Firmware part of BTTS                        |
 | Realtek RTL8822CS                    | Dual mode + Wifi | H5             | Yes          | Yes              | Don't know | Don't know            | Don't know        | Don't know         |                | Requires initial firmware + config               |
@@ -100,7 +109,7 @@ The ATILC3000 Bluetooth/Wifi combo controller has been used with Linux on embedd
 
 **BTstack integration**: *btstack_chipset_atwilc3000.c* contains the code to download the Bluetooth firmware image into the RAM of the ATWILC3000. After that, it can be normally used by BTstack.
 
-## Broadcom/Cypress Semiconductor
+## Broadcom/Cypress/Infineon Semiconductor
 
 Before the Broadcom Wifi+Bluetooth division was taken over by Cypress Semiconductor, it was not possible to buy Broadcom chipset in low quantities. Nevertheless, module manufacturers like Ampak created modules that contained Broadcom BCM chipsets (Bluetooth as well as Bluetooth+Wifi combos) that might already have been pre-tested for FCC and similar certifications.
 
@@ -120,6 +129,9 @@ The CYW20819 can be used as a SoC with Cypress' Bluetooth stack. To use it as a 
 
 The CYW43xxx series contains a Wifi and Bluetooth Controller. The Bluetooth Controller can be used independent from the Wifi part.
 
+Newer Controller likes the CYW5557x series requires to enter a so-called autobaud mode by asserting CTS (low) during reset/power-up. In this mode, only a subset of 
+HCI commands are available. Please see posix-h4-bcm port to get started.
+
 **Init scripts**: For UART connected chipsets, an init script has to be uploaded after power on. For Bluetooth chipsets that are used in Broadcom Wifi+Bluetooth combos, this file often can be found as a binary file in Linux distributions with the ending *'.hcd'* or as part of the WICED SDK as C source file that contains the init script as a data array for use without a file system.
 
 To find the correct file, Broadcom chipsets return their model number when asked for their local name.
@@ -134,8 +146,9 @@ BTstack supports uploading of the init script in two variants: using .hcd files 
 
 **BTstack integration**: The common code for all Broadcom chipsets is provided by *btstack_chipset_bcm.c*. During the setup, *btstack_chipset_bcm_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function.
 
-SCO Data can be routed over HCI for both USB dongles and UART connections, however BTstack does not support flow control for UART connections. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins. Newer Controllers provide an
-mSBC codec that allows to use HSP/HFP incl. WBS over PCM/I2S with ENABLE_BCM_PCM_WBS.
+SCO Data can be routed over HCI for both USB dongles and UART connections, however BTstack only can send audio correctly over UART with newer Controllers that support SCO Flow Control. 
+HSP and HFP Narrow Band Speech is supported via I2C/PCM pins. Newer Controllers provide an mSBC codec that allows to use HSP/HFP incl. WBS over PCM/I2S with ENABLE_BCM_PCM_WBS.
+
 
 ## CSR / Qualcomm Incorporated
 
@@ -258,6 +271,23 @@ To use these chipsets with BTstack, you need to install an arm-none-eabi gcc too
 
    * For the nRF51 Dev Kit, use `make BOARD=nrf51_pca10028` and `./flash_nrf51_10028.sh` with the nRF51 kit.
    * The nRF5 dev kit acts as an LE HCI Controller with H4 interface.
+
+
+## NXP Semiconductors
+NXP Semiconductors acquired the Bluetooth + Wifi division of Marvel in 2019 and continues their products with new names.
+As the Controllers contain no Bluetooth firmware, the firmware needs to be uploaded on start.
+BTstack supports firmware upload for older Controllers with bootloader version v1, like the NXP 88W8997.
+
+**BD ADDR** is stored in Controller.
+
+**SCO data** is routed over HCI by default but does not support flow control.
+
+**Baud rate** is currently kept at 115200
+
+**Init script** is required.
+
+**BTstack integration**: firmware update required and implemented by *btstack_chipset_nxp.c*  See port/posix-h4-nxp for details on how to use it.
+
 
 ## Realtek
 

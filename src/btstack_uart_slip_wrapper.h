@@ -51,6 +51,10 @@
 #include <stdint.h>
 #include "btstack_uart.h"
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 /* API_START */
 
 /**
@@ -61,5 +65,9 @@
 const btstack_uart_t * btstack_uart_slip_wrapper_instance(const btstack_uart_t * uart_without_slip);
 
 /* API_END */
+
+#if defined __cplusplus
+}
+#endif
 
 #endif

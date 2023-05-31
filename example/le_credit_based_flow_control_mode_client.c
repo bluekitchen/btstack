@@ -127,8 +127,8 @@ static void test_track_data(le_cbm_connection_t * context, int bytes_transferred
 /* LISTING_END(tracking): Tracking throughput */
 
 
-// returns 1 if name is found in advertisement
-static int advertisement_report_contains_name(const char * name, uint8_t * advertisement_report){
+// returns true if name is found in advertisement
+static bool advertisement_report_contains_name(const char * name, uint8_t * advertisement_report){
     // get advertisement from report event
     const uint8_t * adv_data = gap_event_advertising_report_get_data(advertisement_report);
     uint8_t         adv_len  = gap_event_advertising_report_get_data_length(advertisement_report);
@@ -145,8 +145,8 @@ static int advertisement_report_contains_name(const char * name, uint8_t * adver
             case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
                 // compare prefix
                 if (data_size < name_len) break;
-                if (memcmp(data, name, name_len) == 0) return 1;
-                return 1;
+                if (memcmp(data, name, name_len) == 0) return true;
+                break;
             default:
                 break;
         }
@@ -265,7 +265,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     handle = l2cap_event_cbm_channel_opened_get_handle(packet);
                     status = l2cap_event_cbm_channel_opened_get_status(packet);
                     if (status == ERROR_CODE_SUCCESS) {
-                        printf("L2CAP: CBM Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                        printf("L2CAP: CBM Channel successfully opened: %s, handle 0x%04x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
                         le_cbm_connection.cid = cid;
                         le_cbm_connection.connection_handle = handle;

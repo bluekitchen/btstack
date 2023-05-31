@@ -8,9 +8,69 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
-## Added
-## Fixed
-## Changed
+### Added
+### Fixed
+### Changed
+
+## Release v1.5.6
+
+### Added
+- HCI: HCI_ACL_CHUNK_SIZE_ALIGNMENT allows to keep HCI transport writes aligned
+- GAP: support additional LE PHYs for scanning and outgoing connections
+- GATT Client: allow to queue requests with gatt_client_request_to_send_gatt_query and gatt_client_request_to_write_without_response
+- GATT Client: support GATT over BR/EDR transport via gatt_client_classic_connect
+- HFP: provide SCO packet types and rx/tx packet lengths in HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
+- HFP: allow to register custom at commands with hfp_hf_register_custom_at_command 
+- AVRCP: support Cover Art via avrcp_cover_art_client
+- example: gatt_streamer_server and le_streamer_client report DLE and PHY changes
+- NXP: support for NXP Controller with bootloader versions v1, e.g. NXP 88W8997, and v3, e.g. NXP IW416 or IW61x
+- esp32: support esp-idf v5.x audio driver
+- esp32: warn about sdkconfig issues
+- esp32: add BTstack component config options via menuconfig
+- esp32: allow to disable default audio i2s driver via component config
+- esp32: btstack_stdio_init configures buffered output, required for stdin support
+- Port for Renesas RA6M4 with DA14531
+- Port for NXP Controller on POSIX (posix-h4-nxp)
+- Port for newer Infineon Controller on POSIX (posix-h4-bcm) that requires autobaud-mode
+
+### Fixed
+- HCI: fix set extended scan response
+- HCI: fix report of extended advertisements with data len > 31
+- HCI: fix CTKD in Initiator role over BR/EDR SC when using dedicated bonding
+- SM: fix value in SM_EVENT_NUMERIC_COMPARISON_REQUEST
+- SM: ignore Security Request during re-encryption
+- GATT Client: return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER for invalid connection handle
+- A2DP: emit A2DP_SUBEVENT_STREAM_ESTABLISHED with if connection fails, e.g. because of Page Timeout
+- A2DP Source: a2dp_source_stream_send_media_payload, use a2dp_source_stream_send_media_payload_rtp instead
+- A2DP: use samples as timestamp, fixes issue with Apple Airpods Pro 2nd Gen
+- AVDTP Source: avdtp_source_stream_send_media_payload, use avdtp_source_stream_send_media_payload_rtp instead
+- AVRCP: re-register for notification
+- HFP: fix setup/accept of synchronous connection
+- HFP: use mandatory safe settings considering BR/EDR Secure Connections to accept synchronous connections
+- HFP: remove trailing newline/carriage return in custom command event 
+- PBAP Client: make pbap_set_property_selector work for Pull Phonebook
+- btstack_stdin_embedded: use timer to poll RTT input, fix for tickless RTOS
+- esp32: fix audio power amplifier control on Lyra T v4.3 board
+
+### Changed
+- GAP: add gap_set_peer_privacy_mode with default LE_PRIVACY_MODE_DEVICE
+- GAP: use stack defaults for LE Connection Parameter Updates
+- GAP: set minimum and maximum CE length to 0
+- GAP: ENABLE_EXPLICIT_DEDICATED_BONDING_DISCONNECT disables disconnect after dedicated bonding
+- GOEP Client: support multiple instances
+- A2DP Sink: drop unused local seid argument in a2dp_sink_establish_stream
+- HFP: emit HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT after sending custom command / unsolicited response code
+- sco_demo_util: replace hfp_msbc by hfp_codec
+- BCM: look for PatchRAM file with prefix DEVICE_NAME and extension '.hcd'
+- bluetooth: indicated identity address in resolved address type enums name
+- btstack_audio: added get_samplerate function to help with audio sample rate synchronization 
+- btstack_flash_bank: write empty tag instead of overwriting existing tag with ENABLE_TLV_FLASH_WRITE_ONCE
+- esp32: drop support for Makefile projects from esp-idf 3.x
+- esp32: avoid deprecated btstack_run_loop_freertos API calls
+- esp32: use sample rate compensation in a2dp_sink_demo
+- stm32-f4discovery-cc256x: use external oscillator for better I2S clock
+- stm32-f4discovery: use sample rate compensation in a2dp_sink_demo
+
 
 ## Release v1.5.5
 
