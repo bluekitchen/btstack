@@ -502,6 +502,7 @@ void hfp_emit_sco_connection_established(hfp_connection_t *hfp_connection, uint8
     pos += 6;
     event[pos++] = negotiated_codec;
     little_endian_store_16(event, pos, hfp_connection->packet_types);
+    pos += 2;
     little_endian_store_16(event, pos, rx_packet_length);
     pos += 2;
     little_endian_store_16(event, pos, tx_packet_length);
