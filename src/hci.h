@@ -1102,6 +1102,9 @@ typedef struct {
     // usable ACL packet types given HCI_ACL_BUFFER_SIZE and local supported features
     uint16_t usable_packet_types_acl;
 
+    // usable SCO packet types given local supported features
+    uint16_t usable_packet_types_sco;
+
     /* hci state machine */
     HCI_STATE      state;
     hci_substate_t substate;
@@ -1568,6 +1571,11 @@ uint16_t hci_max_acl_data_packet_length(void);
  * Get supported ACL packet types. Already flipped for create connection. Called by L2CAP
  */
 uint16_t hci_usable_acl_packet_types(void);
+
+/**
+ * Get supported SCO packet types. Not flipped. Called by HFP
+  */
+uint16_t hci_usable_sco_packet_types(void);
 
 /**
  * Check if ACL packets marked as non flushable can be sent. Called by L2CAP

@@ -1364,6 +1364,37 @@ uint16_t hci_usable_acl_packet_types(void){
     return hci_stack->usable_packet_types_acl ^ 0x3306;
 }
 
+static const struct {
+    uint8_t feature_index;
+    uint16_t feature_packet_mask;
+} hci_sco_packet_type_feature_requirements[] = {
+        { 12, SCO_PACKET_TYPES_HV2 },                           // HV2 packets
+        { 13, SCO_PACKET_TYPES_HV3 },                           // HV3 packets
+        { 31, SCO_PACKET_TYPES_ESCO },                          // eSCO links (EV3 packets)
+        { 32, SCO_PACKET_TYPES_EV4 },                           // EV4 packets
+        { 45, SCO_PACKET_TYPES_2EV3 | SCO_PACKET_TYPES_2EV5 },  // EDR eSCO 2 Mb/s
+        { 46, SCO_PACKET_TYPES_3EV3 | SCO_PACKET_TYPES_3EV5 },  // EDR eSCO 3 Mb/s
+        { 47, SCO_PACKET_TYPES_2EV3 | SCO_PACKET_TYPES_3EV3 },  // 3-slot EDR eSCO packets
+};
+
+static uint16_t hci_sco_packet_types_for_features(const uint8_t * local_supported_features){
+    uint16_t packet_types = SCO_PACKET_TYPES_ALL;
+    unsigned int i;
+    // disable packet types due to missing local supported features
+    for (i=0;i<(sizeof(hci_sco_packet_type_feature_requirements)/sizeof(hci_sco_packet_type_feature_requirements[0])); i++){
+        unsigned int bit_idx = hci_sco_packet_type_feature_requirements[i].feature_index;
+        bool feature_set = (local_supported_features[bit_idx >> 3] & (1<<(bit_idx & 7))) != 0;
+        if (feature_set) continue;
+        log_info("Features bit %02u is not set, removing packet types 0x%04x", bit_idx, hci_sco_packet_type_feature_requirements[i].feature_packet_mask);
+        packet_types &= ~hci_sco_packet_type_feature_requirements[i].feature_packet_mask;
+    }
+    return packet_types;
+}
+
+uint16_t hci_usable_sco_packet_types(void){
+    return hci_stack->usable_packet_types_sco;
+}
+
 #endif
 
 uint8_t* hci_get_outgoing_packet_buffer(void){
@@ -2790,7 +2821,11 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
             // determine usable ACL packet types based on host buffer size and supported features
             hci_stack->usable_packet_types_acl = hci_acl_packet_types_for_buffer_size_and_local_features(HCI_ACL_PAYLOAD_SIZE, &hci_stack->local_supported_features[0]);
-            log_info("ACL Packet types %04x, eSCO %u", hci_stack->usable_packet_types_acl, hci_extended_sco_link_supported());
+            log_info("ACL Packet types %04x", hci_stack->usable_packet_types_acl);
+            // determine usable SCO packet types based on supported features
+            hci_stack->usable_packet_types_sco = hci_sco_packet_types_for_features(
+                    &hci_stack->local_supported_features[0]);
+            log_info("SCO Packet types %04x - eSCO %u", hci_stack->usable_packet_types_sco, hci_extended_sco_link_supported());
 #endif
             // Classic/LE
             log_info("BR/EDR support %u, LE support %u", hci_classic_supported(), hci_le_supported());
