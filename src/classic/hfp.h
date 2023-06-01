@@ -871,7 +871,9 @@ void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool i
 int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs);
 void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_nr);
 void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
-hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, bool local_eSCO_supported, bool remote_eSCO_supported, bool eSCO_s4_supported, uint8_t negotiated_codec);
+hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, uint16_t local_sco_packet_types,
+                                          uint16_t remote_sco_packet_types, bool eSCO_s4_supported,
+                                          uint8_t negotiated_codec);
 hfp_link_settings_t hfp_safe_settings_for_context(bool use_eSCO, uint8_t negotiated_codec, bool secure_connection_in_use);
 
 const char * hfp_hf_feature(int index);
