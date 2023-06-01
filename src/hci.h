@@ -1099,10 +1099,9 @@ typedef struct {
     uint16_t manufacturer;
     // uint16_t lmp_subversion;
 
-    // usable packet types given acl_data_packet_length and HCI_ACL_BUFFER_SIZE
-    uint16_t packet_types;
-    
-    
+    // usable ACL packet types given HCI_ACL_BUFFER_SIZE and local supported features
+    uint16_t usable_packet_types_acl;
+
     /* hci state machine */
     HCI_STATE      state;
     hci_substate_t substate;
@@ -1566,7 +1565,7 @@ bool hci_authentication_active_for_handle(hci_con_handle_t handle);
 uint16_t hci_max_acl_data_packet_length(void);
 
 /**
- * Get supported packet types. Called by L2CAP
+ * Get supported ACL packet types. Already flipped for create connection. Called by L2CAP
  */
 uint16_t hci_usable_acl_packet_types(void);
 
