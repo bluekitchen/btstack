@@ -1228,11 +1228,11 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
             // finally, notifiy client that write is complete
             gatt_client_handle_transaction_complete(gatt_client);
             emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
-            return true;
+            break;
         }
 #endif
         default:
-            packet_sent = false;
+            done = false;
             break;
     }
 
