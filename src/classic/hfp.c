@@ -2092,9 +2092,9 @@ hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, b
         if ((setting == (int8_t) HFP_LINK_SETTINGS_S4) && !eSCO_S4_supported) continue;
         // skip wrong codec
         if ((hfp_link_settings[setting].codec_mask & (1 << negotiated_codec)) == 0) continue;
-        // skip disabled packet types
+        // skip disabled or not supported packet types
         uint16_t required_packet_types = hfp_link_settings[setting].packet_types;
-        uint16_t allowed_packet_types  = hfp_allowed_sco_packet_types;
+        uint16_t allowed_packet_types  = hfp_allowed_sco_packet_types & hci_usable_sco_packet_types();
         if ((required_packet_types & allowed_packet_types) == 0) continue;
 
         // found matching setting
