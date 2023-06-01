@@ -1315,13 +1315,13 @@ static void hci_shutdown_connection(hci_connection_t *conn){
 
 #ifdef ENABLE_CLASSIC
 
-static const uint16_t packet_type_sizes[] = {
+static const uint16_t hci_acl_packet_type_sizes[] = {
     0, HCI_ACL_2DH1_SIZE, HCI_ACL_3DH1_SIZE, HCI_ACL_DM1_SIZE,
     HCI_ACL_DH1_SIZE, 0, 0, 0,
     HCI_ACL_2DH3_SIZE, HCI_ACL_3DH3_SIZE, HCI_ACL_DM3_SIZE, HCI_ACL_DH3_SIZE,
     HCI_ACL_2DH5_SIZE, HCI_ACL_3DH5_SIZE, HCI_ACL_DM5_SIZE, HCI_ACL_DH5_SIZE
 };
-static const uint8_t  packet_type_feature_requirement_bit[] = {
+static const uint8_t hci_acl_packet_type_feature_requirement_bit[] = {
      0, // 3 slot packets
      1, // 5 slot packets
     25, // EDR 2 mpbs
@@ -1329,7 +1329,7 @@ static const uint8_t  packet_type_feature_requirement_bit[] = {
     39, // 3 slot EDR packts
     40, // 5 slot EDR packet
 };
-static const uint16_t packet_type_feature_packet_mask[] = {
+static const uint16_t hci_acl_packet_type_feature_packet_mask[] = {
     0x0f00, // 3 slot packets
     0xf000, // 5 slot packets
     0x1102, // EDR 2 mpbs
@@ -1343,27 +1343,27 @@ static uint16_t hci_acl_packet_types_for_buffer_size_and_local_features(uint16_t
     uint16_t packet_types = 0;
     unsigned int i;
     for (i=0;i<16;i++){
-        if (packet_type_sizes[i] == 0) continue;
-        if (packet_type_sizes[i] <= buffer_size){
+        if (hci_acl_packet_type_sizes[i] == 0) continue;
+        if (hci_acl_packet_type_sizes[i] <= buffer_size){
             packet_types |= 1 << i;
         }
     }
     // disable packet types due to missing local supported features
-    for (i=0;i<sizeof(packet_type_feature_requirement_bit);i++){
-        unsigned int bit_idx = packet_type_feature_requirement_bit[i];
+    for (i=0;i<sizeof(hci_acl_packet_type_feature_requirement_bit); i++){
+        unsigned int bit_idx = hci_acl_packet_type_feature_requirement_bit[i];
         int feature_set = (local_supported_features[bit_idx >> 3] & (1<<(bit_idx & 7))) != 0;
         if (feature_set) continue;
-        log_info("Features bit %02u is not set, removing packet types 0x%04x", bit_idx, packet_type_feature_packet_mask[i]);
-        packet_types &= ~packet_type_feature_packet_mask[i];
+        log_info("Features bit %02u is not set, removing packet types 0x%04x", bit_idx, hci_acl_packet_type_feature_packet_mask[i]);
+        packet_types &= ~hci_acl_packet_type_feature_packet_mask[i];
     }
-    // flip bits for "may not be used"
-    packet_types ^= 0x3306;
     return packet_types;
 }
 
 uint16_t hci_usable_acl_packet_types(void){
-    return hci_stack->packet_types;
+    // flip bits for "may not be used"
+    return hci_stack->usable_packet_types_acl ^ 0x3306;
 }
+
 #endif
 
 uint8_t* hci_get_outgoing_packet_buffer(void){
@@ -2789,8 +2789,8 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 
 #ifdef ENABLE_CLASSIC
             // determine usable ACL packet types based on host buffer size and supported features
-            hci_stack->packet_types = hci_acl_packet_types_for_buffer_size_and_local_features(HCI_ACL_PAYLOAD_SIZE, &hci_stack->local_supported_features[0]);
-            log_info("Packet types %04x, eSCO %u", hci_stack->packet_types, hci_extended_sco_link_supported());
+            hci_stack->usable_packet_types_acl = hci_acl_packet_types_for_buffer_size_and_local_features(HCI_ACL_PAYLOAD_SIZE, &hci_stack->local_supported_features[0]);
+            log_info("ACL Packet types %04x, eSCO %u", hci_stack->usable_packet_types_acl, hci_extended_sco_link_supported());
 #endif
             // Classic/LE
             log_info("BR/EDR support %u, LE support %u", hci_classic_supported(), hci_le_supported());
