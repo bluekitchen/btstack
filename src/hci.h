@@ -555,12 +555,12 @@ typedef struct {
     link_key_t      link_key;
     link_key_type_t link_key_type;
 
+#ifdef ENABLE_CLASSIC
     // remote supported features
     /* bit 0 - eSCO */
     /* bit 1 - extended features */
     uint8_t remote_supported_features[1];
 
-#ifdef ENABLE_CLASSIC
     // IO Capabilities Response
     uint8_t io_cap_response_auth_req;
     uint8_t io_cap_response_io;
