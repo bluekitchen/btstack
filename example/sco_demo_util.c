@@ -515,6 +515,7 @@ static void sco_demo_lc3swb_init(void){
 
     printf("SCO Demo: Init LC3-SWB\n");
 
+    hfp_codec.lc3_encoder_context = &lc3_encoder_context;
     const btstack_lc3_encoder_t * lc3_encoder = btstack_lc3_encoder_google_init_instance((btstack_lc3_encoder_google_t *) hfp_codec.lc3_encoder_context);
     hfp_codec_init_lc3_swb(&hfp_codec, lc3_encoder, &lc3_encoder_context);
 
