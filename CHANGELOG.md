@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVRCP: re-register for notification
 - HFP: fix setup/accept of synchronous connection
 - HFP: use mandatory safe settings considering BR/EDR Secure Connections to accept synchronous connections
+- HFP: avoid SCO packet types not supported either locally or remotely
 - HFP: remove trailing newline/carriage return in custom command event 
 - PBAP Client: make pbap_set_property_selector work for Pull Phonebook
 - btstack_stdin_embedded: use timer to poll RTT input, fix for tickless RTOS
