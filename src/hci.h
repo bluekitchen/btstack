@@ -556,6 +556,9 @@ typedef struct {
     link_key_type_t link_key_type;
 
 #ifdef ENABLE_CLASSIC
+    // remote supported SCO packets based on remote supported features mask
+    uint16_t remote_supported_sco_packets;
+
     // remote supported features
     /* bit 0 - eSCO */
     /* bit 1 - extended features */
@@ -1614,8 +1617,15 @@ void hci_disconnect_security_block(hci_con_handle_t con_handle);
 
 /**
  * Query if remote side supports eSCO
+ * @param con_handle
  */
 bool hci_remote_esco_supported(hci_con_handle_t con_handle);
+
+/**
+ * Query remote supported SCO packets based on remote supported features
+ * @param con_handle
+ */
+uint16_t hci_remote_sco_packet_types(hci_con_handle_t con_handle);
 
 /**
  * Emit current HCI state. Called by daemon

@@ -2542,6 +2542,8 @@ static void hci_handle_remote_features_page_0(hci_connection_t * conn, const uin
     if (features[7] & (1<<7)){
         conn->remote_supported_features[0] |= 2;
     }
+    // SCO packet types
+    conn->remote_supported_sco_packets = hci_sco_packet_types_for_features(features);
 }
 
 static void hci_handle_remote_features_page_1(hci_connection_t * conn, const uint8_t * features){
@@ -7818,6 +7820,12 @@ bool hci_remote_esco_supported(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection) return false;
     return (connection->remote_supported_features[0] & 1) != 0;
+}
+
+uint16_t hci_remote_sco_packet_types(hci_con_handle_t con_handle){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection) return 0;
+    return connection->remote_supported_sco_packets;
 }
 
 static bool hci_ssp_supported(hci_connection_t * connection){
