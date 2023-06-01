@@ -6167,7 +6167,7 @@ static bool hci_run_general_gap_le(void){
                          0x7f,  // tx power: no preference
                          0x01,  // primary adv phy: LE 1M
                          0,     // secondary adv max skip
-                         0,     // secondary adv phy
+                         0x01,  // secondary adv phy
                          0,     // adv sid
                          0      // scan request notification
                          );
