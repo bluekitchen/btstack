@@ -155,7 +155,7 @@ void hfp_codec_encode_audio_frame(hfp_codec_t * hfp_codec, int16_t * pcm_samples
 #else
     hfp_codec->encode(hfp_codec, pcm_samples);
 #endif
-    log_info("Encode frame, read %u, write %u", hfp_codec->read_pos, hfp_codec->write_pos);
+    log_debug("Encode frame, read %u, write %u", hfp_codec->read_pos, hfp_codec->write_pos);
 }
 
 uint16_t hfp_codec_num_bytes_available(const hfp_codec_t * hfp_codec){
@@ -177,7 +177,7 @@ void hfp_codec_read_from_stream(hfp_codec_t * hfp_codec, uint8_t * buf, uint16_t
         hfp_codec->write_pos = 0;
     }
 
-    log_info("Read %u from stream, read %u, write %u", size, hfp_codec->read_pos, hfp_codec->write_pos);
+    log_debug("Read %u from stream, read %u, write %u", size, hfp_codec->read_pos, hfp_codec->write_pos);
 }
 
 void hfp_codec_deinit(hfp_codec_t * hfp_codec){
