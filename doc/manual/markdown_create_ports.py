@@ -30,7 +30,7 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
             if os.path.exists(readme_file):
                 matches[port] = readme_file
                 for file in os.listdir(port_folder + "/" + port):
-                    if file.endswith('.jpg'):
+                    if file.endswith('.jpg') or file.endswith('.png'):
                         images[file] =  port_folder + "/" + port + "/" + file
 
     with open(ports_file, 'w') as ports:
