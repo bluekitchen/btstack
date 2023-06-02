@@ -156,6 +156,9 @@ static btstack_timer_source_t mcs_seeking_speed_timer;
 static void mcs_seeking_speed_timer_stop(uint16_t media_player_id);
 static void mcs_seeking_speed_timer_start(uint16_t media_player_id);
 
+static bool track_changed = false;
+static bool track_position_changed = false;
+
 // MCS Test
 static mcs_track_t tracksA[] = {
     {18000, 0, {0x11, 0x11, 0x11, 0x11, 0x11, 0x11}, "Track1"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
@@ -203,31 +206,6 @@ static mcs_track_group_t * mcs_get_current_group_for_media_player(mcs_media_play
     return &media_player->track_groups[media_player->current_group_index];
 }
 
-// static void mcs_set_current_group_for_media_player(mcs_media_player_t * media_player, uint8_t current_group_index){
-//     if (current_group_index < media_player->track_groups_num){
-//         media_player->current_group_index = current_group_index;
-//     }
-// }
-
-static mcs_track_t * mcs_set_current_track_for_media_player(mcs_media_player_t * media_player, uint8_t current_track_index){
-    mcs_track_group_t * current_track_group = mcs_get_current_group_for_media_player(media_player);
-    if (current_track_group == NULL){
-        return NULL;
-    }
-    if (current_track_index >= current_track_group->tracks_num){
-        return NULL;
-    }
-
-    media_player->current_track_index = current_track_index;
-    
-    mcs_track_t * current_track = &current_track_group->tracks[media_player->current_track_index];
-    current_track->track_position_10ms = 0;
-    printf("    ** reset track[%d]: position %d\n", media_player->current_track_index, 
-        current_track_group->tracks[media_player->current_track_index].track_position_10ms);
-
-    return current_track;
-}
-
 static mcs_track_t * mcs_get_current_track_for_media_player(mcs_media_player_t * media_player){
     if (media_player == NULL){
         return NULL;
@@ -238,11 +216,6 @@ static mcs_track_t * mcs_get_current_track_for_media_player(mcs_media_player_t *
         return NULL;
     }
 
-    // if (current_track_group->tracks[media_player->current_track_index].track_position_10ms % 100 == 0){
-    //     printf("    ** get   track[%d]: position %d\n", media_player->current_track_index, 
-    //         current_track_group->tracks[media_player->current_track_index].track_position_10ms);
-    // }
-    
     return &current_track_group->tracks[media_player->current_track_index];
 }
 
@@ -250,115 +223,128 @@ static mcs_track_t * mcs_get_current_track_for_media_player_id(uint16_t media_pl
     return mcs_get_current_track_for_media_player(mcs_get_media_player_for_id(media_player_id));
 }
 
-static mcs_track_t * mcs_goto_first_track(uint16_t media_player_id) {
-    mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
-    if (media_player == NULL){
-        return NULL;
-    }
-
-    mcs_seeking_speed_timer_stop(media_player_id);
-                            
-    uint32_t previous_track_index = media_player->current_track_index;
-    media_player->current_track_index = 0;
-    printf(" * mcs_goto_first_track: previous %d, current %d\n", previous_track_index, media_player->current_track_index);
-
-    mcs_track_t * current_track = mcs_set_current_track_for_media_player(media_player, media_player->current_track_index);
-    mcs_seeking_speed_timer_start(media_player_id);
-    
-    return current_track;
+static void mcs_reset_current_track(mcs_media_player_t * media_player){
+    mcs_track_t * current_track = mcs_get_current_track_for_media_player(media_player);
+    // reset current track
+    current_track->track_position_10ms = 0;
 }
 
-static mcs_track_t * mcs_goto_last_track(uint16_t media_player_id) {
+static void update_track_position_changed_for_track_cmd(mcs_media_player_t * media_player){
+    switch (media_player->media_state){
+        case MCS_MEDIA_STATE_SEEKING:
+        case MCS_MEDIA_STATE_PAUSED:
+            track_position_changed = true;
+            break;
+        default:
+            track_position_changed = false;
+            break;
+    }
+}
+
+static void mcs_goto_first_track(uint16_t media_player_id) {
     mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
     if (media_player == NULL){
-        return NULL;
+        return;
+    }                            
+
+    uint32_t previous_track_index = media_player->current_track_index;
+    
+    if (media_player->current_track_index != 0){
+        mcs_reset_current_track(media_player);
+        media_player->current_track_index = 0;
+        track_changed = true;
+        mcs_reset_current_track(media_player);
+        update_track_position_changed_for_track_cmd(media_player);
+    }
+    
+    printf(" * mcs_goto_first_track: previous %d, current %d\n", previous_track_index, media_player->current_track_index);
+}
+
+static void mcs_goto_last_track(uint16_t media_player_id) {
+    mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return;
     }
     mcs_track_group_t * current_track_group = mcs_get_current_group_for_media_player(media_player);
     if (current_track_group == NULL){
-        return NULL;
+        return;
     }
 
     if (current_track_group->tracks_num == 0){
-        return NULL;
+        return;
     }
-    mcs_seeking_speed_timer_stop(media_player_id);
-
     uint32_t previous_track_index = media_player->current_track_index;
     media_player->current_track_index = current_track_group->tracks_num - 1;
+    
+    track_changed = previous_track_index != media_player->current_track_index;
+    if (track_changed){
+        mcs_reset_current_track(media_player);
+        update_track_position_changed_for_track_cmd(media_player);
+    }
     printf(" * mcs_goto_last_track: previous %d, current %d\n", previous_track_index, media_player->current_track_index);
-
-    mcs_track_t * current_track = mcs_set_current_track_for_media_player(media_player, media_player->current_track_index);
-    mcs_seeking_speed_timer_start(media_player_id);
-    return current_track;
 }
 
-static mcs_track_t * mcs_goto_next_track(uint16_t media_player_id){
+static void mcs_goto_next_track(uint16_t media_player_id){
     mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
     if (media_player == NULL){
-        return NULL;
+        return;
     }
     mcs_track_group_t * current_track_group = mcs_get_current_group_for_media_player(media_player);
     if (current_track_group == NULL){
-        return NULL;
+        return;
     }
 
     if (current_track_group->tracks_num == 0){
-        return NULL;
+        return;
     }
-    mcs_seeking_speed_timer_stop(media_player_id);
     uint32_t previous_track_index = media_player->current_track_index;
     if (media_player->current_track_index < (current_track_group->tracks_num - 1)){
         media_player->current_track_index++;
+        mcs_reset_current_track(media_player);
+
+        track_changed = true;
+        update_track_position_changed_for_track_cmd(media_player);
     }
     printf(" * mcs_goto_next_track: previous %d, current %d\n", previous_track_index, media_player->current_track_index);
-
-    mcs_track_t * current_track = mcs_set_current_track_for_media_player(media_player, media_player->current_track_index);
-    mcs_seeking_speed_timer_start(media_player_id);
-    return current_track;
 }
 
-static mcs_track_t * mcs_goto_previous_track(uint16_t media_player_id){
+static void mcs_goto_previous_track(uint16_t media_player_id){
     mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
     if (media_player == NULL){
-        return NULL;
+        return;
     }
     mcs_track_group_t * current_track_group = mcs_get_current_group_for_media_player(media_player);
     if (current_track_group == NULL){
-        return NULL;
+        return;
     }
 
     if (current_track_group->tracks_num == 0){
-        return NULL;
+        return;
     }
-    mcs_seeking_speed_timer_stop(media_player_id);
-
+    
     uint32_t previous_track_index = media_player->current_track_index;
     if (media_player->current_track_index > 0){
         media_player->current_track_index--;
+        mcs_reset_current_track(media_player);
+        track_changed = true;
+        update_track_position_changed_for_track_cmd(media_player);
     }
     printf(" * mcs_goto_previous_track: previous %d, current %d\n", previous_track_index, media_player->current_track_index);
-
-    mcs_track_t * current_track = mcs_set_current_track_for_media_player(media_player, media_player->current_track_index);
-    mcs_seeking_speed_timer_start(media_player_id);
-    return current_track;
 }
 
-static bool mcs_goto_track(uint16_t media_player_id, int32_t track_index){
+static void mcs_goto_track(uint16_t media_player_id, int32_t track_index){
     mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
     if (media_player == NULL){
-        return false;
+        return;
     }
     mcs_track_group_t * current_track_group = mcs_get_current_group_for_media_player(media_player);
     if (current_track_group == NULL){
-        return false;
-    }
-
-    
+        return;
+    }    
     if (current_track_group->tracks_num == 0){
-        return false;
+        return;
     }
     
-    mcs_seeking_speed_timer_stop(media_player_id);
     uint32_t previous_track_index = media_player->current_track_index;
         
     if (track_index != 0){
@@ -381,28 +367,26 @@ static bool mcs_goto_track(uint16_t media_player_id, int32_t track_index){
         }
     }
     printf(" * mcs_goto_track[%d/%d]: previous %d, current %d\n", track_index,  current_track_group->tracks_num, previous_track_index, media_player->current_track_index);
-    mcs_set_current_track_for_media_player(media_player, media_player->current_track_index);
-    mcs_seeking_speed_timer_start(media_player_id);
-
-    return previous_track_index != media_player->current_track_index ;
+    
+    track_changed = previous_track_index != media_player->current_track_index;
+    if (track_changed){
+        mcs_reset_current_track(media_player);
+        update_track_position_changed_for_track_cmd(media_player);
+    }
 }
 
-static uint32_t mcs_get_current_track_position_10ms(uint16_t media_player_id){
-    mcs_track_t * current_track = mcs_get_current_track_for_media_player_id(media_player_id);
-    if (current_track != NULL){
-        return current_track->track_position_10ms;
-    }
-    return 0;
-}
 
-static void mcs_reset_current_track(uint16_t media_player_id){
-    mcs_media_player_t * media_player = mcs_get_media_player_for_id(media_player_id);
-    if (media_player == NULL) {
-        return;
+static void update_track_changed_for_group_cmd(mcs_media_player_t * media_player){
+    track_changed = true;
+    switch (media_player->media_state){
+        case MCS_MEDIA_STATE_SEEKING:
+        case MCS_MEDIA_STATE_PAUSED:
+            track_position_changed = true;
+            break;
+        default:
+            track_position_changed = false;
+            break;
     }
-    mcs_track_t * current_track = mcs_get_current_track_for_media_player(media_player);
-    // reset current track
-    current_track->track_position_10ms = 0;
 }
 
 static bool mcs_goto_group(uint16_t media_player_id, int32_t group_index){
@@ -424,24 +408,24 @@ static bool mcs_goto_group(uint16_t media_player_id, int32_t group_index){
         }
 
         if (media_player->current_group_index != group_index){
-            mcs_seeking_speed_timer_stop(media_player_id);
             if (group_index >= 0 ){
                 if (group_index < media_player->track_groups_num){
-                    mcs_reset_current_track(media_player_id);
+                    mcs_reset_current_track(media_player);
                     media_player->current_group_index = group_index;
                     media_player->current_track_index = 0;
-                    mcs_reset_current_track(media_player_id);
+                    mcs_reset_current_track(media_player);
+                    update_track_changed_for_group_cmd(media_player);
                 }
             } else {
                 int32_t abs_group_index = -group_index + 1;
                 if (abs_group_index <= media_player->track_groups_num){
-                    mcs_reset_current_track(media_player_id);
+                    mcs_reset_current_track(media_player);
                     media_player->current_group_index = media_player->track_groups_num - abs_group_index;
                     media_player->current_track_index = 0;
-                    mcs_reset_current_track(media_player_id);
+                    mcs_reset_current_track(media_player);
+                    update_track_changed_for_group_cmd(media_player);
                 }
             }
-            mcs_seeking_speed_timer_start(media_player_id);
         }
     }
 
@@ -449,108 +433,91 @@ static bool mcs_goto_group(uint16_t media_player_id, int32_t group_index){
     return  previous_group_index != media_player->current_group_index;
 }
 
-static mcs_track_group_t * mcs_goto_previous_group(uint16_t media_player_id){
+static void mcs_goto_previous_group(uint16_t media_player_id){
     mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
     if (media_player == NULL){
-        return NULL;
+        return;
     }
     if (media_player->track_groups_num == 0){
-        return NULL;
+        return;
     }
 
     int32_t previous_group_index = media_player->current_group_index;
 
     if (media_player->current_group_index > 0){
-        mcs_seeking_speed_timer_stop(media_player_id);
-        
-        mcs_reset_current_track(media_player_id);
+        mcs_reset_current_track(media_player);
         media_player->current_group_index--;
         media_player->current_track_index = 0;
-        mcs_reset_current_track(media_player_id);
-
-        mcs_seeking_speed_timer_start(media_player_id);
+        mcs_reset_current_track(media_player);
+        update_track_changed_for_group_cmd(media_player);
     }
     
     printf(" * mcs_goto_previous_group: previous %d, current %d\n", previous_group_index, media_player->current_group_index);
-    return mcs_get_current_group_for_media_player(media_player);
 }
 
-static mcs_track_group_t * mcs_goto_first_group(uint16_t media_player_id){
+static void mcs_goto_first_group(uint16_t media_player_id){
     mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
     if (media_player == NULL){
-        return NULL;
+        return;
     }
     if (media_player->track_groups_num == 0){
-        return NULL;
+        return;
     }
 
     int32_t previous_group_index = media_player->current_group_index;
 
     if (media_player->current_group_index > 0){
-        mcs_seeking_speed_timer_stop(media_player_id);
-        
-        mcs_reset_current_track(media_player_id);
+        mcs_reset_current_track(media_player);
         media_player->current_group_index = 0;
         media_player->current_track_index = 0;
-        mcs_reset_current_track(media_player_id);
-
-        mcs_seeking_speed_timer_start(media_player_id);
+        mcs_reset_current_track(media_player);
+        update_track_changed_for_group_cmd(media_player);
     }
     
     printf(" * mcs_goto_previous_group: previous %d, current %d\n", previous_group_index, media_player->current_group_index);
-    return mcs_get_current_group_for_media_player(media_player);
 }
 
-static mcs_track_group_t * mcs_goto_next_group(uint16_t media_player_id){
+static void mcs_goto_next_group(uint16_t media_player_id){
     mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
     if (media_player == NULL){
-        return NULL;
+        return;
     }
     if (media_player->track_groups_num == 0){
-        return NULL;
+        return;
     }
 
     int32_t previous_group_index = media_player->current_group_index;
 
     if (media_player->current_group_index < (media_player->track_groups_num - 1)){
-        mcs_seeking_speed_timer_stop(media_player_id);
-        
-        mcs_reset_current_track(media_player_id);
+        mcs_reset_current_track(media_player);
         media_player->current_group_index++;
         media_player->current_track_index = 0;
-        mcs_reset_current_track(media_player_id);
-
-        mcs_seeking_speed_timer_start(media_player_id);
+        mcs_reset_current_track(media_player);
+        update_track_changed_for_group_cmd(media_player);
     }
-    
     printf(" * mcs_goto_next_group: previous %d, current %d\n", previous_group_index, media_player->current_group_index);
-    return mcs_get_current_group_for_media_player(media_player);
 }
 
-static mcs_track_group_t * mcs_goto_last_group(uint16_t media_player_id){
+static void mcs_goto_last_group(uint16_t media_player_id){
     mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
     if (media_player == NULL){
-        return NULL;
+        return;
     }
     if (media_player->track_groups_num == 0){
-        return NULL;
+        return;
     }
 
     int32_t previous_group_index = media_player->current_group_index;
 
     if (media_player->current_group_index < (media_player->track_groups_num - 1)){
-        mcs_seeking_speed_timer_stop(media_player_id);
-        
-        mcs_reset_current_track(media_player_id);
+        mcs_reset_current_track(media_player);
         media_player->current_group_index = media_player->track_groups_num - 1;
         media_player->current_track_index = 0;
-        mcs_reset_current_track(media_player_id);
-
-        mcs_seeking_speed_timer_start(media_player_id);
+        mcs_reset_current_track(media_player);
+        update_track_changed_for_group_cmd(media_player);
     }
     
     printf(" * mcs_goto_last_group: previous %d, current %d\n", previous_group_index, media_player->current_group_index);
-    return mcs_get_current_group_for_media_player(media_player);
 }
 
 
@@ -560,7 +527,7 @@ static void mcs_current_track_apply_relative_offset(uint16_t media_player_id, in
         return;
     }
     uint32_t position_10ms = track->track_position_10ms;
-
+    printf(" * mcs_current_track_apply_relative_offset: previous position %d, offset %d, ", position_10ms, offset_10ms);
     if (offset_10ms >= 0){
         // forward
         if ((position_10ms + offset_10ms) < track->track_duration_10ms){
@@ -577,7 +544,13 @@ static void mcs_current_track_apply_relative_offset(uint16_t media_player_id, in
             position_10ms = 0;
         }
     }
+    
+    track_changed = false;
+    track_position_changed = position_10ms != track->track_position_10ms;
+
     track->track_position_10ms = position_10ms;
+
+    printf("current %d\n", track->track_position_10ms);
 }
 
 #define MCS_TRACK_SEGMENT_DURATION_10MS 1500
@@ -594,6 +567,10 @@ static uint32_t mcs_track_current_segment(mcs_track_t * track) {
 static void mcs_current_track_goto_first_segment(mcs_track_t * track) {
     int32_t old_position = track->track_position_10ms;
     track->track_position_10ms = 0;
+
+    track_changed = false;
+    track_position_changed = old_position != track->track_position_10ms;
+
     printf("mcs_current_track_goto_first_segment: duration %d, num_segments %d, current segment %d, old position %d, new position %d\n", 
         track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position, 
         track->track_position_10ms);
@@ -604,6 +581,9 @@ static void mcs_current_track_go_from_backward_for_num_steps(mcs_track_t * track
     uint32_t old_position = track->track_position_10ms;
     track->track_position_10ms = track->track_duration_10ms - step_10ms;
 
+    track_changed = false;
+    track_position_changed = old_position != track->track_position_10ms;
+
     printf("mcs_current_track_go_from_backward_for_num_steps: duration %d, num_segments %d, current segment %d, old position %d, backward_steps_num %d [%d], new position %d\n", 
         track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position, 
         backward_steps_num, step_10ms, track->track_position_10ms);
@@ -613,6 +593,9 @@ static void mcs_current_track_go_from_begining_for_num_steps(mcs_track_t * track
     uint32_t step_10ms = forward_steps_num * MCS_TRACK_SEGMENT_DURATION_10MS;
     uint32_t old_position = track->track_position_10ms;
     track->track_position_10ms = step_10ms;
+
+    track_changed = false;
+    track_position_changed = old_position != track->track_position_10ms;
 
     printf("mcs_current_track_go_from_begining_for_num_steps: duration %d, num_segments %d, current segment %d, old position %d, forward_steps_num %d [%d], new position %d\n", 
         track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position, 
@@ -629,6 +612,9 @@ static void mcs_current_track_goto_last_segment(mcs_track_t * track) {
 }
 
 static void mcs_current_track_goto_segment(mcs_track_t * track, int32_t segment_index) {
+    track_changed = false;
+    track_position_changed = true;
+
     if (segment_index > 0) {
         if (segment_index < mcs_track_num_segments(track)){
             printf("    1: ");
@@ -646,7 +632,7 @@ static void mcs_current_track_goto_segment(mcs_track_t * track, int32_t segment_
             printf("    4: ");
             mcs_current_track_goto_first_segment(track);
         }
-    } 
+    }
 }
 
 static void mcs_current_track_goto_next_segment(mcs_track_t * track) {
@@ -749,7 +735,7 @@ static bool mcs_next_track_index(mcs_media_player_t * media_player, bool next_fo
     return true;
 }
 
-static bool mcs_move_forward_with_speed_ms(mcs_media_player_t * media_player, uint32_t speed_delta_ms){
+static void mcs_move_forward_with_speed_ms(mcs_media_player_t * media_player, uint32_t speed_delta_ms){
     mcs_track_t * current_track = mcs_get_current_track_for_media_player(media_player);
     btstack_assert(current_track != NULL);
 
@@ -758,13 +744,16 @@ static bool mcs_move_forward_with_speed_ms(mcs_media_player_t * media_player, ui
     uint32_t remaining_track_ms = track_duration_ms - track_position_ms;
 
     // printf("try go forward 1, index %d, duration %d, position %d, step %d, remaining %d \n", media_player->current_track_index, track_duration_ms, track_position_ms, speed_delta_ms, remaining_track_ms);
-    bool track_changed = speed_delta_ms > remaining_track_ms;
-
-    if (track_changed){
-        // switch to the next track
-        // printf("- switch to the next track\n");
-        current_track->track_position_10ms = 0;
+    track_changed = speed_delta_ms > remaining_track_ms;
+    track_position_changed = true;
         
+    if (track_changed){
+        // printf("- switch to the next track\n");
+
+        // reset current track
+        // then switch to the next track
+        current_track->track_position_10ms = 0;
+
         if (mcs_next_track_index(media_player, true)){
             uint32_t remaining_playing_speed_delta_ms = speed_delta_ms - remaining_track_ms;
             current_track->track_position_10ms = remaining_playing_speed_delta_ms/10;
@@ -774,21 +763,19 @@ static bool mcs_move_forward_with_speed_ms(mcs_media_player_t * media_player, ui
         // printf("- advance with the same track\n");
         current_track->track_position_10ms += speed_delta_ms/10;
     }
-
-    return track_changed;
 }
 
-static bool mcs_seek_forward(mcs_media_player_t * media_player){
+static void mcs_seek_forward(mcs_media_player_t * media_player){
     uint32_t seeking_speed_delta_ms = mcs_seeking_speed_step(media_player);
-    return mcs_move_forward_with_speed_ms(media_player, seeking_speed_delta_ms);
+    mcs_move_forward_with_speed_ms(media_player, seeking_speed_delta_ms);
 }
 
-static bool mcs_play(mcs_media_player_t * media_player){
+static void mcs_play(mcs_media_player_t * media_player){
     uint32_t playing_speed_delta_ms = mcs_playing_speed_step(media_player);
-    return mcs_move_forward_with_speed_ms(media_player, playing_speed_delta_ms);
+    mcs_move_forward_with_speed_ms(media_player, playing_speed_delta_ms);
 }
 
-static bool mcs_seek_backward(mcs_media_player_t * media_player){
+static void mcs_seek_backward(mcs_media_player_t * media_player){
     mcs_track_t * current_track = mcs_get_current_track_for_media_player(media_player);
     btstack_assert(current_track != NULL);
 
@@ -800,7 +787,8 @@ static bool mcs_seek_backward(mcs_media_player_t * media_player){
 
     // printf("try seek backward, index %d, duration %d, position %d, step %d, remaining %d \n", media_player->current_track_index, track_duration_ms, track_position_ms, seeking_speed_delta_ms, remaining_track_ms);
     
-    bool track_changed = seeking_speed_delta_ms > remaining_track_ms;
+    track_changed = seeking_speed_delta_ms > remaining_track_ms;
+    track_position_changed = true;
 
     if (track_changed){
          // printf("- switch to the previous track\n");
@@ -818,27 +806,22 @@ static bool mcs_seek_backward(mcs_media_player_t * media_player){
         // printf("- go backward with the same track\n");
         current_track->track_position_10ms -= seeking_speed_delta_ms/10;
     } 
-    
-    return track_changed;
 }
 
-static void mcs_current_track_info_update(mcs_media_player_t * media_player, bool track_changed){
-    mcs_track_t * current_track = mcs_get_current_track_for_media_player(media_player);
-    btstack_assert(current_track != NULL);
+static void mcs_current_track_info_update(mcs_media_player_t * media_player){
+    mcs_track_t * track = mcs_get_current_track_for_media_player(media_player);
+    btstack_assert(track != NULL);
 
     if (track_changed){
-         media_control_service_server_set_media_track_changed(media_player->id);   
-    }
+        track_position_changed = false;
+        media_control_service_server_set_media_track_changed(media_player->id); 
+        media_control_service_server_set_track_duration(media_player->id, track->track_duration_10ms);
+        media_control_service_server_set_track_title(media_player->id, track->title);
+    } 
 
-    switch (media_player->media_state){
-        case MCS_MEDIA_STATE_PLAYING:
-        case MCS_MEDIA_STATE_PAUSED:
-            break;
-        case MCS_MEDIA_STATE_SEEKING:
-            media_control_service_server_set_track_position(media_player->id, current_track->track_position_10ms);
-            break;
-        default:
-            break;
+    if (track_position_changed){
+        track_changed = false;
+        media_control_service_server_set_track_position(media_player->id, track->track_position_10ms);
     }
 }
 
@@ -846,26 +829,24 @@ static void mcs_seeking_speed_timer_timeout_handler(btstack_timer_source_t * tim
     uint16_t media_player_id = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
     mcs_media_player_t * media_player = mcs_get_media_player_for_id(media_player_id);
 
-    bool track_changed = false;
-
     switch (media_player->media_state){
         case MCS_MEDIA_STATE_SEEKING:
             if (media_player->seeking_forward) {
-                track_changed = mcs_seek_forward(media_player);
+                mcs_seek_forward(media_player);
             } else {
-                track_changed = mcs_seek_backward(media_player);
+                mcs_seek_backward(media_player);
             }
             break;
 
         case MCS_MEDIA_STATE_PLAYING:
-            track_changed = mcs_play(media_player);
+            mcs_play(media_player);
             break;
 
         default:
             break;
     }
 
-    mcs_current_track_info_update(media_player, track_changed);
+    mcs_current_track_info_update(media_player);
 
     btstack_run_loop_set_timer(&mcs_seeking_speed_timer, MCS_MEDIA_PLAYER_TIMEOUT_IN_MS); 
     btstack_run_loop_add_timer(&mcs_seeking_speed_timer);
@@ -888,6 +869,95 @@ static void mcs_seeking_speed_timer_stop(uint16_t media_player_id){
     btstack_run_loop_remove_timer(&mcs_seeking_speed_timer);
 }
 
+static void mcs_server_trigger_notifications(mcs_media_player_t * media_player, bool _track_position_changed){
+    track_position_changed = _track_position_changed;
+    mcs_current_track_info_update(media_player);
+}
+
+static void mcs_server_execute_track_operation(mcs_media_player_t * media_player, 
+    media_control_point_opcode_t opcode, uint8_t * packet, uint16_t packet_size){
+
+    int32_t value_int32;
+
+    mcs_track_t * track = mcs_get_current_track_for_media_player_id(media_player->id);
+    if (track == NULL) {
+        return;
+    }
+    mcs_seeking_speed_timer_stop(media_player->id);
+    switch (opcode){
+        case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
+            mcs_goto_first_track(media_player->id);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_LAST_TRACK:
+            mcs_goto_last_track(media_player->id);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_TRACK:
+            mcs_goto_previous_track(media_player->id);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_NEXT_TRACK:
+            mcs_goto_next_track(media_player->id);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
+            value_int32 = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
+            mcs_goto_track(media_player->id, value_int32);
+            break;
+
+        case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_SEGMENT:
+            printf(" - Goto previous segment, current %d\n", mcs_track_current_segment(track));
+            mcs_current_track_goto_previous_segment(track);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_NEXT_SEGMENT:
+            printf(" - Goto next segment, current %d\n", mcs_track_current_segment(track));
+            mcs_current_track_goto_next_segment(track);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_FIRST_SEGMENT:
+            printf(" - Goto first segment, current %d\n", mcs_track_current_segment(track));
+            mcs_current_track_goto_first_segment(track);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT:
+            printf(" - Goto last segment, current %d\n", mcs_track_current_segment(track));
+            mcs_current_track_goto_last_segment(track);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
+            value_int32 = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
+            printf(" - Goto %d segment, current %d\n", value_int32, mcs_track_current_segment(track));
+            mcs_current_track_goto_segment(track, value_int32);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
+            mcs_goto_previous_group(media_player->id);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
+            mcs_goto_next_group(media_player->id);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
+            mcs_goto_first_group(media_player->id);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
+            mcs_goto_last_group(media_player->id);
+            break;
+        case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
+            value_int32 = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
+            mcs_goto_group(media_player->id, value_int32);
+            break;
+        
+        case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
+            value_int32 = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
+            mcs_current_track_apply_relative_offset(media_player->id, value_int32);
+            break;
+
+        default:
+            break;
+    }
+    switch (media_player->media_state){
+        case MCS_MEDIA_STATE_PLAYING:
+        case MCS_MEDIA_STATE_SEEKING:
+            mcs_seeking_speed_timer_start(media_player->id);
+            break;
+        default:
+            break;
+    } 
+}
+
 static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -898,14 +968,13 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     uint8_t characteristic_id;
     media_control_point_opcode_t opcode;
     uint16_t media_player_id;
-    mcs_media_state_t media_state;
     mcs_media_player_t * media_player;
     uint8_t status;
 
     const uint8_t * search_data;
     uint8_t search_data_len;
-    uint8_t pos;
-    
+    uint8_t pos = 0;
+
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED:
             characteristic_id = gattservice_subevent_mcs_server_value_changed_get_characteristic_id(packet);
@@ -952,290 +1021,103 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                 return;
             }
 
-            media_state = (mcs_media_state_t)gattservice_subevent_mcs_server_media_control_point_notification_task_get_media_state(packet);
-
-            printf("MCS Server App: Control Notification, opcode %s, received state %s, actual state %s\n", 
+            printf("MCS Server App: Control Notification, opcode %s, state %s\n", 
                 mcs_server_media_control_opcode2str(opcode), 
-                mcs_server_media_state2str(media_state),
                 mcs_server_media_state2str(media_player->media_state));
-
-            int32_t relative_offset_10ms;
-            int32_t segment;
-            int32_t track_index;
-            int32_t group_index;
-
-            mcs_track_t * track;
-            mcs_track_group_t * group;
-            // bool set_track_position = media_player->media_state != MCS_MEDIA_STATE_PLAYING;
-            bool track_changed;
 
             if (media_player->media_state == MCS_MEDIA_STATE_INACTIVE){
                 switch (opcode){
                     case MEDIA_CONTROL_POINT_OPCODE_PLAY:
                     case MEDIA_CONTROL_POINT_OPCODE_PAUSE:
-                        // dealt in the same way as other states (see below)
+                        // the application should deal with this state below
                         break; 
-
                     default:
                         media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
                         return;
                 }
             }
 
+            // accept command
+            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+            
             switch (opcode){
-                case MEDIA_CONTROL_POINT_OPCODE_PLAY:
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_PAUSED:
-                        case MCS_MEDIA_STATE_SEEKING:
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            mcs_seeking_speed_timer_stop(media_player_id);
-                            mcs_seeking_speed_timer_start(media_player_id);
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PLAYING);
-                            if (status == ERROR_CODE_SUCCESS){
-                                media_player->media_state = MCS_MEDIA_STATE_PLAYING;
-                            }
-                            return;
-                        default:
-                            break;
+                case MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND:
+                case MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD:
+                    mcs_seeking_speed_timer_stop(media_player_id);
+                    
+                    if (opcode == MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD){
+                        media_player->seeking_forward = true;
+                    } else {
+                        media_player->seeking_forward = false;
                     }
-                    break;
+
+                    status = media_control_service_server_set_seeking_speed(media_player_id, 64);
+                    if (status != ERROR_CODE_SUCCESS){
+                        return;
+                    }
+                    
+                    status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_SEEKING);
+                    if (status == ERROR_CODE_SUCCESS){
+                        media_player->media_state = MCS_MEDIA_STATE_SEEKING;
+                        mcs_seeking_speed_timer_start(media_player_id);
+                    }
+                    return;
+
+                case MEDIA_CONTROL_POINT_OPCODE_PLAY:
+                    if (media_player->media_state == MCS_MEDIA_STATE_PLAYING){
+                        // ignore command
+                        return;
+                    }
+                    mcs_seeking_speed_timer_stop(media_player_id);
+                    status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PLAYING);
+                    if (status == ERROR_CODE_SUCCESS){
+                        media_player->media_state = MCS_MEDIA_STATE_PLAYING;
+                        mcs_seeking_speed_timer_start(media_player_id);
+                    }
+                    return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_PAUSE:
-                    switch (media_player->media_state){
-                        case MCS_MEDIA_STATE_PLAYING:
-                        case MCS_MEDIA_STATE_SEEKING:
-                        case MCS_MEDIA_STATE_INACTIVE:
-                            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                            status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
-                            if (status == ERROR_CODE_SUCCESS){
-                                 mcs_seeking_speed_timer_stop(media_player_id);
-                                 media_player->media_state = MCS_MEDIA_STATE_PAUSED;
-                            }
-                            
-                            track = mcs_get_current_track_for_media_player(media_player);
-                            if (track == NULL){
-                                return;
-                            }
-                            media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-                            media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                            return;
-                        default:
-                            break;
-                    }
-                    break;
-
-                case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    mcs_goto_first_track(media_player_id);
-                    track = mcs_get_current_track_for_media_player(media_player);
-                    if (track == NULL){
+                    if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
+                        // ignore command
                         return;
                     }
-                    media_control_service_server_set_media_track_changed(media_player_id);
-                    media_control_service_server_set_track_title(media_player_id,    track->title);
-                    media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-
-                    if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
-                        media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                    }
-                    return;
-                
-                case MEDIA_CONTROL_POINT_OPCODE_LAST_TRACK:
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    mcs_goto_last_track(media_player_id);
-                    mcs_track_t * track = mcs_get_current_track_for_media_player(media_player);
-                    if (track == NULL){
-                        return;
-                    }
-                    media_control_service_server_set_media_track_changed(media_player_id);
-                    media_control_service_server_set_track_title(media_player_id,    track->title);
-                    media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-
-                    if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
-                        media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                    }
-                    return;
-                
-                case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_TRACK:
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    mcs_goto_previous_track(media_player_id);
-                    track = mcs_get_current_track_for_media_player(media_player);
-                    if (track == NULL){
-                        return;
-                    }
-                    media_control_service_server_set_media_track_changed(media_player_id);
-                    media_control_service_server_set_track_title(media_player_id,    track->title);
-                    media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-
-                    if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
-                        media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                    }
-                    return;
-    
-                case MEDIA_CONTROL_POINT_OPCODE_NEXT_TRACK:
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    mcs_goto_next_track(media_player_id);
-                    track = mcs_get_current_track_for_media_player(media_player);
-                    if (track == NULL){
-                        return;
-                    }
-                    media_control_service_server_set_media_track_changed(media_player_id);
-                    media_control_service_server_set_track_title(media_player_id,    track->title);
-                    media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-
-                    if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
-                        media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                    }
-                    return;
-                    
-                case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
-                    track_index = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    
-                    track_changed = mcs_goto_track(media_player_id, track_index);
-                    track = mcs_get_current_track_for_media_player(media_player);
-                    if (track == NULL){
-                        return;
-                    }
-                    
-                    if (track_changed){
-                        media_control_service_server_set_media_track_changed(media_player_id);
-                        media_control_service_server_set_track_title(media_player_id,    track->title);
-                        media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-                    }
-                    
-                    if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
-                        media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                    }
-                    return;
-            
-                case MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND:
-                    media_player->seeking_forward = false;
-                    status = media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    if (status != ERROR_CODE_SUCCESS){
-                        printf("MCS Server App: MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND, media_control_point_response failed\n");
-                        return;
-                    } 
-
-                    status = media_control_service_server_set_seeking_speed(media_player_id, 64);
-                    if (status != ERROR_CODE_SUCCESS){
-                        printf("MCS Server App: MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND, set_seeking_speed failed\n");
-                        return;
-                    }
-                    
-                    status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_SEEKING);
+                    status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
                     if (status == ERROR_CODE_SUCCESS){
-                        media_player->media_state = MCS_MEDIA_STATE_SEEKING;
+                         media_player->media_state = MCS_MEDIA_STATE_PAUSED;
+                         mcs_seeking_speed_timer_stop(media_player_id);
                     }
-                    return;
-                        
-                case MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD:
-                    media_player->seeking_forward = true;
-                    status = media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    if (status != ERROR_CODE_SUCCESS){
-                        printf("MCS Server App: MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD, media_control_point_response failed\n");
-                        return;
-                    } 
-
-                    status = media_control_service_server_set_seeking_speed(media_player_id, 64);
-                    
-                    if (status != ERROR_CODE_SUCCESS){
-                        printf("MCS Server App: MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD, set_seeking_speed failed\n");
-                        return;
-                    }
-                    
-                    status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_SEEKING);
-                    if (status == ERROR_CODE_SUCCESS){
-                        media_player->media_state = MCS_MEDIA_STATE_SEEKING;
-                    }
+                    mcs_server_trigger_notifications(media_player, true);
                     return;
                         
                 case MEDIA_CONTROL_POINT_OPCODE_STOP:
                     mcs_seeking_speed_timer_stop(media_player_id);
-                    mcs_reset_current_track(media_player_id);
+                    // The track position shall be set to the beginning of the current track
+                    mcs_reset_current_track(media_player);
 
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
                     status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
                     if (status == ERROR_CODE_SUCCESS){
-                         mcs_seeking_speed_timer_stop(media_player_id);
                          media_player->media_state = MCS_MEDIA_STATE_PAUSED;
                     }
-                    media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
+                    mcs_server_trigger_notifications(media_player, true);
                     return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
-                    relative_offset_10ms = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
-                    mcs_current_track_apply_relative_offset(media_player_id, relative_offset_10ms);
+                    mcs_server_execute_track_operation(media_player, opcode, packet, size);
+                    mcs_server_trigger_notifications(media_player, true);
+                    break;
 
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    media_control_service_server_set_track_position(media_player_id,
-                                                                             mcs_get_current_track_position_10ms(media_player_id));
-                    return;
-
+                case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
+                case MEDIA_CONTROL_POINT_OPCODE_LAST_TRACK:
+                case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_TRACK:
+                case MEDIA_CONTROL_POINT_OPCODE_NEXT_TRACK:
+                case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
                 case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_SEGMENT:
-                    track = mcs_get_current_track_for_media_player_id(media_player_id);
-                    if (track == NULL) return;
-                    printf(" - Goto previous segment, current %d\n", mcs_track_current_segment(track));
-                    
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    mcs_current_track_goto_previous_segment(track);
-                    
-                    if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
-                        media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
-                    }
-                    return;
-
                 case MEDIA_CONTROL_POINT_OPCODE_NEXT_SEGMENT:
-                    track = mcs_get_current_track_for_media_player_id(media_player_id);
-                    if (track == NULL) return;
-                    printf(" - Goto next segment, current %d\n", mcs_track_current_segment(track));
-                    
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    mcs_current_track_goto_next_segment(track);
-
-                    if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
-                        media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
-                    }
-                    return;
-
                 case MEDIA_CONTROL_POINT_OPCODE_FIRST_SEGMENT:
-                    track = mcs_get_current_track_for_media_player_id(media_player_id);
-                    if (track == NULL) return;
-                    printf(" - Goto first segment, current %d\n", mcs_track_current_segment(track));
-                    
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    mcs_current_track_goto_first_segment(track);
-
-                    if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
-                        media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
-                    }
-                    return;
-
                 case MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT:
-                    track = mcs_get_current_track_for_media_player_id(media_player_id);
-                    if (track == NULL) return;
-                    printf(" - Goto last segment, current %d\n", mcs_track_current_segment(track));
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    mcs_current_track_goto_last_segment(track);
-
-                    if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
-                        media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
-                    }
-                    return;
-
                 case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
-                    track = mcs_get_current_track_for_media_player_id(media_player_id);
-                    if (track == NULL) return;
-                    segment = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
-
-                    printf(" - Goto %d segment, current %d\n", segment, mcs_track_current_segment(track));
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    mcs_current_track_goto_segment(track, segment);
-
-                    if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
-                        media_control_service_server_set_track_position(media_player_id, mcs_get_current_track_position_10ms(media_player_id));
-                    }
+                    mcs_server_execute_track_operation(media_player, opcode, packet, size);
+                    mcs_current_track_info_update(media_player);
                     return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
@@ -1251,52 +1133,14 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                         }
                     }
 
-                    media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-                    track_changed = true;
-
-                    switch (opcode){
-                        case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
-                            mcs_goto_previous_group(media_player_id);
-                            break;
-                        case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
-                            mcs_goto_next_group(media_player_id);
-                            break;
-                        case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
-                            mcs_goto_first_group(media_player_id);
-                            break;
-                        case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
-                            mcs_goto_last_group(media_player_id);
-                            break;
-                        case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
-                            group_index = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
-                            track_changed = mcs_goto_group(media_player_id, group_index);
-                            break;
-                        default: 
-                            break;
-
-                    }                                
-                    
-                    group = mcs_get_current_group_for_media_player(media_player);
-                    if (group == NULL) return;
-                    track = mcs_get_current_track_for_media_player_id(media_player_id);
-                    if (track == NULL) return;
-
-                    if (track_changed){
-                        media_control_service_server_set_media_track_changed(media_player_id);
-                        media_control_service_server_set_track_title(media_player_id,    track->title);
-                        media_control_service_server_set_track_duration(media_player_id, track->track_duration_10ms);
-                    }
-
-                    if (media_player->media_state != MCS_MEDIA_STATE_PLAYING){
-                        media_control_service_server_set_track_position(media_player_id, track->track_position_10ms);
-                    }
+                    mcs_server_execute_track_operation(media_player, opcode, packet, size);
+                    mcs_current_track_info_update(media_player);
                     return;
 
                 default:
                     break;
             }
             
-            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
             break;
 
         default:
