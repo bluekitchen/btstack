@@ -48,6 +48,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
+#include <getopt.h>
 
 #include "btstack_config.h"
 
@@ -80,6 +82,7 @@
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
 static char tlv_db_path[100];
+static bool tlv_reset;
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 static bd_addr_t             local_addr;
@@ -112,6 +115,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
                     btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str_with_delimiter(local_addr, '-'));
                     btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
+                    printf("TLV path: %s", tlv_db_path);
+                    if (tlv_reset){
+                        int rc = unlink(tlv_db_path);
+                        if (rc == 0) {
+                            printf(", reset ok");
+                        } else {
+                            printf(", reset failed with result = %d", rc);
+                        }
+                    }
+                    printf("\n");
                     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
@@ -237,31 +250,84 @@ static void local_version_information_handler(uint8_t * packet){
     }
 }
 
+static char short_options[] = "hu:l:r";
+
+static struct option long_options[] = {
+        {"help",        no_argument,        NULL,   'h'},
+        {"logfile",    required_argument,  NULL,   'l'},
+        {"reset-tlv",    no_argument,       NULL,   'r'},
+        {"tty",    required_argument,  NULL,   'u'},
+        {0, 0, 0, 0}
+};
+
+static char *help_options[] = {
+        "print (this) help.",
+        "set file to store debug output and HCI trace.",
+        "reset bonding information stored in TLV.",
+        "set path to Bluetooth Controller.",
+};
+
+static char *option_arg_name[] = {
+        "",
+        "LOGFILE",
+        "",
+        "TTY",
+};
+
+static void usage(const char *name){
+    unsigned int i;
+    printf( "usage:\n\t%s [options]\n", name );
+    printf("valid options:\n");
+    for( i=0; long_options[i].name != 0; i++) {
+        printf("--%-10s| -%c  %-10s\t\t%s\n", long_options[i].name, long_options[i].val, option_arg_name[i], help_options[i] );
+    }
+}
+
 int main(int argc, const char * argv[]){
 
-	/// GET STARTED with BTstack ///
+    const char * log_file_path = NULL;
+
+    // set default device path
+    config.device_name = "/dev/tty.usbmodemEF437DF524C51";
+
+    // parse command line parameters
+    while(true){
+        int c = getopt_long( argc, (char* const *)argv, short_options, long_options, NULL );
+        if (c < 0) {
+            break;
+        }
+        if (c == '?'){
+            break;
+        }
+        switch (c) {
+            case 'u':
+                config.device_name = optarg;
+                break;
+            case 'l':
+                log_file_path = optarg;
+                break;
+            case 'r':
+                tlv_reset = true;
+                break;
+            case 'h':
+            default:
+                usage(argv[0]);
+                return EXIT_FAILURE;
+        }
+    }
+    /// GET STARTED with BTstack ///
 	btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 	    
     // log into file using HCI_DUMP_PACKETLOGGER format
-    const char * pklg_path = "/tmp/hci_dump.pklg";
-    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    if (log_file_path == NULL){
+        log_file_path = "/tmp/hci_dump.pklg";
+    }
+    hci_dump_posix_fs_open(log_file_path, HCI_DUMP_PACKETLOGGER);
     const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
     hci_dump_init(hci_dump_impl);
-    printf("Packet Log: %s\n", pklg_path);
+    printf("Packet Log: %s\n", log_file_path);
 
-    // pick serial port
-    // config.device_name = "/dev/tty.usbserial-A900K2WS"; // DFROBOT
-    // config.device_name = "/dev/tty.usbserial-A50285BI"; // BOOST-CC2564MODA New
-    // config.device_name = "/dev/tty.usbserial-A9OVNX5P"; // RedBear IoT pHAT breakout board
-    config.device_name = "/dev/tty.usbmodemEF437DF524C51"; // CSR8811 breakout board
-
-    // accept path from command line
-    if (argc >= 3 && strcmp(argv[1], "-u") == 0){
-        config.device_name = argv[2];
-        argc -= 2;
-        memmove((void *) &argv[1], &argv[3], (argc-1) * sizeof(char *));
-    }
     printf("H4 device: %s\n", config.device_name);
 
     // init HCI
