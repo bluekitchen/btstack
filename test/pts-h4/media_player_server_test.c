@@ -808,9 +808,11 @@ static void mcs_seek_backward(mcs_media_player_t * media_player){
     } 
 }
 
-static void mcs_current_track_info_update(mcs_media_player_t * media_player){
+static void mcs_server_trigger_notifications(mcs_media_player_t * media_player){
     mcs_track_t * track = mcs_get_current_track_for_media_player(media_player);
     btstack_assert(track != NULL);
+
+    // TODO: update MCS server info without triggering notifications, for eventual remote read
 
     if (track_changed){
         track_position_changed = false;
@@ -846,7 +848,7 @@ static void mcs_seeking_speed_timer_timeout_handler(btstack_timer_source_t * tim
             break;
     }
 
-    mcs_current_track_info_update(media_player);
+    mcs_server_trigger_notifications(media_player);
 
     btstack_run_loop_set_timer(&mcs_seeking_speed_timer, MCS_MEDIA_PLAYER_TIMEOUT_IN_MS); 
     btstack_run_loop_add_timer(&mcs_seeking_speed_timer);
@@ -867,11 +869,6 @@ static void mcs_seeking_speed_timer_start(uint16_t media_player_id){
 
 static void mcs_seeking_speed_timer_stop(uint16_t media_player_id){
     btstack_run_loop_remove_timer(&mcs_seeking_speed_timer);
-}
-
-static void mcs_server_trigger_notifications(mcs_media_player_t * media_player, bool _track_position_changed){
-    track_position_changed = _track_position_changed;
-    mcs_current_track_info_update(media_player);
 }
 
 static void mcs_server_execute_track_operation(mcs_media_player_t * media_player, 
@@ -1086,7 +1083,8 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                          media_player->media_state = MCS_MEDIA_STATE_PAUSED;
                          mcs_seeking_speed_timer_stop(media_player_id);
                     }
-                    mcs_server_trigger_notifications(media_player, true);
+                    track_position_changed = true;
+                    mcs_server_trigger_notifications(media_player);
                     return;
                         
                 case MEDIA_CONTROL_POINT_OPCODE_STOP:
@@ -1098,12 +1096,13 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     if (status == ERROR_CODE_SUCCESS){
                          media_player->media_state = MCS_MEDIA_STATE_PAUSED;
                     }
-                    mcs_server_trigger_notifications(media_player, true);
+                    track_position_changed = true;
+                    mcs_server_trigger_notifications(media_player);
                     return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
                     mcs_server_execute_track_operation(media_player, opcode, packet, size);
-                    mcs_server_trigger_notifications(media_player, true);
+                    mcs_server_trigger_notifications(media_player);
                     break;
 
                 case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
@@ -1117,7 +1116,7 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                 case MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT:
                 case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
                     mcs_server_execute_track_operation(media_player, opcode, packet, size);
-                    mcs_current_track_info_update(media_player);
+                    mcs_server_trigger_notifications(media_player);
                     return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
@@ -1134,7 +1133,7 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     }
 
                     mcs_server_execute_track_operation(media_player, opcode, packet, size);
-                    mcs_current_track_info_update(media_player);
+                    mcs_server_trigger_notifications(media_player);
                     return;
 
                 default:
