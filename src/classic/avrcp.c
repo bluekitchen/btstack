@@ -910,6 +910,7 @@ static void avrcp_start_next_sdp_query(void) {
         avrcp_sdp_query_registration.callback = &avrcp_handle_start_sdp_client_query;
         uint8_t status = sdp_client_register_query_callback(&avrcp_sdp_query_registration);
         btstack_assert(status == ERROR_CODE_SUCCESS);
+        UNUSED(status);
         break;
     }
 }
