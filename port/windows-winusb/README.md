@@ -6,7 +6,7 @@ The port provides both a regular Makefile as well as a CMake build file. It uses
 
 ## Access to Bluetooth USB Dongle with Zadig
 
-To allow libusb or WinUSB to access an USB Bluetooth dongle, you need to install a special device driver to make it accessible to user space processes. 
+To allow WinUSB to access an USB Bluetooth dongle, you need to install a special device driver to make it accessible to user space processes. 
 
 It works like this:
 
@@ -14,8 +14,14 @@ It works like this:
 -  Start Zadig
 -  Select Options -> “List all devices”
 -  Select USB Bluetooth dongle in the big pull down list
--  Select WinUSB (libusb) in the right pull pull down list
+-  Select WinUSB in the right pull down list
 -  Select “Replace Driver”
+
+![Zadig showing CYW20704A2](zadig-cyw20704.png)
+
+After the new driver was installed, your device is shown in the Device Manager with Device Provider 'libwdi'
+
+![Device Manager showing CYW20704A2](device-manager-cyw20704.png)
 
 ## Visual Studio 2022
 
