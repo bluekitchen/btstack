@@ -120,6 +120,7 @@ typedef struct {
     uint8_t * receive_buffer;
     uint8_t * send_buffer;
 } att_server_eatt_bearer_t;
+static att_server_eatt_bearer_t * att_server_eatt_bearer_for_con_handle(hci_con_handle_t con_handle);
 static btstack_linked_list_t att_server_eatt_bearer_pool;
 static btstack_linked_list_t att_server_eatt_bearer_active;
 #endif
@@ -560,6 +561,7 @@ att_server_send_prepared(const att_server_t *att_server, const att_connection_t 
     switch (att_server->bearer_type) {
         case ATT_BEARER_UNENHANCED_LE:
             status = l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
+            break;
 #ifdef ENABLE_GATT_OVER_CLASSIC
         case ATT_BEARER_UNENHANCED_CLASSIC:
             status = l2cap_send_prepared(att_server->l2cap_cid, size);
@@ -1359,6 +1361,52 @@ uint8_t att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle
     return att_server_send_prepared(att_server, att_connection, NULL, size);
 }
 
+/**
+ * @brief notify client about multiple attribute value changes
+ * @param con_handle
+ * @param num_attributes
+ * @param attribute_handles[]
+ * @param values_data[]
+ * @param values_len[]
+ * @return 0 if ok, error otherwise
+ */
+uint8_t att_server_multiple_notify(hci_con_handle_t con_handle, uint8_t num_attributes,
+                                   const uint16_t * attribute_handles, const uint8_t ** values_data, const uint16_t * values_len){
+
+    att_server_t * att_server = NULL;
+    att_connection_t * att_connection = NULL;
+    uint8_t * packet_buffer = NULL;
+
+    // prfer enhanced bearer
+#ifdef ENABLE_GATT_OVER_EATT
+    att_server_eatt_bearer_t * eatt_bearer = att_server_eatt_bearer_for_con_handle(con_handle);
+    if (eatt_bearer != NULL){
+        att_server     = &eatt_bearer->att_server;
+        att_connection = &eatt_bearer->att_connection;
+        packet_buffer  = eatt_bearer->send_buffer;
+    } else
+#endif
+    {
+        hci_connection_t *hci_connection = hci_connection_for_handle(con_handle);
+        if (hci_connection != NULL) {
+            att_server     = &hci_connection->att_server;
+            att_connection = &hci_connection->att_connection;
+        }
+    }
+
+    if (att_server == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    if (!att_server_can_send_packet(att_server, att_connection)) return BTSTACK_ACL_BUFFERS_FULL;
+
+    if (packet_buffer == NULL){
+        l2cap_reserve_packet_buffer();
+        packet_buffer = l2cap_get_outgoing_buffer();
+    }
+
+    uint16_t size = att_prepare_handle_value_multiple_notification(att_connection, num_attributes, attribute_handles, values_data, values_len, packet_buffer);
+
+    return att_server_send_prepared(att_server, att_connection, packet_buffer, size);
+}
+
 uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1408,6 +1456,18 @@ static att_server_eatt_bearer_t * att_server_eatt_bearer_for_cid(uint16_t cid){
     while(btstack_linked_list_iterator_has_next(&it)){
         att_server_eatt_bearer_t * eatt_bearer = (att_server_eatt_bearer_t *) btstack_linked_list_iterator_next(&it);
         if (eatt_bearer->att_server.l2cap_cid == cid) {
+            return eatt_bearer;
+        }
+    }
+    return NULL;
+}
+
+static att_server_eatt_bearer_t * att_server_eatt_bearer_for_con_handle(hci_con_handle_t con_handle){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &att_server_eatt_bearer_active);
+    while(btstack_linked_list_iterator_has_next(&it)){
+        att_server_eatt_bearer_t * eatt_bearer = (att_server_eatt_bearer_t *) btstack_linked_list_iterator_next(&it);
+        if (eatt_bearer->att_connection.con_handle == con_handle) {
             return eatt_bearer;
         }
     }
