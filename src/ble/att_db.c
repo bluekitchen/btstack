@@ -1637,7 +1637,13 @@ bool att_is_persistent_ccc(uint16_t handle){
         }
         att_persistent_ccc_cache(&it);
     }
-    return att_persistent_ccc_uuid16 == (uint16_t)GATT_CLIENT_CHARACTERISTICS_CONFIGURATION;
+    switch (att_persistent_ccc_uuid16){
+        case GATT_CLIENT_CHARACTERISTICS_CONFIGURATION:
+        case GATT_CLIENT_SUPPORTED_FEATURES:
+            return true;
+        default:
+            return false;
+    }
 }
 
 // att_read_callback helpers
