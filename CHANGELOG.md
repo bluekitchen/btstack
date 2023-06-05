@@ -42,9 +42,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: ignore Security Request during re-encryption
 - GATT Client: return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER for invalid connection handle
 - A2DP: emit A2DP_SUBEVENT_STREAM_ESTABLISHED with if connection fails, e.g. because of Page Timeout
-- A2DP Source: a2dp_source_stream_send_media_payload, use a2dp_source_stream_send_media_payload_rtp instead
+- A2DP Source: a2dp_source_stream_send_media_payload was removed, use a2dp_source_stream_send_media_payload_rtp instead
 - A2DP: use samples as timestamp, fixes issue with Apple Airpods Pro 2nd Gen
-- AVDTP Source: avdtp_source_stream_send_media_payload, use avdtp_source_stream_send_media_payload_rtp instead
+- AVDTP Source: avdtp_source_stream_send_media_payload was removed, use avdtp_source_stream_send_media_payload_rtp instead
 - AVRCP: re-register for notification
 - HFP: fix setup/accept of synchronous connection
 - HFP: use mandatory safe settings considering BR/EDR Secure Connections to accept synchronous connections
@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - PBAP Client: make pbap_set_property_selector work for Pull Phonebook
 - btstack_stdin_embedded: use timer to poll RTT input, fix for tickless RTOS
 - esp32: fix audio power amplifier control on Lyra T v4.3 board
+- tool/convert_gatt_service: removed as GATT Service descriptions not available on Bluetooth SIG web site
 
 ### Changed
 - GAP: add gap_set_peer_privacy_mode with default LE_PRIVACY_MODE_DEVICE
