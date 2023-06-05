@@ -1314,6 +1314,33 @@ uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection
     return prepare_handle_value(att_connection, attribute_handle, value, value_len, response_buffer);
 }
 
+// MARK: ATT_MULTIPLE_HANDLE_VALUE_NTF 0x23u
+uint16_t att_prepare_handle_value_multiple_notification(att_connection_t * att_connection,
+                                               uint8_t num_attributes,
+                                               const uint16_t * attribute_handles,
+                                               const uint8_t ** values_data,
+                                               const uint16_t * values_len,
+                                               uint8_t * response_buffer){
+
+    response_buffer[0] = ATT_MULTIPLE_HANDLE_VALUE_NTF;
+    uint8_t i;
+    uint16_t offset = 1;
+    uint16_t response_buffer_size = att_connection->mtu - 3u;
+    for (i = 0; i < num_attributes; i++) {
+        uint16_t value_len = values_len[i];
+        if ((offset + 4 + value_len) > response_buffer_size){
+            break;
+        }
+        little_endian_store_16(response_buffer, offset, attribute_handles[i]);
+        offset += 2;
+        little_endian_store_16(response_buffer, offset, value_len);
+        offset += 2;
+        (void) memcpy(&response_buffer[offset], values_data[i], value_len);
+        offset += value_len;
+    }
+    return offset;
+}
+
 // MARK: ATT_HANDLE_VALUE_INDICATION 0x1d
 uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
                                              uint16_t attribute_handle,

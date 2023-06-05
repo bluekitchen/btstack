@@ -226,6 +226,21 @@ uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection
                                                uint8_t * response_buffer);
 
 /**
+ * @brief setup value notification in response buffer for multiple handles and values
+ * @param att_connection
+ * @param attribute_handle
+ * @param value
+ * @param value_len
+ * @param response_buffer for notification
+ */
+uint16_t att_prepare_handle_value_multiple_notification(att_connection_t * att_connection,
+                                                        uint8_t num_attributes,
+                                                        const uint16_t * attribute_handles,
+                                                        const uint8_t ** values_data,
+                                                        const uint16_t * values_len,
+                                                        uint8_t * response_buffer);
+
+/**
  * @brief setup value indication in response buffer for a given handle and value
  * @param att_connection
  * @param attribute_handle
