@@ -1397,6 +1397,8 @@ void att_server_deinit(void){
 
 #ifdef ENABLE_GATT_OVER_EATT
 
+#define MAX_NR_EATT_CHANNELS 5
+
 static uint16_t att_server_eatt_receive_buffer_size;
 static uint16_t att_server_eatt_send_buffer_size;
 
@@ -1420,10 +1422,10 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
     uint8_t i;
     uint8_t num_requested_bearers;
     uint8_t num_accepted_bearers;
-    uint8_t initial_credits = 5;
-    uint8_t * receive_buffers[5];
-    uint16_t cids[5];
-    att_server_eatt_bearer_t * eatt_bearers[5];
+    uint16_t initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
+    uint8_t * receive_buffers[MAX_NR_EATT_CHANNELS];
+    uint16_t cids[MAX_NR_EATT_CHANNELS];
+    att_server_eatt_bearer_t * eatt_bearers[MAX_NR_EATT_CHANNELS];
     att_server_eatt_bearer_t * eatt_bearer;
     att_server_t * att_server;
     att_connection_t * att_connection;
@@ -1505,12 +1507,16 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
 
                     // TODO: finalize - abort queued writes
 
-                    btstack_linked_list_remove(&att_server_eatt_bearer_active, (btstack_linked_item_t  *) eatt_bearers);
+                    btstack_linked_list_remove(&att_server_eatt_bearer_active, (btstack_linked_item_t  *) eatt_bearer);
                     btstack_linked_list_add(&att_server_eatt_bearer_pool, (btstack_linked_item_t  *) eatt_bearer);
                     break;
                 default:
                     break;
             }
+            break;
+        default:
+            btstack_unreachable();
+            break;
     }
 }
 
