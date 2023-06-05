@@ -865,11 +865,12 @@ static uint16_t handle_read_blob_request(att_connection_t * att_connection, uint
 
 //
 // MARK: ATT_READ_MULTIPLE_REQUEST 0x0e
+// MARK: ATT_READ_MULTIPLE_REQUEST 0x20
 //
-static uint16_t handle_read_multiple_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size, uint16_t num_handles, uint8_t * handles){
-    log_info("ATT_READ_MULTIPLE_REQUEST: num handles %u", num_handles);
-    uint8_t request_type = ATT_READ_MULTIPLE_REQUEST;
-    
+static uint16_t handle_read_multiple_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size, uint16_t num_handles, uint8_t * handles, bool store_length){
+    log_info("ATT_READ_MULTIPLE_(VARIABLE_)REQUEST: num handles %u", num_handles);
+    uint8_t request_type  = store_length ? ATT_READ_MULTIPLE_VARIABLE_REQ : ATT_READ_MULTIPLE_REQUEST;
+    uint8_t response_type = store_length ? ATT_READ_MULTIPLE_VARIABLE_RSP : ATT_READ_MULTIPLE_RESPONSE;
     uint16_t offset   = 1;
 
     uint16_t i;
@@ -882,11 +883,11 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
 
     for (i=0; i<num_handles; i++){
         handle = little_endian_read_16(handles, i << 1);
-        
+
         if (handle == 0u){
             return setup_error_invalid_handle(response_buffer, request_type, handle);
         }
-        
+
         att_iterator_t it;
 
         int ok = att_find_handle(&it, handle);
@@ -907,7 +908,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         }
 
         att_update_value_len(&it, 0, att_connection->con_handle);
-        
+
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
         if (it.value_len == (uint16_t)ATT_READ_RESPONSE_PENDING) {
             read_request_pending = true;
@@ -923,28 +924,50 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
             break;
         }
 
-        // store
+#ifdef ENABLE_GATT_OVER_EATT
+        // assert that at least Value Length can be stored
+        if (store_length && ((offset + 2) >= response_buffer_size)){
+            break;
+        }
+        // skip length field
+        uint16_t offset_value_length = offset;
+        if (store_length){
+            offset += 2;
+        }
+#endif
+        // store data
         uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, response_buffer_size - offset, att_connection->con_handle);
         offset += bytes_copied;
+#ifdef ENABLE_GATT_OVER_EATT
+        // set length field
+        if (store_length) {
+            little_endian_store_16(response_buffer, offset_value_length, bytes_copied);
+        }
+#endif
     }
 
     if (error_code != 0u){
         return setup_error(response_buffer, request_type, handle, error_code);
     }
-    
-    response_buffer[0] = (uint8_t)ATT_READ_MULTIPLE_RESPONSE;
+
+    response_buffer[0] = (uint8_t)response_type;
     return offset;
 }
-static uint16_t handle_read_multiple_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
-                                      uint8_t * response_buffer, uint16_t response_buffer_size){
+
+static uint16_t
+handle_read_multiple_request(att_connection_t *att_connection, uint8_t *request_buffer, uint16_t request_len,
+                             uint8_t *response_buffer, uint16_t response_buffer_size, bool store_length) {
+
+    uint8_t request_type = store_length ? ATT_READ_MULTIPLE_VARIABLE_REQ : ATT_READ_MULTIPLE_REQUEST;
 
     // 1 byte opcode + two or more attribute handles (2 bytes each)
     if ( (request_len < 5u) || ((request_len & 1u) == 0u) ){
-        return setup_error_invalid_pdu(response_buffer, ATT_READ_MULTIPLE_REQUEST);
+        return setup_error_invalid_pdu(response_buffer, request_type);
     }
 
-    int num_handles = (request_len - 1u) >> 1u;
-    return handle_read_multiple_request2(att_connection, response_buffer, response_buffer_size, num_handles, &request_buffer[1]);
+    uint8_t num_handles = (request_len - 1u) >> 1u;
+    return handle_read_multiple_request2(att_connection, response_buffer, response_buffer_size, num_handles,
+                                         &request_buffer[1], store_length);
 }
 
 //
@@ -1331,9 +1354,14 @@ uint16_t att_handle_request(att_connection_t * att_connection,
             response_len = handle_read_blob_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
             break;
         case ATT_READ_MULTIPLE_REQUEST:  
-            response_len = handle_read_multiple_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
+            response_len = handle_read_multiple_request(att_connection, request_buffer, request_len, response_buffer,
+                                                        response_buffer_size, false);
             break;
-        case ATT_READ_BY_GROUP_TYPE_REQUEST:  
+        case ATT_READ_MULTIPLE_VARIABLE_REQ:
+            response_len = handle_read_multiple_request(att_connection, request_buffer, request_len, response_buffer,
+                                                        response_buffer_size, true);
+            break;
+        case ATT_READ_BY_GROUP_TYPE_REQUEST:
             response_len = handle_read_by_group_type_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
             break;
         case ATT_WRITE_REQUEST:
