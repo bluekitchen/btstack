@@ -109,10 +109,13 @@ static int ui_digits_for_passkey = 0;
 
 static btstack_timer_source_t heartbeat;
 static uint8_t counter = 0;
+static uint8_t counter_array[4];
 static int update_client = 0;
 static int client_configuration = 0;
 static uint16_t client_configuration_handle;
 static hci_con_handle_t handle = HCI_CON_HANDLE_INVALID;
+static uint8_t client_supported_features_value;
+static hci_con_handle_t client_supported_features_handle = HCI_CON_HANDLE_INVALID;
 
 static bool dynamic_db;
 static uint8_t gatt_database_hash[16];
@@ -302,8 +305,19 @@ static void app_run(void){
     int result = -1;
     switch (client_configuration){
         case 0x01:
-            printf("Notify value %u\n", counter);
-            result = att_server_notify(handle, client_configuration_handle - 1, &counter, 1);
+            if (handle == client_supported_features_handle){
+                uint16_t  attribute_handles[] = { client_configuration_handle - 1 };
+                const uint8_t * value_data[]  = { counter_array };
+                uint16_t  value_lens[]        = { sizeof(counter_array) };
+                memset(counter_array, counter, sizeof(counter_array));
+                printf("Notify Multiple handle 0x%04x, value: ", client_configuration_handle - 1);
+                printf_hexdump(counter_array, sizeof(counter_array));
+                result = att_server_multiple_notify(handle, 1, attribute_handles, value_data, value_lens);
+            } else {
+                printf("Notify handle 0x%04x, value: \n", client_configuration_handle - 1);
+                printf_hexdump(&counter, 1);
+                result = att_server_notify(handle, client_configuration_handle - 1, &counter, 1);
+            }
             break;
         case 0x02:
             printf("Indicate value %u\n", counter);
@@ -488,6 +502,14 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t attribute_ha
                 client_configuration = buffer[0];
                 printf("- Client Configuration set to %u for handle %04x\n", client_configuration, client_configuration_handle);
                 return 0;   // ok
+            case GATT_CLIENT_SUPPORTED_FEATURES:
+                printf("- Client Supported Features set to %x for handle 0x%04x\n", buffer[0], con_handle);
+                // only store if notify multiple supported
+                if ((buffer[0] & 4) != 0){
+                    client_supported_features_value = buffer[0];
+                    client_supported_features_handle = con_handle;
+                }
+                return 0;
             default:
                 break;
         }
