@@ -284,11 +284,11 @@ static void mcs_goto_next_track(uint16_t media_player_id){
         return;
     }
 
-    if (current_track_group->tracks_num == 0){
+    if (current_track_group->tracks_num <= 1){
         return;
     }
 
-    if (media_player->current_track_index >= current_track_group->tracks_num){
+    if (media_player->current_track_index >= (current_track_group->tracks_num - 1)){
         return;
     }
     mcs_change_current_track(media_player, media_player->current_track_index + 1);
@@ -332,14 +332,11 @@ static void mcs_goto_track(uint16_t media_player_id, int32_t track_index){
     if (track_index != 0){
         if (track_index > 0){
             track_index--;
-        } else {
-            track_index++;
         } 
-
-        if (track_index > 0){
+        
+        if (track_index >= 0){
             if (track_index < current_track_group->tracks_num){
                 new_track_index = track_index;
-
             }
         } else {
             uint32_t abs_track_index = -track_index;
