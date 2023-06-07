@@ -115,18 +115,6 @@ static mcs_speed_values_mapping_t mcs_speed_values_mapping[] = {
 };
 
 typedef struct {
-    uint32_t track_duration_10ms;               // 0xFFFFFFFF unknown, or not set
-    uint32_t track_position_10ms;               // 0xFFFFFFFF unknown, or not set
-
-    uint8_t object_id[6];
-
-    // uint8_t parent_group_object_id[6];
-    // uint8_t current_group_object_id[6];
-
-    char * title;
-} mcs_track_t;
-
-typedef struct {
     uint8_t parent_group_object_id[6];
     uint8_t current_group_object_id[6];
 
@@ -783,6 +771,7 @@ static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * med
         default:
             break;
     }
+    media_control_service_server_update_current_track_info(media_player->id, track);
 
     if (notify_track_change){
         media_control_service_server_set_media_track_changed(media_player->id); 
