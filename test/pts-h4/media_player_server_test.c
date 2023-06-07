@@ -365,9 +365,7 @@ static bool mcs_goto_group(uint16_t media_player_id, int32_t group_index){
 
         if (group_index > 0 ){
             group_index--;
-        } else {
-            group_index++;
-        }
+        } 
 
         if (media_player->current_group_index != group_index){
             if (group_index >= 0 ){
@@ -375,7 +373,7 @@ static bool mcs_goto_group(uint16_t media_player_id, int32_t group_index){
                     mcs_change_current_group(media_player, group_index);
                 }
             } else {
-                int32_t abs_group_index = -group_index + 1;
+                int32_t abs_group_index = -group_index;
                 if (abs_group_index <= media_player->track_groups_num){
                     mcs_change_current_group(media_player, media_player->track_groups_num - abs_group_index);
                 }
