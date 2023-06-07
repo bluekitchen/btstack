@@ -1107,7 +1107,7 @@ uint8_t media_control_service_server_set_media_player_name(uint16_t media_player
 
     media_player->data.name_value_changed = true;
 	btstack_strcpy(media_player->data.name, sizeof(media_player->data.name), name);
-		mcs_server_schedule_task(media_player, MEDIA_PLAYER_NAME);
+	mcs_server_schedule_task(media_player, MEDIA_PLAYER_NAME);
 	return ERROR_CODE_SUCCESS;
 }
 
@@ -1315,4 +1315,17 @@ uint8_t media_control_service_server_unregister_media_player(media_control_servi
 		return ERROR_CODE_SUCCESS;
 	}
 	return btstack_linked_list_remove(&mcs_media_players, (btstack_linked_item_t *)media_player);
+}
+
+uint8_t media_control_service_server_update_current_track_info(uint16_t media_player_id, mcs_track_t * track){
+    btstack_assert(track != NULL);
+    
+    media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    media_player->data.track_position_10ms = track->track_position_10ms;
+    media_player->data.track_duration_10ms = track->track_duration_10ms;
+    btstack_strcpy(media_player->data.track_title, sizeof(media_player->data.track_title), track->title);
+    return ERROR_CODE_SUCCESS;
 }
