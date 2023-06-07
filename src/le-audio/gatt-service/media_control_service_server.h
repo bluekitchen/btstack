@@ -167,6 +167,18 @@ typedef struct {
     btstack_timer_source_t   seeking_speed_timer;
 } media_control_service_server_t;
 
+typedef struct {
+    uint32_t track_duration_10ms;               // 0xFFFFFFFF unknown, or not set
+    uint32_t track_position_10ms;               // 0xFFFFFFFF unknown, or not set
+
+    uint8_t object_id[6];
+
+    // uint8_t parent_group_object_id[6];
+    // uint8_t current_group_object_id[6];
+
+    char * title;
+} mcs_track_t;
+
 /**
  * @brief Init media Control Service Server with ATT DB
  */
@@ -177,6 +189,8 @@ uint8_t media_control_service_server_register_media_player(
     btstack_packet_handler_t packet_handler, 
     uint32_t media_control_point_opcodes_supported, 
     uint16_t * media_player_id);
+
+uint8_t media_control_service_server_update_current_track_info(uint16_t media_player_id, mcs_track_t * track);
 
 uint8_t media_control_service_server_set_media_player_name(uint16_t media_player_id, char * name);
 
