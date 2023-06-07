@@ -3768,13 +3768,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (hci_stack->bondable == false) break;
             // - if security level sufficient
             if (gap_security_level_for_link_key_type(link_key_type) < conn->requested_security_level) break;
-            // - for SSP, also check if remote side requested bonding as well
-            if (conn->link_key_type != COMBINATION_KEY){
-                bool remote_bonding = conn->io_cap_response_auth_req >= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
-                if (!remote_bonding){
-                    break;
-                }
-            }
             gap_store_link_key_for_bd_addr(addr, &packet[8], conn->link_key_type);
             break;
         }
