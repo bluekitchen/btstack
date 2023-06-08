@@ -2778,6 +2778,8 @@ static void gatt_client_l2cap_handler(uint8_t packet_type, uint16_t channel, uin
             gatt_client_handle_att_response(gatt_client, packet, size);
             gatt_client_run();
             break;
+        default:
+            break;
     }
 }
 
