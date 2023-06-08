@@ -1289,7 +1289,6 @@ static void gatt_client_run(void){
                 return;
             }
         }
-        continue;
 #endif
         // handle GATT over LE
         if (!att_dispatch_client_can_send_now(gatt_client->con_handle)) {
