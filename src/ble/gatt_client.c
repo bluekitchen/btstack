@@ -2888,7 +2888,7 @@ uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t
     gatt_client->callback = callback;
     btstack_linked_list_add(&gatt_client_connections, (btstack_linked_item_t*)gatt_client);
     sdp_client_register_query_callback(&gatt_client->sdp_query_request);
-    return ERROR_CODE_COMMAND_DISALLOWED;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t gatt_client_classic_disconnect(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
