@@ -1384,15 +1384,15 @@ static uint8_t att_server_prepare_server_message(hci_con_handle_t con_handle, at
 }
 
 uint8_t att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
-    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
-    if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    att_server_t * att_server = &hci_connection->att_server;
-    att_connection_t * att_connection = &hci_connection->att_connection;
+    att_server_t * att_server = NULL;
+    att_connection_t * att_connection = NULL;
+    uint8_t * packet_buffer = NULL;
 
-    if (!att_server_can_send_packet(att_server, att_connection)) return BTSTACK_ACL_BUFFERS_FULL;
+    uint8_t status = att_server_prepare_server_message(con_handle, &att_server, &att_connection, &packet_buffer);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
 
-    l2cap_reserve_packet_buffer();
-    uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_notification(att_connection, attribute_handle, value, value_len, packet_buffer);
 
     return att_server_send_prepared(att_server, att_connection, NULL, size);
@@ -1425,13 +1425,23 @@ uint8_t att_server_multiple_notify(hci_con_handle_t con_handle, uint8_t num_attr
 }
 
 uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
-    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
-    if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    att_server_t * att_server = &hci_connection->att_server;
-    att_connection_t * att_connection = &hci_connection->att_connection;
 
-    if (att_server->value_indication_handle != 0u) return ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS;
-    if (!att_server_can_send_packet(att_server, att_connection)) return BTSTACK_ACL_BUFFERS_FULL;
+    att_server_t * att_server = NULL;
+    att_connection_t * att_connection = NULL;
+    uint8_t * packet_buffer = NULL;
+
+    uint8_t status = att_server_prepare_server_message(con_handle, &att_server, &att_connection, &packet_buffer);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+
+    if (att_server->value_indication_handle != 0u) {
+        // free reserved packet buffer
+        if (att_server->bearer_type == ATT_BEARER_ENHANCED_LE){
+            l2cap_release_packet_buffer();
+        }
+        return ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS;
+    }
 
     // track indication
     att_server->value_indication_handle = attribute_handle;
@@ -1439,8 +1449,6 @@ uint8_t att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_hand
     btstack_run_loop_set_timer(&att_server->value_indication_timer, ATT_TRANSACTION_TIMEOUT_MS);
     btstack_run_loop_add_timer(&att_server->value_indication_timer);
 
-    l2cap_reserve_packet_buffer();
-    uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_indication(att_connection, attribute_handle, value, value_len, packet_buffer);
 
     return att_server_send_prepared(att_server, att_connection, NULL, size);
