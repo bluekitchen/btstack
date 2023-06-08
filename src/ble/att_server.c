@@ -1346,6 +1346,43 @@ uint8_t att_server_request_to_send_indication(btstack_context_callback_registrat
     }
 }
 
+static uint8_t att_server_prepare_server_message(hci_con_handle_t con_handle, att_server_t ** out_att_server, att_connection_t ** out_att_connection, uint8_t ** out_packet_buffer){
+
+    att_server_t *     att_server = NULL;
+    att_connection_t * att_connection = NULL;
+    uint8_t *          packet_buffer = NULL;
+
+    // prefer enhanced bearer
+#ifdef ENABLE_GATT_OVER_EATT
+    att_server_eatt_bearer_t * eatt_bearer = att_server_eatt_bearer_for_con_handle(con_handle);
+    if (eatt_bearer != NULL){
+        att_server     = &eatt_bearer->att_server;
+        att_connection = &eatt_bearer->att_connection;
+        packet_buffer  = eatt_bearer->send_buffer;
+    } else
+#endif
+    {
+        hci_connection_t *hci_connection = hci_connection_for_handle(con_handle);
+        if (hci_connection != NULL) {
+            att_server     = &hci_connection->att_server;
+            att_connection = &hci_connection->att_connection;
+        }
+    }
+
+    if (att_server == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    if (!att_server_can_send_packet(att_server, att_connection)) return BTSTACK_ACL_BUFFERS_FULL;
+
+    if (packet_buffer == NULL){
+        l2cap_reserve_packet_buffer();
+        packet_buffer = l2cap_get_outgoing_buffer();
+    }
+
+    *out_att_connection = att_connection;
+    *out_att_server = att_server;
+    *out_packet_buffer = packet_buffer;
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (!hci_connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1377,29 +1414,9 @@ uint8_t att_server_multiple_notify(hci_con_handle_t con_handle, uint8_t num_attr
     att_connection_t * att_connection = NULL;
     uint8_t * packet_buffer = NULL;
 
-    // prfer enhanced bearer
-#ifdef ENABLE_GATT_OVER_EATT
-    att_server_eatt_bearer_t * eatt_bearer = att_server_eatt_bearer_for_con_handle(con_handle);
-    if (eatt_bearer != NULL){
-        att_server     = &eatt_bearer->att_server;
-        att_connection = &eatt_bearer->att_connection;
-        packet_buffer  = eatt_bearer->send_buffer;
-    } else
-#endif
-    {
-        hci_connection_t *hci_connection = hci_connection_for_handle(con_handle);
-        if (hci_connection != NULL) {
-            att_server     = &hci_connection->att_server;
-            att_connection = &hci_connection->att_connection;
-        }
-    }
-
-    if (att_server == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    if (!att_server_can_send_packet(att_server, att_connection)) return BTSTACK_ACL_BUFFERS_FULL;
-
-    if (packet_buffer == NULL){
-        l2cap_reserve_packet_buffer();
-        packet_buffer = l2cap_get_outgoing_buffer();
+    uint8_t status = att_server_prepare_server_message(con_handle, &att_server, &att_connection, &packet_buffer);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
     }
 
     uint16_t size = att_prepare_handle_value_multiple_notification(att_connection, num_attributes, attribute_handles, values_data, values_len, packet_buffer);
