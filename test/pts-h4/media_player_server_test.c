@@ -678,7 +678,7 @@ static void mcs_seek_backward(mcs_media_player_t * media_player){
 
     uint32_t seeking_speed_delta_ms = mcs_seeking_speed_step(media_player);
 
-    // uint32_t track_duration_ms = current_tracks[media_player->current_track_index].track_duration_10ms * 10;
+    // uint32_t track_duration_ms = current_track->track_duration_10ms * 10;
     uint32_t track_position_ms = current_track->track_position_10ms * 10;
     uint32_t remaining_track_ms = track_position_ms;
 
@@ -767,6 +767,8 @@ static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * med
         default:
             break;
     }
+
+    printf("Update track info, title %s, length %d, pos %d\n", track->title, track->track_duration_10ms, track->track_position_10ms);
     media_control_service_server_update_current_track_info(media_player->id, track);
 
     if (notify_track_change){
@@ -806,9 +808,20 @@ static void mcs_seeking_speed_timer_timeout_handler(btstack_timer_source_t * tim
     }
 
     mcs_server_trigger_notifications(media_player);
+    log_info("timer restart");
 
+    // enforce fixed interval
+#if 0
     btstack_run_loop_set_timer(&mcs_seeking_speed_timer, MCS_MEDIA_PLAYER_TIMEOUT_IN_MS); 
+#else
+#ifdef ENABLE_TESTING_SUPPORT_REPLAY
+        mcs_seeking_speed_timer.timeout += MCS_MEDIA_PLAYER_TIMEOUT_IN_MS * 1000;
+#else
+        mcs_seeking_speed_timer.timeout += MCS_MEDIA_PLAYER_TIMEOUT_IN_MS;
+#endif    
+#endif
     btstack_run_loop_add_timer(&mcs_seeking_speed_timer);
+    
 }
 
 static void mcs_seeking_speed_timer_start(uint16_t media_player_id){
@@ -822,10 +835,12 @@ static void mcs_seeking_speed_timer_start(uint16_t media_player_id){
 
     btstack_run_loop_set_timer(&mcs_seeking_speed_timer, MCS_MEDIA_PLAYER_TIMEOUT_IN_MS); 
     btstack_run_loop_add_timer(&mcs_seeking_speed_timer);
+    log_info("timer start");
 }
 
 static void mcs_seeking_speed_timer_stop(uint16_t media_player_id){
     btstack_run_loop_remove_timer(&mcs_seeking_speed_timer);
+    log_info("timer stop");
 }
 
 static void mcs_server_execute_track_operation(mcs_media_player_t * media_player, 
