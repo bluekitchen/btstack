@@ -62,6 +62,12 @@ typedef struct {
 const btstack_tlv_t * btstack_tlv_posix_init_instance(btstack_tlv_posix_t * context, const char * db_path);
 
 /**
+ * Enable/disable writing to TLV file
+ * @param read_only, default: false
+ */
+void btstack_tlv_posix_set_read_only(bool read_only);
+
+/**
  * Free TLV entries
  * @param self
  */

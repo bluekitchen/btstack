@@ -67,9 +67,14 @@ typedef struct tlv_entry {
 	uint8_t  value[DUMMY_SIZE];	// dummy size
 } tlv_entry_t;
 
-static int btstack_tlv_posix_append_tag(btstack_tlv_posix_t * self, uint32_t tag, const uint8_t * data, uint32_t data_size){
+// testing support
+static bool btstack_tlv_posix_read_only;
 
-	if (!self->file) return 1;
+static void btstack_tlv_posix_append_tag(btstack_tlv_posix_t * self, uint32_t tag, const uint8_t * data, uint32_t data_size){
+
+	if (!self->file) return;
+
+    if (btstack_tlv_posix_read_only) return;
 
 	log_info("append tag %04x, len %u", tag, data_size);
 
@@ -77,13 +82,12 @@ static int btstack_tlv_posix_append_tag(btstack_tlv_posix_t * self, uint32_t tag
 	big_endian_store_32(header, 0, tag);
 	big_endian_store_32(header, 4, data_size);
 	size_t written_header = fwrite(header, 1, sizeof(header), self->file);
-	if (written_header != sizeof(header)) return 1;
+	if (written_header != sizeof(header)) return;
 	if (data_size > 0) {
 		size_t written_value = fwrite(data, 1, data_size, self->file);
-		if (written_value != data_size) return 1;
+		if (written_value != data_size) return;
 	}
 	fflush(self->file);
-	return 1;
 }
 
 static tlv_entry_t * btstack_tlv_posix_find_entry(btstack_tlv_posix_t * self, uint32_t tag){
@@ -269,9 +273,17 @@ const btstack_tlv_t * btstack_tlv_posix_init_instance(btstack_tlv_posix_t * self
 	memset(self, 0, sizeof(btstack_tlv_posix_t));
 	self->db_path = db_path;
 
+    btstack_tlv_posix_read_only = false;
+
 	// read DB
-	btstack_tlv_posix_read_db(self);
+    if (db_path != NULL){
+        btstack_tlv_posix_read_db(self);
+    }
 	return &btstack_tlv_posix;
+}
+
+void btstack_tlv_posix_set_read_only(bool read_only){
+    btstack_tlv_posix_read_only = read_only;
 }
 
 /**
