@@ -89,12 +89,16 @@
 #include "uECC.h"
 #endif
 
-// Software ECC-P256 implementation provided by mbedTLS
+// Software ECC-P256 implementation provided by mbedTLS, allow config via MBEDTLS_CONFIG_FILE
 #ifdef HAVE_MBEDTLS_ECC_P256
 #define ENABLE_ECC_P256
 #define USE_MBEDTLS_ECC_P256
 #define USE_SOFTWARE_ECC_P256_IMPLEMENTATION
-#include "mbedtls/config.h"
+#ifdef MBEDTLS_CONFIG_FILE
+#include MBEDTLS_CONFIG_FILE
+#else
+#include "mbedtls/mbedtls_config.h"
+#endif
 #include "mbedtls/platform.h"
 #include "mbedtls/ecp.h"
 #endif

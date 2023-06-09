@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Fixed
 ### Changed
+- btstack_crypto: allow MBEDTLS config via MBEDTLS_CONFIG_FILE
 
+ 
 ## Release v1.5.6
 
 ### Added
