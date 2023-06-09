@@ -95,6 +95,7 @@
 #define USE_MBEDTLS_ECC_P256
 #define USE_SOFTWARE_ECC_P256_IMPLEMENTATION
 #ifdef MBEDTLS_CONFIG_FILE
+// cppcheck-suppress preprocessorErrorDirective
 #include MBEDTLS_CONFIG_FILE
 #else
 #include "mbedtls/mbedtls_config.h"
