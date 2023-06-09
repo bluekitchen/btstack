@@ -758,6 +758,7 @@ static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * med
                     notify_track_position_change = false;
                     break;
             }
+            break;
 
         case MEDIA_CONTROL_POINT_OPCODE_PAUSE:
         case MEDIA_CONTROL_POINT_OPCODE_STOP:
@@ -837,6 +838,7 @@ static void mcs_server_execute_track_operation(mcs_media_player_t * media_player
         return;
     }
     mcs_seeking_speed_timer_stop(media_player->id);
+    
     switch (opcode){
         case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
             mcs_goto_first_track(media_player->id);
@@ -898,9 +900,15 @@ static void mcs_server_execute_track_operation(mcs_media_player_t * media_player
             mcs_current_track_apply_relative_offset(media_player->id, value_int32);
             break;
 
+        case MEDIA_CONTROL_POINT_OPCODE_STOP:
+            track->track_position_10ms = 0;
+            break;
+
         default:
             break;
     }
+    mcs_server_trigger_notifications_for_opcode(media_player, opcode);
+
     switch (media_player->media_state){
         case MCS_MEDIA_STATE_PLAYING:
         case MCS_MEDIA_STATE_SEEKING:
@@ -1043,20 +1051,15 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     return;
                         
                 case MEDIA_CONTROL_POINT_OPCODE_STOP:
-                    mcs_seeking_speed_timer_stop(media_player_id);
-                    // The track position shall be set to the beginning of the current track
-                    mcs_reset_current_track(media_player);
-
                     status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
                     if (status == ERROR_CODE_SUCCESS){
                          media_player->media_state = MCS_MEDIA_STATE_PAUSED;
                     }
-                    mcs_server_trigger_notifications_for_opcode(media_player, opcode);
+                    mcs_server_execute_track_operation(media_player, opcode, packet, size);
                     return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
                     mcs_server_execute_track_operation(media_player, opcode, packet, size);
-                    mcs_server_trigger_notifications_for_opcode(media_player, opcode);
                     break;
 
                 case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
@@ -1070,7 +1073,6 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                 case MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT:
                 case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
                     mcs_server_execute_track_operation(media_player, opcode, packet, size);
-                    mcs_server_trigger_notifications_for_opcode(media_player, opcode);
                     return;
 
                 case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
@@ -1087,7 +1089,6 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     }
 
                     mcs_server_execute_track_operation(media_player, opcode, packet, size);
-                    mcs_server_trigger_notifications_for_opcode(media_player, opcode);
                     return;
 
                 default:
