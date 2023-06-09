@@ -1142,6 +1142,7 @@ static void show_usage(void){
 
     printf("4 - goto 5th segment\n");
     printf("5 - goto last song\n");
+    printf("6 - goto second group\n");
 
     printf("j - set long media player name 1\n");
     printf("J - set long media player name 2\n");
@@ -1282,6 +1283,7 @@ int btstack_main(void)
     media_player1.current_track_index = previous_track_index;
     media_player1.track_groups = track_groups;
     media_player1.track_groups_num = previous_group_index;
+    media_player1.seeking_forward = true;
 
     mcs_track_t * current_track = mcs_get_current_track_for_media_player(&media_player1);
     btstack_assert(current_track != NULL);
