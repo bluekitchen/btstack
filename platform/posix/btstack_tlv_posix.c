@@ -68,13 +68,11 @@ typedef struct tlv_entry {
 } tlv_entry_t;
 
 // testing support
-static bool btstack_tlv_posix_read_only;
+static bool btstack_tlv_posix_read_only = false;
 
 static void btstack_tlv_posix_append_tag(btstack_tlv_posix_t * self, uint32_t tag, const uint8_t * data, uint32_t data_size){
 
 	if (!self->file) return;
-
-    if (btstack_tlv_posix_read_only) return;
 
 	log_info("append tag %04x, len %u", tag, data_size);
 
@@ -180,7 +178,8 @@ static int btstack_tlv_posix_store_tag(void * context, uint32_t tag, const uint8
 static int btstack_tlv_posix_read_db(btstack_tlv_posix_t * self){
 	// open file
 	log_info("open db %s", self->db_path);
-    self->file = fopen(self->db_path,"r+");
+    const char * mode = btstack_tlv_posix_read_only ? "r" : "r+";
+    self->file = fopen(self->db_path, mode);
     uint8_t header[BTSTACK_TLV_HEADER_LEN];
     if (self->file){
     	// checker header
@@ -239,6 +238,14 @@ static int btstack_tlv_posix_read_db(btstack_tlv_posix_t * self){
     		self->file = NULL;
 	    }
     }
+
+    // close file in read-only mode
+    if (btstack_tlv_posix_read_only && (self->file != NULL)){
+        fclose(self->file);
+        self->file = NULL;
+        return 0;
+    }
+
     if (!self->file){
     	// create truncate file
 	    self->file = fopen(self->db_path,"w+");
@@ -273,8 +280,6 @@ const btstack_tlv_t * btstack_tlv_posix_init_instance(btstack_tlv_posix_t * self
 	memset(self, 0, sizeof(btstack_tlv_posix_t));
 	self->db_path = db_path;
 
-    btstack_tlv_posix_read_only = false;
-
 	// read DB
     if (db_path != NULL){
         btstack_tlv_posix_read_db(self);
@@ -282,8 +287,8 @@ const btstack_tlv_t * btstack_tlv_posix_init_instance(btstack_tlv_posix_t * self
 	return &btstack_tlv_posix;
 }
 
-void btstack_tlv_posix_set_read_only(bool read_only){
-    btstack_tlv_posix_read_only = read_only;
+void btstack_tlv_posix_set_read_only(void){
+    btstack_tlv_posix_read_only = true;
 }
 
 /**
@@ -299,4 +304,5 @@ void btstack_tlv_posix_deinit(btstack_tlv_posix_t * self){
 		btstack_linked_list_iterator_remove(&it);
 		free(entry);
     }
+    btstack_tlv_posix_read_only = true;
 }
