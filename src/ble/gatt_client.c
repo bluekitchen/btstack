@@ -249,6 +249,11 @@ uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu){
     return GATT_CLIENT_IN_WRONG_STATE;
 }
 
+static uint8_t *gatt_client_reserve_request_buffer(gatt_client_t *gatt_client) {
+    l2cap_reserve_packet_buffer();
+    return l2cap_get_outgoing_buffer();
+}
+
 // precondition: can_send_packet_now == TRUE
 static uint8_t gatt_client_send(gatt_client_t * gatt_client, uint16_t len){
 #ifdef ENABLE_GATT_OVER_CLASSIC
@@ -261,9 +266,8 @@ static uint8_t gatt_client_send(gatt_client_t * gatt_client, uint16_t len){
 
 // precondition: can_send_packet_now == TRUE
 static uint8_t att_confirmation(gatt_client_t * gatt_client) {
-    l2cap_reserve_packet_buffer();
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
 
-    uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = ATT_HANDLE_VALUE_CONFIRMATION;
 
     return gatt_client_send(gatt_client, 1);
@@ -272,8 +276,7 @@ static uint8_t att_confirmation(gatt_client_t * gatt_client) {
 // precondition: can_send_packet_now == TRUE
 static uint8_t att_find_information_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t start_handle,
                                             uint16_t end_handle) {
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
 
     request[0] = request_type;
     little_endian_store_16(request, 1, start_handle);
@@ -286,10 +289,9 @@ static uint8_t att_find_information_request(gatt_client_t *gatt_client, uint8_t 
 static uint8_t
 att_find_by_type_value_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t attribute_group_type,
                                uint16_t start_handle, uint16_t end_handle, uint8_t *value, uint16_t value_size) {
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
-    
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
     request[0] = request_type;
+
     little_endian_store_16(request, 1, start_handle);
     little_endian_store_16(request, 3, end_handle);
     little_endian_store_16(request, 5, attribute_group_type);
@@ -302,8 +304,7 @@ att_find_by_type_value_request(gatt_client_t *gatt_client, uint8_t request_type,
 static uint8_t
 att_read_by_type_or_group_request_for_uuid16(gatt_client_t *gatt_client, uint8_t request_type, uint16_t uuid16,
                                              uint16_t start_handle, uint16_t end_handle) {
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
 
     request[0] = request_type;
     little_endian_store_16(request, 1, start_handle);
@@ -317,8 +318,7 @@ att_read_by_type_or_group_request_for_uuid16(gatt_client_t *gatt_client, uint8_t
 static uint8_t
 att_read_by_type_or_group_request_for_uuid128(gatt_client_t *gatt_client, uint8_t request_type, const uint8_t *uuid128,
                                               uint16_t start_handle, uint16_t end_handle) {
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
 
     request[0] = request_type;
     little_endian_store_16(request, 1, start_handle);
@@ -330,8 +330,7 @@ att_read_by_type_or_group_request_for_uuid128(gatt_client_t *gatt_client, uint8_
 
 // precondition: can_send_packet_now == TRUE
 static uint8_t att_read_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t attribute_handle) {
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
 
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
@@ -342,8 +341,8 @@ static uint8_t att_read_request(gatt_client_t *gatt_client, uint8_t request_type
 // precondition: can_send_packet_now == TRUE
 static uint8_t att_read_blob_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t attribute_handle,
                                      uint16_t value_offset) {
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
+
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
     little_endian_store_16(request, 3, value_offset);
@@ -353,11 +352,11 @@ static uint8_t att_read_blob_request(gatt_client_t *gatt_client, uint8_t request
 
 static uint8_t
 att_read_multiple_request(gatt_client_t *gatt_client, uint16_t num_value_handles, uint16_t *value_handles) {
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
+
     request[0] = ATT_READ_MULTIPLE_REQUEST;
-    int i;
-    int offset = 1;
+    uint16_t i;
+    uint16_t offset = 1;
     for (i=0;i<num_value_handles;i++){
         little_endian_store_16(request, offset, value_handles[i]);
         offset += 2;
@@ -370,8 +369,8 @@ att_read_multiple_request(gatt_client_t *gatt_client, uint16_t num_value_handles
 // precondition: can_send_packet_now == TRUE
 static uint8_t att_signed_write_request(gatt_client_t *gatt_client, uint16_t request_type, uint16_t attribute_handle,
                                         uint16_t value_length, uint8_t *value, uint32_t sign_counter, uint8_t sgn[8]) {
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
+
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
     (void)memcpy(&request[3], value, value_length);
@@ -386,8 +385,8 @@ static uint8_t att_signed_write_request(gatt_client_t *gatt_client, uint16_t req
 static uint8_t
 att_write_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t attribute_handle, uint16_t value_length,
                   uint8_t *value) {
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
+
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
     (void)memcpy(&request[3], value, value_length);
@@ -397,8 +396,8 @@ att_write_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t att
 
 // precondition: can_send_packet_now == TRUE
 static uint8_t att_execute_write_request(gatt_client_t *gatt_client, uint8_t request_type, uint8_t execute_write) {
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
+
     request[0] = request_type;
     request[1] = execute_write;
     
@@ -408,8 +407,8 @@ static uint8_t att_execute_write_request(gatt_client_t *gatt_client, uint8_t req
 // precondition: can_send_packet_now == TRUE
 static uint8_t att_prepare_write_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t attribute_handle,
                                          uint16_t value_offset, uint16_t blob_length, uint8_t *value) {
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
+
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
     little_endian_store_16(request, 3, value_offset);
@@ -419,10 +418,10 @@ static uint8_t att_prepare_write_request(gatt_client_t *gatt_client, uint8_t req
 }
 
 static uint8_t att_exchange_mtu_request(gatt_client_t *gatt_client) {
-    uint16_t mtu = l2cap_max_le_mtu();
-    l2cap_reserve_packet_buffer();
-    uint8_t * request = l2cap_get_outgoing_buffer();
+    uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
+
     request[0] = ATT_EXCHANGE_MTU_REQUEST;
+    uint16_t mtu = l2cap_max_le_mtu();
     little_endian_store_16(request, 1, mtu);
     
     return gatt_client_send(gatt_client, 3);
