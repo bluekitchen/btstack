@@ -196,6 +196,8 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static gatt_client_notification_t gatt_client_notification;
 
+static uint8_t eatt_buffer[1000];
+
 static void show_usage(void);
 ///
 
@@ -891,6 +893,7 @@ static void show_usage(void){
     printf_row("t   - terminate connection, stop connecting");
     printf_row("p   - auto connect to PTS");
     printf_row("P   - direct connect to PTS");
+    printf_row("H   - setup LE EATT Bearer to PTS");
     printf_row("w   - signed write on characteristic with UUID %04x", pts_signed_write_characteristic_uuid);
     printf_row("W   - signed write on attribute with handle 0x%04x and value 0x12", pts_signed_write_characteristic_handle);
     printf_row("z   - Update L2CAP Connection Parameters");
@@ -1520,6 +1523,11 @@ static void ui_process_command(char buffer){
         case 'h':
             central_state = CENTRAL_W4_DISCOVER_CHARACTERISTIC_DESCRIPTORS;
             ui_request_uint16("Please enter handle: ");
+            break;
+        case 'H':
+            // setup eatt
+            printf("Setup EATT Bearer over LE\n");
+            gatt_client_le_enhanced_connect(handle_gatt_client_event, handle, 2, eatt_buffer, sizeof(eatt_buffer));
             break;
         case 'j':
             central_state = CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_HANDLE;
