@@ -280,15 +280,17 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
     return 0;
 }
 
-/**
- * @brief Set up HIDS Device
- */
-void hids_device_init(uint8_t country_code, const uint8_t * descriptor, uint16_t descriptor_size){
+void hids_device_init_with_storage(uint8_t hid_country_code, const uint8_t * hid_descriptor, uint16_t hid_descriptor_size, 
+    uint16_t num_reports, hids_device_report_t * report_storage){
+    
     hids_device_t * instance = hids_device_create_instance();
     
-    instance->hid_country_code    = country_code;
-    instance->hid_descriptor      = descriptor;
-    instance->hid_descriptor_size = descriptor_size;
+    btstack_assert(num_reports > 0);
+    btstack_assert(report_storage != NULL);
+
+    instance->hid_country_code    = hid_country_code;
+    instance->hid_descriptor      = hid_descriptor;
+    instance->hid_descriptor_size = hid_descriptor_size;
 
     // default
     instance->hid_protocol_mode   = 1;
@@ -297,8 +299,8 @@ void hids_device_init(uint8_t country_code, const uint8_t * descriptor, uint16_t
     uint16_t start_handle = 0;
     uint16_t end_handle   = 0xffff;
     int service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE, &start_handle, &end_handle);
-	btstack_assert(service_found != 0);
-	UNUSED(service_found);
+    btstack_assert(service_found != 0);
+    UNUSED(service_found);
 
     // get report map handle
     instance->hid_report_map_handle                               = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT_MAP);
@@ -323,9 +325,9 @@ void hids_device_init(uint8_t country_code, const uint8_t * descriptor, uint16_t
     log_info("hid_boot_keyboard_input_client_configuration_handle 0x%02x", instance->hid_boot_keyboard_input_client_configuration_handle);
     log_info("hid_control_point_value_handle                      0x%02x", instance->hid_control_point_value_handle);
 
-    instance->hid_reports = hid_reports_storage;
+    instance->hid_reports = report_storage;
     
-    uint16_t hid_reports_num = sizeof(hid_reports_storage)/sizeof(hids_device_report_t);
+    uint16_t hid_reports_num = num_reports;
     uint16_t assigned_reports_num = 0;
     uint16_t start_chr_handle = start_handle;
     
@@ -382,6 +384,14 @@ void hids_device_init(uint8_t country_code, const uint8_t * descriptor, uint16_t
     hid_service.read_callback  = &att_read_callback;
     hid_service.write_callback = &att_write_callback;
     att_server_register_service_handler(&hid_service);
+}
+
+/**
+ * @brief Set up HIDS Device
+ */
+void hids_device_init(uint8_t country_code, const uint8_t * descriptor, uint16_t descriptor_size){
+    uint16_t hid_reports_num = sizeof(hid_reports_storage)/sizeof(hids_device_report_t);
+    hids_device_init_with_storage(country_code, descriptor, descriptor_size, hid_reports_num, &hid_reports_storage[0]);
 }
 
 /**

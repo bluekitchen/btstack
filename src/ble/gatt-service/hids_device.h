@@ -74,6 +74,12 @@ typedef struct {
 void hids_device_init(uint8_t hid_country_code, const uint8_t * hid_descriptor, uint16_t hid_descriptor_size);
 
 /**
+ * @brief Set up HIDS Device for multiple instances of INPUT, OUTPUT and FEATURE reports
+ */
+void hids_device_init_with_storage(uint8_t hid_country_code, const uint8_t * hid_descriptor, uint16_t hid_descriptor_size, 
+    uint16_t num_reports, hids_device_report_t * report_storage);
+
+/**
  * @brief Register callback for the HIDS Device client.
  * @param callback
  */
