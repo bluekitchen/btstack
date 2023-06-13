@@ -298,6 +298,15 @@ uint16_t att_read_callback_handle_byte(uint8_t value, uint16_t offset, uint8_t *
  */
 uint16_t att_uuid_for_handle(uint16_t attribute_handle);
 
+/**
+ * @brief Get const value for handle
+ * @param attribute_handle
+ * @param out_value_len  output variable that hold value len
+ * @return value 
+ */
+
+const uint8_t * gatt_server_get_const_value_for_handle(uint16_t attribute_handle, uint16_t * out_value_len);
+
 // experimental GATT Server API
 
 /**

@@ -194,13 +194,27 @@ uint16_t att_uuid_for_handle(uint16_t attribute_handle){
     att_iterator_t it;
     int ok = att_find_handle(&it, attribute_handle);
     if (!ok){
-        return 0;
+        return 0u;
     }
     if ((it.flags & (uint16_t)ATT_PROPERTY_UUID128) != 0u){
         return 0u;
     }
     return little_endian_read_16(it.uuid, 0);
 }
+
+const uint8_t * gatt_server_get_const_value_for_handle(uint16_t attribute_handle, uint16_t * out_value_len){
+    att_iterator_t it;
+    int ok = att_find_handle(&it, attribute_handle);
+    if (!ok){
+        return 0u;
+    }
+    if ((it.flags & (uint16_t)ATT_PROPERTY_DYNAMIC) != 0u){
+        return 0u;
+    }
+    *out_value_len = it.value_len;
+    return it.value;
+}
+
 // end of client API
 
 static void att_update_value_len(att_iterator_t *it, uint16_t offset, hci_con_handle_t con_handle) {
