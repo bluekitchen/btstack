@@ -45,6 +45,7 @@
 
 #include <stdint.h>
 #include "btstack_defines.h"
+#include "btstack_hid.h"
 #include "bluetooth.h"
 
 #if defined __cplusplus
@@ -53,13 +54,22 @@ extern "C" {
 
 /* API_START */
 
+typedef struct {
+    uint16_t value_handle;
+    uint16_t client_configuration_handle;
+    uint16_t client_configuration_value;
+
+    hid_report_type_t type;
+    uint16_t id;
+} hids_device_report_t;
+
 /**
  * @text Implementation of the GATT HIDS Device
  * To use with your application, add '#import <hids.gatt>' to your .gatt file
  */
 
 /**
- * @brief Set up HIDS Device
+ * @brief Set up HIDS Device with single INPUT, OUTPUT and FEATURE report 
  */
 void hids_device_init(uint8_t hid_country_code, const uint8_t * hid_descriptor, uint16_t hid_descriptor_size);
 
@@ -75,6 +85,11 @@ void hids_device_register_packet_handler(btstack_packet_handler_t callback);
  * @param hid_cid
  */
 void hids_device_request_can_send_now_event(hci_con_handle_t con_handle);
+
+/**
+ * @brief Send HID Report with given ID
+ */
+uint8_t hids_device_send_report_with_id(hci_con_handle_t con_handle, uint16_t report_id, const uint8_t * report, uint16_t report_len);
 
 /**
  * @brief Send HID Report: Input
