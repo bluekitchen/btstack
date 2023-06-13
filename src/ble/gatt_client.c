@@ -257,12 +257,17 @@ static uint8_t *gatt_client_reserve_request_buffer(gatt_client_t *gatt_client) {
 
 // precondition: can_send_packet_now == TRUE
 static uint8_t gatt_client_send(gatt_client_t * gatt_client, uint16_t len){
+    switch (gatt_client->bearer_type){
+        case ATT_BEARER_UNENHANCED_LE:
+            return l2cap_send_prepared_connectionless(gatt_client->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, len);
 #ifdef ENABLE_GATT_OVER_CLASSIC
-    if (gatt_client->l2cap_psm){
-        return l2cap_send_prepared(gatt_client->l2cap_cid, len);
-    }
+        case ATT_BEARER_UNENHANCED_CLASSIC:
+            return l2cap_send_prepared(gatt_client->l2cap_cid, len);
 #endif
-    return l2cap_send_prepared_connectionless(gatt_client->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, len);
+        default:
+            btstack_unreachable();
+            return ERROR_CODE_HARDWARE_FAILURE;
+    }
 }
 
 // precondition: can_send_packet_now == TRUE
@@ -1009,12 +1014,15 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     bool client_request_pending = gatt_client->gatt_client_state != P_READY;
 
     // verify security level for Mandatory Authentication over LE
-    bool check_security = true;
-#ifdef ENABLE_GATT_OVER_CLASSIC
-    if (gatt_client->l2cap_psm != 0){
-        check_security = false;
+    bool check_security;
+    switch (gatt_client->bearer_type){
+        case ATT_BEARER_UNENHANCED_LE:
+            check_security = true;
+            break;
+        default:
+            check_security = false;
+            break;
     }
-#endif
     if (client_request_pending && (gatt_client_required_security_level > gatt_client->security_level) && check_security){
         log_info("Trigger pairing, current security level %u, required %u\n", gatt_client->security_level, gatt_client_required_security_level);
         gatt_client->wait_for_authentication_complete = 1;
@@ -1276,44 +1284,54 @@ static void gatt_client_run(void){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) gatt_client_connections; it != NULL; it = it->next){
         gatt_client_t * gatt_client = (gatt_client_t *) it;
+        switch (gatt_client->bearer_type){
+            case ATT_BEARER_UNENHANCED_LE:
+                if (!att_dispatch_client_can_send_now(gatt_client->con_handle)) {
+                    att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
+                    return;
+                }
+                bool packet_sent = gatt_client_run_for_gatt_client(gatt_client);
+                if (packet_sent){
+                    // request new permission
+                    att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
+                    // requeue client for fairness and exit
+                    // note: iterator has become invalid
+                    btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
+                    btstack_linked_list_add_tail(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
+                    return;
+                }
+                break;
 #ifdef ENABLE_GATT_OVER_CLASSIC
-        if (gatt_client->con_handle == HCI_CON_HANDLE_INVALID) {
-            continue;
+            case ATT_BEARER_UNENHANCED_CLASSIC:
+                if (gatt_client->con_handle == HCI_CON_HANDLE_INVALID) {
+                    continue;
+                }
+
+                // handle GATT over BR/EDR
+                if (gatt_client->l2cap_psm != 0){
+                    if (l2cap_can_send_packet_now(gatt_client->l2cap_cid) == false){
+                        l2cap_request_can_send_now_event(gatt_client->l2cap_cid);
+                        return;
+                    }
+                    bool packet_sent = gatt_client_run_for_gatt_client(gatt_client);
+                    if (packet_sent){
+                        // request new permission
+                        att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
+                        // requeue client for fairness and exit
+                        // note: iterator has become invalid
+                        btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
+                        btstack_linked_list_add_tail(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
+                        return;
+                    }
+                }
+                break;
+#endif
+            default:
+                btstack_unreachable();
+                break;
         }
 
-        // handle GATT over BR/EDR
-        if (gatt_client->l2cap_psm != 0){
-            if (l2cap_can_send_packet_now(gatt_client->l2cap_cid) == false){
-                l2cap_request_can_send_now_event(gatt_client->l2cap_cid);
-                return;
-            }
-            bool packet_sent = gatt_client_run_for_gatt_client(gatt_client);
-            if (packet_sent){
-                // request new permission
-                att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
-                // requeue client for fairness and exit
-                // note: iterator has become invalid
-                btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
-                btstack_linked_list_add_tail(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
-                return;
-            }
-        }
-#endif
-        // handle GATT over LE
-        if (!att_dispatch_client_can_send_now(gatt_client->con_handle)) {
-            att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
-            return;
-        }
-        bool packet_sent = gatt_client_run_for_gatt_client(gatt_client);
-        if (packet_sent){
-            // request new permission
-            att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
-            // requeue client for fairness and exit 
-            // note: iterator has become invalid
-            btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
-            btstack_linked_list_add_tail(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
-            return;
-        }
+
     }
 }
 
@@ -1590,23 +1608,30 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
     switch (packet[0]) {
         case ATT_EXCHANGE_MTU_RESPONSE: {
             if (size < 3u) break;
-            bool update_att_mtu = true;
+            bool update_gatt_server_att_mtu = false;
             uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
             uint16_t local_rx_mtu = l2cap_max_le_mtu();
+            switch (gatt_client->bearer_type){
+                case ATT_BEARER_UNENHANCED_LE:
+                    update_gatt_server_att_mtu = true;
+                    break;
 #ifdef ENABLE_GATT_OVER_CLASSIC
-            if (gatt_client->l2cap_psm != 0){
-                local_rx_mtu = gatt_client->mtu;
-            } else {
-                update_att_mtu = false;
-            }
+                case ATT_BEARER_UNENHANCED_CLASSIC:
+                    local_rx_mtu = gatt_client->mtu;
+                    break;
 #endif
+                default:
+                    btstack_unreachable();
+                    break;
+            }
+
             uint16_t mtu = (remote_rx_mtu < local_rx_mtu) ? remote_rx_mtu : local_rx_mtu;
 
             // set gatt client mtu
             gatt_client->mtu = mtu;
             gatt_client->mtu_state = MTU_EXCHANGED;
 
-            if (update_att_mtu){
+            if (update_gatt_server_att_mtu){
                 // set per connection mtu state - for fixed channel
                 hci_connection_t *hci_connection = hci_connection_for_handle(gatt_client->con_handle);
                 hci_connection->att_connection.mtu = gatt_client->mtu;
