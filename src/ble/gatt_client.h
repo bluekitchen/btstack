@@ -163,6 +163,8 @@ typedef struct gatt_client{
 
     hci_con_handle_t con_handle;
 
+    att_bearer_type_t bearer_type;
+
 #ifdef ENABLE_GATT_OVER_CLASSIC
     bd_addr_t addr;
     uint16_t  l2cap_psm;

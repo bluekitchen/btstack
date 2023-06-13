@@ -179,6 +179,7 @@ static uint8_t gatt_client_provide_context_for_handle(hci_con_handle_t con_handl
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     } 
     // init state
+    gatt_client->bearer_type = ATT_BEARER_UNENHANCED_LE;
     gatt_client->con_handle = con_handle;
     gatt_client->mtu = ATT_DEFAULT_MTU;
     gatt_client->security_level = gatt_client_le_security_level_for_connection(con_handle);
@@ -2813,6 +2814,7 @@ uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
     // init state
+    gatt_client->bearer_type = ATT_BEARER_UNENHANCED_CLASSIC;
     gatt_client->con_handle = HCI_CON_HANDLE_INVALID;
     memcpy(gatt_client->addr, addr, 6);
     gatt_client->mtu = ATT_DEFAULT_MTU;
