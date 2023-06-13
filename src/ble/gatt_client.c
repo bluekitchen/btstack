@@ -189,6 +189,9 @@ static uint8_t gatt_client_provide_context_for_handle(hci_con_handle_t con_handl
         gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
     }
     gatt_client->gatt_client_state = P_READY;
+#ifdef ENABLE_GATT_OVER_EATT
+    gatt_client->eatt_state = GATT_CLIENT_EATT_IDLE;
+#endif
     btstack_linked_list_add(&gatt_client_connections, (btstack_linked_item_t*)gatt_client);
 
     // get unenhanced att bearer state
@@ -2849,6 +2852,9 @@ uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t
     gatt_client->sdp_query_request.callback = &gatt_client_classic_sdp_start;
     gatt_client->sdp_query_request.context = gatt_client;
     gatt_client->callback = callback;
+#ifdef ENABLE_GATT_OVER_EATT
+    gatt_client->eatt_state = GATT_CLIENT_EATT_IDLE;
+#endif
     btstack_linked_list_add(&gatt_client_connections, (btstack_linked_item_t*)gatt_client);
     sdp_client_register_query_callback(&gatt_client->sdp_query_request);
     return ERROR_CODE_SUCCESS;

@@ -144,6 +144,17 @@ typedef enum{
     MTU_AUTO_EXCHANGE_DISABLED
 } gatt_client_mtu_t;
 
+#ifdef ENABLE_GATT_OVER_EATT
+typedef enum {
+    GATT_CLIENT_EATT_IDLE,
+    GATT_CLIENT_EATT_W2_READ_SERVER_SUPPORTED_FEATURES,
+    GATT_CLIENT_EATT_W4_READ_SERVER_SUPPORTED_FEATURES,
+    GATT_CLIENT_EATT_W2_FIND_CLIENT_SUPPORTED_FEATURES,
+    GATT_CLIENT_EATT_W4_WRITE_ClIENT_SUPPORTED_FEATURES,
+    GATT_CLIENT_EATT_READY,
+} gatt_client_eatt_state_t;
+#endif
+
 typedef struct gatt_client{
     btstack_linked_item_t    item;
     // TODO: rename gatt_client_state -> state
@@ -170,6 +181,11 @@ typedef struct gatt_client{
     uint16_t  l2cap_psm;
     uint16_t  l2cap_cid;
     btstack_context_callback_registration_t sdp_query_request;
+#endif
+
+#ifdef ENABLE_GATT_OVER_EATT
+    gatt_client_eatt_state_t eatt_state;
+    uint16_t gatt_client_supported_features_handle;
 #endif
 
     uint16_t          mtu;
