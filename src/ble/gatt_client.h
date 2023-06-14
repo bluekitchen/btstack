@@ -147,10 +147,14 @@ typedef enum{
 #ifdef ENABLE_GATT_OVER_EATT
 typedef enum {
     GATT_CLIENT_EATT_IDLE,
-    GATT_CLIENT_EATT_W2_READ_SERVER_SUPPORTED_FEATURES,
-    GATT_CLIENT_EATT_W4_READ_SERVER_SUPPORTED_FEATURES,
-    GATT_CLIENT_EATT_W2_FIND_CLIENT_SUPPORTED_FEATURES,
-    GATT_CLIENT_EATT_W4_WRITE_ClIENT_SUPPORTED_FEATURES,
+    GATT_CLIENT_EATT_READ_SERVER_SUPPORTED_FEATURES_W2_SEND,
+    GATT_CLIENT_EATT_READ_SERVER_SUPPORTED_FEATURES_W4_VALUE,
+    GATT_CLIENT_EATT_READ_SERVER_SUPPORTED_FEATURES_W4_DONE,
+    GATT_CLIENT_EATT_FIND_CLIENT_SUPPORTED_FEATURES_W2_SEND,
+    GATT_CLIENT_EATT_FIND_CLIENT_SUPPORTED_FEATURES_W4_CHARACTERISTIC,
+    GATT_CLIENT_EATT_FIND_CLIENT_SUPPORTED_FEATURES_W4_DONE,
+    GATT_CLIENT_EATT_WRITE_ClIENT_SUPPORTED_FEATURES_W2_SEND,
+    GATT_CLIENT_EATT_WRITE_ClIENT_SUPPORTED_FEATURES_W4_DONE,
     GATT_CLIENT_EATT_READY,
 } gatt_client_eatt_state_t;
 #endif
@@ -301,6 +305,17 @@ uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t
  * @return status
  */
 uint8_t gatt_client_classic_disconnect(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
+
+/**
+ *
+ * @param callback
+ * @param con_handle
+ * @param num_channels
+ * @param storage_buffer
+ * @param storage_size
+ * @return
+ */
+uint8_t gatt_client_le_enhanced_connect(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint8_t num_channels, uint8_t * storage_buffer, uint16_t storage_size);
 
 /**
  * @brief MTU is available after the first query has completed. If status is equal to ERROR_CODE_SUCCESS, it returns the real value, 
