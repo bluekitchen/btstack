@@ -86,11 +86,16 @@ void hfp_h2_framing_add_header(hfp_h2_framing_t * hfp_h2_framing, uint8_t * buff
     hfp_h2_framing->sequence_number = (hfp_h2_framing->sequence_number + 1) & 3;
 }
 
+static void hfp_codec_reset_sco_buffer(hfp_codec_t *hfp_codec) {
+    hfp_codec->read_pos = 0;
+    hfp_codec->write_pos = 0;
+}
+
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 void hfp_codec_init_msbc(hfp_codec_t * hfp_codec, btstack_sbc_encoder_state_t * msbc_encoder_context){
     memset(hfp_codec, 0, sizeof(hfp_codec_t));
     hfp_h2_framing_init(&hfp_codec->h2_framing);
-    hfp_codec->write_pos = 0;
+    hfp_codec_reset_sco_buffer(hfp_codec);
     hfp_codec->samples_per_frame = 120;
     hfp_codec->encode = &hfp_codec_encode_msbc;
     hfp_codec->msbc_encoder_context = msbc_encoder_context;
@@ -102,7 +107,7 @@ void hfp_codec_init_msbc(hfp_codec_t * hfp_codec, btstack_sbc_encoder_state_t * 
 void hfp_codec_init_lc3_swb(hfp_codec_t * hfp_codec, const btstack_lc3_encoder_t * lc3_encoder, void * lc3_encoder_context){
     memset(hfp_codec, 0, sizeof(hfp_codec_t));
     hfp_h2_framing_init(&hfp_codec->h2_framing);
-    hfp_codec->write_pos = 0;
+    hfp_codec_reset_sco_buffer(hfp_codec);
     hfp_codec->samples_per_frame = 240;
     hfp_codec->encode = &hfp_codec_encode_lc3swb;
     // init lc3 encoder
@@ -175,8 +180,7 @@ void hfp_codec_read_from_stream(hfp_codec_t * hfp_codec, uint8_t * buf, uint16_t
 
     // reset buffer
     if (hfp_codec->read_pos == hfp_codec->write_pos){
-        hfp_codec->read_pos = 0;
-        hfp_codec->write_pos = 0;
+        hfp_codec_reset_sco_buffer(hfp_codec);
     }
 
     log_debug("Read %u from stream, read %u, write %u", size, hfp_codec->read_pos, hfp_codec->write_pos);
