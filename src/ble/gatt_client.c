@@ -607,12 +607,6 @@ static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client){
     }
 }
 
-static void gatt_client_handle_transaction_complete(gatt_client_t * gatt_client){
-    gatt_client->gatt_client_state = P_READY;
-    gatt_client_timeout_stop(gatt_client);
-    gatt_client_notify_can_send_query(gatt_client);
-}
-
 static void emit_event_new(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
     if (!callback) return;
     hci_dump_packet(HCI_EVENT_PACKET, 1, packet, size);
@@ -745,6 +739,13 @@ static void report_gatt_services(gatt_client_t * gatt_client, uint8_t * packet, 
         }
         emit_gatt_service_query_result_event(gatt_client, start_group_handle, end_group_handle, uuid128);
     }
+}
+
+static void gatt_client_handle_transaction_complete(gatt_client_t *gatt_client, uint8_t att_status) {
+    gatt_client->gatt_client_state = P_READY;
+    gatt_client_timeout_stop(gatt_client);
+    emit_gatt_complete_event(gatt_client, att_status);
+    gatt_client_notify_can_send_query(gatt_client);
 }
 
 // helper
@@ -931,8 +932,7 @@ static int is_query_done(gatt_client_t * gatt_client, uint16_t last_result_handl
 
 static void trigger_next_query(gatt_client_t * gatt_client, uint16_t last_result_handle, gatt_client_state_t next_query_state){
     if (is_query_done(gatt_client, last_result_handle)){
-        gatt_client_handle_transaction_complete(gatt_client);
-        emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+        gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
         return;
     }
     // next
@@ -983,8 +983,7 @@ static void trigger_next_blob_query(gatt_client_t * gatt_client, gatt_client_sta
 
     uint16_t max_blob_length = gatt_client->mtu - 1u;
     if (received_blob_length < max_blob_length){
-        gatt_client_handle_transaction_complete(gatt_client);
-        emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+        gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
         return;
     }
 
@@ -1077,8 +1076,7 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
         case P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR:
             if (gatt_client->attribute_length <= (gatt_client->mtu - 3u)) break;
             log_error("gatt_client_run: value len %u > MTU %u - 3\n", gatt_client->attribute_length,gatt_client->mtu);
-            gatt_client_handle_transaction_complete(gatt_client);
-            emit_gatt_complete_event(gatt_client, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+            gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
             return false;
         default:
             break;
@@ -1232,8 +1230,7 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
                     }
                     break;
                 case IRK_LOOKUP_FAILED:
-                    gatt_client_handle_transaction_complete(gatt_client);
-                    emit_gatt_complete_event(gatt_client, ATT_ERROR_BONDING_INFORMATION_MISSING);
+                    gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_BONDING_INFORMATION_MISSING);
                     break;
                 default:
                     break;
@@ -1256,8 +1253,7 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
             // send signed write command
             send_gatt_signed_write_request(gatt_client, sign_counter);
             // finally, notifiy client that write is complete
-            gatt_client_handle_transaction_complete(gatt_client);
-            emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+            gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
             break;
         }
 #endif
@@ -1350,8 +1346,7 @@ static void gatt_client_run(void){
 
 static void gatt_client_report_error_if_pending(gatt_client_t *gatt_client, uint8_t att_error_code) {
     if (is_ready(gatt_client) == 1) return;
-    gatt_client_handle_transaction_complete(gatt_client);
-    emit_gatt_complete_event(gatt_client, att_error_code);
+    gatt_client_handle_transaction_complete(gatt_client, att_error_code);
 }
 
 static void gatt_client_handle_reencryption_complete(const uint8_t * packet){
@@ -1392,13 +1387,11 @@ static void gatt_client_handle_reencryption_complete(const uint8_t * packet){
             }
 #endif
             // report bonding information missing
-            gatt_client_handle_transaction_complete(gatt_client);
-            emit_gatt_complete_event(gatt_client, ATT_ERROR_BONDING_INFORMATION_MISSING);
+            gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_BONDING_INFORMATION_MISSING);
             break;
         default:
             // report bonding information missing
-            gatt_client_handle_transaction_complete(gatt_client);
-            emit_gatt_complete_event(gatt_client, gatt_client->pending_error_code);
+            gatt_client_handle_transaction_complete(gatt_client, gatt_client->pending_error_code);
             break;
     }
 }
@@ -1490,15 +1483,13 @@ static void gatt_client_handle_att_read_response(gatt_client_t *gatt_client, uin
 
         case P_W4_READ_CHARACTERISTIC_VALUE_RESULT:
             report_gatt_characteristic_value(gatt_client, gatt_client->attribute_handle, &packet[1], size - 1u);
-            gatt_client_handle_transaction_complete(gatt_client);
-            emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+            gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
             break;
 
         case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:
             report_gatt_characteristic_descriptor(gatt_client, gatt_client->attribute_handle, &packet[1],
                                                   size - 1u, 0u);
-            gatt_client_handle_transaction_complete(gatt_client);
-            emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+            gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
             break;
 
             // Use ATT_READ_REQUEST for first blob of Read Long Characteristic
@@ -1600,16 +1591,13 @@ static void gatt_client_handle_att_read_by_type_response(gatt_client_t *gatt_cli
 static void gatt_client_handle_att_write_response(gatt_client_t *gatt_client) {
     switch (gatt_client->gatt_client_state) {
         case P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
-            gatt_client_handle_transaction_complete(gatt_client);
-            emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+            gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
             break;
         case P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT:
-            gatt_client_handle_transaction_complete(gatt_client);
-            emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+            gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
             break;
         case P_W4_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
-            gatt_client_handle_transaction_complete(gatt_client);
-            emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+            gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
             break;
         default:
             break;
@@ -1767,13 +1755,12 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
         case ATT_PREPARE_WRITE_RESPONSE:
             switch (gatt_client->gatt_client_state) {
                 case P_W4_PREPARE_WRITE_SINGLE_RESULT:
-                    gatt_client_handle_transaction_complete(gatt_client);
                     if (is_value_valid(gatt_client, packet, size)) {
                         att_status = ATT_ERROR_SUCCESS;
                     } else {
                         att_status = ATT_ERROR_DATA_MISMATCH;
                     }
-                    emit_gatt_complete_event(gatt_client, att_status);
+                    gatt_client_handle_transaction_complete(gatt_client, att_status);
                     break;
 
                 case P_W4_PREPARE_WRITE_RESULT: {
@@ -1808,20 +1795,16 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
         case ATT_EXECUTE_WRITE_RESPONSE:
             switch (gatt_client->gatt_client_state) {
                 case P_W4_EXECUTE_PREPARED_WRITE_RESULT:
-                    gatt_client_handle_transaction_complete(gatt_client);
-                    emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+                    gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
                     break;
                 case P_W4_CANCEL_PREPARED_WRITE_RESULT:
-                    gatt_client_handle_transaction_complete(gatt_client);
-                    emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+                    gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
                     break;
                 case P_W4_CANCEL_PREPARED_WRITE_DATA_MISMATCH_RESULT:
-                    gatt_client_handle_transaction_complete(gatt_client);
-                    emit_gatt_complete_event(gatt_client, ATT_ERROR_DATA_MISMATCH);
+                    gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_DATA_MISMATCH);
                     break;
                 case P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
-                    gatt_client_handle_transaction_complete(gatt_client);
-                    emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+                    gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
                     break;
                 default:
                     break;
@@ -1833,8 +1816,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
             switch (gatt_client->gatt_client_state) {
                 case P_W4_READ_MULTIPLE_RESPONSE:
                     report_gatt_characteristic_value(gatt_client, 0u, &packet[1], size - 1u);
-                    gatt_client_handle_transaction_complete(gatt_client);
-                    emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+                    gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
                     break;
                 default:
                     break;
@@ -1851,23 +1833,20 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                         case P_W4_SERVICE_WITH_UUID_RESULT:
                         case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
                         case P_W4_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
-                            gatt_client_handle_transaction_complete(gatt_client);
-                            emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+                            gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
                             break;
                         case P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT:
                         case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
                             characteristic_end_found(gatt_client, gatt_client->end_group_handle);
-                            gatt_client_handle_transaction_complete(gatt_client);
-                            emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+                            gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
                             break;
                         case P_W4_READ_BY_TYPE_RESPONSE:
-                            gatt_client_handle_transaction_complete(gatt_client);
                             if (gatt_client->start_group_handle == gatt_client->query_start_handle) {
                                 att_status = ATT_ERROR_ATTRIBUTE_NOT_FOUND;
                             } else {
                                 att_status = ATT_ERROR_SUCCESS;
                             }
-                            emit_gatt_complete_event(gatt_client, att_status);
+                            gatt_client_handle_transaction_complete(gatt_client, att_status);
                             break;
                         default:
                             gatt_client_report_error_if_pending(gatt_client, att_status);
