@@ -165,6 +165,7 @@
 #include "le-audio/gatt-service/media_control_service_client.h"
 #include "le-audio/gatt-service/microphone_control_service_client.h"
 #include "le-audio/gatt-service/microphone_control_service_server.h"
+#include "le-audio/gatt-service/object_transfer_service_server.h"
 #include "le-audio/gatt-service/published_audio_capabilities_service_client.h"
 #include "le-audio/gatt-service/published_audio_capabilities_service_server.h"
 #include "le-audio/gatt-service/volume_control_service_server.h"
