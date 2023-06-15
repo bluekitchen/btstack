@@ -2216,7 +2216,6 @@ uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t
     }
 
     if (characteristic->value_handle == characteristic->end_handle){
-        emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
         return ERROR_CODE_SUCCESS;
     }
     gatt_client->callback = callback;
