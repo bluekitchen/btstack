@@ -1489,15 +1489,15 @@ static void gatt_client_handle_att_read_response(gatt_client_t *gatt_client, uin
             break;
 
         case P_W4_READ_CHARACTERISTIC_VALUE_RESULT:
-            gatt_client_handle_transaction_complete(gatt_client);
             report_gatt_characteristic_value(gatt_client, gatt_client->attribute_handle, &packet[1], size - 1u);
+            gatt_client_handle_transaction_complete(gatt_client);
             emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
             break;
 
         case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:
-            gatt_client_handle_transaction_complete(gatt_client);
             report_gatt_characteristic_descriptor(gatt_client, gatt_client->attribute_handle, &packet[1],
                                                   size - 1u, 0u);
+            gatt_client_handle_transaction_complete(gatt_client);
             emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
             break;
 
