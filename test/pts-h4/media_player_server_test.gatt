@@ -1,4 +1,5 @@
 PRIMARY_SERVICE, GAP_SERVICE
 CHARACTERISTIC, GAP_DEVICE_NAME, READ, "GATT Media Player Server"
 
+#import <object_transfer_service.gatt>
 #import <media_control_service.gatt>
