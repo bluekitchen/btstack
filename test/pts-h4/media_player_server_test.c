@@ -101,6 +101,10 @@ static const le_extended_advertising_parameters_t extended_params = {
 
 static void setup_advertising(void);
 
+// Object Transfer Server (OTS)
+#define OTS_MAX_CLIENTS_NUM 3
+static  object_transfer_service_connection_t ots_clients[OTS_MAX_CLIENTS_NUM];
+
 // Media Player Server (MCS)
 
 #define MCS_MEDIA_PLAYER_TIMEOUT_IN_MS  500
@@ -768,7 +772,7 @@ static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * med
             break;
     }
 
-    printf("Update track info, title %s, length %d, pos %d\n", track->title, track->track_duration_10ms, track->track_position_10ms);
+    // printf("Update track info, title %s, length %d, pos %d\n", track->title, track->track_duration_10ms, track->track_position_10ms);
     media_control_service_server_update_current_track_info(media_player->id, track);
 
     if (notify_track_change){
@@ -932,6 +936,9 @@ static void mcs_server_execute_track_operation(mcs_media_player_t * media_player
         default:
             break;
     } 
+}
+
+static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 }
 
 static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1282,6 +1289,10 @@ int btstack_main(void)
     sm_allow_ltk_reconstruction_without_le_device_db_entry(0);
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
+
+    // setup OTS
+    object_transfer_service_server_init(0x3FF, 0x0F, OTS_MAX_CLIENTS_NUM, ots_clients);
+    object_transfer_service_server_register_packet_handler(&ots_server_packet_handler);
 
     // setup MCS
     media_control_service_server_init();
