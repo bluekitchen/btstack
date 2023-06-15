@@ -113,7 +113,7 @@ void hfp_codec_init_lc3_swb(hfp_codec_t * hfp_codec, const btstack_lc3_encoder_t
     // init lc3 encoder
     hfp_codec->lc3_encoder = lc3_encoder;
     hfp_codec->lc3_encoder_context = lc3_encoder_context;
-    hfp_codec->lc3_encoder->configure(&hfp_codec->lc3_encoder_context, 32000, BTSTACK_LC3_FRAME_DURATION_7500US, LC3_SWB_OCTETS_PER_FRAME);
+    hfp_codec->lc3_encoder->configure(hfp_codec->lc3_encoder_context, 32000, BTSTACK_LC3_FRAME_DURATION_7500US, LC3_SWB_OCTETS_PER_FRAME);
 }
 #endif
 
@@ -139,7 +139,7 @@ static void hfp_codec_encode_msbc(hfp_codec_t * hfp_codec, int16_t * pcm_samples
 #ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
 static void hfp_codec_encode_lc3swb(hfp_codec_t * hfp_codec, int16_t * pcm_samples){
     // Encode LC3 Frame
-    hfp_codec->lc3_encoder->encode_signed_16(&hfp_codec->lc3_encoder_context, pcm_samples, 1, &hfp_codec->sco_packet[hfp_codec->write_pos]);
+    hfp_codec->lc3_encoder->encode_signed_16(hfp_codec->lc3_encoder_context, pcm_samples, 1, &hfp_codec->sco_packet[hfp_codec->write_pos]);
     hfp_codec->write_pos += LC3_SWB_OCTETS_PER_FRAME;
 }
 #endif
