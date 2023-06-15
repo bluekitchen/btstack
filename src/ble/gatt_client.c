@@ -1617,7 +1617,7 @@ static void gatt_client_handle_att_write_response(gatt_client_t *gatt_client) {
 }
 
 static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size) {
-    uint8_t error_code;
+    uint8_t att_status;
     switch (packet[0]) {
         case ATT_EXCHANGE_MTU_RESPONSE: {
             if (size < 3u) break;
@@ -1769,10 +1769,11 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                 case P_W4_PREPARE_WRITE_SINGLE_RESULT:
                     gatt_client_handle_transaction_complete(gatt_client);
                     if (is_value_valid(gatt_client, packet, size)) {
-                        emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+                        att_status = ATT_ERROR_SUCCESS;
                     } else {
-                        emit_gatt_complete_event(gatt_client, ATT_ERROR_DATA_MISMATCH);
+                        att_status = ATT_ERROR_DATA_MISMATCH;
                     }
+                    emit_gatt_complete_event(gatt_client, att_status);
                     break;
 
                 case P_W4_PREPARE_WRITE_RESULT: {
@@ -1842,8 +1843,8 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
 
         case ATT_ERROR_RESPONSE:
             if (size < 5u) return;
-            error_code = packet[4];
-            switch (error_code) {
+            att_status = packet[4];
+            switch (att_status) {
                 case ATT_ERROR_ATTRIBUTE_NOT_FOUND: {
                     switch (gatt_client->gatt_client_state) {
                         case P_W4_SERVICE_QUERY_RESULT:
@@ -1862,13 +1863,14 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                         case P_W4_READ_BY_TYPE_RESPONSE:
                             gatt_client_handle_transaction_complete(gatt_client);
                             if (gatt_client->start_group_handle == gatt_client->query_start_handle) {
-                                emit_gatt_complete_event(gatt_client, ATT_ERROR_ATTRIBUTE_NOT_FOUND);
+                                att_status = ATT_ERROR_ATTRIBUTE_NOT_FOUND;
                             } else {
-                                emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
+                                att_status = ATT_ERROR_SUCCESS;
                             }
+                            emit_gatt_complete_event(gatt_client, att_status);
                             break;
                         default:
-                            gatt_client_report_error_if_pending(gatt_client, error_code);
+                            gatt_client_report_error_if_pending(gatt_client, att_status);
                             break;
                     }
                     break;
@@ -1882,7 +1884,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
 
                         // security too low
                         if (gatt_client->security_counter > 0) {
-                            gatt_client_report_error_if_pending(gatt_client, error_code);
+                            gatt_client_report_error_if_pending(gatt_client, att_status);
                             break;
                         }
                         // start security
@@ -1954,7 +1956,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                         }
 
                         if (!retry) {
-                            gatt_client_report_error_if_pending(gatt_client, error_code);
+                            gatt_client_report_error_if_pending(gatt_client, att_status);
                             break;
                         }
 
@@ -1962,7 +1964,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
 
                         // start pairing for higher security level
                         gatt_client->wait_for_authentication_complete = 1;
-                        gatt_client->pending_error_code = error_code;
+                        gatt_client->pending_error_code = att_status;
                         sm_request_pairing(gatt_client->con_handle);
                         break;
                     }
@@ -1971,7 +1973,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                     // nothing we can do about that
                 case ATT_ERROR_INSUFFICIENT_AUTHORIZATION:
                 default:
-                    gatt_client_report_error_if_pending(gatt_client, error_code);
+                    gatt_client_report_error_if_pending(gatt_client, att_status);
                     break;
             }
             break;
