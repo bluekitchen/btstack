@@ -1,0 +1,341 @@
+/*
+ * Copyright (C) 2021 BlueKitchen GmbH
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ * 4. Any redistribution, use, or modification is done solely for
+ *    personal benefit and not for any commercial purpose or for
+ *    monetary gain.
+ *
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
+ *
+ */
+
+#define BTSTACK_FILE__ "object_transfer_service_server.c"
+
+/**
+ * Implementation of the GATT Battery Service Server 
+ * To use with your application, add '#import <media_control_service.gatt' to your .gatt file
+ */
+
+#ifdef ENABLE_TESTING_SUPPORT
+#include <stdio.h>
+#endif
+
+#include "ble/att_db.h"
+#include "ble/att_server.h"
+#include "bluetooth_gatt.h"
+#include "btstack_debug.h"
+#include "btstack_defines.h"
+#include "btstack_event.h"
+#include "btstack_util.h"
+
+#include "le-audio/gatt-service/object_transfer_service_server.h"
+
+typedef enum {
+    OTS_FEATURE_INDEX = 0, 
+    OTS_OBJECT_NAME_INDEX, 
+    OTS_OBJECT_TYPE_INDEX, 
+    OTS_OBJECT_SIZE_INDEX, 
+    OTS_OBJECT_FIRST_CREATED_INDEX, 
+    OTS_OBJECT_LAST_MODIFIED_INDEX, 
+    OTS_OBJECT_ID_INDEX, 
+    OTS_OBJECT_PROPERTIES_INDEX, 
+    OTS_OBJECT_ACTION_CONTROL_POINT_INDEX, 
+    OTS_OBJECT_LIST_CONTROL_POINT_INDEX, 
+    OTS_OBJECT_LIST_FILTER_INDEX, 
+    OTS_OBJECT_CHANGED_INDEX, 
+    OTS_CHARACTERISTICS_NUM
+} ots_characteristic_index_t;
+
+typedef struct {
+    uint16_t  value_handle;
+    uint16_t  client_configuration_handle;
+    uint16_t  client_configuration;
+} ots_characteristic_t;
+
+static att_service_handler_t    object_transfer_service_server;
+static btstack_packet_handler_t ots_server_event_callback;
+
+static object_transfer_service_connection_t * ots_clients;
+static uint8_t  ots_clients_num = 0;
+
+static ots_characteristic_t  ots_characteristics[OTS_CHARACTERISTICS_NUM];
+static uint32_t ots_oacp_features;
+static uint32_t ots_olcp_features;
+
+static object_transfer_service_connection_t * ots_server_find_connection_for_con_handle(hci_con_handle_t con_handle){
+    if (con_handle == HCI_CON_HANDLE_INVALID){
+        return NULL;
+    }
+
+    uint16_t i;
+    for (i = 0; i < ots_clients_num; i++){
+        if (ots_clients[i].con_handle == con_handle) {
+            return &ots_clients[i];
+        }
+    }
+    return NULL;
+}
+
+static object_transfer_service_connection_t * ots_server_add_connection_for_con_handle(hci_con_handle_t con_handle){
+    if (con_handle == HCI_CON_HANDLE_INVALID){
+        return NULL;
+    }
+
+    uint16_t i;
+    for (i = 0; i < ots_clients_num; i++){
+        if (ots_clients[i].con_handle == HCI_CON_HANDLE_INVALID){
+            ots_clients[i].con_handle = con_handle;
+            return &ots_clients[i];
+        }
+    }
+    return NULL;
+}
+
+static uint16_t ots_client_configuration_handle(ots_characteristic_index_t index){
+    return ots_characteristics[index].client_configuration_handle;
+}
+
+static uint16_t ots_client_value_handle(ots_characteristic_index_t index){
+    return ots_characteristics[index].value_handle;
+}
+
+static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_NAME)){
+        // TODO
+        return 0;
+    } 
+    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_TYPE)){
+        // TODO
+        return 0;
+    } 
+    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_SIZE)){
+        // TODO
+        return 0;
+    } 
+    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED)){
+        // TODO
+        return 0;
+    } 
+    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED)){
+        // TODO
+        return 0;
+    } 
+    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ID)){
+        // TODO
+        return 0;
+    } 
+    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_PROPERTIES)){
+        // TODO
+        return 0;
+    } 
+    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER)){
+        // TODO
+        return 0;
+    } 
+
+    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OTS_FEATURE)){
+        uint8_t ots_features[8];
+        little_endian_store_32(ots_features, 0, ots_oacp_features);
+        little_endian_store_32(ots_features, 4, ots_olcp_features);
+        return att_read_callback_handle_blob(ots_features, sizeof(ots_features), offset, buffer, buffer_size); 
+    }
+    
+    // handle indication
+    if (attribute_handle == ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
+        return att_read_callback_handle_little_endian_16(ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT), offset, buffer, buffer_size); 
+    }
+    
+    if (attribute_handle == ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
+       return att_read_callback_handle_little_endian_16(ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT), offset, buffer, buffer_size); 
+    }
+
+    if (attribute_handle == ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED)){
+        return att_read_callback_handle_little_endian_16(ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED), offset, buffer, buffer_size); 
+    }
+
+    return 0;
+}
+
+static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    object_transfer_service_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        connection = ots_server_add_connection_for_con_handle(con_handle);
+        if (connection == NULL){
+            return 0;
+        }
+    }
+
+    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
+        // TODO
+    } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
+        // TODO
+    } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_NAME)){
+        // TODO
+    } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED)){
+        // TODO
+    } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED)){
+        // TODO
+    } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER)){
+        // TODO
+    } else if (attribute_handle == ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
+        connection->oacp_configuration = little_endian_read_16(buffer, 0);
+
+    } else if (attribute_handle == ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
+        connection->olcp_configuration = little_endian_read_16(buffer, 0);
+    
+    } else if (attribute_handle == ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED)){
+        connection->object_changed_configuration = little_endian_read_16(buffer, 0);
+    }
+    
+    return 0;
+}
+
+static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(packet);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET){
+        return;
+    }
+
+    hci_con_handle_t con_handle;
+    object_transfer_service_connection_t * connection;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+
+            connection = ots_server_find_connection_for_con_handle(con_handle);
+            if (connection == NULL){
+                break;
+            }
+            
+            memset(connection, 0, sizeof(object_transfer_service_connection_t));
+            connection->con_handle = HCI_CON_HANDLE_INVALID;
+            break;
+        default:
+            break;
+    }
+}
+
+uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olcp_features, uint8_t const clients_num, object_transfer_service_connection_t * clients){
+    btstack_assert(clients_num != 0);
+    
+    uint16_t start_handle = 0;
+    uint16_t end_handle   = 0xffff;
+    bool service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER, &start_handle, &end_handle);
+    
+    if (!service_found){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+    log_info("Found OTS service 0x%02x-0x%02x", start_handle, end_handle);
+
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("Found OTS Service 0x%02x - 0x%02x \n", start_handle, end_handle);
+#endif
+
+    const uint16_t characteristic_uuids[] = {
+        ORG_BLUETOOTH_CHARACTERISTIC_OTS_FEATURE                , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_NAME                , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_TYPE                , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_SIZE                , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED       , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED       , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ID                  , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_PROPERTIES          , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT, 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT  , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER         , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED             , 
+    };
+
+#ifdef ENABLE_TESTING_SUPPORT
+    const char * characteristic_uuid_names[]= {
+        "ots feature                ", 
+        "object name                ", 
+        "object type                ", 
+        "object size                ", 
+        "object first created       ", 
+        "object last modified       ", 
+        "object id                  ", 
+        "object properties          ", 
+        "object action control point", 
+        "object list control point  ", 
+        "object list filter         ", 
+        "object changed             ", 
+    };
+#endif
+
+    ots_oacp_features = oacp_features;
+    ots_olcp_features = olcp_features;
+
+    ots_clients_num = clients_num;
+    ots_clients = clients;
+    memset(ots_clients, 0, sizeof(object_transfer_service_connection_t) * ots_clients_num);
+    uint16_t i;
+    for (i = 0; i < ots_clients_num; i++){
+        ots_clients[i].con_handle = HCI_CON_HANDLE_INVALID;
+    }
+
+    uint16_t ots_services_end_handle = end_handle;
+    uint16_t ots_services_start_handle = start_handle;
+
+    for (i = 0; i < OTS_CHARACTERISTICS_NUM; i++){
+        ots_characteristics[i].value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(ots_services_start_handle, ots_services_end_handle, characteristic_uuids[i]);
+        ots_characteristics[i].client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(ots_services_start_handle, ots_services_end_handle, characteristic_uuids[i]);
+
+        if (ots_characteristics[i].client_configuration_handle != 0){
+            ots_services_start_handle = ots_characteristics[i].client_configuration_handle + 1;
+        } else {
+            ots_services_start_handle = ots_characteristics[i].value_handle + 1;
+        }
+
+#ifdef ENABLE_TESTING_SUPPORT
+        printf("    %s      0x%02x\n", characteristic_uuid_names[i], ots_characteristics[i].value_handle);
+        if (ots_characteristics[i].client_configuration_handle != 0){
+            printf("    %s CCC  0x%02x\n", characteristic_uuid_names[i], ots_characteristics[i].client_configuration_handle);
+        }
+#endif
+    }
+
+    // register service with ATT Server
+    object_transfer_service_server.start_handle   = start_handle;
+    object_transfer_service_server.end_handle     = end_handle;
+    object_transfer_service_server.read_callback  = &ots_server_read_callback;
+    object_transfer_service_server.write_callback = &ots_server_write_callback;
+    object_transfer_service_server.packet_handler = ots_server_packet_handler;
+    att_server_register_service_handler(&object_transfer_service_server);
+    return ERROR_CODE_SUCCESS;
+}
+
+void object_transfer_service_server_register_packet_handler(btstack_packet_handler_t packet_handler){
+    btstack_assert(packet_handler != NULL);
+    ots_server_event_callback = packet_handler;
+}
