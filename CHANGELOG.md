@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Fixed
 - HFP: use 'don't care' to accept SCO connections, fixes issue on ESP32
-
+- HFP: fix LC3-WB init
+ 
 ### Changed
 
 ## Release v1.5.6
