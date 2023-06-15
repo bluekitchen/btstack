@@ -147,14 +147,15 @@ typedef enum{
 #ifdef ENABLE_GATT_OVER_EATT
 typedef enum {
     GATT_CLIENT_EATT_IDLE,
+    GATT_CLIENT_EATT_DISCOVER_GATT_SERVICE_W2_SEND,
+    GATT_CLIENT_EATT_DISCOVER_GATT_SERVICE_W4_DONE,
     GATT_CLIENT_EATT_READ_SERVER_SUPPORTED_FEATURES_W2_SEND,
-    GATT_CLIENT_EATT_READ_SERVER_SUPPORTED_FEATURES_W4_VALUE,
     GATT_CLIENT_EATT_READ_SERVER_SUPPORTED_FEATURES_W4_DONE,
     GATT_CLIENT_EATT_FIND_CLIENT_SUPPORTED_FEATURES_W2_SEND,
-    GATT_CLIENT_EATT_FIND_CLIENT_SUPPORTED_FEATURES_W4_CHARACTERISTIC,
     GATT_CLIENT_EATT_FIND_CLIENT_SUPPORTED_FEATURES_W4_DONE,
     GATT_CLIENT_EATT_WRITE_ClIENT_SUPPORTED_FEATURES_W2_SEND,
     GATT_CLIENT_EATT_WRITE_ClIENT_SUPPORTED_FEATURES_W4_DONE,
+    GATT_CLIENT_EATT_L2CAP_SETUP,
     GATT_CLIENT_EATT_READY,
 } gatt_client_eatt_state_t;
 #endif
@@ -189,6 +190,13 @@ typedef struct gatt_client{
 
 #ifdef ENABLE_GATT_OVER_EATT
     gatt_client_eatt_state_t eatt_state;
+    btstack_linked_list_t eatt_clients;
+    uint8_t * eatt_storage_buffer;
+    uint16_t eatt_storage_size;
+    uint8_t  eatt_num_clients;
+    uint8_t  gatt_server_supported_features;
+    uint16_t gatt_service_start_group_handle;
+    uint16_t gatt_service_end_group_handle;
     uint16_t gatt_client_supported_features_handle;
 #endif
 
@@ -307,11 +315,11 @@ uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t
 uint8_t gatt_client_classic_disconnect(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
 
 /**
- *
- * @param callback
+ * @brief Setup Enhanced LE Bearer with up to 5 channels on existing LE connection
+ * @param callback for GATT_EVENT_CONNECTED and GATT_EVENT_DISCONNECTED events
  * @param con_handle
  * @param num_channels
- * @param storage_buffer
+ * @param storage_buffer for L2CAP connection
  * @param storage_size
  * @return
  */
