@@ -141,6 +141,10 @@ static uint16_t ots_server_get_client_value_handle(ots_characteristic_index_t in
     return ots_characteristics[index].value_handle;
 }
 
+static void ots_server_reset_current_object_name(object_transfer_service_connection_t * connection){
+    // TODO
+}
+
 static void ots_server_emit_current_object_name_changed(object_transfer_service_connection_t * connection){
     // TODO
 }
@@ -362,9 +366,41 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         // TODO
     
     } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_NAME)){
-        btstack_strcpy(connection->current_object.name, sizeof(connection->current_object.name), (const char *)buffer);
-        ots_server_emit_current_object_name_changed(connection);
-    
+        uint16_t total_value_len = buffer_size + offset;
+        // handle long write
+        switch (transaction_mode){
+            case ATT_TRANSACTION_MODE_NONE:
+                if (buffer_size > strlen(connection->current_object.name)){
+                    return ATT_ERROR_WRITE_REQUEST_REJECTED;
+                }
+                btstack_strcpy(&connection->current_object.name[0], buffer_size, (const char *)buffer);
+                break;
+
+            case ATT_TRANSACTION_MODE_ACTIVE:
+                if (total_value_len > strlen(connection->current_object.name)){
+                    ots_server_reset_current_object_name(connection);
+                    return ATT_ERROR_WRITE_REQUEST_REJECTED;
+                }
+                btstack_strcpy(&connection->current_object.name[offset], buffer_size, (const char *)buffer);
+                return 0;
+
+            case ATT_TRANSACTION_MODE_CANCEL:
+                ots_server_reset_current_object_name(connection);
+                break;
+
+            case ATT_TRANSACTION_MODE_EXECUTE:
+                ots_server_emit_current_object_name_changed(connection);
+                break;
+
+            default:
+                return 0;
+        }
+        
+    } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_PROPERTIES)){
+        if (buffer_size >= 4){
+            connection->current_object.properties = little_endian_read_32(buffer, 0);
+            ots_server_emit_current_object_properties_changed(connection);
+        }
     } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED)){
         if (buffer_size >= 7){
             btstack_utc_read_time(buffer, buffer_size, &connection->current_object.first_created);
