@@ -72,6 +72,9 @@ typedef struct {
     ots_object_t current_object;
     bool current_object_locked;
     bool current_object_object_transfer_in_progress;
+
+    // offset, used in OACP write procedure
+    uint32_t current_size;
 } object_transfer_service_connection_t;
 
 
