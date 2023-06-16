@@ -84,6 +84,8 @@ typedef struct {
 
     uint16_t type_uuid16;
     uint8_t  type_uuid128[16];
+
+    uint32_t allocated_size;
 } ots_object_t;
 
 
