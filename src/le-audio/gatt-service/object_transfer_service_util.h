@@ -74,6 +74,16 @@ extern "C" {
 #define OLCP_FEATURE_MASK_REQUEST_NUMBER_OF_OBJECTS                     0x0004
 #define OLCP_FEATURE_MASK_CLEAR_MARKING                                 0x0008
 
+// Object Properties
+#define OBJECT_PROPERTY_MASK_DELETE                                     0x0001
+#define OBJECT_PROPERTY_MASK_EXECUTE                                    0x0002
+#define OBJECT_PROPERTY_MASK_READ                                       0x0004
+#define OBJECT_PROPERTY_MASK_WRITE                                      0x0008
+#define OBJECT_PROPERTY_MASK_APPEND                                     0x0010
+#define OBJECT_PROPERTY_MASK_TRUNCATE                                   0x0020
+#define OBJECT_PROPERTY_MASK_PATCH                                      0x0040
+#define OBJECT_PROPERTY_MASK_MARK                                       0x0080
+
 
 #define OTS_MAX_NAME_LENGHT         32
 
@@ -100,6 +110,8 @@ typedef struct {
     // Locally Unique Identifier: 0x000000000000 - Directory Listing Object, [0x000000000001, 0x0000000000FF] - RFU
     // luid >= 0x000000000100
     const ots_object_id_t luid;                   
+
+    uint32_t properties;
 
     char name[OTS_MAX_NAME_LENGHT];
 
