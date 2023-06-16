@@ -50,6 +50,12 @@
 extern "C" {
 #endif
 
+#define ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED                   0x80
+#define ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED                      0x81
+#define ATT_ERROR_RESPONSE_OTS_CONCURRENCY_LIMIT_EXCEEDED               0x82
+#define ATT_ERROR_RESPONSE_OTS_OBJECT_NAME_ALREADY_EXISTS               0x83
+
+
 // OACP (Object Action Control Point) feature masks
 #define OACP_FEATURE_MASK_CREATE                                        0x0001
 #define OACP_FEATURE_MASK_DELETE                                        0x0002
@@ -68,7 +74,18 @@ extern "C" {
 #define OLCP_FEATURE_MASK_REQUEST_NUMBER_OF_OBJECTS                     0x0004
 #define OLCP_FEATURE_MASK_CLEAR_MARKING                                 0x0008
 
+
+#define OTS_MAX_NAME_LENGHT         32
 /* API_START */
+
+typedef struct {
+    char name[OTS_MAX_NAME_LENGHT];
+} ots_object_metadata_t;
+
+typedef struct {
+    ots_object_metadata_t metadata;
+} ots_object_t;
+
 
 /* API_END */
 
