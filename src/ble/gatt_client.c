@@ -407,10 +407,10 @@ static uint8_t att_read_blob_request(gatt_client_t *gatt_client, uint8_t request
 }
 
 static uint8_t
-att_read_multiple_request(gatt_client_t *gatt_client, uint16_t num_value_handles, uint16_t *value_handles) {
+att_read_multiple_request_with_opcode(gatt_client_t *gatt_client, uint16_t num_value_handles, uint16_t *value_handles, uint8_t opcode) {
     uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
 
-    request[0] = ATT_READ_MULTIPLE_REQUEST;
+    request[0] = opcode;
     uint16_t i;
     uint16_t offset = 1;
     for (i=0;i<num_value_handles;i++){
@@ -420,6 +420,18 @@ att_read_multiple_request(gatt_client_t *gatt_client, uint16_t num_value_handles
 
     return gatt_client_send(gatt_client, offset);
 }
+
+static uint8_t
+att_read_multiple_request(gatt_client_t *gatt_client, uint16_t num_value_handles, uint16_t *value_handles) {
+    return att_read_multiple_request_with_opcode(gatt_client, num_value_handles, value_handles, ATT_READ_MULTIPLE_REQUEST);
+}
+
+#ifdef ENABLE_GATT_OVER_EATT
+static uint8_t
+att_read_multiple_variable_request(gatt_client_t *gatt_client, uint16_t num_value_handles, uint16_t *value_handles) {
+    return att_read_multiple_request_with_opcode(gatt_client, num_value_handles, value_handles, ATT_READ_MULTIPLE_VARIABLE_REQ);
+}
+#endif
 
 #ifdef ENABLE_LE_SIGNED_WRITE
 // precondition: can_send_packet_now == TRUE
@@ -568,6 +580,12 @@ static void send_gatt_read_blob_request(gatt_client_t *gatt_client){
 static void send_gatt_read_multiple_request(gatt_client_t * gatt_client){
     att_read_multiple_request(gatt_client, gatt_client->read_multiple_handle_count, gatt_client->read_multiple_handles);
 }
+
+#ifdef ENABLE_GATT_OVER_EATT
+static void send_gatt_read_multiple_variable_request(gatt_client_t * gatt_client){
+    att_read_multiple_variable_request(gatt_client, gatt_client->read_multiple_handle_count, gatt_client->read_multiple_handles);
+}
+#endif
 
 static void send_gatt_write_attribute_value_request(gatt_client_t * gatt_client){
     att_write_request(gatt_client, ATT_WRITE_REQUEST, gatt_client->attribute_handle, gatt_client->attribute_length,
@@ -1182,6 +1200,13 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
             gatt_client->gatt_client_state = P_W4_READ_MULTIPLE_RESPONSE;
             send_gatt_read_multiple_request(gatt_client);
             break;
+
+#ifdef ENABLE_GATT_OVER_EATT
+        case P_W2_SEND_READ_MULTIPLE_VARIABLE_REQUEST:
+            gatt_client->gatt_client_state = P_W4_READ_MULTIPLE_VARIABLE_RESPONSE;
+            send_gatt_read_multiple_variable_request(gatt_client);
+            break;
+#endif
 
         case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
             gatt_client->gatt_client_state = P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
@@ -1880,6 +1905,19 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
             }
             break;
 
+#ifdef ENABLE_GATT_OVER_EATT
+        case ATT_READ_MULTIPLE_VARIABLE_RSP:
+            switch (gatt_client->gatt_client_state) {
+                case P_W4_READ_MULTIPLE_RESPONSE:
+                    report_gatt_characteristic_value(gatt_client, 0u, &packet[1], size - 1u);
+                    gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
+                    break;
+                default:
+                    break;
+            }
+            break;
+#endif
+
         case ATT_ERROR_RESPONSE:
             if (size < 5u) return;
             att_status = packet[4];
@@ -1940,6 +1978,9 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                                 break;
                             case P_W4_READ_MULTIPLE_RESPONSE:
                                 gatt_client->gatt_client_state = P_W2_SEND_READ_MULTIPLE_REQUEST;
+                                break;
+                            case P_W4_READ_MULTIPLE_VARIABLE_RESPONSE:
+                                gatt_client->gatt_client_state = P_W2_SEND_READ_MULTIPLE_VARIABLE_REQUEST;
                                 break;
                             case P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
                                 gatt_client->gatt_client_state = P_W2_SEND_WRITE_CHARACTERISTIC_VALUE;
@@ -2343,20 +2384,38 @@ uint8_t gatt_client_read_long_value_of_characteristic(btstack_packet_handler_t c
     return gatt_client_read_long_value_of_characteristic_using_value_handle(callback, con_handle, characteristic->value_handle);
 }
 
-uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles){
+static uint8_t gatt_client_read_multiple_characteristic_values_with_state(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles, gatt_client_state_t state){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
 
+#ifdef ENABLE_GATT_OVER_EATT
+    if (state == P_W2_SEND_READ_MULTIPLE_VARIABLE_REQUEST){
+        if (gatt_client->bearer_type != ATT_BEARER_ENHANCED_LE){
+            return ERROR_CODE_COMMAND_DISALLOWED;
+        }
+    }
+#endif
+
     gatt_client->callback = callback;
     gatt_client->read_multiple_handle_count = num_value_handles;
     gatt_client->read_multiple_handles = value_handles;
-    gatt_client->gatt_client_state = P_W2_SEND_READ_MULTIPLE_REQUEST;
+    gatt_client->gatt_client_state = state;
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles){
+    return gatt_client_read_multiple_characteristic_values_with_state(callback, con_handle, num_value_handles, value_handles, P_W2_SEND_READ_MULTIPLE_REQUEST);
+}
+
+#ifdef ENABLE_GATT_OVER_EATT
+uint8_t gatt_client_read_multiple_variable_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles){
+    return gatt_client_read_multiple_characteristic_values_with_state(callback, con_handle, num_value_handles, value_handles, P_W2_SEND_READ_MULTIPLE_VARIABLE_REQUEST);
+}
+#endif
 
 uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client;

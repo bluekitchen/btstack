@@ -81,6 +81,9 @@ typedef enum {
     P_W2_SEND_READ_MULTIPLE_REQUEST,
     P_W4_READ_MULTIPLE_RESPONSE,
 
+    P_W2_SEND_READ_MULTIPLE_VARIABLE_REQUEST,
+    P_W4_READ_MULTIPLE_VARIABLE_RESPONSE,
+
     P_W2_SEND_WRITE_CHARACTERISTIC_VALUE,
     P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT,
     
@@ -629,7 +632,21 @@ uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_of
  */
 uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles);
 
-/** 
+/*
+ * @brief Read multiple varaible characteristic values. Only supported over LE Enhanced Bearer
+ * The all results are emitted via single GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT event,
+ * followed by the GATT_EVENT_QUERY_COMPLETE event, which marks the end of read.
+ * @param  callback
+ * @param  con_handle
+ * @param  num_value_handles
+ * @param  value_handles list of handles
+ * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found
+ *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
+ *                ERROR_CODE_SUCCESS         , if query is successfully registered
+ */
+uint8_t gatt_client_read_multiple_variable_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles);
+
+/**
  * @brief Writes the characteristic value using the characteristic's value handle without 
  * an acknowledgment that the write was successfully performed.
  * @param  con_handle   
