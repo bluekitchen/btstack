@@ -153,6 +153,9 @@ static void ots_server_emit_current_object_last_modified_time_changed(object_tra
     // TODO
 }
 
+static void ots_server_emit_current_object_properties_changed(object_transfer_service_connection_t * connection){
+    // TODO
+}
 
 static bool ots_current_object_valid_for_filters(object_transfer_service_connection_t * connection){
     // TODO
@@ -293,9 +296,11 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         if (!ots_current_object_valid(connection)){
             return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
         }
-        // TODO
-        return 0;
+        uint8_t properties[8];
+        little_endian_store_32(properties, 0, connection->current_object.properties);
+        return att_read_callback_handle_blob(properties, sizeof(properties), offset, buffer, buffer_size);
     } 
+
     if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER)){
         if (!ots_current_object_valid(connection)){
             return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
