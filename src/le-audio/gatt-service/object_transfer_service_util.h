@@ -99,7 +99,7 @@ typedef struct {
 
     // Locally Unique Identifier: 0x000000000000 - Directory Listing Object, [0x000000000001, 0x0000000000FF] - RFU
     // luid >= 0x000000000100
-    ots_object_id_t luid;                   
+    const ots_object_id_t luid;                   
 
     char name[OTS_MAX_NAME_LENGHT];
 

@@ -286,8 +286,8 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         if (!ots_current_object_valid(connection)){
             return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
         }
-        // TODO
-        return 0;
+        return att_read_callback_handle_blob((const uint8_t *)connection->current_object.luid, OTS_OBJECT_ID_LEN, offset, buffer, buffer_size);
+    
     } 
     if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_PROPERTIES)){
         if (!ots_current_object_valid(connection)){
