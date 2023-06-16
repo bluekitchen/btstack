@@ -89,6 +89,7 @@ typedef enum {
     CENTRAL_ENTER_OFFSET_4_READ_LONG_CHARACTERISTIC_DESCRIPTOR_BY_HANDLE,
     CENTRAL_W4_READ_LONG_CHARACTERISTIC_DESCRIPTOR_BY_HANDLE,
     CENTRAL_W4_READ_MULTIPLE_CHARACTERISTIC_VALUES,
+    CENTRAL_W4_READ_MULTIPLE_VARIABLE_CHARACTERISTIC_VALUES,
     CENTRAL_W4_WRITE_WITHOUT_RESPONSE,
     CENTRAL_W4_WRITE_CHARACTERICISTIC_VALUE,
     CENTRAL_ENTER_HANDLE_4_WRITE_LONG_CHARACTERISTIC_VALUE,
@@ -533,6 +534,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_HANDLE:
                 case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID:
                 case CENTRAL_W4_READ_MULTIPLE_CHARACTERISTIC_VALUES:
+                case CENTRAL_W4_READ_MULTIPLE_VARIABLE_CHARACTERISTIC_VALUES:
                     printf("Value: ");
                     printf_hexdump(value, value_length);
                     break;
@@ -1104,7 +1106,20 @@ static int ui_process_uint16_request(char buffer){
                     gatt_client_read_multiple_characteristic_values(handle_gatt_client_event, handle, ui_handles_count, ui_handles);
                 }
                 return 0;
-
+            case CENTRAL_W4_READ_MULTIPLE_VARIABLE_CHARACTERISTIC_VALUES:
+                if (ui_uint16){
+                    ui_handles[ui_handles_count++] = ui_uint16;
+                    ui_request_uint16("Please enter handle: ");
+                } else {
+                    int i;
+                    printf("Read multiple variable values, handles: ");
+                    for (i=0;i<ui_handles_count;i++){
+                        printf("0x%04x, ", ui_handles[i]);
+                    }
+                    printf("\n");
+                    gatt_client_read_multiple_variable_characteristic_values(handle_gatt_client_event, handle, ui_handles_count, ui_handles);
+                }
+                return 0;
             case CENTRAL_ENTER_HANDLE_4_WRITE_LONG_CHARACTERISTIC_VALUE:
                 ui_attribute_handle = ui_uint16;
                 ui_request_uint16("Please enter offset: ");
@@ -1557,6 +1572,11 @@ static void ui_process_command(char buffer){
             ui_request_uint16("Read Multiple Characteristic Values - enter 0 to complete list.\nPlease enter handle: ");
             ui_handles_count = 0;
             central_state = CENTRAL_W4_READ_MULTIPLE_CHARACTERISTIC_VALUES;
+            break;
+        case 'Z':
+            ui_request_uint16("Read Multiple Variable Characteristic Values - enter 0 to complete list.\nPlease enter handle: ");
+            ui_handles_count = 0;
+            central_state = CENTRAL_W4_READ_MULTIPLE_VARIABLE_CHARACTERISTIC_VALUES;
             break;
         case 'O':
             central_state = CENTRAL_W4_WRITE_WITHOUT_RESPONSE;
