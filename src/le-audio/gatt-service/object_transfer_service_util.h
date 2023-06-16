@@ -81,6 +81,9 @@ extern "C" {
 typedef struct {
     // metadata
     char name[OTS_MAX_NAME_LENGHT];
+
+    uint16_t type_uuid16;
+    uint8_t  type_uuid128[16];
 } ots_object_t;
 
 
