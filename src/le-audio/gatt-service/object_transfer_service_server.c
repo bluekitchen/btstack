@@ -123,11 +123,11 @@ static object_transfer_service_connection_t * ots_server_add_connection_for_con_
     return NULL;
 }
 
-static uint16_t ots_client_configuration_handle(ots_characteristic_index_t index){
+static uint16_t ots_server_get_client_configuration_handle(ots_characteristic_index_t index){
     return ots_characteristics[index].client_configuration_handle;
 }
 
-static uint16_t ots_client_value_handle(ots_characteristic_index_t index){
+static uint16_t ots_server_get_client_value_handle(ots_characteristic_index_t index){
     return ots_characteristics[index].value_handle;
 }
 
@@ -150,12 +150,26 @@ static bool ots_current_object_valid(object_transfer_service_connection_t * conn
 }
 
 static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    // handle indication
+    if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
+        return att_read_callback_handle_little_endian_16(ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT), offset, buffer, buffer_size); 
+    }
+    
+    if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
+       return att_read_callback_handle_little_endian_16(ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT), offset, buffer, buffer_size); 
+    }
+
+    if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED)){
+        return att_read_callback_handle_little_endian_16(ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED), offset, buffer, buffer_size); 
+    }
+
+
     object_transfer_service_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
     if (connection == NULL){
         return false;
     }
 
-    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_NAME)){
+    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_NAME)){
         if (buffer == NULL){
             // get len and check if we have up to date value
             if ((offset != 0) && !ots_current_object_valid(connection)){
@@ -170,55 +184,45 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         return att_read_callback_handle_blob((const uint8_t *)connection->current_object.name, strlen(connection->current_object.name), offset, buffer, buffer_size);
     }
 
-    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_TYPE)){
+    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_TYPE)){
+        if (!ots_current_object_valid(connection)){
+
+        }
+        return 0;
+    } 
+    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_SIZE)){
         // TODO
         return 0;
     } 
-    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_SIZE)){
+    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED)){
         // TODO
         return 0;
     } 
-    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED)){
+    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED)){
         // TODO
         return 0;
     } 
-    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED)){
+    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ID)){
         // TODO
         return 0;
     } 
-    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ID)){
+    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_PROPERTIES)){
         // TODO
         return 0;
     } 
-    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_PROPERTIES)){
-        // TODO
-        return 0;
-    } 
-    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER)){
+    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER)){
         // TODO
         return 0;
     } 
 
-    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OTS_FEATURE)){
+    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OTS_FEATURE)){
         uint8_t ots_features[8];
         little_endian_store_32(ots_features, 0, ots_oacp_features);
         little_endian_store_32(ots_features, 4, ots_olcp_features);
         return att_read_callback_handle_blob(ots_features, sizeof(ots_features), offset, buffer, buffer_size); 
     }
     
-    // handle indication
-    if (attribute_handle == ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
-        return att_read_callback_handle_little_endian_16(ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT), offset, buffer, buffer_size); 
-    }
     
-    if (attribute_handle == ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
-       return att_read_callback_handle_little_endian_16(ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT), offset, buffer, buffer_size); 
-    }
-
-    if (attribute_handle == ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED)){
-        return att_read_callback_handle_little_endian_16(ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED), offset, buffer, buffer_size); 
-    }
-
     return 0;
 }
 
@@ -231,29 +235,29 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         }
     }
 
-    if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
+    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
         // TODO
-    } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
+    } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
         // TODO
-    } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_NAME)){
+    } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_NAME)){
         if (ots_current_object_valid(connection)){
             btstack_strcpy(connection->current_object.name, sizeof(connection->current_object.name), (const char *)buffer);
             ots_server_emit_current_object_name_changed(connection);
         }
   
-    } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED)){
+    } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED)){
         // TODO
-    } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED)){
+    } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED)){
         // TODO
-    } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER)){
+    } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER)){
         // TODO
-    } else if (attribute_handle == ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
+    } else if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
         connection->oacp_configuration = little_endian_read_16(buffer, 0);
 
-    } else if (attribute_handle == ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
+    } else if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
         connection->olcp_configuration = little_endian_read_16(buffer, 0);
     
-    } else if (attribute_handle == ots_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED)){
+    } else if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED)){
         connection->object_changed_configuration = little_endian_read_16(buffer, 0);
     }
     
