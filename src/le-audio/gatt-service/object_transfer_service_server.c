@@ -70,7 +70,8 @@ typedef enum {
     OTS_OBJECT_LIST_CONTROL_POINT_INDEX, 
     OTS_OBJECT_LIST_FILTER_INDEX, 
     OTS_OBJECT_CHANGED_INDEX, 
-    OTS_CHARACTERISTICS_NUM
+    OTS_CHARACTERISTICS_NUM,
+    OTS_CHARACTERISTICS_RFU
 } ots_characteristic_index_t;
 
 typedef struct {
@@ -130,11 +131,45 @@ static uint16_t ots_client_value_handle(ots_characteristic_index_t index){
     return ots_characteristics[index].value_handle;
 }
 
+static void ots_server_emit_current_object_name_changed(object_transfer_service_connection_t * connection){
+    // TODO
+}
+
+static bool ots_current_object_valid_for_filters(object_transfer_service_connection_t * connection){
+    // TODO
+    return true;
+}
+
+static bool ots_current_object_exists(object_transfer_service_connection_t * connection){
+    // TODO
+    return true;
+}
+
+static bool ots_current_object_valid(object_transfer_service_connection_t * connection){
+    return ots_current_object_exists(connection) && ots_current_object_valid_for_filters(connection);
+}
+
 static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    object_transfer_service_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return false;
+    }
+
     if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_NAME)){
-        // TODO
-        return 0;
-    } 
+        if (buffer == NULL){
+            // get len and check if we have up to date value
+            if ((offset != 0) && !ots_current_object_valid(connection)){
+                return (uint16_t)ATT_READ_ERROR_CODE_OFFSET + (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
+            }
+        } else {
+            // actual read (after everything was validated)
+            if ((offset == 0) && !ots_current_object_valid(connection)){
+                return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
+            }
+        }
+        return att_read_callback_handle_blob((const uint8_t *)connection->current_object.name, strlen(connection->current_object.name), offset, buffer, buffer_size);
+    }
+
     if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_TYPE)){
         // TODO
         return 0;
@@ -201,7 +236,11 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
         // TODO
     } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_NAME)){
-        // TODO
+        if (ots_current_object_valid(connection)){
+            btstack_strcpy(connection->current_object.name, sizeof(connection->current_object.name), (const char *)buffer);
+            ots_server_emit_current_object_name_changed(connection);
+        }
+  
     } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED)){
         // TODO
     } else if (attribute_handle == ots_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED)){
