@@ -85,6 +85,8 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
 
 void object_transfer_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
+void object_transfer_service_server_get_next_object_id(ots_object_id_t * object_id_out);
+
 /* API_END */
 
 #if defined __cplusplus
