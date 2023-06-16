@@ -79,6 +79,15 @@ extern "C" {
 /* API_START */
 
 typedef struct {
+    uint16_t year;
+    uint8_t  month;
+    uint8_t  day;
+    uint8_t  hours;
+    uint8_t  minutes;
+    uint8_t  seconds;
+} btstack_utc_t;
+
+typedef struct {
     // metadata
     char name[OTS_MAX_NAME_LENGHT];
 
@@ -86,6 +95,9 @@ typedef struct {
     uint8_t  type_uuid128[16];
 
     uint32_t allocated_size;
+
+    btstack_utc_t first_created;
+    btstack_utc_t last_modified;
 } ots_object_t;
 
 
