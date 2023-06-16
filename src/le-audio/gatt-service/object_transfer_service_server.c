@@ -219,7 +219,11 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         if (!ots_current_object_valid(connection)){
             return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
         }
-
+        if (connection->current_object.type_uuid16 != 0){
+            return att_read_callback_handle_little_endian_16(connection->current_object.type_uuid16, offset, buffer, buffer_size); 
+        } else {
+            att_read_callback_handle_blob((const uint8_t *)connection->current_object.type_uuid128, sizeof(connection->current_object.type_uuid128), offset, buffer, buffer_size);
+        }
         return 0;
     } 
     if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_SIZE)){
