@@ -52,6 +52,7 @@
 #include "btstack_debug.h"
 #include "btstack_defines.h"
 #include "btstack_event.h"
+#include "btstack_linked_list.h"
 #include "btstack_util.h"
 
 #include "le-audio/gatt-service/object_transfer_service_server.h"
@@ -78,13 +79,15 @@ typedef struct {
     uint16_t  client_configuration;
 } ots_characteristic_t;
 
+
 static att_service_handler_t    object_transfer_service_server;
 static btstack_packet_handler_t ots_server_event_callback;
 
-static object_transfer_service_connection_t * ots_clients;
-static uint8_t  ots_clients_num = 0;
+static btstack_linked_list_t ots_connections;
+static uint8_t  ots_connections_num = 0;
 
 static ots_characteristic_t  ots_characteristics[OTS_CHARACTERISTICS_NUM];
+
 static uint32_t ots_oacp_features;
 static uint32_t ots_olcp_features;
 
@@ -93,11 +96,12 @@ static object_transfer_service_connection_t * ots_server_find_connection_for_con
         return NULL;
     }
 
-    uint16_t i;
-    for (i = 0; i < ots_clients_num; i++){
-        if (ots_clients[i].con_handle == con_handle) {
-            return &ots_clients[i];
-        }
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &ots_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        object_transfer_service_connection_t * connection = (object_transfer_service_connection_t*) btstack_linked_list_iterator_next(&it);
+        if (connection->con_handle != con_handle) continue;
+        return connection;
     }
     return NULL;
 }
@@ -106,13 +110,14 @@ static object_transfer_service_connection_t * ots_server_add_connection_for_con_
     if (con_handle == HCI_CON_HANDLE_INVALID){
         return NULL;
     }
-
-    uint16_t i;
-    for (i = 0; i < ots_clients_num; i++){
-        if (ots_clients[i].con_handle == HCI_CON_HANDLE_INVALID){
-            ots_clients[i].con_handle = con_handle;
-            return &ots_clients[i];
-        }
+    
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &ots_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        object_transfer_service_connection_t * connection = (object_transfer_service_connection_t*) btstack_linked_list_iterator_next(&it);
+        if (connection->con_handle != HCI_CON_HANDLE_INVALID) continue;
+        connection->con_handle = con_handle;
+        return connection;
     }
     return NULL;
 }
@@ -216,6 +221,20 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     return 0;
 }
 
+static void ots_server_reset_connection_for_con_handle(hci_con_handle_t con_handle){
+    object_transfer_service_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return;
+    }
+    connection->con_handle = HCI_CON_HANDLE_INVALID;
+    connection->current_object_locked = false;
+    connection->current_object_object_transfer_in_progress = false;
+    connection->oacp_configuration = 0;
+    connection->olcp_configuration = 0;
+    connection->object_changed_configuration = 0;
+    connection->scheduled_tasks = 0;
+}
+
 static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(packet);
@@ -225,20 +244,9 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
         return;
     }
 
-    hci_con_handle_t con_handle;
-    object_transfer_service_connection_t * connection;
-
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
-
-            connection = ots_server_find_connection_for_con_handle(con_handle);
-            if (connection == NULL){
-                break;
-            }
-            
-            memset(connection, 0, sizeof(object_transfer_service_connection_t));
-            connection->con_handle = HCI_CON_HANDLE_INVALID;
+            ots_server_reset_connection_for_con_handle(hci_event_disconnection_complete_get_connection_handle(packet));
             break;
         default:
             break;
@@ -296,12 +304,13 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
     ots_oacp_features = oacp_features;
     ots_olcp_features = olcp_features;
 
-    ots_clients_num = clients_num;
-    ots_clients = clients;
-    memset(ots_clients, 0, sizeof(object_transfer_service_connection_t) * ots_clients_num);
+    ots_connections_num = clients_num;
+    memset(clients, 0, sizeof(object_transfer_service_connection_t) * ots_connections_num);
+    
     uint16_t i;
-    for (i = 0; i < ots_clients_num; i++){
-        ots_clients[i].con_handle = HCI_CON_HANDLE_INVALID;
+    for (i = 0; i < ots_connections_num; i++){
+        clients[i].con_handle = HCI_CON_HANDLE_INVALID;
+        btstack_linked_list_add(&ots_connections, (btstack_linked_item_t *) &clients[i]);
     }
 
     uint16_t ots_services_end_handle = end_handle;
