@@ -230,8 +230,10 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         if (!ots_current_object_valid(connection)){
             return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
         }
-        // TODO
-        return 0;
+        uint8_t object_size[8];
+        little_endian_store_32(object_size, 0, connection->current_size);
+        little_endian_store_32(object_size, 4, connection->current_object.allocated_size);
+        return att_read_callback_handle_blob(object_size, sizeof(object_size), offset, buffer, buffer_size); 
     } 
     if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED)){
         if (!ots_current_object_valid(connection)){
