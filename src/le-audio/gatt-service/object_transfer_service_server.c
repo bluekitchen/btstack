@@ -79,6 +79,7 @@ typedef struct {
     uint16_t  client_configuration_handle;
 } ots_characteristic_t;
 
+static uint32_t ots_object_id_counter;
 
 static att_service_handler_t    object_transfer_service_server;
 static btstack_packet_handler_t ots_server_event_callback;
@@ -491,4 +492,13 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
 void object_transfer_service_server_register_packet_handler(btstack_packet_handler_t packet_handler){
     btstack_assert(packet_handler != NULL);
     ots_server_event_callback = packet_handler;
+}
+
+void object_transfer_service_server_get_next_object_id(ots_object_id_t * object_id_out){
+    ots_object_id_counter++;
+    if (ots_object_id_counter < 0x0100) {
+        ots_object_id_counter = 0x0100;
+    }
+    memset((uint8_t *)object_id_out, 0, OTS_OBJECT_ID_LEN);
+    little_endian_store_32((uint8_t *)object_id_out, 2, ots_object_id_counter);
 }
