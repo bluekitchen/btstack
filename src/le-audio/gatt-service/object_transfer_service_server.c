@@ -171,7 +171,10 @@ static bool ots_current_object_valid(object_transfer_service_connection_t * conn
     return ots_current_object_exists(connection) && ots_current_object_valid_for_filters(connection);
 }
 
-static void btstack_utc_store_time(btstack_utc_t * time, uint8_t * time_buffer_out){
+static void btstack_utc_store_time(btstack_utc_t * time, uint8_t * time_buffer_out, uint16_t time_buffer_out_size){
+    if (time_buffer_out_size < 7){
+        return;
+    }
     little_endian_store_16(time_buffer_out, 0, time->year);
     time_buffer_out[2] = time->month;
     time_buffer_out[3] = time->day;
@@ -180,7 +183,10 @@ static void btstack_utc_store_time(btstack_utc_t * time, uint8_t * time_buffer_o
     time_buffer_out[6] = time->seconds;
 }
 
-static void btstack_utc_read_time(uint8_t * time_buffer, btstack_utc_t * time_out){
+static void btstack_utc_read_time(uint8_t * time_buffer, uint16_t time_buffer_size, btstack_utc_t * time_out){
+    if (time_buffer_size < 7){
+        return;
+    }
     time_out->year    = little_endian_read_16(time_buffer, 0);
     time_out->month   = time_buffer[2];
     time_out->day     = time_buffer[3];
@@ -273,7 +279,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         }
 
         uint8_t time_buffer[7];
-        btstack_utc_store_time(&connection->current_object.first_created, &time_buffer[0]);
+        btstack_utc_store_time(&connection->current_object.first_created, &time_buffer[0], sizeof(time_buffer));
         return att_read_callback_handle_blob(time_buffer, sizeof(time_buffer), offset, buffer, buffer_size);
     } 
     if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED)){
@@ -281,7 +287,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
             return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
         }
         uint8_t time_buffer[7];
-        btstack_utc_store_time(&connection->current_object.last_modified, &time_buffer[0]);
+        btstack_utc_store_time(&connection->current_object.last_modified, &time_buffer[0], sizeof(time_buffer));
        
         return att_read_callback_handle_blob(time_buffer, sizeof(time_buffer), offset, buffer, buffer_size);
     } 
@@ -360,12 +366,15 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         ots_server_emit_current_object_name_changed(connection);
     
     } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED)){
-        btstack_utc_read_time(buffer, &connection->current_object.first_created);
-        ots_server_emit_current_object_first_created_time_changed(connection);
-    
+        if (buffer_size >= 7){
+            btstack_utc_read_time(buffer, buffer_size, &connection->current_object.first_created);
+            ots_server_emit_current_object_first_created_time_changed(connection);
+        }
     } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED)){
-        btstack_utc_read_time(buffer, &connection->current_object.last_modified);
-        ots_server_emit_current_object_last_modified_time_changed(connection);
+        if (buffer_size >= 7){
+            btstack_utc_read_time(buffer, buffer_size, &connection->current_object.last_modified);
+            ots_server_emit_current_object_last_modified_time_changed(connection);
+        }
     } 
     
     return 0;
