@@ -52,12 +52,10 @@ extern "C" {
 #endif
 
 /* API_START */
-typedef struct {
-    
-} ots_data_t;
-
 
 typedef struct {
+    btstack_linked_item_t item;
+
     hci_con_handle_t            con_handle;
     
     // att_service_handler_t       service;
@@ -70,7 +68,10 @@ typedef struct {
     btstack_context_callback_registration_t scheduled_tasks_callback; 
 
     btstack_packet_handler_t event_callback;
-    ots_data_t  data;
+
+    ots_object_t current_object;
+    bool current_object_locked;
+    bool current_object_object_transfer_in_progress;
 } object_transfer_service_connection_t;
 
 
