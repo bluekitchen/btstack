@@ -79,11 +79,8 @@ extern "C" {
 /* API_START */
 
 typedef struct {
+    // metadata
     char name[OTS_MAX_NAME_LENGHT];
-} ots_object_metadata_t;
-
-typedef struct {
-    ots_object_metadata_t metadata;
 } ots_object_t;
 
 
