@@ -76,6 +76,13 @@ extern "C" {
 
 
 #define OTS_MAX_NAME_LENGHT         32
+
+#define OTS_OBJECT_ID_LEN           6
+/**
+ * @brief Bluetooth address
+ */
+typedef uint8_t ots_object_id_t[OTS_OBJECT_ID_LEN];
+
 /* API_START */
 
 typedef struct {
@@ -89,6 +96,11 @@ typedef struct {
 
 typedef struct {
     // metadata
+
+    // Locally Unique Identifier: 0x000000000000 - Directory Listing Object, [0x000000000001, 0x0000000000FF] - RFU
+    // luid >= 0x000000000100
+    ots_object_id_t luid;                   
+
     char name[OTS_MAX_NAME_LENGHT];
 
     uint16_t type_uuid16;
