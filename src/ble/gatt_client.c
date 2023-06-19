@@ -1745,6 +1745,22 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
             if (size < 3u) return;
             report_gatt_notification(gatt_client, little_endian_read_16(packet, 1u), &packet[3], size - 3u);
             return;
+#ifdef ENABLE_GATT_OVER_EATT
+        case ATT_MULTIPLE_HANDLE_VALUE_NTF:
+            if (size >= 5u) {
+                uint16_t offset = 1;
+                while (true){
+                    uint16_t value_handle = little_endian_read_16(packet, offset);
+                    offset += 2;
+                    uint16_t value_length = little_endian_read_16(packet, offset);
+                    offset += 2;
+                    if ((offset + value_length) > size) break;
+                    report_gatt_notification(gatt_client, value_handle, &packet[offset], value_length);
+                    offset += value_length;
+                }
+            }
+            return;
+#endif
         case ATT_HANDLE_VALUE_INDICATION:
             if (size < 3u) break;
             report_gatt_indication(gatt_client, little_endian_read_16(packet, 1u), &packet[3], size - 3u);
