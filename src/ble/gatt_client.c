@@ -668,25 +668,24 @@ static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client){
     }
 }
 
+// test if notification/indication should be delivered to application (BLESA)
+static bool gatt_client_accept_server_message(gatt_client_t *gatt_client) {
+#ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
+    // ignore messages until re-encryption is complete
+    if (gap_reconnect_security_setup_active(gatt_client->con_handle)) return false;
+
+	// after that ignore if bonded but not encrypted
+	return !gap_bonded(gatt_client->con_handle) || (gap_encryption_key_size(gatt_client->con_handle) > 0);
+#else
+    UNUSED(gatt_client);
+    return true;
+#endif
+}
+
 static void emit_event_new(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
     if (!callback) return;
     hci_dump_packet(HCI_EVENT_PACKET, 1, packet, size);
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
-}
-
-void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
-    notification->callback = callback;
-    notification->con_handle = con_handle;
-    if (characteristic == NULL){
-        notification->attribute_handle = GATT_CLIENT_ANY_VALUE_HANDLE;
-    } else {
-        notification->attribute_handle = characteristic->value_handle;
-    }
-    btstack_linked_list_add(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
-}
-
-void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification){
-    btstack_linked_list_remove(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
 }
 
 static void emit_event_to_registered_listeners(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t * packet, uint16_t size){
@@ -777,12 +776,65 @@ static void emit_gatt_mtu_exchanged_result_event(gatt_client_t * gatt_client, ui
     att_dispatch_client_mtu_exchanged(gatt_client->con_handle, new_mtu);
     emit_event_new(gatt_client->callback, packet, sizeof(packet));
 }
+
+// helper
+static void gatt_client_handle_transaction_complete(gatt_client_t *gatt_client, uint8_t att_status) {
+    gatt_client->gatt_client_state = P_READY;
+    gatt_client_timeout_stop(gatt_client);
+    emit_gatt_complete_event(gatt_client, att_status);
+    gatt_client_notify_can_send_query(gatt_client);
+}
+
+// @return packet pointer
+// @note assume that value is part of an l2cap buffer - overwrite HCI + L2CAP packet headers
+#define CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE 8
+static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t * value, uint16_t length){
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // copy value into test packet for testing
+    static uint8_t packet[1000];
+    memcpy(&packet[8], value, length);
+#else
+    // before the value inside the ATT PDU
+    uint8_t * packet = value - CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE;
+#endif
+    packet[0] = type;
+    packet[1] = CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE - 2 + length;
+    little_endian_store_16(packet, 2, con_handle);
+    little_endian_store_16(packet, 4, attribute_handle);
+    little_endian_store_16(packet, 6, length);
+    return packet;
+}
+
+// @return packet pointer
+// @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes
+#define LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE 10
+static uint8_t * setup_long_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * value, uint16_t length){
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // avoid using pre ATT headers.
+    return NULL;
+#endif
+#if defined(HCI_INCOMING_PRE_BUFFER_SIZE) && (HCI_INCOMING_PRE_BUFFER_SIZE >= LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE - 8) // L2CAP Header (4) - ACL Header (4)
+    // before the value inside the ATT PDU
+    uint8_t * packet = value - LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE;
+    packet[0] = type;
+    packet[1] = LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE - 2 + length;
+    little_endian_store_16(packet, 2, con_handle);
+    little_endian_store_16(packet, 4, attribute_handle);
+    little_endian_store_16(packet, 6, offset);
+    little_endian_store_16(packet, 8, length);
+    return packet;
+#else
+    log_error("HCI_INCOMING_PRE_BUFFER_SIZE >= 2 required for long characteristic reads");
+    return NULL;
+#endif
+}
+
 ///
 static void report_gatt_services(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size){
     if (size < 2) return;
     uint8_t attr_length = packet[1];
     uint8_t uuid_length = attr_length - 4u;
-    
+
     int i;
     for (i = 2; (i+attr_length) <= size; i += attr_length){
         uint16_t start_group_handle = little_endian_read_16(packet,i);
@@ -802,15 +854,7 @@ static void report_gatt_services(gatt_client_t * gatt_client, uint8_t * packet, 
     }
 }
 
-static void gatt_client_handle_transaction_complete(gatt_client_t *gatt_client, uint8_t att_status) {
-    gatt_client->gatt_client_state = P_READY;
-    gatt_client_timeout_stop(gatt_client);
-    emit_gatt_complete_event(gatt_client, att_status);
-    gatt_client_notify_can_send_query(gatt_client);
-}
-
-// helper
-static void characteristic_start_found(gatt_client_t * gatt_client, uint16_t start_handle, uint8_t properties, uint16_t value_handle, uint8_t * uuid, uint16_t uuid_length){
+static void report_gatt_characteristic_start_found(gatt_client_t * gatt_client, uint16_t start_handle, uint8_t properties, uint16_t value_handle, uint8_t * uuid, uint16_t uuid_length){
     uint8_t uuid128[16];
     uint16_t uuid16 = 0;
     if (uuid_length == 2u){
@@ -821,22 +865,22 @@ static void characteristic_start_found(gatt_client_t * gatt_client, uint16_t sta
     } else {
         return;
     }
-    
+
     if (gatt_client->filter_with_uuid && (memcmp(gatt_client->uuid128, uuid128, 16) != 0)) return;
 
     gatt_client->characteristic_properties = properties;
     gatt_client->characteristic_start_handle = start_handle;
     gatt_client->attribute_handle = value_handle;
-    
+
     if (gatt_client->filter_with_uuid) return;
 
     gatt_client->uuid16 = uuid16;
     (void)memcpy(gatt_client->uuid128, uuid128, 16);
 }
 
-static void characteristic_end_found(gatt_client_t * gatt_client, uint16_t end_handle){
+static void report_gatt_characteristic_end_found(gatt_client_t * gatt_client, uint16_t end_handle){
     // TODO: stop searching if filter and uuid found
-    
+
     if (!gatt_client->characteristic_start_handle) return;
 
     emit_gatt_characteristic_query_result_event(gatt_client, gatt_client->characteristic_start_handle, gatt_client->attribute_handle,
@@ -844,6 +888,7 @@ static void characteristic_end_found(gatt_client_t * gatt_client, uint16_t end_h
 
     gatt_client->characteristic_start_handle = 0;
 }
+
 
 static void report_gatt_characteristics(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size){
     if (size < 2u) return;
@@ -855,8 +900,9 @@ static void report_gatt_characteristics(gatt_client_t * gatt_client, uint8_t * p
         uint16_t start_handle = little_endian_read_16(packet, i);
         uint8_t  properties = packet[i+2];
         uint16_t value_handle = little_endian_read_16(packet, i+3);
-        characteristic_end_found(gatt_client, start_handle - 1u);
-        characteristic_start_found(gatt_client, start_handle, properties, value_handle, &packet[i + 5], uuid_length);
+        report_gatt_characteristic_end_found(gatt_client, start_handle - 1u);
+        report_gatt_characteristic_start_found(gatt_client, start_handle, properties, value_handle, &packet[i + 5],
+                                               uuid_length);
     }
 }
 
@@ -872,90 +918,31 @@ static void report_gatt_included_service_uuid128(gatt_client_t * gatt_client, ui
                                                   gatt_client->query_end_handle, uuid128);
 }
 
-// @return packet pointer
-// @note assume that value is part of an l2cap buffer - overwrite HCI + L2CAP packet headers
-static const int characteristic_value_event_header_size = 8;
-static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t * value, uint16_t length){
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    // copy value into test packet for testing
-    static uint8_t packet[1000];
-    memcpy(&packet[8], value, length);
-#else
-    // before the value inside the ATT PDU
-    uint8_t * packet = value - characteristic_value_event_header_size;
-#endif
-    packet[0] = type;
-    packet[1] = characteristic_value_event_header_size - 2 + length;
-    little_endian_store_16(packet, 2, con_handle);
-    little_endian_store_16(packet, 4, attribute_handle);
-    little_endian_store_16(packet, 6, length);
-    return packet;
-}
-
-// @return packet pointer
-// @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
-static const int long_characteristic_value_event_header_size = 10;
-static uint8_t * setup_long_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * value, uint16_t length){
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    // avoid using pre ATT headers.
-    return NULL;
-#endif
-#if defined(HCI_INCOMING_PRE_BUFFER_SIZE) && (HCI_INCOMING_PRE_BUFFER_SIZE >= 10 - 8) // L2CAP Header (4) - ACL Header (4)
-    // before the value inside the ATT PDU
-    uint8_t * packet = value - long_characteristic_value_event_header_size;
-    packet[0] = type;
-    packet[1] = long_characteristic_value_event_header_size - 2 + length;
-    little_endian_store_16(packet, 2, con_handle);
-    little_endian_store_16(packet, 4, attribute_handle);
-    little_endian_store_16(packet, 6, offset);
-    little_endian_store_16(packet, 8, length);
-    return packet;
-#else 
-    log_error("HCI_INCOMING_PRE_BUFFER_SIZE >= 2 required for long characteristic reads");
-    return NULL;
-#endif
-}
-
-// test if notification/indication should be delivered to application (BLESA)
-static bool gatt_client_accept_server_message(gatt_client_t *gatt_client) {
-#ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
-	// ignore messages until re-encryption is complete
-    if (gap_reconnect_security_setup_active(gatt_client->con_handle)) return false;
-
-	// after that ignore if bonded but not encrypted
-	return !gap_bonded(gatt_client->con_handle) || (gap_encryption_key_size(gatt_client->con_handle) > 0);
-#else
-    UNUSED(gatt_client);
-	return true;
-#endif
-}
-
-
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_notification(gatt_client_t *gatt_client, uint16_t value_handle, uint8_t *value, int length) {
 	if (!gatt_client_accept_server_message(gatt_client)) return;
     uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_NOTIFICATION, gatt_client->con_handle, value_handle, value, length);
-    emit_event_to_registered_listeners(gatt_client->con_handle, value_handle, packet, characteristic_value_event_header_size + length);
+    emit_event_to_registered_listeners(gatt_client->con_handle, value_handle, packet, CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE + length);
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_indication(gatt_client_t *gatt_client, uint16_t value_handle, uint8_t *value, int length) {
 	if (!gatt_client_accept_server_message(gatt_client)) return;
     uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_INDICATION, gatt_client->con_handle, value_handle, value, length);
-    emit_event_to_registered_listeners(gatt_client->con_handle, value_handle, packet, characteristic_value_event_header_size + length);
+    emit_event_to_registered_listeners(gatt_client->con_handle, value_handle, packet, CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE + length);
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_characteristic_value(gatt_client_t * gatt_client, uint16_t attribute_handle, uint8_t * value, uint16_t length){
     uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT, gatt_client->con_handle, attribute_handle, value, length);
-    emit_event_new(gatt_client->callback, packet, characteristic_value_event_header_size + length);
+    emit_event_new(gatt_client->callback, packet, CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE + length);
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_long_characteristic_value_blob(gatt_client_t * gatt_client, uint16_t attribute_handle, uint8_t * blob, uint16_t blob_length, int value_offset){
     uint8_t * packet = setup_long_characteristic_value_packet(GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT, gatt_client->con_handle, attribute_handle, value_offset, blob, blob_length);
     if (!packet) return;
-    emit_event_new(gatt_client->callback, packet, blob_length + long_characteristic_value_event_header_size);
+    emit_event_new(gatt_client->callback, packet, blob_length + LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE);
 }
 
 static void report_gatt_characteristic_descriptor(gatt_client_t * gatt_client, uint16_t descriptor_handle, uint8_t *value, uint16_t value_length, uint16_t value_offset){
@@ -967,7 +954,7 @@ static void report_gatt_characteristic_descriptor(gatt_client_t * gatt_client, u
 static void report_gatt_long_characteristic_descriptor(gatt_client_t * gatt_client, uint16_t descriptor_handle, uint8_t *blob, uint16_t blob_length, uint16_t value_offset){
     uint8_t * packet = setup_long_characteristic_value_packet(GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT, gatt_client->con_handle, descriptor_handle, value_offset, blob, blob_length);
     if (!packet) return;
-    emit_event_new(gatt_client->callback, packet, blob_length + long_characteristic_value_event_header_size);
+    emit_event_new(gatt_client->callback, packet, blob_length + LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE);
 }
 
 static void report_gatt_all_characteristic_descriptors(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size, uint16_t pair_size){
@@ -1016,7 +1003,7 @@ static void trigger_next_service_by_uuid_query(gatt_client_t * gatt_client, uint
 static void trigger_next_characteristic_query(gatt_client_t * gatt_client, uint16_t last_result_handle){
     if (is_query_done(gatt_client, last_result_handle)){
         // report last characteristic
-        characteristic_end_found(gatt_client, gatt_client->end_group_handle);
+        report_gatt_characteristic_end_found(gatt_client, gatt_client->end_group_handle);
     }
     trigger_next_query(gatt_client, last_result_handle, P_W2_SEND_ALL_CHARACTERISTICS_OF_SERVICE_QUERY);
 }
@@ -1052,6 +1039,20 @@ static void trigger_next_blob_query(gatt_client_t * gatt_client, gatt_client_sta
     gatt_client->gatt_client_state = next_query_state;
 }
 
+void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    notification->callback = callback;
+    notification->con_handle = con_handle;
+    if (characteristic == NULL){
+        notification->attribute_handle = GATT_CLIENT_ANY_VALUE_HANDLE;
+    } else {
+        notification->attribute_handle = characteristic->value_handle;
+    }
+    btstack_linked_list_add(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
+}
+
+void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification){
+    btstack_linked_list_remove(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
+}
 
 static int is_value_valid(gatt_client_t *gatt_client, uint8_t *packet, uint16_t size){
     uint16_t attribute_handle = little_endian_read_16(packet, 1);
@@ -1932,7 +1933,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                             break;
                         case P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT:
                         case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
-                            characteristic_end_found(gatt_client, gatt_client->end_group_handle);
+                            report_gatt_characteristic_end_found(gatt_client, gatt_client->end_group_handle);
                             gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
                             break;
                         case P_W4_READ_BY_TYPE_RESPONSE:
