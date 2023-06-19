@@ -223,6 +223,8 @@ static attribute_t att_write_queues[ATT_NUM_WRITE_QUEUES];
 #define ATT_NUM_ATTRIBUTES 10
 static attribute_t att_attributes[ATT_NUM_ATTRIBUTES];
 
+static uint8_t eatt_buffer[10000];
+
 static void att_write_queue_init(void){
     int i;
     for (i=0;i<ATT_NUM_WRITE_QUEUES;i++){
@@ -1011,7 +1013,8 @@ int btstack_main(int argc, const char * argv[]){
 #endif
 
     // setup ATT server
-    att_server_init(profile_data, att_read_callback, att_write_callback);    
+    att_server_init(profile_data, att_read_callback, att_write_callback);
+    att_server_eatt_init(5, eatt_buffer, sizeof(eatt_buffer));
     att_write_queue_init();
     att_attributes_init();
     att_server_register_packet_handler(app_packet_handler);
