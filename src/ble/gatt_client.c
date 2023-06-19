@@ -1407,21 +1407,19 @@ static void gatt_client_run(void){
                 }
 
                 // handle GATT over BR/EDR
-                if (gatt_client->l2cap_psm != 0){
-                    if (l2cap_can_send_packet_now(gatt_client->l2cap_cid) == false){
-                        l2cap_request_can_send_now_event(gatt_client->l2cap_cid);
-                        return;
-                    }
-                    packet_sent = gatt_client_run_for_gatt_client(gatt_client);
-                    if (packet_sent){
-                        // request new permission
-                        att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
-                        // requeue client for fairness and exit
-                        // note: iterator has become invalid
-                        btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
-                        btstack_linked_list_add_tail(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
-                        return;
-                    }
+                if (l2cap_can_send_packet_now(gatt_client->l2cap_cid) == false){
+                    l2cap_request_can_send_now_event(gatt_client->l2cap_cid);
+                    return;
+                }
+                packet_sent = gatt_client_run_for_gatt_client(gatt_client);
+                if (packet_sent){
+                    // request new permission
+                    att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
+                    // requeue client for fairness and exit
+                    // note: iterator has become invalid
+                    btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
+                    btstack_linked_list_add_tail(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
+                    return;
                 }
                 break;
 #endif
