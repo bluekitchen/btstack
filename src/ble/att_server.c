@@ -492,11 +492,10 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     hci_connection = hci_connection_for_handle(con_handle);
                     if (!hci_connection) break;
                     att_server = &hci_connection->att_server;
-                    att_server->pairing_active = 1;
-                    att_connection = &hci_connection->att_connection;
                     log_info("SM Pairing started");
+                    att_server->pairing_active = 1;
                     if (att_server->ir_le_device_db_index < 0) break;
-                    att_run_for_context(att_server, att_connection);
+                    att_server_persistent_ccc_clear(att_server);
                     // index not valid anymore
                     att_server->ir_le_device_db_index = -1;
                     break;
