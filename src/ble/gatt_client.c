@@ -3217,7 +3217,8 @@ static void gatt_client_le_enhanced_packet_handler(uint8_t packet_type, uint16_t
         case L2CAP_DATA_PACKET:
             gatt_client = gatt_client_le_enhanced_get_context_for_l2cap_cid(channel, &eatt_client);
             btstack_assert(gatt_client != NULL);
-            gatt_client_handle_att_response(gatt_client, packet, size);
+            btstack_assert(eatt_client != NULL);
+            gatt_client_handle_att_response(eatt_client, packet, size);
             gatt_client_run();
             break;
         default:
