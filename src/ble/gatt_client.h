@@ -323,7 +323,7 @@ uint8_t gatt_client_classic_disconnect(btstack_packet_handler_t callback, hci_co
  * @param con_handle
  * @param num_channels
  * @param storage_buffer for L2CAP connection
- * @param storage_size
+ * @param storage_size - each channel requires (2 * ATT MTU) + 10 bytes
  * @return
  */
 uint8_t gatt_client_le_enhanced_connect(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint8_t num_channels, uint8_t * storage_buffer, uint16_t storage_size);
