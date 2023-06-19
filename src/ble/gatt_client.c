@@ -653,6 +653,27 @@ static uint16_t get_last_result_handle_from_included_services_list(uint8_t * pac
 }
 
 static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client){
+
+#ifdef ENABLE_GATT_OVER_EATT
+    // if eatt is ready, notify all clients that can send a query
+    if (gatt_client->eatt_state == GATT_CLIENT_EATT_READY){
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &gatt_client->eatt_clients);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            gatt_client_t * client = (gatt_client_t *) btstack_linked_list_iterator_next(&it);
+            if (client->gatt_client_state == P_READY){
+                // call callback
+                btstack_context_callback_registration_t * callback = (btstack_context_callback_registration_t *) btstack_linked_list_pop(&gatt_client->query_requests);
+                if (callback == NULL) {
+                    return;
+                }
+                (*callback->callback)(callback->context);
+            }
+        }
+        return;
+    }
+#endif
+
     while (gatt_client->gatt_client_state == P_READY){
 #ifdef ENABLE_GATT_OVER_EATT
         bool query_sent = gatt_client_le_enhanced_handle_can_send_query(gatt_client);
