@@ -2731,11 +2731,11 @@ uint8_t gatt_client_request_to_write_without_response(btstack_context_callback_r
         return status;
     }
     bool added = btstack_linked_list_add_tail(&gatt_client->write_without_response_requests, (btstack_linked_item_t*) callback_registration);
-    att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
-    if (added){
-        return ERROR_CODE_SUCCESS;
-    } else {
+    if (added == false){
         return ERROR_CODE_COMMAND_DISALLOWED;
+    } else {
+        att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
+        return ERROR_CODE_SUCCESS;
     }
 }
 
@@ -2746,11 +2746,11 @@ uint8_t gatt_client_request_to_send_gatt_query(btstack_context_callback_registra
         return status;
     }
     bool added = btstack_linked_list_add_tail(&gatt_client->query_requests, (btstack_linked_item_t*) callback_registration);
-    gatt_client_notify_can_send_query(gatt_client);
-    if (added){
-        return ERROR_CODE_SUCCESS;
-    } else {
+    if (added == false){
         return ERROR_CODE_COMMAND_DISALLOWED;
+    } else {
+        gatt_client_notify_can_send_query(gatt_client);
+        return ERROR_CODE_SUCCESS;
     }
 }
 
