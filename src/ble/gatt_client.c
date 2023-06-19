@@ -1366,6 +1366,7 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
 
 static void gatt_client_run(void){
     btstack_linked_item_t *it;
+    bool packet_sent;
 #ifdef ENABLE_GATT_OVER_EATT
     btstack_linked_list_iterator_t it_eatt;
 #endif
@@ -1388,7 +1389,7 @@ static void gatt_client_run(void){
                     att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
                     return;
                 }
-                bool packet_sent = gatt_client_run_for_gatt_client(gatt_client);
+                packet_sent = gatt_client_run_for_gatt_client(gatt_client);
                 if (packet_sent){
                     // request new permission
                     att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
@@ -1411,7 +1412,7 @@ static void gatt_client_run(void){
                         l2cap_request_can_send_now_event(gatt_client->l2cap_cid);
                         return;
                     }
-                    bool packet_sent = gatt_client_run_for_gatt_client(gatt_client);
+                    packet_sent = gatt_client_run_for_gatt_client(gatt_client);
                     if (packet_sent){
                         // request new permission
                         att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
