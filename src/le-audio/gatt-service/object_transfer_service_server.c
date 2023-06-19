@@ -56,6 +56,7 @@
 #include "btstack_util.h"
 
 #include "le-audio/gatt-service/object_transfer_service_server.h"
+#include "le-audio/le_audio_util.h"
 
 typedef enum {
     OTS_FEATURE_INDEX = 0, 
@@ -68,7 +69,9 @@ typedef enum {
     OTS_OBJECT_PROPERTIES_INDEX, 
     OTS_OBJECT_ACTION_CONTROL_POINT_INDEX, 
     OTS_OBJECT_LIST_CONTROL_POINT_INDEX, 
-    OTS_OBJECT_LIST_FILTER_INDEX, 
+    OTS_OBJECT_LIST_FILTER1_INDEX, 
+    OTS_OBJECT_LIST_FILTER2_INDEX, 
+    OTS_OBJECT_LIST_FILTER3_INDEX, 
     OTS_OBJECT_CHANGED_INDEX, 
     OTS_CHARACTERISTICS_NUM,
     OTS_CHARACTERISTICS_RFU
@@ -137,7 +140,7 @@ static uint16_t ots_server_get_client_configuration_handle(ots_characteristic_in
     return ots_characteristics[index].client_configuration_handle;
 }
 
-static uint16_t ots_server_get_client_value_handle(ots_characteristic_index_t index){
+static uint16_t ots_server_get_client_value_handle_for_index(ots_characteristic_index_t index){
     return ots_characteristics[index].value_handle;
 }
 
@@ -171,6 +174,16 @@ static bool ots_current_object_exists(object_transfer_service_connection_t * con
     return true;
 }
 
+static void ots_server_emit_current_object_filter_changed(object_transfer_service_connection_t * connection, uint8_t filter_index){
+    // TODO
+}
+
+static void ots_server_reset_long_write_filter(object_transfer_service_connection_t * connection){
+    connection->temp_filter.type = OTS_FILTER_TYPE_NO_FILTER;
+    connection->temp_filter.data_size = 0;
+    memset(connection->temp_filter.data, 0, sizeof(connection->temp_filter.data));
+}
+
 static bool ots_current_object_valid(object_transfer_service_connection_t * connection){
     return ots_current_object_exists(connection) && ots_current_object_valid_for_filters(connection);
 }
@@ -199,10 +212,29 @@ static void btstack_utc_read_time(uint8_t * time_buffer, uint16_t time_buffer_si
     time_out->seconds = time_buffer[6];
 }
 
+static uint16_t ots_server_store_filter_list(const ots_filter_t * filter, uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset){
+    uint8_t  field_data[5];
+    uint16_t filters_offset = 0;
+    uint16_t stored_bytes = 0;
+    
+    memset(buffer, 0, buffer_size);
+
+    field_data[0] = (uint8_t)filter->type;
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, filters_offset, buffer, buffer_size, buffer_offset);
+    filters_offset++;
+
+    field_data[0] = filter->data_size;
+    stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, filters_offset, buffer, buffer_size, buffer_offset);
+    filters_offset++;
+
+    stored_bytes += le_audio_util_virtual_memcpy_helper(filter->data, filter->data_size, filters_offset, buffer, buffer_size, buffer_offset);
+    return stored_bytes;
+}
+
 static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     object_transfer_service_connection_t * connection = NULL;
 
-    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OTS_FEATURE)){
+    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_FEATURE_INDEX)){
         ots_server_find_or_add_connection_for_con_handle(con_handle);
         
         uint8_t ots_features[8];
@@ -212,7 +244,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
     }
 
     // handle indication
-    if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
+    if (attribute_handle == ots_server_get_client_configuration_handle(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)){
         connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
         if (connection == NULL){
             return 0;
@@ -220,7 +252,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         return att_read_callback_handle_little_endian_16(connection->oacp_configuration, offset, buffer, buffer_size); 
     }
     
-    if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
+    if (attribute_handle == ots_server_get_client_configuration_handle(OTS_OBJECT_LIST_CONTROL_POINT_INDEX)){
         connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
         if (connection == NULL){
             return 0;
@@ -228,7 +260,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         return att_read_callback_handle_little_endian_16(connection->olcp_configuration, offset, buffer, buffer_size); 
     }
 
-    if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED)){
+    if (attribute_handle == ots_server_get_client_configuration_handle(OTS_OBJECT_CHANGED_INDEX)){
         connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
         if (connection == NULL){
             return 0;
@@ -241,25 +273,21 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         return 0;
     }
 
-    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_NAME)){
+    if ((offset == 0) && !ots_current_object_valid(connection)){
+        return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
+    }
+
+    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_NAME_INDEX)){
         if (buffer == NULL){
             // get len and check if we have up to date value
             if ((offset != 0) && !ots_current_object_valid(connection)){
                 return (uint16_t)ATT_READ_ERROR_CODE_OFFSET + (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
             }
-        } else {
-            // actual read (after everything was validated)
-            if ((offset == 0) && !ots_current_object_valid(connection)){
-                return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
-            }
         }
         return att_read_callback_handle_blob((const uint8_t *)connection->current_object.name, strlen(connection->current_object.name), offset, buffer, buffer_size);
     }
 
-    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_TYPE)){
-        if (!ots_current_object_valid(connection)){
-            return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
-        }
+    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_TYPE_INDEX)){
         if (connection->current_object.type_uuid16 != 0){
             return att_read_callback_handle_little_endian_16(connection->current_object.type_uuid16, offset, buffer, buffer_size); 
         } else {
@@ -267,58 +295,43 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         }
         return 0;
     } 
-    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_SIZE)){
-        if (!ots_current_object_valid(connection)){
-            return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
-        }
+
+    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_SIZE_INDEX)){
         uint8_t object_size[8];
         little_endian_store_32(object_size, 0, connection->current_size);
         little_endian_store_32(object_size, 4, connection->current_object.allocated_size);
         return att_read_callback_handle_blob(object_size, sizeof(object_size), offset, buffer, buffer_size); 
     }
 
-    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED)){
-        if (!ots_current_object_valid(connection)){
-            return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
-        }
-
+    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_FIRST_CREATED_INDEX)){
         uint8_t time_buffer[7];
         btstack_utc_store_time(&connection->current_object.first_created, &time_buffer[0], sizeof(time_buffer));
         return att_read_callback_handle_blob(time_buffer, sizeof(time_buffer), offset, buffer, buffer_size);
     } 
-    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED)){
-        if (!ots_current_object_valid(connection)){
-            return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
-        }
+
+    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_LAST_MODIFIED_INDEX)){
         uint8_t time_buffer[7];
         btstack_utc_store_time(&connection->current_object.last_modified, &time_buffer[0], sizeof(time_buffer));
        
         return att_read_callback_handle_blob(time_buffer, sizeof(time_buffer), offset, buffer, buffer_size);
     } 
-    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ID)){
-        if (!ots_current_object_valid(connection)){
-            return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
-        }
+
+    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_ID_INDEX)){
         return att_read_callback_handle_blob((const uint8_t *)connection->current_object.luid, OTS_OBJECT_ID_LEN, offset, buffer, buffer_size);
     
     } 
-    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_PROPERTIES)){
-        if (!ots_current_object_valid(connection)){
-            return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
-        }
+    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_PROPERTIES_INDEX)){
         uint8_t properties[8];
         little_endian_store_32(properties, 0, connection->current_object.properties);
         return att_read_callback_handle_blob(properties, sizeof(properties), offset, buffer, buffer_size);
     } 
 
-    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER)){
-        if (!ots_current_object_valid(connection)){
-            return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
+    uint8_t i;
+    for (i = 0; i < OTS_MAX_NUM_FILTERS; i++){
+        if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)){
+           return ots_server_store_filter_list(&connection->filters[i], buffer, buffer_size, offset);    
         }
-        // TODO
-        return 0;
-    } 
-
+    }
     return 0;
 }
 
@@ -356,22 +369,19 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         return 0;
     }
 
-    if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
+    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)){
         // TODO
     
-    } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
+    } else if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX)){
         // TODO
     
-    } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER)){
-        // TODO
-    
-    } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_NAME)){
+    } else if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_NAME_INDEX)){
         uint16_t total_value_len = buffer_size + offset;
         // handle long write
         switch (transaction_mode){
             case ATT_TRANSACTION_MODE_NONE:
                 if (buffer_size > strlen(connection->current_object.name)){
-                    return ATT_ERROR_WRITE_REQUEST_REJECTED;
+                    return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
                 }
                 btstack_strcpy(&connection->current_object.name[0], buffer_size, (const char *)buffer);
                 break;
@@ -379,7 +389,7 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             case ATT_TRANSACTION_MODE_ACTIVE:
                 if (total_value_len > strlen(connection->current_object.name)){
                     ots_server_reset_current_object_name(connection);
-                    return ATT_ERROR_WRITE_REQUEST_REJECTED;
+                    return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
                 }
                 btstack_strcpy(&connection->current_object.name[offset], buffer_size, (const char *)buffer);
                 return 0;
@@ -396,22 +406,95 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 return 0;
         }
         
-    } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_PROPERTIES)){
+    } else if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_PROPERTIES_INDEX)){
         if (buffer_size >= 4){
             connection->current_object.properties = little_endian_read_32(buffer, 0);
             ots_server_emit_current_object_properties_changed(connection);
         }
-    } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED)){
+    } else if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_FIRST_CREATED_INDEX)){
         if (buffer_size >= 7){
             btstack_utc_read_time(buffer, buffer_size, &connection->current_object.first_created);
             ots_server_emit_current_object_first_created_time_changed(connection);
         }
-    } else if (attribute_handle == ots_server_get_client_value_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED)){
+    } else if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_LAST_MODIFIED_INDEX)){
         if (buffer_size >= 7){
             btstack_utc_read_time(buffer, buffer_size, &connection->current_object.last_modified);
             ots_server_emit_current_object_last_modified_time_changed(connection);
         }
-    } 
+    } else {
+        uint16_t total_value_len = buffer_size + offset;
+
+        uint8_t i;
+        for (i = 0; i < OTS_MAX_NUM_FILTERS; i++){
+            if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)){
+                switch (transaction_mode){
+                    case ATT_TRANSACTION_MODE_NONE:
+                        if (buffer_size > strlen(connection->current_object.name)){
+                            return ATT_ERROR_WRITE_REQUEST_REJECTED;
+                        }
+                        
+                        connection->temp_filter.type = (ots_filter_type_t) buffer[0];
+                        if (connection->temp_filter.type >= OTS_FILTER_TYPE_RFU){
+                            ots_server_reset_long_write_filter(connection);
+                            return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+                        }
+                        
+                        connection->temp_filter.data_size = buffer[1];
+                        if (connection->temp_filter.data_size > sizeof(connection->temp_filter.data)){
+                            ots_server_reset_long_write_filter(connection);
+                            return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+                        }
+
+                        connection->filters[i].type = connection->temp_filter.type;
+                        connection->filters[i].data_size = connection->temp_filter.data_size;
+                        memcpy(connection->filters[i].data, &buffer[2], connection->temp_filter.data_size);
+                        break;
+
+                    case ATT_TRANSACTION_MODE_ACTIVE:
+                        if (total_value_len > (2 + sizeof(connection->temp_filter.data))){
+                            return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+                        }
+
+                        if (offset == 0){
+                            connection->temp_filter.type = (ots_filter_type_t) buffer[0];
+                            if (connection->temp_filter.type >= OTS_FILTER_TYPE_RFU){
+                                ots_server_reset_long_write_filter(connection);
+                                return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+                            }
+                            
+                            connection->temp_filter.data_size = buffer[1];
+                            if (connection->temp_filter.data_size > sizeof(connection->temp_filter.data)){
+                                ots_server_reset_long_write_filter(connection);
+                                return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+                            }
+                            connection->filters[i].type = connection->temp_filter.type;
+                            connection->filters[i].data_size = connection->temp_filter.data_size;
+                            memcpy(connection->filters[i].data, &buffer[2], connection->temp_filter.data_size);
+                        } else {
+                            memcpy(&connection->filters[i].data[offset], &buffer[offset], connection->temp_filter.data_size);
+                        }
+                        return 0;
+
+                    case ATT_TRANSACTION_MODE_CANCEL:
+                        ots_server_reset_long_write_filter(connection);
+                        break;
+
+                    case ATT_TRANSACTION_MODE_EXECUTE:
+                        connection->filters[i].type = connection->temp_filter.type;
+                        connection->filters[i].data_size = connection->temp_filter.data_size;
+                        memcpy(connection->filters[i].data, connection->temp_filter.data, connection->temp_filter.data_size);
+                        ots_server_reset_long_write_filter(connection);
+
+                        ots_server_emit_current_object_filter_changed(connection, i);
+                        break;
+
+                    default:
+                        break;
+                } 
+               return 0;    
+            }
+        }
+    }
     
     return 0;
 }
@@ -476,6 +559,8 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
         ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT, 
         ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT  , 
         ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER         , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER         , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_FILTER         , 
         ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED             , 
     };
 
@@ -491,7 +576,9 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
         "object properties          ", 
         "object action control point", 
         "object list control point  ", 
-        "object list filter         ", 
+        "object list filter 1       ", 
+        "object list filter 2       ", 
+        "object list filter 3       ", 
         "object changed             ", 
     };
 #endif
