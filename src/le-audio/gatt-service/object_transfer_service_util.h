@@ -86,8 +86,8 @@ extern "C" {
 
 
 #define OTS_MAX_NAME_LENGHT         32
-
-#define OTS_OBJECT_ID_LEN           6
+#define OTS_MAX_NUM_FILTERS          3
+#define OTS_OBJECT_ID_LEN            6
 /**
  * @brief Bluetooth address
  */
@@ -103,6 +103,27 @@ typedef struct {
     uint8_t  minutes;
     uint8_t  seconds;
 } btstack_utc_t;
+
+typedef enum {
+    OTS_FILTER_TYPE_NO_FILTER = 0,              // 0
+    OTS_FILTER_TYPE_NAME_STARTS_WITH,           // var
+    OTS_FILTER_TYPE_NAME_ENDS_WITH,             // var
+    OTS_FILTER_TYPE_NAME_CONTAINS,              // var
+    OTS_FILTER_TYPE_NAME_IS_EXACTLY,            // var
+    OTS_FILTER_TYPE_OBJECT_TYPE,                // 6
+    OTS_FILTER_TYPE_CREATED_BETWEEN,            // 14
+    OTS_FILTER_TYPE_MODIFIED_BETWEEN,           // 14
+    OTS_FILTER_TYPE_CURRENT_SIZE_BETWEEN,       // 8
+    OTS_FILTER_TYPE_ALLOCATED_SIZE_BETWEEN,     // 8
+    OTS_FILTER_TYPE_MARKED_OBJECTS,             // 0
+    OTS_FILTER_TYPE_RFU
+} ots_filter_type_t;
+
+typedef struct {
+    ots_filter_type_t type;
+    uint8_t data_size;
+    uint8_t data[OTS_MAX_NAME_LENGHT];
+} ots_filter_t;
 
 typedef struct {
     // metadata
