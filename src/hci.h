@@ -287,6 +287,13 @@ typedef enum {
     LE_CONNECTING_WHITELIST,
 } le_connecting_state_t;
 
+typedef enum {
+    ATT_BEARER_UNENHANCED_LE,
+    ATT_BEARER_UNENHANCED_CLASSIC,
+    ATT_BEARER_ENHANCED_LE,
+    ATT_BEARER_ENHANCED_CLASSIC
+} att_bearer_type_t;
+
 #ifdef ENABLE_BLE
 
 //
@@ -477,13 +484,6 @@ typedef enum {
     ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED,
     ATT_SERVER_RESPONSE_PENDING,
 } att_server_state_t;
-
-typedef enum {
-    ATT_BEARER_UNENHANCED_LE,
-    ATT_BEARER_UNENHANCED_CLASSIC,
-    ATT_BEARER_ENHANCED_LE,
-    ATT_BEARER_ENHANCED_CLASSIC
-} att_bearer_type_t;
 
 typedef struct {
     att_server_state_t      state;
