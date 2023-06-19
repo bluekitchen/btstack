@@ -374,6 +374,11 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t attribut
                 reverse_bd_addr(gap_reconnection_address, buffer);
             }
             return 6;
+        case ATT_CHARACTERISTIC_GATT_CLIENT_SUPPORTED_FEATURES_01_VALUE_HANDLE:
+            if (buffer){
+                buffer[0] = client_supported_features_value;
+            }
+            return 1;
         case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
             // Value with size mtu - 1, buffer has size mtu - 1
             if (buffer){
@@ -504,11 +509,8 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t attribute_ha
                 return 0;   // ok
             case GATT_CLIENT_SUPPORTED_FEATURES:
                 printf("- Client Supported Features set to %x for handle 0x%04x\n", buffer[0], con_handle);
-                // only store if notify multiple supported
-                if ((buffer[0] & 4) != 0){
-                    client_supported_features_value = buffer[0];
-                    client_supported_features_handle = con_handle;
-                }
+                client_supported_features_value = buffer[0] & 0x07;
+                client_supported_features_handle = con_handle;
                 return 0;
             default:
                 break;
