@@ -1915,7 +1915,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
 #ifdef ENABLE_GATT_OVER_EATT
         case ATT_READ_MULTIPLE_VARIABLE_RSP:
             switch (gatt_client->gatt_client_state) {
-                case P_W4_READ_MULTIPLE_RESPONSE:
+                case P_W4_READ_MULTIPLE_VARIABLE_RESPONSE:
                     report_gatt_characteristic_value(gatt_client, 0u, &packet[1], size - 1u);
                     gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_SUCCESS);
                     break;
