@@ -75,6 +75,12 @@ typedef struct {
 
     // offset, used in OACP write procedure
     uint32_t current_size;
+
+    ots_filter_t filters[OTS_MAX_NUM_FILTERS];
+
+    // used in write callback
+    ots_filter_t temp_filter;
+    uint16_t     temp_attribute_handle;
 } object_transfer_service_connection_t;
 
 
