@@ -829,6 +829,12 @@ static uint8_t * setup_long_characteristic_value_packet(uint8_t type, hci_con_ha
 #endif
 }
 
+#if (LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE > CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE)
+#define REPORT_PREBUFFER_HEADER LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE
+#else
+#define REPORT_PREBUFFER_HEADER CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE
+#endif
+
 ///
 static void report_gatt_services(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size){
     if (size < 2) return;
@@ -3060,24 +3066,26 @@ static void gatt_client_le_enhanced_setup_l2cap_channel(gatt_client_t * gatt_cli
 
     // setup channels
     uint16_t buffer_size_per_client = gatt_client->eatt_storage_size / num_channels;
-    uint16_t receive_buffer_size  = buffer_size_per_client / 2;
-    uint16_t transmit_buffer_size = buffer_size_per_client / 2;
+    uint16_t max_mtu = (buffer_size_per_client - REPORT_PREBUFFER_HEADER) / 2;
     uint8_t * receive_buffers[MAX_NR_EATT_CHANNELS];
     uint16_t  new_cids[MAX_NR_EATT_CHANNELS];
     memset(gatt_client->eatt_storage_buffer, 0, gatt_client->eatt_storage_size);
     uint8_t i;
     for (i=0;i<gatt_client->eatt_num_clients; i++){
-        receive_buffers[i] = gatt_client->eatt_storage_buffer;;
-        gatt_client->eatt_storage_buffer += receive_buffer_size;
+        receive_buffers[i] = &gatt_client->eatt_storage_buffer[REPORT_PREBUFFER_HEADER];
+        gatt_client->eatt_storage_buffer += REPORT_PREBUFFER_HEADER + max_mtu;
     }
 
     log_info("%u EATT clients with receive buffer size %u", gatt_client->eatt_num_clients, buffer_size_per_client);
 
-    uint8_t status = l2cap_ecbm_create_channels(&gatt_client_le_enhanced_packet_handler, gatt_client->con_handle,
+    uint8_t status = l2cap_ecbm_create_channels(&gatt_client_le_enhanced_packet_handler,
+                                                gatt_client->con_handle,
                                                 gatt_client->security_level,
-                                                BLUETOOTH_PSM_EATT, num_channels, L2CAP_LE_AUTOMATIC_CREDITS,
+                                                BLUETOOTH_PSM_EATT, num_channels,
+                                                L2CAP_LE_AUTOMATIC_CREDITS,
                                                 buffer_size_per_client,
-                                                receive_buffers, new_cids);
+                                                receive_buffers,
+                                                new_cids);
 
     if (status == ERROR_CODE_SUCCESS){
         i = 0;
@@ -3095,8 +3103,7 @@ static void gatt_client_le_enhanced_setup_l2cap_channel(gatt_client_t * gatt_cli
             new_eatt_client->gatt_client_state = P_W4_L2CAP_CONNECTION;
             new_eatt_client->l2cap_cid = new_cids[i];
             new_eatt_client->eatt_storage_buffer = gatt_client->eatt_storage_buffer;
-
-            gatt_client->eatt_storage_buffer += receive_buffer_size;
+            gatt_client->eatt_storage_buffer += max_mtu;
             i++;
         }
         gatt_client->eatt_state = GATT_CLIENT_EATT_L2CAP_SETUP;
@@ -3272,9 +3279,10 @@ uint8_t gatt_client_le_enhanced_connect(btstack_packet_handler_t callback, hci_c
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    // need one buffer for sending and one for receiving
+    // need one buffer for sending and one for receiving. Receiving includes pre-buffer for reports
     uint16_t buffer_size_per_client = storage_size / num_channels;
-    if (buffer_size_per_client < (64*2)) {
+    uint16_t max_mtu = (buffer_size_per_client - REPORT_PREBUFFER_HEADER) / 2;
+    if (max_mtu < 64) {
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
