@@ -81,6 +81,14 @@ typedef struct {
     // used in write callback
     ots_filter_t temp_filter;
     uint16_t     temp_attribute_handle;
+
+    // used for OACP procedures
+    oacp_opcode_t       oacp_opcode;
+    oacp_result_code_t  oacp_result_code;
+    
+    // used for OACP procedures
+    olcp_opcode_t       olcp_opcode;
+    olcp_result_code_t  olcp_result_code;
 } object_transfer_service_connection_t;
 
 
